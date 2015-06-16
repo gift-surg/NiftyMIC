@@ -15,6 +15,7 @@ import sys
 
 ## Import other py-files within src-folder
 from FetalImage import *
+from FileAndImageHelpers import *
 
 
 ## Global variables to store computed results
@@ -128,9 +129,9 @@ class Registration:
                 "-aff " + dir_out + aff_filename + ".txt"
             # print(cmd)
 
-            print "Job %d/%d ... " % (i+1,N_stacks)
+            print "Rigid registration %d/%d ... " % (i+1,N_stacks)
             os.system(cmd)
-            print("............. done" % (i+1,N_stacks))
+            print("Rigid registration %d/%d ... done" % (i+1,N_stacks))
 
             ## Update results
             self._corrected_stacks[i] = FetalImage(dir_out, res_filename)
@@ -156,23 +157,22 @@ class Registration:
         ## compute length of sampling in z-direction and new number of slices
         ## after rescaling their thickness to in-plane resolution
         length_through_plane = shape[2]*pixdim[2]
+
+        ## new number of slices given the new pixel dimension
         number_of_slices_target_through_plane \
                 = np.ceil(length_through_plane / float(pixdim[0])).astype(np.uint8)
+
+        ## incorporating of scaling in affine matrix
+        affine = np.identity(4)
+        affine[2,2] = pixdim[0]/pixdim[2]
+        affine = img.get_affine().dot(affine)
 
         data_target = np.zeros(
             (shape[0], shape[1], number_of_slices_target_through_plane),
             dtype=np.int16
             )
 
-        # print("shape = " + str(shape))
-        # print("pixdim = " + str(pixdim) + " mm")
-        # print("length_through_plane = " + str(length_through_plane) + " mm")
-        # print img.get_data().shape
-        # print img.affine
-        # print(header.get_data_shape())
-        # sform[2,0:2] = sform[2,0:2] * length_through_plane/pixdim[0]
-        # print sform
-
+        """
         ## Nearest neighbour interpolation to uniform grid
         if (order == 0):
             i = 0
@@ -185,22 +185,16 @@ class Registration:
                     # print("dist_coarse = " + str((i)*pixdim[2]) )
                     # print("\n")
                 data_target[:,:,j] = data[:,:,i]
-
+        """
 
         ## Store data into nifti-object with appropriate header information
-        img_target_nib = nib.Nifti1Image(data_target, img.get_affine())
-        header_target = img_target_nib.get_header()
-        header_target.set_zooms(pixdim[0]*np.ones(3))
-        header_target.set_data_shape([shape[0],shape[1],number_of_slices_target_through_plane])
-        # header_target.set_xyzt_units(2)
-        # header_target.set_sform(sform,code=1)
-        # header_target.set_qform(qform)
-
-        # print(header_target.get_zooms())
-
+        ## and updated affine matrix
+        img_target_nib = nib.Nifti1Image(data_target, affine=affine, header=header)
+        
         ## Save nifti-image to directory and create FetalImage instance
         img_target_nifti_filename = filename
         nib.save(img_target_nib, dir_out + img_target_nifti_filename + ".nii.gz")
+
         # img_target = FetalImage(dir_out, img_target_nifti_filename)
 
         ## NiftyReg: Resample to isotropic grid
@@ -210,14 +204,12 @@ class Registration:
         #  \param[in] -flo floating image
         #  \param[in] -trans segmentation of floating image
         #  \param[out] -res propagated labels of flo image in ref-space
-        # cmd = "reg_resample " + "-inter 0 " + \
-        #     "-ref " + img_target_dummy.get_dir() + img_target_dummy.get_filename() + ".nii.gz " + \
-        #     "-flo " + img.get_dir() + img.get_filename() + ".nii.gz " + \
-        #     "-trans " + dir_out + "test-trafo.txt " \
-        #     "-res " + dir_out + img_target_nifti_filename + ".nii.gz"
-        # os.system(cmd)
-
-
+        cmd = "reg_resample -voff " + "-inter " + str(order) + " " \
+            "-ref " + dir_out + filename + ".nii.gz " + \
+            "-flo " + img.get_dir() + img.get_filename() + ".nii.gz " + \
+            "-res " + dir_out + filename + ".nii.gz"
+        os.system(cmd)
+        print("Resampling of chosen target stack to uniform grid done")
 
         # nib.save(img_target, 'my_image.nii.gz')
         # print(img.zooms)
@@ -229,13 +221,23 @@ class Registration:
         N_stacks = len(self._fetal_stacks)
 
         data = np.zeros(self._HR_volume.get_data().shape)
+        ind = np.zeros(self._HR_volume.get_data().shape)
 
         for i in range(0,N_stacks):
-            # print self._corrected_stacks[i].data.shape
-            data += self._corrected_stacks[i].get_data()
+            ## Sum intensities of stacks
+            tmp_data = self._corrected_stacks[i].get_data()
+            tmp_data = normalize_image(tmp_data)
+            data += tmp_data
 
-        data /= N_stacks
+            ## Store indices of elements with non-zero contribution
+            ind_nonzero = np.nonzero(tmp_data)
+            ind[ind_nonzero] += 1
 
+        ## Average over the amount of non-zero contributions of the stack at each index
+        ind[ind==0] = 1                 # exclude division by zero
+        data = np.divide(data,ind)
+
+        ## Update HR volume
         self._HR_volume.set_data(data)
 
         return None

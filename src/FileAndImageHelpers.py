@@ -51,7 +51,7 @@ def show_slices(slices):
     for i, slice in enumerate(slices):
         axes[i].imshow(slice.T, cmap="gray", origin="lower")
 
-
+## Normalize array between 0 and 1
 def normalize_image(array):
     minimal_value = np.min(array)
     maximal_value = np.max(array)
