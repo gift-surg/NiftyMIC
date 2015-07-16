@@ -71,7 +71,7 @@ def main():
 
     ## Data Preprocessing:
     data_preprocessing = DataPreprocessing(dir_out, dir_input, filenames)   
-    # data_preprocessing.normalize_images()
+    # data_preprocessing.cap_and_normalize_images()
 
     # data_preprocessing.create_rectangular_mask(dir_input, filenames[1], [161, 219], 100, 100)
     # data_preprocessing.create_rectangular_mask(dir_input, filenames[2], [150, 214], 120, 150)
@@ -86,7 +86,7 @@ def main():
     # data_preprocessing.copy_files(dir_out+"input_data/", dir_input, filenames)
     
 
-    stacks = data_preprocessing.get_stacks()
+    # stacks = data_preprocessing.get_stacks()
 
 
     # ## 
@@ -127,31 +127,65 @@ def main():
 
         ind = 7
 
-        nifti_0 = nib.load(dir_out+filenames[target_stack_id]+".nii.gz")
-        nifti_1 = nib.load(dir_out+filenames[ind]+".nii.gz")
+        # nifti_0 = nib.load(dir_out+"input_data/"+"0.nii.gz")
+        # nifti_1 = nib.load(dir_out+"input_data/"+"1.nii.gz")
+        # nifti_2 = nib.load(dir_out+"input_data/"+"1_0_flirt.nii.gz")
 
-        nifti_0_warp = nib.load(dir_out+filenames[target_stack_id]+".nii.gz")
-        nifti_1_warp = nib.load(dir_out+filenames[ind]+".nii.gz")
+        img_0 = SliceStack(dir_out+"input_data/","0")
+        # img_1 = SliceStack(dir_out+"input_data/","1")
+        img_2 = SliceStack(dir_out+"input_data/","1")
 
-        T_0 = np.loadtxt(dir_out+filenames[target_stack_id]+".txt")
-        T_1 = np.loadtxt(dir_out+filenames[ind]+".txt")
+        # img_1_0 = SliceStack(dir_out+"input_data/","ref_1_flo_0_flirt")
+        img_2_0 = SliceStack(dir_out+"input_data/","ref_2_flo_0_flirt")
+        T = np.loadtxt(dir_out+"input_data/"+"ref_2_flo_0_flirt_mat.txt")
+        
+        # img_1_0 = SliceStack(dir_out+"input_data_segmentation_prop/","ref_1_flo_0_affine_result")
+        # img_2_0 = SliceStack(dir_out+"input_data_segmentation_prop/","ref_2_flo_0_affine_result")
+        # T = np.loadtxt(dir_out+"input_data_segmentation_prop/"+"ref_2_flo_0_affine_matrix.txt")
 
-        M_0 = nifti_0.affine
-        M_1 = nifti_1.affine
 
-        M_0_warp = nifti_0_warp.affine
-        M_1_warp = nifti_1_warp.affine
+        A_0 = img_0.get_affine()
+        A_2 = img_2.get_affine()
+        A_2_0 = img_2_0.get_affine()
 
-        print M_0
-        print np.dot(M_1[0:-1,1],M_1[0:-1,2])
+        print("T")
+        print(T)
+        print(np.linalg.inv(T))
 
-        print M_0-M_0_warp
+        print("A_2_0 and A_2")
+        # print(A_2_0)
+        print(A_2)
+
+        print("A_0")
+        print(A_0)
+
+
+        print("T*A_2")
+        print(T.dot(A_2))
+        print(np.linalg.inv(T).dot(A_2))
+
+        print("T*A_0")
+        print(T.dot(A_0))
+        print(np.linalg.inv(T).dot(A_0))
+
+        # print(np.dot(np.linalg.inv(T),A_0))
+        # print(np.dot(T,A_0))
+        # M_0 = nifti_0.affine
+        # M_1 = nifti_1.affine
+
+        # M_0_warp = nifti_0_warp.affine
+        # M_1_warp = nifti_1_warp.affine
+
+        # print M_0
+        # print np.dot(M_1[0:-1,1],M_1[0:-1,2])
+
+        # print M_0-M_0_warp
         # print T_0-npl.inv(M_0_warp)
-        print M_0-M_1_warp
+        # print M_0-M_1_warp
         # print npl.inv(T_1)*M_0-M_1_warp
         # print npl.inv(T_1)*M_0-M_1_warp
 
-        npl.inv(T_1*M_1)*M_0
+        # npl.inv(T_1*M_1)*M_0
 
 
         # print nib.aff2axcodes(nifti.affine)

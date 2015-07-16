@@ -7,6 +7,7 @@
 ## Import libraries
 import os                       # used to execute terminal commands in python
 import numpy as np
+import sys
 
 ## Import other py-files within src-folder
 from SliceStack import *
@@ -15,13 +16,14 @@ class DataPreprocessing:
 
     def __init__(self, dir_out, dir_in, filenames):
 
-        print("\n***** Data preprocessing (DP): ******")
+        print("\n***** Data preprocessing (DP) ******")
 
-        self._stacks = []
-        self._masks = []
+        self._N_stacks = len(filenames)
+
+        self._stacks = [None]*self._N_stacks
+        self._masks = [None]*self._N_stacks
         
         self._dir_results = dir_out
-        self._N_stacks = len(filenames)
 
 
         ## Directory of input data used for reconstruction algorithm
@@ -49,8 +51,8 @@ class DataPreprocessing:
             # print cmd
             os.system(cmd)
 
-            ## Append stack
-            self._stacks.append(SliceStack(self._dir_results_input_data, new_name))
+            ## Link image to stack
+            self._stacks[i] = SliceStack(self._dir_results_input_data, new_name)
 
             ## 2) Copy masks:
 
@@ -60,10 +62,10 @@ class DataPreprocessing:
             os.system(cmd)
             
             if os.path.isfile(self._dir_results_input_data + new_name + "_mask.nii.gz"):
-                ## Append mask
-                self._masks.append(SliceStack(self._dir_results_input_data, new_name + "_mask"))
+                ## Link mask to stack
+                self._masks[i] = SliceStack(self._dir_results_input_data, new_name + "_mask")
 
-            print("Stacks were copied to directory " + self._dir_results_input_data)
+        print(str(self._N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
 
 
         return None
@@ -71,7 +73,7 @@ class DataPreprocessing:
 
     def segmentation_propagation(self, target_stack_id):
 
-        print("\nDP: Segmentation progation:\n")
+        print("\n** DP: Segmentation progation **\n")
 
         ## Create folder if not already existing
         os.system("mkdir -p " + self._dir_results_seg_prop)
@@ -82,43 +84,136 @@ class DataPreprocessing:
 
         ## Compute propagation of masks based on target stack
         try:
-            ref_image = self._stacks[target_stack_id].get_filename()
+            ## Define floating image details
+            dir_flo = self._stacks[target_stack_id].get_dir()
+            flo_image = self._stacks[target_stack_id].get_filename()
+            flo_mask = self._masks[target_stack_id].get_dir() \
+                        + self._masks[target_stack_id].get_filename()
+
+
+            methods = ["NiftyReg", "FLIRT"]
+            method = methods[1]
+
+            ## Output directory of computed results
+            dir_res = self._dir_results_seg_prop
+
+            ## Counter for current image processing
             ctr = 0
 
             for i in range(0,self._N_stacks):
 
-                flo_image = self._stacks[i].get_filename()
-                res_image = "ref_" + ref_image + "_flo_" \
-                            + flo_image + "_affine_result"
-                res_image_affine = "ref_" + ref_image + "_flo_" \
-                            + flo_image + "_affine_matrix"
+                ## Define floating image details
+                dir_ref = self._stacks[i].get_dir()
+                ref_image = self._stacks[i].get_filename()
 
-                if i==target_stack_id:
+                ## Used intermediate variable names
+                res_affine_image = "ref_" + ref_image + "_flo_" \
+                            + flo_image + "_affine_result"
+                res_affine_matrix = "ref_" + ref_image + "_flo_" \
+                            + flo_image + "_affine_matrix"
+                res_nrr_image    = "ref_" + ref_image + "_flo_" \
+                            + flo_image + "_nrr_result"
+                res_nrr_cpp = "ref_" + ref_image + "_flo_" \
+                            + flo_image + "_nrr_cpp"
+
+                ## Define name of obtained propagated mask of floating image
+                ## in reference space
+                res_mask_flo = "ref_" + ref_image + "_flo_" + flo_image + "_mask"
+
+                if i == target_stack_id:
                     continue
 
-                # options = "-voff -platf Cuda=1 "
-                options = "-voff "
+                ctr += 1
 
-                ## NiftyReg: 1) Global affine registration of reference image:
+                ## Affine registration
+                if method == "FLIRT":
+                    options = "-usesqform "
+                    cmd = "flirt " + options + \
+                        "-ref " + dir_ref + ref_image + ".nii.gz " + \
+                        "-in " + dir_flo + flo_image + ".nii.gz " + \
+                        "-out " + dir_res + res_affine_image + ".nii.gz " + \
+                        "-omat " + dir_res + res_affine_matrix + ".txt"
+                    sys.stdout.write("Rigid registration (FLIRT) " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+
+                    # img = SliceStack(dir_res, res_affine_image)
+                    # T = np.loadtxt(dir_res + res_affine_matrix + ".txt")
+                    # np.savetxt(dir_res + res_affine_matrix + ".txt", np.linalg.inv(T))
+
+                else:
+                    ## NiftyReg: 1) Global affine registration of reference image:
+                    #  \param[in] -ref reference image
+                    #  \param[in] -flo floating image
+                    #  \param[out] -res affine registration of floating image
+                    #  \param[out] -aff affine transformation matrix
+                    options = "-voff "
+                    # options = "-voff -platf Cuda=1 "
+                    cmd = "reg_aladin " + options + \
+                        "-ref " + dir_ref + ref_image + ".nii.gz " + \
+                        "-flo " + dir_flo + flo_image + ".nii.gz " + \
+                        "-rmask " + self._masks[i].get_dir() + ref_image + "_mask.nii.gz " + \
+                        "-fmask " + flo_mask + ".nii.gz " + \
+                        "-res " + dir_res + res_affine_image + ".nii.gz " + \
+                        "-aff " + dir_res + res_affine_matrix + ".txt"
+                    sys.stdout.write("Rigid registration (NiftyReg reg_aladin) " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+
+                # print(cmd)
+                sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+                # print(cmd)
+                os.system(cmd)
+                print "done"
+
+                # affine = np.loadtxt(dir_results + res_image_affine + ".txt")
+                # stacks_dp[i].set_affine(affine)
+
+                ## NiftyReg: 2) Non-rigid registration:
+                #  \param[in] options (like 'be' and 'sx')
+                #  \param[in] -ref reference image
+                #  \param[in] -flo floating image (templates)
+                #  \param[in] -aff affine transformation matrix
+                #  \param[out] -res non-rigid registration of floating image
+                #  \param[out] -cpp control point grid
+                options = "-voff "
+                cmd = "reg_f3d " + options + \
+                    "-ref " + dir_ref + ref_image + ".nii.gz " + \
+                    "-flo " + dir_flo + flo_image + ".nii.gz " + \
+                    "-aff " + dir_res + res_affine_matrix + ".txt " + \
+                    "-res " + dir_res + res_nrr_image + ".nii.gz " + \
+                    "-cpp " + dir_res + res_nrr_cpp + ".nii.gz"
+                sys.stdout.write("Non-rigid registration (NiftyReg reg_f3d) " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+                sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+                # print(cmd)
+                # os.system(cmd)
+                # print "done"
+                
+
+
+                ## NiftyReg: 3) Propagate labels of floating image into space 
+                #               of reference image based on non-rigid 
+                #               transformation parametrization stored in
+                #               *cpp.nii.gz:
+                #  \param[in] -inter interpolation order
                 #  \param[in] -ref reference image
                 #  \param[in] -flo floating image
-                #  \param[out] -res affine registration of floating image
-                #  \param[out] -aff affine transformation matrix
-                cmd = "reg_aladin " + options + \
-                    "-ref " + self._stacks[i].get_dir() + ref_image + ".nii.gz " + \
-                    "-rmask " + self._masks[target_stack_id].get_dir() + ref_image + "_mask.nii.gz " + \
-                    "-flo " + self._stacks[i].get_dir() + flo_image + ".nii.gz " + \
-                    "-fmask " + self._masks[i].get_dir() + flo_image + "_mask.nii.gz " + \
-                    "-res " + self._dir_results_seg_prop + res_image + ".nii.gz " + \
-                    "-aff " + self._dir_results_seg_prop + res_image_affine + ".txt"
-                print(cmd)
-                print "Rigid registration %d/%d ... " % (ctr+1,self._N_stacks-1)
+                #  \param[in] -trans control point grid
+                #  \param[out] -res propagated labels of flo image in ref-space
+                options = "-voff "
+                    # "-trans " + dir_res + res_nrr_cpp + ".nii.gz " + \
+                cmd = "reg_resample " + options + "-inter 0 " + \
+                    "-ref " + dir_ref + ref_image + ".nii.gz " + \
+                    "-flo " + flo_mask + ".nii.gz " + \
+                    "-trans " + dir_res + res_affine_matrix + ".txt " + \
+                    "-res " + dir_res + res_mask_flo + ".nii.gz"
+                sys.stdout.write("Resampling (NiftyReg reg_resample) " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+                sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+                # print(cmd)
                 os.system(cmd)
-                print "Rigid registration %d/%d ... done" % (ctr+1,self._N_stacks-1)
-                ctr+=1
+                print("done")
 
-                affine = np.loadtxt(self._dir_results_seg_prop + res_image_affine + ".txt")
-                # stacks_dp[i].set_affine(affine)
+                self._masks[i] = SliceStack(dir_res, res_mask_flo)
+                print("Propagated labels were copied to directory " + dir_res)
+
+            for i in range(0, self._N_stacks):
+                print(str(self._masks[i].get_dir()) + str(self._masks[i].get_filename()))
 
 
         except ValueError as err:
@@ -145,8 +240,8 @@ class DataPreprocessing:
         return None
 
 
-    def normalize_images(self):
-        print("\nDP: Normalization of Images:\n")
+    def cap_and_normalize_images(self):
+        print("\n** DP: Normalization of Images **\n")
 
         ## Create folder if not already existing
         os.system("mkdir -p " + self._dir_results_input_data_dp_final)

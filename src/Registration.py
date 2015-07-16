@@ -208,8 +208,7 @@ class Registration:
         img_target_nib = nib.Nifti1Image(data_target, affine=affine, header=header)
         
         ## Save nifti-image to directory
-        img_target_nifti_filename = filename
-        nib.save(img_target_nib, dir_out + img_target_nifti_filename + ".nii.gz")
+        nib.save(img_target_nib, dir_out + filename + ".nii.gz")
 
         # img_target = 
 
