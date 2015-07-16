@@ -1,4 +1,4 @@
-## \file fetalImage.py
+## \file SliceStack.py
 #  \brief  
 # 
 #  \author Michael Ebner
@@ -9,7 +9,7 @@ import numpy as np
 import copy
 
 
-class FetalImage:
+class SliceStack:
 
     def __init__(self, dir_nifti, nifti_filename):
         self._dir_nifti = dir_nifti
@@ -32,12 +32,12 @@ class FetalImage:
 
 
     # def __copy__(self):
-    #     return FetalImage(self._dir_nifti, self._nifti_filename)
+    #     return SliceStack(self._dir_nifti, self._nifti_filename)
 
 
     # fails
     # def __deepcopy__(self, memo):
-    #     return FetalImage(copy.deepcopy(self._dir_nifti, 
+    #     return SliceStack(copy.deepcopy(self._dir_nifti, 
     #         self._nifti_filename, memo))
 
 
@@ -65,19 +65,31 @@ class FetalImage:
         return self._affine
 
 
+    def set_affine(self, affine):
+        try:
+            if (affine.shape != (4, 4)):
+                raise ValueError("Affine transformation non-compliant")
+
+            self._affine = affine
+
+            nifti = nib.Nifti1Image(self._data, affine=self._affine, header=self._header)
+            nib.save(nifti, self._dir_nifti + self._nifti_filename + ".nii.gz") 
+            print("Affine transformation of image " + self._nifti_filename + " successfully updated")
+
+        except ValueError as err:
+            print(err.args)
+
     def set_data(self, array):
         try:
             if (array.size != self._data.size):
                 raise ValueError("Dimension mismatch of data array")
 
             self._data = array
-            self._update_file()
+
+            nifti = nib.Nifti1Image(self._data, affine=None, header=self._header)
+            nib.save(nifti, self._dir_nifti + self._nifti_filename + ".nii.gz") 
+            print("Data array of image " + self._nifti_filename + " successfully updated")          
 
         except ValueError as err:
             print(err.args)
 
-
-    def _update_file(self):
-        nifti = nib.Nifti1Image(self._data, affine=None, header=self._header)
-        nib.save(nifti, self._dir_nifti + self._nifti_filename + ".nii.gz") 
-        print("File " + self._nifti_filename + " successfully updated.")          
