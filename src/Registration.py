@@ -28,7 +28,7 @@ dir_out_rigid_corr = dir_out+"input_data_rigidly_corrected/"
 ## \brief some description
 class Registration:
 
-    def __init__(self, stacks, target_stack_id):
+    def __init__(self, stacks, masks, target_stack_id):
 
         print("\n***** Rigid Registration (RR) ******")
 
@@ -41,6 +41,8 @@ class Registration:
         self._input_stacks = stacks
         self._target_stack = stacks[target_stack_id]
         self._corrected_stacks = [None]*len(self._input_stacks)
+        self._masks = masks
+        self._N_stacks = len(self._input_stacks)
 
 
         try:
@@ -53,7 +55,7 @@ class Registration:
                 ## Try to read already corrected stacks
                 if  os.path.isfile(dir_out_rigid_corr + filename + ".nii.gz"):
                     # raise ValueError("Corrected stacks already exist!")
-                    print("Corrected stack %d was read from directory" % i)
+                    print("Corrected stack %d was read from directory %s" % (i,dir_out_rigid_corr))
 
                 ## Or copy originally acquired stacks
                 else:
@@ -77,12 +79,12 @@ class Registration:
             if os.path.isfile(dir_out + filename + ".nii.gz"):
                 # raise ValueError("HR volume already exists!")
                 self._HR_volume = SliceStack(dir_out, filename)
-                print ("HR volume was read from directory")
+                print ("HR volume was read from directory " + dir_out)
 
             ## Or resample target stack to isotropic grid as first estimate of HRV
             else:
                 self._HR_volume = self.resample_to_isotropic_grid(stacks[target_stack_id], filename)
-                print ("HR volume initialized as resampled target image")
+                print ("HR volume initialized as resampled target stack")
 
 
         except ValueError as err:
@@ -109,46 +111,64 @@ class Registration:
     ## Register stacks rigidly to current HR volume
     def register_images(self):
 
-        ## Amount of used stacks for volumetric reconstruction
-        N_stacks = len(self._input_stacks)
-        # print N_stacks
-
         ## Fetch data of current HR volume
         dir_ref = self._HR_volume.get_dir()
-        ref_filename = self._HR_volume.get_filename()
+        ref_image = self._HR_volume.get_filename()
+
+        methods = ["NiftyReg", "FLIRT"]
+        method = methods[1]
 
         ## Compute rigid registration of each stack by using NiftyReg
-        for i in range(0, N_stacks):
+        for i in range(0, self._N_stacks):
 
             ## Fetch data of motion corrupted slices
             dir_flo = self._corrected_stacks[i].get_dir()
-            flo_filename = self._corrected_stacks[i].get_filename()
+            flo_image = self._corrected_stacks[i].get_filename()
 
             ## Define filenames of resulting rigidly registered stacks
-            res_filename = flo_filename
-            aff_filename = flo_filename
+            dir_res = dir_flo
+            res_affine_image = flo_image
+            res_affine_matrix = flo_image + "_ref_" + ref_image + "_flo_" \
+                        + flo_image + "_affine_matrix"
 
-            # options = "-voff -platf Cuda=1 "
-            options = "-voff "
 
-            ## NiftyReg: Global affine registration of reference image:
-            #  \param[in] -ref reference image
-            #  \param[in] -flo floating image
-            #  \param[out] -res affine registration of floating image
-            #  \param[out] -aff affine transformation matrix
-            cmd = "reg_aladin " + options + \
-                "-ref " + dir_ref + ref_filename + ".nii.gz " + \
-                "-flo " + dir_flo + flo_filename + ".nii.gz " + \
-                "-res " + dir_flo + res_filename + ".nii.gz " + \
-                "-aff " + dir_flo + aff_filename + ".txt"
+            ## Affine registration
+            if method == "FLIRT":
+                options = ""
+                cmd = "flirt " + options + \
+                    "-ref " + dir_ref + ref_image + ".nii.gz " + \
+                    "-in " + dir_flo + flo_image + ".nii.gz " + \
+                    "-out " + dir_res + res_affine_image + ".nii.gz " + \
+                    "-omat " + dir_res + res_affine_matrix + ".txt"
+                sys.stdout.write("Rigid registration (FLIRT) to target stack " + str(i+1) + "/" + str(self._N_stacks) + " ... ")
+
+                # img = SliceStack(dir_res, res_affine_image)
+                # T = np.loadtxt(dir_res + res_affine_matrix + ".txt")
+                # np.savetxt(dir_res + res_affine_matrix + ".txt", np.linalg.inv(T))
+
+            else:
+                ## NiftyReg: Global affine registration of reference image:
+                #  \param[in] -ref reference image
+                #  \param[in] -flo floating image
+                #  \param[out] -res affine registration of floating image
+                #  \param[out] -aff affine transformation matrix
+                options = "-voff "
+                # options = "-voff -platf Cuda=1 "
+                cmd = "reg_aladin " + options + \
+                    "-ref " + dir_ref + ref_image + ".nii.gz " + \
+                    "-flo " + dir_flo + flo_image + ".nii.gz " + \
+                    "-res " + dir_res + res_affine_image + ".nii.gz " + \
+                    "-aff " + dir_res + res_affine_matrix + ".txt"
+                sys.stdout.write("Rigid registration (NiftyReg reg_aladin) " + str(i+1) + "/" + str(self._N_stacks) + " ... ")
+
             # print(cmd)
-
-            print "Rigid registration %d/%d ... " % (i+1,N_stacks)
+            sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+            # print(cmd)
             os.system(cmd)
-            print("Rigid registration %d/%d ... done" % (i+1,N_stacks))
+            print "done"
 
             ## Update results
-            self._corrected_stacks[i] = SliceStack(dir_flo, res_filename)
+            self._corrected_stacks[i] = SliceStack(dir_flo, res_affine_image)
 
         return None
 
@@ -234,12 +254,11 @@ class Registration:
 
 
     def compute_HR_volume(self):
-        N_stacks = len(self._input_stacks)
 
         data = np.zeros(self._HR_volume.get_data().shape)
         ind = np.zeros(self._HR_volume.get_data().shape)
 
-        for i in range(0,N_stacks):
+        for i in range(0, self._N_stacks):
             ## Sum intensities of stacks
             tmp_data = self._corrected_stacks[i].get_data()
             tmp_data = normalize_image(tmp_data)

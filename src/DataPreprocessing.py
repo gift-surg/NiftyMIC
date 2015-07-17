@@ -73,7 +73,7 @@ class DataPreprocessing:
 
     def segmentation_propagation(self, target_stack_id):
 
-        print("\n** DP: Segmentation progation **\n")
+        print("\n** DP: Segmentation progation **")
 
         ## Create folder if not already existing
         os.system("mkdir -p " + self._dir_results_seg_prop)
@@ -125,19 +125,41 @@ class DataPreprocessing:
 
                 ctr += 1
 
-                ## Affine registration
                 if method == "FLIRT":
+
+                    ## Affine registration
                     options = "-usesqform "
                     cmd = "flirt " + options + \
                         "-ref " + dir_ref + ref_image + ".nii.gz " + \
                         "-in " + dir_flo + flo_image + ".nii.gz " + \
                         "-out " + dir_res + res_affine_image + ".nii.gz " + \
                         "-omat " + dir_res + res_affine_matrix + ".txt"
-                    sys.stdout.write("Rigid registration (FLIRT) " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+                    sys.stdout.write("Rigid registration (FLIRT) from masked target " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+                    sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+                    # print(cmd)
+                    os.system(cmd)
+                    print("done")
 
                     # img = SliceStack(dir_res, res_affine_image)
                     # T = np.loadtxt(dir_res + res_affine_matrix + ".txt")
                     # np.savetxt(dir_res + res_affine_matrix + ".txt", np.linalg.inv(T))
+
+                    ## Resampling
+                    cmd = \
+                        "flirt " + \
+                        "-in " + flo_mask + ".nii.gz " + \
+                        "-ref " + dir_ref + ref_image + ".nii.gz " + \
+                        "-applyxfm " + \
+                        "-init " + dir_res + res_affine_matrix + ".txt " + \
+                        "-out " + dir_res + res_mask_flo + ".nii.gz; " + \
+                        "fslmaths " + dir_res + res_mask_flo + ".nii.gz " + \
+                        "-thr 0.9 " + \
+                        "-bin " + dir_res + res_mask_flo + ".nii.gz"
+                    sys.stdout.write("Resampling (FLIRT) of propagated target mask " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+                    sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+                    # print(cmd)
+                    os.system(cmd)
+                    print("done")
 
                 else:
                     ## NiftyReg: 1) Global affine registration of reference image:
@@ -154,66 +176,63 @@ class DataPreprocessing:
                         "-fmask " + flo_mask + ".nii.gz " + \
                         "-res " + dir_res + res_affine_image + ".nii.gz " + \
                         "-aff " + dir_res + res_affine_matrix + ".txt"
-                    sys.stdout.write("Rigid registration (NiftyReg reg_aladin) " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+                    sys.stdout.write("Rigid registration (NiftyReg reg_aladin) from masked target " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
 
-                # print(cmd)
-                sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
-                # print(cmd)
-                os.system(cmd)
-                print "done"
+                    sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+                    # print(cmd)
+                    os.system(cmd)
+                    print("done")
+                    
 
-                # affine = np.loadtxt(dir_results + res_image_affine + ".txt")
-                # stacks_dp[i].set_affine(affine)
+                    # affine = np.loadtxt(dir_results + res_image_affine + ".txt")
+                    # stacks_dp[i].set_affine(affine)
 
-                ## NiftyReg: 2) Non-rigid registration:
-                #  \param[in] options (like 'be' and 'sx')
-                #  \param[in] -ref reference image
-                #  \param[in] -flo floating image (templates)
-                #  \param[in] -aff affine transformation matrix
-                #  \param[out] -res non-rigid registration of floating image
-                #  \param[out] -cpp control point grid
-                options = "-voff "
-                cmd = "reg_f3d " + options + \
-                    "-ref " + dir_ref + ref_image + ".nii.gz " + \
-                    "-flo " + dir_flo + flo_image + ".nii.gz " + \
-                    "-aff " + dir_res + res_affine_matrix + ".txt " + \
-                    "-res " + dir_res + res_nrr_image + ".nii.gz " + \
-                    "-cpp " + dir_res + res_nrr_cpp + ".nii.gz"
-                sys.stdout.write("Non-rigid registration (NiftyReg reg_f3d) " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
-                sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
-                # print(cmd)
-                # os.system(cmd)
-                # print "done"
-                
+                    ## NiftyReg: 2) Non-rigid registration:
+                    #  \param[in] options (like 'be' and 'sx')
+                    #  \param[in] -ref reference image
+                    #  \param[in] -flo floating image (templates)
+                    #  \param[in] -aff affine transformation matrix
+                    #  \param[out] -res non-rigid registration of floating image
+                    #  \param[out] -cpp control point grid
+                    options = "-voff "
+                    cmd = "reg_f3d " + options + \
+                        "-ref " + dir_ref + ref_image + ".nii.gz " + \
+                        "-flo " + dir_flo + flo_image + ".nii.gz " + \
+                        "-aff " + dir_res + res_affine_matrix + ".txt " + \
+                        "-res " + dir_res + res_nrr_image + ".nii.gz " + \
+                        "-cpp " + dir_res + res_nrr_cpp + ".nii.gz"
+                    sys.stdout.write("Non-rigid registration (NiftyReg reg_f3d) from masked target " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+                    sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+                    # print(cmd)
+                    os.system(cmd)
+                    print("done")
 
 
-                ## NiftyReg: 3) Propagate labels of floating image into space 
-                #               of reference image based on non-rigid 
-                #               transformation parametrization stored in
-                #               *cpp.nii.gz:
-                #  \param[in] -inter interpolation order
-                #  \param[in] -ref reference image
-                #  \param[in] -flo floating image
-                #  \param[in] -trans control point grid
-                #  \param[out] -res propagated labels of flo image in ref-space
-                options = "-voff "
-                    # "-trans " + dir_res + res_nrr_cpp + ".nii.gz " + \
-                cmd = "reg_resample " + options + "-inter 0 " + \
-                    "-ref " + dir_ref + ref_image + ".nii.gz " + \
-                    "-flo " + flo_mask + ".nii.gz " + \
-                    "-trans " + dir_res + res_affine_matrix + ".txt " + \
-                    "-res " + dir_res + res_mask_flo + ".nii.gz"
-                sys.stdout.write("Resampling (NiftyReg reg_resample) " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
-                sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
-                # print(cmd)
-                os.system(cmd)
-                print("done")
+                    ## NiftyReg: 3) Propagate labels of floating image into space 
+                    #               of reference image based on non-rigid 
+                    #               transformation parametrization stored in
+                    #               *cpp.nii.gz:
+                    #  \param[in] -inter interpolation order
+                    #  \param[in] -ref reference image
+                    #  \param[in] -flo floating image
+                    #  \param[in] -trans control point grid
+                    #  \param[out] -res propagated labels of flo image in ref-space
+                    options = "-voff "
+                        # "-trans " + dir_res + res_nrr_cpp + ".nii.gz " + \
+                    cmd = "reg_resample " + options + "-inter 0 " + \
+                        "-ref " + dir_ref + ref_image + ".nii.gz " + \
+                        "-flo " + flo_mask + ".nii.gz " + \
+                        "-trans " + dir_res + res_affine_matrix + ".txt " + \
+                        "-res " + dir_res + res_mask_flo + ".nii.gz"
+                    sys.stdout.write("Resampling (NiftyReg reg_resample) of propagated target mask " + str(ctr) + "/" + str(self._N_stacks-1) + " ... ")
+
+                    sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+                    # print(cmd)
+                    os.system(cmd)
+                    print("done")
 
                 self._masks[i] = SliceStack(dir_res, res_mask_flo)
                 print("Propagated labels were copied to directory " + dir_res)
-
-            for i in range(0, self._N_stacks):
-                print(str(self._masks[i].get_dir()) + str(self._masks[i].get_filename()))
 
 
         except ValueError as err:
@@ -291,6 +310,10 @@ class DataPreprocessing:
 
     def get_stacks(self):
         return self._stacks
+
+
+    def get_masks(self):
+        return self._masks
 
 
     def _copy_stacks_to_directory(self, dir_out):

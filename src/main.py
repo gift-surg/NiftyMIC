@@ -54,7 +54,10 @@ def main():
     filenames = [
         "20150713_09583130x3mmlongSENSEs2801a1028",
         "20150713_09583130x3mmlongSENSEs2701a1027",
-        "20150713_09583130x3mmlongSENSEs2601a1026"
+        "20150713_09583130x3mmlongSENSEs2601a1026",
+        "20150713_09583130x3mmlongSENSEs2501a1025",
+        "20150713_09583130x3mmlongSENSEs2401a1024",
+        "20150713_09583130x3mmlongSENSEs2301a1023"
         ]
 
 
@@ -77,7 +80,7 @@ def main():
     # data_preprocessing.create_rectangular_mask(dir_input, filenames[2], [150, 214], 120, 150)
 
     ## Make images "ready": Progagate segmentations + subsequent mask to target volume
-    data_preprocessing.segmentation_propagation(target_stack_id)
+    # data_preprocessing.segmentation_propagation(target_stack_id)
     
     # data_preprocessing.crop_and_copy_images()
 
@@ -86,13 +89,18 @@ def main():
     # data_preprocessing.copy_files(dir_out+"input_data/", dir_input, filenames)
     
 
-    # stacks = data_preprocessing.get_stacks()
+    stacks = data_preprocessing.get_stacks()
+    masks = data_preprocessing.get_masks()
 
+    print("Summary: Used data sets")
+    for i in range(0,3):
+        print(stacks[i].get_dir()+stacks[i].get_filename())
+        print(masks[i].get_dir()+masks[i].get_filename())
 
     # ## 
-    # registration = Registration(stacks, target_stack_id)
-    # registration.register_images()
-    # registration.compute_HR_volume()
+    registration = Registration(stacks, masks, target_stack_id)
+    registration.register_images()
+    registration.compute_HR_volume()
 
     # target = registration.get_target_stack()
     # corrected_stacks = registration.get_corrected_stacks()
