@@ -56,3 +56,5 @@ def normalize_image(array):
     minimal_value = np.min(array)
     maximal_value = np.max(array)
     return (array - minimal_value) / float(maximal_value - minimal_value)
+
+

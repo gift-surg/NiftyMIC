@@ -23,6 +23,7 @@ from DataPreprocessing import *
 from SliceStack import *
 from FileAndImageHelpers import *
 from Registration import *
+from MyImageProcessingFunctions import *
 # from SegmentationPropagation import *
 # from SimilarityMeasures import *
 # from StatisticalAnalysis import *
@@ -74,6 +75,7 @@ def main():
 
     ## Data Preprocessing:
     data_preprocessing = DataPreprocessing(dir_out, dir_input, filenames)   
+    # data_preprocessing = DataPreprocessing(dir_out, dir_input, filenames[3:])   
     # data_preprocessing.cap_and_normalize_images()
 
     # data_preprocessing.create_rectangular_mask(dir_input, filenames[1], [161, 219], 100, 100)
@@ -89,18 +91,18 @@ def main():
     # data_preprocessing.copy_files(dir_out+"input_data/", dir_input, filenames)
     
 
-    stacks = data_preprocessing.get_stacks()
-    masks = data_preprocessing.get_masks()
+    # stacks = data_preprocessing.get_stacks()
+    # masks = data_preprocessing.get_masks()
 
-    print("Summary: Used data sets")
-    for i in range(0,3):
-        print(stacks[i].get_dir()+stacks[i].get_filename())
-        print(masks[i].get_dir()+masks[i].get_filename())
+    # print("Summary: Used data sets")
+    # for i in range(0,3):
+    #     print(stacks[i].get_dir()+stacks[i].get_filename())
+    #     print(masks[i].get_dir()+masks[i].get_filename())
 
     # ## 
-    registration = Registration(stacks, masks, target_stack_id)
-    registration.register_images()
-    registration.compute_HR_volume()
+    # registration = Registration(stacks, masks, target_stack_id)
+    # registration.register_images()
+    # registration.compute_HR_volume()
 
     # target = registration.get_target_stack()
     # corrected_stacks = registration.get_corrected_stacks()
@@ -129,7 +131,7 @@ def main():
     """ #######################################################################
         Playground:
     """
-    flag_playground = 0
+    flag_playground = 1
 
     if flag_playground:
 
@@ -143,38 +145,14 @@ def main():
         # img_1 = SliceStack(dir_out+"input_data/","1")
         img_2 = SliceStack(dir_out+"input_data/","1")
 
-        # img_1_0 = SliceStack(dir_out+"input_data/","ref_1_flo_0_flirt")
-        img_2_0 = SliceStack(dir_out+"input_data/","ref_2_flo_0_flirt")
-        T = np.loadtxt(dir_out+"input_data/"+"ref_2_flo_0_flirt_mat.txt")
-        
-        # img_1_0 = SliceStack(dir_out+"input_data_segmentation_prop/","ref_1_flo_0_affine_result")
-        # img_2_0 = SliceStack(dir_out+"input_data_segmentation_prop/","ref_2_flo_0_affine_result")
-        # T = np.loadtxt(dir_out+"input_data_segmentation_prop/"+"ref_2_flo_0_affine_matrix.txt")
+        slice_0 = img_2.get_data()[:,:,26]
+        slice_1 = img_2.get_data()[:,:,27]
+
+        # display_image(slice_0)
+
+        img = rotate_2D_image_in_plane(img_2, 1, 45)
 
 
-        A_0 = img_0.get_affine()
-        A_2 = img_2.get_affine()
-        A_2_0 = img_2_0.get_affine()
-
-        print("T")
-        print(T)
-        print(np.linalg.inv(T))
-
-        print("A_2_0 and A_2")
-        # print(A_2_0)
-        print(A_2)
-
-        print("A_0")
-        print(A_0)
-
-
-        print("T*A_2")
-        print(T.dot(A_2))
-        print(np.linalg.inv(T).dot(A_2))
-
-        print("T*A_0")
-        print(T.dot(A_0))
-        print(np.linalg.inv(T).dot(A_0))
 
         # print(np.dot(np.linalg.inv(T),A_0))
         # print(np.dot(T,A_0))

@@ -252,6 +252,12 @@ class Registration:
         return SliceStack(dir_out, filename)
 
 
+    def planar_registering_of_slices(self, reference, target):
+
+        warped = reference
+
+        return warped
+
 
     def compute_HR_volume(self):
 
@@ -264,7 +270,7 @@ class Registration:
             tmp_data = normalize_image(tmp_data)
             data += tmp_data
 
-            ## Store indices of elements with non-zero contribution
+            ## Store indices of voxels with non-zero contribution
             ind_nonzero = np.nonzero(tmp_data)
             ind[ind_nonzero] += 1
 
