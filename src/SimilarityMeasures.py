@@ -13,6 +13,12 @@ import matplotlib.cm as cm
 from PIL import Image
 import nibabel as nib           # nifti files
 
+## Normalize array between 0 and 1
+def normalize_image(array):
+    minimal_value = np.min(array)
+    maximal_value = np.max(array)
+    return (array - minimal_value) / float(maximal_value - minimal_value)
+
 
 ## Sum square difference
 def ssd(img1, img2):
@@ -126,7 +132,7 @@ def plot_joint_histogram(img0, img1):
 
 
 ## Plot of reference and warped image with similarity measure
-def plot_image_overview(img0, img1):
+def plot_comparison_of_reference_and_warped_image(img0, img1):
     SSD = ssd(img0, img1)
     NCC = ncc(img0, img1)
     NMI = nmi(img0, img1)
@@ -144,22 +150,22 @@ def plot_image_overview(img0, img1):
     plt.figure(2)
     plt.suptitle("SSD = " + str(SSD) + "\nNCC = " + str(NCC) + "\nNMI = " + str(NMI))
 
-    plt.subplot(221)
-    plt.imshow(img0[:, y_slice, :], cmap="Greys_r")
+    plt.subplot(121)
+    plt.imshow(img0, cmap="Greys_r")
     plt.title('Reference Image')
 
-    plt.subplot(222)
-    plt.imshow(img1[:, y_slice, :], cmap="Greys_r")
+    plt.subplot(122)
+    plt.imshow(img1, cmap="Greys_r")
     plt.title('Warped Image')
 
-    plt.subplot(223)
-    plt.imshow(np.abs(img0 - img1)[:, y_slice, :], cmap="Greys_r")
-    plt.title('absolute difference')
+    # plt.subplot(223)
+    # plt.imshow(np.abs(img0 - img1), cmap="Greys_r")
+    # plt.title('absolute difference')
 
-    plt.subplot(224)
-    # plt.imshow(grad_l1(img0-img1)[:,y_slice,:],cmap="Greys_r")
-    plt.imshow(grad_ssd_l1(img0, img1)[:, y_slice, :], cmap="Greys_r")
-    plt.title('grad_ssd')
+    # plt.subplot(224)
+    # # plt.imshow(grad_l1(img0-img1)[:,y_slice,:],cmap="Greys_r")
+    # plt.imshow(grad_ssd_l1(img0, img1), cmap="Greys_r")
+    # plt.title('grad_ssd')
 
     # plt.show()                # execution of could would pause here
     plt.show(block=False)       # does not pause, but needs plt.show() at end 

@@ -24,6 +24,7 @@ from SliceStack import *
 from FileAndImageHelpers import *
 from Registration import *
 from MyImageProcessingFunctions import *
+from TwoDImage import *
 # from SegmentationPropagation import *
 # from SimilarityMeasures import *
 # from StatisticalAnalysis import *
@@ -75,7 +76,7 @@ def main():
 
     ## Data Preprocessing:
     data_preprocessing = DataPreprocessing(dir_out, dir_input, filenames)   
-    # data_preprocessing = DataPreprocessing(dir_out, dir_input, filenames[3:])   
+    # data_preprocessing = DataPreprocessing(dir_out, dir_input, filenames[0:3])   
     # data_preprocessing.cap_and_normalize_images()
 
     # data_preprocessing.create_rectangular_mask(dir_input, filenames[1], [161, 219], 100, 100)
@@ -144,15 +145,23 @@ def main():
         img_0 = SliceStack(dir_out+"input_data/","0")
         # img_1 = SliceStack(dir_out+"input_data/","1")
         img_2 = SliceStack(dir_out+"input_data/","1")
+        # img_2 = SliceStack(dir_out,"HR_volume_0")
 
         slice_0 = img_2.get_data()[:,:,26]
         slice_1 = img_2.get_data()[:,:,27]
 
         # display_image(slice_0)
+        # img_2.burst_into_single_slices()
 
-        img = rotate_2D_image_in_plane(img_2, 1, 45)
+        single_slices = img_2.get_single_slices()
 
+        trafo = generate_rigid_transformation_matrix_3d(degree_z=90)
+        apply_rigid_transformation(single_slices[-1], trafo)
 
+        v0 = np.dot(single_slices[0].get_affine(), np.array([0,0,0,1]))
+        v1 = np.dot(single_slices[1].get_affine(), np.array([0,0,0,1]))
+
+        # print v1-v0
 
         # print(np.dot(np.linalg.inv(T),A_0))
         # print(np.dot(T,A_0))
