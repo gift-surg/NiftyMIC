@@ -21,7 +21,7 @@ from SimilarityMeasures import *
 #  \param[in] -degree rotation in-plane
 #  \param[in] -translation translation vector
 #  \param[out] rigid transformation as 3x3 np.array
-def generate_rigid_transformation_matrix_2d(degree=0, translation=np.array([0,0])):
+def generate_rigid_transformation_matrix_2d(angle=0, translation=np.array([0,0])):
 
     if translation.size != 2:
         raise ValueError("Translation vector must be of dimension 2")
@@ -30,13 +30,14 @@ def generate_rigid_transformation_matrix_2d(degree=0, translation=np.array([0,0]
     transformation = np.identity(3)
 
     ## Rotation in degree in-plane
-    rotation_angle = degree*np.pi/180
+    # rotation_angle = degree*np.pi/180
+    rotation_angle = angle
 
     ## Rotation matrix:
     rotation = np.identity(2)
     rotation[0,0] = np.cos(rotation_angle)
-    rotation[0,1] = np.sin(rotation_angle)
-    rotation[1,0] = -np.sin(rotation_angle)
+    rotation[0,1] = -np.sin(rotation_angle)
+    rotation[1,0] = np.sin(rotation_angle)
     rotation[1,1] = np.cos(rotation_angle)
 
     ## Insert rotation and translation into affine transformation matrix
@@ -44,36 +45,6 @@ def generate_rigid_transformation_matrix_2d(degree=0, translation=np.array([0,0]
     transformation[0:2,2] = translation
 
     return transformation
-
-
-#  \param[in] -degree_x rotation around x-axes in degree
-#  \param[in] -degree_y rotation around y-axes in degree
-#  \param[in] -degree_z rotation around z-axes in degree
-#  \param[in] -translation translation vector
-#  \param[out] differentiated transformation as (3x3x3)-np.array
-def generate_derivative_of_rigid_transformation_matrix_2d(degree=0):
-
-    ## Generate transformation matrix in homogenous coordinates
-    transformation_derivative = np.array([np.zeros((3,3)) for i in range(0,3)])
-    transformation_derivative[:,2,2] = 1
-
-    ## Rotation in degree in-plane
-    rotation_angle = degree*np.pi/180
-
-    ## Rotation matrix:
-    rotation_derivative = np.identity(2)
-    rotation_derivative[0,0] = -np.sin(rotation_angle)
-    rotation_derivative[0,1] = np.cos(rotation_angle)
-    rotation_derivative[1,0] = -np.cos(rotation_angle)
-    rotation_derivative[1,1] = -np.sin(rotation_angle)
-
-    ## Insert rotation and translation into affine transformation matrix
-    transformation_derivative[0,0:2,0:2] = rotation_derivative
-    transformation_derivative[1,0,2] = 1
-    transformation_derivative[2,1,2] = 1
-
-    return transformation_derivative
-
 
 
 #  \brief Change of basis such that the transformation is w.r.t the center of the image
@@ -85,8 +56,8 @@ def get_origin_corrected_transformation_2d(array, transformation):
     shape = array.shape
 
     ## Change of origin before applying rigid transformation:
-    t_x = shape[0]/2
-    t_y = shape[1]/2
+    t_x = shape[0]/2 - transformation[0,2]
+    t_y = shape[1]/2 - transformation[1,2]
 
     ## Generate matrices to perform change of basis
     T1 = np.array([
@@ -101,6 +72,36 @@ def get_origin_corrected_transformation_2d(array, transformation):
 
     ## Transformation matrix with respect to image basis
     return T1.dot(transformation).dot(T2)
+
+
+#  \param[in] -degree_x rotation around x-axes in degree
+#  \param[in] -degree_y rotation around y-axes in degree
+#  \param[in] -degree_z rotation around z-axes in degree
+#  \param[in] -translation translation vector
+#  \param[out] differentiated transformation as (3x3x3)-np.array
+def generate_derivative_of_rigid_transformation_matrix_2d(angle=0):
+
+    ## Generate transformation matrix in homogenous coordinates
+    transformation_derivative = np.array([np.zeros((3,3)) for i in range(0,3)])
+    transformation_derivative[:,2,2] = 1
+
+    ## Rotation in degree in-plane
+    # rotation_angle = degree*np.pi/180
+    rotation_angle = angle
+
+    ## Rotation matrix:
+    rotation_derivative = np.identity(2)
+    rotation_derivative[0,0] = -np.sin(rotation_angle)
+    rotation_derivative[0,1] = -np.cos(rotation_angle)
+    rotation_derivative[1,0] = np.cos(rotation_angle)
+    rotation_derivative[1,1] = -np.sin(rotation_angle)
+
+    ## Insert rotation and translation into affine transformation matrix
+    transformation_derivative[0,0:2,0:2] = rotation_derivative
+    transformation_derivative[1,0,2] = 1
+    transformation_derivative[2,1,2] = 1
+
+    return transformation_derivative
 
 
 #  \param[in] -degree_x rotation around x-axes in degree
@@ -197,8 +198,8 @@ def get_origin_corrected_transformation_3d(array, transformation):
 #  \param[in] -transformation transformation from reference to floating image space
 #  \param[in] -order interpolation order for resampling
 #  \param[in] -padding intensity value for padding
-def resampling(reference, floating, transformation, order=0, padding=0):
-    flag_fast_computation = True
+def resampling(reference, floating, transformation, order=1, padding=0):
+    flag_fast_computation = 0
 
     if order==0:
         if flag_fast_computation:
@@ -240,7 +241,7 @@ def resampling(reference, floating, transformation, order=0, padding=0):
         ## intuitive approach (but not fast)
         else:
             # Create an empty image based on the reference image discretisation space
-            warped_image_array = np.zeros(reference.shape)
+            warped_image = np.zeros(reference.shape)
             reference_position = np.array([0,0,1])
 
             # Iterate over all pixel in the reference image
@@ -263,12 +264,48 @@ def resampling(reference, floating, transformation, order=0, padding=0):
 
                         floating_position[0] = np.round(floating_position[0])
                         floating_position[1] = np.round(floating_position[1])
-                        warped_image_array[i][j] = floating[floating_position[0]][floating_position[1]]
+                        warped_image[i][j] = floating[floating_position[0]][floating_position[1]]
                     else:
-                        warped_image_array[i][j] = padding
+                        warped_image[i][j] = padding
 
-            return warped_image_array
+    elif order==1:
+        # Create an empty image based on the reference image discretisation space
+        warped_image=np.zeros(reference.shape)
+        reference_position=np.array([0,0,1])
+        # Iterate over all pixel in the reference image
+        for j in range(0,reference.shape[1]):
+            reference_position[1]=j
+            for i in range(0,reference.shape[0]):
+                reference_position[0]=i
+                # Compute the corresponding position in the floating image space
+                floating_position=transformation.dot(reference_position)
+                # Nearest neighbour interpolation
+                if floating_position[0]>=0 and \
+                    floating_position[1]>=0 and \
+                    floating_position[0]<floating.shape[0]-1 and \
+                    floating_position[1]<floating.shape[1]-1:
 
+                    xfloor = np.floor(floating_position[0])
+                    yfloor = np.floor(floating_position[1])
+
+                    xp = floating_position[0] - xfloor
+                    yp = floating_position[1] - yfloor
+
+                    wa = (1-xp)*(1-yp)
+                    wb = xp*(1-yp)
+                    wc = xp*yp
+                    wd = (1-xp)*yp
+
+                    Ia = floating[xfloor][yfloor]
+                    Ib = floating[xfloor+1][yfloor]
+                    Ic = floating[xfloor+1][yfloor+1]
+                    Id = floating[xfloor][yfloor+1]
+
+                    warped_image[i][j] = wa*Ia + wb*Ib + wc*Ic + wd*Id
+                else:
+                    warped_image[i][j]=padding
+
+    return warped_image
 
 ## Only for 2D!!
 def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(reference, 
@@ -276,6 +313,8 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
     
     relative_tolerance = 1e-3
     max_iterations = 5
+
+    gamma = 1e-2           # step size
 
     g = np.zeros(parameter.size)
 
@@ -290,7 +329,7 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
         translation = np.zeros(2)
 
         ## Compute warped image:
-        transformation = generate_rigid_transformation_matrix_2d(degree=angle, translation=translation)
+        transformation = generate_rigid_transformation_matrix_2d(angle=angle, translation=translation)
         transformation = get_origin_corrected_transformation_2d(reference, transformation)
         warped_image = resampling(reference, floating, transformation)
 
@@ -301,12 +340,10 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
         # warped_image_derivative[1] = warped_image_derivative[1].reshape(-1)
 
         ## Compute derivative of transformation
-        transformation_derivative_matrix = generate_derivative_of_rigid_transformation_matrix_2d(degree=angle)
-
-        rotation_derivative = transformation_derivative_matrix[0]
+        transformation_derivative = generate_derivative_of_rigid_transformation_matrix_2d(angle=angle)
+        rotation_derivative = transformation_derivative[0]
         rotation_derivative = get_origin_corrected_transformation_2d(reference, rotation_derivative)
 
-        print rotation_derivative
 
         ## Generate multi-dimensional meshgrid:
         #  Create matrix of dimension 3 times number of elements(=pixels):
@@ -316,25 +353,26 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
         #  Indices of x-coordinates in first and of y-coordinates in second row
         reference_mgrid[0:2,:] = np.mgrid[0:reference.shape[0], 0:reference.shape[1]].reshape(2, reference.size)
 
-        ## Differentiated rotation at each point
+        ## Apply derivative w.r.t. rotation at each point
         tmp = rotation_derivative.dot(reference_mgrid)
 
-        print tmp.shape
 
-
-        transformation_derivative = np.zeros([3,2,reference.shape[0],reference.shape[1]])
+        ## Reshape results to fit reference shapes:
+        transformation_derivative_refshape = np.zeros([3,2,reference.shape[0],reference.shape[1]])
         
-        ## 
-        transformation_derivative[0,0,:,:] = tmp[0,:].reshape(reference.shape[0],reference.shape[1])
-        transformation_derivative[0,1,:,:] = tmp[1,:].reshape(reference.shape[0],reference.shape[1])
+        ## Reshape results related to derivative w.r.t. rotation
+        transformation_derivative_refshape[0,0,:,:] = tmp[0,:].reshape(reference.shape[0],reference.shape[1])
+        transformation_derivative_refshape[0,1,:,:] = tmp[1,:].reshape(reference.shape[0],reference.shape[1])
+
+        ## Reshape results related to derivative w.r.t. translation in x
+        transformation_derivative_refshape[1,0,:,:] = np.ones(reference.shape) 
+
+        ## Reshape results related to derivative w.r.t. translation in y
+        transformation_derivative_refshape[2,1,:,:] = np.ones(reference.shape) 
 
 
-        transformation_derivative[1,0,:,:] = np.ones(reference.shape) 
-        transformation_derivative[2,1,:,:] = np.ones(reference.shape) 
-
-
-        plot_comparison_of_reference_and_warped_image(reference,warped_image)
-        plt.show()
+        # plot_comparison_of_reference_and_warped_image(reference,warped_image)
+        # plt.show()
 
         
 
@@ -342,22 +380,27 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
         #     for j in range(0,reference.shape[1]):
         #         g[i] += (reference[i,j]-warped_image[i,j])*warped_image_derivative[:,i,j].dot()
 
-        print("Iteration " + str(iteration) + ":")
+        print("\nIteration " + str(iteration) + ":")
 
         for i in range(0,3):
-            g[i] = -2*np.sum( \
+            g[i] = 2*np.sum( \
                     ( reference - warped_image )* \
-                    ( warped_image_derivative[0]*transformation_derivative[i,0] \
-                    + warped_image_derivative[1]*transformation_derivative[i,1] )) / reference.size
+                    ( warped_image_derivative[0]*transformation_derivative_refshape[i,0] \
+                    + warped_image_derivative[1]*transformation_derivative_refshape[i,1] )) / reference.size
 
-            print("g[" +str(i) + "] = " + str(g[i]))
+            print("gamma*g[" +str(i) + "] = " + str(gamma*g[i]))
 
-        tol = np.linalg.norm(g)/np.linalg.norm(parameter)
+        tol = np.linalg.norm(gamma*g)/np.linalg.norm(parameter)
         print("relative tol = " + str(tol))
         print("MSD = " + str(msd(reference,warped_image)))
+        print("NMI = " + str(nmi(reference,warped_image)))
 
-        parameter += - g
-        print("parameter = " + str(parameter) + "\n")
+
+        parameter +=  gamma*g
+        tmp = np.mod(parameter[0],2*np.pi)
+        parameter[0] = tmp
+
+        print("Parameter = " + str(parameter))
 
 
 
@@ -376,15 +419,17 @@ def main():
 
     image_array = read_file('../../Courses/Information Processing in Medical Imaging/Workshop 01_Registration_WS1/BrainWeb_2D.png')
 
-    example_1 = True
-    example_2 = False
-    example_3 = False
+    example_1 = 0
+    example_2 = 0
+    example_3 = 1
 
 
     ## Simple rotation:
     if example_1:
 
-        transformation = generate_rigid_transformation_matrix_2d(degree=90)
+        angle = 90*np.pi/180
+        translation = np.array([50,50])
+        transformation = generate_rigid_transformation_matrix_2d(angle=angle,translation=translation)
         transformation = get_origin_corrected_transformation_2d(image_array, transformation)
         warped_image_array = resampling(image_array, image_array, transformation)
 
@@ -404,7 +449,7 @@ def main():
 
     ## Step wise rotation of 180 deg rotated image by 45 degree:
     if example_2:
-        transformation = generate_rigid_transformation_matrix_2d(degree=180)
+        transformation = generate_rigid_transformation_matrix_2d(angle=np.pi)
         transformation = get_origin_corrected_transformation_2d(image_array, transformation)
         # np.savetxt("../results/input_data/test.txt",transformation)
 
@@ -413,15 +458,15 @@ def main():
 
         image_array_altered = resampling(image_array, image_array, transformation)
 
-        rotation_values = np.arange(0,361,45)
+        rotation_values = np.arange(0,361,45)   # Rotations in degree
 
         SSD = np.zeros(len(rotation_values))
         NMI = np.zeros(len(rotation_values))
         joint_entropy = np.zeros(len(rotation_values))
 
         for i in range(0,len(rotation_values)):
-            deg = rotation_values[i]
-            transformation = generate_rigid_transformation_matrix_2d(degree=deg)
+            angle = rotation_values[i]*np.pi/180
+            transformation = generate_rigid_transformation_matrix_2d(angle=angle)
             transformation = get_origin_corrected_transformation_2d(image_array_altered, transformation)
 
             warped_image_array = resampling(image_array, image_array_altered, transformation)
@@ -454,14 +499,36 @@ def main():
 
 
     if example_3:
-        transformation = generate_rigid_transformation_matrix_2d(degree=180)
+        angle_0 = np.pi
+
+        transformation = generate_rigid_transformation_matrix_2d(angle=angle_0)
         transformation = get_origin_corrected_transformation_2d(image_array, transformation)
         image_array_altered = resampling(image_array, image_array, transformation)
 
-        print iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(image_array, image_array_altered, np.array([45,0,0]))
 
+        ## Iterative optimization to seek parameter configuration:
+        parameter_init = np.array([angle_0*5/6,0,0]).astype('float')
+
+
+        parameter = iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(image_array, image_array_altered, parameter_init)
+
+        print("\nFinal parameter: ")
+        print("  Rotation = " + str(parameter[0]*180/np.pi) + " deg")
+        print("  Translation = " + str(parameter[1:]))
         # print generate_derivative_of_rigid_transformation_matrix_2d(90)
 
+        ## Compute final tranformation:
+        angle = parameter[0]
+        translation = parameter[1:]
+        # angle = -angle_0
+        # translation = np.array([0,0])
+
+        transformation = generate_rigid_transformation_matrix_2d(angle=angle, translation=translation)
+        transformation = get_origin_corrected_transformation_2d(image_array_altered, transformation)
+        warped_image = resampling(image_array, image_array_altered, transformation)
+
+        plot_comparison_of_reference_and_warped_image(image_array,warped_image)
+        plt.show()
 
     # plot_joint_histogram(image_array,image_array)
     # plt.show()

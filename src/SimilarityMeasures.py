@@ -139,7 +139,7 @@ def plot_comparison_of_reference_and_warped_image(img0, img1):
     JE = joint_entropy(img0, img1)
 
     # print("entropy = " + str(entropy(img0)))
-    print("joint entropy = " + str(JE))
+    print("\nJoint Entropy = " + str(JE))
     print("SSD = " + str(SSD))
     print("NCC = " + str(NCC))
     # print("MI = " + str(mi(img0,img1)))
@@ -151,11 +151,11 @@ def plot_comparison_of_reference_and_warped_image(img0, img1):
     plt.suptitle("SSD = " + str(SSD) + "\nNCC = " + str(NCC) + "\nNMI = " + str(NMI))
 
     plt.subplot(121)
-    plt.imshow(img0, cmap="Greys_r")
+    plt.imshow(img0, cmap="Greys_r", origin="low")
     plt.title('Reference Image')
 
     plt.subplot(122)
-    plt.imshow(img1, cmap="Greys_r")
+    plt.imshow(img1, cmap="Greys_r", origin="low")
     plt.title('Warped Image')
 
     # plt.subplot(223)
