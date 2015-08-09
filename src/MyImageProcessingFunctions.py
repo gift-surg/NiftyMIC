@@ -229,6 +229,9 @@ def resampling(reference, floating, transformation, order=1, padding=0):
                     + floating_position_mgrid_round[0,:]*floating.shape[1]
 
             ## Indices out of image are set to respective boundary intensities:
+            """
+            Boundary values need to be corrected => periodic b.c.
+            """
             indices[indices<0] = 0
             indices[indices>=floating.size] = floating.size-1
 
@@ -311,17 +314,17 @@ def resampling(reference, floating, transformation, order=1, padding=0):
 def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(reference, 
     floating, parameter):
     
-    relative_tolerance = 1e-3
-    max_iterations = 5
+    relative_tolerance = 1e-4
+    max_iterations = 10
 
-    gamma = 1e-2           # step size
+    gamma = 1e-4           # step size
 
     g = np.zeros(parameter.size)
 
     iteration = 0
     tol = 1
 
-    while tol>relative_tolerance and iteration < max_iterations:
+    while tol > relative_tolerance and iteration < max_iterations:
         iteration += 1
 
         angle = parameter[0]
@@ -381,6 +384,8 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
         #         g[i] += (reference[i,j]-warped_image[i,j])*warped_image_derivative[:,i,j].dot()
 
         print("\nIteration " + str(iteration) + ":")
+        print("MSD = " + str(msd(reference,warped_image)))
+        print("NMI = " + str(nmi(reference,warped_image)))
 
         for i in range(0,3):
             g[i] = 2*np.sum( \
@@ -390,10 +395,10 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
 
             print("gamma*g[" +str(i) + "] = " + str(gamma*g[i]))
 
+        """
+        if parameters = [0,0,0] division by zero:
+        """
         tol = np.linalg.norm(gamma*g)/np.linalg.norm(parameter)
-        print("relative tol = " + str(tol))
-        print("MSD = " + str(msd(reference,warped_image)))
-        print("NMI = " + str(nmi(reference,warped_image)))
 
 
         parameter +=  gamma*g
@@ -401,6 +406,7 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
         parameter[0] = tmp
 
         print("Parameter = " + str(parameter))
+        print("relative tol = " + str(tol))
 
 
 
@@ -417,17 +423,18 @@ def main():
     image =  SliceStack(dir_out+"input_data/","1")
     image_array = image.get_data()[:,:,30]
 
-    image_array = read_file('../../Courses/Information Processing in Medical Imaging/Workshop 01_Registration_WS1/BrainWeb_2D.png')
+    # image_array = read_file('../test/pics/BrainWeb_2D.png')
+    image_array = read_file('../test/pics/Text.png')
 
-    example_1 = 0
+    example_1 = 1
     example_2 = 0
-    example_3 = 1
+    example_3 = 0
 
 
     ## Simple rotation:
     if example_1:
 
-        angle = 90*np.pi/180
+        angle = 0*np.pi/180
         translation = np.array([50,50])
         transformation = generate_rigid_transformation_matrix_2d(angle=angle,translation=translation)
         transformation = get_origin_corrected_transformation_2d(image_array, transformation)
@@ -507,7 +514,7 @@ def main():
 
 
         ## Iterative optimization to seek parameter configuration:
-        parameter_init = np.array([angle_0*5/6,0,0]).astype('float')
+        parameter_init = np.array([0,0,0]).astype('float')
 
 
         parameter = iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(image_array, image_array_altered, parameter_init)

@@ -151,11 +151,13 @@ def plot_comparison_of_reference_and_warped_image(img0, img1):
     plt.suptitle("SSD = " + str(SSD) + "\nNCC = " + str(NCC) + "\nNMI = " + str(NMI))
 
     plt.subplot(121)
-    plt.imshow(img0, cmap="Greys_r", origin="low")
+    # plt.imshow(img0, cmap="Greys_r", origin="low")
+    plt.imshow(img0, cmap="Greys_r")
     plt.title('Reference Image')
 
     plt.subplot(122)
-    plt.imshow(img1, cmap="Greys_r", origin="low")
+    # plt.imshow(img1, cmap="Greys_r", origin="low")
+    plt.imshow(img1, cmap="Greys_r")
     plt.title('Warped Image')
 
     # plt.subplot(223)

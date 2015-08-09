@@ -15,8 +15,14 @@ import nibabel as nib           # nifti files
 
 def read_file(filename):
     imagefile = Image.open(filename)
-    image_array = np.array(imagefile.getdata(), 
-        np.uint8).reshape(imagefile.size[1], imagefile.size[0])
+    image_array = np.array(imagefile.getdata(), np.uint8)
+
+
+    if len(image_array.shape)==1:
+        image_array = image_array.reshape(imagefile.size[1], imagefile.size[0])
+    else:
+        image_array = image_array[:,0].reshape(imagefile.size[1], imagefile.size[0])
+
     return image_array.astype('float32')
 
 

@@ -10,9 +10,10 @@ import unittest
 
 import numpy as np
 import numpy.linalg as npl
-
+import sys
 
 ## Import other py-files within src-folder
+sys.path.insert(0, '../src')
 from DataPreprocessing import *
 from SliceStack import *
 from FileAndImageHelpers import *
