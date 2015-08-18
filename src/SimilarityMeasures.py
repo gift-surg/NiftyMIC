@@ -132,22 +132,29 @@ def plot_joint_histogram(img0, img1):
 
 
 ## Plot of reference and warped image with similarity measure
-def plot_comparison_of_reference_and_warped_image(img0, img1):
+def plot_comparison_of_reference_and_warped_image(img0, img1, number=-1, output=0):
     SSD = ssd(img0, img1)
     NCC = ncc(img0, img1)
     NMI = nmi(img0, img1)
     JE = joint_entropy(img0, img1)
 
-    # print("entropy = " + str(entropy(img0)))
-    print("\nJoint Entropy = " + str(JE))
-    print("SSD = " + str(SSD))
-    print("NCC = " + str(NCC))
-    # print("MI = " + str(mi(img0,img1)))
-    print("NMI = " + str(NMI))
+    if output:
+        # print("entropy = " + str(entropy(img0)))
+        print("\nJoint Entropy = " + str(JE))
+        print("SSD = " + str(SSD))
+        print("NCC = " + str(NCC))
+        # print("MI = " + str(mi(img0,img1)))
+        print("NMI = " + str(NMI))
 
     y_slice = 50
 
-    plt.figure(2)
+    if number == -1:
+        fig = plt.figure()
+    else:
+        fig = plt.figure(number)
+        plt.clf()
+
+        
     plt.suptitle("SSD = " + str(SSD) + "\nNCC = " + str(NCC) + "\nNMI = " + str(NMI))
 
     plt.subplot(121)
@@ -169,10 +176,10 @@ def plot_comparison_of_reference_and_warped_image(img0, img1):
     # plt.imshow(grad_ssd_l1(img0, img1), cmap="Greys_r")
     # plt.title('grad_ssd')
 
-    # plt.show()                # execution of could would pause here
+    # plt.show()                # execution of code would pause here
     plt.show(block=False)       # does not pause, but needs plt.show() at end 
                                 # of file to be visible
-    return None
+    return fig
 
 
 def my_log(x):
