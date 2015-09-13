@@ -131,57 +131,6 @@ def plot_joint_histogram(img0, img1):
     return None
 
 
-## Plot of reference and warped image with similarity measure
-def plot_comparison_of_reference_and_warped_image(img0, img1, number=-1, output=0):
-    SSD = ssd(img0, img1)
-    NCC = ncc(img0, img1)
-    NMI = nmi(img0, img1)
-    JE = joint_entropy(img0, img1)
-
-    if output:
-        # print("entropy = " + str(entropy(img0)))
-        print("\nJoint Entropy = " + str(JE))
-        print("SSD = " + str(SSD))
-        print("NCC = " + str(NCC))
-        # print("MI = " + str(mi(img0,img1)))
-        print("NMI = " + str(NMI))
-
-    y_slice = 50
-
-    if number == -1:
-        fig = plt.figure()
-    else:
-        fig = plt.figure(number)
-        plt.clf()
-
-        
-    plt.suptitle("SSD = " + str(SSD) + "\nNCC = " + str(NCC) + "\nNMI = " + str(NMI))
-
-    plt.subplot(121)
-    # plt.imshow(img0, cmap="Greys_r", origin="low")
-    plt.imshow(img0, cmap="Greys_r")
-    plt.title('Reference Image')
-
-    plt.subplot(122)
-    # plt.imshow(img1, cmap="Greys_r", origin="low")
-    plt.imshow(img1, cmap="Greys_r")
-    plt.title('Warped Image')
-
-    # plt.subplot(223)
-    # plt.imshow(np.abs(img0 - img1), cmap="Greys_r")
-    # plt.title('absolute difference')
-
-    # plt.subplot(224)
-    # # plt.imshow(grad_l1(img0-img1)[:,y_slice,:],cmap="Greys_r")
-    # plt.imshow(grad_ssd_l1(img0, img1), cmap="Greys_r")
-    # plt.title('grad_ssd')
-
-    # plt.show()                # execution of code would pause here
-    plt.show(block=False)       # does not pause, but needs plt.show() at end 
-                                # of file to be visible
-    return fig
-
-
 def my_log(x):
     return map(np.log,x)
     # for i in x:
