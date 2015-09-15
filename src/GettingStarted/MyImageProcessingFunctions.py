@@ -5,10 +5,6 @@
 #  \date August 2015
 
 
-"""
-scikit-image
-"""
-
 ## Import libraries 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,10 +13,9 @@ from PIL import Image
 import nibabel as nib           # nifti files
 from pylab import * 
 import time
-import SimpleITK as sitk
 
 import sys
-sys.path.append("..")
+sys.path.append("../v1_20150915/")
 
 ## Import other py-files within src-folder
 from SliceStack import *
@@ -483,53 +478,14 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
 
     return parameter
 
-
-#callback invoked when the StartEvent happens, sets up our new data
-def start_plot():
-    global metric_values, multires_iterations
-    
-    metric_values = []
-    multires_iterations = []
-
-#callback invoked when the EndEvent happens, do cleanup of data and figure
-def end_plot():
-    global metric_values, multires_iterations
-    
-    del metric_values
-    del multires_iterations
-    #close figure, we don't want to get a duplicate of the plot latter on
-    plt.close()
-
-#callback invoked when the IterationEvent happens, update our data and display new figure    
-def plot_values(registration_method):
-    global metric_values, multires_iterations
-    
-    metric_values.append(registration_method.GetMetricValue())                                       
-    #clear the output area (wait=True, to reduce flickering), and plot current data
-    clear_output(wait=True)
-    #plot the similarity metric values
-    plt.plot(metric_values, 'r')
-    plt.plot(multires_iterations, [metric_values[index] for index in multires_iterations], 'b*')
-    plt.xlabel('Iteration Number',fontsize=12)
-    plt.ylabel('Metric Value',fontsize=12)
-    plt.show()
-    
-#callback invoked when the sitkMultiResolutionIterationEvent happens, update the index into the 
-#metric_values list. 
-def update_multires_iterations():
-    global metric_values, multires_iterations
-    multires_iterations.append(len(metric_values))
-
-
 # ## Running example of some test code
 # def main():
     
 example_1 = 0
 example_2 = 0
 example_3 = 0
-example_4 = 1
 
-image_array = read_file('../test/images/BrainWeb_2D.png')
+image_array = read_file('data/BrainWeb_2D.png')
 # image_array = read_file('../test/images/Text.png')
 
 ## Simple rotation:
@@ -659,7 +615,7 @@ if example_3:
 
 # Use SimpleITK to register images in-plane
 if example_4:
-    dir_out = "../results/"
+    dir_out = "../../results/"
 
     image_id =  "1"
 
@@ -676,8 +632,8 @@ if example_4:
 
     step = 1
 
-    for i in xrange(0,N-1):
-    # for i in xrange(35,37):
+    # for i in xrange(0,N-1):
+    for i in xrange(35,36):
         if i == N-2:
             step=1
 

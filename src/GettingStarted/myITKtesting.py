@@ -16,7 +16,7 @@ import itk
 # writer.Update()
 
 dir_input = "../../results/input_data/"
-dir_output = "../../src/GettingStarted/results/"
+dir_output = "results/"
 filename = "0"
 
 # Define types of input and output pixels and state dimension of images
@@ -47,6 +47,8 @@ writer.SetFileName(dir_output + filename + "_test.nii.gz")
 # Set image IO type to nifti
 reader.SetImageIO(image_IO)
 
+reader.Update()
+
 # Extract 2D image from 3D volume
 filter_type = itk.ExtractImageFilter[input_image_type, output_image_type]
 filter = filter_type.New()
@@ -63,7 +65,7 @@ start = input_region.GetIndex()     #output: start = itkIndex3 ([0, 0, 0])
 slice_number = 15                   #specify slice number to be extracted
 start[2] = slice_number
 
-
+# input_image_type.?
 
 
 # reader.Update()
