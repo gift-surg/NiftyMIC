@@ -1,4 +1,5 @@
 import SimpleITK as sitk
+import nibabel as nib
 import numpy as np
 
 import sys
@@ -36,11 +37,93 @@ def plot_values(registration_method):
     plt.ylabel('Metric Value',fontsize=12)
     plt.show()
     
+
 #callback invoked when the sitkMultiResolutionIterationEvent happens, update the index into the 
 #metric_values list. 
 def update_multires_iterations():
     global metric_values, multires_iterations
     multires_iterations.append(len(metric_values))
+
+
+def compute_new_3D_origin_from_2D_alignment(transform_2D, slice_3D):
+    # Get parameters of 2D registration
+    angle_z, translation_x, translation_y = transform_2D.GetParameters()
+    
+    # Expand obtained translation to 3D vector
+    translation_2D = np.array([translation_x, translation_y, 0])
+
+    # Fetch information of current position in physical space of 3D slice
+    origin = slice_3D.GetOrigin()
+    spacing = slice_3D.GetSpacing()
+    direction_matrix = np.array(slice_3D.GetDirection()).reshape(3,3)
+
+    # Update origin of 3D slice given the planar registration 
+    # return direction_matrix.dot(translation_2D*spacing) + origin #automatic cast to np.arrays
+    return direction_matrix.dot(-translation_2D) + origin #automatic cast to np.arrays
+    # return translation_2D + origin #automatic cast to np.arrays
+
+
+def compute_new_3D_direction_matrix_from_2D_alignment(transform_2D, slice_3D):
+    # Get parameters of 2D registration
+    angle_z, translation_x, translation_y = transform_2D.GetParameters()
+    center = transform_2D.GetFixedParameters()   #center of 2D rotation 
+
+    # Create 3D rigid transformation
+    rigid_transform_3D = sitk.Euler3DTransform()
+    rigid_transform_3D.SetRotation(0, 0, angle_z)
+    rigid_transform_3D.SetTranslation((translation_x, translation_y, 0))
+    rigid_transform_3D.SetCenter((center[0], center[1], 0))
+
+    transform_3D_rotation_matrix = np.array(rigid_transform_3D.GetMatrix()).reshape(3,3)
+    # print transform_3D_rotation_matrix
+
+
+    # Fetch information of current position in physical space of 3D slice
+    direction_matrix = np.array(slice_3D.GetDirection()).reshape(3,3)
+
+    # Compute new direction matrix and return in SimpleITK format
+    return (direction_matrix.dot(transform_3D_rotation_matrix)).reshape(-1)
+
+
+def test_planar_alignment(transform_2D, slice_3D):
+    Nx,Ny,Nz = slice_3D.GetSize()
+
+    e_0 = (0,0,0)
+    e_x = (Nx,0,0)
+    e_y = (0,Ny,0)
+    # e_z = (0,0,Nz)
+
+    a_0 = np.array(slice_3D.TransformIndexToPhysicalPoint(e_0))
+    a_x = np.array(slice_3D.TransformIndexToPhysicalPoint(e_x)) - a_0
+    a_y = np.array(slice_3D.TransformIndexToPhysicalPoint(e_y)) - a_0
+    # a_z = np.array(slice_3D.TransformIndexToPhysicalPoint(e_z)) - a_0
+
+    origin = compute_new_3D_origin_from_2D_alignment(transform_2D, slice_3D)
+    direction = compute_new_3D_direction_matrix_from_2D_alignment(transform_2D, slice_3D)
+
+    slice_3D.SetOrigin(origin)
+    slice_3D.SetDirection(direction)
+
+    b_0 = np.array(slice_3D.TransformIndexToPhysicalPoint(e_0))
+    b_x = np.array(slice_3D.TransformIndexToPhysicalPoint(e_x)) - b_0
+    b_y = np.array(slice_3D.TransformIndexToPhysicalPoint(e_y)) - b_0
+    # b_z = np.array(slice_3D.TransformIndexToPhysicalPoint(e_z)) - b_0
+    b_ortho = np.cross(b_x,b_y)
+
+    print b_0
+
+    print("e_x dot e_y = 0?: Result = " + str(np.dot(e_x,e_y)))
+    print("a_x dot a_y = 0?: Result = " + str(np.dot(a_x,a_y)))
+    print("b_x dot b_y = 0?: Result = " + str(np.dot(b_x,b_y)))
+    print("b_ortho dot a_x = 0?: Result = " + str(np.dot(b_ortho,a_x)))
+    print("b_ortho dot a_y = 0?: Result = " + str(np.dot(b_ortho,a_y)))
+
+    # print("\n")
+
+    angle_z, translation_x, translation_y = transform_2D.GetParameters()
+    spacing = slice_3D.GetSpacing()
+    print("norm(a_0 - b_0) = " + str(np.linalg.norm(a_0 - b_0)))
+    print("norm(t_x,t_y) = " + str(np.linalg.norm((translation_x,translation_y))))
 
 
 """
@@ -60,12 +143,17 @@ stack_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
 
 N = stack.GetSize()[-1]
 
+# stack.SetSpacing((0.5,0.5,0.5))
+
 
 i = 0
 step = 1
 
 slice_3D_fixed = stack[:,:,i:i+1]
 slice_3D_moving = stack[:,:,i+step:i+step+1]
+
+# slice_3D_fixed = stack
+# slice_3D_moving = stack
 
 slice_2D_fixed = slice_3D_fixed[:,:,0]
 slice_2D_moving = slice_3D_moving[:,:,0]
@@ -126,24 +214,46 @@ registration_method.SetInitialTransform(initial_transform)
 final_transform = registration_method.Execute(
     sitk.Cast(slice_2D_fixed, sitk.sitkFloat32), sitk.Cast(slice_2D_moving, sitk.sitkFloat32))
 
-angle_z, translation_x, translation_y = final_transform.GetParameters()
-center = final_transform.GetFixedParameters()
-
-
-rigid_transform_3D = sitk.Euler3DTransform()
-rigid_transform_3D.SetRotation(0, 0, angle_z)
-rigid_transform_3D.SetTranslation((translation_x, translation_y, 0))
-rigid_transform_3D.SetCenter((center[0], center[1], 0))
-
-A = rigid_transform_3D.GetMatrix()
-t = rigid_transform_3D.GetTranslation()
-
-
-
-# composite_transform = sitk.Transform(rigid_transform_3D) # not necessary here but now trafos can be composited!!
-
-
 warped = sitk.Resample(slice_2D_moving, slice_2D_fixed, final_transform, sitk.sitkLinear, 0.0, slice_2D_moving.GetPixelIDValue())
+
+warped_origin = warped.GetOrigin()
+slice_2D_moving_origin = slice_2D_moving.GetOrigin()
+
+print np.linalg.norm(warped_origin-np.array(slice_2D_moving_origin))
+
+
+"""
+Update image information
+"""
+
+angle, translation_x, translation_y = final_transform.GetParameters()
+translation_2D = np.array((translation_x, translation_y))
+print("Translation = " +str(translation_2D))
+
+
+# print slice_3D_fixed.TransformContinuousIndexToPhysicalPoint((translation_x, translation_y,0))
+
+# angle = np.pi
+# translation_x = 50
+# translation_y = 25
+
+# final_transform.SetParameters((angle,translation_x, translation_y))
+
+origin_update = compute_new_3D_origin_from_2D_alignment(final_transform, slice_3D_moving)
+direction_update = compute_new_3D_direction_matrix_from_2D_alignment(final_transform, slice_3D_moving)
+
+sitk.WriteImage(slice_3D_moving, os.path.join(dir_output, filename+"_"+str(i)+".nii.gz"))
+
+
+slice_3D_moving.SetOrigin(origin_update)
+slice_3D_moving.SetDirection(direction_update)
+
+sitk.WriteImage(slice_3D_moving, os.path.join(dir_output, filename+"_"+str(i)+"_aligned_planar.nii.gz"))
+
+test_planar_alignment(final_transform, slice_3D_fixed)
+
+
+# warped = sitk.Resample(slice_2D_moving, slice_2D_fixed, final_transform, sitk.sitkLinear, 0.0, slice_2D_moving.GetPixelIDValue())
 # warped_mask = sitk.Resample(moving_mask, fixed_mask, final_transform, sitk.sitkNearestNeighbor, 0.0, moving_mask.GetPixelIDValue())
 
 # # for i in xrange(0,N-1):
