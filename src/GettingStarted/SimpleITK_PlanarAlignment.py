@@ -1,18 +1,113 @@
+"""
+Use SimpleITK to register images in-plane
+"""
+
 import SimpleITK as sitk
 import nibabel as nib
 import numpy as np
+import unittest
 
 import sys
 sys.path.append("../v1_20150915/")
 
 from FileAndImageHelpers import *
+from SimpleITK_PhysicalCoordinates import *
 
+
+"""
+Set variables
+"""
+## Specify data
+dir_input = "../../results/input_data/"
+dir_output = "results/"
+filename =  "0"
+
+accuracy = 6 # decimal places for accuracy of unit tests
+
+## Rotation matrix:
+# theta = np.pi
+# R = np.array([
+#     [np.cos(theta), -np.sin(theta), 0],
+#     [np.sin(theta), np.cos(theta), 0],
+#     [0, 0, 1]
+#     ])
+R = np.array([
+    [-1, 0, 0],
+    [0, -1, 0],
+    [0, 0, 1]])
+
+
+"""
+Functions
+"""
+def get_3D_from_2D_rigid_transform(rigid_transform_2D):
+    # Get parameters of 2D registration
+    angle_z, translation_x, translation_y = rigid_transform_2D.GetParameters()
+    center_x, center_y = rigid_transform_2D.GetFixedParameters()
+    
+    # Expand obtained translation to 3D vector
+    translation_3D = (translation_x, translation_y, 0)
+    center_3D = (center_x, center_y, 0)
+
+    # Create 3D rigid transform based on 2D
+    return sitk.Euler3DTransform(center_3D, 0, 0, angle_z, translation_3D)
+
+
+def compute_new_3D_direction_matrix_from_2D_alignment(rigid_transform_2D, slice_3D):
+    # Get parameters of 2D registration
+    angle_z, translation_x, translation_y = rigid_transform_2D.GetParameters()
+    center = rigid_transform_2D.GetFixedParameters()   #center of 2D rotation 
+
+    # Create 3D rigid transformation
+    rigid_transform_3D = sitk.Euler3DTransform()
+    rigid_transform_3D.SetRotation(0, 0, angle_z)
+    rigid_transform_3D.SetTranslation((translation_x, translation_y, 0))
+    rigid_transform_3D.SetCenter((center[0], center[1], 0))
+
+    transform_3D_rotation_matrix = np.array(rigid_transform_3D.GetMatrix()).reshape(3,3)
+    # print transform_3D_rotation_matrix
+
+
+    # Fetch information of current position in physical space of 3D slice
+    direction_matrix = np.array(slice_3D.GetDirection()).reshape(3,3)
+
+    # Compute new direction matrix and return in SimpleITK format
+    return (direction_matrix.dot(transform_3D_rotation_matrix)).reshape(-1)
+
+
+def get_3D_in_plane_alignment_transform_from_2D_rigid_transform(rigid_transform_2D, slice_3D):
+    rigid_transform_3D = get_3D_from_2D_rigid_transform(rigid_transform_2D)
+
+    A = get_sitk_affine_matrix_from_sitk_image(slice_3D)
+    t = get_sitk_affine_translation_from_sitk_image(slice_3D)
+
+    T_IP = sitk.AffineTransform(A,t)
+    T_IP_inv = sitk.AffineTransform(T_IP.GetInverse())
+
+    spacing = np.array(slice_3D.GetSpacing())
+    S_inv_matrix = np.diag(1/spacing).flatten()
+    S_inv = sitk.AffineTransform(S_inv_matrix,(0,0,0))
+
+    # Trafo T = rigid_trafo_3D o T_IP_inv
+    T = get_composited_sitk_affine_transform(rigid_transform_3D,T_IP_inv)
+
+    # Trafo T = S_inv o rigid_trafo_3D o T_IP_inv
+    # T = get_composited_sitk_affine_transform(S_inv,T)
+
+    # Compute final composition T = T_IP o S_inv o rigid_trafo_3D o T_IP_inv
+    return get_composited_sitk_affine_transform(T_IP,T)
+
+
+"""
+Functions used for SimpleITK illustrations
+"""
 #callback invoked when the StartEvent happens, sets up our new data
 def start_plot():
     global metric_values, multires_iterations
     
     metric_values = []
     multires_iterations = []
+
 
 #callback invoked when the EndEvent happens, do cleanup of data and figure
 def end_plot():
@@ -22,6 +117,7 @@ def end_plot():
     del multires_iterations
     #close figure, we don't want to get a duplicate of the plot latter on
     plt.close()
+
 
 #callback invoked when the IterationEvent happens, update our data and display new figure    
 def plot_values(registration_method):
@@ -45,273 +141,257 @@ def update_multires_iterations():
     multires_iterations.append(len(metric_values))
 
 
-def compute_new_3D_origin_from_2D_alignment(transform_2D, slice_3D):
-    # Get parameters of 2D registration
-    angle_z, translation_x, translation_y = transform_2D.GetParameters()
-    
-    # Expand obtained translation to 3D vector
-    translation_2D = np.array([translation_x, translation_y, 0])
+"""
+Unit Test Class
 
-    # Fetch information of current position in physical space of 3D slice
-    origin = slice_3D.GetOrigin()
-    spacing = slice_3D.GetSpacing()
-    direction_matrix = np.array(slice_3D.GetDirection()).reshape(3,3)
+Rigid registration transform stored as rigid_transform_2D in main() is not used here.
+"""
+## Concept of unit testing for python used in here is based on
+#  http://pythontesting.net/framework/unittest/unittest-introduction/
+#  Retrieved: Aug accuracy, 2015
+class TestUM(unittest.TestCase):
 
-    # Update origin of 3D slice given the planar registration 
-    # return direction_matrix.dot(translation_2D*spacing) + origin #automatic cast to np.arrays
-    return direction_matrix.dot(-translation_2D) + origin #automatic cast to np.arrays
-    # return translation_2D + origin #automatic cast to np.arrays
+    def setUp(self):
+        pass
+
+    """
+    Test 
+    """
+    def test_in_plane_registration_of_slice_in_2D_space_of_origin(self):
+        
+        # Set test data
+        angle_z = np.pi
+        translation_x = 20
+        translation_y = 30
+        point = (0,0,0)   #last coordinate must be zero (only one slice!)
+
+        # Create 2D rigid transform
+        rigid_transform_2D = sitk.Euler2DTransform()
+        rigid_transform_2D.SetParameters((angle_z,translation_x, translation_y))
+
+        # Extend to 3D rigid transform
+        rigid_transform_3D = get_3D_from_2D_rigid_transform(rigid_transform_2D)   
+
+        # Create sitk::simple::AffineTransform object from rigid transform 
+        A = get_sitk_affine_matrix_from_sitk_image(slice_3D_fixed)
+        t = get_sitk_affine_translation_from_sitk_image(slice_3D_fixed)
+
+        T_IP = sitk.AffineTransform(A,t)
+        T_IP_inv = sitk.AffineTransform(T_IP.GetInverse())
+
+        T = get_composited_sitk_affine_transform(rigid_transform_3D,T_IP_inv)
+        # T = get_composited_sitk_affine_transform(T_IP,T)
 
 
-def compute_new_3D_direction_matrix_from_2D_alignment(transform_2D, slice_3D):
-    # Get parameters of 2D registration
-    angle_z, translation_x, translation_y = transform_2D.GetParameters()
-    center = transform_2D.GetFixedParameters()   #center of 2D rotation 
+        result_2D = np.array(rigid_transform_2D.TransformPoint(slice_2D_fixed.TransformIndexToPhysicalPoint((point[0],point[1]))))
+        result_3D = np.array(rigid_transform_3D.TransformPoint(slice_3D_fixed.TransformIndexToPhysicalPoint(point)))
 
-    # Create 3D rigid transformation
-    rigid_transform_3D = sitk.Euler3DTransform()
-    rigid_transform_3D.SetRotation(0, 0, angle_z)
-    rigid_transform_3D.SetTranslation((translation_x, translation_y, 0))
-    rigid_transform_3D.SetCenter((center[0], center[1], 0))
+        # print result_2D
+        # print result_3D
 
-    transform_3D_rotation_matrix = np.array(rigid_transform_3D.GetMatrix()).reshape(3,3)
-    # print transform_3D_rotation_matrix
+        self.assertEqual(np.around(
+            np.sum(abs(result_2D - result_3D[0:-1]))
+            , decimals = accuracy), 0 )
 
 
-    # Fetch information of current position in physical space of 3D slice
-    direction_matrix = np.array(slice_3D.GetDirection()).reshape(3,3)
+    def test_in_plane_registration_of_slice_in_2D_space_of_arbitrary_point(self):
+        
+        # Set test data
+        angle_z = np.pi
+        translation_x = 20
+        translation_y = 30
+        point = (10,10,0)   #last coordinate must be zero (only one slice!)
 
-    # Compute new direction matrix and return in SimpleITK format
-    return (direction_matrix.dot(transform_3D_rotation_matrix)).reshape(-1)
+        # Create 2D rigid transform
+        rigid_transform_2D = sitk.Euler2DTransform()
+        rigid_transform_2D.SetParameters((angle_z,translation_x, translation_y))
+
+        # Extend to 3D rigid transform
+        rigid_transform_3D = get_3D_from_2D_rigid_transform(rigid_transform_2D)   
+
+        A = get_sitk_affine_matrix_from_sitk_image(slice_3D_fixed)
+        t = get_sitk_affine_translation_from_sitk_image(slice_3D_fixed)
+
+        T_IP = sitk.AffineTransform(A,t)
+        T_IP_inv = sitk.AffineTransform(T_IP.GetInverse())
+
+        T = get_composited_sitk_affine_transform(rigid_transform_3D,T_IP_inv)
+
+        result_2D = np.array(rigid_transform_2D.TransformPoint(slice_2D_fixed.TransformIndexToPhysicalPoint((point[0],point[1]))))
+        result_3D = np.array(rigid_transform_3D.TransformPoint(slice_3D_fixed.TransformIndexToPhysicalPoint(point)))
+
+        self.assertEqual(np.around(
+            np.sum(abs(result_2D - result_3D[0:-1]))
+            , decimals = accuracy), 0 )
 
 
-def test_planar_alignment(transform_2D, slice_3D):
-    Nx,Ny,Nz = slice_3D.GetSize()
+    def test_in_plane_registration_in_3D_space(self):
 
-    e_0 = (0,0,0)
-    e_x = (Nx,0,0)
-    e_y = (0,Ny,0)
-    # e_z = (0,0,Nz)
+        # Set test data  
+        angle_z = np.pi
+        translation_x = 20
+        translation_y = 40
 
-    a_0 = np.array(slice_3D.TransformIndexToPhysicalPoint(e_0))
-    a_x = np.array(slice_3D.TransformIndexToPhysicalPoint(e_x)) - a_0
-    a_y = np.array(slice_3D.TransformIndexToPhysicalPoint(e_y)) - a_0
-    # a_z = np.array(slice_3D.TransformIndexToPhysicalPoint(e_z)) - a_0
+        #(angle_z, 0, 0) works
 
-    origin = compute_new_3D_origin_from_2D_alignment(transform_2D, slice_3D)
-    direction = compute_new_3D_direction_matrix_from_2D_alignment(transform_2D, slice_3D)
+        rigid_transform_2D = sitk.Euler2DTransform()
+        rigid_transform_2D.SetParameters((angle_z,translation_x, translation_y))
 
-    slice_3D.SetOrigin(origin)
-    slice_3D.SetDirection(direction)
+        test_slice = slice_3D_fixed
 
-    b_0 = np.array(slice_3D.TransformIndexToPhysicalPoint(e_0))
-    b_x = np.array(slice_3D.TransformIndexToPhysicalPoint(e_x)) - b_0
-    b_y = np.array(slice_3D.TransformIndexToPhysicalPoint(e_y)) - b_0
-    # b_z = np.array(slice_3D.TransformIndexToPhysicalPoint(e_z)) - b_0
-    b_ortho = np.cross(b_x,b_y)
+        # Compute final composition T = T_IP o S_inv o rigid_trafo_3D o T_IP_inv
+        T = get_3D_in_plane_alignment_transform_from_2D_rigid_transform(rigid_transform_2D, test_slice)
 
-    print b_0
+        """
+        Test planar alignment of 3D images
+        """
+        Nx,Ny,Nz = test_slice.GetSize()
 
-    print("e_x dot e_y = 0?: Result = " + str(np.dot(e_x,e_y)))
-    print("a_x dot a_y = 0?: Result = " + str(np.dot(a_x,a_y)))
-    print("b_x dot b_y = 0?: Result = " + str(np.dot(b_x,b_y)))
-    print("b_ortho dot a_x = 0?: Result = " + str(np.dot(b_ortho,a_x)))
-    print("b_ortho dot a_y = 0?: Result = " + str(np.dot(b_ortho,a_y)))
+        e_0 = (0,0,0)
+        e_x = (Nx,0,0)
+        e_y = (0,Ny,0)
 
-    # print("\n")
+        a_0 = np.array(test_slice.TransformIndexToPhysicalPoint(e_0))
+        a_x = np.array(test_slice.TransformIndexToPhysicalPoint(e_x)) - a_0
+        a_y = np.array(test_slice.TransformIndexToPhysicalPoint(e_y)) - a_0
+        a_z = np.cross(a_x,a_y)
 
-    angle_z, translation_x, translation_y = transform_2D.GetParameters()
-    spacing = slice_3D.GetSpacing()
-    print("norm(a_0 - b_0) = " + str(np.linalg.norm(a_0 - b_0)))
-    print("norm(t_x,t_y) = " + str(np.linalg.norm((translation_x,translation_y))))
+        b_0 = np.array(T.TransformPoint(test_slice.TransformIndexToPhysicalPoint(e_0)))
+        b_x = np.array(T.TransformPoint(test_slice.TransformIndexToPhysicalPoint(e_x))) - b_0
+        b_y = np.array(T.TransformPoint(test_slice.TransformIndexToPhysicalPoint(e_y))) - b_0
+
+        t_3D = b_0 - a_0
+        
+        angle_z, translation_x, translation_y = rigid_transform_2D.GetParameters()
+        t_2D = np.array([translation_x, translation_y])
+
+        # Check: a_x-a_y-plane orthogonal to b_x-b_y-plane
+        self.assertEqual(np.around(
+            abs(a_z.dot(b_x))
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            abs(a_z.dot(b_y))
+            , decimals = accuracy), 0 )
+
+        # Check: In-plane translation vector (i.e. translation in a_x-b_x-plane)
+        self.assertEqual(np.around(
+            abs(a_z.dot(t_3D))
+            , decimals = accuracy), 0 )
+
+        # Check: Isometric transformation:
+        self.assertEqual(np.around(
+            abs(np.linalg.norm(a_x) - np.linalg.norm(b_x))
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            abs(np.linalg.norm(a_y) - np.linalg.norm(b_y))
+            , decimals = accuracy), 0 )
+
+        print("t_2D = " + str(t_2D))
+        print("t_3D = " + str(t_3D))
+        print("||t_2D|| = " + str(np.linalg.norm(t_2D)))
+        print("||t_3D|| = " + str(np.linalg.norm(t_3D)))
+        print("||t_2D|| - ||t_3D|| = " + str(
+            abs(np.linalg.norm(t_2D) - np.linalg.norm(t_3D))
+            ))
+
+        # self.assertEqual(np.around(
+        #     abs(np.linalg.norm(t_2D) - np.linalg.norm(t_3D))
+        #     , decimals = accuracy), 0 )
 
 
 """
-Use SimpleITK to register images in-plane
+Main Function
 """
+if __name__ == '__main__':
 
-dir_input = "../../results/input_data/"
-dir_output = "results/"
-filename =  "0"
+    """
+    Fetch data
+    """
+    stack = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat32)
+    stack_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
 
-
-stack = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat32)
-# stack_aligned_planar = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat32)
-
-stack_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
-# stack_mask_aligned_planar = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
-
-N = stack.GetSize()[-1]
-
-# stack.SetSpacing((0.5,0.5,0.5))
+    N = stack.GetSize()[-1]
 
 
-i = 0
-step = 1
+    i = 0
+    step = 1
 
-slice_3D_fixed = stack[:,:,i:i+1]
-slice_3D_moving = stack[:,:,i+step:i+step+1]
+    slice_3D_fixed = stack[:,:,i:i+1]
+    slice_3D_moving = stack[:,:,i+step:i+step+1]
 
-# slice_3D_fixed = stack
-# slice_3D_moving = stack
-
-slice_2D_fixed = slice_3D_fixed[:,:,0]
-slice_2D_moving = slice_3D_moving[:,:,0]
+    slice_2D_fixed = slice_3D_fixed[:,:,0]
+    slice_2D_moving = slice_3D_moving[:,:,0]
 
 
-# stack_nda = sitk.GetArrayFromImage(stack_aligned_planar) #now indexed as [z,y,x]!
-# stack_mask_nda = sitk.GetArrayFromImage(stack_mask_aligned_planar) #now indexed as [z,y,x]!
+    flag_rigid_alignment_in_plane = 0
 
-"""
-Register slices in-plane:
-"""
+    ## not necessary but kept for futre reference
+    if flag_rigid_alignment_in_plane:
+        """
+        Register slices in-plane:
+        """
+        initial_transform = sitk.CenteredTransformInitializer(
+            slice_2D_fixed, slice_2D_moving, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
 
-initial_transform = sitk.CenteredTransformInitializer(
-    slice_2D_fixed, slice_2D_moving, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
+        registration_method = sitk.ImageRegistrationMethod()
 
-registration_method = sitk.ImageRegistrationMethod()
+        """
+        similarity metric settings
+        """
+        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5) #set unsigned int radius
+        # registration_method.SetMetricAsCorrelation()
+        # registration_method.SetMetricAsDemons()
+        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=20, varianceForJointPDFSmoothing=1.5)
+        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+        # registration_method.SetMetricAsMeanSquares()
 
-"""
-similarity metric settings
-"""
-registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5) #set unsigned int radius
-# registration_method.SetMetricAsCorrelation()
-# registration_method.SetMetricAsDemons()
-# registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=20, varianceForJointPDFSmoothing=1.5)
-# registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
-# registration_method.SetMetricAsMeanSquares()
+        # registration_method.SetMetricFixedMask(fixed_mask)
+        # registration_method.SetMetricMovingMask(moving_mask)
+        # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
 
-# registration_method.SetMetricFixedMask(fixed_mask)
-# registration_method.SetMetricMovingMask(moving_mask)
-# registration_method.SetMetricSamplingStrategy(registration_method.NONE)
+        registration_method.SetInterpolator(sitk.sitkLinear)
 
-registration_method.SetInterpolator(sitk.sitkLinear)
+        """
+        optimizer settings
+        """
+        # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
+        # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1, numberOfIterations=100)
 
-"""
-optimizer settings
-"""
-# registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
-# registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
-registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1, numberOfIterations=100)
+        registration_method.SetOptimizerScalesFromPhysicalShift()
 
-registration_method.SetOptimizerScalesFromPhysicalShift()
+        """
+        setup for the multi-resolution framework            
+        """
+        registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+        registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+        registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
 
-"""
-setup for the multi-resolution framework            
-"""
-registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
-registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
-registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+        registration_method.SetInitialTransform(initial_transform)
 
-registration_method.SetInitialTransform(initial_transform)
+        #connect all of the observers so that we can perform plotting during registration
+        # registration_method.AddCommand(sitk.sitkStartEvent, start_plot)
+        # registration_method.AddCommand(sitk.sitkEndEvent, end_plot)
+        # registration_method.AddCommand(sitk.sitkMultiResolutionIterationEvent, update_multires_iterations) 
+        # registration_method.AddCommand(sitk.sitkIterationEvent, lambda: plot_values(registration_method))
 
-#connect all of the observers so that we can perform plotting during registration
-# registration_method.AddCommand(sitk.sitkStartEvent, start_plot)
-# registration_method.AddCommand(sitk.sitkEndEvent, end_plot)
-# registration_method.AddCommand(sitk.sitkMultiResolutionIterationEvent, update_multires_iterations) 
-# registration_method.AddCommand(sitk.sitkIterationEvent, lambda: plot_values(registration_method))
+        rigid_transform_2D = registration_method.Execute(
+            sitk.Cast(slice_2D_fixed, sitk.sitkFloat32), sitk.Cast(slice_2D_moving, sitk.sitkFloat32))
 
-final_transform = registration_method.Execute(
-    sitk.Cast(slice_2D_fixed, sitk.sitkFloat32), sitk.Cast(slice_2D_moving, sitk.sitkFloat32))
-
-warped = sitk.Resample(slice_2D_moving, slice_2D_fixed, final_transform, sitk.sitkLinear, 0.0, slice_2D_moving.GetPixelIDValue())
-
-warped_origin = warped.GetOrigin()
-slice_2D_moving_origin = slice_2D_moving.GetOrigin()
-
-print np.linalg.norm(warped_origin-np.array(slice_2D_moving_origin))
+        # warped = sitk.Resample(slice_2D_moving, slice_2D_fixed, rigid_transform_2D, sitk.sitkLinear, 0.0, slice_2D_moving.GetPixelIDValue())
 
 
-"""
-Update image information
-"""
-
-angle, translation_x, translation_y = final_transform.GetParameters()
-translation_2D = np.array((translation_x, translation_y))
-print("Translation = " +str(translation_2D))
+        angle_z, translation_x, translation_y = rigid_transform_2D.GetParameters()
+        translation_2D = (translation_x, translation_y)
+        print("translation = " +str(translation_2D))
+        print("angle_z = " +str(angle_z))
 
 
-# print slice_3D_fixed.TransformContinuousIndexToPhysicalPoint((translation_x, translation_y,0))
 
-# angle = np.pi
-# translation_x = 50
-# translation_y = 25
+    """
+    Unit tests:
 
-# final_transform.SetParameters((angle,translation_x, translation_y))
-
-origin_update = compute_new_3D_origin_from_2D_alignment(final_transform, slice_3D_moving)
-direction_update = compute_new_3D_direction_matrix_from_2D_alignment(final_transform, slice_3D_moving)
-
-sitk.WriteImage(slice_3D_moving, os.path.join(dir_output, filename+"_"+str(i)+".nii.gz"))
-
-
-slice_3D_moving.SetOrigin(origin_update)
-slice_3D_moving.SetDirection(direction_update)
-
-sitk.WriteImage(slice_3D_moving, os.path.join(dir_output, filename+"_"+str(i)+"_aligned_planar.nii.gz"))
-
-test_planar_alignment(final_transform, slice_3D_fixed)
-
-
-# warped = sitk.Resample(slice_2D_moving, slice_2D_fixed, final_transform, sitk.sitkLinear, 0.0, slice_2D_moving.GetPixelIDValue())
-# warped_mask = sitk.Resample(moving_mask, fixed_mask, final_transform, sitk.sitkNearestNeighbor, 0.0, moving_mask.GetPixelIDValue())
-
-# # for i in xrange(0,N-1):
-# for i in xrange(35,36):
-#     if i == N-2:
-#         step=1
-
-#     fixed = stack_aligned_planar[:,:,i]
-#     moving = stack_aligned_planar[:,:,i+step]
-
-#     fixed_mask = stack_mask_aligned_planar[:,:,i]
-#     moving_mask = stack_mask_aligned_planar[:,:,i+step]
-
-    
-
-   
-
-#     stack_nda[i+step,:,:] = sitk.GetArrayFromImage(warped)
-#     stack_mask_nda[i+step,:,:] = sitk.GetArrayFromImage(warped_mask)
-
-#     # plot_comparison_of_reference_and_warped_image(
-#         # fixed=sitk.GetArrayFromImage(fixed), warped=sitk.GetArrayFromImage(warped), fig_id=2)
-
-#     # myshow(fixed-moving)
-
-#     print("Iteration " + str(i+1) + "/" + str(N-1) + ":")
-#     print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
-#     print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
-#     print("\n")
-
-#     fig = plot_comparison_of_reference_and_warped_image(
-#         fixed=sitk.GetArrayFromImage(stack)[i,:,:]-sitk.GetArrayFromImage(stack)[i+1,:,:], 
-#         warped=sitk.GetArrayFromImage(fixed)-sitk.GetArrayFromImage(warped),
-#         fixed_title="without registration between Slice " + str(i) + " and " + str(i+step),
-#         warped_title="rigidly registered",
-#         fig_id=1)
-#     fig.canvas.draw()
-
-#     fig = plot_comparison_of_reference_and_warped_image(
-#         fixed=sitk.GetArrayFromImage(stack_mask)[i,:,:]-sitk.GetArrayFromImage(stack_mask)[i+1,:,:], 
-#         warped=sitk.GetArrayFromImage(fixed_mask)-sitk.GetArrayFromImage(warped_mask),
-#         fixed_title="without registration between Slice " + str(i) + " and " + str(i+step),
-#         warped_title="rigidly registered",
-#         fig_id=2)
-#     fig.canvas.draw()
-#     # time.sleep(1)
-
-#     stack_aligned_planar = sitk.GetImageFromArray(stack_nda)
-#     stack_aligned_planar.CopyInformation(stack)
-
-#     stack_mask_aligned_planar = sitk.GetImageFromArray(stack_mask_nda)
-#     stack_mask_aligned_planar.CopyInformation(stack_mask)
-
-# # imshow(sitk.GetArrayFromImage(fixed)-sitk.GetArrayFromImage(moving),cmap=cm.gray)
-
-# # myshow(fixed-warped)
-
-# sitk.WriteImage(stack_aligned_planar, os.path.join(dir_output,filename+"_aligned_planar.nii.gz"))
-# sitk.WriteImage(stack_mask_aligned_planar, os.path.join(dir_output,filename+"_mask_aligned_planar.nii.gz"))
-
-# plt.show()
+    (Essentially all before not important but kept for just-in-case-lookups later on)
+    """
+    print("\nUnit tests:\n--------------")
+    unittest.main()

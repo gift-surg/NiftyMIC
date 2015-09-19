@@ -6,6 +6,7 @@
 
 
 ## Import libraries 
+import SimpleITK as sitk
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -478,264 +479,308 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
 
     return parameter
 
-# ## Running example of some test code
-# def main():
+"""
+Functions used for SimpleITK illustrations
+"""
+#callback invoked when the StartEvent happens, sets up our new data
+def start_plot():
+    global metric_values, multires_iterations
     
-example_1 = 0
-example_2 = 0
-example_3 = 0
+    metric_values = []
+    multires_iterations = []
 
-image_array = read_file('data/BrainWeb_2D.png')
-# image_array = read_file('../test/images/Text.png')
 
-## Simple rotation:
-if example_1:
+#callback invoked when the EndEvent happens, do cleanup of data and figure
+def end_plot():
+    global metric_values, multires_iterations
+    
+    del metric_values
+    del multires_iterations
+    #close figure, we don't want to get a duplicate of the plot latter on
+    plt.close()
 
-    angle = 90*np.pi/180
-    translation = np.array([0,0])
-    transformation = generate_rigid_transformation_matrix_2d(angle=angle,translation=translation)
-    transformation = get_origin_corrected_transformation_2d(image_array, transformation)
-    warped_image_array = resampling(image_array, image_array, transformation)
 
-    print("  Rotation = " + str(angle*180/np.pi) + " deg")
-    print("  Translation = " + str(translation))
-
-    # Display the results
-    # plt.subplot(2, 1, 1)
-    # plt.plot(image_array)
-
-    # plt.subplot(2, 1, 2)
-    # plt.plot(warped_image_array)
-    # plt.legend(['SSD', 'NMI'], loc='upper left')
-    # plt.show()
-
-    plot_comparison_of_reference_and_warped_image(image_array, warped_image_array)
+#callback invoked when the IterationEvent happens, update our data and display new figure    
+def plot_values(registration_method):
+    global metric_values, multires_iterations
+    
+    metric_values.append(registration_method.GetMetricValue())                                       
+    #clear the output area (wait=True, to reduce flickering), and plot current data
+    clear_output(wait=True)
+    #plot the similarity metric values
+    plt.plot(metric_values, 'r')
+    plt.plot(multires_iterations, [metric_values[index] for index in multires_iterations], 'b*')
+    plt.xlabel('Iteration Number',fontsize=12)
+    plt.ylabel('Metric Value',fontsize=12)
     plt.show()
-
-
-## Step wise rotation of 180 deg rotated image by 45 degree:
-if example_2:
-    transformation = generate_rigid_transformation_matrix_2d(angle=180*np.pi/180)
-    transformation = get_origin_corrected_transformation_2d(image_array, transformation)
-    # np.savetxt("../results/input_data/test.txt",transformation)
-
-    # transformation = generate_rigid_transformation_matrix_3d(degree_z=90)
-    # transformation = get_origin_corrected_transformation_3d(image_array, transformation)
-
-    image_array_altered = resampling(image_array, image_array, transformation)
-
-    rotation_values = np.arange(0,361,10)   # Rotations in degree
-
-    MSD = np.zeros(len(rotation_values))
-    NMI = np.zeros(len(rotation_values))
-    joint_entropy = np.zeros(len(rotation_values))
-
-    for i in range(0,len(rotation_values)):
-        angle = rotation_values[i]*np.pi/180
     
-        sys.stdout.write("Apply rotation " + str(i+1) + "/" + str(len(rotation_values)) + " with angle = " + str(rotation_values[i]) + " deg ... ")
-        sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
 
-        transformation = generate_rigid_transformation_matrix_2d(angle=angle)
-        transformation = get_origin_corrected_transformation_2d(image_array_altered, transformation)
-
-        warped_image_array = resampling(image_array, image_array_altered, transformation)
-
-        MSD[i] = msd(image_array, warped_image_array)
-        NMI[i] = nmi(image_array, warped_image_array)
-        # joint_entropy[i] = ssd(image_array, warped_image_array)
-        print("done.  (MSD = " + str(MSD[i]) + ", NMI = " + str(NMI[i]) +")")
+#callback invoked when the sitkMultiResolutionIterationEvent happens, update the index into the 
+#metric_values list. 
+def update_multires_iterations():
+    global metric_values, multires_iterations
+    multires_iterations.append(len(metric_values))
 
 
-        plot_comparison_of_reference_and_warped_image(image_array, warped_image_array)
+"""
+Main Function
+"""
+# ## Running example of some test code
+if __name__ == '__main__':
+    
+    example_1 = 0
+    example_2 = 0
+    example_3 = 0
+    example_4 = 1
+
+    image_array = read_file('data/BrainWeb_2D.png')
+    # image_array = read_file('../test/images/Text.png')
+
+    ## Simple rotation:
+    if example_1:
+
+        angle = 90*np.pi/180
+        translation = np.array([0,0])
+        transformation = generate_rigid_transformation_matrix_2d(angle=angle,translation=translation)
+        transformation = get_origin_corrected_transformation_2d(image_array, transformation)
+        warped_image_array = resampling(image_array, image_array, transformation)
+
+        print("  Rotation = " + str(angle*180/np.pi) + " deg")
+        print("  Translation = " + str(translation))
+
+        # Display the results
+        # plt.subplot(2, 1, 1)
+        # plt.plot(image_array)
+
+        # plt.subplot(2, 1, 2)
+        # plt.plot(warped_image_array)
+        # plt.legend(['SSD', 'NMI'], loc='upper left')
         # plt.show()
 
-    plt.figure()
-    plt.suptitle("MSD and NMI measure based on rotations with initial rotation of 180 deg")
-    plt.subplot(121)
-    # plt.semilogy(rotation_values,MSD)
-    plt.plot(rotation_values,MSD)
-    plt.xlabel('Rotation in degree')
-    plt.title('MSD')
-
-    plt.subplot(122)
-    plt.plot(rotation_values,NMI)
-    plt.xlabel('Rotation in degree')
-    plt.title('NMI')
-    plt.show()
+        plot_comparison_of_reference_and_warped_image(image_array, warped_image_array)
+        plt.show()
 
 
-# Use own optimization algorithm for to rigidly register two images
-if example_3:
-    ## Set transformation to alter orientation of image:
-    angle_0 = np.pi/16
-    translation_0 = np.array([0,0])
+    ## Step wise rotation of 180 deg rotated image by 45 degree:
+    if example_2:
+        transformation = generate_rigid_transformation_matrix_2d(angle=180*np.pi/180)
+        transformation = get_origin_corrected_transformation_2d(image_array, transformation)
+        # np.savetxt("../results/input_data/test.txt",transformation)
 
-    ## Apply transformation to get altered image:
-    transformation = generate_rigid_transformation_matrix_2d(angle=angle_0,translation=translation_0)
-    transformation_inverse = np.linalg.inv(transformation)
+        # transformation = generate_rigid_transformation_matrix_3d(degree_z=90)
+        # transformation = get_origin_corrected_transformation_3d(image_array, transformation)
 
-    transformation = get_origin_corrected_transformation_2d(image_array, transformation)
-    image_array_altered = resampling(image_array, image_array, transformation)
+        image_array_altered = resampling(image_array, image_array, transformation)
 
-    ## Iterative optimization to seek parameters to obtain original image again:
-    parameter_init = np.array([0,0,0]).astype('float')
+        rotation_values = np.arange(0,361,10)   # Rotations in degree
 
-    parameter = iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(image_array, image_array_altered, parameter_init)
+        MSD = np.zeros(len(rotation_values))
+        NMI = np.zeros(len(rotation_values))
+        joint_entropy = np.zeros(len(rotation_values))
 
-    ## Display results:
-    print("\nFinal parameters: ")
-    print("  Rotation = " + str(parameter[0]*180/np.pi) + " deg")
-    print("  Translation = " + str(parameter[1:]))
-    print("Solution should be: ")
-    print("  Rotation = " + str(-angle_0*180/np.pi) + " deg")
-    print("  Translation = " + str(transformation_inverse[0:-1,2]))
-    # print generate_derivative_of_rigid_transformation_matrix_2d(90)
-
-    ## Apply obtained transformation to get original image again:
-    angle = parameter[0]
-    translation = parameter[1:]
-
-    ## Inverse parameter to transformation_0:
-    # angle = -angle_0
-    # translation = transformation_inverse[0:-1,2]
-
-    transformation = generate_rigid_transformation_matrix_2d(angle=angle, translation=translation)
-    transformation = get_origin_corrected_transformation_2d(image_array_altered, transformation)
-    warped_image = resampling(image_array, image_array_altered, transformation)
-
-    # plot_comparison_of_reference_and_warped_image(image_array,image_array_altered)
-    # plot_comparison_of_reference_and_warped_image(image_array_altered,warped_image)
-    plot_comparison_of_reference_and_warped_image(image_array,warped_image)
-    plt.show()
-
-# plot_joint_histogram(image_array,image_array)
-# plt.show()
-
-
-# Use SimpleITK to register images in-plane
-if example_4:
-    dir_out = "../../results/"
-
-    image_id =  "1"
-
-    stack = sitk.ReadImage(dir_out+"input_data/"+image_id+".nii.gz",sitk.sitkFloat32)
-    stack_aligned_planar = sitk.ReadImage(dir_out+"input_data/"+image_id+".nii.gz",sitk.sitkFloat32)
-
-    stack_mask = sitk.ReadImage(dir_out+"input_data/"+image_id+"_mask.nii.gz",sitk.sitkUInt8)
-    stack_mask_aligned_planar = sitk.ReadImage(dir_out+"input_data/"+image_id+"_mask.nii.gz",sitk.sitkUInt8)
-
-
-    N = stack.GetSize()[-1]
-    stack_nda = sitk.GetArrayFromImage(stack_aligned_planar) #now indexed as [z,y,x]!
-    stack_mask_nda = sitk.GetArrayFromImage(stack_mask_aligned_planar) #now indexed as [z,y,x]!
-
-    step = 1
-
-    # for i in xrange(0,N-1):
-    for i in xrange(35,36):
-        if i == N-2:
-            step=1
-
-        fixed = stack_aligned_planar[:,:,i]
-        moving = stack_aligned_planar[:,:,i+step]
-
-        fixed_mask = stack_mask_aligned_planar[:,:,i]
-        moving_mask = stack_mask_aligned_planar[:,:,i+step]
-
-        initial_transform = sitk.CenteredTransformInitializer(fixed, moving, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
-
-        registration_method = sitk.ImageRegistrationMethod()
-
-        """
-        similarity metric settings
-        """
-        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5) #set unsigned int radius
-        # registration_method.SetMetricAsCorrelation()
-        # registration_method.SetMetricAsDemons()
-        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=20, varianceForJointPDFSmoothing=1.5)
-        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
-        # registration_method.SetMetricAsMeanSquares()
-
-        # registration_method.SetMetricFixedMask(fixed_mask)
-        # registration_method.SetMetricMovingMask(moving_mask)
-        # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
-
-        registration_method.SetInterpolator(sitk.sitkLinear)
+        for i in range(0,len(rotation_values)):
+            angle = rotation_values[i]*np.pi/180
         
-        """
-        optimizer settings
-        """
-        # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
-        # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1, numberOfIterations=100)
+            sys.stdout.write("Apply rotation " + str(i+1) + "/" + str(len(rotation_values)) + " with angle = " + str(rotation_values[i]) + " deg ... ")
+            sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
 
-        registration_method.SetOptimizerScalesFromPhysicalShift()
-        
-        """
-        setup for the multi-resolution framework            
-        """
-        registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
-        registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
-        registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+            transformation = generate_rigid_transformation_matrix_2d(angle=angle)
+            transformation = get_origin_corrected_transformation_2d(image_array_altered, transformation)
 
-        registration_method.SetInitialTransform(initial_transform)
+            warped_image_array = resampling(image_array, image_array_altered, transformation)
 
-        #connect all of the observers so that we can perform plotting during registration
-        # registration_method.AddCommand(sitk.sitkStartEvent, start_plot)
-        # registration_method.AddCommand(sitk.sitkEndEvent, end_plot)
-        # registration_method.AddCommand(sitk.sitkMultiResolutionIterationEvent, update_multires_iterations) 
-        # registration_method.AddCommand(sitk.sitkIterationEvent, lambda: plot_values(registration_method))
+            MSD[i] = msd(image_array, warped_image_array)
+            NMI[i] = nmi(image_array, warped_image_array)
+            # joint_entropy[i] = ssd(image_array, warped_image_array)
+            print("done.  (MSD = " + str(MSD[i]) + ", NMI = " + str(NMI[i]) +")")
 
-        final_transform = registration_method.Execute(sitk.Cast(fixed, sitk.sitkFloat32), sitk.Cast(moving, sitk.sitkFloat32))
 
-        warped = sitk.Resample(moving, fixed, final_transform, sitk.sitkLinear, 0.0, moving.GetPixelIDValue())
-        warped_mask = sitk.Resample(moving_mask, fixed_mask, final_transform, sitk.sitkNearestNeighbor, 0.0, moving_mask.GetPixelIDValue())
+            plot_comparison_of_reference_and_warped_image(image_array, warped_image_array)
+            # plt.show()
 
-        stack_nda[i+step,:,:] = sitk.GetArrayFromImage(warped)
-        stack_mask_nda[i+step,:,:] = sitk.GetArrayFromImage(warped_mask)
+        plt.figure()
+        plt.suptitle("MSD and NMI measure based on rotations with initial rotation of 180 deg")
+        plt.subplot(121)
+        # plt.semilogy(rotation_values,MSD)
+        plt.plot(rotation_values,MSD)
+        plt.xlabel('Rotation in degree')
+        plt.title('MSD')
 
-        # plot_comparison_of_reference_and_warped_image(
-            # fixed=sitk.GetArrayFromImage(fixed), warped=sitk.GetArrayFromImage(warped), fig_id=2)
+        plt.subplot(122)
+        plt.plot(rotation_values,NMI)
+        plt.xlabel('Rotation in degree')
+        plt.title('NMI')
+        plt.show()
 
-        # myshow(fixed-moving)
 
-        print("Iteration " + str(i+1) + "/" + str(N-1) + ":")
-        print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
-        print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
-        print("\n")
+    # Use own optimization algorithm for to rigidly register two images
+    if example_3:
+        ## Set transformation to alter orientation of image:
+        angle_0 = np.pi/16
+        translation_0 = np.array([0,0])
 
-        fig = plot_comparison_of_reference_and_warped_image(
-            fixed=sitk.GetArrayFromImage(stack)[i,:,:]-sitk.GetArrayFromImage(stack)[i+1,:,:], 
-            warped=sitk.GetArrayFromImage(fixed)-sitk.GetArrayFromImage(warped),
-            fixed_title="without registration between Slice " + str(i) + " and " + str(i+step),
-            warped_title="rigidly registered",
-            fig_id=1)
-        fig.canvas.draw()
+        ## Apply transformation to get altered image:
+        transformation = generate_rigid_transformation_matrix_2d(angle=angle_0,translation=translation_0)
+        transformation_inverse = np.linalg.inv(transformation)
 
-        fig = plot_comparison_of_reference_and_warped_image(
-            fixed=sitk.GetArrayFromImage(stack_mask)[i,:,:]-sitk.GetArrayFromImage(stack_mask)[i+1,:,:], 
-            warped=sitk.GetArrayFromImage(fixed_mask)-sitk.GetArrayFromImage(warped_mask),
-            fixed_title="without registration between Slice " + str(i) + " and " + str(i+step),
-            warped_title="rigidly registered",
-            fig_id=2)
-        fig.canvas.draw()
-        # time.sleep(1)
+        transformation = get_origin_corrected_transformation_2d(image_array, transformation)
+        image_array_altered = resampling(image_array, image_array, transformation)
 
-        stack_aligned_planar = sitk.GetImageFromArray(stack_nda)
-        stack_aligned_planar.CopyInformation(stack)
+        ## Iterative optimization to seek parameters to obtain original image again:
+        parameter_init = np.array([0,0,0]).astype('float')
 
-        stack_mask_aligned_planar = sitk.GetImageFromArray(stack_mask_nda)
-        stack_mask_aligned_planar.CopyInformation(stack_mask)
+        parameter = iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(image_array, image_array_altered, parameter_init)
 
-    # imshow(sitk.GetArrayFromImage(fixed)-sitk.GetArrayFromImage(moving),cmap=cm.gray)
+        ## Display results:
+        print("\nFinal parameters: ")
+        print("  Rotation = " + str(parameter[0]*180/np.pi) + " deg")
+        print("  Translation = " + str(parameter[1:]))
+        print("Solution should be: ")
+        print("  Rotation = " + str(-angle_0*180/np.pi) + " deg")
+        print("  Translation = " + str(transformation_inverse[0:-1,2]))
+        # print generate_derivative_of_rigid_transformation_matrix_2d(90)
 
-    # myshow(fixed-warped)
+        ## Apply obtained transformation to get original image again:
+        angle = parameter[0]
+        translation = parameter[1:]
 
-    sitk.WriteImage(stack_aligned_planar, os.path.join(dir_out,image_id+"_aligned_planar.nii.gz"))
-    sitk.WriteImage(stack_mask_aligned_planar, os.path.join(dir_out,image_id+"_mask_aligned_planar.nii.gz"))
+        ## Inverse parameter to transformation_0:
+        # angle = -angle_0
+        # translation = transformation_inverse[0:-1,2]
 
+        transformation = generate_rigid_transformation_matrix_2d(angle=angle, translation=translation)
+        transformation = get_origin_corrected_transformation_2d(image_array_altered, transformation)
+        warped_image = resampling(image_array, image_array_altered, transformation)
+
+        # plot_comparison_of_reference_and_warped_image(image_array,image_array_altered)
+        # plot_comparison_of_reference_and_warped_image(image_array_altered,warped_image)
+        plot_comparison_of_reference_and_warped_image(image_array,warped_image)
+        plt.show()
+
+    # plot_joint_histogram(image_array,image_array)
     # plt.show()
 
-# if __name__ == "__main__":
-#     main()
+
+    # Use SimpleITK to register images in-plane
+    if example_4:
+        dir_out = "../../results/"
+
+        image_id =  "1"
+
+        stack = sitk.ReadImage(dir_out+"input_data/"+image_id+".nii.gz",sitk.sitkFloat32)
+        stack_aligned_planar = sitk.ReadImage(dir_out+"input_data/"+image_id+".nii.gz",sitk.sitkFloat32)
+
+        stack_mask = sitk.ReadImage(dir_out+"input_data/"+image_id+"_mask.nii.gz",sitk.sitkUInt8)
+        stack_mask_aligned_planar = sitk.ReadImage(dir_out+"input_data/"+image_id+"_mask.nii.gz",sitk.sitkUInt8)
+
+
+        N = stack.GetSize()[-1]
+        stack_nda = sitk.GetArrayFromImage(stack_aligned_planar) #now indexed as [z,y,x]!
+        stack_mask_nda = sitk.GetArrayFromImage(stack_mask_aligned_planar) #now indexed as [z,y,x]!
+
+        step = 1
+
+        # for i in xrange(0,N-1):
+        for i in xrange(35,36):
+            if i == N-2:
+                step=1
+
+            fixed = stack_aligned_planar[:,:,i]
+            moving = stack_aligned_planar[:,:,i+step]
+
+            fixed_mask = stack_mask_aligned_planar[:,:,i]
+            moving_mask = stack_mask_aligned_planar[:,:,i+step]
+
+            initial_transform = sitk.CenteredTransformInitializer(fixed, moving, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
+
+            registration_method = sitk.ImageRegistrationMethod()
+
+            """
+            similarity metric settings
+            """
+            registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5) #set unsigned int radius
+            # registration_method.SetMetricAsCorrelation()
+            # registration_method.SetMetricAsDemons()
+            # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=20, varianceForJointPDFSmoothing=1.5)
+            # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+            # registration_method.SetMetricAsMeanSquares()
+
+            # registration_method.SetMetricFixedMask(fixed_mask)
+            # registration_method.SetMetricMovingMask(moving_mask)
+            # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
+
+            registration_method.SetInterpolator(sitk.sitkLinear)
+            
+            """
+            optimizer settings
+            """
+            # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
+            # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
+            registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1, numberOfIterations=100)
+
+            registration_method.SetOptimizerScalesFromPhysicalShift()
+            
+            """
+            setup for the multi-resolution framework            
+            """
+            registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+            registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+            registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+
+            registration_method.SetInitialTransform(initial_transform)
+
+            #connect all of the observers so that we can perform plotting during registration
+            # registration_method.AddCommand(sitk.sitkStartEvent, start_plot)
+            # registration_method.AddCommand(sitk.sitkEndEvent, end_plot)
+            # registration_method.AddCommand(sitk.sitkMultiResolutionIterationEvent, update_multires_iterations) 
+            # registration_method.AddCommand(sitk.sitkIterationEvent, lambda: plot_values(registration_method))
+
+            final_transform = registration_method.Execute(sitk.Cast(fixed, sitk.sitkFloat32), sitk.Cast(moving, sitk.sitkFloat32))
+
+            warped = sitk.Resample(moving, fixed, final_transform, sitk.sitkLinear, 0.0, moving.GetPixelIDValue())
+            warped_mask = sitk.Resample(moving_mask, fixed_mask, final_transform, sitk.sitkNearestNeighbor, 0.0, moving_mask.GetPixelIDValue())
+
+            stack_nda[i+step,:,:] = sitk.GetArrayFromImage(warped)
+            stack_mask_nda[i+step,:,:] = sitk.GetArrayFromImage(warped_mask)
+
+            # plot_comparison_of_reference_and_warped_image(
+                # fixed=sitk.GetArrayFromImage(fixed), warped=sitk.GetArrayFromImage(warped), fig_id=2)
+
+            # myshow(fixed-moving)
+
+            print("Iteration " + str(i+1) + "/" + str(N-1) + ":")
+            print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
+            print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+            print("\n")
+
+            fig = plot_comparison_of_reference_and_warped_image(
+                fixed=sitk.GetArrayFromImage(stack)[i,:,:]-sitk.GetArrayFromImage(stack)[i+1,:,:], 
+                warped=sitk.GetArrayFromImage(fixed)-sitk.GetArrayFromImage(warped),
+                fixed_title="without registration between Slice " + str(i) + " and " + str(i+step),
+                warped_title="rigidly registered",
+                fig_id=1)
+            fig.canvas.draw()
+
+            fig = plot_comparison_of_reference_and_warped_image(
+                fixed=sitk.GetArrayFromImage(stack_mask)[i,:,:]-sitk.GetArrayFromImage(stack_mask)[i+1,:,:], 
+                warped=sitk.GetArrayFromImage(fixed_mask)-sitk.GetArrayFromImage(warped_mask),
+                fixed_title="without registration between Slice " + str(i) + " and " + str(i+step),
+                warped_title="rigidly registered",
+                fig_id=2)
+            fig.canvas.draw()
+            # time.sleep(1)
+
+            stack_aligned_planar = sitk.GetImageFromArray(stack_nda)
+            stack_aligned_planar.CopyInformation(stack)
+
+            stack_mask_aligned_planar = sitk.GetImageFromArray(stack_mask_nda)
+            stack_mask_aligned_planar.CopyInformation(stack_mask)
+
+        # imshow(sitk.GetArrayFromImage(fixed)-sitk.GetArrayFromImage(moving),cmap=cm.gray)
+
+        # myshow(fixed-warped)
+
+        sitk.WriteImage(stack_aligned_planar, os.path.join(dir_out,image_id+"_aligned_planar.nii.gz"))
+        sitk.WriteImage(stack_mask_aligned_planar, os.path.join(dir_out,image_id+"_mask_aligned_planar.nii.gz"))
+
+        # plt.show()
