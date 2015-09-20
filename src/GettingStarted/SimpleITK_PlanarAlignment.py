@@ -8,7 +8,7 @@ import numpy as np
 import unittest
 
 import sys
-sys.path.append("../v1_20150915/")
+sys.path.append("../../backups/v1_20150915/")
 
 from FileAndImageHelpers import *
 from SimpleITK_PhysicalCoordinates import *
@@ -18,7 +18,7 @@ from SimpleITK_PhysicalCoordinates import *
 Set variables
 """
 ## Specify data
-dir_input = "../../results/input_data/"
+dir_input = "data/"
 dir_output = "results/"
 filename =  "0"
 
@@ -51,28 +51,6 @@ def get_3D_from_2D_rigid_transform(rigid_transform_2D):
 
     # Create 3D rigid transform based on 2D
     return sitk.Euler3DTransform(center_3D, 0, 0, angle_z, translation_3D)
-
-
-def compute_new_3D_direction_matrix_from_2D_alignment(rigid_transform_2D, slice_3D):
-    # Get parameters of 2D registration
-    angle_z, translation_x, translation_y = rigid_transform_2D.GetParameters()
-    center = rigid_transform_2D.GetFixedParameters()   #center of 2D rotation 
-
-    # Create 3D rigid transformation
-    rigid_transform_3D = sitk.Euler3DTransform()
-    rigid_transform_3D.SetRotation(0, 0, angle_z)
-    rigid_transform_3D.SetTranslation((translation_x, translation_y, 0))
-    rigid_transform_3D.SetCenter((center[0], center[1], 0))
-
-    transform_3D_rotation_matrix = np.array(rigid_transform_3D.GetMatrix()).reshape(3,3)
-    # print transform_3D_rotation_matrix
-
-
-    # Fetch information of current position in physical space of 3D slice
-    direction_matrix = np.array(slice_3D.GetDirection()).reshape(3,3)
-
-    # Compute new direction matrix and return in SimpleITK format
-    return (direction_matrix.dot(transform_3D_rotation_matrix)).reshape(-1)
 
 
 def get_3D_in_plane_alignment_transform_from_2D_rigid_transform(rigid_transform_2D, slice_3D):
@@ -308,7 +286,7 @@ if __name__ == '__main__':
     Fetch data
     """
     stack = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat32)
-    stack_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
+    # stack_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
 
     N = stack.GetSize()[-1]
 
@@ -323,7 +301,7 @@ if __name__ == '__main__':
     slice_2D_moving = slice_3D_moving[:,:,0]
 
 
-    flag_rigid_alignment_in_plane = 0
+    flag_rigid_alignment_in_plane = 1
 
     ## not necessary but kept for futre reference
     if flag_rigid_alignment_in_plane:
