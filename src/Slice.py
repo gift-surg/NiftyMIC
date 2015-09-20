@@ -7,6 +7,7 @@
 ## Import libraries
 import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
+import SimpleITKHelper as sitkh
 import numpy as np
 
 
@@ -17,7 +18,11 @@ class Slice:
         self._dir_input = dir_input
         self._filename = filename
         self._slice_number = slice_number
-        self._affine_transform = sitk.AffineTransform(np.eye(3).flatten(),(0,0,0))
+        # self._affine_transform = sitk.AffineTransform(np.eye(3).flatten(),(0,0,0))
+        self._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(self.sitk)
+
+        self._registration_history_sitk = []
+        self._registration_history_sitk.append(self._affine_transform_sitk)
 
         return None
 
@@ -26,13 +31,23 @@ class Slice:
         return self.sitk
 
 
-    def set_affine_transform(self, affine_transform):
-        self._affine_transform = affine_transform
+    def set_affine_transform(self, affine_transform_sitk):
+        self._affine_transform_sitk = affine_transform_sitk
+
+        origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
+        direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
+
+        self.sitk.SetOrigin(origin)
+        self.sitk.SetDirection(direction)
         return None
 
 
     def get_affine_transform(self):
-        return self._affine_transform
+        return self._affine_transform_sitk
+
+
+    def get_registration_history(self):
+        return self._registration_history_sitk
 
 
     def write_results(self, directory):
@@ -42,6 +57,6 @@ class Slice:
 
         ## Write transformation:
         full_file_name = os.path.join(directory, self._filename + "_" + str(self._slice_number) + ".tfm")
-        sitk.WriteTransform(self._affine_transform, full_file_name)
+        sitk.WriteTransform(self._affine_transform_sitk, full_file_name)
 
         print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, directory))

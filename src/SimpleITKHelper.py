@@ -47,6 +47,29 @@ def get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D):
     return sitk.Euler3DTransform(center_3D, 0, 0, angle_z, translation_3D)
 
 
+def get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
+    spacing_sitk = np.array(image_sitk.GetSpacing())
+    S_inv_sitk = np.diag(1/spacing_sitk)
+
+    A = np.array(affine_transform_sitk.GetMatrix()).reshape(3,3)
+    return A.dot(S_inv_sitk).flatten()
+
+
+def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
+    """
+    Important: Only tested for center=\0! Not clear how it shall be implemented,
+            cf. Johnson2015a on page 551 vs page 125!
+    """
+    affine_center = np.array(affine_transform_sitk.GetCenter())
+    affine_translation = np.array(affine_transform_sitk.GetTranslation())
+    
+    image_sitk_direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk) 
+
+    R = np.array(image_sitk_direction).reshape(3,3)
+
+    return affine_center + affine_translation - R.dot(affine_center)
+
+
 def get_sitk_affine_matrix_from_sitk_image(image_sitk):
     spacing_sitk = np.array(image_sitk.GetSpacing())
     S_sitk = np.diag(spacing_sitk)
@@ -57,6 +80,13 @@ def get_sitk_affine_matrix_from_sitk_image(image_sitk):
 
 def get_sitk_affine_translation_from_sitk_image(image_sitk):
     return np.array(image_sitk.GetOrigin())
+
+
+def get_sitk_affine_transform_from_sitk_image(image_sitk):
+    A = get_sitk_affine_matrix_from_sitk_image(image_sitk)
+    t = get_sitk_affine_translation_from_sitk_image(image_sitk)
+
+    return sitk.AffineTransform(A,t)
 
 
 def get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, slice_3D):

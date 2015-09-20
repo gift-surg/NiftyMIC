@@ -84,7 +84,10 @@ if __name__ == '__main__':
 
     ## In-plane rigid registration
     reconstruction_manager.run_in_plane_rigid_registration()
+
+    ## Write results
     reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
+    # reconstruction_manager.write_results()
 
     """
     Playground
@@ -93,5 +96,3 @@ if __name__ == '__main__':
     slices = stacks[0].get_slices()
     # print stacks[0.sitk
     # print slices[-1].sitk
-
-    # reconstruction_manager.write_results()

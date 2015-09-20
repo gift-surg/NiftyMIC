@@ -50,6 +50,8 @@ def get_3D_from_2D_rigid_transform(rigid_transform_2D):
     center_3D = (center_x, center_y, 0)
 
     # Create 3D rigid transform based on 2D
+    # rigid_transform_3D = sitk.Euler3DTransform()
+    # rigid_transform_3D.SetParameters((0,0, angle_z, translation_3D))
     return sitk.Euler3DTransform(center_3D, 0, 0, angle_z, translation_3D)
 
 
@@ -138,17 +140,19 @@ class TestUM(unittest.TestCase):
     def test_in_plane_registration_of_slice_in_2D_space_of_origin(self):
         
         # Set test data
-        angle_z = np.pi
+        angle_z = np.pi/2
         translation_x = 20
         translation_y = 30
+        center = (10,10,0)
         point = (0,0,0)   #last coordinate must be zero (only one slice!)
 
         # Create 2D rigid transform
         rigid_transform_2D = sitk.Euler2DTransform()
-        rigid_transform_2D.SetParameters((angle_z,translation_x, translation_y))
+        rigid_transform_2D.SetParameters((angle_z, translation_x, translation_y))
+        rigid_transform_2D.SetFixedParameters((center[0],center[1]))
 
         # Extend to 3D rigid transform
-        rigid_transform_3D = get_3D_from_2D_rigid_transform(rigid_transform_2D)   
+        rigid_transform_3D = get_3D_from_2D_rigid_transform(rigid_transform_2D)  
 
         # Create sitk::simple::AffineTransform object from rigid transform 
         A = get_sitk_affine_matrix_from_sitk_image(slice_3D_fixed)
@@ -175,17 +179,21 @@ class TestUM(unittest.TestCase):
     def test_in_plane_registration_of_slice_in_2D_space_of_arbitrary_point(self):
         
         # Set test data
-        angle_z = np.pi
+        angle_z = np.pi/2
         translation_x = 20
         translation_y = 30
+        center = (10,10,0)
         point = (10,10,0)   #last coordinate must be zero (only one slice!)
 
         # Create 2D rigid transform
         rigid_transform_2D = sitk.Euler2DTransform()
-        rigid_transform_2D.SetParameters((angle_z,translation_x, translation_y))
+        rigid_transform_2D.SetParameters((angle_z, translation_x, translation_y))
+        rigid_transform_2D.SetFixedParameters((center[0],center[1]))
 
         # Extend to 3D rigid transform
-        rigid_transform_3D = get_3D_from_2D_rigid_transform(rigid_transform_2D)   
+        rigid_transform_3D = get_3D_from_2D_rigid_transform(rigid_transform_2D)
+        # print rigid_transform_2D  
+        # print rigid_transform_3D    
 
         A = get_sitk_affine_matrix_from_sitk_image(slice_3D_fixed)
         t = get_sitk_affine_translation_from_sitk_image(slice_3D_fixed)

@@ -8,6 +8,7 @@
 ## Import libraries
 import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
+import numpy as np
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
@@ -34,41 +35,44 @@ class InPlaneRigidRegistration:
 
             step = 1
 
+            # *
             test = sitk.ReadImage(stack.get_directory()+stack.get_filename()+".nii.gz", sitk.sitkFloat32)
             test_planar = sitk.ReadImage(stack.get_directory()+stack.get_filename()+".nii.gz", sitk.sitkFloat32)
 
             test_nda = sitk.GetArrayFromImage(test)
+            # *
 
             for j in range(0, N_slices-step):
             # for j in range(0, 10):
-                fixed_3D = slices[j+step]
-                moving_3D = slices[j+step]
+                slice_3D = slices[j+step]
+                # moving_3D = slices[j+step]
 
                 fixed_2D_sitk = slices[j].sitk[:,:,0]
                 moving_2D_sitk = slices[j+step].sitk[:,:,0]
 
-
-
-
                 rigid_transform_2D = self._in_plane_rigid_registration(fixed_2D_sitk, moving_2D_sitk)
 
-                warped_2D = sitk.Resample(moving_2D_sitk, fixed_2D_sitk, rigid_transform_2D, sitk.sitkLinear, 0.0, moving_2D_sitk.GetPixelIDValue())
+                angle, translation_x, translation_y = rigid_transform_2D.GetParameters()
 
+                # center = rigid_transform_2D.GetFixedParameters()
+                # rigid_transform_2D_inv = sitk.Euler2DTransform(center, -angle, (-translation_x, -translation_y))
+
+                # *
+                warped_2D = sitk.Resample(moving_2D_sitk, fixed_2D_sitk, rigid_transform_2D, sitk.sitkLinear, 0.0, moving_2D_sitk.GetPixelIDValue())
 
                 test_nda[j+step,:,:] = sitk.GetArrayFromImage(warped_2D)
                 test_planar = sitk.GetImageFromArray(test_nda)
                 test_planar.CopyInformation(self._stacks[i].sitk)
+                # *
+
+                rigid_transform_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D.GetInverse(), slice_3D.sitk)
 
 
+                ## Composite obtained rigid alignment with physical trafo of slice
+                transform = self._update_affine_transform(slice_3D, rigid_transform_3D)
+                slice_3D.set_affine_transform(transform)
 
-
-                rigid_transform_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, fixed_3D.sitk)
-
-
-                transform = self._update_affine_transform(fixed_3D, moving_3D, rigid_transform_3D)
-                fixed_3D.set_affine_transform(transform)
-
-                print("Iteration " + str(j+1) + "/" + str(N_slices-1) + ":")
+                # print("Iteration " + str(j+1) + "/" + str(N_slices-1) + ":")
 
             full_file_name = os.path.join("../results/", self._stacks[i].get_filename() + "_aligned_2D_base.nii.gz")
             sitk.WriteImage(test_planar, full_file_name)
@@ -131,12 +135,9 @@ class InPlaneRigidRegistration:
         return final_transform_2D
 
 
-    def _update_affine_transform(self, fixed_3D, moving_3D, rigid_transform_3D):
-        transform_moving = moving_3D.get_affine_transform()
+    def _update_affine_transform(self, fixed_3D, rigid_transform_3D):
         transform_fixed = fixed_3D.get_affine_transform()
-
         transform = sitkh.get_composited_sitk_affine_transform(rigid_transform_3D, transform_fixed)
-        # transform = sitkh.get_composited_sitk_affine_transform(transform, transform_moving)
 
         return transform
 
@@ -151,13 +152,18 @@ class InPlaneRigidRegistration:
             warped_stack_nda = sitk.GetArrayFromImage(stack.sitk)
 
             for j in range(0, N_slices):
-                slice_sitk = slices[j].sitk
-                transform = slices[j].get_affine_transform()
-                warped_slice = sitk.Resample(slice_sitk, transform, sitk.sitkLinear, 0.0, slice_sitk.GetPixelIDValue())
+                fixed_sitk = stack.sitk[:,:,j:j+1]
+                moving_sitk = slices[j].sitk
 
-                slice_nda = sitk.GetArrayFromImage(warped_slice)
+                # Identity transform
+                transform = sitk.Euler3DTransform()
 
-                warped_stack_nda[j,:,:] = slice_nda[0,:,:]
+                warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
+
+                warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
+
+                warped_stack_nda[j,:,:] = warped_slice_nda[0,:,:]
+                
 
             warped_stack = sitk.GetImageFromArray(warped_stack_nda)
             warped_stack.CopyInformation(stack.sitk)

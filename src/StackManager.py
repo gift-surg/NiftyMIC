@@ -36,8 +36,8 @@ class StackManager:
 
 
     def write_results(self, directory):
-        # for i in range(0, self._N_stacks):
-        for i in range(0, 1):
+        for i in range(0, self._N_stacks):
+        # for i in range(0, 1):
             slices = self._stacks[i].get_slices()
             N_slices = self._stacks[i].get_number_of_slices()
 
