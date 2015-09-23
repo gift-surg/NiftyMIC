@@ -27,12 +27,10 @@ class Slice:
         return None
 
 
-    def get_slice_sitk(self):
-        return self.sitk
-
-
     def set_affine_transform(self, affine_transform_sitk):
         self._affine_transform_sitk = affine_transform_sitk
+
+        self._registration_history_sitk.append(affine_transform_sitk)
 
         origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
         direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
@@ -40,6 +38,22 @@ class Slice:
         self.sitk.SetOrigin(origin)
         self.sitk.SetDirection(direction)
         return None
+
+
+    def get_slice_sitk(self):
+        return self.sitk
+
+
+    def get_filename(self):
+        return self._filename
+
+
+    def get_slice_number(self):
+        return self._slice_number
+
+
+    def get_directory(self):
+        return self._dir_input
 
 
     def get_affine_transform(self):

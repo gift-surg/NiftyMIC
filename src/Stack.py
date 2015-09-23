@@ -16,7 +16,7 @@ import Slice as slice
 class Stack:
 
     def __init__(self, dir_input, filename):
-        self.sitk = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat32)
+        self.sitk = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat64)
         self._dir = dir_input
         self._filename = filename
 

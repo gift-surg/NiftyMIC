@@ -34,17 +34,21 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
     return sitk.AffineTransform(A_composited.flatten(), t_composited, c_composited)
 
 
-def get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D):
+def get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk):
     # Get parameters of 2D registration
-    angle_z, translation_x, translation_y = rigid_transform_2D.GetParameters()
-    center_x, center_y = rigid_transform_2D.GetFixedParameters()
-    
+    angle_z, translation_x, translation_y = rigid_transform_2D_sitk.GetParameters()
+    center_x, center_y = rigid_transform_2D_sitk.GetFixedParameters()
+
     # Expand obtained translation to 3D vector
     translation_3D = (translation_x, translation_y, 0)
     center_3D = (center_x, center_y, 0)
 
     # Create 3D rigid transform based on 2D
-    return sitk.Euler3DTransform(center_3D, 0, 0, angle_z, translation_3D)
+    rigid_transform_3D = sitk.Euler3DTransform()
+    rigid_transform_3D.SetRotation(0,0,angle_z)
+    rigid_transform_3D.SetTranslation(translation_3D)
+    rigid_transform_3D.SetFixedParameters(center_3D)
+    return rigid_transform_3D
 
 
 def get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
@@ -63,11 +67,10 @@ def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, imag
     affine_center = np.array(affine_transform_sitk.GetCenter())
     affine_translation = np.array(affine_transform_sitk.GetTranslation())
     
-    image_sitk_direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk) 
+    R = np.array(affine_transform_sitk.GetMatrix()).reshape(3,3)
 
-    R = np.array(image_sitk_direction).reshape(3,3)
-
-    return affine_center + affine_translation - R.dot(affine_center)
+    return affine_center + affine_translation 
+    # return affine_center + affine_translation - R.dot(affine_center)
 
 
 def get_sitk_affine_matrix_from_sitk_image(image_sitk):
@@ -89,8 +92,8 @@ def get_sitk_affine_transform_from_sitk_image(image_sitk):
     return sitk.AffineTransform(A,t)
 
 
-def get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, slice_3D):
-    rigid_transform_3D = get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D)
+def get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk, slice_3D):
+    rigid_transform_3D = get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk)
 
     A = get_sitk_affine_matrix_from_sitk_image(slice_3D)
     t = get_sitk_affine_translation_from_sitk_image(slice_3D)
@@ -101,6 +104,11 @@ def get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_trans
     spacing = np.array(slice_3D.GetSpacing())
     S_inv_matrix = np.diag(1/spacing).flatten()
     S_inv = sitk.AffineTransform(S_inv_matrix,(0,0,0))
+
+    # Rescale translation to voxel space:
+    translation_3D = np.array(rigid_transform_3D.GetTranslation())
+    translation_3D = translation_3D/spacing
+    rigid_transform_3D.SetTranslation(translation_3D)
 
     # Trafo T = rigid_trafo_3D o T_IP_inv
     T = get_composited_sitk_affine_transform(rigid_transform_3D,T_IP_inv)

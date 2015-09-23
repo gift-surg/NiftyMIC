@@ -33,7 +33,6 @@ class InPlaneRigidRegistration:
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
 
-            step = 1
 
             # *
             test = sitk.ReadImage(stack.get_directory()+stack.get_filename()+".nii.gz", sitk.sitkFloat32)
@@ -42,8 +41,10 @@ class InPlaneRigidRegistration:
             test_nda = sitk.GetArrayFromImage(test)
             # *
 
+            # for steps in range(1,3):
+            step = 1
+
             for j in range(0, N_slices-step):
-            # for j in range(0, 10):
                 slice_3D = slices[j+step]
                 # moving_3D = slices[j+step]
 
@@ -54,8 +55,8 @@ class InPlaneRigidRegistration:
 
                 angle, translation_x, translation_y = rigid_transform_2D.GetParameters()
 
-                # center = rigid_transform_2D.GetFixedParameters()
-                # rigid_transform_2D_inv = sitk.Euler2DTransform(center, -angle, (-translation_x, -translation_y))
+                center = rigid_transform_2D.GetFixedParameters()
+                rigid_transform_2D_inv = sitk.Euler2DTransform(center, -angle, (-translation_x, -translation_y))
 
                 # *
                 warped_2D = sitk.Resample(moving_2D_sitk, fixed_2D_sitk, rigid_transform_2D, sitk.sitkLinear, 0.0, moving_2D_sitk.GetPixelIDValue())
@@ -65,7 +66,7 @@ class InPlaneRigidRegistration:
                 test_planar.CopyInformation(self._stacks[i].sitk)
                 # *
 
-                rigid_transform_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D.GetInverse(), slice_3D.sitk)
+                rigid_transform_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, slice_3D.sitk)
 
 
                 ## Composite obtained rigid alignment with physical trafo of slice
@@ -82,7 +83,7 @@ class InPlaneRigidRegistration:
 
     def _in_plane_rigid_registration(self, fixed, moving):
 
-        initial_transform = sitk.CenteredTransformInitializer(fixed, moving, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
+        initial_transform = sitk.CenteredTransformInitializer(fixed, moving, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
 
         registration_method = sitk.ImageRegistrationMethod()
 
@@ -90,10 +91,10 @@ class InPlaneRigidRegistration:
         similarity metric settings
         """
         # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5) #set unsigned int radius
-        # registration_method.SetMetricAsCorrelation()
+        registration_method.SetMetricAsCorrelation()
         # registration_method.SetMetricAsDemons()
         # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=20, varianceForJointPDFSmoothing=1.5)
-        registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)
+        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
         # registration_method.SetMetricAsMeanSquares()
 
         # registration_method.SetMetricFixedMask(fixed_mask)
@@ -114,9 +115,9 @@ class InPlaneRigidRegistration:
         """
         setup for the multi-resolution framework            
         """
-        registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
-        registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
-        registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+        # registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+        # registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+        # registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
 
         registration_method.SetInitialTransform(initial_transform)
 

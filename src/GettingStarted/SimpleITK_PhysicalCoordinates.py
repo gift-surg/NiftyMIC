@@ -4,29 +4,6 @@ import nibabel as nib
 import unittest
 
 """
-Set variables
-"""
-## Specify data
-dir_input = "data/"
-dir_output = "results/"
-filename =  "0"
-
-accuracy = 6 # decimal places for accuracy of unit tests
-
-## Rotation matrix:
-# theta = np.pi
-# R = np.array([
-#     [np.cos(theta), -np.sin(theta), 0],
-#     [np.sin(theta), np.cos(theta), 0],
-#     [0, 0, 1]
-#     ])
-R = np.array([
-    [-1, 0, 0],
-    [0, -1, 0],
-    [0, 0, 1]])
-
-
-"""
 Functions
 """
 def get_sitk_origin_from_nib_image(image_nib):
@@ -88,14 +65,15 @@ def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, imag
     affine_center = np.array(affine_transform_sitk.GetCenter())
     affine_translation = np.array(affine_transform_sitk.GetTranslation())
     
-    image_sitk_direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk) 
+    # image_sitk_direction = get_sitk_affine_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk) 
 
-    R = np.array(image_sitk_direction).reshape(3,3)
+    # R = np.array(image_sitk_direction).reshape(3,3)
 
-    return affine_center + affine_translation - R.dot(affine_center)
+    # return affine_center + affine_translation - R.dot(affine_center)
+    return affine_center + affine_translation - affine_transform_sitk.TransformPoint(affine_center)
 
 
-def get_nib_rotation_matrix_from_sitk_image(image_sitk):
+def get_nib_orthogonal_matrix_from_sitk_image(image_sitk):
     spacing_sitk = np.array(image_sitk.GetSpacing())
     S_sitk = np.diag(spacing_sitk)
     R_sitk = np.array(image_sitk.GetDirection()).reshape(3,3)
@@ -111,7 +89,7 @@ def get_nib_translation_from_sitk_image(image_sitk):
 
 def get_nib_affine_matrix_from_sitk_image(image_sitk):
     A = np.eye(4)
-    A[0:-1,0:-1] = get_nib_rotation_matrix_from_sitk_image(image_sitk)
+    A[0:-1,0:-1] = get_nib_orthogonal_matrix_from_sitk_image(image_sitk)
     A[0:-1,3] = get_nib_translation_from_sitk_image(image_sitk)
 
     return A
@@ -161,7 +139,7 @@ def run_examples():
     print("np.sum(abs(R_sitk - R(nib))) = " + 
         str(np.sum(abs(R_sitk - get_sitk_direction_matrix_from_nib_image(stack_nib)))))
     print("np.sum(abs(R_nib - R(sitk))) = " + 
-        str(np.sum(abs(R_nib - get_nib_rotation_matrix_from_sitk_image(stack_sitk)))))
+        str(np.sum(abs(R_nib - get_nib_orthogonal_matrix_from_sitk_image(stack_sitk)))))
 
     # Check computation to translation vectors:
     print("np.sum(abs(t_sitk - t(nib))) = " + 
@@ -216,7 +194,7 @@ class TestUM(unittest.TestCase):
     """
     def test_01_transformation_to_obtain_nib_matrix(self):
         self.assertEqual(np.around(
-            np.sum(abs(R_nib - get_nib_rotation_matrix_from_sitk_image(stack_sitk)))
+            np.sum(abs(R_nib - get_nib_orthogonal_matrix_from_sitk_image(stack_sitk)))
             , decimals = accuracy), 0 )
 
 
@@ -402,6 +380,32 @@ class TestUM(unittest.TestCase):
 Main Function
 """
 if __name__ == '__main__':
+    """
+    Set variables
+    """
+    ## Specify data
+    dir_input = "data/"
+    dir_output = "results/"
+    # filename =  "kidney_s"
+    # filename =  "fetal_brain_a"
+    # filename =  "fetal_brain_c"
+    # filename =  "fetal_brain_s"
+    filename =  "placenta_s"
+
+    accuracy = 6 # decimal places for accuracy of unit tests
+
+    ## Rotation matrix:
+    # theta = np.pi
+    # R = np.array([
+    #     [np.cos(theta), -np.sin(theta), 0],
+    #     [np.sin(theta), np.cos(theta), 0],
+    #     [0, 0, 1]
+    #     ])
+    R = np.array([
+        [-1, 0, 0],
+        [0, -1, 0],
+        [0, 0, 1]])
+    
     """
     Fetch data
     """
