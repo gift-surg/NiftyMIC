@@ -667,8 +667,8 @@ if __name__ == '__main__':
 
         image_id =  "1"
 
-        stack = sitk.ReadImage(dir_out+"input_data/"+image_id+".nii.gz",sitk.sitkFloat32)
-        stack_aligned_planar = sitk.ReadImage(dir_out+"input_data/"+image_id+".nii.gz",sitk.sitkFloat32)
+        stack = sitk.ReadImage(dir_out+"input_data/"+image_id+".nii.gz",sitk.sitkFloat64)
+        stack_aligned_planar = sitk.ReadImage(dir_out+"input_data/"+image_id+".nii.gz",sitk.sitkFloat64)
 
         stack_mask = sitk.ReadImage(dir_out+"input_data/"+image_id+"_mask.nii.gz",sitk.sitkUInt8)
         stack_mask_aligned_planar = sitk.ReadImage(dir_out+"input_data/"+image_id+"_mask.nii.gz",sitk.sitkUInt8)
@@ -735,7 +735,7 @@ if __name__ == '__main__':
             # registration_method.AddCommand(sitk.sitkMultiResolutionIterationEvent, update_multires_iterations) 
             # registration_method.AddCommand(sitk.sitkIterationEvent, lambda: plot_values(registration_method))
 
-            final_transform = registration_method.Execute(sitk.Cast(fixed, sitk.sitkFloat32), sitk.Cast(moving, sitk.sitkFloat32))
+            final_transform = registration_method.Execute(sitk.Cast(fixed, sitk.sitkFloat64), sitk.Cast(moving, sitk.sitkFloat64))
 
             warped = sitk.Resample(moving, fixed, final_transform, sitk.sitkLinear, 0.0, moving.GetPixelIDValue())
             warped_mask = sitk.Resample(moving_mask, fixed_mask, final_transform, sitk.sitkNearestNeighbor, 0.0, moving_mask.GetPixelIDValue())

@@ -89,23 +89,11 @@ class TestUM(unittest.TestCase):
         e_z = (0,0,N_z)
         e_xyz = (N_x,N_y,N_z)
 
-        ## Extract info from stack:
-        origin = np.array(stack.GetOrigin())
-        direction = np.array(stack.GetDirection())
-        spacing = np.array(stack.GetSpacing())
+        ## Extract affine transformation to transform from Image to Physical Space
+        T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(stack)
 
-        affine_trafo = sitkh.get_sitk_affine_transform_from_sitk_image(stack)
-
-        ## Generate inverse transformations for translation and orthogonal transformations
-        T_translation = sitk.AffineTransform(3)
-        T_translation.SetTranslation(-origin)
-
-        T_rotation = sitk.AffineTransform(3)
-        direction_inv = np.linalg.inv(direction.reshape(3,3)).flatten()
-        T_rotation.SetMatrix(direction_inv)
-
-        ## Transformation to put stack back to physical origin with axis aligned
-        T = sitkh.get_composited_sitk_affine_transform(T_rotation,T_translation)
+        ## T = T_rotation_inv o T_origin_inv
+        T = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(stack)
 
         ## Test that image axis in physical space now align with physical coordinate system ones
         self.assertEqual(np.around(
@@ -126,15 +114,15 @@ class TestUM(unittest.TestCase):
 
 
         ## Transformation representing the one needed to incorporated in the image header
-        T_physical = sitkh.get_composited_sitk_affine_transform(T, affine_trafo)
+        T_PI_align = sitkh.get_composited_sitk_affine_transform(T, T_PI)
 
         ## Extract origin and direction to write into axis aligned stack
-        origin_physical = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_physical,stack)
-        direction_physical = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_physical,stack)
+        origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,stack)
+        direction_PI_align = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,stack)
 
         ## Update image header
-        stack.SetDirection(direction_physical)
-        stack.SetOrigin(origin_physical)
+        stack.SetDirection(direction_PI_align)
+        stack.SetOrigin(origin_PI_align)
 
         ## Test whether the update of the image header (set origin and direction) lead to the same results
         self.assertEqual(np.around(
@@ -154,7 +142,7 @@ class TestUM(unittest.TestCase):
             , decimals = accuracy), 0 )
 
 
-    def test_02_in_plane_rigid_transformation_in_2D_space(self):
+    def test_02_alignment_with_PI_align_trafo_coordinate_system(self):
         ## Set test data:
         slice_number = 0
         angle = np.pi/3
@@ -172,38 +160,28 @@ class TestUM(unittest.TestCase):
         e_y = (0,N_y,0)
         e_xy = (N_x,N_y,0)
 
-        ## Extract info from stack:
-        origin = np.array(stack.GetOrigin())
-        direction = np.array(stack.GetDirection())
-        spacing = np.array(stack.GetSpacing())
 
-        affine_trafo = sitkh.get_sitk_affine_transform_from_sitk_image(stack)
+        ## Extract affine transformation to transform from Image to Physical Space
+        T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(stack)
 
-        ## Generate inverse transformations for translation and orthogonal transformations
-        T_translation = sitk.AffineTransform(3)
-        T_translation.SetTranslation(-origin)
+        ## T = T_rotation_inv o T_origin_inv
+        T = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(stack)
 
-        T_rotation = sitk.AffineTransform(3)
-        direction_inv = np.linalg.inv(direction.reshape(3,3)).flatten()
-        T_rotation.SetMatrix(direction_inv)
+        ## T_PI_align = T_rotation_inv o T_origin_inv o T_PI: Trafo to align stack with physical coordinate system
+        ## (Hence, T_PI_align(i) = spacing*i)
+        T_PI_align = sitkh.get_composited_sitk_affine_transform(T, T_PI)
 
-        ## Transformation to put stack back to physical origin with axis aligned
-        T = sitkh.get_composited_sitk_affine_transform(T_rotation,T_translation)
-
-        ## Transformation representing the one needed to incorporated in the image header
-        T_physical = sitkh.get_composited_sitk_affine_transform(T, affine_trafo)
-
-        ## Extract origin and direction to write into axis aligned stack
-        origin_physical = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_physical,stack)
-        direction_physical = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_physical,stack)
+        ## Extract direction matrix and origin so that slice is oriented according to T_PI_align (i.e. with physical axes)
+        origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,stack)
+        direction_PI_align = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,stack)
 
         ## Update image header
         """
         After this line: direction = eye(3) and origin = \0. Only spacing kept!
-        Hence: Find proper trafo by hand do get this without numerical approximation!
+        Hence: Find proper trafo by hand do get this without numerical approximation or set it by hand!
         """
-        stack.SetDirection(direction_physical)
-        stack.SetOrigin(origin_physical)
+        stack.SetDirection(direction_PI_align)
+        stack.SetOrigin(origin_PI_align)
 
         ## Fetch slices
         slice_3D = stack[:,:,slice_number:slice_number+1]        
@@ -258,12 +236,19 @@ class TestUM(unittest.TestCase):
         slice_number = 0
         angle = np.pi/3
         translation = (20,30)
-        center = (0,0)
-        # center = (10,0)
+        center = (10,0)
+
+        ## Create 2D rigid transform
+        rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
 
         ## Fetch data:
         stack = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat64)
-        stack_original = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat64)
+
+        ## Fetch slice which header is to be updated
+        slice_3D = stack[:,:,slice_number:slice_number+1]  
+
+        ## Create deep copy for before/after comparison
+        slice_3D_original = sitk.Image(slice_3D)
 
         ## Define vectors pointing along the main axis of the image space
         spacing = np.array(stack.GetSpacing())
@@ -275,63 +260,17 @@ class TestUM(unittest.TestCase):
         e_xy = (N_x,N_y,0)
         e_c = (center[0],center[1],0)/spacing
 
-        ## Extract info from stack:
-        origin = np.array(stack.GetOrigin())
-        direction = np.array(stack.GetDirection())
-        spacing = np.array(stack.GetSpacing())
 
-        affine_trafo = sitkh.get_sitk_affine_transform_from_sitk_image(stack)
+        ## Get in-plane rigid transform in 3D space
+        T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, slice_3D)      
 
-        ## Generate inverse transformations for translation and orthogonal transformations
-        T_translation = sitk.AffineTransform(3)
-        T_translation.SetTranslation(-origin)
+        ## Fetch corresponding information for origin and direction
+        origin_PI_in_plane_rotation_3D = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_in_plane_rotation_3D, slice_3D)
+        direction_PI_in_plane_rotation_3D = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_in_plane_rotation_3D, slice_3D)
 
-        T_rotation = sitk.AffineTransform(3)
-        direction_inv = np.linalg.inv(direction.reshape(3,3)).flatten()
-        # direction_inv = np.linalg.inv(sitkh.get_sitk_affine_matrix_from_sitk_image(stack).reshape(3,3)).flatten()
-        T_rotation.SetMatrix(direction_inv)
-
-        ## Transformation to put stack back to physical origin with axis aligned
-        T = sitkh.get_composited_sitk_affine_transform(T_rotation,T_translation)
-        T_inv = sitk.AffineTransform(T.GetInverse())
-
-        ## Transformation representing the one needed to incorporated in the image header
-        T_physical = sitkh.get_composited_sitk_affine_transform(T, affine_trafo)
-
-        ## Extract origin and direction to write into axis aligned stack
-        origin_physical = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_physical,stack)
-        direction_physical = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_physical,stack)
-
-        ## Update image header
-        stack.SetDirection(direction_physical)
-        stack.SetOrigin(origin_physical)
-
-        ## Fetch slice which header is to be updated
-        slice_3D = stack[:,:,slice_number:slice_number+1]        
-
-        ## Create 2D rigid transform
-        rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
-
-        ## Extend to 3D rigid transform
-        rigid_transform_3D = sitkh.get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D)  
-
-        T_physical_inv = sitk.AffineTransform(T_physical.GetInverse())
-        # T_translation_inv = sitk.AffineTransform(T_translation.GetInverse())
-        # T_rotation_inv = sitk.AffineTransform(T_rotation.GetInverse())
-
-        T_final = sitk.AffineTransform(3)
-        T_final = sitkh.get_composited_sitk_affine_transform(rigid_transform_3D, T_physical)
-        # T_final = sitkh.get_composited_sitk_affine_transform(T_rotation_inv, T_final)
-        # T_final = sitkh.get_composited_sitk_affine_transform(T_translation_inv, T_final)
-        T_final = sitkh.get_composited_sitk_affine_transform(T_inv, T_final)
-
-        origin_final = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_final, slice_3D)
-        direction_final = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_final, slice_3D)
-
-        slice_3D.SetOrigin(origin_final)
-        slice_3D.SetDirection(direction_final)
-
-        slice_3D_original = stack_original[:,:,slice_number:slice_number+1]
+        ## Update information at slice_3D
+        slice_3D.SetOrigin(origin_PI_in_plane_rotation_3D)
+        slice_3D.SetDirection(direction_PI_in_plane_rotation_3D)
 
 
         """
@@ -404,106 +343,6 @@ class TestUM(unittest.TestCase):
             abs(alpha_3D_y - angle)
             , decimals = accuracy), 0 )
 
-    def test_in_plane_registration_in_3D_space(self):
-
-        # Set test data  
-        angle_z = np.pi/3
-        translation_x = 20
-        translation_y = 40
-        center = (0,0,0)
-        # center = (10,10,0)
-
-        #(angle_z, 0, 0) works
-
-        # Fetch data:
-        i = 0
-        slice_2D_fixed = stack[:,:,i]
-        stack_fixed = stack[:,:,i:i+1]
-
-        # Create 2D rigid transform
-        rigid_transform_2D = sitk.Euler2DTransform()
-        rigid_transform_2D.SetParameters((angle_z,translation_x, translation_y))
-        rigid_transform_2D.SetFixedParameters((center[0],center[1]))
-
-
-        test_slice = stack_fixed
-
-        # Compute final composition T = T_IP o S_inv o rigid_trafo_3D o T_IP_inv
-        T = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, test_slice)
-
-        """
-        Test planar alignment of 3D images
-        """
-        Nx,Ny,Nz = test_slice.GetSize()
-
-        e_0 = (0,0,0)
-        e_x = (Nx,0,0)
-        e_y = (0,Ny,0)
-
-        a_0 = np.array(test_slice.TransformIndexToPhysicalPoint(e_0))
-        a_x = np.array(test_slice.TransformIndexToPhysicalPoint(e_x)) - a_0
-        a_y = np.array(test_slice.TransformIndexToPhysicalPoint(e_y)) - a_0
-        a_z = np.cross(a_x,a_y)
-
-        b_0 = np.array(T.TransformPoint(test_slice.TransformIndexToPhysicalPoint(e_0)))
-        b_x = np.array(T.TransformPoint(test_slice.TransformIndexToPhysicalPoint(e_x))) - b_0
-        b_y = np.array(T.TransformPoint(test_slice.TransformIndexToPhysicalPoint(e_y))) - b_0
-
-        t_3D = b_0 - a_0
-
-        # Not exactly orthogonal!!
-        ## Check: Rigid transformation
-        # self.assertEqual(np.around(
-        #     abs(a_x.dot(a_y))
-        #     , decimals = accuracy), 0 )
-        # self.assertEqual(np.around(
-        #     abs(b_x.dot(b_y))
-        #     , decimals = accuracy), 0 )
-
-        ## Check: a_x-a_y-plane parallel to b_x-b_y-plane
-        self.assertEqual(np.around(
-            abs(a_z.dot(b_x))
-            , decimals = accuracy), 0 )
-        self.assertEqual(np.around(
-            abs(a_z.dot(b_y))
-            , decimals = accuracy), 0 )
-
-        ## Check: In-plane translation vector (i.e. translation in a_x-b_x-plane)
-        self.assertEqual(np.around(
-            abs(a_z.dot(t_3D))
-            , decimals = accuracy), 0 )
-
-        ## Check: Isometric transformation:
-        self.assertEqual(np.around(
-            abs(np.linalg.norm(a_x) - np.linalg.norm(b_x))
-            , decimals = accuracy-1), 0 )
-        self.assertEqual(np.around(
-            abs(np.linalg.norm(a_y) - np.linalg.norm(b_y))
-            , decimals = accuracy-1), 0 )
-
-        ## Check: Translation vectors have the same norm
-        # print("t_2D = " + str(t_2D))
-        # print("t_3D = " + str(t_3D))
-        # print("||t_2D|| = " + str(np.linalg.norm(t_2D)))
-        # print("||t_3D|| = " + str(np.linalg.norm(t_3D)))
-        # print("||t_2D|| - ||t_3D|| = " + str(
-        #     abs(np.linalg.norm(t_2D) - np.linalg.norm(t_3D))
-        #     ))
-        t_2D = np.array([translation_x, translation_y])
-        self.assertEqual(np.around(
-            abs(np.linalg.norm(t_2D) - np.linalg.norm(t_3D))
-            , decimals = accuracy), 0 )
-
-        ## Check: Rotation angle correct:
-        alpha_3D_x = np.arccos(a_x.dot(b_x)/(np.linalg.norm(a_x)*np.linalg.norm(b_x)))
-        alpha_3D_y = np.arccos(a_y.dot(b_y)/(np.linalg.norm(a_y)*np.linalg.norm(b_y)))
-
-        self.assertEqual(np.around(
-            abs(alpha_3D_x - angle_z)
-            , decimals = accuracy), 0 )
-        self.assertEqual(np.around(
-            abs(alpha_3D_y - angle_z)
-            , decimals = accuracy), 0 )
 
 """
 Main Function
@@ -559,9 +398,9 @@ if __name__ == '__main__':
     T_rotation.SetMatrix(direction_inv)
 
     T = sitkh.get_composited_sitk_affine_transform(T_rotation,T_translation)
-    T_physical = sitkh.get_composited_sitk_affine_transform(T, affine_trafo)
-    origin_physical = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_physical,stack)
-    direction_physical = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_physical,stack)
+    T_PI_align = sitkh.get_composited_sitk_affine_transform(T, affine_trafo)
+    origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,stack)
+    direction_PI_align = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,stack)
     # T.SetCenter()
 
 

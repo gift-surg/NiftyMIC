@@ -18,11 +18,16 @@ class Slice:
         self._dir_input = dir_input
         self._filename = filename
         self._slice_number = slice_number
-        # self._affine_transform = sitk.AffineTransform(np.eye(3).flatten(),(0,0,0))
+
         self._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(self.sitk)
 
         self._registration_history_sitk = []
         self._registration_history_sitk.append(self._affine_transform_sitk)
+
+        ## Get transform to align stack with physical space
+        T = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(self.sitk)
+        # self._T_PP = sitk.AffineTransform(T.GetInverse())
+        self._T_PP = T
 
         return None
 
@@ -64,6 +69,9 @@ class Slice:
         return self._registration_history_sitk
 
 
+    def get_transform_to_align_with_physical_coordinate_system(self):
+        return self._T_PP
+
     def write_results(self, directory):
         ## Write slice:
         full_file_name = os.path.join(directory, self._filename + "_" + str(self._slice_number) + ".nii.gz")
@@ -74,3 +82,5 @@ class Slice:
         sitk.WriteTransform(self._affine_transform_sitk, full_file_name)
 
         print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, directory))
+
+        return None

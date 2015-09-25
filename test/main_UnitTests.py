@@ -15,10 +15,12 @@ import unittest
 import sys
 sys.path.append("../src/")
 
+import matplotlib.pyplot as plt
+
 ## Import modules from src-folder
 import ReconstructionManager as rm
 import SimpleITKHelper as sitkh
-# import SliceStack
+# import InPlaneRigidRegistration as inplaneRR
 
 
 def read_input_data(image_type):
@@ -69,113 +71,230 @@ class TestUM(unittest.TestCase):
     def setUp(self):
         pass
 
+    def test_01_transformation_back_to_origin(self):
 
-    def test_01_in_plane_registration_of_slice_in_2D_space_at_origin(self):
-        # Set test data
-        angle_z = np.pi/2
-        translation_x = 20
-        translation_y = 30
-        center = (0,0,0)
-        point = (0,0,0)   #last coordinate must be zero (only one slice!)
-
-        # Fetch data
+        ## Fetch data
+        stack_number = 0
+        slice_number = 0
         stacks = reconstruction_manager.get_stacks()
-        slice_3D_sitk = stacks[0].sitk[:,:,0:1]
-        slice_2D_sitk = stacks[0].sitk[:,:,0]
+        slices = stacks[stack_number].get_slices()
+        slice_sitk = sitk.Image(slices[slice_number].sitk)
 
-        # Create 2D rigid transform
-        rigid_transform_2D = sitk.Euler2DTransform()
-        rigid_transform_2D.SetParameters((angle_z, translation_x, translation_y))
-        rigid_transform_2D.SetFixedParameters((center[0],center[1]))
-
-        # Extend to 3D rigid transform
-        rigid_transform_3D = sitkh.get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D)  
-
-
-        result_2D = np.array(rigid_transform_2D.TransformPoint(slice_2D_sitk.TransformIndexToPhysicalPoint((point[0],point[1]))))
-        result_3D = np.array(rigid_transform_3D.TransformPoint(slice_3D_sitk.TransformIndexToPhysicalPoint(point)))
-
-        self.assertEqual(np.around(
-            np.sum(abs(result_2D - result_3D[0:-1]))
-            , decimals = accuracy), 0 )
-
-
-    def test_02_in_plane_registration_of_slice_in_2D_space_at_arbitrary_point(self):
-        # Set test data
-        angle_z = np.pi/2
-        translation_x = 20
-        translation_y = 30
-        center = (10,10,0)
-        point = (10,10,0)   #last coordinate must be zero (only one slice!)
-
-        # Fetch data
-        stacks = reconstruction_manager.get_stacks()
-        slice_3D_sitk = stacks[0].sitk[:,:,0:1]
-        slice_2D_sitk = stacks[0].sitk[:,:,0]
-
-        # Create 2D rigid transform
-        rigid_transform_2D = sitk.Euler2DTransform()
-        rigid_transform_2D.SetParameters((angle_z, translation_x, translation_y))
-        rigid_transform_2D.SetFixedParameters((center[0],center[1]))
-
-        # Extend to 3D rigid transform
-        rigid_transform_3D = sitkh.get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D)  
-
-        result_2D = np.array(rigid_transform_2D.TransformPoint(slice_2D_sitk.TransformIndexToPhysicalPoint((point[0],point[1]))))
-        result_3D = np.array(rigid_transform_3D.TransformPoint(slice_3D_sitk.TransformIndexToPhysicalPoint(point)))
-
-
-        self.assertEqual(np.around(
-            np.sum(abs(result_2D - result_3D[0:-1]))
-            , decimals = accuracy), 0 )
-        
-
-
-    def test_03_in_plane_registration_in_3D_space(self):
-        # Set test data  
-        angle_z = np.pi/3
-        translation_x = 20
-        translation_y = 40
-        center = (0,0,0)
-        # center = (10,10,0)
-
-        #(angle_z, 0, 0) works
-
-        # Fetch data
-        stacks = reconstruction_manager.get_stacks()
-        slice_3D_sitk = stacks[0].sitk[:,:,0:1]
-
-        # Create 2D rigid transform
-        rigid_transform_2D = sitk.Euler2DTransform()
-        rigid_transform_2D.SetParameters((angle_z, translation_x, translation_y))
-        rigid_transform_2D.SetFixedParameters((center[0],center[1]))
-
-
-        # Compute final composition T = T_IP o S_inv o rigid_trafo_3D o T_IP_inv
-        T = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, slice_3D_sitk)
-
-        """
-        Test planar alignment of 3D images
-        """
-        Nx,Ny,Nz = slice_3D_sitk.GetSize()
+        ## Define vectors pointing along the main axis of the image space
+        N_x, N_y, N_z = slice_sitk.GetSize()
+        spacing = np.array(slice_sitk.GetSpacing())
 
         e_0 = (0,0,0)
-        e_x = (Nx,0,0)
-        e_y = (0,Ny,0)
+        e_x = (N_x,0,0)
+        e_y = (0,N_y,0)
+        e_z = (0,0,N_z)
+        e_xyz = (N_x,N_y,N_z)
 
-        a_0 = np.array(slice_3D_sitk.TransformIndexToPhysicalPoint(e_0))
-        a_x = np.array(slice_3D_sitk.TransformIndexToPhysicalPoint(e_x)) - a_0
-        a_y = np.array(slice_3D_sitk.TransformIndexToPhysicalPoint(e_y)) - a_0
+        ## Extract affine transformation to transform from Image to Physical Space
+        T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(slice_sitk)
+
+        ## T = T_rotation_inv o T_origin_inv
+        T = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_sitk)
+
+        ## Test that image axis in physical space now align with physical coordinate system ones
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_0 - T.TransformPoint(slice_sitk.TransformIndexToPhysicalPoint(e_0) ))
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_x - T.TransformPoint(slice_sitk.TransformIndexToPhysicalPoint(e_x) ))
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_y - T.TransformPoint(slice_sitk.TransformIndexToPhysicalPoint(e_y) ))
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_z - T.TransformPoint(slice_sitk.TransformIndexToPhysicalPoint(e_z) ))
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_xyz - T.TransformPoint(slice_sitk.TransformIndexToPhysicalPoint(e_xyz) ))
+            , decimals = accuracy), 0 )
+
+
+        ## Transformation representing the one needed to incorporated in the image header
+        T_PI_align = sitkh.get_composited_sitk_affine_transform(T, T_PI)
+
+        ## Extract origin and direction to write into axis aligned stack
+        origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,slice_sitk)
+        direction_PI_align = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,slice_sitk)
+
+        ## Update image header
+        slice_sitk.SetDirection(direction_PI_align)
+        slice_sitk.SetOrigin(origin_PI_align)
+
+        ## Test whether the update of the image header (set origin and direction) lead to the same results
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_0 - slice_sitk.TransformIndexToPhysicalPoint(e_0) )
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_x - slice_sitk.TransformIndexToPhysicalPoint(e_x) )
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_y - slice_sitk.TransformIndexToPhysicalPoint(e_y) )
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_z - slice_sitk.TransformIndexToPhysicalPoint(e_z) )
+            , decimals = accuracy), 0 )
+        self.assertEqual(np.around(
+            np.linalg.norm( spacing*e_xyz - slice_sitk.TransformIndexToPhysicalPoint(e_xyz) )
+            , decimals = accuracy), 0 )
+
+
+    def test_02_alignment_with_PI_align_trafo_coordinate_system(self):
+        ## Set test data:
+        slice_number = 0
+        angle = np.pi/3
+        translation = (20,30)
+        center = (10,15)
+
+        ## Fetch data
+        stack_number = 0
+        slice_number = 0
+        stacks = reconstruction_manager.get_stacks()
+        slices = stacks[stack_number].get_slices()
+        slice_sitk = sitk.Image(slices[slice_number].sitk)
+
+        ## Define vectors pointing along the main axis of the image space
+        N_x, N_y, N_z = slice_sitk.GetSize()
+        
+        e_0 = (0,0,0)
+        e_x = (N_x,0,0)
+        e_y = (0,N_y,0)
+        e_xy = (N_x,N_y,0)
+
+
+        ## Extract affine transformation to transform from Image to Physical Space
+        T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(slice_sitk)
+
+        ## T = T_rotation_inv o T_origin_inv
+        T = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_sitk)
+
+        ## T_PI_align = T_rotation_inv o T_origin_inv o T_PI: Trafo to align stack with physical coordinate system
+        ## (Hence, T_PI_align(i) = spacing*i)
+        T_PI_align = sitkh.get_composited_sitk_affine_transform(T, T_PI)
+
+        ## Extract direction matrix and origin so that slice is oriented according to T_PI_align (i.e. with physical axes)
+        origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,slice_sitk)
+        direction_PI_align = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,slice_sitk)
+
+        ## Update image header
+        """
+        After this line: direction = eye(3) and origin = \0. Only spacing kept!
+        Hence: Find proper trafo by hand do get this without numerical approximation or set it by hand!
+        """
+        slice_sitk.SetDirection(direction_PI_align)
+        slice_sitk.SetOrigin(origin_PI_align)
+
+        ## Fetch slices
+        slice_3D = slice_sitk[:,:,slice_number:slice_number+1]        
+        slice_2D = slice_sitk[:,:,slice_number]        
+
+        ## Create 2D rigid transform
+        rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
+
+        ## Extend to 3D rigid transform
+        rigid_transform_3D = sitkh.get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D)  
+
+        ## Check results
+        point = e_0
+        res_2D = rigid_transform_2D.TransformPoint(slice_2D.TransformIndexToPhysicalPoint((point[0],point[1])))
+        self.assertEqual(np.around(
+            np.linalg.norm(
+                np.array([res_2D[0],res_2D[1],0]) -
+                np.array(rigid_transform_3D.TransformPoint(slice_3D.TransformIndexToPhysicalPoint(point)))
+                )
+            , decimals = accuracy), 0 )
+
+        point = e_x
+        res_2D = rigid_transform_2D.TransformPoint(slice_2D.TransformIndexToPhysicalPoint((point[0],point[1])))
+        self.assertEqual(np.around(
+            np.linalg.norm(
+                np.array([res_2D[0],res_2D[1],0]) -
+                np.array(rigid_transform_3D.TransformPoint(slice_3D.TransformIndexToPhysicalPoint(point)))
+                )
+            , decimals = accuracy), 0 )
+
+        point = e_y
+        res_2D = rigid_transform_2D.TransformPoint(slice_2D.TransformIndexToPhysicalPoint((point[0],point[1])))
+        self.assertEqual(np.around(
+            np.linalg.norm(
+                np.array([res_2D[0],res_2D[1],0]) -
+                np.array(rigid_transform_3D.TransformPoint(slice_3D.TransformIndexToPhysicalPoint(point)))
+                )
+            , decimals = accuracy), 0 )
+        
+        point = e_xy
+        res_2D = rigid_transform_2D.TransformPoint(slice_2D.TransformIndexToPhysicalPoint((point[0],point[1])))
+        self.assertEqual(np.around(
+            np.linalg.norm(
+                np.array([res_2D[0],res_2D[1],0]) -
+                np.array(rigid_transform_3D.TransformPoint(slice_3D.TransformIndexToPhysicalPoint(point)))
+                )
+            , decimals = accuracy), 0 )
+
+
+    def test_03_in_plane_rigid_transformation_in_3D_space(self):
+        ## Set test data:
+        slice_number = 0
+        angle = np.pi/3
+        translation = (20,30)
+        center = (10,0)
+
+        ## Fetch data
+        stack_number = 0
+        slice_number = 0
+        stacks = reconstruction_manager.get_stacks()
+        slices = stacks[stack_number].get_slices()
+        slice_sitk = sitk.Image(slices[slice_number].sitk)
+
+        ## Create 2D rigid transform
+        rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
+
+        ## Create deep copy for before/after comparison
+        slice_sitk_original = sitk.Image(slice_sitk)
+
+        ## Define vectors pointing along the main axis of the image space
+        spacing = np.array(slice_sitk.GetSpacing())
+        N_x, N_y, N_z = slice_sitk.GetSize()
+        
+        e_0 = (0,0,0)
+        e_x = (N_x,0,0)
+        e_y = (0,N_y,0)
+        e_xy = (N_x,N_y,0)
+        e_c = (center[0],center[1],0)/spacing
+
+
+        ## Get in-plane rigid transform in 3D space
+        T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, slice_sitk)      
+
+        ## Fetch corresponding information for origin and direction
+        origin_PI_in_plane_rotation_3D = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_in_plane_rotation_3D, slice_sitk)
+        direction_PI_in_plane_rotation_3D = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_in_plane_rotation_3D, slice_sitk)
+
+        ## Update information at slice_sitk
+        slice_sitk.SetOrigin(origin_PI_in_plane_rotation_3D)
+        slice_sitk.SetDirection(direction_PI_in_plane_rotation_3D)
+
+
+        ## Test planar alignment of 3D images
+        a_0 = np.array(slice_sitk_original.TransformIndexToPhysicalPoint(e_0))
+        a_x = np.array(slice_sitk_original.TransformIndexToPhysicalPoint(e_x)) - a_0
+        a_y = np.array(slice_sitk_original.TransformIndexToPhysicalPoint(e_y)) - a_0
+        a_c = np.array(slice_sitk_original.TransformContinuousIndexToPhysicalPoint(e_c))
         a_z = np.cross(a_x,a_y)
 
-        b_0 = np.array(T.TransformPoint(slice_3D_sitk.TransformIndexToPhysicalPoint(e_0)))
-        b_x = np.array(T.TransformPoint(slice_3D_sitk.TransformIndexToPhysicalPoint(e_x))) - b_0
-        b_y = np.array(T.TransformPoint(slice_3D_sitk.TransformIndexToPhysicalPoint(e_y))) - b_0
+        b_0 = np.array(slice_sitk.TransformIndexToPhysicalPoint(e_0))
+        b_x = np.array(slice_sitk.TransformIndexToPhysicalPoint(e_x)) - b_0
+        b_y = np.array(slice_sitk.TransformIndexToPhysicalPoint(e_y)) - b_0
+        b_c = np.array(slice_sitk.TransformContinuousIndexToPhysicalPoint(e_c)) 
 
-        t_3D = b_0 - a_0
+        t_3D = b_c - a_c
 
-        # Not exactly orthogonal!!
         ## Check: Rigid transformation
+        ## Not exactly orthogonal!!
         # self.assertEqual(np.around(
         #     abs(a_x.dot(a_y))
         #     , decimals = accuracy), 0 )
@@ -212,7 +331,7 @@ class TestUM(unittest.TestCase):
         # print("||t_2D|| - ||t_3D|| = " + str(
         #     abs(np.linalg.norm(t_2D) - np.linalg.norm(t_3D))
         #     ))
-        t_2D = np.array([translation_x, translation_y])
+        t_2D = np.array([translation[0], translation[1]])
         self.assertEqual(np.around(
             abs(np.linalg.norm(t_2D) - np.linalg.norm(t_3D))
             , decimals = accuracy), 0 )
@@ -222,85 +341,53 @@ class TestUM(unittest.TestCase):
         alpha_3D_y = np.arccos(a_y.dot(b_y)/(np.linalg.norm(a_y)*np.linalg.norm(b_y)))
 
         self.assertEqual(np.around(
-            abs(alpha_3D_x - angle_z)
+            abs(alpha_3D_x - angle)
             , decimals = accuracy), 0 )
         self.assertEqual(np.around(
-            abs(alpha_3D_y - angle_z)
+            abs(alpha_3D_y - angle)
             , decimals = accuracy), 0 )
 
- 
-    # def test_04_test_in_plane_registration(self):
-    #     # Fetch data
-    #     stacks = reconstruction_manager.get_stacks()
 
-    #     N_stacks = len(stacks)
+    def test_04_compare_in_plane_registration_of_single_3D_slices_with_2D_ones(self):
+        ## Run in-plane rigid registration
+        reconstruction_manager.run_in_plane_rigid_registration()
+        in_plane_rigid_registration = reconstruction_manager._in_plane_rigid_registration
 
-    #     Nx,Ny,Nz = stacks[0].sitk.GetSize()
-    #     e_0 = (0,0,0)
-    #     e_x = (Nx,0,0)
-    #     e_y = (0,Ny,0)
+        stacks_aligned_3D_sitk = in_plane_rigid_registration._UT_get_resampled_stacks()
+        stacks_aligned_2D_sitk = in_plane_rigid_registration._UT_2D_resampled_stacks
 
-    #     for i in range(0,N_stacks):
-    #         stack = stacks[i]
-    #         slices = stack.get_slices()
+        # plot = False
+        plot = True
 
-    #         N_slices = stack.sitk.GetDepth()
+        for i in range(0, len(stacks_aligned_2D_sitk)):
+            stacks_aligned_3D_nda = sitk.GetArrayFromImage(stacks_aligned_3D_sitk[i])
+            stacks_aligned_2D_nda = sitk.GetArrayFromImage(stacks_aligned_2D_sitk[i])
 
-    #         for j in range(0,N_slices):
-    #             slice_3D_original = stack.sitk[:,:,j:j+1]
-    #             slice_3D_aligned = slices[j].sitk
+            N_slices = stacks_aligned_2D_sitk[i].GetDepth()
 
+            if plot:
+                for j in range(0, 3):
+                # for j in range(0, N_slices):
 
-    #             a_0 = np.array(slice_3D_original.TransformIndexToPhysicalPoint(e_0))
-    #             a_x = np.array(slice_3D_original.TransformIndexToPhysicalPoint(e_x)) - a_0
-    #             a_y = np.array(slice_3D_original.TransformIndexToPhysicalPoint(e_y)) - a_0
-    #             a_z = np.cross(a_x,a_y)
+                    fig = plt.figure(1)
+                    plt.suptitle("Slice %r/%r: error (norm) = %r" %(j+1,N_slices,np.linalg.norm(stacks_aligned_3D_nda[j,:,:]-stacks_aligned_2D_nda[j,:,:])))
+                    plt.subplot(1,3,1)
+                    plt.imshow(stacks_aligned_2D_nda[j,:,:], cmap="Greys_r")
+                    plt.axis('off')
 
-    #             b_0 = np.array(slice_3D_aligned.TransformIndexToPhysicalPoint(e_0))
-    #             b_x = np.array(slice_3D_aligned.TransformIndexToPhysicalPoint(e_x)) - b_0
-    #             b_y = np.array(slice_3D_aligned.TransformIndexToPhysicalPoint(e_y)) - b_0
+                    plt.subplot(1,3,2)
+                    plt.imshow(stacks_aligned_3D_nda[j,:,:], cmap="Greys_r")
+                    plt.axis('off')
 
-    #             t_3D = b_0 - a_0
+                    plt.subplot(1,3,3)
+                    plt.imshow(stacks_aligned_3D_nda[j,:,:]-stacks_aligned_2D_nda[j,:,:], cmap="Greys_r")
+                    plt.axis('off')
+                    plt.show()
 
-    #             # print("slice %r: ||t_3D|| = %r" % (j, np.linalg.norm(t_3D)))
+            self.assertEqual(np.around(
+                np.linalg.norm(stacks_aligned_3D_nda - stacks_aligned_2D_nda)
+                , decimals = accuracy), 0 )
 
-    #             # Not exactly orthogonal!!
-    #             ## Check: Rigid transformation
-    #             # self.assertEqual(np.around(
-    #             #     abs(a_x.dot(a_y))
-    #             #     , decimals = accuracy), 0 )
-    #             # self.assertEqual(np.around(
-    #             #     abs(b_x.dot(b_y))
-    #             #     , decimals = accuracy), 0 )
-
-    #             ## Check: a_x-a_y-plane parallel to b_x-b_y-plane
-    #             self.assertEqual(np.around(
-    #                 abs(a_z.dot(b_x))
-    #                 , decimals = accuracy), 0 )
-    #             self.assertEqual(np.around(
-    #                 abs(a_z.dot(b_y))
-    #                 , decimals = accuracy), 0 )
-
-    #             ## Check: In-plane translation vector (i.e. translation in a_x-b_x-plane)
-    #             self.assertEqual(np.around(
-    #                 abs(a_z.dot(t_3D))
-    #                 , decimals = accuracy), 0 )
-
-    #             ## Check: Isometric transformation:
-    #             self.assertEqual(np.around(
-    #                 abs(np.linalg.norm(a_x) - np.linalg.norm(b_x))
-    #                 , decimals = accuracy), 0 )
-    #             self.assertEqual(np.around(
-    #                 abs(np.linalg.norm(a_y) - np.linalg.norm(b_y))
-    #                 , decimals = accuracy), 0 )
-
-    #             ## Check: intensity arrays of both original and aligned stack are equal
-    #             slice_3D_original_nda = sitk.GetArrayFromImage(slice_3D_original)
-    #             slice_3D_aligned_nda = sitk.GetArrayFromImage(slice_3D_aligned)
-
-    #             self.assertEqual(np.around(
-    #                 np.linalg.norm(slice_3D_original_nda - slice_3D_aligned_nda)
-    #                 , decimals = accuracy), 0 )
 
 
 """ ###########################################################################
@@ -341,9 +428,6 @@ if __name__ == '__main__':
     #!
 
     reconstruction_manager.read_input_data(dir_input, filenames)
-
-    ## In-plane rigid registration
-    # reconstruction_manager.run_in_plane_rigid_registration()
 
     print("\nUnit tests:\n--------------")
     unittest.main()

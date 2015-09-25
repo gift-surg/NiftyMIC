@@ -34,23 +34,6 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
     return sitk.AffineTransform(A_composited.flatten(), t_composited, c_composited)
 
 
-def get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk):
-    # Get parameters of 2D registration
-    angle_z, translation_x, translation_y = rigid_transform_2D_sitk.GetParameters()
-    center_x, center_y = rigid_transform_2D_sitk.GetFixedParameters()
-
-    # Expand obtained translation to 3D vector
-    translation_3D = (translation_x, translation_y, 0)
-    center_3D = (center_x, center_y, 0)
-
-    # Create 3D rigid transform based on 2D
-    rigid_transform_3D = sitk.Euler3DTransform()
-    rigid_transform_3D.SetRotation(0,0,angle_z)
-    rigid_transform_3D.SetTranslation(translation_3D)
-    rigid_transform_3D.SetFixedParameters(center_3D)
-    return rigid_transform_3D
-
-
 def get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
     spacing_sitk = np.array(image_sitk.GetSpacing())
     S_inv_sitk = np.diag(1/spacing_sitk)
@@ -92,29 +75,94 @@ def get_sitk_affine_transform_from_sitk_image(image_sitk):
     return sitk.AffineTransform(A,t)
 
 
-def get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk, slice_3D):
-    rigid_transform_3D = get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk)
+def get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk):
+    # Get parameters of 2D registration
+    angle_z, translation_x, translation_y = rigid_transform_2D_sitk.GetParameters()
+    center_x, center_y = rigid_transform_2D_sitk.GetFixedParameters()
 
-    A = get_sitk_affine_matrix_from_sitk_image(slice_3D)
-    t = get_sitk_affine_translation_from_sitk_image(slice_3D)
+    # Expand obtained translation to 3D vector
+    translation_3D = (translation_x, translation_y, 0)
+    center_3D = (center_x, center_y, 0)
 
-    T_IP = sitk.AffineTransform(A,t)
-    T_IP_inv = sitk.AffineTransform(T_IP.GetInverse())
-
-    spacing = np.array(slice_3D.GetSpacing())
-    S_inv_matrix = np.diag(1/spacing).flatten()
-    S_inv = sitk.AffineTransform(S_inv_matrix,(0,0,0))
-
-    # Rescale translation to voxel space:
-    translation_3D = np.array(rigid_transform_3D.GetTranslation())
-    translation_3D = translation_3D/spacing
+    # Create 3D rigid transform based on 2D
+    rigid_transform_3D = sitk.Euler3DTransform()
+    rigid_transform_3D.SetRotation(0,0,angle_z)
     rigid_transform_3D.SetTranslation(translation_3D)
+    rigid_transform_3D.SetFixedParameters(center_3D)
+    
+    return rigid_transform_3D
 
-    # Trafo T = rigid_trafo_3D o T_IP_inv
-    T = get_composited_sitk_affine_transform(rigid_transform_3D,T_IP_inv)
+def get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D):
+    ## Extract origin and direction matrix from slice:
+    origin_3D = np.array(slice_3D.GetOrigin())
+    direction_3D = np.array(slice_3D.GetDirection())
 
-    # Trafo T = S_inv o rigid_trafo_3D o T_IP_inv
-    # T = get_composited_sitk_affine_transform(S_inv,T)
+    ## Generate inverse transformations for translation and orthogonal transformations
+    T_translation = sitk.AffineTransform(3)
+    T_translation.SetTranslation(-origin_3D)
 
-    # Compute final composition T = T_IP o S_inv o rigid_trafo_3D o T_IP_inv
-    return get_composited_sitk_affine_transform(T_IP,T)
+    T_rotation = sitk.AffineTransform(3)
+    direction_inv = np.linalg.inv(direction_3D.reshape(3,3)).flatten()
+    T_rotation.SetMatrix(direction_inv)
+
+    ## T = T_rotation_inv o T_origin_inv
+    T = get_composited_sitk_affine_transform(T_rotation,T_translation)
+
+    return T
+
+
+def get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk, T, slice_3D_sitk):
+    ## Extract affine transformation to transform from Image to Physical Space
+    T_PI = get_sitk_affine_transform_from_sitk_image(slice_3D_sitk)
+
+    ## T = T_rotation_inv o T_origin_inv
+    # T = get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D)
+    # T = slice_3D.get_transform_to_align_with_physical_coordinate_system()
+    T_inv = sitk.AffineTransform(T.GetInverse())
+
+    ## T_PI_align = T_rotation_inv o T_origin_inv o T_PI: Trafo to align stack with physical coordinate system
+    ## (Hence, T_PI_align(\i) = \spacing*\i)
+    T_PI_align = get_composited_sitk_affine_transform(T, T_PI)
+
+    ## Extract direction matrix and origin so that slice is oriented according to T_PI_align (i.e. with physical axes)
+    # origin_PI_align = get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,slice_3D)
+    # direction_PI_align = get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,slice_3D)
+
+    ## Extend to 3D rigid transform
+    rigid_transform_3D = get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk) 
+
+    ## T_PI_in_plane_rotation_3D 
+    ##    = T_origin o T_rotation o T_in_plane_rotation_2D_space 
+    ##                      o T_rotation_inv o T_origin_inv o T_PI
+    T_PI_in_plane_rotation_3D = sitk.AffineTransform(3)
+    T_PI_in_plane_rotation_3D = get_composited_sitk_affine_transform(rigid_transform_3D, T_PI_align)
+    T_PI_in_plane_rotation_3D = get_composited_sitk_affine_transform(T_inv, T_PI_in_plane_rotation_3D)
+
+    return T_PI_in_plane_rotation_3D
+
+    """
+    Old version
+    """
+    # A = get_sitk_affine_matrix_from_sitk_image(slice_3D)
+    # t = get_sitk_affine_translation_from_sitk_image(slice_3D)
+
+    # T_IP = sitk.AffineTransform(A,t)
+    # T_IP_inv = sitk.AffineTransform(T_IP.GetInverse())
+
+    # spacing = np.array(slice_3D.GetSpacing())
+    # S_inv_matrix = np.diag(1/spacing).flatten()
+    # S_inv = sitk.AffineTransform(S_inv_matrix,(0,0,0))
+
+    # # Rescale translation to voxel space:
+    # translation_3D = np.array(rigid_transform_3D.GetTranslation())
+    # translation_3D = translation_3D/spacing
+    # rigid_transform_3D.SetTranslation(translation_3D)
+
+    # # Trafo T = rigid_trafo_3D o T_IP_inv
+    # T = get_composited_sitk_affine_transform(rigid_transform_3D,T_IP_inv)
+
+    # # Trafo T = S_inv o rigid_trafo_3D o T_IP_inv
+    # # T = get_composited_sitk_affine_transform(S_inv,T)
+
+    # # Compute final composition T = T_IP o S_inv o rigid_trafo_3D o T_IP_inv
+    # return get_composited_sitk_affine_transform(T_IP,T)

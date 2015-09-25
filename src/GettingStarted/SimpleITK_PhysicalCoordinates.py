@@ -410,7 +410,7 @@ if __name__ == '__main__':
     Fetch data
     """
     ## Read image: SimpleITK
-    stack_sitk = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat32)
+    stack_sitk = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat64)
 
     ## Read image: Nibabel
     stack_nib = nib.load(dir_input+filename+".nii.gz")
