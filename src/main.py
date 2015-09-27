@@ -69,7 +69,7 @@ if __name__ == '__main__':
     dir_output = "../results/"
 
     ## Choose input stacks and reference stack therein
-    input_stacks_type = input_stack_types_available[0]
+    input_stacks_type = input_stack_types_available[2]
     reference_stack_id = 0
 
     """

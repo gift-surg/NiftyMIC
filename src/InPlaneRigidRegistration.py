@@ -62,8 +62,33 @@ class InPlaneRigidRegistration:
                 slice_3D_copy_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(slice_3D)
                 slice_3D_ref_copy_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(slice_3D_ref)
 
-                ## Get registration trafo for slices in physical 2D space (moving_2D -> fixed_2D)
-                rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(slice_3D_ref_copy_sitk[:,:,0], slice_3D_copy_sitk[:,:,0])
+
+                if slices[j].sitk_mask is None:
+                    ## Get registration trafo for slices in physical 2D space (moving_2D -> fixed_2D)
+                    rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(
+                        fixed_2D_sitk = slice_3D_ref_copy_sitk[:,:,0], 
+                        moving_2D_sitk = slice_3D_copy_sitk[:,:,0])
+                         # fixed_2D_sitk_mask=None, moving_2D_sitk_mask=None)
+
+                ## Fetch and update masks if existing:
+                else:
+                    ## Mask information of fixed
+                    mask_nda = sitk.GetArrayFromImage(slice_3D_ref.sitk_mask)
+                    slice_3D_ref_copy_sitk_mask = sitk.GetImageFromArray(mask_nda)
+                    slice_3D_ref_copy_sitk_mask.CopyInformation(slice_3D_ref_copy_sitk)
+
+                    ## Mask information of moving
+                    mask_nda = sitk.GetArrayFromImage(slice_3D.sitk_mask)
+                    slice_3D_copy_sitk_mask = sitk.GetImageFromArray(mask_nda)
+                    slice_3D_copy_sitk_mask.CopyInformation(slice_3D_copy_sitk)
+
+                    ## Get registration trafo for slices in physical 2D space (moving_2D -> fixed_2D)
+                    rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(
+                        fixed_2D_sitk = slice_3D_ref_copy_sitk[:,:,0], 
+                        moving_2D_sitk = slice_3D_copy_sitk[:,:,0],
+                        fixed_2D_sitk_mask = slice_3D_ref_copy_sitk_mask[:,:,0], 
+                        moving_2D_sitk_mask = slice_3D_copy_sitk_mask[:,:,0])
+
 
                 ## Get transformation for 3D in-plane rigid transformation to update T_PI of slice
                 T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
@@ -81,17 +106,37 @@ class InPlaneRigidRegistration:
         slices = stack.get_slices()
         N_slices = stack.get_number_of_slices()
 
-        for iterations in range(0,2):
+        for iterations in range(0,5):
             for j in np.concatenate((range(1, N_slices, 2),range(0, N_slices, 2))):
                 slice_3D = slices[j]
-
-                slice_2D_ref_sitk = self._get_average_of_slice_neighbours(slices, j)
 
                 ## Get copy of slices aligned to physical coordinate system
                 slice_3D_copy_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(slice_3D)
 
-                ## Get registration trafo for slices in physical 2D space (moving_2D -> fixed_2D)
-                rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(slice_2D_ref_sitk, slice_3D_copy_sitk[:,:,0])
+                ## Average neighbours of slices and retrieve slices aligned with physical coordinate system
+                slice_2D_ref_sitk, slice_2D_ref_sitk_mask = self._get_average_of_slice_neighbours(slices, j)
+
+                if slices[j].sitk_mask is None:
+                    ## Get registration trafo for slices in physical 2D space (moving_2D -> fixed_2D)
+                    rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(
+                        fixed_2D_sitk = slice_2D_ref_sitk, 
+                        moving_2D_sitk = slice_3D_copy_sitk[:,:,0])
+                         # fixed_2D_sitk_mask=None, moving_2D_sitk_mask=None)
+
+                ## Fetch and update masks if existing:
+                else:
+                    ## Mask information of moving
+                    mask_nda = sitk.GetArrayFromImage(slice_3D.sitk_mask)
+                    slice_3D_copy_sitk_mask = sitk.GetImageFromArray(mask_nda)
+                    slice_3D_copy_sitk_mask.CopyInformation(slice_3D_copy_sitk)
+
+                    ## Get registration trafo for slices in physical 2D space (moving_2D -> fixed_2D)
+                    rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(
+                        fixed_2D_sitk = slice_2D_ref_sitk, 
+                        moving_2D_sitk = slice_3D_copy_sitk[:,:,0],
+                        fixed_2D_sitk_mask = slice_2D_ref_sitk_mask, 
+                        moving_2D_sitk_mask = slice_3D_copy_sitk_mask[:,:,0])
+
 
                 ## Get transformation for 3D in-plane rigid transformation to update T_PI of slice
                 T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
@@ -112,32 +157,66 @@ class InPlaneRigidRegistration:
         if slice_number == 0:
             slice_3D_next = slices[slice_number+1]
 
-            return self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(
+            average_2D_slice_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(
                 slice_3D_next)[:,:,0]
+
+            average_2D_slice_sitk_mask = sitk.Image(slice_3D_next.sitk_mask)[:,:,0]
+            average_2D_slice_sitk_mask.SetOrigin(average_2D_slice_sitk.GetOrigin())
+            average_2D_slice_sitk_mask.SetDirection(average_2D_slice_sitk.GetDirection())
 
         elif slice_number == N_slices-1:
             slice_3D_prev = slices[slice_number-1]
 
-            return self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(
+            average_2D_slice_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(
                 slice_3D_prev)[:,:,0]
+
+            average_2D_slice_sitk_mask = sitk.Image(slice_3D_prev.sitk_mask)[:,:,0]
+            average_2D_slice_sitk_mask.SetOrigin(average_2D_slice_sitk.GetOrigin())
+            average_2D_slice_sitk_mask.SetDirection(average_2D_slice_sitk.GetDirection())
 
         else:
             slice_3D_prev = slices[slice_number-1]
             slice_3D_next = slices[slice_number+1]
 
             ## Get 2D sitk slices aligned with physical coordinates
-            slice_2D_align = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(
-                slice_3D)[:,:,0]
+            # slice_2D_align = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(
+            #     slice_3D)[:,:,0]
             slice_2D_prev_align = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(
                 slice_3D_prev)[:,:,0]
             slice_2D_next_align = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(
                 slice_3D_next)[:,:,0]
 
-            ## Resample previous and subsequent 2D slice to slice_2D space
+            ## Resample previous 2D slice to slice_2D_prev space
             slice_2D_next_align = sitk.Resample(slice_2D_next_align, slice_2D_prev_align, sitk.Euler2DTransform(), sitk.sitkLinear, 0.0, slice_2D_next_align.GetPixelIDValue())
 
+            ## Masks:
+            slice_2D_prev_align_mask = sitk.Image(slice_3D_prev.sitk_mask)[:,:,0]
+            slice_2D_next_align_mask = sitk.Image(slice_3D_next.sitk_mask)[:,:,0]
+
+            slice_2D_next_align_mask.SetOrigin(slice_2D_next_align.GetOrigin())
+            slice_2D_next_align_mask.SetDirection(slice_2D_next_align.GetDirection())
+
+            slice_2D_prev_align_mask.SetOrigin(slice_2D_prev_align.GetOrigin())
+            slice_2D_prev_align_mask.SetDirection(slice_2D_prev_align.GetDirection())
+
+            slice_2D_next_align_mask = sitk.Resample(slice_2D_next_align_mask, slice_2D_prev_align_mask, sitk.Euler2DTransform(), sitk.sitkLinear, 0.0, slice_2D_next_align_mask.GetPixelIDValue())
+
+
             ## Compute average
-            return (slice_2D_prev_align + slice_2D_next_align)/2.
+            average_2D_slice_sitk =  (slice_2D_prev_align + slice_2D_next_align)/2.
+            average_2D_slice_sitk_mask = (slice_2D_prev_align_mask + slice_2D_next_align_mask)/2
+
+            # tmp = sitk.GetArrayFromImage(average_2D_slice_sitk)
+            # tmp_mask = sitk.GetArrayFromImage(average_2D_slice_sitk_mask)
+
+            # plt.subplot(1,2,1)
+            # plt.imshow(sitk.GetArrayFromImage(slice_2D_prev_align_mask), cmap="Greys_r")
+
+            # plt.subplot(1,2,2)
+            # plt.imshow(sitk.GetArrayFromImage(slice_2D_next_align_mask), cmap="Greys_r")
+            # plt.show()
+
+        return average_2D_slice_sitk, average_2D_slice_sitk_mask
 
         # fig = plt.figure(1)
         # # plt.suptitle("Slice %r/%r: error (norm) = %r" %(j+1,N_slices,np.linalg.norm(stacks_aligned_3D_nda[j,:,:]-stacks_aligned_2D_nda[j,:,:])))
@@ -165,15 +244,17 @@ class InPlaneRigidRegistration:
         """
         similarity metric settings
         """
-        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5) #set unsigned int radius
+        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5) #set unsigned int radius
         # registration_method.SetMetricAsCorrelation()
         # registration_method.SetMetricAsDemons()
-        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=20, varianceForJointPDFSmoothing=2)
+        registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=20, varianceForJointPDFSmoothing=2)
         # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
         # registration_method.SetMetricAsMeanSquares()
 
-        # registration_method.SetMetricFixedMask(fixed_2D_sitk_mask)
-        # registration_method.SetMetricMovingMask(moving_2D_sitk_mask)
+        if fixed_2D_sitk_mask is not None:
+            registration_method.SetMetricFixedMask(fixed_2D_sitk_mask)
+            registration_method.SetMetricMovingMask(moving_2D_sitk_mask)
+
         # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
 
         registration_method.SetInterpolator(sitk.sitkLinear)

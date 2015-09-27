@@ -13,8 +13,9 @@ import numpy as np
 
 class Slice:
 
-    def __init__(self, slice_sitk, dir_input, filename, slice_number):
+    def __init__(self, slice_sitk, dir_input, filename, slice_number, slice_sitk_mask = None):
         self.sitk = slice_sitk
+        self.sitk_mask = slice_sitk_mask
         self._dir_input = dir_input
         self._filename = filename
         self._slice_number = slice_number
@@ -42,6 +43,11 @@ class Slice:
 
         self.sitk.SetOrigin(origin)
         self.sitk.SetDirection(direction)
+
+        if self.sitk_mask is not None:
+            self.sitk_mask.SetOrigin(origin)
+            self.sitk_mask.SetDirection(direction)
+
         return None
 
 

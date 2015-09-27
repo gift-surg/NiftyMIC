@@ -6,7 +6,7 @@
 
 
 ## Import libraries
-# import os                       # used to execute terminal commands in python
+import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
 # import numpy as np
 
@@ -22,6 +22,12 @@ class Stack:
 
         self._N_slices = self.sitk.GetSize()[-1]
         self._slices = [None]*self._N_slices
+
+        self.sitk_mask = None
+
+        if os.path.isfile(dir_input+filename+"_mask.nii.gz"):
+            self.sitk_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
+            self._slices_masks = [None]*self._N_slices
 
         self._extract_slices()
 
@@ -40,8 +46,24 @@ class Stack:
 
 
     def _extract_slices(self):
-        for i in range(0, self._N_slices):
-            self._slices[i] = slice.Slice(self.sitk[:,:,i:i+1], self._dir, self._filename, i)
+        ## Extract slices and add masks
+        if self.sitk_mask is not None:
+            for i in range(0, self._N_slices):
+                self._slices[i] = slice.Slice(
+                    slice_sitk = self.sitk[:,:,i:i+1], 
+                    dir_input = self._dir, 
+                    filename = self._filename, 
+                    slice_number = i,
+                    slice_sitk_mask = self.sitk_mask[:,:,i:i+1])
+        
+        ## No masks available
+        else:
+            for i in range(0, self._N_slices):
+                self._slices[i] = slice.Slice(
+                    slice_sitk = self.sitk[:,:,i:i+1], 
+                    dir_input = self._dir, 
+                    filename = self._filename, 
+                    slice_number = i)
 
         return None
 

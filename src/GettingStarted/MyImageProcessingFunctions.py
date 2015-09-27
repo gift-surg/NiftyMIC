@@ -16,7 +16,7 @@ from pylab import *
 import time
 
 import sys
-sys.path.append("../v1_20150915/")
+sys.path.append("../../backups/v1_20150915/")
 
 ## Import other py-files within src-folder
 from SliceStack import *
@@ -479,6 +479,22 @@ def iterative_optimization_gradient_descent_rigid_transformation_MSD_2d(referenc
 
     return parameter
 
+def get_rectangular_mask(image_sitk, x_range, y_range, z_range):
+
+    mask_nda = sitk.GetArrayFromImage(image_sitk)
+    mask_nda[:,:,:] = 0
+
+
+    mask_nda[
+    z_range[0]:z_range[1]+1, 
+    y_range[0]:y_range[1]+1,
+    x_range[0]:x_range[1]+1] = 1
+
+    mask_sitk = sitk.GetImageFromArray(mask_nda)
+    mask_sitk.CopyInformation(image_sitk)
+
+    return mask_sitk
+
 """
 Functions used for SimpleITK illustrations
 """
@@ -531,7 +547,7 @@ if __name__ == '__main__':
     example_1 = 0
     example_2 = 0
     example_3 = 0
-    example_4 = 1
+    example_4 = 0
 
     image_array = read_file('data/BrainWeb_2D.png')
     # image_array = read_file('../test/images/Text.png')
