@@ -67,8 +67,7 @@ class ReconstructionManager:
                             + self._dir_results_input_data + filenames[i] + "_mask.nii.gz"
                 ## Link mask to stack
                 # self._masks[i] = SliceStack(self._dir_results_input_data, filenames[i] + "_mask")
-            # print cmd
-            os.system(cmd)
+                os.system(cmd)
             
         print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
 

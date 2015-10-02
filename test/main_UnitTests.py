@@ -266,9 +266,11 @@ class TestUM(unittest.TestCase):
         e_xy = (N_x,N_y,0)
         e_c = (center[0],center[1],0)/spacing
 
+        ## Transform to physical origin
+        T = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_sitk)
 
         ## Get in-plane rigid transform in 3D space
-        T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, slice_sitk)      
+        T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, T, slice_sitk)      
 
         ## Fetch corresponding information for origin and direction
         origin_PI_in_plane_rotation_3D = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_in_plane_rotation_3D, slice_sitk)
@@ -350,14 +352,15 @@ class TestUM(unittest.TestCase):
 
     def test_04_compare_in_plane_registration_of_single_3D_slices_with_2D_ones(self):
         ## Run in-plane rigid registration
+
         reconstruction_manager.run_in_plane_rigid_registration()
         in_plane_rigid_registration = reconstruction_manager._in_plane_rigid_registration
 
         stacks_aligned_3D_sitk = in_plane_rigid_registration._UT_get_resampled_stacks()
         stacks_aligned_2D_sitk = in_plane_rigid_registration._UT_2D_resampled_stacks
 
-        # plot = False
-        plot = True
+        plot = False
+        # plot = True
 
         for i in range(0, len(stacks_aligned_2D_sitk)):
             stacks_aligned_3D_nda = sitk.GetArrayFromImage(stacks_aligned_3D_sitk[i])

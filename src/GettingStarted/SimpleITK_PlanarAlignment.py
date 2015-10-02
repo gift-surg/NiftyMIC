@@ -82,6 +82,7 @@ class TestUM(unittest.TestCase):
 
         ## Define vectors pointing along the main axis of the image space
         N_x, N_y, N_z = stack.GetSize()
+        spacing = np.array(stack.GetSpacing())
 
         e_0 = (0,0,0)
         e_x = (N_x,0,0)
@@ -260,9 +261,11 @@ class TestUM(unittest.TestCase):
         e_xy = (N_x,N_y,0)
         e_c = (center[0],center[1],0)/spacing
 
+        ## Transform to physical origin
+        T = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D)
 
         ## Get in-plane rigid transform in 3D space
-        T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, slice_3D)      
+        T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D, T, slice_3D)      
 
         ## Fetch corresponding information for origin and direction
         origin_PI_in_plane_rotation_3D = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_in_plane_rotation_3D, slice_3D)
@@ -370,44 +373,10 @@ if __name__ == '__main__':
     # stack_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
 
 
-    i = 0
-
-    N_x, N_y, N_z = stack.GetSize()
-    e_0 = (0,0,0)
-    e_x = (N_x,0,0)
-    e_y = (0,N_y,0)
-    e_z = (0,0,N_z)
-    e_c = (N_x/2., N_y/2., 0)
-
-    stack = stack[:,:,i:i+1]
-
-    origin = np.array(stack.GetOrigin())
-    direction = np.array(stack.GetDirection())
-    spacing = np.array(stack.GetSpacing())
-
-    affine_trafo = sitkh.get_sitk_affine_transform_from_sitk_image(stack)
-    # A_inv = np.linalg.inv(affine_trafo.reshape(3,3)).flatten()
-
-    direction_inv = np.linalg.inv(direction.reshape(3,3)).flatten()
-
-    center = stack.TransformContinuousIndexToPhysicalPoint(e_c)
-
-    T_translation = sitk.AffineTransform(3)
-    T_rotation = sitk.AffineTransform(3)
-    T_translation.SetTranslation(-origin)
-    T_rotation.SetMatrix(direction_inv)
-
-    T = sitkh.get_composited_sitk_affine_transform(T_rotation,T_translation)
-    T_PI_align = sitkh.get_composited_sitk_affine_transform(T, affine_trafo)
-    origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,stack)
-    direction_PI_align = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,stack)
-    # T.SetCenter()
-
-
     """
     In-plane registration (2D)
     """
-    flag_rigid_alignment_in_plane = 0
+    flag_rigid_alignment_in_plane = 1
 
     ## not necessary but kept for future reference
     if flag_rigid_alignment_in_plane:

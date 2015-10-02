@@ -69,8 +69,8 @@ def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, imag
 
     # R = np.array(image_sitk_direction).reshape(3,3)
 
-    # return affine_center + affine_translation - R.dot(affine_center)
-    return affine_center + affine_translation - affine_transform_sitk.TransformPoint(affine_center)
+    return affine_center + affine_translation - R.dot(affine_center)
+    # return affine_center + affine_translation - affine_transform_sitk.TransformPoint(affine_center)
 
 
 def get_nib_orthogonal_matrix_from_sitk_image(image_sitk):

@@ -34,14 +34,24 @@ def read_input_data(image_type):
 
     elif image_type in ["kidney"]:
         ## Kidney Images:
-        dir_input = "/Users/mebner/UCL/Data/Kidney\\ \\(3T,\\ Philips,\\ UCH,\\ 20150713\\)/Nifti/"
+        # dir_input = "/Users/mebner/UCL/Data/Kidney\\ \\(3T,\\ Philips,\\ UCH,\\ 20150713\\)/Nifti/"
+        # filenames = [
+        #     "20150713_09583130x3mmlongSENSEs2801a1028",
+        #     "20150713_09583130x3mmlongSENSEs2701a1027",
+        #     "20150713_09583130x3mmlongSENSEs2601a1026"
+        #     # "20150713_09583130x3mmlongSENSEs2501a1025",
+        #     # "20150713_09583130x3mmlongSENSEs2401a1024",
+        #     # "20150713_09583130x3mmlongSENSEs2301a1023"
+        #     ]
+
+        dir_input = "../data/kidney/"
         filenames = [
-            "20150713_09583130x3mmlongSENSEs2801a1028",
-            "20150713_09583130x3mmlongSENSEs2701a1027",
-            "20150713_09583130x3mmlongSENSEs2601a1026",
-            "20150713_09583130x3mmlongSENSEs2501a1025",
-            "20150713_09583130x3mmlongSENSEs2401a1024",
-            "20150713_09583130x3mmlongSENSEs2301a1023"
+            "SENSEs2801a1028",
+            "SENSEs2701a1027",
+            "SENSEs2601a1026"
+            # "SENSEs2501a1025",
+            # "SENSEs2401a1024",
+            # "SENSEs2301a1023"
             ]
 
     else:
