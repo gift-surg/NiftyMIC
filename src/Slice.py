@@ -27,7 +27,6 @@ class Slice:
 
         ## Get transform to align stack with physical space
         T = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(self.sitk)
-        # self._T_PP = sitk.AffineTransform(T.GetInverse())
         self._T_PP = T
 
         return None

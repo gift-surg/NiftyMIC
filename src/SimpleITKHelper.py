@@ -45,7 +45,7 @@ def get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_
 def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
     """
     Important: Only tested for center=\0! Not clear how it shall be implemented,
-            cf. Johnson2015a on page 551 vs page 125!
+            cf. Johnson2015a on page 551 vs page 107!
     """
     affine_center = np.array(affine_transform_sitk.GetCenter())
     affine_translation = np.array(affine_transform_sitk.GetTranslation())
@@ -91,6 +91,7 @@ def get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk):
     rigid_transform_3D.SetFixedParameters(center_3D)
     
     return rigid_transform_3D
+
 
 def get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D):
     ## Extract origin and direction matrix from slice:
@@ -139,30 +140,3 @@ def get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_trans
     T_PI_in_plane_rotation_3D = get_composited_sitk_affine_transform(T_inv, T_PI_in_plane_rotation_3D)
 
     return T_PI_in_plane_rotation_3D
-
-    """
-    Old version
-    """
-    # A = get_sitk_affine_matrix_from_sitk_image(slice_3D)
-    # t = get_sitk_affine_translation_from_sitk_image(slice_3D)
-
-    # T_IP = sitk.AffineTransform(A,t)
-    # T_IP_inv = sitk.AffineTransform(T_IP.GetInverse())
-
-    # spacing = np.array(slice_3D.GetSpacing())
-    # S_inv_matrix = np.diag(1/spacing).flatten()
-    # S_inv = sitk.AffineTransform(S_inv_matrix,(0,0,0))
-
-    # # Rescale translation to voxel space:
-    # translation_3D = np.array(rigid_transform_3D.GetTranslation())
-    # translation_3D = translation_3D/spacing
-    # rigid_transform_3D.SetTranslation(translation_3D)
-
-    # # Trafo T = rigid_trafo_3D o T_IP_inv
-    # T = get_composited_sitk_affine_transform(rigid_transform_3D,T_IP_inv)
-
-    # # Trafo T = S_inv o rigid_trafo_3D o T_IP_inv
-    # # T = get_composited_sitk_affine_transform(S_inv,T)
-
-    # # Compute final composition T = T_IP o S_inv o rigid_trafo_3D o T_IP_inv
-    # return get_composited_sitk_affine_transform(T_IP,T)

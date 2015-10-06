@@ -7,6 +7,7 @@
 
 ## Import libraries
 import os                       # used to execute terminal commands in python
+import sys
 import SimpleITK as sitk
 import numpy as np
 
@@ -42,7 +43,8 @@ class InPlaneRigidRegistration:
         for i in range(0, self._N_stacks):
 
             # self._apply_in_plane_rigid_registration_2D_approach_01(self._stacks[i])
-            self._apply_in_plane_rigid_registration_2D_approach_02(self._stacks[i])
+            # self._apply_in_plane_rigid_registration_2D_approach_02(self._stacks[i])
+            self._apply_in_plane_rigid_registration_2D_approach_02_Alternative(self._stacks[i])
 
         return None
 
@@ -154,8 +156,132 @@ class InPlaneRigidRegistration:
                 ## Update T_PI of slice s.t. it is aligned with slice_3D_ref
                 slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
 
+        return None
+
+    def _apply_in_plane_rigid_registration_2D_approach_02_Alternative(self, stack):
+        slices = stack.get_slices()
+        N_slices = stack.get_number_of_slices()
+
+        methods = ["NiftyReg", "FLIRT"]
+        method = methods[1]
+
+        iterations = 1
+        for iteration in range(0,iterations):
+            for j in np.concatenate((range(1, N_slices, 2),range(0, N_slices, 2))):
+            # for j in range(20, 21, 2):
+                slice_3D = slices[j]
+
+                print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j+1,N_slices))
+
+                ## Get copy of slices aligned to physical coordinate system
+                slice_3D_copy_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(slice_3D)
+
+                ## Average neighbours of slices and retrieve slices aligned with physical coordinate system
+                slice_2D_ref_sitk, slice_2D_ref_sitk_mask = self._get_average_of_slice_neighbours(slices, j)
+
+                ## Fetch and update masks if existing:
+                slice_3D_copy_sitk_mask = sitk.Image(slice_3D.sitk_mask)
+                slice_3D_copy_sitk_mask.SetOrigin(slice_3D_copy_sitk.GetOrigin())
+                slice_3D_copy_sitk_mask.SetDirection(slice_3D_copy_sitk.GetDirection())
+
+                ## Save images prior the use of NiftyReg
+                moving = ".moving"
+                moving_mask = ".moving_mask"
+                fixed = ".fixed"
+                fixed_mask = ".fixed_mask"
+
+                sitk.WriteImage(slice_3D_copy_sitk[:,:,0], moving+".nii.gz")
+                sitk.WriteImage(slice_3D_copy_sitk_mask[:,:,0], moving_mask+".nii.gz")
+                sitk.WriteImage(slice_2D_ref_sitk, fixed+".nii.gz")
+                sitk.WriteImage(slice_2D_ref_sitk_mask, fixed_mask+".nii.gz")
+
+                ## Define variables used for registration
+                res_affine_image = moving + "_warped"
+                res_affine_matrix = ".affine_matrix"
+
+                ## Rigid registration
+                if method == "FLIRT":
+                    options = "-2D "
+                    cmd = "flirt " + options + \
+                        "-ref " + fixed + ".nii.gz " + \
+                        "-in " + moving + ".nii.gz " + \
+                        "-refweight " + fixed_mask + ".nii.gz " + \
+                        "-inweight " + moving_mask + ".nii.gz " + \
+                        "-out " + res_affine_image + ".nii.gz " + \
+                        "-omat " + res_affine_matrix + ".txt"
+                    sys.stdout.write("  Rigid registration (FLIRT) " + str(j+1) + "/" + str(N_slices) + " ... ")
+
+                else:
+                    ## NiftyReg: Global affine registration of reference image:
+                    #  \param[in] -ref reference image
+                    #  \param[in] -flo floating image
+                    #  \param[out] -res affine registration of floating image
+                    #  \param[out] -aff affine transformation matrix
+                    options = "-voff -rigOnly "
+                        # "-rmask " + fixed_mask + ".nii.gz " + \
+                        # "-fmask " + moving_mask + ".nii.gz " + \
+                    # options = "-voff -platf Cuda=1 "
+                    cmd = "reg_aladin " + options + \
+                        "-ref " + fixed + ".nii.gz " + \
+                        "-flo " + moving + ".nii.gz " + \
+                        "-res " + res_affine_image + ".nii.gz " + \
+                        "-aff " + res_affine_matrix + ".txt"
+                    sys.stdout.write("  Rigid registration (NiftyReg reg_aladin) " + str(j+1) + "/" + str(N_slices) + " ... ")
+
+                # print(cmd)
+                sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+                # print(cmd)
+                os.system(cmd)
+                print "done"
+
+                ## Read trafo and invert such that T: moving_2D -> fixed_3D
+                matrix = np.loadtxt(res_affine_matrix+".txt")
+                # matrix[0:2,:] *= -1
+                matrix = np.linalg.inv(matrix)
+
+                print matrix
+
+                ## Convert to SimpleITK format
+                A = matrix[0:-1,0:-1]
+                t = matrix[0:-1,-1]
+
+                # matrix[0:2,3] *= -1
+                # t[0:-1] *= -1
+
+                A = A.flatten()
+
+
+                rigid_transform_3D = sitk.AffineTransform(A, t)
+
+                ## Extract affine transformation to transform from Image to Physical Space
+                T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(slice_3D.sitk)
+
+                ## Get transformation for 3D in-plane rigid transformation to update T_PI of slice
+                T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
+
+                T = sitkh.get_composited_sitk_affine_transform(T_PP,T_PI)
+                T = sitkh.get_composited_sitk_affine_transform(rigid_transform_3D, T)
+
+                T_PI_in_plane_rotation_3D = sitkh.get_composited_sitk_affine_transform(sitk.AffineTransform(T_PP.GetInverse()), T)
+
+
+                ## Get registration trafo for slices in physical 2D space (moving_2D -> fixed_2D)
+                # rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(
+                #     fixed_2D_sitk = slice_2D_ref_sitk, 
+                #     moving_2D_sitk = slice_3D_copy_sitk[:,:,0],
+                #     fixed_2D_sitk_mask = slice_2D_ref_sitk_mask, 
+                #     moving_2D_sitk_mask = slice_3D_copy_sitk_mask[:,:,0])
+
+
+                ## Get registration trafo for slices in physical 3D space
+                # T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
+
+                ## Update T_PI of slice s.t. it is aligned with slice_3D_ref
+                slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
 
         return None
+
+
 
     def _get_average_of_slice_neighbours(self, slices, slice_number):
         N_slices = len(slices)
