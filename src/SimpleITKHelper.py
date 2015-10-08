@@ -19,11 +19,13 @@ import numpy as np
 #
 # \param[in] sitk::simple::AffineTransform for inner and outer transform
 def get_composited_sitk_affine_transform(transform_outer, transform_inner):
-    A_inner = np.asarray(transform_inner.GetMatrix()).reshape(3,3)
+    dim = transform_outer.GetDimension()
+
+    A_inner = np.asarray(transform_inner.GetMatrix()).reshape(dim,dim)
     c_inner = np.asarray(transform_inner.GetCenter())
     t_inner = np.asarray(transform_inner.GetTranslation())
 
-    A_outer = np.asarray(transform_outer.GetMatrix()).reshape(3,3)
+    A_outer = np.asarray(transform_outer.GetMatrix()).reshape(dim,dim)
     c_outer = np.asarray(transform_outer.GetCenter())
     t_outer = np.asarray(transform_outer.GetTranslation())
 
@@ -35,10 +37,12 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
 
 
 def get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
+    dim = len(image_sitk.GetSize())
     spacing_sitk = np.array(image_sitk.GetSpacing())
     S_inv_sitk = np.diag(1/spacing_sitk)
 
-    A = np.array(affine_transform_sitk.GetMatrix()).reshape(3,3)
+    A = np.array(affine_transform_sitk.GetMatrix()).reshape(dim,dim)
+
     return A.dot(S_inv_sitk).flatten()
 
 
@@ -46,20 +50,26 @@ def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, imag
     """
     Important: Only tested for center=\0! Not clear how it shall be implemented,
             cf. Johnson2015a on page 551 vs page 107!
+
+    Mostly outcome of application of get_composited_sitk_affine_transform and first transform_inner is image. 
+    Therefore, center_composited is always zero on tested functions so far
     """
+    dim = len(image_sitk.GetSize())
+
     affine_center = np.array(affine_transform_sitk.GetCenter())
     affine_translation = np.array(affine_transform_sitk.GetTranslation())
     
-    R = np.array(affine_transform_sitk.GetMatrix()).reshape(3,3)
+    R = np.array(affine_transform_sitk.GetMatrix()).reshape(dim,dim)
 
     return affine_center + affine_translation 
     # return affine_center + affine_translation - R.dot(affine_center)
 
 
 def get_sitk_affine_matrix_from_sitk_image(image_sitk):
+    dim = len(image_sitk.GetSize())
     spacing_sitk = np.array(image_sitk.GetSpacing())
     S_sitk = np.diag(spacing_sitk)
-    A_sitk = np.array(image_sitk.GetDirection()).reshape(3,3)
+    A_sitk = np.array(image_sitk.GetDirection()).reshape(dim,dim)
 
     return A_sitk.dot(S_sitk).flatten()
 

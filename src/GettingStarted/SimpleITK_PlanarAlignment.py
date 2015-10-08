@@ -376,7 +376,7 @@ if __name__ == '__main__':
     """
     In-plane registration (2D)
     """
-    flag_rigid_alignment_in_plane = 1
+    flag_rigid_alignment_in_plane = 0
 
     ## not necessary but kept for future reference
     if flag_rigid_alignment_in_plane:
@@ -449,11 +449,55 @@ if __name__ == '__main__':
         print("angle_z = " + str(angle_z))
 
 
+    fixed = sitk.ReadImage("../.fixed.nii.gz",sitk.sitkFloat64)
+    moving = sitk.ReadImage("../.moving.nii.gz",sitk.sitkFloat64)
+    warped = sitk.ReadImage("../.moving_warped_NiftyReg.nii.gz",sitk.sitkFloat64)
+
+    spacing = np.array(fixed.GetSpacing())
+    dim = np.array(fixed.GetSize())
+
+    fixed_origin = np.array(fixed.GetOrigin())
+    moving_origin = np.array(moving.GetOrigin())
+    warped_origin = np.array(warped.GetOrigin())
+
+    transform = np.loadtxt("../.affine_matrix_NiftyReg.txt")
+    A = transform[0:-2,0:-2]
+    t_2D = transform[0:-2,-1]
+    angle_z = np.arccos(A[0,0])
+
+
+    S = np.diag(spacing)
+    S_inv = np.diag(1/spacing)
+
+    center_2D = S.dot(dim/2.)
+
+    # affine = sitk.AffineTransform(A.flatten(), t_2D, center_2D)
+    affine = sitk.Euler2DTransform(center_2D, -angle_z, t_2D)
+
+    warped_sitk = sitk.Resample(moving, fixed, affine.GetInverse(), sitk.sitkBSpline, 0.0, moving.GetPixelIDValue())
+
+    print("error = " + str(np.linalg.norm(sitk.GetArrayFromImage(warped_sitk-warped))))
+
+    fig = plt.figure(1)
+    plt.suptitle(np.linalg.norm(sitk.GetArrayFromImage(warped_sitk-warped)))
+    plt.subplot(1,3,1)
+    plt.imshow(sitk.GetArrayFromImage(warped_sitk), cmap="Greys_r")
+    plt.axis('off')
+
+    plt.subplot(1,3,2)
+    plt.imshow(sitk.GetArrayFromImage(warped), cmap="Greys_r")
+    plt.axis('off')
+    
+    plt.subplot(1,3,3)
+    plt.imshow(sitk.GetArrayFromImage(warped_sitk-warped), cmap="Greys_r")
+    plt.axis('off')
+    plt.show()
+
 
     """
     Unit tests:
 
     (Essentially all before not important but kept for just-in-case-lookups later on)
     """
-    print("\nUnit tests:\n--------------")
-    unittest.main()
+    # print("\nUnit tests:\n--------------")
+    # unittest.main()

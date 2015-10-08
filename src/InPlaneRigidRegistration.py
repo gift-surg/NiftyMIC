@@ -43,8 +43,8 @@ class InPlaneRigidRegistration:
         for i in range(0, self._N_stacks):
 
             # self._apply_in_plane_rigid_registration_2D_approach_01(self._stacks[i])
-            # self._apply_in_plane_rigid_registration_2D_approach_02(self._stacks[i])
-            self._apply_in_plane_rigid_registration_2D_approach_02_Alternative(self._stacks[i])
+            self._apply_in_plane_rigid_registration_2D_approach_02(self._stacks[i])
+            # self._apply_in_plane_rigid_registration_2D_approach_02_Alternative(self._stacks[i])
 
         return None
 
@@ -112,7 +112,7 @@ class InPlaneRigidRegistration:
         slices = stack.get_slices()
         N_slices = stack.get_number_of_slices()
 
-        iterations = 2
+        iterations = 1
         for iteration in range(0,iterations):
             # for j in np.concatenate((range(0, N_slices, 2),range(1, N_slices, 2))):
             for j in np.concatenate((range(1, N_slices, 2),range(0, N_slices, 2))):
@@ -158,17 +158,18 @@ class InPlaneRigidRegistration:
 
         return None
 
+
     def _apply_in_plane_rigid_registration_2D_approach_02_Alternative(self, stack):
         slices = stack.get_slices()
         N_slices = stack.get_number_of_slices()
 
         methods = ["NiftyReg", "FLIRT"]
-        method = methods[1]
+        method = methods[0]
 
-        iterations = 1
+        iterations = 2
         for iteration in range(0,iterations):
             for j in np.concatenate((range(1, N_slices, 2),range(0, N_slices, 2))):
-            # for j in range(20, 21, 2):
+            # for j in range(20, 22):
                 slice_3D = slices[j]
 
                 print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j+1,N_slices))
@@ -195,18 +196,16 @@ class InPlaneRigidRegistration:
                 sitk.WriteImage(slice_2D_ref_sitk, fixed+".nii.gz")
                 sitk.WriteImage(slice_2D_ref_sitk_mask, fixed_mask+".nii.gz")
 
-                ## Define variables used for registration
-                res_affine_image = moving + "_warped"
-                res_affine_matrix = ".affine_matrix"
-
-                ## Rigid registration
                 if method == "FLIRT":
-                    options = "-2D "
+                    res_affine_image = moving + "_warped_FLIRT"
+                    res_affine_matrix = ".affine_matrix_FLIRT"
+                    options = "-2D -cost mutualinfo "
+                        # "-refweight " + fixed_mask + ".nii.gz " + \
+                        # "-inweight " + moving_mask + ".nii.gz " + \
+
                     cmd = "flirt " + options + \
                         "-ref " + fixed + ".nii.gz " + \
                         "-in " + moving + ".nii.gz " + \
-                        "-refweight " + fixed_mask + ".nii.gz " + \
-                        "-inweight " + moving_mask + ".nii.gz " + \
                         "-out " + res_affine_image + ".nii.gz " + \
                         "-omat " + res_affine_matrix + ".txt"
                     sys.stdout.write("  Rigid registration (FLIRT) " + str(j+1) + "/" + str(N_slices) + " ... ")
@@ -217,10 +216,13 @@ class InPlaneRigidRegistration:
                     #  \param[in] -flo floating image
                     #  \param[out] -res affine registration of floating image
                     #  \param[out] -aff affine transformation matrix
+                    res_affine_image = moving + "_warped_NiftyReg"
+                    res_affine_matrix = ".affine_matrix_NiftyReg"
+
                     options = "-voff -rigOnly "
+                    # options = "-voff -platf Cuda=1 "
                         # "-rmask " + fixed_mask + ".nii.gz " + \
                         # "-fmask " + moving_mask + ".nii.gz " + \
-                    # options = "-voff -platf Cuda=1 "
                     cmd = "reg_aladin " + options + \
                         "-ref " + fixed + ".nii.gz " + \
                         "-flo " + moving + ".nii.gz " + \
@@ -236,48 +238,75 @@ class InPlaneRigidRegistration:
 
                 ## Read trafo and invert such that T: moving_2D -> fixed_3D
                 matrix = np.loadtxt(res_affine_matrix+".txt")
-                # matrix[0:2,:] *= -1
-                matrix = np.linalg.inv(matrix)
 
-                print matrix
+                ## Convert to SimpleITK format:
 
-                ## Convert to SimpleITK format
-                A = matrix[0:-1,0:-1]
-                t = matrix[0:-1,-1]
+                ## Negative representation of (x,y)-coordinates compared to nifti-header (cf. SimpleITK_PhysicalCoordinates.py) --> negative sign
+                t_2D = -matrix[0:-2,-1]
+                
+                ## NiftyReg uses mathematically negative representation for rotation!! --> negative sign
+                angle_z = -np.arccos(matrix[0,0])
+                
+                center_2D = (0,0)
 
-                # matrix[0:2,3] *= -1
-                # t[0:-1] *= -1
+                ## Obtain inverse translation
+                tmp_trafo = sitk.Euler2DTransform((0,0),-angle_z,(0,0))
+                t_2D_inv = tmp_trafo.TransformPoint(-t_2D)
 
-                A = A.flatten()
-
-
-                rigid_transform_3D = sitk.AffineTransform(A, t)
-
-                ## Extract affine transformation to transform from Image to Physical Space
-                T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(slice_3D.sitk)
+                ## inverse = R_inv(x-c) - R_inv(t) + c
+                rigid_transform_2D_inv = sitk.Euler2DTransform(center_2D, -angle_z, t_2D_inv)
 
                 ## Get transformation for 3D in-plane rigid transformation to update T_PI of slice
                 T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
 
-                T = sitkh.get_composited_sitk_affine_transform(T_PP,T_PI)
-                T = sitkh.get_composited_sitk_affine_transform(rigid_transform_3D, T)
-
-                T_PI_in_plane_rotation_3D = sitkh.get_composited_sitk_affine_transform(sitk.AffineTransform(T_PP.GetInverse()), T)
-
-
-                ## Get registration trafo for slices in physical 2D space (moving_2D -> fixed_2D)
-                # rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(
-                #     fixed_2D_sitk = slice_2D_ref_sitk, 
-                #     moving_2D_sitk = slice_3D_copy_sitk[:,:,0],
-                #     fixed_2D_sitk_mask = slice_2D_ref_sitk_mask, 
-                #     moving_2D_sitk_mask = slice_3D_copy_sitk_mask[:,:,0])
-
-
                 ## Get registration trafo for slices in physical 3D space
-                # T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
+                T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
 
                 ## Update T_PI of slice s.t. it is aligned with slice_3D_ref
                 slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
+
+                """
+                """
+
+                moving = slice_3D_copy_sitk[:,:,0]
+                fixed = slice_2D_ref_sitk
+                warped = sitk.ReadImage(res_affine_image +".nii.gz",sitk.sitkFloat64)
+
+                # print matrix
+
+                # spacing = np.array(fixed.GetSpacing())
+                # S = np.diag(spacing)
+                # S_inv = np.diag(1/spacing)
+
+
+                # A_test = transform[0:-2,0:-2]
+                # t_test = transform[0:-2,-1]
+
+                # dim = np.array(fixed.GetSize())
+                # center_test = (dim/2.)
+
+                # affine = sitk.AffineTransform(A_test.flatten(),t_test,center_test)
+
+                # warped_sitk = sitk.Resample(moving, fixed, affine, sitk.sitkBSpline, 0.0, moving.GetPixelIDValue())
+
+
+                # fig = plt.figure(1)
+                # plt.suptitle(np.linalg.norm(sitk.GetArrayFromImage(fixed-warped)))
+                # plt.subplot(1,3,1)
+                # plt.imshow(sitk.GetArrayFromImage(fixed), cmap="Greys_r")
+                # plt.axis('off')
+
+                # plt.subplot(1,3,2)
+                # plt.imshow(sitk.GetArrayFromImage(warped), cmap="Greys_r")
+                # plt.axis('off')
+                
+                # plt.subplot(1,3,3)
+                # plt.imshow(sitk.GetArrayFromImage(fixed-warped), cmap="Greys_r")
+                # plt.axis('off')
+                # plt.show()
+
+                """
+                """
 
         return None
 
@@ -377,27 +406,12 @@ class InPlaneRigidRegistration:
 
         return average_2D_slice_sitk, average_2D_slice_sitk_mask
 
-        # fig = plt.figure(1)
-        # # plt.suptitle("Slice %r/%r: error (norm) = %r" %(j+1,N_slices,np.linalg.norm(stacks_aligned_3D_nda[j,:,:]-stacks_aligned_2D_nda[j,:,:])))
-        # plt.subplot(1,3,1)
-        # plt.imshow(sitk.GetArrayFromImage(slice_2D_prev_align), cmap="Greys_r")
-        # plt.axis('off')
-
-        # plt.subplot(1,3,2)
-        # plt.imshow(sitk.GetArrayFromImage(slice_2D_next_align), cmap="Greys_r")
-        # plt.axis('off')
-        
-        # plt.subplot(1,3,3)
-        # plt.imshow(sitk.GetArrayFromImage(average_slice_2D), cmap="Greys_r")
-        # plt.axis('off')
-        # plt.show()
-
 
     def _in_plane_rigid_registration_2D(self, fixed_2D_sitk, moving_2D_sitk, fixed_2D_sitk_mask, moving_2D_sitk_mask):
 
         ## Set transform
-        # initial_transform = sitk.CenteredTransformInitializer(fixed_2D_sitk, moving_2D_sitk, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
-        initial_transform = sitk.Euler2DTransform()
+        initial_transform = sitk.CenteredTransformInitializer(fixed_2D_sitk, moving_2D_sitk, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+        # initial_transform = sitk.Euler2DTransform()
 
         registration_method = sitk.ImageRegistrationMethod()
 
@@ -430,9 +444,9 @@ class InPlaneRigidRegistration:
         """
         setup for the multi-resolution framework            
         """
-        # registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
-        # registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
-        # registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+        registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+        registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+        registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
 
         registration_method.SetInitialTransform(initial_transform)
 
@@ -457,11 +471,9 @@ class InPlaneRigidRegistration:
 
         ## Obtain inverse translation
         tmp_trafo = sitk.Euler2DTransform((0,0),-angle,(0,0))
-        translation_inv = tmp_trafo.TransformPoint((-translation_x, - translation_y))
+        translation_inv = tmp_trafo.TransformPoint((-translation_x, -translation_y))
 
-
-        # rigid_transform_2D_inv = sitk.AffineTransform(test.GetInverse())
-        ## math.stackexchange.com/questions/1234948/inverse-of-a-rigid-transformation
+        ## inverse = R_inv(x-c) - R_inv(t) + c
         rigid_transform_2D_inv = sitk.Euler2DTransform(center, -angle, translation_inv)
 
         return rigid_transform_2D_inv

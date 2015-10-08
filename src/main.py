@@ -21,16 +21,20 @@ def read_input_data(image_type):
     if image_type in ["fetal_neck"]:
         ## Fetal Neck Images:
         dir_input = "../data/fetal_neck/"
-        filenames = [
-            "20150115_161038s006a1001_crop",
-            "20150115_161038s003a1001_crop",
-            "20150115_161038s004a1001_crop",
-            "20150115_161038s005a1001_crop",
-            "20150115_161038s007a1001_crop",
-            "20150115_161038s5005a1001_crop",
-            "20150115_161038s5006a1001_crop",
-            "20150115_161038s5007a1001_crop"
-            ]
+        # filenames = [
+        #     "20150115_161038s006a1001_crop",
+        #     "20150115_161038s003a1001_crop",
+        #     "20150115_161038s004a1001_crop",
+        #     "20150115_161038s005a1001_crop",
+        #     "20150115_161038s007a1001_crop",
+        #     "20150115_161038s5005a1001_crop",
+        #     "20150115_161038s5006a1001_crop",
+        #     "20150115_161038s5007a1001_crop"
+        #     ]
+
+        # filenames = [str(i) for i in range(0, 8)]
+        filenames = [str(i) for i in range(0, 1)]
+
 
     elif image_type in ["kidney"]:
         ## Kidney Images:
@@ -45,14 +49,16 @@ def read_input_data(image_type):
         #     ]
 
         dir_input = "../data/kidney/"
-        filenames = [
-            "SENSEs2801a1028",
-            "SENSEs2701a1027",
-            "SENSEs2601a1026"
-            # "SENSEs2501a1025",
-            # "SENSEs2401a1024",
-            # "SENSEs2301a1023"
-            ]
+        # filenames = [
+        #     "SENSEs2801a1028",
+        #     "SENSEs2701a1027",
+        #     "SENSEs2601a1026",
+        #     "SENSEs2501a1025",
+        #     "SENSEs2401a1024",
+        #     "SENSEs2301a1023"
+        #     ]
+        filenames = [str(i) for i in range(0, 6)]
+
 
     else:
         ## Fetal Neck Images:
