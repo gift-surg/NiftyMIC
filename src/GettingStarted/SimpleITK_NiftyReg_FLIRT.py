@@ -6,68 +6,28 @@ import SimpleITK as sitk
 import nibabel as nib
 import numpy as np
 import unittest
-import matplotlib.pyplot as plt
 
 import os                       # used to execute terminal commands in python
 import sys
-# sys.path.append("../../backups/v1_20150915/")
 sys.path.append("../")
 
 # from FileAndImageHelpers import *
 # from SimpleITK_PhysicalCoordinates import *
 
+## Import modules from src-folder
 import SimpleITKHelper as sitkh
 
 
-def plot_compare_sitk_images(image_0, image_1, fig_number=1, flag_continue=0):
 
-    fig = plt.figure(fig_number)
-    plt.suptitle("intensity error norm = " + str(np.linalg.norm(sitk.GetArrayFromImage(image_0-image_1))))
-    plt.subplot(1,3,1)
-    plt.imshow(sitk.GetArrayFromImage(image_0), cmap="Greys_r")
-    plt.title("image_0")
-    plt.axis('off')
-
-    plt.subplot(1,3,2)
-    plt.imshow(sitk.GetArrayFromImage(image_1), cmap="Greys_r")
-    plt.title("image_1")
-    plt.axis('off')
-    
-    plt.subplot(1,3,3)
-    plt.imshow(sitk.GetArrayFromImage(image_0-image_1), cmap="Greys_r")
-    plt.title("image_0 - image_1")
-    plt.axis('off')
-
-    if flag_continue == 0:
-        plt.show()
-    else:
-        plt.show(block=False)       # does not pause, but needs plt.show() at end 
-                                    # of file to be visible
-
-
-def get_inverse_of_rigid_transform_2D(rigid_transform_2D):
-    ## Extract parameters of 2D registration
-    angle, translation_x, translation_y = rigid_transform_2D.GetParameters()
-    center = rigid_transform_2D.GetFixedParameters()
-
-    ## Create transformation used to align moving -> fixed
-
-    ## Obtain inverse translation
-    tmp_trafo = sitk.Euler2DTransform((0,0),-angle,(0,0))
-    translation_inv = tmp_trafo.TransformPoint((-translation_x, -translation_y))
-
-    ## inverse = R_inv(x-c) - R_inv(t) + c
-    rigid_transform_2D_inv = sitk.Euler2DTransform(center, -angle, translation_inv)
-
-    return rigid_transform_2D_inv
-
-
+"""
+Functions
+"""
 def get_transformed_image(image_init, rigid_transform_2D):
     image = sitk.Image(image_init)
     
     affine_transform = sitkh.get_sitk_affine_transform_from_sitk_image(image)
 
-    transform = sitkh.get_composited_sitk_affine_transform(get_inverse_of_rigid_transform_2D(rigid_transform_2D), affine_transform)
+    transform = sitkh.get_composited_sitk_affine_transform(sitkh.get_inverse_of_sitk_rigid_registration_transform(rigid_transform_2D), affine_transform)
 
     direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(transform, image)
     origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(transform, image)
@@ -78,36 +38,98 @@ def get_transformed_image(image_init, rigid_transform_2D):
     return image
 
 
-def get_sitk_registration_transform(fixed, moving):
+def get_sitk_rigid_registration_transform_2D(fixed_2D, moving_2D):
 
-    ## Registration with SimpleITK:
-    # initial_transform = sitk.Euler2DTransform()
-    initial_transform = sitk.CenteredTransformInitializer(
-            fixed, moving, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
-
+    ## Instantiate interface method to the modular ITKv4 registration framework
     registration_method = sitk.ImageRegistrationMethod()
 
-    registration_method.SetMetricAsCorrelation()
-    registration_method.SetInterpolator(sitk.sitkLinear)
-    # registration_method.SetOptimizerAsConjugateGradientLineSearch(
-        # learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
+    ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
+    initial_transform = sitk.CenteredTransformInitializer(fixed_2D, moving_2D, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
+    # initial_transform = sitk.Euler2DTransform()
 
-    registration_method.SetOptimizerAsGradientDescentLineSearch(
-        learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
-    # registration_method.SetOptimizerAsRegularStepGradientDescent(
-    #     learningRate=1, minStep=1, numberOfIterations=100)
-
-    registration_method.SetOptimizerScalesFromPhysicalShift()
-    
-    ## Multi-resolution framework
-    registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
-    registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
-    registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()    
-    
+    ## Set the initial transform and parameters to optimize
     registration_method.SetInitialTransform(initial_transform)
 
+    ## Set an image masks in order to restrict the sampled points for the metric
+    # registration_method.SetMetricFixedMask(fixed_2D_mask)
+    # registration_method.SetMetricMovingMask(moving_2D_mask)
+
+    ## Set percentage of pixels sampled for metric evaluation
+    # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
+
+    ## Set interpolator to use
+    registration_method.SetInterpolator(sitk.sitkLinear)
+
+    """
+    similarity metric settings
+    """
+    ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
+    # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
+    
+    ## Use negative normalized cross correlation image metric
+    # registration_method.SetMetricAsCorrelation()
+
+    ## Use demons image metric
+    # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
+
+    ## Use mutual information between two images
+    # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=50, varianceForJointPDFSmoothing=3)
+    
+    ## Use the mutual information between two images to be registered using the method of Mattes2001
+    # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+
+    ## Use negative means squares image metric
+    registration_method.SetMetricAsMeanSquares()
+    
+    """
+    optimizer settings
+    """
+    ## Set optimizer to Nelder-Mead downhill simplex algorithm
+    # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
+
+    ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
+    # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
+
+    ## Set the optimizer to sample the metric at regular steps
+    # registration_method.SetOptimizerAsExhaustive(numberOfSteps=50, stepLength=1.0)
+
+    ## Gradient descent optimizer with a golden section line search
+    # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
+
+    ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
+    # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
+
+    ## Regular Step Gradient descent optimizer
+    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1, numberOfIterations=100)
+
+    ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
+    ## (Many more possibilities to estimate scales)
+    registration_method.SetOptimizerScalesFromPhysicalShift()
+    
+    """
+    setup for the multi-resolution framework            
+    """
+    ## Set the shrink factors for each level where each level has the same shrink factor for each dimension
+    registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+
+    ## Set the sigmas of Gaussian used for smoothing at each level
+    registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+
+    ## Enable the smoothing sigmas for each level in physical units (default) or in terms of voxels (then *UnitsOff instead)
+    registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+
+    ## Connect all of the observers so that we can perform plotting during registration
+    # registration_method.AddCommand(sitk.sitkStartEvent, start_plot)
+    # registration_method.AddCommand(sitk.sitkEndEvent, end_plot)
+    # registration_method.AddCommand(sitk.sitkMultiResolutionIterationEvent, update_multires_iterations) 
+    # registration_method.AddCommand(sitk.sitkIterationEvent, lambda: plot_values(registration_method))
+
+    # print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
+    # print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+    # print("\n")
+
     ## Execute 2D registration
-    final_transform_2D_sitk = registration_method.Execute(fixed, moving) 
+    final_transform_2D_sitk = registration_method.Execute(fixed_2D, moving_2D) 
     print("SimpleITK Image Registration Method:")
     print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
     print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
@@ -122,18 +144,22 @@ def get_NiftyReg_registration_transform(fixed_sitk, moving_sitk):
     res_affine_image = moving + "_warped_NiftyReg"
     res_affine_matrix = "affine_matrix_NiftyReg"
 
-    sitk.WriteImage(fixed_sitk, fixed+".nii.gz")
-    sitk.WriteImage(moving_sitk, moving+".nii.gz")
+    ## Save images prior the use of NiftyReg
+    dir_tmp = ".tmp/" 
+    os.system("mkdir -p " + dir_tmp)
+
+    sitk.WriteImage(fixed_sitk, dir_tmp + fixed+".nii.gz")
+    sitk.WriteImage(moving_sitk, dir_tmp + moving+".nii.gz")
 
     options = "-voff -rigOnly "
     # options = "-voff -platf Cuda=1 "
         # "-rmask " + fixed_mask + ".nii.gz " + \
         # "-fmask " + moving_mask + ".nii.gz " + \
     cmd = "reg_aladin " + options + \
-        "-ref " + fixed + ".nii.gz " + \
-        "-flo " + moving + ".nii.gz " + \
-        "-res " + res_affine_image + ".nii.gz " + \
-        "-aff " + res_affine_matrix + ".txt"
+        "-ref " + dir_tmp + fixed + ".nii.gz " + \
+        "-flo " + dir_tmp + moving + ".nii.gz " + \
+        "-res " + dir_tmp + res_affine_image + ".nii.gz " + \
+        "-aff " + dir_tmp + res_affine_matrix + ".txt"
     sys.stdout.write("  Rigid registration (NiftyReg reg_aladin) ... ")
     
     sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
@@ -142,7 +168,7 @@ def get_NiftyReg_registration_transform(fixed_sitk, moving_sitk):
     print "done"
 
     ## Read registration matrix
-    transform = np.loadtxt(res_affine_matrix+".txt")
+    transform = np.loadtxt(dir_tmp+res_affine_matrix+".txt")
 
     ## Extract information of transform:
     A = transform[0:-2,0:-2]
@@ -162,13 +188,9 @@ def get_NiftyReg_registration_transform(fixed_sitk, moving_sitk):
     ## Variant 2
     # final_transform_2D_NiftyReg = sitk.Euler2DTransform((0,0), angle, t)
 
-    ## Delete files used for NiftyReg
-    # cmd = "rm " + \
-    #         fixed + ".nii.gz " + \
-    #         moving + ".nii.gz " + \
-    #         res_affine_image + ".nii.gz " + \
-    #         res_affine_matrix + ".txt"
-    # os.system(cmd)
+    ## Delete tmp-folder
+    cmd = "rm -rf " + dir_tmp
+    os.system(cmd)
 
     return final_transform_2D_NiftyReg
 
@@ -183,18 +205,22 @@ def get_FLIRT_registration_transform(fixed_sitk, moving_sitk):
     res_affine_image = moving + "_warped_FLIRT"
     res_affine_matrix = "affine_matrix_FLIRT"
 
-    sitk.WriteImage(fixed_sitk, fixed+".nii.gz")
-    sitk.WriteImage(moving_sitk, moving+".nii.gz")
+    ## Save images prior the use of NiftyReg
+    dir_tmp = ".tmp/" 
+    os.system("mkdir -p " + dir_tmp)
 
-    options = "-2D -v -cost normmi -searchcost normmi -init affine_matrix_FLIRT.txt "
+    sitk.WriteImage(fixed_sitk, dir_tmp+fixed+".nii.gz")
+    sitk.WriteImage(moving_sitk, dir_tmp+moving+".nii.gz")
+
+    options = "-2D "
     # options = ""
         # "-refweight " + fixed_mask + ".nii.gz " + \
         # "-inweight " + moving_mask + ".nii.gz " + \
         # "-out " + res_affine_image + ".nii.gz " + \
     cmd = "flirt " + options + \
-        "-in " + moving + ".nii.gz " + \
-        "-ref " + fixed + ".nii.gz " + \
-        "-omat " + res_affine_matrix + ".txt"
+        "-in " + dir_tmp + moving + ".nii.gz " + \
+        "-ref " + dir_tmp + fixed + ".nii.gz " + \
+        "-omat " + dir_tmp + res_affine_matrix + ".txt"
     sys.stdout.write("  Rigid registration (FLIRT) ... ")
     
     sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
@@ -203,7 +229,7 @@ def get_FLIRT_registration_transform(fixed_sitk, moving_sitk):
     print "done"
 
     ## Read registration matrix
-    transform = np.loadtxt(res_affine_matrix+".txt")
+    transform = np.loadtxt(dir_tmp+res_affine_matrix+".txt")
 
     ## Extract information of transform:
     A = transform[0:-2,0:-2]
@@ -238,6 +264,10 @@ def get_FLIRT_registration_transform(fixed_sitk, moving_sitk):
 
     # print final_transform_2D_FLIRT
 
+    ## Delete tmp-folder
+    cmd = "rm -rf " + dir_tmp
+    os.system(cmd)
+
     return final_transform_2D_FLIRT
 
 
@@ -258,7 +288,7 @@ class TestUM(unittest.TestCase):
         # center = (0,0)
 
         ## Load image
-        fixed = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
+        fixed = sitk.ReadImage(dir_input + filename_2D + ".nii.gz", sitk.sitkFloat64)
 
         ## Generate rigid transformation
         rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
@@ -273,9 +303,10 @@ class TestUM(unittest.TestCase):
         moving_warped_resampled = sitk.Resample(moving_warped, moving_resampled, sitk.Euler2DTransform(), sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
 
         ## Optional: Plot outcome
-        # plot_compare_sitk_images(moving_warped_resampled, moving_resampled)
+        # sitkh.plot_compare_sitk_2D_images(moving_warped_resampled, moving_resampled)
 
-        ## Test alginment
+        ## Test whether resampling directly the image via sitk.Resample with provided rigid_transform_2d yields the
+        ## same result as transforming first and then resampling with provided identity transform:
         self.assertEqual(np.around(
             np.linalg.norm( sitk.GetArrayFromImage(moving_warped_resampled - moving_resampled) )
             , decimals = accuracy), 0 )
@@ -288,7 +319,7 @@ class TestUM(unittest.TestCase):
         # center = (0,0)
 
         ## Load image
-        fixed = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
+        fixed = sitk.ReadImage(dir_input + filename_2D + ".nii.gz", sitk.sitkFloat64)
 
         ## Generate rigid transformation
         rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
@@ -299,28 +330,32 @@ class TestUM(unittest.TestCase):
 
         ## Optional: Plot
         # moving_resampled = sitk.Resample(moving, fixed, sitk.Euler2DTransform(), sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
-        # plot_compare_sitk_images(fixed, moving_resampled)
+        # sitkh.plot_compare_sitk_2D_images(fixed, moving_resampled)
 
 
         ## Register with SimpleITK:
-        final_transform_2D_sitk = get_sitk_registration_transform(fixed, moving)
+        final_transform_2D_sitk = get_sitk_rigid_registration_transform_2D(fixed, moving)
 
         ## Resample result:
         ## Transform fixed into moving space and then resample there to bring image back to fixed space
         warped_sitk_registration = sitk.Resample(moving, fixed, final_transform_2D_sitk, sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
-
-        ## Optional: Plot outcome
-        plot_compare_sitk_images(fixed, warped_sitk_registration)
+       
         
         ## Test alginment
         # dim_x, dim_y = np.array(fixed.GetSize())
         # center_x, center_y = dim_x/2, dim_y/2
-        self.assertEqual(np.around(
-            np.linalg.norm( sitk.GetArrayFromImage(warped_sitk_registration - fixed) )
-            # np.linalg.norm( sitk.GetArrayFromImage(warped_sitk_registration - fixed)
-            #     [center_x - dim_x/4 : center_x + dim_x/4, center_y - dim_y/4 : center_y + dim_y/4] )
-            , decimals = accuracy), 0 )
+        try:
+            self.assertEqual(np.around(
+                np.linalg.norm( sitk.GetArrayFromImage(warped_sitk_registration - fixed) )
+                # np.linalg.norm( sitk.GetArrayFromImage(warped_sitk_registration - fixed)
+                #     [center_x - dim_x/4 : center_x + dim_x/4, center_y - dim_y/4 : center_y + dim_y/4] )
+                , decimals = accuracy), 0 )
 
+        except Exception as e:
+            print(self.id() + " failed and image is plotted for further investigation")
+            ## Plot outcome
+            sitkh.plot_compare_sitk_2D_images(fixed, warped_sitk_registration)
+            # self.skipTest(MyTestCase)
 
 
     def test_03_NifyReg_Registration(self):
@@ -338,35 +373,37 @@ if __name__ == '__main__':
     ## Specify data
     dir_input = "data/"
     dir_output = "results/"
-    filename =  "BrainWeb_2D"
-    # filename =  "placenta_s"
-    # filename =  "kidney_s"
-    # filename =  "fetal_brain_a"
-    # filename =  "fetal_brain_c"
-    # filename =  "fetal_brain_s"
+    filename_2D =  "BrainWeb_2D"
+    # filename_3D =  "placenta_s"
+    # filename_3D =  "kidney_s"
+    # filename_3D =  "fetal_brain_a"
+    # filename_3D =  "fetal_brain_c"
+    filename_3D =  "fetal_brain_s"
 
     accuracy = 6 # decimal places for accuracy of unit tests
-
-    """
-    Unit tests:
-    """
-    print("\nUnit tests:\n--------------")
-    # unittest.main()
 
 
     """
     Playground
     """
-    # angle = 0
-    angle = np.pi/20
-    # translation = (1,20)
-    translation = (0,0)
+    angle = 0
+    # angle = np.pi/20
+    translation = (1,2)
+    # translation = (0,0)
     center = (30,40)
     # center = (0,0)
 
+    print("Chosen parameters to get moving image:")
+    print("  translation =  (%r,%r) " %(translation))
+    print("  angle       =  %r deg" %(angle*180/np.pi))
+    print("  center      =  (%r,%r) " %(center))
+
 
     ## Load image
-    fixed = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
+    fixed = sitk.ReadImage(dir_input + filename_3D + ".nii.gz", sitk.sitkFloat64)
+
+    slice_number = 10
+    fixed = fixed[:,:,slice_number]
 
     ## Generate test transformation:
     rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
@@ -382,10 +419,10 @@ if __name__ == '__main__':
     # final_transform_2D = get_sitk_registration_transform(fixed, moving)
 
     ## Rigid Registration NiftyReg:
-    # final_transform_2D = get_NiftyReg_registration_transform(fixed, moving)
+    final_transform_2D = get_NiftyReg_registration_transform(fixed, moving)
 
     ## Rigid Registration FLIRT:
-    final_transform_2D = get_FLIRT_registration_transform(fixed, moving)
+    # final_transform_2D = get_FLIRT_registration_transform(fixed, moving)
 
 
     """
@@ -398,13 +435,14 @@ if __name__ == '__main__':
     """
     ## Optional: Plot
     # moving_resampled = sitk.Resample(moving, fixed, sitk.Euler2DTransform(), sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
-    # plot_compare_sitk_images(fixed, moving_resampled,1,1)
+    # sitkh.plot_compare_sitk_2D_images(fixed, moving_resampled,1,1)
 
     ## Optional: Plot outcome
-    plot_compare_sitk_images(fixed, warped_registration,2)
+    sitkh.plot_compare_sitk_2D_images(fixed, warped_registration,2)
 
 
-
-    print angle*180/np.pi
-
-
+    """
+    Unit tests:
+    """
+    print("\nUnit tests:\n--------------")
+    # unittest.main()

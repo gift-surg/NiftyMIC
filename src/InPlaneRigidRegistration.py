@@ -26,6 +26,8 @@ class InPlaneRigidRegistration:
         self._N_stacks = stack_manager.get_number_of_stacks()
 
         self._resampled_sitk_stacks_after_in_plane_alignment = [None]*len(self._stacks)
+        self._resampled_sitk_stack_masks_after_in_plane_alignment = [None]*len(self._stacks)
+
         self._UT_2D_resampled_stacks = [None]*len(self._stacks)
 
         self._run_in_plane_rigid_registration_2D_sitk_2D()
@@ -43,8 +45,8 @@ class InPlaneRigidRegistration:
         for i in range(0, self._N_stacks):
 
             # self._apply_in_plane_rigid_registration_2D_approach_01(self._stacks[i])
-            self._apply_in_plane_rigid_registration_2D_approach_02(self._stacks[i])
-            # self._apply_in_plane_rigid_registration_2D_approach_02_Alternative(self._stacks[i])
+            # self._apply_in_plane_rigid_registration_2D_approach_02(self._stacks[i])
+            self._apply_in_plane_rigid_registration_2D_approach_02_Alternative(self._stacks[i])
 
         return None
 
@@ -118,7 +120,7 @@ class InPlaneRigidRegistration:
             for j in np.concatenate((range(1, N_slices, 2),range(0, N_slices, 2))):
                 slice_3D = slices[j]
 
-                print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j+1,N_slices))
+                print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j,N_slices-1))
 
                 ## Get copy of slices aligned to physical coordinate system
                 slice_3D_copy_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(slice_3D)
@@ -144,8 +146,8 @@ class InPlaneRigidRegistration:
                 rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(
                     fixed_2D_sitk = slice_2D_ref_sitk, 
                     moving_2D_sitk = slice_3D_copy_sitk[:,:,0],
-                    fixed_2D_sitk_mask = slice_2D_ref_sitk_mask, 
-                    moving_2D_sitk_mask = slice_3D_copy_sitk_mask[:,:,0])
+                    fixed_2D_sitk_mask = sitkh.check_sitk_mask_2D(slice_2D_ref_sitk_mask), 
+                    moving_2D_sitk_mask = sitkh.check_sitk_mask_2D(slice_3D_copy_sitk_mask[:,:,0]))
 
                 ## Get transformation for 3D in-plane rigid transformation to update T_PI of slice
                 T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
@@ -166,13 +168,14 @@ class InPlaneRigidRegistration:
         methods = ["NiftyReg", "FLIRT"]
         method = methods[0]
 
-        iterations = 2
+        iterations = 1
         for iteration in range(0,iterations):
-            for j in np.concatenate((range(1, N_slices, 2),range(0, N_slices, 2))):
-            # for j in range(20, 22):
+            # for j in np.concatenate((range(1, N_slices, 2),range(0, N_slices, 2))):
+            for j in range(1, N_slices, 2):
+            # for j in range(24, 25):
                 slice_3D = slices[j]
 
-                print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j+1,N_slices))
+                print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j,N_slices-1))
 
                 ## Get copy of slices aligned to physical coordinate system
                 slice_3D_copy_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(slice_3D)
@@ -186,29 +189,40 @@ class InPlaneRigidRegistration:
                 slice_3D_copy_sitk_mask.SetDirection(slice_3D_copy_sitk.GetDirection())
 
                 ## Save images prior the use of NiftyReg
-                moving = ".moving"
-                moving_mask = ".moving_mask"
-                fixed = ".fixed"
-                fixed_mask = ".fixed_mask"
+                dir_tmp = ".tmp/" 
+                os.system("mkdir -p " + dir_tmp)
 
-                sitk.WriteImage(slice_3D_copy_sitk[:,:,0], moving+".nii.gz")
-                sitk.WriteImage(slice_3D_copy_sitk_mask[:,:,0], moving_mask+".nii.gz")
-                sitk.WriteImage(slice_2D_ref_sitk, fixed+".nii.gz")
-                sitk.WriteImage(slice_2D_ref_sitk_mask, fixed_mask+".nii.gz")
+                moving_sitk_2D = slice_3D_copy_sitk[:,:,0]
+                moving_sitk_2D_mask = sitkh.check_sitk_mask_2D(slice_3D_copy_sitk_mask[:,:,0])
+
+                fixed_sitk_2D = slice_2D_ref_sitk
+                fixed_sitk_2D_mask = sitkh.check_sitk_mask_2D(slice_2D_ref_sitk_mask)
+
+                moving_str = str(j) + "_moving" 
+                moving_mask_str = str(j) +"_moving_mask"
+                fixed_str = str(j) + "_fixed"
+                fixed_mask_str = str(j) + "_fixed_mask"
+
+                sitk.WriteImage(moving_sitk_2D, dir_tmp+moving_str+".nii.gz")
+                sitk.WriteImage(moving_sitk_2D_mask, dir_tmp+moving_mask_str+".nii.gz")
+                sitk.WriteImage(fixed_sitk_2D, dir_tmp+fixed_str+".nii.gz")
+                sitk.WriteImage(fixed_sitk_2D_mask, dir_tmp+fixed_mask_str+".nii.gz")
 
                 if method == "FLIRT":
-                    res_affine_image = moving + "_warped_FLIRT"
-                    res_affine_matrix = ".affine_matrix_FLIRT"
+                    res_affine_image = dir_tmp + moving_str + "_warped_FLIRT_" + str(j)
+                    res_affine_matrix = dir_tmp + ".affine_matrix_FLIRT_" + str(j)
+
                     options = "-2D -cost mutualinfo "
-                        # "-refweight " + fixed_mask + ".nii.gz " + \
-                        # "-inweight " + moving_mask + ".nii.gz " + \
+                        # "-refweight " + fixed_mask_str + ".nii.gz " + \
+                        # "-inweight " + moving_mask_str + ".nii.gz " + \
 
                     cmd = "flirt " + options + \
-                        "-ref " + fixed + ".nii.gz " + \
-                        "-in " + moving + ".nii.gz " + \
-                        "-out " + res_affine_image + ".nii.gz " + \
-                        "-omat " + res_affine_matrix + ".txt"
+                        "-ref " + dir_tmp + fixed_str + ".nii.gz " + \
+                        "-in " + dir_tmp + moving_str + ".nii.gz " + \
+                        "-out " + dir_tmp + res_affine_image + ".nii.gz " + \
+                        "-omat " + dir_tmp + res_affine_matrix + ".txt"
                     sys.stdout.write("  Rigid registration (FLIRT) " + str(j+1) + "/" + str(N_slices) + " ... ")
+
 
                 else:
                     ## NiftyReg: Global affine registration of reference image:
@@ -216,29 +230,34 @@ class InPlaneRigidRegistration:
                     #  \param[in] -flo floating image
                     #  \param[out] -res affine registration of floating image
                     #  \param[out] -aff affine transformation matrix
-                    res_affine_image = moving + "_warped_NiftyReg"
-                    res_affine_matrix = ".affine_matrix_NiftyReg"
+                    res_affine_image = moving_str + "_warped_NiftyReg"
+                    res_affine_matrix = str(j) + "_affine_matrix_NiftyReg"
 
                     options = "-voff -rigOnly "
-                    # options = "-voff -platf Cuda=1 "
-                        # "-rmask " + fixed_mask + ".nii.gz " + \
-                        # "-fmask " + moving_mask + ".nii.gz " + \
+                    # options = "-voff -platf 1 "
                     cmd = "reg_aladin " + options + \
-                        "-ref " + fixed + ".nii.gz " + \
-                        "-flo " + moving + ".nii.gz " + \
-                        "-res " + res_affine_image + ".nii.gz " + \
-                        "-aff " + res_affine_matrix + ".txt"
+                        "-ref " + dir_tmp + fixed_str + ".nii.gz " + \
+                        "-flo " + dir_tmp + moving_str + ".nii.gz " + \
+                        "-rmask " + dir_tmp + fixed_mask_str + ".nii.gz " + \
+                        "-fmask " + dir_tmp + moving_mask_str + ".nii.gz " + \
+                        "-res " + dir_tmp + res_affine_image + ".nii.gz " + \
+                        "-aff " + dir_tmp + res_affine_matrix + ".txt "
+                    print(cmd)
                     sys.stdout.write("  Rigid registration (NiftyReg reg_aladin) " + str(j+1) + "/" + str(N_slices) + " ... ")
 
-                # print(cmd)
                 sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
-                # print(cmd)
                 os.system(cmd)
                 print "done"
 
-                ## Read trafo and invert such that T: moving_2D -> fixed_3D
-                matrix = np.loadtxt(res_affine_matrix+".txt")
+                """
+                ## Test within console
+                # reg_aladin -rigOnly -ref .tmp/${N}_fixed.nii.gz -flo .tmp/${N}_moving.nii.gz -rmask .tmp/${N}_fixed_mask.nii.gz -fmask .tmp/${N}_moving_mask.nii.gz -res .tmp/${N}_moving_warped_NiftyReg.nii.gz -aff .tmp/${N}_affine_matrix_NiftyReg.txt; N=11;
+                """
 
+                ## Read trafo and invert such that T: moving_2D -> fixed_3D
+                matrix = np.loadtxt(dir_tmp+res_affine_matrix+".txt")
+
+                print matrix
                 ## Convert to SimpleITK format:
 
                 ## Negative representation of (x,y)-coordinates compared to nifti-header (cf. SimpleITK_PhysicalCoordinates.py) --> negative sign
@@ -270,7 +289,7 @@ class InPlaneRigidRegistration:
 
                 moving = slice_3D_copy_sitk[:,:,0]
                 fixed = slice_2D_ref_sitk
-                warped = sitk.ReadImage(res_affine_image +".nii.gz",sitk.sitkFloat64)
+                warped = sitk.ReadImage(dir_tmp+res_affine_image +".nii.gz",sitk.sitkFloat64)
 
                 # print matrix
 
@@ -361,94 +380,109 @@ class InPlaneRigidRegistration:
             slice_2D_next_align_warped = sitk.Resample(slice_2D_next_align, slice_2D_prev_align, sitk.Euler2DTransform(), sitk.sitkLinear, 0.0, slice_2D_next_align.GetPixelIDValue())
 
             ## Masks:
-            # average_3D_slice_sitk_mask = sitk.Image(slice_3D_next.sitk_mask)
-            # average_3D_slice_sitk_mask.SetOrigin(average_3D_slice_sitk.GetOrigin())
-            # average_3D_slice_sitk_mask.SetDirection(average_3D_slice_sitk.GetDirection())
-
-            # average_2D_slice_sitk = average_3D_slice_sitk[:,:,0]
-            # average_2D_slice_sitk_mask = average_3D_slice_sitk_mask[:,:,0]
-
-
             slice_3D_prev_align_mask = sitk.Image(slice_3D_prev.sitk_mask)
-            slice_3D_next_align_mask = sitk.Image(slice_3D_next.sitk_mask)
-
             slice_3D_prev_align_mask.SetOrigin(slice_3D_prev_align.GetOrigin())
             slice_3D_prev_align_mask.SetDirection(slice_3D_prev_align.GetDirection())
+            slice_2D_prev_align_mask = slice_3D_prev_align_mask[:,:,0]
 
+            slice_3D_next_align_mask = sitk.Image(slice_3D_next.sitk_mask)
             slice_3D_next_align_mask.SetOrigin(slice_3D_next_align.GetOrigin())
             slice_3D_next_align_mask.SetDirection(slice_3D_next_align.GetDirection())
-
-            slice_2D_prev_align_mask = slice_3D_prev_align_mask[:,:,0]
             slice_2D_next_align_mask = slice_3D_next_align_mask[:,:,0]
 
             slice_2D_next_align_mask_warped = sitk.Resample(slice_2D_next_align_mask, slice_2D_prev_align_mask, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_next_align_mask.GetPixelIDValue())
 
+            ## Compute average of images
+            average_2D_slice_sitk =  ( slice_2D_prev_align + slice_2D_next_align_warped )/2.
 
-            ## Compute average
-            average_2D_slice_sitk =  (slice_2D_prev_align + slice_2D_next_align_warped)/2.
-
-            average_2D_slice_sitk_mask_nda = np.round((sitk.GetArrayFromImage(slice_2D_prev_align_mask)+sitk.GetArrayFromImage(slice_2D_next_align_mask_warped)/2.))
-
+            ## Compute average of masks
+            average_2D_slice_sitk_mask_nda = np.round(
+                ( sitk.GetArrayFromImage(slice_2D_prev_align_mask) + sitk.GetArrayFromImage(slice_2D_next_align_mask_warped) )/2.
+                )
             average_2D_slice_sitk_mask = sitk.GetImageFromArray(average_2D_slice_sitk_mask_nda)
             average_2D_slice_sitk_mask.CopyInformation(slice_2D_prev_align_mask)
-
-            # average_2D_slice_sitk_mask = (slice_2D_prev_align_mask + slice_2D_next_align_mask_warped)/2
-
-            # tmp = sitk.GetArrayFromImage(average_2D_slice_sitk)
-            # tmp_mask = sitk.GetArrayFromImage(average_2D_slice_sitk_mask)
-
-            # plt.subplot(1,2,1)
-            # plt.imshow(sitk.GetArrayFromImage(slice_2D_prev_align_mask), cmap="Greys_r")
-
-            # plt.subplot(1,2,2)
-            # plt.imshow(sitk.GetArrayFromImage(slice_2D_next_align_mask), cmap="Greys_r")
-            # plt.show()
 
         return average_2D_slice_sitk, average_2D_slice_sitk_mask
 
 
     def _in_plane_rigid_registration_2D(self, fixed_2D_sitk, moving_2D_sitk, fixed_2D_sitk_mask, moving_2D_sitk_mask):
+        ## Instantiate interface method to the modular ITKv4 registration framework
+        registration_method = sitk.ImageRegistrationMethod()
 
-        ## Set transform
-        initial_transform = sitk.CenteredTransformInitializer(fixed_2D_sitk, moving_2D_sitk, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+        ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
+        initial_transform = sitk.CenteredTransformInitializer(fixed_2D_sitk, moving_2D_sitk, sitk.Euler2DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
         # initial_transform = sitk.Euler2DTransform()
 
-        registration_method = sitk.ImageRegistrationMethod()
+        ## Set the initial transform and parameters to optimize
+        registration_method.SetInitialTransform(initial_transform)
+
+        ## Set an image masks in order to restrict the sampled points for the metric
+        registration_method.SetMetricFixedMask(fixed_2D_sitk_mask)
+        registration_method.SetMetricMovingMask(moving_2D_sitk_mask)
+
+        ## Set percentage of pixels sampled for metric evaluation
+        # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
+
+        ## Set interpolator to use
+        registration_method.SetInterpolator(sitk.sitkLinear)
 
         """
         similarity metric settings
         """
-        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5) #set unsigned int radius
-        registration_method.SetMetricAsCorrelation()
-        # registration_method.SetMetricAsDemons()
-        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=50, varianceForJointPDFSmoothing=3)
+        ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
+        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
+        
+        ## Use negative normalized cross correlation image metric
+        # registration_method.SetMetricAsCorrelation()
+
+        ## Use demons image metric
+        # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
+
+        ## Use mutual information between two images
+        registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=50, varianceForJointPDFSmoothing=3)
+        
+        ## Use the mutual information between two images to be registered using the method of Mattes2001
         # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+
+        ## Use negative means squares image metric
         # registration_method.SetMetricAsMeanSquares()
-
-        registration_method.SetMetricFixedMask(fixed_2D_sitk_mask)
-        registration_method.SetMetricMovingMask(moving_2D_sitk_mask)
-
-        # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
-
-        registration_method.SetInterpolator(sitk.sitkLinear)
         
         """
         optimizer settings
         """
-        # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
-        registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
-        # registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1, numberOfIterations=100)
+        ## Set optimizer to Nelder-Mead downhill simplex algorithm
+        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
 
+        ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
+        # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
+
+        ## Set the optimizer to sample the metric at regular steps
+        # registration_method.SetOptimizerAsExhaustive(numberOfSteps=50, stepLength=1.0)
+
+        ## Gradient descent optimizer with a golden section line search
+        # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
+
+        ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
+        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
+
+        ## Regular Step Gradient descent optimizer
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1, numberOfIterations=100)
+
+        ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
+        ## (Many more possibilities to estimate scales)
         registration_method.SetOptimizerScalesFromPhysicalShift()
         
         """
         setup for the multi-resolution framework            
         """
+        ## Set the shrink factors for each level where each level has the same shrink factor for each dimension
         registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
-        registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
-        registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
 
-        registration_method.SetInitialTransform(initial_transform)
+        ## Set the sigmas of Gaussian used for smoothing at each level
+        registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+
+        ## Enable the smoothing sigmas for each level in physical units (default) or in terms of voxels (then *UnitsOff instead)
+        registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
 
         ## Connect all of the observers so that we can perform plotting during registration
         # registration_method.AddCommand(sitk.sitkStartEvent, start_plot)
@@ -463,20 +497,8 @@ class InPlaneRigidRegistration:
         ## Execute 2D registration
         rigid_transform_2D = registration_method.Execute(sitk.Cast(fixed_2D_sitk, sitk.sitkFloat64), sitk.Cast(moving_2D_sitk, sitk.sitkFloat64)) 
 
-        ## Extract parameters of 2D registration
-        angle, translation_x, translation_y = rigid_transform_2D.GetParameters()
-        center = rigid_transform_2D.GetFixedParameters()
-
-        ## Create transformation used to align moving -> fixed
-
-        ## Obtain inverse translation
-        tmp_trafo = sitk.Euler2DTransform((0,0),-angle,(0,0))
-        translation_inv = tmp_trafo.TransformPoint((-translation_x, -translation_y))
-
-        ## inverse = R_inv(x-c) - R_inv(t) + c
-        rigid_transform_2D_inv = sitk.Euler2DTransform(center, -angle, translation_inv)
-
-        return rigid_transform_2D_inv
+        ## Return inverse transform
+        return sitkh.get_inverse_of_sitk_rigid_registration_transform(rigid_transform_2D)
 
 
     def _get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(self, slice_3D):
@@ -612,25 +634,41 @@ class InPlaneRigidRegistration:
             N_slices = stack.get_number_of_slices()
 
             warped_stack_nda = sitk.GetArrayFromImage(stack.sitk)
+            warped_stack_mask_nda = sitk.GetArrayFromImage(stack.sitk_mask)
+
+
+            # Identity transform since trafo is already updated in image header
+            transform = sitk.Euler3DTransform()
 
             for j in range(0, N_slices):
+                ## Image    
                 fixed_sitk = stack.sitk[:,:,j:j+1]
                 moving_sitk = slices[j].sitk
 
-                # Identity transform since trafo is already updated in image header
-                transform = sitk.Euler3DTransform()
-
                 warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
-
                 warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
-
                 warped_stack_nda[j,:,:] = warped_slice_nda[0,:,:]
 
+                ## Mask
+                fixed_sitk = stack.sitk_mask[:,:,j:j+1]
+                moving_sitk = slices[j].sitk_mask
 
+                warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
+                warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
+                warped_stack_mask_nda[j,:,:] = warped_slice_nda[0,:,:]
+
+
+            ## Image
             warped_stack = sitk.GetImageFromArray(warped_stack_nda)
             warped_stack.CopyInformation(stack.sitk)
 
+            ## Mask
+            warped_stack_mask = sitk.GetImageFromArray(warped_stack_mask_nda)
+            warped_stack_mask.CopyInformation(stack.sitk_mask)
+
+            ## Update member variables
             self._resampled_sitk_stacks_after_in_plane_alignment[i] = warped_stack
+            self._resampled_sitk_stack_masks_after_in_plane_alignment[i] = warped_stack_mask
 
         return None
 
@@ -652,8 +690,13 @@ class InPlaneRigidRegistration:
         for i in range(0, self._N_stacks):
             filename = self._stacks[i].get_filename()
 
+            ## Image
             full_file_name = os.path.join(directory, filename + "_aligned.nii.gz")
             sitk.WriteImage(self._resampled_sitk_stacks_after_in_plane_alignment[i], full_file_name)
+
+            ## Mask
+            full_file_name = os.path.join(directory, filename + "_aligned_mask.nii.gz")
+            sitk.WriteImage(self._resampled_sitk_stack_masks_after_in_plane_alignment[i], full_file_name)
 
         return None
 

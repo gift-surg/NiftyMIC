@@ -8,6 +8,7 @@
 # import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
 import numpy as np
+import matplotlib.pyplot as plt
 
 ## Import modules from src-folder
 # import SimpleITKHelper as sitkh
@@ -150,3 +151,92 @@ def get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_trans
     T_PI_in_plane_rotation_3D = get_composited_sitk_affine_transform(T_inv, T_PI_in_plane_rotation_3D)
 
     return T_PI_in_plane_rotation_3D
+
+
+## rigid_transform_*D (object type  Transform) as output of object sitk.ImageRegistrationMethod does not contain the
+## member functions GetCenter, GetTranslation, GetMatrix whereas the objects sitk.Euler*DTransform does.
+## Hence, create an instance sitk.Euler*D so that it can be used for composition of transforms as coded 
+## in get_composited_sitk_affine_transform
+def get_inverse_of_sitk_rigid_registration_transform(rigid_registration_transform):
+
+    dim = rigid_registration_transform.GetDimension()
+
+    if dim == 2:
+        rigid_transform_2D = rigid_registration_transform
+
+        ## Steps could have been chosen the same way as in the 3D case. However,
+        ## here the computational steps more visible
+
+        ## Extract parameters of 2D registration
+        angle, translation_x, translation_y = rigid_transform_2D.GetParameters()
+        center = rigid_transform_2D.GetFixedParameters()
+
+        ## Create transformation used to align moving -> fixed
+
+        ## Obtain inverse translation
+        tmp_trafo = sitk.Euler2DTransform((0,0),-angle,(0,0))
+        translation_inv = tmp_trafo.TransformPoint((-translation_x, -translation_y))
+
+        ## Create instance of Euler2DTransform based on inverse = R_inv(x-c) - R_inv(t) + c
+        return sitk.Euler2DTransform(center, -angle, translation_inv)
+
+    elif dim == 3:
+        rigid_transform_3D = rigid_registration_transform
+
+        ## Create inverse transform of type Transform
+        rigid_transform_3D_inv = rigid_transform_3D.GetInverse()
+
+        ## Extract parameters of inverse 3D transform to feed them back to object Euler3DTransform:
+        angle_x, angle_y, angle_z, translation_x, translation_y, translation_z = rigid_transform_3D_inv.GetParameters()
+        center = rigid_transform_3D_inv.GetFixedParameters()
+
+        ## Return inverse of rigid_transform_3D as instance of Euler3DTransform
+        return sitk.Euler3DTransform(center, angle_x, angle_y, angle_z, (translation_x, translation_y, translation_z))
+ 
+    
+
+
+def check_sitk_mask_2D(mask_2D_sitk):
+
+    mask_nda = sitk.GetArrayFromImage(mask_2D_sitk)
+
+    if np.sum(mask_nda) > 1:
+        return mask_2D_sitk
+
+    else:
+        mask_nda[:] = 1
+
+        mask = sitk.GetImageFromArray(mask_nda)
+        mask.CopyInformation(mask_2D_sitk)
+
+        return mask
+
+
+def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, flag_continue=0):
+
+    fig = plt.figure(fig_number)
+    plt.suptitle("intensity error norm = " + str(np.linalg.norm(sitk.GetArrayFromImage(image0_2D_sitk-image1_2D_sitk))))
+    
+    plt.subplot(1,3,1)
+    plt.imshow(sitk.GetArrayFromImage(image0_2D_sitk), cmap="Greys_r")
+    plt.title("image_0")
+    plt.axis('off')
+
+    plt.subplot(1,3,2)
+    plt.imshow(sitk.GetArrayFromImage(image1_2D_sitk), cmap="Greys_r")
+    plt.title("image_1")
+    plt.axis('off')
+    
+    plt.subplot(1,3,3)
+    plt.imshow(sitk.GetArrayFromImage(image0_2D_sitk-image1_2D_sitk), cmap="Greys_r")
+    plt.title("image_0 - image_1")
+    plt.axis('off')
+
+    ## Plot immediately or wait for following figures to come as well
+    if flag_continue == 0:
+        plt.show()
+    else:
+        plt.show(block=False)       # does not pause, but needs plt.show() at end 
+                                    # of file to be visible
+
+    return fig
