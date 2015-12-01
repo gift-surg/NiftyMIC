@@ -1,4 +1,6 @@
 results/
 data/
 backups/
+doc/html/
+doc/latex/
 .*

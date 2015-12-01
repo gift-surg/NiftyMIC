@@ -32,8 +32,8 @@ def read_input_data(image_type):
         #     "20150115_161038s5007a1001_crop"
         #     ]
 
-        # filenames = [str(i) for i in range(0, 8)]
-        filenames = [str(i) for i in range(0, 1)]
+        filenames = [str(i) for i in range(0, 8)]
+        # filenames = [str(i) for i in range(0, 2)]
 
 
     elif image_type in ["kidney"]:
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     dir_output = "../results/"
 
     ## Choose input stacks and reference stack therein
-    input_stacks_type = input_stack_types_available[2]
+    input_stacks_type = input_stack_types_available[0]
     reference_stack_id = 0
 
     """
@@ -98,11 +98,14 @@ if __name__ == '__main__':
     dir_input, filenames = read_input_data(input_stacks_type)
     reconstruction_manager.read_input_data(dir_input, filenames)
 
+    ## Compute first estimate of HR volume
+    reconstruction_manager.compute_first_estimate_of_HR_volume()
+
     ## In-plane rigid registration
-    reconstruction_manager.run_in_plane_rigid_registration()
+    # reconstruction_manager.run_in_plane_rigid_registration()
 
     ## Write results
-    reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
+    # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
     # reconstruction_manager.write_results()
 
     """

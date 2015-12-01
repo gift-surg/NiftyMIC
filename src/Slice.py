@@ -25,9 +25,8 @@ class Slice:
         self._registration_history_sitk = []
         self._registration_history_sitk.append(self._affine_transform_sitk)
 
-        ## Get transform to align stack with physical space
-        T = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(self.sitk)
-        self._T_PP = T
+        ## Get transform to align original (!) stack with axes of physical coordinate system
+        self._T_PP = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(self.sitk)
 
         return None
 
@@ -40,9 +39,11 @@ class Slice:
         origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
         direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
 
+        ## Update origin and direction of 3D sitk slice
         self.sitk.SetOrigin(origin)
         self.sitk.SetDirection(direction)
 
+        ## Update origin and direction of 3D sitk slice mask
         if self.sitk_mask is not None:
             self.sitk_mask.SetOrigin(origin)
             self.sitk_mask.SetDirection(direction)

@@ -11,6 +11,7 @@ import os                       # used to execute terminal commands in python
 ## Import modules from src-folder
 import StackManager as sm
 import InPlaneRigidRegistration as iprr
+import FirstEstimateOfHRVolume as efhrv
 
 class ReconstructionManager:
 
@@ -38,6 +39,12 @@ class ReconstructionManager:
         # os.system("mkdir -p " + self._dir_results_seg_prop)
         # os.system("mkdir -p " + self._dir_results_input_data)
 
+        self._filename_reconstructed_volume = "reconstruction"
+
+        self._in_plane_rigid_registration = None
+        self._stack_manager = None
+        self._HR_volume = None
+
         return None
 
 
@@ -48,7 +55,7 @@ class ReconstructionManager:
         self._stack_manager = sm.StackManager()
 
         ## Copy files to dir_results_input_data:
-        ## (Filenames represent continouous numbering)
+        ## (Filenames represent continuous numbering)
         for i in range(0, N_stacks):
             new_name = str(filenames[i])
 
@@ -58,15 +65,10 @@ class ReconstructionManager:
             # print cmd
             os.system(cmd)
 
-            ## Link image to stack
-            # self._stacks[i] = SliceStack(self._dir_results_input_data, filenames[i])
-
             ## 2) Copy masks:
             if os.path.isfile(dir_input_to_copy + filenames_to_copy[i] + "_mask.nii.gz"):
                 cmd = "cp " + dir_input_to_copy + filenames_to_copy[i] + "_mask.nii.gz " \
                             + self._dir_results_input_data + filenames[i] + "_mask.nii.gz"
-                ## Link mask to stack
-                # self._masks[i] = SliceStack(self._dir_results_input_data, filenames[i] + "_mask")
                 os.system(cmd)
             
         print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
@@ -74,6 +76,12 @@ class ReconstructionManager:
         ## Read stacks:
         self._stack_manager.read_input_data(self._dir_results_input_data, filenames)
 
+        return None
+
+
+    def compute_first_estimate_of_HR_volume(self):
+        first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._dir_results, self._filename_reconstructed_volume)
+        self._HR_volume = first_estimate_of_HR_volume.get_first_estimate_of_HR_volume()
         return None
 
 

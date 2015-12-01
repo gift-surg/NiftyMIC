@@ -15,24 +15,34 @@ import Slice as slice
 
 class Stack:
 
-    def __init__(self, dir_input, filename):
-        self.sitk = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat64)
-        self._dir = dir_input
-        self._filename = filename
+    # def __init__(self, dir_input, filename):
+    #     self.sitk = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat64)
+    #     self._dir = dir_input
+    #     self._filename = filename
 
-        self._N_slices = self.sitk.GetSize()[-1]
-        self._slices = [None]*self._N_slices
+    #     self._N_slices = self.sitk.GetSize()[-1]
+    #     self._slices = [None]*self._N_slices
 
-        self.sitk_mask = None
+    #     self.sitk_mask = None
 
-        if os.path.isfile(dir_input+filename+"_mask.nii.gz"):
-            self.sitk_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
-            self._slices_masks = [None]*self._N_slices
+    #     if os.path.isfile(dir_input+filename+"_mask.nii.gz"):
+    #         self.sitk_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
+    #         self._slices_masks = [None]*self._N_slices
 
-        self._extract_slices()
+    #     self._extract_slices()
 
-        return None
+    #     return None
 
+
+    # ## Stack is not read from
+    # @classmethod
+    # def create_from_sitk_image(cls, image_sitk, filename):
+    #     cls.sitk = sitk.Image(image_sitk)
+    #     cls._filename = filename
+
+    #     cls.sitk_mask = None
+
+    #     return cls
 
     # def __getitem__(self, index):
     #     try:
@@ -43,6 +53,48 @@ class Stack:
 
     #     except ValueError as err:
     #         print(err)
+
+
+    def __init__(self, *args, **kwargs):
+
+        ## Stack(dir_input, filename)
+        if isinstance(args[0], str):
+            dir_input = args[0]
+            filename = args[1]
+
+            self.sitk = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat64)
+            self._dir = dir_input
+            self._filename = filename
+
+            self._N_slices = self.sitk.GetSize()[-1]
+            self._slices = [None]*self._N_slices
+
+            self.sitk_mask = None
+
+            if os.path.isfile(dir_input+filename+"_mask.nii.gz"):
+                self.sitk_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
+                self._slices_masks = [None]*self._N_slices
+
+            self._extract_slices()
+
+
+        ## Stack(image_sitk, directory, filename)
+        else:
+            image_sitk = args[0]
+            directory = args[1]
+            filename = args[2]
+
+            self.sitk = sitk.Image(image_sitk)
+            self._dir = directory
+            self._filename = filename
+
+            self._N_slices = None
+            self._slices = None
+
+            self.sitk_mask = None
+
+
+        return None
 
 
     def _extract_slices(self):
@@ -68,6 +120,11 @@ class Stack:
         return None
 
 
+    def add_mask(self, image_sitk_mask):
+        self.sitk_mask = image_sitk_mask
+        return None
+
+
     def get_slices(self):
         return self._slices
 
@@ -82,3 +139,35 @@ class Stack:
 
     def get_number_of_slices(self):
         return self._N_slices
+
+
+    def show_stack(self, display_segmentation=0):
+        dir_output = "/tmp/"
+
+        if display_segmentation:
+            sitk.WriteImage(self.sitk, dir_output + self._filename + ".nii.gz")
+            sitk.WriteImage(self.sitk_mask, dir_output + self._filename + "_mask.nii.gz")
+
+            cmd = "itksnap " \
+                    + "-g " + dir_output + self._filename + ".nii.gz " \
+                    + "-s " +  dir_output + self._filename + "_mask.nii.gz " + \
+                    "& "
+
+        else:
+            sitk.WriteImage(self.sitk, dir_output + self._filename + ".nii.gz")
+
+            cmd = "itksnap " \
+                    + "-g " + dir_output + self._filename + ".nii.gz " \
+                    "& "
+
+        # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
+        os.system(cmd)
+
+
+    def write_stack(self, directory):
+        full_file_name = os.path.join(directory, self._filename + "_" + str(self._slice_number) + ".nii.gz")
+        sitk.WriteImage(self.sitk, full_file_name)
+
+        print("Stack %s was successfully written to %s" %(self._filename, directory))
+
+        return None
