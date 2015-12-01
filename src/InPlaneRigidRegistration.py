@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
+import Stack as stk
 
 
 class InPlaneRigidRegistration:
@@ -25,8 +26,9 @@ class InPlaneRigidRegistration:
         self._stacks = stack_manager.get_stacks()
         self._N_stacks = stack_manager.get_number_of_stacks()
 
-        self._resampled_sitk_stacks_after_in_plane_alignment = [None]*len(self._stacks)
-        self._resampled_sitk_stack_masks_after_in_plane_alignment = [None]*len(self._stacks)
+        self._resampled_stacks_after_in_plane_alignment = [None]*len(self._stacks)
+        # self._resampled_sitk_stacks_after_in_plane_alignment = [None]*len(self._stacks)
+        # self._resampled_sitk_stack_masks_after_in_plane_alignment = [None]*len(self._stacks)
 
         self._UT_2D_resampled_stacks = [None]*len(self._stacks)
 
@@ -45,8 +47,8 @@ class InPlaneRigidRegistration:
         for i in range(0, self._N_stacks):
 
             # self._apply_in_plane_rigid_registration_2D_approach_01(self._stacks[i])
-            # self._apply_in_plane_rigid_registration_2D_approach_02(self._stacks[i])
-            self._apply_in_plane_rigid_registration_2D_approach_02_Alternative(self._stacks[i])
+            self._apply_in_plane_rigid_registration_2D_approach_02(self._stacks[i])
+            # self._apply_in_plane_rigid_registration_2D_approach_02_Alternative(self._stacks[i])
 
         return None
 
@@ -667,18 +669,23 @@ class InPlaneRigidRegistration:
             warped_stack_mask.CopyInformation(stack.sitk_mask)
 
             ## Update member variables
-            self._resampled_sitk_stacks_after_in_plane_alignment[i] = warped_stack
-            self._resampled_sitk_stack_masks_after_in_plane_alignment[i] = warped_stack_mask
+            # self._resampled_sitk_stacks_after_in_plane_alignment[i] = warped_stack
+            # self._resampled_sitk_stack_masks_after_in_plane_alignment[i] = warped_stack_mask
+
+            # self._resampled_stacks_after_in_plane_alignment[i] = stk.Stack.create_from_sitk_image(warped_stack, stack.get_filename())
+            self._resampled_stacks_after_in_plane_alignment[i] = stk.Stack(warped_stack, stack.get_directory(), stack.get_filename())
+            self._resampled_stacks_after_in_plane_alignment[i].add_mask(warped_stack_mask)
 
         return None
 
 
-    def _UT_get_resampled_stacks(self):
+    # def _UT_get_resampled_stacks(self):
+    def get_resampled_planarly_aligned_stacks(self):
         ## In case stacks have not been resample yet, do it
-        if all(i is None for i in self._resampled_sitk_stacks_after_in_plane_alignment):
+        if all(i is None for i in self._resampled_stacks_after_in_plane_alignment):
             self._resample_stacks_of_aligned_slices()
 
-        return self._resampled_sitk_stacks_after_in_plane_alignment
+        return self._resampled_stacks_after_in_plane_alignment
 
 
     def write_resampled_stacks(self, directory):

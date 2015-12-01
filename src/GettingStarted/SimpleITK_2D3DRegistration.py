@@ -25,23 +25,6 @@ import SimpleITKHelper as sitkh
 Functions
 """
 
-def get_transformed_image(image_init, rigid_transform):
-    image = sitk.Image(image_init)
-    
-    affine_transform = sitkh.get_sitk_affine_transform_from_sitk_image(image)
-
-    transform = sitkh.get_composited_sitk_affine_transform(rigid_transform, affine_transform)
-    # transform = sitkh.get_composited_sitk_affine_transform(sitkh.get_inverse_of_sitk_rigid_registration_transform(rigid_transform), affine_transform)
-
-    direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(transform, image)
-    origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(transform, image)
-
-    image.SetOrigin(origin)
-    image.SetDirection(direction)
-
-    return image
-
-
 def get_sitk_rigid_registration_transform_2D(fixed_2D, moving_2D):
 
     ## Instantiate interface method to the modular ITKv4 registration framework
@@ -148,6 +131,7 @@ def get_sitk_rigid_registration_transform_3D(fixed_3D, moving_3D):
 
     ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
     initial_transform = sitk.CenteredTransformInitializer(fixed_3D, moving_3D, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+    # initial_transform = sitk.CenteredTransformInitializer(fixed_3D, moving_3D, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
     # initial_transform = sitk.Euler3DTransform()
 
     ## Set the initial transform and parameters to optimize
@@ -240,7 +224,10 @@ def get_sitk_rigid_registration_transform_3D(fixed_3D, moving_3D):
     return sitk.Euler3DTransform(final_transform_3D_sitk)
 
 
+## difference to get_sitk_rigid_registration_transform_3D is that initial_transform
+## is defined as identity in here
 def get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D, moving_3D):
+
 
     ## Instantiate interface method to the modular ITKv4 registration framework
     registration_method = sitk.ImageRegistrationMethod()
@@ -290,7 +277,7 @@ def get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D, moving_3D):
     # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
 
     ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
-    # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
+    registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
 
     ## Set the optimizer to sample the metric at regular steps
     # registration_method.SetOptimizerAsExhaustive(numberOfSteps=50, stepLength=1.0)
@@ -302,7 +289,7 @@ def get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D, moving_3D):
     # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
     ## Regular Step Gradient descent optimizer
-    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=2000)
+    # registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=2000)
 
     ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
     ## (Many more possibilities to estimate scales)
@@ -367,7 +354,7 @@ class TestUM(unittest.TestCase):
         moving_resampled = sitk.Resample(fixed, sitkh.get_inverse_of_sitk_rigid_registration_transform(rigid_transform_3D), sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
 
         ## Get transformed image in physical space:
-        moving_warped = get_transformed_image(fixed, rigid_transform_3D)
+        moving_warped = sitkh.get_transformed_image(fixed, rigid_transform_3D)
 
         ## Resample rigidly transformed fixed to image space of moving_resampled:
         moving_warped_resampled = sitk.Resample(moving_warped, moving_resampled, sitk.Euler3DTransform(), sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
@@ -403,7 +390,7 @@ class TestUM(unittest.TestCase):
     #     rigid_transform_3D = sitk.Euler3DTransform(center, angle_x, angle_y, angle_z, translation)
 
     #     ## Get transformed image in physical space:
-    #     moving = get_transformed_image(fixed, rigid_transform_3D)
+    #     moving = sitkh.get_transformed_image(fixed, rigid_transform_3D)
 
     #     ## SimpleITK registration:
     #     registration_transform_3D = get_sitk_rigid_registration_transform_3D(fixed_3D=fixed, moving_3D=moving)
@@ -411,7 +398,7 @@ class TestUM(unittest.TestCase):
     #     ## Resulting warped image:
     #     ## Resample rigidly transformed fixed to image space of moving_resampled:
     #     warped = sitk.Resample(moving, fixed, registration_transform_3D, sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
-    #     # warped = get_transformed_image(moving, sitkh.get_inverse_of_sitk_rigid_registration_transform(registration_transform_3D))
+    #     # warped = sitkh.get_transformed_image(moving, sitkh.get_inverse_of_sitk_rigid_registration_transform(registration_transform_3D))
 
     #     ## Test whether resampling directly the image via sitk.Resample with provided rigid_transform_3d yields the
     #     ## same result as transforming first and then resampling with provided identity transform:
@@ -440,7 +427,7 @@ if __name__ == '__main__':
     ## Specify data
     dir_input = "../../data/fetal_neck/"
     dir_output = "results/"
-    filename =  "0"
+    filename =  "5"
     filename_recon = "data/3TReconstruction" # result B. Kainz
     # filename_recon = "data/SRTV_fetalUCL_3V_NoNLM_bcorr_norm_lambda_0.1_deltat_0.001_loops_10_it1" # result S. Tourbier
     filename_out = "test"
@@ -454,17 +441,27 @@ if __name__ == '__main__':
     reconstruction = sitk.ReadImage(filename_recon + ".nii.gz", sitk.sitkFloat64)
     stack = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
 
+    # sitkh.show_sitk_image(reconstruction)
+    # sitkh.show_sitk_image(stack)
+
 
     ## 3D rigid transformation of stack:
     transform_3D = get_sitk_rigid_registration_transform_3D(fixed_3D=stack, moving_3D=reconstruction)
-    stack_rigidly_aligned = get_transformed_image(stack, transform_3D)
+    stack_rigidly_aligned = sitkh.get_transformed_image(stack, transform_3D)
 
     # stack_rigidly_aligned = sitk.ReadImage(dir_output + "stack_aligned.nii.gz", sitk.sitkFloat64)
+
+    sitkh.print_rigid_transformation(transform_3D,"global alignment")
 
     ## Check alignment
     test = sitk.Resample(
         stack_rigidly_aligned, reconstruction, sitk.Euler3DTransform(), sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
         )
+    # test = sitk.Resample(
+        # stack, reconstruction, transform_3D, sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
+        # )
+    sitk.WriteImage(test, dir_output + filename_out + "_.nii.gz")
+
     # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
     cmd = "itksnap " \
             + "-g " + dir_output + filename_out + "_.nii.gz " \
@@ -485,25 +482,25 @@ if __name__ == '__main__':
     slice_3D_HR_grid = sitk.Resample(slice_3D, size_resampled, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, slice_3D.GetOrigin(), spacing_HR, slice_3D.GetDirection(), 0.0, slice_3D.GetPixelIDValue())
 
 
-    transform_3D_slice = get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D=slice_3D_HR_grid, moving_3D=reconstruction)
+    # transform_3D_slice = get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D=slice_3D_HR_grid, moving_3D=reconstruction)
 
-    print np.array(transform_3D_slice.GetMatrix()).reshape(3,3)
-    print transform_3D_slice.GetTranslation()
+    # sitkh.print_rigid_transformation(transform_3D_slice,"local alignment")
+    
 
 
-    ## Check alignment
-    test = sitk.Resample(
-        slice_3D_HR_grid, reconstruction, transform_3D_slice, sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
-        # slice_3D_HR_grid, reconstruction, sitk.Euler3DTransform(), sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
-        )
+    # ## Check alignment
+    # test = sitk.Resample(
+    #     slice_3D_HR_grid, reconstruction, transform_3D_slice, sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
+    #     # slice_3D_HR_grid, reconstruction, sitk.Euler3DTransform(), sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
+    #     )
 
-    sitk.WriteImage(test, dir_output + filename_out + ".nii.gz")
+    # sitk.WriteImage(test, dir_output + filename_out + ".nii.gz")
     # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
     cmd = "itksnap " \
             + "-g " + dir_output + filename_out + ".nii.gz " \
             + "-o " +  filename_recon + ".nii.gz " + \
             "& "
-    os.system(cmd)
+    # os.system(cmd)
 
 
     """

@@ -5,7 +5,7 @@
 #  \date September 2015
 
 ## Import libraries
-# import os                       # used to execute terminal commands in python
+import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
 import numpy as np
 import matplotlib.pyplot as plt
@@ -212,6 +212,21 @@ def check_sitk_mask_2D(mask_2D_sitk):
         return mask
 
 
+def print_rigid_transformation(rigid_registration_transform, text="rigid transformation"):
+    dim = rigid_registration_transform.GetDimension()
+
+    matrix = np.array(rigid_registration_transform.GetMatrix()).reshape(dim,dim)
+    translation = np.array(rigid_registration_transform.GetTranslation())
+
+    print("\n" + text + ":")
+    print("matrix = \n" + str(matrix))
+    # print("angle = " + str(np.arccos(matrix[0,0])*180/np.pi))
+    print("translation = " + str(translation))
+    # print("\n")
+
+    return None
+
+
 def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, flag_continue=0):
 
     fig = plt.figure(fig_number)
@@ -238,5 +253,31 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
     else:
         plt.show(block=False)       # does not pause, but needs plt.show() at end 
                                     # of file to be visible
-
     return fig
+
+
+def show_sitk_image(image_sitk, filename_out="test"):
+    dir_output = "/tmp/"
+    sitk.WriteImage(image_sitk, dir_output + filename_out + ".nii.gz")
+    # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
+    cmd = "itksnap " \
+            + "-g " + dir_output + filename_out + ".nii.gz " \
+            "& "
+    os.system(cmd)
+
+
+def get_transformed_image(image_init, transform):
+    image = sitk.Image(image_init)
+    
+    affine_transform = get_sitk_affine_transform_from_sitk_image(image)
+
+    transform = get_composited_sitk_affine_transform(transform, affine_transform)
+    # transform = get_composited_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform), affine_transform)
+
+    direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(transform, image)
+    origin = get_sitk_image_origin_from_sitk_affine_transform(transform, image)
+
+    image.SetOrigin(origin)
+    image.SetDirection(direction)
+
+    return image
