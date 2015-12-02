@@ -1,7 +1,7 @@
 ## \file ReconstructionManager.py
 #  \brief  
 # 
-#  \author Michael Ebner
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date September 2015
 
 
@@ -80,7 +80,7 @@ class ReconstructionManager:
 
 
     def compute_first_estimate_of_HR_volume(self):
-        first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._dir_results, self._filename_reconstructed_volume)
+        first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._filename_reconstructed_volume)
         self._HR_volume = first_estimate_of_HR_volume.get_first_estimate_of_HR_volume()
         return None
 

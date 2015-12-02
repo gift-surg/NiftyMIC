@@ -3,7 +3,7 @@
 ## \file main.py
 #  \brief main-file incorporating all the other files 
 # 
-#  \author Michael Ebner
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date September 2015
 
 
@@ -32,8 +32,8 @@ def read_input_data(image_type):
         #     "20150115_161038s5007a1001_crop"
         #     ]
 
-        filenames = [str(i) for i in range(0, 8)]
-        # filenames = [str(i) for i in range(0, 2)]
+        # filenames = [str(i) for i in range(0, 8)]
+        filenames = [str(i) for i in range(0, 3)]
 
 
     elif image_type in ["kidney"]:

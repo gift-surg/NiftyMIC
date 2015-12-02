@@ -1,7 +1,7 @@
 ## \file MyImageProcessingFunctions.py
 #  \brief Image processing functions
 # 
-#  \author Michael Ebner
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date August 2015
 
 

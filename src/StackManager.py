@@ -1,7 +1,7 @@
 ## \file StackManager.py
 #  \brief  
 # 
-#  \author Michael Ebner
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date September 2015
 
 
@@ -10,7 +10,7 @@ import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
 
 ## Import modules from src-folder
-import Stack as stack
+import Stack as st
 
 class StackManager:
 
@@ -24,7 +24,7 @@ class StackManager:
         self._stacks = [None]*self._N_stacks
 
         for i in range(0, self._N_stacks):
-            self._stacks[i] = stack.Stack(dir_input, filenames[i])
+            self._stacks[i] = st.Stack.from_nifti(dir_input, filenames[i])
 
 
     def get_stacks(self):

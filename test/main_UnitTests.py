@@ -1,10 +1,9 @@
 #!/usr/bin/python
 
-## \file main.py
+## \file main_UnitTests.py
 #  \brief main-file incorporating all the other files 
 # 
-#  \author Michael Ebner
-#  \date September 2015
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)#  \date September 2015
 
 
 ## Import libraries 

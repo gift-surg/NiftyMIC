@@ -1,7 +1,7 @@
 ## \file Slice.py
 #  \brief  
 # 
-#  \author Michael Ebner
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date September 2015
 
 ## Import libraries
