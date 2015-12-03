@@ -18,8 +18,13 @@ import matplotlib.pyplot as plt
 # AddTransform does not work! Python always crashes! Moreover, the composition
 # of AddTransform is stack based, i.e. first in -- last applied. Wtf!?
 #
-# \param[in] sitk::simple::AffineTransform for inner and outer transform
+# \param[in] sitk::simple::AffineTransform or EulerxDTransform for inner and outer transform
 def get_composited_sitk_affine_transform(transform_outer, transform_inner):
+    
+    ## Guarantee type sitk::simple::AffineTransform of transformations
+    # transform_outer = sitk.AffineTransform(transform_outer)
+    # transform_inner = sitk.AffineTransform(transform_inner)
+
     dim = transform_outer.GetDimension()
 
     A_inner = np.asarray(transform_inner.GetMatrix()).reshape(dim,dim)

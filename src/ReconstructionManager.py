@@ -81,6 +81,7 @@ class ReconstructionManager:
 
     def compute_first_estimate_of_HR_volume(self):
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._filename_reconstructed_volume)
+        first_estimate_of_HR_volume.compute_first_estimate_of_HR_volume()
         self._HR_volume = first_estimate_of_HR_volume.get_first_estimate_of_HR_volume()
         return None
 

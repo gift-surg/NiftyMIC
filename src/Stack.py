@@ -63,6 +63,9 @@ class Stack:
         stack.sitk = sitk.Image(image_sitk)
         stack._filename = name
 
+        stack._N_slices = stack.sitk.GetSize()[-1]
+        stack._slices = [None]*stack._N_slices
+
         stack.sitk_mask = None
 
 
@@ -75,6 +78,7 @@ class Stack:
     #         self.sitk_mask = None
 
         return stack
+
 
     ## Burst the stack into its slices and store them
     def _extract_slices(self):
@@ -161,15 +165,31 @@ class Stack:
     ## Write the sitk.Image object of Stack.
     #  \param directory string specifying where the output will be written to (default="/tmp/")
     #  \param filename string specifying the filename. If not given the assigned one within Stack will be chosen.
-    def write(self, directory="/tmp/", filename=None):
-        if filename is not None:
-            full_file_name = os.path.join(directory, filename + ".nii.gz")
-        else:
-            full_file_name = os.path.join(directory, self._filename + ".nii.gz")
+    #  \param write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
+    def write(self, directory="/tmp/", filename=None, write_slices=False):
+        if filename is None:
+            filename = self._filename
+
+        full_file_name = os.path.join(directory, filename + ".nii.gz")
 
         ## Write file to specified location
         sitk.WriteImage(self.sitk, full_file_name)
-
         print("Stack was successfully written to %s" %(full_file_name))
+
+        ## Write each separate Slice of stack (if they exist)
+        if write_slices:
+            try:
+                ## Check whether variable exists
+                # if 'self._slices' not in locals() or all(i is None for i in self._slices):
+                if not hasattr(self,'_slices'):
+                    raise ValueError("Error occurred in attempt to write %s: No separate slices of object Slice are found" % (full_file_name))
+
+                ## Write slices
+                else:
+                    for i in xrange(0,self._N_slices):
+                        self._slices[i].write(directory=directory, filename=filename)
+
+            except ValueError as err:
+                print(err.message)
 
         return None

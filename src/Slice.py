@@ -32,7 +32,7 @@ class Slice:
 
 
     def set_affine_transform(self, affine_transform_sitk):
-        self._affine_transform_sitk = affine_transform_sitk
+        self._affine_transform_sitk = sitk.AffineTransform(affine_transform_sitk)
 
         self._registration_history_sitk.append(affine_transform_sitk)
 
@@ -78,15 +78,23 @@ class Slice:
     def get_transform_to_align_with_physical_coordinate_system(self):
         return self._T_PP
 
-    def write_results(self, directory):
+
+    def write(self, directory="/tmp/", filename=None):
+        if filename is None:
+            filename_out = self._filename + "_" + str(self._slice_number)
+        else:
+            filename_out = filename + "_" + str(self._slice_number)
+            
+
         ## Write slice:
-        full_file_name = os.path.join(directory, self._filename + "_" + str(self._slice_number) + ".nii.gz")
+        full_file_name = os.path.join(directory, filename_out + ".nii.gz")
         sitk.WriteImage(self.sitk, full_file_name)
+        print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
 
         ## Write transformation:
-        full_file_name = os.path.join(directory, self._filename + "_" + str(self._slice_number) + ".tfm")
+        full_file_name = os.path.join(directory, filename_out + ".tfm")
         sitk.WriteTransform(self._affine_transform_sitk, full_file_name)
+        print("Transformation of slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
 
-        print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, directory))
 
         return None

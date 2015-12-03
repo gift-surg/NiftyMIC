@@ -33,7 +33,7 @@ def read_input_data(image_type):
         #     ]
 
         # filenames = [str(i) for i in range(0, 8)]
-        filenames = [str(i) for i in range(0, 3)]
+        filenames = [str(i) for i in range(4, 8)]
 
 
     elif image_type in ["kidney"]:

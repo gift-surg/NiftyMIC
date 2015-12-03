@@ -44,20 +44,12 @@ class FirstEstimateOfHRVolume:
 
         self._filename_reconstructed_volume = filename_reconstructed_volume
 
-        ## Compute first estimate of HR volume
-        self._compute_first_estimate_of_HR_volume()
-
         return None
 
 
-    ## Get approximation of the HR volume
-    #  \return Stack of HR volume
-    def get_first_estimate_of_HR_volume(self):
-        return self._HR_volume
-
-
-    ## Function steering the estimation of first HR volume
-    def _compute_first_estimate_of_HR_volume(self):
+    ## Comput first estimate of HR volume
+    ## This function steers the estimation of first HR volume
+    def compute_first_estimate_of_HR_volume(self):
 
         ## Array of rigid registrations from all stacks to the chosen target (HR volume)
         rigid_registrations = [None]*self._N_stacks
@@ -79,9 +71,46 @@ class FirstEstimateOfHRVolume:
         self._update_estimate_of_HR_volume(stacks_planarly_aligned, rigid_registrations)
 
         ## Update all slice transformations of each stack according to rigid alignment with HR volume
-        # self._update_slice_transformations(rigid_registrations)
+        self._update_slice_transformations(rigid_registrations)
+
+
+        directory = "../test/data/FirstEstimateOfHRVolume/"
+        # self._HR_volume.write(directory=directory, filename="HRVolume")
+        # self._stacks[0].write(directory=directory, filename="stack0", write_slices=1)
+
+        # sitk.WriteImage(sitk.Resample(
+        #         stacks_planarly_aligned[0].sitk,
+        #         self._HR_volume.sitk, 
+        #         rigid_registrations[0], 
+        #         sitk.sitkNearestNeighbor, 
+        #         0.0,
+        #         self._HR_volume.sitk.GetPixelIDValue()), directory + "stack0_warped.nii.gz")
+        sitk.WriteTransform(rigid_registrations[2], directory + "rigid_transform_.tfm")
+
+        # print rigid_registrations[0]
+
+        # print self._stacks[0].sitk.GetOrigin()
+        # print stacks_planarly_aligned[0].sitk.GetOrigin()
+        # print self._HR_volume.sitk.GetOrigin()
+
+        # test = sitkh.get_transformed_image(self._stacks[0].sitk, rigid_registrations[0])
+        # print test.GetOrigin()
 
         return None
+
+
+    ## Get approximation of the HR volume
+    #  \return Stack of HR volume
+    def get_first_estimate_of_HR_volume(self):
+        try:
+            if self._HR_volume is None:
+                raise ValueError("Error: First estimate of HR volume has not been computed yet.")
+
+            else:
+                return self._HR_volume
+
+        except ValueError as err:
+            print(err.message)
 
 
     ## Resample stack to isotropic grid
@@ -141,23 +170,10 @@ class FirstEstimateOfHRVolume:
         # self._stacks[1].show(1)
         # self._HR_volume.show(1)
 
-        # self._HR_volume.sitk = sitk.ReadImage("GettingStarted/data/3TReconstruction.nii.gz")
-
-
-        for i in xrange(0, self._N_stacks):
+        for i in range(0, self._N_stacks):
 
             rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(self._stacks[i], self._HR_volume)
-
             sitkh.print_rigid_transformation(rigid_registrations[i])
-
-            # test = sitk.Resample(sitkh.get_transformed_image(self._stacks[i].sitk, rigid_registrations[i]),
-            #     self._HR_volume.sitk, sitk.Euler3DTransform(), sitk.sitkLinear, 0.0, self._HR_volume.sitk.GetPixelIDValue())
-
-            # full_file_name = os.path.join("/tmp/", self._stacks[i].get_filename() + ".nii.gz")
-            # sitk.WriteImage(test, full_file_name)
-
-
-        # sitk.WriteImage(self._HR_volume.sitk, "/tmp/HR_volume.nii.gz")
 
         return rigid_registrations
 
@@ -343,4 +359,24 @@ class FirstEstimateOfHRVolume:
 
     ## Update all slice transformations of each stack
     def _update_slice_transformations(self, rigid_registrations):
+
+        for i in range(0, self._N_stacks):
+            stack = self._stacks[i]
+
+            ## Rigid transformation to align stack i with target (HR volume)
+            T = rigid_registrations[i]
+
+            for j in range(0, stack.get_number_of_slices()):
+                slice = stack._slices[j]
+                
+                ## Trafo from physical origin to origin of slice j
+                slice_trafo = slice.get_affine_transform()
+
+                ## New affine transform of slice j with respect to rigid registration
+                affine_transform = sitkh.get_composited_sitk_affine_transform(T, slice_trafo)
+
+                ## Update affine transform of slice j
+                slice.set_affine_transform(affine_transform)
+
+
         return None
