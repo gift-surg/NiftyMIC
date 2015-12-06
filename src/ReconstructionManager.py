@@ -94,11 +94,11 @@ class ReconstructionManager:
         
         return None
 
-    def run_two_step_reconstruction_alignment_approach(self, iterations=10):
-        print("--- Run two-step reconstruction alignment approach ---")
 
-        ## Amount of two-step reconstruction alignment steps
-        iterations = 1
+    ## Execute two-step rconstruction alignment approach
+    #  \param iterations amount of two-step reconstruction alignment steps
+    def run_two_step_reconstruction_alignment_approach(self, iterations=1):
+        print("--- Run two-step reconstruction alignment approach ---")
 
         ## Instantiate objects
         slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager)
@@ -111,7 +111,7 @@ class ReconstructionManager:
         for i in range(0, iterations):   
             print(" iteration %s" %(i+1))
             ## Register all slices to current estimate of volume reconstruction
-            slice_to_volume_registration.run_slice_to_volume_registration(self._HR_volume)
+            # slice_to_volume_registration.run_slice_to_volume_registration(self._HR_volume)
 
             ## Reconstruct new volume based on updated positions of slices
             volume_reconstruction.update_reconstructed_volume(self._HR_volume)

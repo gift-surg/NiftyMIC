@@ -190,7 +190,7 @@ class InPlaneRigidRegistration:
                 slice_3D_copy_sitk_mask.SetOrigin(slice_3D_copy_sitk.GetOrigin())
                 slice_3D_copy_sitk_mask.SetDirection(slice_3D_copy_sitk.GetDirection())
 
-                ## Save images prior the use of NiftyReg
+                ## Save images prior to the use of NiftyReg
                 dir_tmp = ".tmp/" 
                 os.system("mkdir -p " + dir_tmp)
 

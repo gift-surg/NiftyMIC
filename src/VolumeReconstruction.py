@@ -18,11 +18,11 @@ import SimpleITKHelper as sitkh
 # import Slice as sl
 
 
-## Class implementing the volume reconstruction giben the current position of slices
+## Class implementing the volume reconstruction given the current position of slices
 class VolumeReconstruction:
 
     ## Constructor
-    #  \param[in,out] stack_manager instance of StackManager containing all stacks and additional information
+    #  \param stack_manager instance of StackManager containing all stacks and additional information
     def __init__(self, stack_manager):
         self._stack_manager = stack_manager
         self._stacks = stack_manager.get_stacks()
@@ -38,7 +38,7 @@ class VolumeReconstruction:
         self._use_discrete_shepard(HR_volume)
 
 
-    ## Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006
+    ## Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19)
     #  \param[in,out] HR_volume current estimate of reconstructed HR volume (Stack object)
     def _use_discrete_shepard(self, HR_volume):
         sigma = 1
@@ -59,7 +59,7 @@ class VolumeReconstruction:
             for j in range(0, N_slices):
                 slice = slices[j]
 
-                ## Resample slice to target space (HR volume)
+                ## Nearest neighbour resampling of slice to target space (HR volume)
                 slice_resampled_sitk = sitk.Resample(
                     slice.sitk, 
                     HR_volume.sitk, 
@@ -82,21 +82,25 @@ class VolumeReconstruction:
                 # print("helper_D_nda: (min, max) = (%s, %s)" %(np.min(helper_D_nda), np.max(helper_D_nda)))
 
 
+        ## Create sitk-images with correct header data
         helper_N = sitk.GetImageFromArray(helper_N_nda) 
         helper_D = sitk.GetImageFromArray(helper_D_nda) 
 
         helper_N.CopyInformation(HR_volume.sitk)
         helper_D.CopyInformation(HR_volume.sitk)
 
+        ## Apply recursive Gaussian smoothing
         gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
         gaussian.SetSigma(sigma)
 
         HR_volume_update_N = gaussian.Execute(helper_N)
         HR_volume_update_D = gaussian.Execute(helper_D)
 
+        ## Compute HR volume based on scattered data approximation with correct header (might be redundant):
         HR_volume_update = HR_volume_update_N/HR_volume_update_D
         HR_volume_update.CopyInformation(HR_volume.sitk)
 
+        ## Update HR volume image file within Stack-object HR_volume
         HR_volume.sitk = HR_volume_update
 
-        HR_volume.show()
+        # HR_volume.show()

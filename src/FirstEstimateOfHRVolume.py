@@ -20,18 +20,10 @@ import InPlaneRigidRegistration as iprr
 import Stack as st
 
 
-## Compute first estimate of HR volume. 
-#  The process consists of several steps:
-#  -# In-plane registration of all stacks
-#  -# Resample in-plane registered slices to 3D-volumes
-#  -# Pick one planarly-aligned stack and assign it as target volume
-#  -# Resample target volume on isotropic grid
-#  -# Register all planarly-aligned stacks to target-volume
-#  -# Create first HR volume estimate: Average all registered planarly-aligned stacks
-#  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
+## Class to compute first estimate of HR volume. 
 class FirstEstimateOfHRVolume:
 
-    ## Estimate first approximation of HR volume
+    ## Constructor
     #  \param stack_manager instance of StackManager containing all stacks and additional information
     #  \param filename_reconstructed_volume chosen filename for created HR volume (Stack object)
     def __init__(self, stack_manager, filename_reconstructed_volume):
@@ -47,8 +39,15 @@ class FirstEstimateOfHRVolume:
         return None
 
 
-    ## Comput first estimate of HR volume
-    ## This function steers the estimation of first HR volume
+    ## Execute computation for first estimate of HR volume
+    #  This function steers the estimation of first HR volume. The process consists of several steps:
+    #  -# In-plane registration of all stacks
+    #  -# Resample in-plane registered slices to 3D-volumes
+    #  -# Pick one planarly-aligned stack and assign it as target volume
+    #  -# Resample target volume on isotropic grid
+    #  -# Register all planarly-aligned stacks to target-volume
+    #  -# Create first HR volume estimate: Average all registered planarly-aligned stacks
+    #  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
     def compute_first_estimate_of_HR_volume(self):
 
         ## Array of rigid registrations from all stacks to the chosen target (HR volume)
@@ -100,7 +99,7 @@ class FirstEstimateOfHRVolume:
         return None
 
 
-    ## Get approximation of the HR volume
+    ## Get first estimation of the HR volume.
     #  \return Stack of HR volume
     def get_first_estimate_of_HR_volume(self):
         try:

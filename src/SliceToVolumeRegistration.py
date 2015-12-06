@@ -78,6 +78,9 @@ class SliceToVolumeRegistration:
     #  \param HR_volume current estimate of reconstructed HR volume (Stack object)
     def run_slice_to_volume_registration(self, HR_volume):
         print("Slice-to-volume registration")
+
+        use_NiftyReg = False
+
         for i in range(0, self._N_stacks):
         # for i in range(0,1):
             print("  Stack %s/%s" %(i,self._N_stacks-1))
@@ -89,7 +92,14 @@ class SliceToVolumeRegistration:
                 slice = slices[j]
 
                 ## Register slice to current volume
-                rigid_transform = self._get_rigid_registration_transform_3D_sitk(slice, HR_volume,1)
+                if use_NiftyReg:
+                # try:
+                    rigid_transform = self._get_rigid_registration_transform_3D_NiftyReg(
+                        fixed_slice_3D=slice, moving_3D=HR_volume)
+                else:
+                # except:
+                    rigid_transform = self._get_rigid_registration_transform_3D_sitk(
+                        fixed_slice_3D=slice, moving_3D=HR_volume, display_registration_info=0)
 
                 ## print if translation is strange
                 translation = rigid_transform.GetTranslation()
@@ -110,6 +120,65 @@ class SliceToVolumeRegistration:
                 # sitkh.print_rigid_transformation(rigid_transform)
                 
         return None
+
+
+    def _get_rigid_registration_transform_3D_NiftyReg(self, fixed_slice_3D, moving_3D):
+        ## Save images prior to the use of NiftyReg
+        dir_tmp = "../results/tmp/" 
+        os.system("mkdir -p " + dir_tmp)
+
+        j = fixed_slice_3D.get_slice_number()
+
+        moving_str = str(j) + "_moving" 
+        fixed_str = str(j) + "_fixed"
+        moving_mask_str = str(j) +"_moving_mask"
+        fixed_mask_str = str(j) + "_fixed_mask"
+
+        sitk.WriteImage(fixed_slice_3D._sitk_upsampled, dir_tmp+fixed_str+".nii.gz")
+        sitk.WriteImage(moving_3D.sitk, dir_tmp+moving_str+".nii.gz")
+        # sitk.WriteImage(fixed_slice_3D._sitk_mask_upsampled, dir_tmp+fixed_mask_str+".nii.gz")
+        # sitk.WriteImage(moving_3D.sitk_mask, dir_tmp+moving_mask_str+".nii.gz")
+
+        ## NiftyReg: Global affine registration:
+        #  \param[in] -ref reference image
+        #  \param[in] -flo floating image
+        #  \param[out] -res affine registration of floating image
+        #  \param[out] -aff affine transformation matrix
+        res_affine_image = moving_str + "_warped_NiftyReg"
+        res_affine_matrix = str(j) + "_affine_matrix_NiftyReg"
+
+        options = "-voff -rigOnly -noSym "
+        # options = "-voff -platf 1 "
+            # "-rmask " + dir_tmp + fixed_mask_str + ".nii.gz " + \
+            # "-fmask " + dir_tmp + moving_mask_str + ".nii.gz " + \
+        cmd = "reg_aladin " + options + \
+            "-ref " + dir_tmp + fixed_str + ".nii.gz " + \
+            "-flo " + dir_tmp + moving_str + ".nii.gz " + \
+            "-res " + dir_tmp + res_affine_image + ".nii.gz " + \
+            "-aff " + dir_tmp + res_affine_matrix + ".txt "
+        print(cmd)
+        sys.stdout.write("  Rigid registration (NiftyReg reg_aladin) " + str(j) + " ... ")
+
+        sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+        os.system(cmd)
+        print "done"
+
+        ## Read trafo and invert such that format fits within SimpleITK structure
+        matrix = np.loadtxt(dir_tmp+res_affine_matrix+".txt")
+        A = matrix[0:-1,0:-1]
+        t = matrix[0:-1,-1]
+
+        ## TODO: check conversion!!!
+        R = np.array([
+        [-1, 0, 0],
+        [0, -1, 0],
+        [0, 0, 1]])
+
+        A = R.dot(A)
+        t = R.dot(t)
+
+        return sitk.AffineTransform(A.flatten(),t)
+
 
 
     ## Rigid registration routine based on SimpleITK

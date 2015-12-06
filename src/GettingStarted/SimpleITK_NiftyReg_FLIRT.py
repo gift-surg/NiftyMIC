@@ -137,7 +137,7 @@ def get_sitk_rigid_registration_transform_2D(fixed_2D, moving_2D):
     return final_transform_2D_sitk
 
 
-def get_NiftyReg_registration_transform(fixed_sitk, moving_sitk):
+def get_NiftyReg_rigid_registration_transform_2D(fixed_sitk, moving_sitk):
     fixed = "fixed"
     moving = "moving"
 
@@ -145,7 +145,7 @@ def get_NiftyReg_registration_transform(fixed_sitk, moving_sitk):
     res_affine_matrix = "affine_matrix_NiftyReg"
 
     ## Save images prior the use of NiftyReg
-    dir_tmp = ".tmp/" 
+    dir_tmp = "tmp/" 
     os.system("mkdir -p " + dir_tmp)
 
     sitk.WriteImage(fixed_sitk, dir_tmp + fixed+".nii.gz")
@@ -195,10 +195,76 @@ def get_NiftyReg_registration_transform(fixed_sitk, moving_sitk):
     return final_transform_2D_NiftyReg
 
 
+def get_NiftyReg_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
+    fixed = "fixed"
+    moving = "moving"
+
+    res_affine_image = moving + "_warped_NiftyReg"
+    res_affine_matrix = "affine_matrix_NiftyReg"
+
+    ## Save images prior the use of NiftyReg
+    dir_tmp = "tmp/" 
+    os.system("mkdir -p " + dir_tmp)
+
+    sitk.WriteImage(fixed_sitk, dir_tmp + fixed + ".nii.gz")
+    sitk.WriteImage(moving_sitk, dir_tmp + moving + ".nii.gz")
+
+    options = "-voff -rigOnly -noSym "
+    # options = "-voff -platf Cuda=1 "
+        # "-rmask " + fixed_mask + ".nii.gz " + \
+        # "-fmask " + moving_mask + ".nii.gz " + \
+    cmd = "reg_aladin " + options + \
+        "-ref " + dir_tmp + fixed + ".nii.gz " + \
+        "-flo " + dir_tmp + moving + ".nii.gz " + \
+        "-res " + dir_tmp + res_affine_image + ".nii.gz " + \
+        "-aff " + dir_tmp + res_affine_matrix + ".txt"
+    sys.stdout.write("  Rigid registration (NiftyReg reg_aladin) ... ")
+    
+    sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+    # print(cmd)
+    os.system(cmd)
+    print "done"
+
+    ## Read registration matrix
+    transform = np.loadtxt(dir_tmp+res_affine_matrix+".txt")
+
+    # print transform
+
+    ## Extract information of transform:
+
+    R = np.array([
+        [-1, 0, 0],
+        [0, -1, 0],
+        [0, 0, 1]])
+
+    A = transform[0:-1,0:-1]
+    t = transform[0:-1,-1]
+
+    # t = R.dot(t)
+
+    # A = np.linalg.inv(A)
+    A = R.dot(A).dot(R)
+    # A[0,1] *= -1
+    # A[1,0] *= -1
+    t = R.dot(t)
+
+    print A
+    print t
+
+    ## Create SimpleITK transformation
+    final_transform_3D_NiftyReg = sitk.AffineTransform(A.flatten(), t)
+
+    ## Delete tmp-folder
+    cmd = "rm -rf " + dir_tmp
+    # os.system(cmd)
+
+    return final_transform_3D_NiftyReg
+
+
 """
 Why does FLIRT not do anything at all?!
 """
-def get_FLIRT_registration_transform(fixed_sitk, moving_sitk):
+def get_FLIRT_rigid_registration_transform_2D(fixed_sitk, moving_sitk):
     fixed = "fixed"
     moving = "moving"
 
@@ -206,7 +272,7 @@ def get_FLIRT_registration_transform(fixed_sitk, moving_sitk):
     res_affine_matrix = "affine_matrix_FLIRT"
 
     ## Save images prior the use of NiftyReg
-    dir_tmp = ".tmp/" 
+    dir_tmp = "tmp/" 
     os.system("mkdir -p " + dir_tmp)
 
     sitk.WriteImage(fixed_sitk, dir_tmp+fixed+".nii.gz")
@@ -386,59 +452,93 @@ if __name__ == '__main__':
     """
     Playground
     """
-    angle = 0
-    # angle = np.pi/20
-    translation = (1,2)
-    # translation = (0,0)
-    center = (30,40)
-    # center = (0,0)
+    # angle_x = 0
+    angle_x = np.pi/20
+    # angle_y = 0
+    angle_y = np.pi/4
+    # angle_z = 0
+    angle_z = np.pi/10
 
-    print("Chosen parameters to get moving image:")
-    print("  translation =  (%r,%r) " %(translation))
-    print("  angle       =  %r deg" %(angle*180/np.pi))
-    print("  center      =  (%r,%r) " %(center))
+    # angle = np.pi/20
+    # translation = (1,2)
+    # translation = (0,0)
+    # center = (30,40)
+    # center = (0,0)
+    translation_3D = (10,3,5)
+    # translation_3D = (0,0,0)
+    # center_3D = (0,0,0)
+    center_3D = (10,30,-10)
+
+    # print("Chosen parameters to get moving image:")
+    # print("  translation =  (%r,%r) " %(translation))
+    # print("  angle       =  %r deg" %(angle*180/np.pi))
+    # print("  center      =  (%r,%r) " %(center))
 
 
     ## Load image
-    fixed = sitk.ReadImage(dir_input + filename_3D + ".nii.gz", sitk.sitkFloat64)
+    stack = sitk.ReadImage(dir_input + filename_3D + ".nii.gz", sitk.sitkFloat64)
 
     slice_number = 10
-    fixed = fixed[:,:,slice_number]
+    # fixed = fixed[:,:,slice_number]
+
+    # fixed_staple = stack[:,:,slice_number:slice_number+3]
+    fixed_staple = stack
 
     ## Generate test transformation:
-    rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
+    # rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
+    rigid_transform_3D = sitk.Euler3DTransform(center_3D, angle_x, angle_y, angle_z, translation_3D)
+
+    sitkh.print_rigid_transformation(rigid_transform_3D)
 
     ## Get rigidly transformed image
-    moving = get_transformed_image(fixed, rigid_transform_2D)
+    fixed_staple_motion = sitkh.get_transformed_image(fixed_staple, rigid_transform_3D)
 
     
     """
     Registration algorithms
     """
     ## Rigid Registration SimpleITK:
-    # final_transform_2D = get_sitk_registration_transform(fixed, moving)
+    # final_transform_2D = get_sitk_rigid_registration_transform_2D(fixed, stack)
 
     ## Rigid Registration NiftyReg:
-    final_transform_2D = get_NiftyReg_registration_transform(fixed, moving)
+    # final_transform_2D = get_NiftyReg_rigid_registration_transform_2D(fixed, stack)
+    final_transform_3D = get_NiftyReg_rigid_registration_transform_3D(fixed_staple_motion, stack)
+    fixed_staple_corrected = sitkh.get_transformed_image(fixed_staple_motion, final_transform_3D)
 
     ## Rigid Registration FLIRT:
-    # final_transform_2D = get_FLIRT_registration_transform(fixed, moving)
+    # final_transform_2D = get_FLIRT_rigid_registration_transform_2D(fixed, stack)
 
 
     """
     Resampling
     """
-    warped_registration = sitk.Resample(moving, fixed, final_transform_2D, sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
+    # warped_registration = sitk.Resample(stack, fixed, final_transform_2D, sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
+    # fixed_staple_warped = sitk.Resample(fixed_staple_motion, stack, final_transform_3D, sitk.sitkNearestNeighbor, 0.0, stack.GetPixelIDValue())
+
+    fixed_staple_warped = sitk.Resample(
+        fixed_staple_corrected, 
+        stack, 
+        sitk.Euler3DTransform(), 
+        sitk.sitkNearestNeighbor, 
+        0.0, 
+        stack.GetPixelIDValue())
 
     """
     Plot
     """
+
+    sitkh.show_sitk_image(image_sitk=fixed_staple_warped, overlay_sitk=stack)
     ## Optional: Plot
-    # moving_resampled = sitk.Resample(moving, fixed, sitk.Euler2DTransform(), sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
+    # moving_resampled = sitk.Resample(stack, fixed, sitk.Euler2DTransform(), sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
     # sitkh.plot_compare_sitk_2D_images(fixed, moving_resampled,1,1)
 
     ## Optional: Plot outcome
-    sitkh.plot_compare_sitk_2D_images(fixed, warped_registration,2)
+    # sitkh.plot_compare_sitk_2D_images(fixed, warped_registration,2)
+
+
+    """
+    3D registration problems
+    """
 
 
     """

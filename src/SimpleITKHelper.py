@@ -269,14 +269,30 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
     return fig
 
 
-def show_sitk_image(image_sitk, filename_out="test"):
+def show_sitk_image(image_sitk, overlay_sitk=None, filename_out="test"):
+    
     dir_output = "/tmp/"
-    sitk.WriteImage(image_sitk, dir_output + filename_out + ".nii.gz")
-    # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
-    cmd = "itksnap " \
+
+    if overlay_sitk is not None:
+        sitk.WriteImage(image_sitk, dir_output + filename_out + ".nii.gz")
+        sitk.WriteImage(overlay_sitk, dir_output + filename_out + "_overlay.nii.gz")
+
+        cmd = "itksnap " \
+            + "-g " + dir_output + filename_out + ".nii.gz " \
+            + "-o " + dir_output + filename_out + "_overlay.nii.gz " \
+            "& "
+
+    else:
+        sitk.WriteImage(image_sitk, dir_output + filename_out + ".nii.gz")
+
+        cmd = "itksnap " \
             + "-g " + dir_output + filename_out + ".nii.gz " \
             "& "
+
+    # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
     os.system(cmd)
+
+    return None
 
 
 def get_transformed_image(image_init, transform):
