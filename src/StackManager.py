@@ -35,7 +35,7 @@ class StackManager:
         return self._N_stacks
 
 
-    def write_results(self, directory):
+    def write(self, directory):
 
         ## Write all slices
         for i in range(0, self._N_stacks):
@@ -45,5 +45,7 @@ class StackManager:
 
             for j in range(0, N_slices):
                 slices[j].write(directory=directory)
+
+        print("All aligned slices successfully written to directory %s" % directory)
 
         return None

@@ -28,6 +28,10 @@ class Slice:
         ## Get transform to align original (!) stack with axes of physical coordinate system
         self._T_PP = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(self.sitk)
 
+        ## HACK (for current slice-to-volume registration)
+        self._sitk_upsampled = None
+        self._sitk_mask_upsampled = None
+
         return None
 
 
@@ -47,6 +51,14 @@ class Slice:
         if self.sitk_mask is not None:
             self.sitk_mask.SetOrigin(origin)
             self.sitk_mask.SetDirection(direction)
+
+        ## HACK (for current slice-to-volume registration)
+        if self._sitk_upsampled is not None:
+            self._sitk_upsampled.SetOrigin(origin)
+            self._sitk_upsampled.SetDirection(direction)
+
+            self._sitk_mask_upsampled.SetOrigin(origin)
+            self._sitk_mask_upsampled.SetDirection(direction)
 
         return None
 

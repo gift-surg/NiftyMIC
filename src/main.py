@@ -33,7 +33,7 @@ def read_input_data(image_type):
         #     ]
 
         # filenames = [str(i) for i in range(0, 8)]
-        filenames = [str(i) for i in range(4, 8)]
+        filenames = [str(i) for i in range(0, 4)]
 
 
     elif image_type in ["kidney"]:
@@ -101,8 +101,9 @@ if __name__ == '__main__':
     ## Compute first estimate of HR volume
     reconstruction_manager.compute_first_estimate_of_HR_volume()
 
-    ## In-plane rigid registration
-    # reconstruction_manager.run_in_plane_rigid_registration()
+
+    ## Run tow step reconstruction alignment approach
+    reconstruction_manager.run_two_step_reconstruction_alignment_approach()
 
     ## Write results
     # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()

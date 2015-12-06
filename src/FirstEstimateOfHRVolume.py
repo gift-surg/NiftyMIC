@@ -32,7 +32,7 @@ import Stack as st
 class FirstEstimateOfHRVolume:
 
     ## Estimate first approximation of HR volume
-    #  \param stack_manager Instance of StackManager containing all stacks and additional information
+    #  \param stack_manager instance of StackManager containing all stacks and additional information
     #  \param filename_reconstructed_volume chosen filename for created HR volume (Stack object)
     def __init__(self, stack_manager, filename_reconstructed_volume):
         self._stack_manager = stack_manager
@@ -58,7 +58,8 @@ class FirstEstimateOfHRVolume:
         in_plane_rigid_registration =  iprr.InPlaneRigidRegistration(self._stack_manager)
 
         ## Get resampled stacks of planarly aligned slices as Stack objects (3D volume)
-        stacks_planarly_aligned = in_plane_rigid_registration.get_resampled_planarly_aligned_stacks()
+        stacks_planarly_aligned = in_plane_rigid_registration.get_resampled_planarly_aligned_stacks() # with in-plane alignment
+        # stacks_planarly_aligned = self._stacks    #without in-plane alignment
 
         ## Resample chosen target volume and its mask to isotropic grid
         ## TODO: replace self._target_stack_number with "best choice" of stack
@@ -74,7 +75,7 @@ class FirstEstimateOfHRVolume:
         self._update_slice_transformations(rigid_registrations)
 
 
-        directory = "../test/data/FirstEstimateOfHRVolume/"
+        # directory = "../test/data/FirstEstimateOfHRVolume/"
         # self._HR_volume.write(directory=directory, filename="HRVolume")
         # self._stacks[0].write(directory=directory, filename="stack0", write_slices=1)
 
@@ -85,7 +86,7 @@ class FirstEstimateOfHRVolume:
         #         sitk.sitkNearestNeighbor, 
         #         0.0,
         #         self._HR_volume.sitk.GetPixelIDValue()), directory + "stack0_warped.nii.gz")
-        sitk.WriteTransform(rigid_registrations[2], directory + "rigid_transform_.tfm")
+        # sitk.WriteTransform(rigid_registrations[2], directory + "rigid_transform_.tfm")
 
         # print rigid_registrations[0]
 
@@ -171,16 +172,15 @@ class FirstEstimateOfHRVolume:
         # self._HR_volume.show(1)
 
         for i in range(0, self._N_stacks):
-
             rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(self._stacks[i], self._HR_volume)
-            sitkh.print_rigid_transformation(rigid_registrations[i])
+            # sitkh.print_rigid_transformation(rigid_registrations[i])
 
         return rigid_registrations
 
 
     ## Rigid registration routine based on SimpleITK
-    #  \param fixed_3D Fixed Stack
-    #  \param moving_3D
+    #  \param fixed_3D fixed Stack
+    #  \param moving_3D moving Stack
     #  \param display_registration_info display registration summary at the end of execution (default=0)
     #  \return Rigid registration as sitk.Euler3DTransform object
     def _get_rigid_registration_transform_3D_sitk(self, fixed_3D, moving_3D, display_registration_info=0):

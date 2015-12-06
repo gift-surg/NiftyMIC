@@ -277,7 +277,7 @@ def get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D, moving_3D):
     # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
 
     ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
-    registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
+    # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
 
     ## Set the optimizer to sample the metric at regular steps
     # registration_method.SetOptimizerAsExhaustive(numberOfSteps=50, stepLength=1.0)
@@ -289,7 +289,7 @@ def get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D, moving_3D):
     # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
     ## Regular Step Gradient descent optimizer
-    # registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=2000)
+    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=2000)
 
     ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
     ## (Many more possibilities to estimate scales)
@@ -467,10 +467,10 @@ if __name__ == '__main__':
             + "-g " + dir_output + filename_out + "_.nii.gz " \
             + "-o " +  filename_recon + ".nii.gz " + \
             "& "
-    os.system(cmd)
+    # os.system(cmd)
 
     ## 3D rigid transformation of slice
-    slice_number = 14
+    slice_number = 4
     slice_3D = stack_rigidly_aligned[:,:,slice_number:slice_number+1]
 
     spacing_HR = np.array(reconstruction.GetSpacing())
@@ -482,9 +482,9 @@ if __name__ == '__main__':
     slice_3D_HR_grid = sitk.Resample(slice_3D, size_resampled, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, slice_3D.GetOrigin(), spacing_HR, slice_3D.GetDirection(), 0.0, slice_3D.GetPixelIDValue())
 
 
-    # transform_3D_slice = get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D=slice_3D_HR_grid, moving_3D=reconstruction)
+    transform_3D_slice = get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D=slice_3D_HR_grid, moving_3D=reconstruction)
 
-    # sitkh.print_rigid_transformation(transform_3D_slice,"local alignment")
+    sitkh.print_rigid_transformation(transform_3D_slice,"local alignment")
     
 
 

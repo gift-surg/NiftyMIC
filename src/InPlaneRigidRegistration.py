@@ -122,7 +122,7 @@ class InPlaneRigidRegistration:
             for j in np.concatenate((range(1, N_slices, 2),range(0, N_slices, 2))):
                 slice_3D = slices[j]
 
-                print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j,N_slices-1))
+                # print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j,N_slices-1))
 
                 ## Get copy of slices aligned to physical coordinate system
                 slice_3D_copy_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(slice_3D)

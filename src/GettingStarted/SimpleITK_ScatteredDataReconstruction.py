@@ -129,7 +129,6 @@ if __name__ == '__main__':
     D = sitk.GetImageFromArray(image_nda)
     D.CopyInformation(image)
 
-
     gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
     gaussian.SetSigma(sigma)
 

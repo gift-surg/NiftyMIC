@@ -223,11 +223,19 @@ def print_rigid_transformation(rigid_registration_transform, text="rigid transfo
     matrix = np.array(rigid_registration_transform.GetMatrix()).reshape(dim,dim)
     translation = np.array(rigid_registration_transform.GetTranslation())
 
-    print("\n" + text + ":")
-    print("matrix = \n" + str(matrix))
-    # print("angle = " + str(np.arccos(matrix[0,0])*180/np.pi))
-    print("translation = " + str(translation))
-    # print("\n")
+    if isinstance(rigid_registration_transform, sitk.Euler3DTransform):
+        parameters = rigid_registration_transform.GetParameters()
+        center = rigid_registration_transform.GetFixedParameters()
+        print(text + ":")
+        print("matrix = \n" + str(matrix))
+        print("center = " + str(center))
+        print("angle_x, angle_y, angle_z =  (%s, %s, %s)" % (parameters[0], parameters[1], parameters[2]))
+        print("translation = " + str(translation))
+
+    else:
+        print(text + ":")
+        print("matrix = \n" + str(matrix))
+        print("translation = " + str(translation))
 
     return None
 

@@ -12,12 +12,15 @@ import os                       # used to execute terminal commands in python
 import StackManager as sm
 import InPlaneRigidRegistration as iprr
 import FirstEstimateOfHRVolume as efhrv
+import SliceToVolumeRegistration as s2vr
+import VolumeReconstruction as vr
 
 class ReconstructionManager:
 
     def __init__(self, dir_output):
 
         self._dir_results = dir_output
+        self._HR_volume_filename = "Reconstruction"
         
         ## Directory of input data used for reconstruction algorithm
         self._dir_results_input_data = self._dir_results + "input_data/"
@@ -38,8 +41,6 @@ class ReconstructionManager:
         os.system("mkdir -p " + self._dir_results_slices)
         # os.system("mkdir -p " + self._dir_results_seg_prop)
         # os.system("mkdir -p " + self._dir_results_input_data)
-
-        self._filename_reconstructed_volume = "reconstruction"
 
         self._in_plane_rigid_registration = None
         self._stack_manager = None
@@ -80,9 +81,42 @@ class ReconstructionManager:
 
 
     def compute_first_estimate_of_HR_volume(self):
-        first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._filename_reconstructed_volume)
+        print("--- Compute first estimate of HR volume ---")
+        
+        ## Instantiate object
+        first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename)
+
+        ## Perform estimation of initial HR volume
         first_estimate_of_HR_volume.compute_first_estimate_of_HR_volume()
+
+        ## Get estimation
         self._HR_volume = first_estimate_of_HR_volume.get_first_estimate_of_HR_volume()
+        
+        return None
+
+    def run_two_step_reconstruction_alignment_approach(self, iterations=10):
+        print("--- Run two-step reconstruction alignment approach ---")
+
+        ## Amount of two-step reconstruction alignment steps
+        iterations = 1
+
+        ## Instantiate objects
+        slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager)
+        volume_reconstruction = vr.VolumeReconstruction(self._stack_manager)
+
+
+        self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_0")
+
+        ## Run two-step reconstruction alignment:
+        for i in range(0, iterations):   
+            print(" iteration %s" %(i+1))
+            ## Register all slices to current estimate of volume reconstruction
+            slice_to_volume_registration.run_slice_to_volume_registration(self._HR_volume)
+
+            ## Reconstruct new volume based on updated positions of slices
+            volume_reconstruction.update_reconstructed_volume(self._HR_volume)
+
+            self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_"+str(i+1))
         return None
 
 
@@ -94,6 +128,7 @@ class ReconstructionManager:
     def write_resampled_stacks_after_2D_in_plane_registration(self):
         self._in_plane_rigid_registration.write_resampled_stacks(self._dir_results)
         print("Resampled stacks after in-plane registration successfully written to directory %r " % self._dir_results)
+
         return None
 
 
@@ -102,7 +137,8 @@ class ReconstructionManager:
 
 
     def write_results(self):
-        self._stack_manager.write_results(self._dir_results_slices)
+        self._stack_manager.write(self._dir_results_slices)
 
-        print("All results successfully written to directory %s " % self._dir_results_slices)
+        self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename)
+
         return None
