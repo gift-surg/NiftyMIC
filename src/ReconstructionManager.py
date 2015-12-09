@@ -80,14 +80,14 @@ class ReconstructionManager:
         return None
 
 
-    def compute_first_estimate_of_HR_volume(self):
+    def compute_first_estimate_of_HR_volume(self, use_in_plane_registration=False):
         print("--- Compute first estimate of HR volume ---")
         
         ## Instantiate object
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename)
 
         ## Perform estimation of initial HR volume
-        first_estimate_of_HR_volume.compute_first_estimate_of_HR_volume()
+        first_estimate_of_HR_volume.compute_first_estimate_of_HR_volume(use_in_plane_registration)
 
         ## Get estimation
         self._HR_volume = first_estimate_of_HR_volume.get_first_estimate_of_HR_volume()

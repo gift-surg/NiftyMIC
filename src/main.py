@@ -59,6 +59,14 @@ def read_input_data(image_type):
         #     ]
         filenames = [str(i) for i in range(0, 6)]
 
+    elif image_type in ["StructuralData_Pig"]:
+        dir_input = "../data/StructuralData_Pig/"
+        filenames = [
+            "T22D3mm05x05hresCLEARs601a1006",
+            "T22D3mm05x05hresCLEARs701a1007",
+            "T22D3mm05x05hresCLEARs901a1009"
+            ]
+
 
     else:
         ## Fetal Neck Images:
@@ -79,14 +87,15 @@ if __name__ == '__main__':
     Choose variables
     """
     ## Types of input images to process
-    input_stack_types_available = ("fetal_neck", "kidney", "placenta")
+    input_stack_types_available = ("fetal_neck", "StructuralData_Pig", "kidney", "placenta")
 
     ## Directory to save obtained results
     dir_output = "../results/"
 
     ## Choose input stacks and reference stack therein
-    input_stacks_type = input_stack_types_available[0]
+    input_stacks_type = input_stack_types_available[1]
     reference_stack_id = 0
+    print("Stacks chosen: %s" %input_stacks_type)
 
     """
     Run reconstruction
@@ -99,7 +108,7 @@ if __name__ == '__main__':
     reconstruction_manager.read_input_data(dir_input, filenames)
 
     ## Compute first estimate of HR volume
-    reconstruction_manager.compute_first_estimate_of_HR_volume()
+    reconstruction_manager.compute_first_estimate_of_HR_volume(use_in_plane_registration=False)
 
 
     ## Run tow step reconstruction alignment approach

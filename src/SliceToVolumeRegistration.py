@@ -79,7 +79,7 @@ class SliceToVolumeRegistration:
     def run_slice_to_volume_registration(self, HR_volume):
         print("Slice-to-volume registration")
 
-        use_NiftyReg = False
+        use_NiftyReg = 0
 
         for i in range(0, self._N_stacks):
         # for i in range(0,1):
@@ -134,7 +134,8 @@ class SliceToVolumeRegistration:
         moving_mask_str = str(j) +"_moving_mask"
         fixed_mask_str = str(j) + "_fixed_mask"
 
-        sitk.WriteImage(fixed_slice_3D._sitk_upsampled, dir_tmp+fixed_str+".nii.gz")
+        # sitk.WriteImage(fixed_slice_3D._sitk_upsampled, dir_tmp+fixed_str+".nii.gz")
+        sitk.WriteImage(fixed_slice_3D.sitk, dir_tmp+fixed_str+".nii.gz")
         sitk.WriteImage(moving_3D.sitk, dir_tmp+moving_str+".nii.gz")
         # sitk.WriteImage(fixed_slice_3D._sitk_mask_upsampled, dir_tmp+fixed_mask_str+".nii.gz")
         # sitk.WriteImage(moving_3D.sitk_mask, dir_tmp+moving_mask_str+".nii.gz")
@@ -147,7 +148,8 @@ class SliceToVolumeRegistration:
         res_affine_image = moving_str + "_warped_NiftyReg"
         res_affine_matrix = str(j) + "_affine_matrix_NiftyReg"
 
-        options = "-voff -rigOnly -noSym "
+        # options = "-voff -rigOnly "
+        options = "-rigOnly "
         # options = "-voff -platf 1 "
             # "-rmask " + dir_tmp + fixed_mask_str + ".nii.gz " + \
             # "-fmask " + dir_tmp + moving_mask_str + ".nii.gz " + \
@@ -168,17 +170,17 @@ class SliceToVolumeRegistration:
         A = matrix[0:-1,0:-1]
         t = matrix[0:-1,-1]
 
-        ## TODO: check conversion!!!
+        ## Convert to SimpleITK physical coordinate system
+        ## TODO: Unit tests according to SimpleITK_NiftyReg_FLIRT.py
         R = np.array([
         [-1, 0, 0],
         [0, -1, 0],
         [0, 0, 1]])
 
-        A = R.dot(A)
+        A = R.dot(A).dot(R)
         t = R.dot(t)
 
         return sitk.AffineTransform(A.flatten(),t)
-
 
 
     ## Rigid registration routine based on SimpleITK

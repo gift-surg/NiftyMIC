@@ -229,7 +229,8 @@ def print_rigid_transformation(rigid_registration_transform, text="rigid transfo
         print(text + ":")
         print("matrix = \n" + str(matrix))
         print("center = " + str(center))
-        print("angle_x, angle_y, angle_z =  (%s, %s, %s)" % (parameters[0], parameters[1], parameters[2]))
+        print("angle_x, angle_y, angle_z =  (%s, %s, %s) deg" 
+            % (parameters[0]*180/np.pi, parameters[1]*180/np.pi, parameters[2]*180/np.pi))
         print("translation = " + str(translation))
 
     else:

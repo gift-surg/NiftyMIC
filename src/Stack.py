@@ -8,7 +8,7 @@
 ## Import libraries
 import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
-# import numpy as np
+import numpy as np
 
 ## Import modules from src-folder
 import Slice as sl
@@ -42,11 +42,14 @@ class Stack:
         stack._N_slices = stack.sitk.GetSize()[-1]
         stack._slices = [None]*stack._N_slices
 
-        stack.sitk_mask = None
-
+        ## If mask is provided
         if os.path.isfile(dir_input+filename+"_mask.nii.gz"):
             stack.sitk_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
             stack._slices_masks = [None]*stack._N_slices
+
+        ## If not: Generate binary mask consisting of ones
+        else:
+            stack.sitk_mask = stack._generate_binary_mask()
 
         stack._extract_slices()
 
@@ -193,3 +196,14 @@ class Stack:
                 print(err.message)
 
         return None
+
+
+    # \return binary_mask consisting of ones
+    def _generate_binary_mask(self):
+        shape = sitk.GetArrayFromImage(self.sitk).shape
+        nda = np.ones(shape, dtype=np.uint8)
+
+        binary_mask = sitk.GetImageFromArray(nda)
+        binary_mask.CopyInformation(self.sitk)
+
+        return binary_mask

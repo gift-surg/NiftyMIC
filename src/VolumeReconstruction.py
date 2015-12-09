@@ -43,9 +43,9 @@ class VolumeReconstruction:
     def _use_discrete_shepard(self, HR_volume):
         sigma = 1
 
-        helper_N_nda = sitk.GetArrayFromImage(HR_volume.sitk)
-        helper_N_nda[:] = 0
-        helper_D_nda = np.array(helper_N_nda)
+        shape = sitk.GetArrayFromImage(HR_volume.sitk).shape
+        helper_N_nda = np.zeros(shape)
+        helper_D_nda = np.zeros(shape)
 
         default_pixel_value = 0.0
 
@@ -96,6 +96,34 @@ class VolumeReconstruction:
         HR_volume_update_N = gaussian.Execute(helper_N)
         HR_volume_update_D = gaussian.Execute(helper_D)
 
+        ## Avoid undefined division by zero
+        """
+        HACK start
+        """
+        ## HACK for denominator
+        nda = sitk.GetArrayFromImage(HR_volume_update_D)
+        ind_min = np.unravel_index(np.argmin(nda), nda.shape)
+        # print nda[nda<0]
+        # print nda[ind_min]
+
+        eps = 1e-8
+        nda[nda<=eps]=1   # actually only nda=0 but some are negative!?
+        print("denominator min = %s" % np.min(nda))
+
+
+        HR_volume_update_D = sitk.GetImageFromArray(nda)
+        HR_volume_update_D.CopyInformation(HR_volume.sitk)
+
+        ## HACK for numerator given that some intensities are negative!?
+        nda = sitk.GetArrayFromImage(HR_volume_update_N)
+        ind_min = np.unravel_index(np.argmin(nda), nda.shape)
+        nda[nda<=eps]=0
+        # print nda[nda<0]
+        print("numerator min = %s" % np.min(nda))
+        """
+        HACK end
+        """
+        
         ## Compute HR volume based on scattered data approximation with correct header (might be redundant):
         HR_volume_update = HR_volume_update_N/HR_volume_update_D
         HR_volume_update.CopyInformation(HR_volume.sitk)
@@ -103,4 +131,9 @@ class VolumeReconstruction:
         ## Update HR volume image file within Stack-object HR_volume
         HR_volume.sitk = HR_volume_update
 
-        # HR_volume.show()
+
+        ##
+        nda = sitk.GetArrayFromImage(HR_volume_update)
+        print np.min(nda)
+
+        HR_volume.show()

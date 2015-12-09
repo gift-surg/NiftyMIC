@@ -11,6 +11,9 @@ import os                       # used to execute terminal commands in python
 import sys
 sys.path.append("../")
 
+# from scipy import ndimage       # For computation of center of mass for FLIRT coordinate system conversion
+import commands
+
 # from FileAndImageHelpers import *
 # from SimpleITK_PhysicalCoordinates import *
 
@@ -160,10 +163,10 @@ def get_NiftyReg_rigid_registration_transform_2D(fixed_sitk, moving_sitk):
         "-flo " + dir_tmp + moving + ".nii.gz " + \
         "-res " + dir_tmp + res_affine_image + ".nii.gz " + \
         "-aff " + dir_tmp + res_affine_matrix + ".txt"
-    sys.stdout.write("  Rigid registration (NiftyReg reg_aladin) ... ")
+    print(cmd)
     
+    sys.stdout.write("  Rigid registration (NiftyReg reg_aladin) ... ")
     sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
-    # print(cmd)
     os.system(cmd)
     print "done"
 
@@ -202,14 +205,22 @@ def get_NiftyReg_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
     res_affine_image = moving + "_warped_NiftyReg"
     res_affine_matrix = "affine_matrix_NiftyReg"
 
-    ## Save images prior the use of NiftyReg
+    ## Create folder if not existing
     dir_tmp = "tmp/" 
     os.system("mkdir -p " + dir_tmp)
 
+    ## Delete possibly pre-existing files 
+    # cmd = "rm -rf " + dir_tmp
+    cmd = "rm -f " + dir_tmp + "*"
+    # print cmd
+    os.system(cmd)
+
+    ## Save images prior the use of NiftyReg
     sitk.WriteImage(fixed_sitk, dir_tmp + fixed + ".nii.gz")
     sitk.WriteImage(moving_sitk, dir_tmp + moving + ".nii.gz")
 
-    options = "-voff -rigOnly -noSym "
+    options = "-voff -rigOnly -nac "
+    # options = "-rigOnly -nac "
     # options = "-voff -platf Cuda=1 "
         # "-rmask " + fixed_mask + ".nii.gz " + \
         # "-fmask " + moving_mask + ".nii.gz " + \
@@ -218,10 +229,10 @@ def get_NiftyReg_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
         "-flo " + dir_tmp + moving + ".nii.gz " + \
         "-res " + dir_tmp + res_affine_image + ".nii.gz " + \
         "-aff " + dir_tmp + res_affine_matrix + ".txt"
-    sys.stdout.write("  Rigid registration (NiftyReg reg_aladin) ... ")
+    print(cmd)
     
+    sys.stdout.write("  Rigid registration (NiftyReg reg_aladin) ... ")
     sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
-    # print(cmd)
     os.system(cmd)
     print "done"
 
@@ -255,7 +266,8 @@ def get_NiftyReg_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
     final_transform_3D_NiftyReg = sitk.AffineTransform(A.flatten(), t)
 
     ## Delete tmp-folder
-    cmd = "rm -rf " + dir_tmp
+    # cmd = "rm -rf " + dir_tmp
+    # cmd = "rm -f " + dir_tmp + "*.txt"
     # os.system(cmd)
 
     return final_transform_3D_NiftyReg
@@ -271,10 +283,18 @@ def get_FLIRT_rigid_registration_transform_2D(fixed_sitk, moving_sitk):
     res_affine_image = moving + "_warped_FLIRT"
     res_affine_matrix = "affine_matrix_FLIRT"
 
-    ## Save images prior the use of NiftyReg
+
+    ## Create folder if not existing
     dir_tmp = "tmp/" 
     os.system("mkdir -p " + dir_tmp)
 
+    ## Delete possibly pre-existing files 
+    # cmd = "rm -rf " + dir_tmp
+    cmd = "rm -f " + dir_tmp + "*"
+    # print cmd
+    os.system(cmd)
+
+    ## Save images prior to ethe use of FLIRT
     sitk.WriteImage(fixed_sitk, dir_tmp+fixed+".nii.gz")
     sitk.WriteImage(moving_sitk, dir_tmp+moving+".nii.gz")
 
@@ -282,15 +302,15 @@ def get_FLIRT_rigid_registration_transform_2D(fixed_sitk, moving_sitk):
     # options = ""
         # "-refweight " + fixed_mask + ".nii.gz " + \
         # "-inweight " + moving_mask + ".nii.gz " + \
-        # "-out " + res_affine_image + ".nii.gz " + \
     cmd = "flirt " + options + \
         "-in " + dir_tmp + moving + ".nii.gz " + \
         "-ref " + dir_tmp + fixed + ".nii.gz " + \
+        "-out " + dir_tmp + res_affine_image + ".nii.gz " + \
         "-omat " + dir_tmp + res_affine_matrix + ".txt"
-    sys.stdout.write("  Rigid registration (FLIRT) ... ")
-    
-    sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
     print(cmd)
+
+    sys.stdout.write("  Rigid registration (FLIRT) ... ")
+    sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
     os.system(cmd)
     print "done"
 
@@ -336,6 +356,160 @@ def get_FLIRT_rigid_registration_transform_2D(fixed_sitk, moving_sitk):
 
     return final_transform_2D_FLIRT
 
+
+def get_FLIRT_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
+    fixed = "fixed"
+    moving = "moving"
+
+    res_affine_image = moving + "_warped_FLIRT"
+    res_affine_matrix = "affine_matrix_FLIRT"
+
+    ## Create folder if not existing
+    dir_tmp = "tmp/" 
+    os.system("mkdir -p " + dir_tmp)
+
+    ## Delete possibly pre-existing files 
+    # cmd = "rm -rf " + dir_tmp
+    cmd = "rm -f " + dir_tmp + "*"
+    # print cmd
+    os.system(cmd)
+
+    ## Save images prior the use of FLIRT
+    sitk.WriteImage(fixed_sitk, dir_tmp+fixed+".nii.gz")
+    sitk.WriteImage(moving_sitk, dir_tmp+moving+".nii.gz")
+
+    # options = "-2D "
+    options = ""
+        # "-refweight " + fixed_mask + ".nii.gz " + \
+        # "-inweight " + moving_mask + ".nii.gz " + \
+    cmd = "flirt " + options + \
+        "-in " + dir_tmp + moving + ".nii.gz " + \
+        "-ref " + dir_tmp + fixed + ".nii.gz " + \
+        "-out " + dir_tmp + res_affine_image + ".nii.gz " + \
+        "-omat " + dir_tmp + res_affine_matrix + ".txt"
+    print(cmd)
+
+    sys.stdout.write("  Rigid registration (FLIRT) ... ")
+    sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+    os.system(cmd)
+    print "done"
+
+    ## Read registration matrix
+    transform = np.loadtxt(dir_tmp+res_affine_matrix+".txt")
+
+    warped_sitk = sitk.ReadImage(dir_tmp+res_affine_image+".nii.gz")
+
+    # print transform
+
+    ## Extract information of transform:
+    R = np.array([
+        [-1, 0, 0],
+        [0, -1, 0],
+        [0, 0, 1]])
+
+
+    e_0 = (0,0,0)
+    e_x = (1,0,0)
+    e_y = (0,1,0)
+    e_z = (0,0,1)
+
+    a_0 = np.array(fixed_sitk.TransformIndexToPhysicalPoint(e_0))
+    a_x = fixed_sitk.TransformIndexToPhysicalPoint(e_x) - a_0
+    a_y = fixed_sitk.TransformIndexToPhysicalPoint(e_y) - a_0
+    a_z = fixed_sitk.TransformIndexToPhysicalPoint(e_z) - a_0
+    a_x = a_x/np.linalg.norm(a_x)
+    a_y = a_y/np.linalg.norm(a_y)
+    a_z = a_z/np.linalg.norm(a_z)
+
+    b_0 = get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_0)
+    b_x = get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_x) - b_0
+    b_y = get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_y) - b_0
+    b_z = get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_z) - b_0
+    b_x = b_x/np.linalg.norm(b_x)
+    b_y = b_y/np.linalg.norm(b_y)
+    b_z = b_z/np.linalg.norm(b_z)
+
+    B = np.array(fixed_sitk.GetDirection()).reshape(3,3)
+    B_inv = np.linalg.inv(B)
+
+    # print b_x
+    # print b_y
+    # print b_z
+
+    C = np.array([b_x,b_y,b_z])
+    C = R.dot(C.transpose())
+
+    # print C
+
+    D = B_inv.dot(C)
+
+    # print D
+    # print np.linalg.det(D)
+
+
+    center = (0,0,0)
+    angle_x = 0
+    angle_y = 0
+    angle_z = 0
+
+
+
+    translation = D.dot(R.dot(b_0)-a_0)
+
+    # A = sitk.Euler3DTransform(center, angle_x, angle_y, angle_z, translation)
+    A = sitk.AffineTransform(D.flatten(), translation)
+
+    sitkh.print_rigid_transformation(A)
+
+    final_transform_3D_FLIRT = A
+
+    # cmd = "echo " + str(p[0]) + " " + str(p[1]) + " " + str(p[2]) + " | " + \
+    #     "img2stdcoord " + \
+    #     "-std " + dir_tmp + fixed + ".nii.gz " + \
+    #     "-img " + dir_tmp + moving + ".nii.gz " + \
+    #     "-xfm " + dir_tmp + res_affine_matrix + ".txt - "
+    # # print cmd
+    # # os.system(cmd)
+    # origin = commands.getstatusoutput(cmd)[1]
+
+
+    # T1 = sitk.AffineTransform(np.zeros((3,3)).flatten(), -center_of_mass_fixed)
+    # T2 = sitk.AffineTransform(A.flatten(), np.zeros(3))
+    # T3 = sitk.AffineTransform(np.zeros((3,3)).flatten(), center_of_mass_fixed)
+    # T3 = sitk.AffineTransform(np.zeros((3,3)).flatten(), center_of_mass_fixed)
+
+    # T = sitkh.get_composited_sitk_affine_transform(T2,T1)
+    # T = sitkh.get_composited_sitk_affine_transform(T3,T)
+
+
+    ## Create SimpleITK transformation
+    # final_transform_3D_FLIRT = sitk.AffineTransform(A.flatten(), t)
+    # final_transform_3D_FLIRT = T
+
+    ## Delete tmp-folder
+    # cmd = "rm -rf " + dir_tmp
+    # cmd = "rm -f " + dir_tmp + "*.txt"
+    # os.system(cmd)
+
+    return final_transform_3D_FLIRT
+
+
+def get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, p):
+    cmd = "echo " + str(p[0]) + " " + str(p[1]) + " " + str(p[2]) + " | " + \
+        "img2stdcoord " + \
+        "-img " + dir_tmp + fixed + ".nii.gz " + \
+        "-std " + dir_tmp + moving + ".nii.gz " + \
+        "-xfm " + dir_tmp + res_affine_matrix + ".txt - "
+    print cmd
+    # os.system(cmd)
+    transformed_p_str = commands.getstatusoutput(cmd)[1]
+    transformed_p_str = transformed_p_str.split(" ")
+    transformed_p = np.array((
+        float(transformed_p_str[0]), 
+        float(transformed_p_str[2]), 
+        float(transformed_p_str[4])))
+
+    return transformed_p
 
 """
 Unit Test Class
@@ -444,7 +618,9 @@ if __name__ == '__main__':
     # filename_3D =  "kidney_s"
     # filename_3D =  "fetal_brain_a"
     # filename_3D =  "fetal_brain_c"
-    filename_3D =  "fetal_brain_s"
+    # filename_3D =  "fetal_brain_s"
+    # filename_3D =  "fetal_brain_s_origin0"
+    filename_3D =  "fetal_brain_s_origin0_unitSpacing"
 
     accuracy = 6 # decimal places for accuracy of unit tests
 
@@ -452,10 +628,10 @@ if __name__ == '__main__':
     """
     Playground
     """
-    # angle_x = 0
-    angle_x = np.pi/20
-    # angle_y = 0
-    angle_y = np.pi/4
+    angle_x = 0
+    # angle_x = np.pi/20
+    angle_y = 0
+    # angle_y = np.pi/20
     # angle_z = 0
     angle_z = np.pi/10
 
@@ -464,10 +640,10 @@ if __name__ == '__main__':
     # translation = (0,0)
     # center = (30,40)
     # center = (0,0)
-    translation_3D = (10,3,5)
+    translation_3D = (4,-5,1)
     # translation_3D = (0,0,0)
-    # center_3D = (0,0,0)
-    center_3D = (10,30,-10)
+    center_3D = (0,0,0)
+    # center_3D = (10,30,-10)
 
     # print("Chosen parameters to get moving image:")
     # print("  translation =  (%r,%r) " %(translation))
@@ -481,8 +657,8 @@ if __name__ == '__main__':
     slice_number = 10
     # fixed = fixed[:,:,slice_number]
 
-    # fixed_staple = stack[:,:,slice_number:slice_number+3]
     fixed_staple = stack
+    # fixed_staple = stack[:,:,slice_number:slice_number+2]
 
     ## Generate test transformation:
     # rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
@@ -502,12 +678,13 @@ if __name__ == '__main__':
 
     ## Rigid Registration NiftyReg:
     # final_transform_2D = get_NiftyReg_rigid_registration_transform_2D(fixed, stack)
-    final_transform_3D = get_NiftyReg_rigid_registration_transform_3D(fixed_staple_motion, stack)
-    fixed_staple_corrected = sitkh.get_transformed_image(fixed_staple_motion, final_transform_3D)
+    # final_transform_3D = get_NiftyReg_rigid_registration_transform_3D(fixed_staple_motion, stack)
 
     ## Rigid Registration FLIRT:
     # final_transform_2D = get_FLIRT_rigid_registration_transform_2D(fixed, stack)
+    final_transform_3D = get_FLIRT_rigid_registration_transform_3D(fixed_staple_motion, stack)
 
+    fixed_staple_corrected = sitkh.get_transformed_image(fixed_staple_motion, final_transform_3D)
 
     """
     Resampling
