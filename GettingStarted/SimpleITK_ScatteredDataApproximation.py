@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-## \file SimpleITK_ScatteredDataReconstruction.py
+## \file SimpleITK_ScatteredDataApproximation.py
 #  \brief Figure out how to implement and use Scattered Data Reconstruction methods in SimpleITK:
 #       - Scattered Data Approximation (SDA)
 #

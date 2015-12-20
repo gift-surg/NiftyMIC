@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 
 ## Import modules for unit testing
 from Test_FirstEstimateOfHRVolume import *
+from Test_SimpleITKHelper import *
 # from Test_Stack import *
 
 
@@ -34,10 +35,10 @@ if __name__ == '__main__':
     Choose variables
     """
     ## Directory to save obtained results
-    dir_output = "results/"
+    # dir_output = "results/"
 
     ## Choose decimal place accuracy for unit tests:
-    accuracy = 6
+    # accuracy = 6
 
     """
     Unit tests:

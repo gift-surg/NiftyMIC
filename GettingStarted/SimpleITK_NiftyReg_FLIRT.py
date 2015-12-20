@@ -394,12 +394,32 @@ def get_FLIRT_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
     os.system(cmd)
     print "done"
 
+    ## IRTK: Convert a transformation from the FSL flirt format to DOF format
+    cmd = "flirt2dof " + \
+        dir_tmp + res_affine_matrix + ".txt " + \
+        dir_tmp + fixed + ".nii.gz " + \
+        dir_tmp + moving + ".nii.gz " + \
+        dir_tmp + res_affine_matrix + ".dof"
+    print(cmd)
+    os.system(cmd)
+
+    ## IRTK: Convert a transformation represented by the file [doffile] to the IRTK project matrix format
+    cmd = "dof2mat " + \
+        dir_tmp + res_affine_matrix + ".dof " + \
+        "-matout " + dir_tmp + res_affine_matrix + "_mat.txt" 
+    print(cmd)
+    os.system(cmd)
+    
+
+
+
     ## Read registration matrix
-    transform = np.loadtxt(dir_tmp+res_affine_matrix+".txt")
+    # transform = np.loadtxt(dir_tmp+res_affine_matrix+".txt")
+    transform = np.loadtxt(dir_tmp+res_affine_matrix+"_mat.txt")
 
     warped_sitk = sitk.ReadImage(dir_tmp+res_affine_image+".nii.gz")
 
-    # print transform
+    print transform
 
     ## Extract information of transform:
     R = np.array([
@@ -421,27 +441,33 @@ def get_FLIRT_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
     a_y = a_y/np.linalg.norm(a_y)
     a_z = a_z/np.linalg.norm(a_z)
 
-    b_0 = get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_0)
-    b_x = get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_x) - b_0
-    b_y = get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_y) - b_0
-    b_z = get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_z) - b_0
+    b_0 = R.dot(get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_0))
+    b_x = R.dot(get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_x)) - b_0
+    b_y = R.dot(get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_y)) - b_0
+    b_z = R.dot(get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, e_z)) - b_0
     b_x = b_x/np.linalg.norm(b_x)
     b_y = b_y/np.linalg.norm(b_y)
     b_z = b_z/np.linalg.norm(b_z)
 
-    B = np.array(fixed_sitk.GetDirection()).reshape(3,3)
-    B_inv = np.linalg.inv(B)
+    B0 = np.array(fixed_sitk.GetDirection()).reshape(3,3)
+    B0_inv = np.linalg.inv(B0)
 
-    # print b_x
-    # print b_y
-    # print b_z
+    B1 = np.array([b_x,b_y,b_z])
+    B1 = B1.transpose()
+    # print B1
 
-    C = np.array([b_x,b_y,b_z])
-    C = R.dot(C.transpose())
+    print("a_0 = " + str(a_0))
+    print("a_x = " + str(a_x))
+    print("a_y = " + str(a_y))
+    print("a_z = " + str(a_z))
 
-    # print C
+    print("b_0 = " + str(b_0))
+    print("b_x = " + str(B1[:,0]))
+    print("b_y = " + str(B1[:,1]))
+    print("b_z = " + str(B1[:,2]))
 
-    D = B_inv.dot(C)
+
+    D = B0_inv.dot(B1)
 
     # print D
     # print np.linalg.det(D)
@@ -459,7 +485,7 @@ def get_FLIRT_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
     # A = sitk.Euler3DTransform(center, angle_x, angle_y, angle_z, translation)
     A = sitk.AffineTransform(D.flatten(), translation)
 
-    sitkh.print_rigid_transformation(A)
+    # sitkh.print_rigid_transformation(A)
 
     final_transform_3D_FLIRT = A
 
@@ -495,19 +521,39 @@ def get_FLIRT_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
 
 
 def get_coordinates(dir_tmp, fixed, moving, res_affine_matrix, p):
+    # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FLIRT/UserGuide
+
+    res_affine_matrix_inv = res_affine_matrix + "_inv"
+    cmd = "convert_xfm " + \
+        "-omat " + dir_tmp + res_affine_matrix_inv + ".txt " + \
+        "-inverse " + dir_tmp + res_affine_matrix + ".txt "
+    # print cmd
+    os.system(cmd)
+
+
     cmd = "echo " + str(p[0]) + " " + str(p[1]) + " " + str(p[2]) + " | " + \
         "img2stdcoord " + \
         "-img " + dir_tmp + fixed + ".nii.gz " + \
         "-std " + dir_tmp + moving + ".nii.gz " + \
         "-xfm " + dir_tmp + res_affine_matrix + ".txt - "
-    print cmd
-    # os.system(cmd)
+
+    # cmd = "echo " + str(p[0]) + " " + str(p[1]) + " " + str(p[2]) + " | " + \
+    #     "img2stdcoord " + \
+    #     "-img " + dir_tmp + moving + ".nii.gz " + \
+    #     "-std " + dir_tmp + fixed + ".nii.gz " + \
+    #     "-xfm " + dir_tmp + res_affine_matrix_inv + ".txt - "
+    
+    # print cmd
     transformed_p_str = commands.getstatusoutput(cmd)[1]
     transformed_p_str = transformed_p_str.split(" ")
+
+    ## return transformed point in SimpleITK coordinate system
     transformed_p = np.array((
         float(transformed_p_str[0]), 
         float(transformed_p_str[2]), 
         float(transformed_p_str[4])))
+
+    print transformed_p
 
     return transformed_p
 
@@ -618,9 +664,9 @@ if __name__ == '__main__':
     # filename_3D =  "kidney_s"
     # filename_3D =  "fetal_brain_a"
     # filename_3D =  "fetal_brain_c"
-    # filename_3D =  "fetal_brain_s"
+    filename_3D =  "fetal_brain_s"
     # filename_3D =  "fetal_brain_s_origin0"
-    filename_3D =  "fetal_brain_s_origin0_unitSpacing"
+    # filename_3D =  "fetal_brain_s_origin0_unitSpacing"
 
     accuracy = 6 # decimal places for accuracy of unit tests
 
@@ -640,8 +686,8 @@ if __name__ == '__main__':
     # translation = (0,0)
     # center = (30,40)
     # center = (0,0)
-    translation_3D = (4,-5,1)
-    # translation_3D = (0,0,0)
+    # translation_3D = (10,0,0)
+    translation_3D = (0,0,0)
     center_3D = (0,0,0)
     # center_3D = (10,30,-10)
 
@@ -654,11 +700,11 @@ if __name__ == '__main__':
     ## Load image
     stack = sitk.ReadImage(dir_input + filename_3D + ".nii.gz", sitk.sitkFloat64)
 
-    slice_number = 10
+    slice_number = 5
     # fixed = fixed[:,:,slice_number]
 
     fixed_staple = stack
-    # fixed_staple = stack[:,:,slice_number:slice_number+2]
+    fixed_staple = stack[:,:,slice_number:slice_number+2]
 
     ## Generate test transformation:
     # rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
@@ -704,7 +750,7 @@ if __name__ == '__main__':
     Plot
     """
 
-    sitkh.show_sitk_image(image_sitk=fixed_staple_warped, overlay_sitk=stack)
+    # sitkh.show_sitk_image(image_sitk=fixed_staple_warped, overlay_sitk=stack)
     ## Optional: Plot
     # moving_resampled = sitk.Resample(stack, fixed, sitk.Euler2DTransform(), sitk.sitkBSpline, 0.0, fixed.GetPixelIDValue())
     # sitkh.plot_compare_sitk_2D_images(fixed, moving_resampled,1,1)

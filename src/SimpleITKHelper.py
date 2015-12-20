@@ -7,6 +7,7 @@
 ## Import libraries
 import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
+import itk
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -311,3 +312,23 @@ def get_transformed_image(image_init, transform):
     image.SetDirection(direction)
 
     return image
+
+
+## Convert between direction matrix from sitk to itk
+#  \param[in] image_sitk SimpleITK image
+#  \return direction matrix as itkMatrix object
+def get_itk_direction_from_sitk_image(image_sitk):
+    dim = image_sitk.GetDimension()
+    direction_sitk = image_sitk.GetDirection()
+    m = itk.vnl_matrix_fixed[itk.D, dim, dim]()
+
+    for i in range(0, dim):
+        for j in range(0, dim):
+            m.set(i,j,direction_sitk[dim*i + j])
+
+    return itk.Matrix[itk.D, dim, dim](m)
+        
+
+
+
+

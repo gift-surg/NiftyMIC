@@ -81,7 +81,7 @@ class ReconstructionManager:
 
 
     def compute_first_estimate_of_HR_volume(self, use_in_plane_registration=False):
-        print("--- Compute first estimate of HR volume ---")
+        print("\n--- Compute first estimate of HR volume ---")
         
         ## Instantiate object
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename)
@@ -98,7 +98,7 @@ class ReconstructionManager:
     ## Execute two-step rconstruction alignment approach
     #  \param iterations amount of two-step reconstruction alignment steps
     def run_two_step_reconstruction_alignment_approach(self, iterations=1):
-        print("--- Run two-step reconstruction alignment approach ---")
+        print("\n--- Run two-step reconstruction alignment approach ---")
 
         ## Instantiate objects
         slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager)
