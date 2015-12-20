@@ -39,8 +39,8 @@ class VolumeReconstruction:
 
         t0 = time.clock()
 
-        # self._use_discrete_shepard_based_on_Deriche(HR_volume)
-        self._use_discrete_shepard(HR_volume)
+        self._use_discrete_shepard_based_on_Deriche(HR_volume)
+        # self._use_discrete_shepard(HR_volume)
 
         time_elapsed = time.clock() - t0
         print("Elapsed time for SDA = %s seconds" %(time_elapsed))
@@ -52,7 +52,7 @@ class VolumeReconstruction:
     #  via ITK
     #  \param[in,out] HR_volume current estimate of reconstructed HR volume (Stack object)
     def _use_discrete_shepard(self, HR_volume):
-        sigma = 0.7
+        sigma = 0.5
 
         shape = sitk.GetArrayFromImage(HR_volume.sitk).shape
         helper_N_nda = np.zeros(shape)
@@ -109,8 +109,9 @@ class VolumeReconstruction:
         helper_D.SetDirection(sitkh.get_itk_direction_from_sitk_image(HR_volume.sitk))
         helper_D.SetOrigin(HR_volume.sitk.GetOrigin())
 
-        ## Apply recursive Gaussian smoothing
+        ## Apply Recursive Gaussian YVV filter
         gaussian = itk.SmoothingRecursiveYvvGaussianImageFilter[image_type, image_type].New()
+        # gaussian = itk.SmoothingRecursiveGaussianImageFilter[image_type, image_type].New()
         gaussian.SetSigma(sigma)
         gaussian.SetInput(helper_N)
         gaussian.Update()
@@ -118,6 +119,7 @@ class VolumeReconstruction:
         nda_N = itk2np.GetArrayFromImage(HR_volume_update_N)
 
         gaussian = itk.SmoothingRecursiveYvvGaussianImageFilter[image_type, image_type].New()
+        # gaussian = itk.SmoothingRecursiveGaussianImageFilter[image_type, image_type].New()
         gaussian.SetSigma(sigma)
         gaussian.SetInput(helper_D)
         gaussian.Update()
@@ -126,8 +128,7 @@ class VolumeReconstruction:
 
         ## Compute data array of HR volume:
         # nda_D[nda_D==0]=1 
-        # nda = nda_N/nda_D.astype(float)
-        nda = nda_N/nda_D
+        nda = nda_N/nda_D.astype(float)
         # HR_volume_update.CopyInformation(HR_volume.sitk)
 
         ## Update HR volume image file within Stack-object HR_volume
@@ -146,7 +147,7 @@ class VolumeReconstruction:
     #  via SimpleITK
     #  \param[in,out] HR_volume current estimate of reconstructed HR volume (Stack object)
     def _use_discrete_shepard_based_on_Deriche(self, HR_volume):
-        sigma = 1
+        sigma = 0.5
 
         shape = sitk.GetArrayFromImage(HR_volume.sitk).shape
         helper_N_nda = np.zeros(shape)
@@ -212,7 +213,7 @@ class VolumeReconstruction:
         # print nda[ind_min]
 
         eps = 1e-8
-        nda[nda<=eps]=1   # actually only nda=0 but some are negative!?
+        nda[nda<=eps]=1
         print("denominator min = %s" % np.min(nda))
 
 

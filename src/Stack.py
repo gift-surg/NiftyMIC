@@ -86,23 +86,13 @@ class Stack:
     ## Burst the stack into its slices and store them
     def _extract_slices(self):
         ## Extract slices and add masks
-        if self.sitk_mask is not None:
-            for i in range(0, self._N_slices):
-                self._slices[i] = sl.Slice(
-                    slice_sitk = self.sitk[:,:,i:i+1], 
-                    dir_input = self._dir, 
-                    filename = self._filename, 
-                    slice_number = i,
-                    slice_sitk_mask = self.sitk_mask[:,:,i:i+1])
-        
-        ## No masks available
-        else:
-            for i in range(0, self._N_slices):
-                self._slices[i] = sl.Slice(
-                    slice_sitk = self.sitk[:,:,i:i+1], 
-                    dir_input = self._dir, 
-                    filename = self._filename, 
-                    slice_number = i)
+        for i in range(0, self._N_slices):
+            self._slices[i] = sl.Slice(
+                slice_sitk = self.sitk[:,:,i:i+1], 
+                dir_input = self._dir, 
+                filename = self._filename, 
+                slice_number = i,
+                slice_sitk_mask = self.sitk_mask[:,:,i:i+1])        
 
         return None
 

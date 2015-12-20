@@ -307,11 +307,10 @@ class FirstEstimateOfHRVolume:
         default_pixel_value = 0.0
 
         ## Define helpers to obtain averaged stack
-        array = sitk.GetArrayFromImage(self._HR_volume.sitk)
-        array[:,:,:] = 0
-
-        array_mask = np.zeros(array.shape)
-        ind = np.zeros(array.shape)
+        shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
+        array = np.zeros(shape)
+        array_mask = np.zeros(shape)
+        ind = np.zeros(shape)
 
         ## Average over domain specified by the joint mask ("union mask")
         for i in range(0,self._N_stacks):
@@ -323,6 +322,8 @@ class FirstEstimateOfHRVolume:
                 sitk.sitkLinear, 
                 default_pixel_value,
                 self._HR_volume.sitk.GetPixelIDValue())
+
+            # stacks_planarly_aligned[i].show(1)
 
             ## Resample warped stack masks
             stack_sitk_mask =  sitk.Resample(
@@ -346,13 +347,16 @@ class FirstEstimateOfHRVolume:
 
         ## Average over the amount of non-zero contributions of the stacks at each index
         ind[ind==0] = 1                 # exclude division by zero
-        array = np.divide(array,ind)    # elemenwise division
+        array = np.divide(array,ind.astype(float))    # elemenwise division
 
         ## Create (joint) binary mask. Mask represents union of all masks
         array_mask[array_mask>0] = 1
 
         ## Set pixels of the image not specified by the mask to zero
         array[array_mask==0] = 0
+
+        # plt.imshow(array[np.round(shape[0]/2),:,:],cmap="gray")
+        # plt.show()
 
         ## Update HR volume (sitk image)
         helper = sitk.GetImageFromArray(array)

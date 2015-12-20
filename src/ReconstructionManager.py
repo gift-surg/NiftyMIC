@@ -38,6 +38,7 @@ class ReconstructionManager:
         ## Create folder if not already existing
         os.system("mkdir -p " + self._dir_results)
         os.system("mkdir -p " + self._dir_results_input_data)
+        os.system("rm -rf " + self._dir_results_input_data + "*")
         os.system("mkdir -p " + self._dir_results_slices)
         # os.system("mkdir -p " + self._dir_results_seg_prop)
         # os.system("mkdir -p " + self._dir_results_input_data)

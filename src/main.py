@@ -67,6 +67,7 @@ def read_input_data(image_type):
             "T22D3mm05x05hresCLEARs901a1009"
             ]
 
+        # filenames = filenames[0:1]
 
     else:
         ## Fetal Neck Images:

@@ -103,17 +103,17 @@ reader_moving.Update()
 moving_itk = reader_moving.GetOutput()
 
 ## Register images
-# rigid_transform_3D = get_rigid_registration_transform_3D(fixed_itk, moving_itk)
+rigid_transform_3D = get_rigid_registration_transform_3D(fixed_itk, moving_itk)
 
 ## Resample image
-# warped_itk = get_resampled_image(fixed_itk, moving_itk, rigid_transform_3D)
+warped_itk = get_resampled_image(fixed_itk, moving_itk, rigid_transform_3D)
 
-trafo = itk.Euler3DTransform.New()
-writer_transformation = itk.TransformFileWriterTemplate[itk.D].New()
+# trafo = itk.Euler3DTransform.New()
+# writer_transformation = itk.TransformFileWriterTemplate[itk.D].New()
 
 
 ## Write warped image
-# writer.SetFileName(dir_output + filename + "_test.nii.gz")
-# writer.SetInput(warped_itk)
-# writer.Update()
+writer.SetFileName(dir_output + filename + "_test.nii.gz")
+writer.SetInput(warped_itk)
+writer.Update()
 
