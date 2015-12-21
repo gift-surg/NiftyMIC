@@ -31,7 +31,6 @@ class VolumeReconstruction:
         self._N_stacks = stack_manager.get_number_of_stacks()
 
 
-
     ## Computed reconstructed volume based on current estimated positions of slices
     #  \param[in,out] HR_volume current estimate of reconstructed HR volume (Stack object)
     def update_reconstructed_volume(self, HR_volume):
@@ -47,9 +46,10 @@ class VolumeReconstruction:
 
         HR_volume.show()
 
+
     ## Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19).
     #  The computation here is based on the YVV variant of Recursive Gaussian Filter and executed
-    #  via ITK
+    #  via ITK (but is slower than the one based on SimpleITK)
     #  \param[in,out] HR_volume current estimate of reconstructed HR volume (Stack object)
     def _use_discrete_shepard(self, HR_volume):
         sigma = 0.5
@@ -142,9 +142,8 @@ class VolumeReconstruction:
 
 
     ## Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19).
-    #  TODO: Delete at some point when not used anymore
     #  The computation here is based on the Deriche variant of Recursive Gaussian Filter and executed
-    #  via SimpleITK
+    #  via SimpleITK (and is faster than the one based on ITK)
     #  \param[in,out] HR_volume current estimate of reconstructed HR volume (Stack object)
     def _use_discrete_shepard_based_on_Deriche(self, HR_volume):
         sigma = 0.5
@@ -243,4 +242,3 @@ class VolumeReconstruction:
         print np.min(nda)
 
 
-        return None
