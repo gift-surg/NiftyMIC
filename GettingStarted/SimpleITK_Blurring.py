@@ -3,6 +3,9 @@ import numpy as np
 import unittest
 import matplotlib.pyplot as plt
 
+from scipy import ndimage
+from scipy.stats import chi2
+
 import sys
 sys.path.append("../src")
 
@@ -12,6 +15,21 @@ import SimpleITKHelper as sitkh
 """
 Functions
 """
+
+## Check whether variance-covariance matrix is SPD
+#  \param Sigma matrix to check
+def is_SPD(Sigma):
+    tol = 1e-8
+    
+    ## is positive definite
+    bool_PD = np.all(np.linalg.eigvals(Sigma)>0)
+
+    ## is symmetric
+    bool_Sym = np.linalg.norm(Sigma.transpose() - Sigma) < tol
+
+    return bool_PD and bool_Sym
+
+
 ## Obtain value of ellipsoidal function (2 or 3 dimensional)
 #  \param points to check given as array \in \R^{(2 or 3)\times N}
 #  \param origin origin of ellipsoid \in \R^{(2 or 3)}
@@ -35,22 +53,67 @@ def evaluate_function_ellipsoid(points, origin, Sigma):
         if points.size is 2 or points.size is 3:
             points = points.reshape(points.size,-1)
 
-        ## Check whether everything is well-defined
+        ## Check whether input parameters are well-defined
         if (points.shape[0] is not 2 and points.shape[0] is not 3) \
             or (points.shape[0] is not origin.size) \
             or (Sigma.shape[0] is not Sigma.shape[1]) \
             or (points.shape[0] is not Sigma.shape[0]):
             raise ValueError("Error: Parameters must be of dimension 2 or 3")
 
-        elif ( not np.all(np.linalg.eigvals(Sigma)>0) )\
-            or not ( (Sigma.transpose() == Sigma).all() ) \
-            or not ( np.linalg.matrix_rank(Sigma) == Sigma.shape[0] ):
+        ## Check whether variance-covariance matrix is SPD
+        elif not is_SPD(Sigma):
             raise ValueError("Error: Sigma is not SPD")
-
 
         else:
             ## Compute value according to equation of ellipsoid
             value = np.sum((points-origin)*np.linalg.inv(Sigma).dot(points-origin), 0)
+            return value
+
+    except ValueError as err:
+        print(err.args[0])
+
+
+## Compute multivariate Gaussian 
+#  \param points to check given as array \in \R^{dim \times N}
+#  \param origin origin of ellipsoid \in \R^{dim}
+#  \param Sigma variance-covariance matrix \in \R^{dim \times dim}
+#  \return values of (multivariate) Gaussian distribution
+def compute_gaussian(Sigma, mu, points):
+
+    points = np.array(points)
+    origin = np.array(origin)
+
+    dim = Sigma.shape[0]
+
+    try:
+        ## Guarantee that origin is column vector, i.e. in \R^{(2 or 3)}
+        if origin.size is 2 or orign.size is 3:
+            origin = origin.reshape(origin.size,-1)
+
+        else:
+            raise ValueError("Error: origin is not in R^2 or R^3")
+
+
+        ## If only one point is given: Reshape to column vector
+        if points.size is 2 or points.size is 3:
+            points = points.reshape(points.size,-1)
+
+        ## Check whether input parameters are well-defined
+        if (points.shape[0] is not 2 and points.shape[0] is not 3) \
+            or (points.shape[0] is not origin.size) \
+            or (Sigma.shape[0] is not Sigma.shape[1]) \
+            or (points.shape[0] is not Sigma.shape[0]):
+            raise ValueError("Error: Parameters must be of dimension 2 or 3")
+
+        ## Check whether variance-covariance matrix is SPD
+        elif not is_SPD(Sigma):
+            raise ValueError("Error: Sigma is not SPD")
+
+        else:
+            ## Compute value according to equation of ellipsoid
+            value = np.sum((points-origin)*np.linalg.inv(Sigma).dot(points-origin), 0)
+            value = np.exp(-0.5*value)/np.sqrt((2*np.pi)**dim * np.linalg.det(Sigma)) 
+            
             return value
 
     except ValueError as err:
@@ -70,7 +133,7 @@ def is_in_ellipsoid(points, origin, Sigma, cutoff_level):
     # print values
 
     ## Points are within ellipsoid
-    return values <= cutoff_level**2+eps, values
+    return values <= cutoff_level+eps, values
 
 
 ## Scale axis of ellipsoid defined by the variance covariance matrix
@@ -83,9 +146,9 @@ def get_scaled_variance_covariance_matrix(Sigma, scales):
     U,s,V = np.linalg.svd(Sigma)
 
     ## Scale variances
-    print("Variances before scaling with factor(s)=%s: %s" %(scales,s))
+    # print("Variances before scaling with factor(s)=%s: %s" %(scales,s))
     s = scales*s;
-    print("Variances after scaling with factor(s)=%s: %s" %(scales,s))
+    # print("Variances after scaling with factor(s)=%s: %s" %(scales,s))
 
     ## Computed scaled variance covariance matrix
     Sigma = U.dot(np.diag(s)).dot(np.transpose(V))
@@ -96,16 +159,16 @@ def get_scaled_variance_covariance_matrix(Sigma, scales):
 ## Plot of gaussian
 #  \param Sigma variance-covariance matrix \in \R^{2 \times 2}
 #  \param origin origin of ellipsoid \in \R^{2}
-#  \param x array describing the x-interval
-#  \param y array describing the y-interval
+#  \param x_interval array describing the x-interval
+#  \param y_interval array describing the y-interval
 #  \param contour_plot either contour plot or heat map can be chosen
 #  \param scaled scale to gaussian distribution
-def plot_gaussian(Sigma, origin, x, y, contour_plot=1, scaled=1):
-    x = np.array(x)
-    y = np.array(y)
+def plot_gaussian(Sigma, origin, x_interval, y_interval, contour_plot=1, scaled=1):
+    x_interval = np.array(x_interval)
+    y_interval = np.array(y_interval)
 
     ## Generate array of 2D points
-    X,Y = np.meshgrid(x,y)
+    X,Y = np.meshgrid(x_interval,y_interval)
     points = np.array([X.flatten(), Y.flatten()])
 
     ## Evaluate points
@@ -115,7 +178,7 @@ def plot_gaussian(Sigma, origin, x, y, contour_plot=1, scaled=1):
         vals = np.exp(-0.5*vals)/( (2*np.pi)**1 * np.sqrt(np.linalg.det(Sigma)) )
 
     ## Reshape so that values fit meshgrid structure
-    Vals = vals.reshape(y.size,-1)
+    Vals = vals.reshape(x_interval.size,-1)
 
     ## Define levels and colours for contour plot
     levels = np.array([0.1, 0.5, 1, 2, 5])
@@ -135,13 +198,13 @@ def plot_gaussian(Sigma, origin, x, y, contour_plot=1, scaled=1):
     else:
         CS = plt.contour(X,Y, Vals, levels, colors=colours)
         plt.clabel(CS, inline=1, fontsize=10)
-        plt.imshow(Vals, origin='lower', extent=[x.min(), x.max(), y.min(), y.max()])
+        plt.imshow(Vals, origin='lower', extent=[x_interval.min(), x_interval.max(), y_interval.min(), y_interval.max()])
         plt.colorbar()
         
         
     ax = fig.gca()
-    ax.set_xticks(np.arange(x.min(),x.max()+1,1))
-    ax.set_yticks(np.arange(y.min(),y.max()+1,1))
+    ax.set_xticks(np.arange(x_interval.min(),x_interval.max()+1,1))
+    ax.set_yticks(np.arange(y_interval.min(),y_interval.max()+1,1))
 
     plt.grid()
     plt.title("Sigma = %s, origin = %s" %( Sigma.flatten(), origin.flatten() ))
@@ -156,91 +219,158 @@ def plot_gaussian(Sigma, origin, x, y, contour_plot=1, scaled=1):
 #  \param image_sitk
 #  \param Sigma
 #  \param origin
-#  \param cutoff_level
+#  \param cutoff either
 #  \return kernel 
 #  \return reference
-def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff_level):
-    spacing = np.array(image_sitk.GetSpacing())
+def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
 
-    ## Scale to image space with cutoff-sigma
-    scaling = 1/spacing
+    try:
+        cutoff = np.array(cutoff)
 
-    Sigma_image = get_scaled_variance_covariance_matrix(Sigma, scaling)
-    
-    ## Perform SVD
-    U,s_image,V = np.linalg.svd(Sigma_image)
+        spacing = np.array(image_sitk.GetSpacing())
 
-    # print s_image
-    # U,s,V = np.linalg.svd(Sigma)
-    # print s
+        ## Scale to image space with cutoff-sigma
+        scaling = 1/spacing
 
-    ## Maximumg length of vector in image space
-    l_max_image = np.sqrt(np.linalg.norm(s_image))
-    print("l_max_image = %s" %(l_max_image))
-    l_max_image = np.round(l_max_image)
+        Sigma_image = get_scaled_variance_covariance_matrix(Sigma, scaling)
+        
+        ## Perform SVD
+        U,s_image,V = np.linalg.svd(Sigma_image)
 
-    ## Generate interval for x and y based on l_max_image
-    x = np.arange(-l_max_image, l_max_image+1)
-    y = np.arange(-l_max_image, l_max_image+1)
+        # print s_image
+        # U,s,V = np.linalg.svd(Sigma)
+        # print s
 
-    ## Store reference/center/midpoint of kernel
-    reference = np.array([x.size/2, y.size/2]).astype(int)
-    print ("reference = %s" %reference)
+        ## cutoff = cutoff_level, i.e. a scalar to determine cutoff level of ellipse
+        if cutoff.size == 1:
+            ## Maximumg length of vector in image space
+            ## TODO: more exact
+            l_max_image = np.sqrt(np.linalg.norm(s_image)*cutoff)
+            print("l_max_image = %s" %(l_max_image))
+            l_max_image = np.ceil(l_max_image)
 
-    ## Generate arrays of 2D points
-    X,Y = np.meshgrid(x,y)
-    points = np.array([X.flatten(), Y.flatten()])
+            ## Generate intervals for x and y based on l_max_image
+            step = 0.01
+            x_interval = np.arange(-l_max_image, l_max_image+step,step)
+            y_interval = np.arange(-l_max_image, l_max_image+step,step)
 
-    ## Determine points in ellipsoid
-    bool, vals = is_in_ellipsoid(points, origin, Sigma_image, cutoff_level)
-    bool = bool.reshape(y.size,-1)  # reshape to grid
-    vals = vals.reshape(y.size,-1)  # reshape to grid
+        ## cutoff represents kernel size
+        else:
+            if cutoff[0]%2==0 or cutoff[1]%2==0:
+                raise ValueError("Error: kernel size must consist of odd numbers in both dimensions")
 
-    print bool 
-    print vals
-    
-    ## Compute values proportional to gaussian bell curve
-    # vals = np.exp(-0.5*vals) / ( (2*np.pi)**1 * np.sqrt(np.linalg.det(Sigma_image)) )
-    vals = np.exp(-0.5*vals)
+            ## create intervalls
+            x_interval = np.arange(0,cutoff[0])
+            y_interval = np.arange(0,cutoff[1])
 
-    ## Normalize values of kernel
-    vals[bool==0] = 0
-    kernel = vals/np.sum(vals[bool])
+            ## symmetry around zero
+            x_interval = x_interval-x_interval.mean()
+            y_interval = y_interval-y_interval.mean()
 
-    print kernel
-    print np.sum(kernel)
 
-    ## Find rows which only contain zeros
-    delete_ind_rows = []
-    for i in range(0, kernel.shape[0]):
-        if np.sum(kernel[i,:]) == 0:
-            delete_ind_rows.append(i)
+        ## Store reference/center/midpoint of kernel
+        # print x_interval
+        reference = np.array([x_interval.size/2, y_interval.size/2]).astype(int)
+        # print ("reference = %s" %reference)
 
-            ## Update center/reference/mitpoint
-            if i<reference[0]:
-                reference[0] = reference[0]-1
+        ## Generate arrays of 2D points
+        Y,X = np.meshgrid(y_interval,x_interval)    # do it this order so that x-coordinate is vertical for image!
+        points = np.array([X.flatten(), Y.flatten()])
 
-    ## Find cols which only contain zeros
-    delete_ind_cols = []
-    for i in range(0, kernel.shape[1]):
-        if np.sum(kernel[:,i]) == 0:
-            delete_ind_cols.append(i)
+        ## cutoff = cutoff_level, i.e. a scalar to determine cutoff level of ellipse
+        if cutoff.size == 1:
 
-            ## Update center/reference/mitpoint
-            if i<reference[1]:
-                reference[1] = reference[1]-1
+            ## Determine points in ellipsoid
+            bool, vals = is_in_ellipsoid(points, origin, Sigma_image, cutoff)
 
-    ## Delete rows and columns which only contain zeros
-    kernel = np.delete(kernel, delete_ind_rows, 0)
-    kernel = np.delete(kernel, delete_ind_cols, 1)
-    bool = np.delete(bool, delete_ind_rows, 0)
-    bool = np.delete(bool, delete_ind_cols, 1)
+            ## Compute Gaussian values
+            dim = Sigma_image.shape[0]
+            vals = np.exp(-0.5*vals)/np.sqrt((2*np.pi)**dim * np.linalg.det(Sigma_image)) 
 
-    print bool
-    print kernel
-    print ("reference = %s" %reference)
+            ## Reshape to grid defined by X and Y
+            Bool = bool.reshape(x_interval.size,-1) 
+            Vals = vals.reshape(x_interval.size,-1) 
 
-    return kernel, reference
+            print("X = \n%s" %(X))
+            print("Y = \n%s" %(Y))
+            print("Bool = \n%s" %(Bool))
+            # print("Vals = \n%s" %(Vals))
+
+            ## Normalize values of kernel
+            Phi_all = np.sum(Vals)*step**2
+
+            Vals[Bool==0] = 0
+
+            Phi = np.sum(Vals[Bool])*step**2
+
+            kernel = Vals/np.sum(Vals[Bool])
+
+            ## Find rows which only contain zeros
+            delete_ind_rows = []
+            for i in range(0, kernel.shape[0]):
+                if np.sum(kernel[i,:]) == 0:
+                    # print("delete row %s" %i)
+                    delete_ind_rows.append(i)
+
+                    ## Update center/reference/mitpoint
+                    if i<x_interval.size/float(2):
+                        # print("reference[0]=%s" %reference[0])
+                        reference[0] = reference[0]-1
+
+            ## Find cols which only contain zeros
+            delete_ind_cols = []
+            for i in range(0, kernel.shape[1]):
+                if np.sum(kernel[:,i]) == 0:
+                    # print("delete col %s" %i)
+                    delete_ind_cols.append(i)
+
+                    ## Update center/reference/mitpoint
+                    if i<y_interval.size/float(2):
+                        reference[1] = reference[1]-1
+
+            ## Delete rows and columns which only contain zeros
+            X = np.delete(X, delete_ind_rows, 0)
+            Y = np.delete(Y, delete_ind_rows, 0)
+            kernel = np.delete(kernel, delete_ind_rows, 0)
+            Bool = np.delete(Bool, delete_ind_rows, 0)
+
+            X = np.delete(X, delete_ind_cols, 1)
+            Y = np.delete(Y, delete_ind_cols, 1)
+            kernel = np.delete(kernel, delete_ind_cols, 1)
+            Bool = np.delete(Bool, delete_ind_cols, 1)
+
+            # print("cutoff = %s" %cutoff)
+            # print("Bool = \n%s" %(Bool))
+            # print("X = \n%s" %(X))
+            # print("Y = \n%s" %(Y))
+
+
+        ## cutoff represents kernel size
+        else:
+            ## Evaluate equation for ellipsoid
+            vals = np.exp(-0.5*evaluate_function_ellipsoid(points, origin, Sigma))
+            Vals = vals.reshape(x_interval.size,-1)  # reshape to grid defined by X and Y
+
+            kernel = Vals/np.sum(vals)
+
+
+        
+        print("kernel = \n%s" %(kernel))
+        print ("np.sum(kernel) = %s" %(np.sum(kernel)))
+        print ("reference = %s" %reference)
+
+        if cutoff.size == 1:
+            print("cutoff = %s" %cutoff)
+            print("Phi_all = %s" %Phi_all)
+            print("Phi = %s" %Phi)
+
+
+        return kernel, reference
+
+    except ValueError as err:
+        print(err.args[0])
+        return None
+
 
 
 ## Smooth image based on kernel
@@ -258,6 +388,8 @@ def get_smoothed_image(image_sitk, kernel, reference):
     print("(left, right) = (%s, %s)" %(left,right))
     print("(up, down) = (%s, %s)" %(up,down))
 
+
+    ## by hand
     for i in range(0, nda.shape[0]):
         for j in range(0, nda.shape[1]):
 
@@ -267,14 +399,54 @@ def get_smoothed_image(image_sitk, kernel, reference):
                 for l in range(left, right):
                     if ( 0<=i+k and i+k<nda.shape[0] ) \
                         and ( 0<=j+l and j+l<nda.shape[1] ):
-                        tmp += nda[i+k,j+l]*kernel[k,l]
+                        tmp += nda[i+k,j+l]*kernel[reference[0]+k,reference[1]+l]
 
             nda_smoothed[i,j] = tmp
         
     image_smoothed_sitk = sitk.GetImageFromArray(nda_smoothed)
     image_smoothed_sitk.CopyInformation(image_sitk)
 
+    ## via scipy:
+    ## TODO: https://github.com/scipy/scipy/issues/4580 for correct setting of origin
+    nda_smoothed_scipy = ndimage.convolve(nda, kernel, mode='constant', origin=(0,0))
+
+    ## compare results obtained by hand with those via scipy
+    fig = plt.figure()
+    plt.subplot(131)
+    # plt.imshow(fixed, cmap="Greys_r", origin="low")
+    plt.imshow(nda_smoothed, cmap="Greys_r")
+    plt.xlabel("nda_smoothed")
+
+    plt.subplot(132)
+    # plt.imshow(warped, cmap="Greys_r", origin="low")
+    plt.imshow(nda_smoothed_scipy, cmap="Greys_r")
+    plt.xlabel("nda_smoothed_scipy")
+
+    plt.subplot(133)
+    # plt.imshow(warped, cmap="Greys_r", origin="low")
+    diff = nda_smoothed_scipy-nda_smoothed
+    abs_diff = abs(diff)
+    norm_diff = np.linalg.norm(diff)
+    plt.imshow(abs_diff, cmap="Greys_r")
+    plt.title("abs_diff_min = %s, abs_diff_max = %s, norm_diff = %s" %(abs_diff.min(), abs_diff.max(), norm_diff))
+    plt.xlabel("abs_diff")
+    # plt.colorbar()
+
+    print nda_smoothed.min()
+    print nda_smoothed.max()
+
+    plt.show()
+
     return image_smoothed_sitk
+
+
+def simple_gaussian_2D(Sigma, mu, x, y):
+    sigma_x2 = Sigma[0,0]
+    sigma_y2 = Sigma[1,1]
+
+    val = np.exp(-0.5*( (x-mu[0])**2/sigma_x2 + (y-mu[1])**2/sigma_y2 ))
+
+    return val
 
 
 """
@@ -329,6 +501,7 @@ class TestUM(unittest.TestCase):
             np.linalg.norm( vals_0 - vals_1) 
             , decimals = self.accuracy), 0 )
 
+
 """
 Main
 """
@@ -352,16 +525,18 @@ image_sitk = sitk.ReadImage(dir_input + filename + image_type)
 # image_sitk.SetSpacing((1.4, 1.2))
 
 ## Set variance matrix
-sigma_x = 3
-sigma_y = 3
-cutoff_level = 1
+sigma_x = 1
+sigma_y = 1.5
+kernel_size = (3,5)
 
+
+# cutoff = kernel_size
 
 dim = image_sitk.GetDimension()
 Sigma = np.identity(dim)
 
 Sigma[0,0] = sigma_x**2
-# Sigma[0,1] = 0.5
+# Sigma[0,1] = 3
 Sigma[1,1] = sigma_y**2
 Sigma[1,0] = Sigma[0,1]
 
@@ -372,40 +547,79 @@ origin = np.zeros((2,1))
 
 
 # point = np.array([[0,1],[1,0]])
-point = np.zeros((2,3))
-point[:,0] = (1,1)
-point[:,1] = (2,2)
-point[:,2] = (3,3)
 
-stepsize = 0.1
-x = np.arange(-5,5+stepsize,stepsize)
-y = np.arange(-5,5+stepsize,stepsize)
+try:
+    if is_SPD(Sigma):
+        ## Generate arrays of 2D points
+        step = 1
+        x_interval = np.arange(-1,2,step)
+        y_interval = np.arange(-1,2,step)
+        X,Y = np.meshgrid(x_interval,y_interval)
+        points = np.array([X.flatten(), Y.flatten()])
+        # point = np.zeros((2,3))
+        # point[:,0] = (1,1)
+        # point[:,1] = (2,2)
+        # point[:,2] = (3,3)
 
-## Evaluate equation for ellipsoid
-# print evaluate_function_ellipsoid(point, origin, Sigma)
+        # print points
+        # print X
+        # print Y
 
-## Check whether points are within ellipsoid
-# print is_in_ellipsoid(point, origin, Sigma, cutoff_level)
+        ## Evaluate equation for ellipsoid
+        # vals = np.exp(-0.5*evaluate_function_ellipsoid(points, origin, Sigma))
+        # Vals = vals.reshape(x_interval.size,-1)
 
-## Scale variance-covariance matrix by given factor
-Sigma_scale = get_scaled_variance_covariance_matrix(Sigma, cutoff_level)
+        # print Vals/np.sum(vals)
+        # print vals
 
-kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff_level)
-image_smoothed_sitk = get_smoothed_image(image_sitk, kernel, reference)
+        res = np.zeros(points.shape[1])
+        for i in range(0, points.shape[1]):
+            res[i] = simple_gaussian_2D(Sigma, origin, points[0,i], points[1,i])
+
+        # print res
+
+        ## Check whether points are within ellipsoid
+        # print is_in_ellipsoid(point, origin, Sigma, cutoff_level)
+
+        ## Get contour line level:
+        alpha = 0.98
+        dim = Sigma.shape[0]
+        cutoff_level = chi2.ppf(alpha, dim)
+
+        kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=cutoff_level)
+        # kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=kernel_size)
+        # image_smoothed_sitk = get_smoothed_image(image_sitk, kernel, reference)
+
+        # sitkh.show_sitk_image(image_smoothed_sitk)
+
+        gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
+        gaussian.SetSigma(sigma_x)
+        image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
+
+        # sitkh.show_sitk_image(image_sitk=image_smoothed_sitk, overlay_sitk=image_smoothed_recursive_sitk)
+        # sitkh.show_sitk_image(image_sitk=image_smoothed_sitk)
 
 
-# sitkh.show_sitk_image(image_smoothed_sitk)
-# sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_smoothed_sitk)
+        ## Scale variance-covariance matrix by given factor
+        Sigma_scale = get_scaled_variance_covariance_matrix(Sigma, 1/np.array(image_sitk.GetSpacing()))
 
-## Plot 
-# plot_gaussian(Sigma_scale, origin, x, y)
+        ## Plot 
+        step = 0.1
+        M = 3
+        x_interval = np.arange(-M,M+step,step)
+        y_interval = np.arange(-M,M+step,step)
 
-gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
-gaussian.SetSigma(sigma_x)
+        # plot_gaussian(Sigma_scale, origin, x_interval, y_interval, contour_plot=1, scaled=0)
 
-image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
-sitkh.show_sitk_image(image_sitk=image_smoothed_sitk, overlay_sitk=image_smoothed_recursive_sitk)
-# sitkh.show_sitk_image(image_sitk=image_smoothed_sitk)
+        print("alpha = %s" %alpha)
+        
+
+    else:
+        raise ValueError("Error: Sigma is not SPD")
+
+
+except ValueError as err:
+    print(err.args[0])
 
 
 
