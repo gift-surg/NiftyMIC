@@ -250,18 +250,19 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
             l_max_image = np.ceil(l_max_image)
 
             ## Generate intervals for x and y based on l_max_image
-            step = 0.01
+            step = 1
             x_interval = np.arange(-l_max_image, l_max_image+step,step)
             y_interval = np.arange(-l_max_image, l_max_image+step,step)
 
         ## cutoff represents kernel size
         else:
-            if cutoff[0]%2==0 or cutoff[1]%2==0:
-                raise ValueError("Error: kernel size must consist of odd numbers in both dimensions")
+            # if cutoff[0]%2==0 or cutoff[1]%2==0:
+            #     raise ValueError("Error: kernel size must consist of odd numbers in both dimensions")
 
             ## create intervalls
-            x_interval = np.arange(0,cutoff[0])
-            y_interval = np.arange(0,cutoff[1])
+            step = 1
+            x_interval = np.arange(0,cutoff[0],step)
+            y_interval = np.arange(0,cutoff[1],step)
 
             ## symmetry around zero
             x_interval = x_interval-x_interval.mean()
@@ -270,7 +271,10 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
 
         ## Store reference/center/midpoint of kernel
         # print x_interval
-        reference = np.array([x_interval.size/2, y_interval.size/2]).astype(int)
+        # origin = reference = np.array(kernel.shape)/2
+
+        reference = np.array([len(x_interval), len(y_interval)])/2
+        # reference = np.array([2,2])
         # print ("reference = %s" %reference)
 
         ## Generate arrays of 2D points
@@ -291,18 +295,21 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
             Bool = bool.reshape(x_interval.size,-1) 
             Vals = vals.reshape(x_interval.size,-1) 
 
-            print("X = \n%s" %(X))
-            print("Y = \n%s" %(Y))
-            print("Bool = \n%s" %(Bool))
+            # print("X = \n%s" %(X))
+            # print("Y = \n%s" %(Y))
+            # print("Bool = \n%s" %(Bool))
             # print("Vals = \n%s" %(Vals))
 
             ## Normalize values of kernel
             Phi_all = np.sum(Vals)*step**2
 
+            ## Set values out of desired ellipse to zero
             Vals[Bool==0] = 0
 
+            ## Compute coverage of gaussian (i.e. approximation of confidence interval)
             Phi = np.sum(Vals[Bool])*step**2
 
+            ## Normalize values to kernel
             kernel = Vals/np.sum(Vals[Bool])
 
             ## Find rows which only contain zeros
@@ -348,21 +355,31 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
         ## cutoff represents kernel size
         else:
             ## Evaluate equation for ellipsoid
-            vals = np.exp(-0.5*evaluate_function_ellipsoid(points, origin, Sigma))
-            Vals = vals.reshape(x_interval.size,-1)  # reshape to grid defined by X and Y
+            vals = evaluate_function_ellipsoid(points, origin, Sigma)
 
+            ## Compute Gaussian values
+            dim = Sigma_image.shape[0]
+            vals = np.exp(-0.5*vals)/np.sqrt((2*np.pi)**dim * np.linalg.det(Sigma_image)) 
+
+            ## Reshape to grid defined by X and Y
+            Vals = vals.reshape(x_interval.size,-1)
+
+            ## Compute coverage of gaussian (i.e. approximation of confidence interval)
+            Phi = np.sum(Vals)*step**2
+
+            ## Normalize values to kernel
             kernel = Vals/np.sum(vals)
 
 
         
-        print("kernel = \n%s" %(kernel))
-        print ("np.sum(kernel) = %s" %(np.sum(kernel)))
-        print ("reference = %s" %reference)
+        print("(%sx%s)-kernel = \n%s" %(kernel.shape[0], kernel.shape[1],kernel))
+        print("np.sum(kernel) = %s" %(np.sum(kernel)))
+        print("reference = %s" %reference)
+        print("confidence interval coverage by chosen kernel = %s" %Phi)
 
         if cutoff.size == 1:
-            print("cutoff = %s" %cutoff)
-            print("Phi_all = %s" %Phi_all)
-            print("Phi = %s" %Phi)
+            print("cutoff 'radius' for ellipse = %s" %cutoff)
+            print("possible confidence interval before eliminating values = %s" %Phi_all)
 
 
         return kernel, reference
@@ -374,7 +391,7 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
 
 
 ## Smooth image based on kernel
-def get_smoothed_image(image_sitk, kernel, reference):
+def get_smoothed_image_by_hand(image_sitk, kernel, reference):
 
     nda = sitk.GetArrayFromImage(image_sitk)
     nda_smoothed = np.zeros(nda.shape)
@@ -385,8 +402,8 @@ def get_smoothed_image(image_sitk, kernel, reference):
     up = -reference[0]
     down = kernel.shape[0] - reference[0]
 
-    print("(left, right) = (%s, %s)" %(left,right))
-    print("(up, down) = (%s, %s)" %(up,down))
+    # print("(left, right) = (%s, %s)" %(left,right))
+    # print("(up, down) = (%s, %s)" %(up,down))
 
 
     ## by hand
@@ -406,9 +423,38 @@ def get_smoothed_image(image_sitk, kernel, reference):
     image_smoothed_sitk = sitk.GetImageFromArray(nda_smoothed)
     image_smoothed_sitk.CopyInformation(image_sitk)
 
+    # print nda_smoothed.min()
+    # print nda_smoothed.max()
+
+    return image_smoothed_sitk
+
+
+def get_smoothed_image_by_scipy(image_sitk, kernel, reference):
+
+    nda = sitk.GetArrayFromImage(image_sitk)
+
     ## via scipy:
     ## TODO: https://github.com/scipy/scipy/issues/4580 for correct setting of origin
-    nda_smoothed_scipy = ndimage.convolve(nda, kernel, mode='constant', origin=(0,0))
+    origin = np.array(kernel.shape)/2 - reference
+    print("Update of origin for scipy.ndimage.convole: origin = %s" % origin)
+    nda_smoothed_scipy = ndimage.convolve(nda, kernel, mode='constant', origin=origin)
+
+    image_sitk_smoothed = sitk.GetImageFromArray(nda_smoothed_scipy)
+    image_sitk_smoothed.CopyInformation(image_sitk)
+
+    return image_sitk_smoothed
+
+
+def plot_comparison_of_images(image_sitk_smoothed_by_hand, image_sitk_smoothed_via_scipy):
+    nda_smoothed = sitk.GetArrayFromImage(image_sitk_smoothed_by_hand)
+    nda_smoothed_scipy = sitk.GetArrayFromImage(image_sitk_smoothed_via_scipy)
+
+    diff = nda_smoothed_scipy-nda_smoothed
+    abs_diff = abs(diff)
+    norm_diff = np.linalg.norm(diff)
+
+    print("abs_diff_min = %s, abs_diff_max = %s, norm_diff = %s" %(abs_diff.min(), abs_diff.max(), norm_diff))
+
 
     ## compare results obtained by hand with those via scipy
     fig = plt.figure()
@@ -424,20 +470,13 @@ def get_smoothed_image(image_sitk, kernel, reference):
 
     plt.subplot(133)
     # plt.imshow(warped, cmap="Greys_r", origin="low")
-    diff = nda_smoothed_scipy-nda_smoothed
-    abs_diff = abs(diff)
-    norm_diff = np.linalg.norm(diff)
     plt.imshow(abs_diff, cmap="Greys_r")
     plt.title("abs_diff_min = %s, abs_diff_max = %s, norm_diff = %s" %(abs_diff.min(), abs_diff.max(), norm_diff))
     plt.xlabel("abs_diff")
     # plt.colorbar()
 
-    print nda_smoothed.min()
-    print nda_smoothed.max()
-
     plt.show()
 
-    return image_smoothed_sitk
 
 
 def simple_gaussian_2D(Sigma, mu, x, y):
@@ -502,6 +541,255 @@ class TestUM(unittest.TestCase):
             , decimals = self.accuracy), 0 )
 
 
+    ## Square kernel (3 x 3)
+    def test_02_compare_smoothing_results_of_scipy_and_by_hand_square_kernel(self):
+
+        dir_input = "data/"
+        filename = "BrainWeb_2D"
+        image_type = ".png"
+
+        ## Read image
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+
+        kernel = np.array([\
+            [ 0.08435869,  0.13908396,  0.08435869],
+            [ 0.10535125,  0.17369484,  0.10535125],
+            [ 0.08435869,  0.13908396,  0.08435869]])
+
+        reference = np.array([1,1])
+
+        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+
+        nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_hand-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    ## Rectangular kernel (3 x 5)
+    def test_02_compare_smoothing_results_of_scipy_and_by_hand_rectangular_kernel(self):
+
+        dir_input = "data/"
+        filename = "BrainWeb_2D"
+        image_type = ".png"
+
+        ## Read image
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+
+        kernel = np.array([\
+            [ 0.06935881,  0.10347119,  0.06935881,  0.02089047,  0.00282722],\
+            [ 0.03444257,  0.11435335,  0.17059515,  0.11435335,  0.03444257],
+            [ 0.00282722,  0.02089047,  0.06935881,  0.10347119,  0.06935881]])
+
+        reference = np.array([1,2])
+
+        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+
+        nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_hand-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    ## Rectangular kernel (3 x 5)
+    def test_02_compare_smoothing_results_of_scipy_and_by_hand_rectangular_kernel_altered_reference(self):
+
+        dir_input = "data/"
+        filename = "BrainWeb_2D"
+        image_type = ".png"
+
+        ## Read image
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+
+        kernel = np.array([\
+            [ 0.06935881,  0.10347119,  0.06935881,  0.02089047,  0.00282722],\
+            [ 0.03444257,  0.11435335,  0.17059515,  0.11435335,  0.03444257],
+            [ 0.00282722,  0.02089047,  0.06935881,  0.10347119,  0.06935881]])
+
+        reference = np.array([1,1])
+
+        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+
+        nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_hand-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    ## kernel based on 
+    ##   - elliptic cutoff line with confidence level of alpha=0.65
+    ##   - Sigma = [1, 0; 0 1.5**2]
+    def test_02_compare_smoothing_results_of_scipy_and_by_hand_elliptic_kernel(self):
+
+        dir_input = "data/"
+        filename = "BrainWeb_2D"
+        image_type = ".png"
+
+        ## Read image
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+
+        kernel = np.array([\
+            [ 0.        ,  0.0738165 ,  0.09218565,  0.0738165 ,  0.        ],\
+            [ 0.06248431,  0.12170283,  0.15198844,  0.12170283,  0.06248431],\
+            [ 0.        ,  0.0738165 ,  0.09218565,  0.0738165 ,  0.        ]])
+        reference = np.array([1,2])
+
+        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+
+        nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_hand-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    ## kernel based on 
+    ##   - elliptic cutoff line with confidence level of alpha=0.65
+    ##   - Sigma = [1, 1; 1 1.5**2]
+    def test_02_compare_smoothing_results_of_scipy_and_by_hand_elliptic_kernel_skewed(self):
+
+        dir_input = "data/"
+        filename = "BrainWeb_2D"
+        image_type = ".png"
+
+        ## Read image
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+
+        kernel = np.array([\
+            [ 0.07848865,  0.11709131,  0.07848865,  0.        ,  0.        ],\
+            [ 0.        ,  0.12940591,  0.19305094,  0.12940591,  0.        ],\
+            [ 0.        ,  0.        ,  0.07848865,  0.11709131,  0.07848865]])
+        reference = np.array([1,2])
+
+        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+
+        nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_hand-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    ## kernel based on 
+    ##   - elliptic cutoff line with confidence level of alpha=0.65
+    ##   - Sigma = [1, 1; 1 1.5**2]
+    def test_02_compare_smoothing_results_of_scipy_and_by_hand_elliptic_kernel_skewed_altered_reference(self):
+
+        dir_input = "data/"
+        filename = "BrainWeb_2D"
+        image_type = ".png"
+
+        ## Read image
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+
+        kernel = np.array([\
+            [ 0.07848865,  0.11709131,  0.07848865,  0.        ,  0.        ],\
+            [ 0.        ,  0.12940591,  0.19305094,  0.12940591,  0.        ],\
+            [ 0.        ,  0.        ,  0.07848865,  0.11709131,  0.07848865]])
+        reference = np.array([1,3])
+
+        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+
+        nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_hand-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
 """
 Main
 """
@@ -536,7 +824,7 @@ dim = image_sitk.GetDimension()
 Sigma = np.identity(dim)
 
 Sigma[0,0] = sigma_x**2
-# Sigma[0,1] = 3
+Sigma[0,1] = 1
 Sigma[1,1] = sigma_y**2
 Sigma[1,0] = Sigma[0,1]
 
@@ -582,13 +870,21 @@ try:
         # print is_in_ellipsoid(point, origin, Sigma, cutoff_level)
 
         ## Get contour line level:
-        alpha = 0.98
+        alpha = 0.65
         dim = Sigma.shape[0]
         cutoff_level = chi2.ppf(alpha, dim)
 
-        kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=cutoff_level)
+        # kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=cutoff_level)
         # kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=kernel_size)
-        # image_smoothed_sitk = get_smoothed_image(image_sitk, kernel, reference)
+
+        reference = np.array([1,1])
+
+        # image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        # image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+
+        # plot_comparison_of_images(image_smoothed_sitk, image_smoothed_sitk_scipy)
+
+
 
         # sitkh.show_sitk_image(image_smoothed_sitk)
 
@@ -619,6 +915,8 @@ try:
 
 
 except ValueError as err:
+    print("Sigma = \n%s" %Sigma)
+    print("eigenvalues(Sigma) = \n%s" %np.linalg.eigvals(Sigma))
     print(err.args[0])
 
 
