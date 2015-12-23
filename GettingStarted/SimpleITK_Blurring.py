@@ -156,65 +156,6 @@ def get_scaled_variance_covariance_matrix(Sigma, scales):
     return Sigma
 
 
-## Plot of gaussian
-#  \param Sigma variance-covariance matrix \in \R^{2 \times 2}
-#  \param origin origin of ellipsoid \in \R^{2}
-#  \param x_interval array describing the x-interval
-#  \param y_interval array describing the y-interval
-#  \param contour_plot either contour plot or heat map can be chosen
-#  \param scaled scale to gaussian distribution
-def plot_gaussian(Sigma, origin, x_interval, y_interval, contour_plot=1, scaled=1):
-    x_interval = np.array(x_interval)
-    y_interval = np.array(y_interval)
-
-    ## Generate array of 2D points
-    X,Y = np.meshgrid(x_interval,y_interval)
-    points = np.array([X.flatten(), Y.flatten()])
-
-    ## Evaluate points
-    vals = evaluate_function_ellipsoid(points, origin, Sigma)
-
-    if scaled:
-        vals = np.exp(-0.5*vals)/( (2*np.pi)**1 * np.sqrt(np.linalg.det(Sigma)) )
-
-    ## Reshape so that values fit meshgrid structure
-    Vals = vals.reshape(x_interval.size,-1)
-
-    ## Define levels and colours for contour plot
-    levels = np.array([0.1, 0.5, 1, 2, 5])
-    colours = ('orange', 'orange', 'red', 'blue', 'blue')
-
-    if scaled:
-        levels = np.exp(-0.5*levels)/( (2*np.pi)**1 * np.sqrt(np.linalg.det(Sigma)) )
-
-    ## Plot
-    fig = plt.figure()
-    plt.scatter(origin[0,0], origin[1,0], s=30, c='yellow')
-
-    if contour_plot:
-        CS = plt.contour(X,Y, Vals, levels, colors=colours)
-        plt.clabel(CS, inline=1, fontsize=10)
-    
-    else:
-        CS = plt.contour(X,Y, Vals, levels, colors=colours)
-        plt.clabel(CS, inline=1, fontsize=10)
-        plt.imshow(Vals, origin='lower', extent=[x_interval.min(), x_interval.max(), y_interval.min(), y_interval.max()])
-        plt.colorbar()
-        
-        
-    ax = fig.gca()
-    ax.set_xticks(np.arange(x_interval.min(),x_interval.max()+1,1))
-    ax.set_yticks(np.arange(y_interval.min(),y_interval.max()+1,1))
-
-    plt.grid()
-    plt.title("Sigma = %s, origin = %s" %( Sigma.flatten(), origin.flatten() ))
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.show()
-
-    return None
-
-
 ## get smoothing kernel
 #  \param image_sitk
 #  \param Sigma
@@ -274,7 +215,6 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
         # origin = reference = np.array(kernel.shape)/2
 
         reference = np.array([len(x_interval), len(y_interval)])/2
-        # reference = np.array([2,2])
         # print ("reference = %s" %reference)
 
         ## Generate arrays of 2D points
@@ -347,9 +287,9 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
             Bool = np.delete(Bool, delete_ind_cols, 1)
 
             # print("cutoff = %s" %cutoff)
-            # print("Bool = \n%s" %(Bool))
-            # print("X = \n%s" %(X))
-            # print("Y = \n%s" %(Y))
+            print("Bool = \n%s" %(Bool))
+            print("X = \n%s" %(X))
+            print("Y = \n%s" %(Y))
 
 
         ## cutoff represents kernel size
@@ -475,8 +415,81 @@ def plot_comparison_of_images(image_sitk_smoothed_by_hand, image_sitk_smoothed_v
     plt.xlabel("abs_diff")
     # plt.colorbar()
 
-    plt.show()
+    plt.show(block=False)       # does not pause, but needs plt.draw() (or plt.show()) at end 
+                                # of file to be visible
 
+    return fig
+
+
+## Plot of gaussian
+#  \param Sigma variance-covariance matrix \in \R^{2 \times 2}
+#  \param origin origin of ellipsoid \in \R^{2}
+#  \param x_interval array describing the x-interval
+#  \param y_interval array describing the y-interval
+#  \param contour_plot either contour plot or heat map can be chosen
+def plot_gaussian(Sigma, origin, x_interval, y_interval, contour_plot=1):
+    x_interval = np.array(x_interval)
+    y_interval = np.array(y_interval)
+
+    ## Generate array of 2D points
+    X,Y = np.meshgrid(x_interval,y_interval)
+    points = np.array([X.flatten(), Y.flatten()])
+
+    ## Evaluate points
+    vals = evaluate_function_ellipsoid(points, origin, Sigma)
+
+    ## Define levels and colours for contour plot
+    dim = Sigma.shape[0]
+    level_050 = chi2.ppf(0.50, dim)
+    level_070 = chi2.ppf(0.70, dim)
+    level_080 = chi2.ppf(0.80, dim)
+    level_090 = chi2.ppf(0.90, dim)
+    level_095 = chi2.ppf(0.95, dim)
+
+    levels = np.array([level_050, level_070, level_080, level_090, level_095])
+    levels_name = ['50%', '70%', '80%', '90%', '95%']
+    # levels_name = np.array([0.5, 0.7, 0.8, 0.90, 0.95])
+    colours = ('blue', 'green', 'orange', 'magenta', 'red')
+
+    vals = np.exp(-0.5*vals)/np.sqrt( (2*np.pi)**dim * np.linalg.det(Sigma) )
+    levels = np.exp(-0.5*levels)/np.sqrt( (2*np.pi)**dim * np.linalg.det(Sigma) )
+        
+    ## Combine levels with corresponding labels for contour lines
+    fmt = {}
+    for l,s in zip(levels, levels_name):
+        fmt[l] =  s
+
+    ## Reshape so that values fit meshgrid structure
+    Vals = vals.reshape(y_interval.size,-1)
+
+    ## Plot
+    fig = plt.figure()
+    plt.scatter(origin[0,0], origin[1,0], s=30, c='yellow')
+
+    # CS = plt.contour(X,Y, Vals, levels)
+    CS = plt.contour(X,Y, Vals, levels, colors=colours)
+
+    if contour_plot:
+        plt.clabel(CS, inline=True, fmt=fmt, fontsize=10)
+    
+    else:
+        plt.clabel(CS, inline=True, fmt=fmt, fontsize=10)        
+        plt.imshow(Vals, origin='lower', extent=[x_interval.min(), x_interval.max(), y_interval.min(), y_interval.max()])
+        plt.colorbar()
+        
+        
+    ax = fig.gca()
+    ax.set_xticks(np.arange(x_interval.min(),x_interval.max()+1,1))
+    ax.set_yticks(np.arange(y_interval.min(),y_interval.max()+1,1))
+
+    plt.grid()
+    plt.title("Sigma = %s, origin = %s" %( Sigma.flatten(), origin.flatten() ))
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.show(block=False)       # does not pause, but needs plt.draw() (or plt.show()) at end 
+                                # of file to be visible
+
+    return fig
 
 
 def simple_gaussian_2D(Sigma, mu, x, y):
@@ -790,6 +803,50 @@ class TestUM(unittest.TestCase):
             print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
 
 
+    ## kernel based on 
+    ##   - elliptic cutoff line with confidence level of alpha=0.95
+    ##   - Sigma = [5**2, 0; 0 5**2]
+    def test_02_compare_smoothing_results_of_scipy_and_recursive_gaussian_elliptic_kernel(self):
+
+        dir_input = "data/"
+        filename = "BrainWeb_2D"
+        image_type = ".png"
+
+        sigma = 5
+
+        ## Read image
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+
+        kernel = np.loadtxt(dir_input+"kernel_Sigma_" + str(sigma) + "_0_0_" + str(sigma) + ".txt")
+        reference = np.array(kernel.shape)/2
+
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+        
+        gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
+        gaussian.SetSigma(sigma)
+        image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
+        
+        nda_recursive = sitk.GetArrayFromImage(image_smoothed_recursive_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_recursive-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
 """
 Main
 """
@@ -813,8 +870,8 @@ image_sitk = sitk.ReadImage(dir_input + filename + image_type)
 # image_sitk.SetSpacing((1.4, 1.2))
 
 ## Set variance matrix
-sigma_x = 1
-sigma_y = 1.5
+sigma_x = 2
+sigma_y = 1
 kernel_size = (3,5)
 
 
@@ -870,17 +927,15 @@ try:
         # print is_in_ellipsoid(point, origin, Sigma, cutoff_level)
 
         ## Get contour line level:
-        alpha = 0.65
+        alpha = 0.8
         dim = Sigma.shape[0]
         cutoff_level = chi2.ppf(alpha, dim)
 
-        # kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=cutoff_level)
+        kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=cutoff_level)
         # kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=kernel_size)
 
-        reference = np.array([1,1])
-
         # image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
-        # image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
 
         # plot_comparison_of_images(image_smoothed_sitk, image_smoothed_sitk_scipy)
 
@@ -891,6 +946,8 @@ try:
         gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
         gaussian.SetSigma(sigma_x)
         image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
+        
+        # plot_comparison_of_images(image_smoothed_recursive_sitk, image_smoothed_sitk_scipy)
 
         # sitkh.show_sitk_image(image_sitk=image_smoothed_sitk, overlay_sitk=image_smoothed_recursive_sitk)
         # sitkh.show_sitk_image(image_sitk=image_smoothed_sitk)
@@ -900,15 +957,17 @@ try:
         Sigma_scale = get_scaled_variance_covariance_matrix(Sigma, 1/np.array(image_sitk.GetSpacing()))
 
         ## Plot 
+        M_x = 3*sigma_x
+        M_y = 3*sigma_y
         step = 0.1
-        M = 3
-        x_interval = np.arange(-M,M+step,step)
-        y_interval = np.arange(-M,M+step,step)
+        x_interval = np.arange(-M_x,M_x+step,step)
+        y_interval = np.arange(-M_y,M_y+step,step)
 
-        # plot_gaussian(Sigma_scale, origin, x_interval, y_interval, contour_plot=1, scaled=0)
+        plot_gaussian(Sigma_scale, origin, x_interval, y_interval, contour_plot=1)
 
         print("alpha = %s" %alpha)
-        
+
+        plt.draw()        
 
     else:
         raise ValueError("Error: Sigma is not SPD")
@@ -927,4 +986,4 @@ except ValueError as err:
 Unit tests:
 """
 print("\nUnit tests:\n--------------")
-unittest.main()
+# unittest.main()
