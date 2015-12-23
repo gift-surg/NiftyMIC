@@ -42,7 +42,7 @@ def evaluate_function_ellipsoid(points, origin, Sigma):
 
     try:
         ## Guarantee that origin is column vector, i.e. in \R^{(2 or 3)}
-        if origin.size is 2 or orign.size is 3:
+        if origin.size is 2 or origin.size is 3:
             origin = origin.reshape(origin.size,-1)
 
         else:
@@ -75,23 +75,23 @@ def evaluate_function_ellipsoid(points, origin, Sigma):
 
 ## Compute multivariate Gaussian 
 #  \param points to check given as array \in \R^{dim \times N}
-#  \param origin origin of ellipsoid \in \R^{dim}
+#  \param mu mean of gaussian \in \R^{dim}
 #  \param Sigma variance-covariance matrix \in \R^{dim \times dim}
 #  \return values of (multivariate) Gaussian distribution
-def compute_gaussian(Sigma, mu, points):
+def compute_gaussian(points, mu, Sigma):
 
     points = np.array(points)
-    origin = np.array(origin)
+    mu = np.array(mu)
 
     dim = Sigma.shape[0]
 
     try:
-        ## Guarantee that origin is column vector, i.e. in \R^{(2 or 3)}
-        if origin.size is 2 or orign.size is 3:
-            origin = origin.reshape(origin.size,-1)
+        ## Guarantee that mu is column vector, i.e. in \R^{(2 or 3)}
+        if mu.size is 2 or mu.size is 3:
+            mu = mu.reshape(mu.size,-1)
 
         else:
-            raise ValueError("Error: origin is not in R^2 or R^3")
+            raise ValueError("Error: mu is not in R^2 or R^3")
 
 
         ## If only one point is given: Reshape to column vector
@@ -100,7 +100,7 @@ def compute_gaussian(Sigma, mu, points):
 
         ## Check whether input parameters are well-defined
         if (points.shape[0] is not 2 and points.shape[0] is not 3) \
-            or (points.shape[0] is not origin.size) \
+            or (points.shape[0] is not mu.size) \
             or (Sigma.shape[0] is not Sigma.shape[1]) \
             or (points.shape[0] is not Sigma.shape[0]):
             raise ValueError("Error: Parameters must be of dimension 2 or 3")
@@ -111,7 +111,7 @@ def compute_gaussian(Sigma, mu, points):
 
         else:
             ## Compute value according to equation of ellipsoid
-            value = np.sum((points-origin)*np.linalg.inv(Sigma).dot(points-origin), 0)
+            value = np.sum((points-mu)*np.linalg.inv(Sigma).dot(points-mu), 0)
             value = np.exp(-0.5*value)/np.sqrt((2*np.pi)**dim * np.linalg.det(Sigma)) 
             
             return value
@@ -165,89 +165,71 @@ def get_scaled_variance_covariance_matrix(Sigma, scales):
 #  \return reference
 def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
 
-    try:
-        cutoff = np.array(cutoff)
+    dim = Sigma.shape[0]
 
-        spacing = np.array(image_sitk.GetSpacing())
+    ## Convert to arrays
+    cutoff = np.array(cutoff)
+    spacing = np.array(image_sitk.GetSpacing())
 
-        ## Scale to image space with cutoff-sigma
-        scaling = 1/spacing
+    ## Scale to image space with cutoff-sigma
+    scaling = 1/spacing
 
-        Sigma_image = get_scaled_variance_covariance_matrix(Sigma, scaling)
-        
-        ## Perform SVD
-        U,s_image,V = np.linalg.svd(Sigma_image)
+    Sigma_image = get_scaled_variance_covariance_matrix(Sigma, scaling)
+    
+    ## Perform SVD
+    U,s_image,V = np.linalg.svd(Sigma_image)
 
-        # print s_image
-        # U,s,V = np.linalg.svd(Sigma)
-        # print s
+    # print s_image
+    # U,s,V = np.linalg.svd(Sigma)
+    # print s
 
-        ## cutoff = cutoff_level, i.e. a scalar to determine cutoff level of ellipse
-        if cutoff.size == 1:
-            ## Maximumg length of vector in image space
-            ## TODO: more exact
-            l_max_image = np.sqrt(np.linalg.norm(s_image)*cutoff)
-            print("l_max_image = %s" %(l_max_image))
-            l_max_image = np.ceil(l_max_image)
+    ## cutoff = cutoff_level, i.e. a scalar to determine cutoff level of ellipse
+    if cutoff.size == 1:
 
+        ## Maximumg length of vector in image space
+        ## (Length of) vector representing the sphere such that cutoff-ellipse is for sure covered
+        l_max_image = np.sqrt(np.linalg.norm(s_image)*cutoff)
+        print("l_max_image = %s" %(l_max_image))
+        l_max_image = np.ceil(l_max_image)
+
+
+        if dim == 2:
             ## Generate intervals for x and y based on l_max_image
             step = 1
             x_interval = np.arange(-l_max_image, l_max_image+step,step)
             y_interval = np.arange(-l_max_image, l_max_image+step,step)
 
-        ## cutoff represents kernel size
-        else:
-            # if cutoff[0]%2==0 or cutoff[1]%2==0:
-            #     raise ValueError("Error: kernel size must consist of odd numbers in both dimensions")
+            ## Store reference/center/refpoint of kernel
+            reference = np.array([len(x_interval), len(y_interval)])/2
+            # print ("reference = %s" %reference)
 
-            ## create intervalls
-            step = 1
-            x_interval = np.arange(0,cutoff[0],step)
-            y_interval = np.arange(0,cutoff[1],step)
-
-            ## symmetry around zero
-            x_interval = x_interval-x_interval.mean()
-            y_interval = y_interval-y_interval.mean()
-
-
-        ## Store reference/center/midpoint of kernel
-        # print x_interval
-        # origin = reference = np.array(kernel.shape)/2
-
-        reference = np.array([len(x_interval), len(y_interval)])/2
-        # print ("reference = %s" %reference)
-
-        ## Generate arrays of 2D points
-        Y,X = np.meshgrid(y_interval,x_interval)    # do it this order so that x-coordinate is vertical for image!
-        points = np.array([X.flatten(), Y.flatten()])
-
-        ## cutoff = cutoff_level, i.e. a scalar to determine cutoff level of ellipse
-        if cutoff.size == 1:
+            ## Generate arrays of 2D points
+            X,Y = np.meshgrid(x_interval, y_interval, indexing='ij')    # 'ij' yields vertical x-coordinate for image!
+            points = np.array([X.flatten(), Y.flatten()])
 
             ## Determine points in ellipsoid
             bool, vals = is_in_ellipsoid(points, origin, Sigma_image, cutoff)
 
             ## Compute Gaussian values
-            dim = Sigma_image.shape[0]
             vals = np.exp(-0.5*vals)/np.sqrt((2*np.pi)**dim * np.linalg.det(Sigma_image)) 
 
             ## Reshape to grid defined by X and Y
-            Bool = bool.reshape(x_interval.size,-1) 
-            Vals = vals.reshape(x_interval.size,-1) 
+            Bool = bool.reshape(x_interval.size, y_interval.size) 
+            Vals = vals.reshape(x_interval.size, y_interval.size) 
 
-            # print("X = \n%s" %(X))
-            # print("Y = \n%s" %(Y))
-            # print("Bool = \n%s" %(Bool))
-            # print("Vals = \n%s" %(Vals))
+            # print("%s-Bool = \n%s" %(Bool.shape,Bool))
+            # print("%s-X = \n%s" %(X.shape,X))
+            # print("%s-Y = \n%s" %(Y.shape,Y))
+            # print("%s-Vals = \n%s" %(Vals.shape,Vals))
 
             ## Normalize values of kernel
-            Phi_all = np.sum(Vals)*step**2
+            Phi_all = np.sum(Vals)*step**dim
 
             ## Set values out of desired ellipse to zero
             Vals[Bool==0] = 0
 
             ## Compute coverage of gaussian (i.e. approximation of confidence interval)
-            Phi = np.sum(Vals[Bool])*step**2
+            Phi = np.sum(Vals[Bool])*step**dim
 
             ## Normalize values to kernel
             kernel = Vals/np.sum(Vals[Bool])
@@ -276,57 +258,214 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
                         reference[1] = reference[1]-1
 
             ## Delete rows and columns which only contain zeros
-            X = np.delete(X, delete_ind_rows, 0)
-            Y = np.delete(Y, delete_ind_rows, 0)
-            kernel = np.delete(kernel, delete_ind_rows, 0)
-            Bool = np.delete(Bool, delete_ind_rows, 0)
+            X = np.delete(X, delete_ind_rows, axis=0)
+            Y = np.delete(Y, delete_ind_rows, axis=0)
+            kernel = np.delete(kernel, delete_ind_rows, axis=0)
+            Bool = np.delete(Bool, delete_ind_rows, axis=0)
 
-            X = np.delete(X, delete_ind_cols, 1)
-            Y = np.delete(Y, delete_ind_cols, 1)
-            kernel = np.delete(kernel, delete_ind_cols, 1)
-            Bool = np.delete(Bool, delete_ind_cols, 1)
+            X = np.delete(X, delete_ind_cols, axis=1)
+            Y = np.delete(Y, delete_ind_cols, axis=1)
+            kernel = np.delete(kernel, delete_ind_cols, axis=1)
+            Bool = np.delete(Bool, delete_ind_cols, axis=1)
 
             # print("cutoff = %s" %cutoff)
-            print("Bool = \n%s" %(Bool))
-            print("X = \n%s" %(X))
-            print("Y = \n%s" %(Y))
+            print("%s-Bool = \n%s" %(Bool.shape,Bool))
+            print("%s-X = \n%s" %(X.shape,X))
+            print("%s-Y = \n%s" %(Y.shape,Y))
 
 
-        ## cutoff represents kernel size
-        else:
-            ## Evaluate equation for ellipsoid
-            vals = evaluate_function_ellipsoid(points, origin, Sigma)
+        elif dim == 3:
+            ## Generate intervals for x, y and z based on l_max_image
+            step = 1
+            x_interval = np.arange(-l_max_image, l_max_image+step,step)
+            y_interval = np.arange(-l_max_image, l_max_image+step,step)
+            z_interval = np.arange(-l_max_image, l_max_image+step,step)
+
+            ## Store reference/center/refpoint of kernel
+            reference = np.array([len(x_interval), len(y_interval), len(z_interval)])/2
+
+            ## Generate arrays of 3D points
+            X,Y,Z = np.meshgrid(x_interval, y_interval, z_interval, indexing='ij')    # 'ij' yields vertical x-coordinate for image!
+            points = np.array([X.flatten(), Y.flatten(), Z.flatten()])
+
+            ## Determine points in ellipsoid
+            bool, vals = is_in_ellipsoid(points, origin, Sigma_image, cutoff)
 
             ## Compute Gaussian values
-            dim = Sigma_image.shape[0]
             vals = np.exp(-0.5*vals)/np.sqrt((2*np.pi)**dim * np.linalg.det(Sigma_image)) 
+
+            ## Reshape to grid defined by X, Y and Z
+            Bool = bool.reshape(x_interval.size, y_interval.size, z_interval.size) 
+            Vals = vals.reshape(x_interval.size, y_interval.size, z_interval.size) 
+
+            print("%s-Bool = \n%s" %(Bool.shape,Bool))
+            # print("%s-X = \n%s" %(X.shape,X))
+            # print("%s-Y = \n%s" %(Y.shape,Y))
+            # print("%s-Z = \n%s" %(Z.shape,Z))
+            print("%s-Vals = \n%s" %(Vals.shape,Vals))
+
+            ## Normalize values of kernel (rectangu)
+            Phi_all = np.sum(Vals)*step**dim
+
+            ## Set values out of desired ellipse to zero
+            Vals[Bool==0] = 0
+
+            ## Compute coverage of gaussian (i.e. approximation of confidence interval)
+            Phi = np.sum(Vals[Bool])*step**dim
+
+            ## Normalize values to kernel
+            kernel = Vals/np.sum(Vals[Bool])
+
+            ## Find x-planes which only contain zeros
+            delete_ind_x = []
+            for x in range(0, kernel.shape[0]):
+                if np.sum(kernel[x,:,:]) == 0:
+                    # print("delete x-plane %s" %x)
+                    delete_ind_x.append(x)
+
+                    ## Update center/reference/mitpoint
+                    if x<x_interval.size/float(2):
+                        # print("reference[0]=%s" %reference[0])
+                        reference[0] = reference[0]-1
+
+            ## Find y-planes which only contain zeros
+            delete_ind_y = []
+            for y in range(0, kernel.shape[1]):
+                if np.sum(kernel[:,y,:]) == 0:
+                    # print("delete y-plane %s" %y)
+                    delete_ind_y.append(y)
+
+                    ## Update center/reference/mitpoint
+                    if y<y_interval.size/float(2):
+                        # print("reference[0]=%s" %reference[0])
+                        reference[1] = reference[1]-1
+
+            ## Find z-planes which only contain zeros
+            delete_ind_z = []
+            for z in range(0, kernel.shape[2]):
+                if np.sum(kernel[:,:,z]) == 0:
+                    # print("delete z-plane %s" %z)
+                    delete_ind_z.append(z)
+
+                    ## Update center/reference/mitpoint
+                    if z<z_interval.size/float(2):
+                        # print("reference[0]=%s" %reference[0])
+                        reference[2] = reference[2]-1
+
+
+            ## Delete all plains which only contain zeros
+            X = np.delete(X, delete_ind_x, axis=0)
+            Y = np.delete(Y, delete_ind_x, axis=0)
+            Z = np.delete(Z, delete_ind_x, axis=0)
+            kernel = np.delete(kernel, delete_ind_x, axis=0)
+            Bool = np.delete(Bool, delete_ind_x, axis=0)
+
+            X = np.delete(X, delete_ind_y, axis=1)
+            Y = np.delete(Y, delete_ind_y, axis=1)
+            Z = np.delete(Z, delete_ind_y, axis=1)
+            kernel = np.delete(kernel, delete_ind_y, axis=1)
+            Bool = np.delete(Bool, delete_ind_y, axis=1)
+
+            X = np.delete(X, delete_ind_z, axis=2)
+            Y = np.delete(Y, delete_ind_z, axis=2)
+            Z = np.delete(Z, delete_ind_z, axis=2)
+            kernel = np.delete(kernel, delete_ind_z, axis=2)
+            Bool = np.delete(Bool, delete_ind_z, axis=2)
+
+            # print("cutoff = %s" %cutoff)
+            # print("%s-Bool = \n%s" %(Bool.shape,Bool))
+            # print("%s-X = \n%s" %(X.shape,X))
+            # print("%s-Y = \n%s" %(Y.shape,Y))
+            # print("%s-Z = \n%s" %(Z.shape,Z))
+
+
+        else:
+            raise ValueError("Error: Dimension must be 2 or 3")
+
+
+
+    ## cutoff represents kernel size
+    else:
+        if dim == 2:
+            ## create intervalls
+            step = 1
+            x_interval = np.arange(0,cutoff[0],step)
+            y_interval = np.arange(0,cutoff[1],step)
+
+            ## symmetry around zero
+            x_interval = x_interval-x_interval.mean()
+            y_interval = y_interval-y_interval.mean()
+
+            ## Store reference/center/refpoint of kernel
+            # origin = reference = np.array(kernel.shape)/2
+            reference = np.array([len(x_interval), len(y_interval)])/2
+            # print ("reference = %s" %reference)
+
+            ## Generate arrays of 2D points
+            X,Y = np.meshgrid(x_interval, y_interval, indexing='ij')    # 'ij' yields vertical x-coordinate for image!
+            points = np.array([X.flatten(), Y.flatten()])
+
+            ## Compute Gaussian values
+            vals = compute_gaussian(points, origin, Sigma)
 
             ## Reshape to grid defined by X and Y
             Vals = vals.reshape(x_interval.size,-1)
 
             ## Compute coverage of gaussian (i.e. approximation of confidence interval)
-            Phi = np.sum(Vals)*step**2
+            Phi = np.sum(Vals)*step**dim
 
             ## Normalize values to kernel
             kernel = Vals/np.sum(vals)
 
+        elif dim == 3:
+            ## create intervalls
+            step = 1
+            x_interval = np.arange(0,cutoff[0],step)
+            y_interval = np.arange(0,cutoff[1],step)
+            z_interval = np.arange(0,cutoff[1],step)
 
-        
-        print("(%sx%s)-kernel = \n%s" %(kernel.shape[0], kernel.shape[1],kernel))
-        print("np.sum(kernel) = %s" %(np.sum(kernel)))
-        print("reference = %s" %reference)
-        print("confidence interval coverage by chosen kernel = %s" %Phi)
+            ## symmetry around zero
+            x_interval = x_interval-x_interval.mean()
+            y_interval = y_interval-y_interval.mean()
+            z_interval = z_interval-z_interval.mean()
+            
+            ## Store reference/center/refpoint of kernel
+            # origin = reference = np.array(kernel.shape)/2
+            reference = np.array([len(x_interval), len(y_interval), len(z_interval)])/2
+            # print ("reference = %s" %reference)
 
-        if cutoff.size == 1:
-            print("cutoff 'radius' for ellipse = %s" %cutoff)
-            print("possible confidence interval before eliminating values = %s" %Phi_all)
+            ## Generate arrays of 3D points
+            X,Y,Z = np.meshgrid(x_interval, y_interval, z_interval, indexing='ij')    # 'ij' yields vertical x-coordinate for image!
+            points = np.array([X.flatten(), Y.flatten(), Z.flatten()])
+
+            ## Compute Gaussian values
+            vals = compute_gaussian(points, origin, Sigma)
+
+            ## Reshape to grid defined by X, Y and Z
+            Vals = vals.reshape(x_interval.size, y_interval.size, z_interval.size)
+
+            ## Compute coverage of gaussian (i.e. approximation of confidence interval)
+            Phi = np.sum(Vals)*step**dim
+
+            ## Normalize values to kernel
+            kernel = Vals/np.sum(vals)
+
+        else:
+            raise ValueError("Error: Dimension must be 2 or 3")
+
+    
+    print("%s-kernel = \n%s" %(kernel.shape,kernel))
+    print("np.sum(kernel) = %s" %(np.sum(kernel)))
+    print("reference = %s" %reference)
+    print("confidence interval coverage by chosen kernel (approx) = %s" %Phi)
+
+    if cutoff.size == 1:
+        print("cutoff 'radius' for ellipse = %s" %cutoff)
+        print("possible confidence interval before eliminating values (approx) = %s" %Phi_all)
 
 
-        return kernel, reference
+    return kernel, reference
 
-    except ValueError as err:
-        print(err.args[0])
-        return None
 
 
 
@@ -491,14 +630,6 @@ def plot_gaussian(Sigma, origin, x_interval, y_interval, contour_plot=1):
 
     return fig
 
-
-def simple_gaussian_2D(Sigma, mu, x, y):
-    sigma_x2 = Sigma[0,0]
-    sigma_y2 = Sigma[1,1]
-
-    val = np.exp(-0.5*( (x-mu[0])**2/sigma_x2 + (y-mu[1])**2/sigma_y2 ))
-
-    return val
 
 
 """
@@ -854,91 +985,121 @@ Main
 dir_input = "data/"
 dir_output = "results/"
 
-filename =  "placenta_s"
-filename = "BrainWeb_2D"
+# filename =  "placenta_s"
 # filename =  "kidney_s"
-# filename =  "fetal_brain_a"
 # filename =  "fetal_brain_c"
 # filename =  "fetal_brain_s"
 
+filename = "BrainWeb_2D"
 image_type = ".png"
-# image_type = ".nii.gz"
+
+filename =  "fetal_brain_a"
+image_type = ".nii.gz"
 
 ## Read image
-image_sitk = sitk.ReadImage(dir_input + filename + image_type)    
-
-# image_sitk.SetSpacing((1.4, 1.2))
-
-## Set variance matrix
-sigma_x = 2
-sigma_y = 1
-kernel_size = (3,5)
-
-
-# cutoff = kernel_size
+image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
 
 dim = image_sitk.GetDimension()
+
 Sigma = np.identity(dim)
-
-Sigma[0,0] = sigma_x**2
-Sigma[0,1] = 1
-Sigma[1,1] = sigma_y**2
-Sigma[1,0] = Sigma[0,1]
-
-# point = np.array([1,1]).reshape(dim,-1)
-origin = np.zeros((2,1))
-# origin[0] = 0.1
-# origin[1] = 0.4
+origin = np.zeros((dim,1))
 
 
-# point = np.array([[0,1],[1,0]])
+if dim == 2:
+    sigma_x = 1
+    sigma_y = 1
+
+    Sigma[0,0] = sigma_x**2
+    # Sigma[0,1] = 1
+    Sigma[1,1] = sigma_y**2
+    Sigma[1,0] = Sigma[0,1]
+
+    # origin[0] = 0.1
+    # origin[1] = 0.4
+
+    kernel_size = (3,5)
+
+elif dim == 3:
+    sigma_x = 1
+    sigma_y = 1
+    sigma_z = 1
+
+    Sigma[0,0] = sigma_x**2
+    # Sigma[0,1] = 2
+    # Sigma[0,2] = 1
+    Sigma[1,1] = sigma_y**2
+    # Sigma[1,2] = 1
+    Sigma[2,2] = sigma_z**2
+    Sigma[1,0] = Sigma[0,1]
+    Sigma[2,0] = Sigma[0,2]
+    Sigma[2,1] = Sigma[1,2]
+
+    # origin[0] = 1
+    # origin[1] = 4
+    # origin[2] = -1
+
+    kernel_size = (3,5,3)
+
+    ## Unit spacing for better comparison
+    image_sitk.SetSpacing((1,1,1))  
+
+
 
 try:
     if is_SPD(Sigma):
+        print("Sigma = \n%s" %Sigma)
+
         ## Generate arrays of 2D points
-        step = 1
-        x_interval = np.arange(-1,2,step)
-        y_interval = np.arange(-1,2,step)
-        X,Y = np.meshgrid(x_interval,y_interval)
-        points = np.array([X.flatten(), Y.flatten()])
-        # point = np.zeros((2,3))
-        # point[:,0] = (1,1)
-        # point[:,1] = (2,2)
-        # point[:,2] = (3,3)
+        if dim == 2:
+            step = 1
+            x_interval = np.arange(-1,2,step)
+            y_interval = np.arange(-1,2,step)
+            X,Y = np.meshgrid(x_interval, y_interval, indexing='ij')    # 'ij' yields vertical x-coordinate for image!
 
-        # print points
-        # print X
-        # print Y
+            points = np.array([X.flatten(), Y.flatten()])
 
-        ## Evaluate equation for ellipsoid
-        # vals = np.exp(-0.5*evaluate_function_ellipsoid(points, origin, Sigma))
-        # Vals = vals.reshape(x_interval.size,-1)
+            # print("x_interval = %s" %x_interval)
+            # print("y_interval = %s" %y_interval)
+            # print("X = \n%s" %X)
+            # print("Y = \n%s" %Y)
+            # print("points = \n%s" %points)
+            # print("origin = \n%s" %origin)
 
-        # print Vals/np.sum(vals)
-        # print vals
 
-        res = np.zeros(points.shape[1])
-        for i in range(0, points.shape[1]):
-            res[i] = simple_gaussian_2D(Sigma, origin, points[0,i], points[1,i])
+        ## Generate arrays of 3D points
+        elif dim == 3:
+            step = 1
+            x_interval = np.arange(-1,1,step)
+            y_interval = np.arange(-2,0,step)
+            z_interval = np.arange(-3,-1,step)
+            X,Y,Z = np.meshgrid(x_interval, y_interval, z_interval, indexing='ij')
+            points = np.array([X.flatten(), Y.flatten(), Z.flatten()])
 
-        # print res
+            # print("x_interval = %s" %x_interval)
+            # print("y_interval = %s" %y_interval)
+            # print("z_interval = %s" %z_interval)
+            # print("X = \n%s" %X)
+            # print("Y = \n%s" %Y)
+            # print("Z = \n%s" %Z)
+            # print("points = \n%s" %points)
+            # print("origin = \n%s" %origin)
 
-        ## Check whether points are within ellipsoid
-        # print is_in_ellipsoid(point, origin, Sigma, cutoff_level)
 
         ## Get contour line level:
-        alpha = 0.8
-        dim = Sigma.shape[0]
+        alpha = 0.3
         cutoff_level = chi2.ppf(alpha, dim)
+        # print("cutoff_level = %s" %cutoff_level)
+
+        ## Check whether points are within ellipsoid
+        # print is_in_ellipsoid(points[:,0], origin, Sigma, cutoff_level)
 
         kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=cutoff_level)
         # kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=kernel_size)
 
         # image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
-        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+        # image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
 
         # plot_comparison_of_images(image_smoothed_sitk, image_smoothed_sitk_scipy)
-
 
 
         # sitkh.show_sitk_image(image_smoothed_sitk)
@@ -957,13 +1118,15 @@ try:
         Sigma_scale = get_scaled_variance_covariance_matrix(Sigma, 1/np.array(image_sitk.GetSpacing()))
 
         ## Plot 
-        M_x = 3*sigma_x
-        M_y = 3*sigma_y
-        step = 0.1
-        x_interval = np.arange(-M_x,M_x+step,step)
-        y_interval = np.arange(-M_y,M_y+step,step)
+        if dim == 2:
 
-        plot_gaussian(Sigma_scale, origin, x_interval, y_interval, contour_plot=1)
+            M_x = 3*sigma_x
+            M_y = 3*sigma_y
+            step = 0.1
+            x_interval = np.arange(-M_x,M_x+step,step)
+            y_interval = np.arange(-M_y,M_y+step,step)
+
+            # plot_gaussian(Sigma_scale, origin, x_interval, y_interval, contour_plot=1)
 
         print("alpha = %s" %alpha)
 
