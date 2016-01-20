@@ -1,8 +1,10 @@
 import itk
+import SimpleITK as sitk
 import numpy as np
 
 import sys
-sys.path.append("../")
+sys.path.append("../src")
+
 
 dir_input = "data/"
 dir_output = "results/"
@@ -48,31 +50,10 @@ nda = itk2np.GetArrayFromImage(image_itk)
 
 # Gaussian Filtering
 sigma = 3
-
-# Recursive Gaussian YVV Filter
 filter_type_YVV = itk.SmoothingRecursiveYvvGaussianImageFilter[input_image_type, output_image_type]
 filter_YVV = filter_type_YVV.New()
 filter_YVV.SetInput(image_itk)
 filter_YVV.SetSigma(sigma)
+print("OK 1")
 filter_YVV.Update()     #Execution of the Recursive Gaussian YVV Filter
-
-# Recursive Gaussian Filter (Deriche)
-filter_type_Deriche = itk.SmoothingRecursiveGaussianImageFilter[input_image_type, output_image_type]
-filter_Deriche = filter_type_Deriche.New()
-filter_Deriche.SetInput(image_itk)
-filter_Deriche.SetSigma(sigma)
-filter_Deriche.Update() #Execution of the Recursive Gaussian Filter
-
-# Write Image
-writer.SetFileName(dir_output + filename + "_GaussianFilter_Yvv.nii.gz")
-writer.SetInput(filter_YVV.GetOutput())
-writer.Update()
-
-writer.SetFileName(dir_output + filename + "_GaussianFilter_Deriche.nii.gz")
-writer.SetInput(filter_Deriche.GetOutput())
-writer.Update()
-
-
-## SimpleITK
-import SimpleITK as sitk
-image_sitk = sitk.ReadImage(dir_input + filename + ".nii.gz")
+print("OK 2")

@@ -15,7 +15,7 @@ import itk
 
 import os                       # used to execute terminal commands in python
 import sys
-sys.path.append("../")
+sys.path.append("../src/")
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
@@ -425,12 +425,14 @@ if __name__ == '__main__':
     Set variables
     """
     ## Specify data
-    dir_input = "../../data/fetal_neck/"
+    # dir_input = "../data/fetal_neck/"
+    dir_input = "../results/"
     dir_output = "results/"
-    filename =  "5"
+    filename =  "Reconstruction_0_without_in_plane_alignment"
     filename_recon = "data/3TReconstruction" # result B. Kainz
     # filename_recon = "data/SRTV_fetalUCL_3V_NoNLM_bcorr_norm_lambda_0.1_deltat_0.001_loops_10_it1" # result S. Tourbier
-    filename_out = "test"
+    # filename_out = "2_registered"
+    filename_out = filename + "_registered"
 
     accuracy = 6 # decimal places for accuracy of unit tests
 
@@ -454,20 +456,27 @@ if __name__ == '__main__':
     sitkh.print_rigid_transformation(transform_3D,"global alignment")
 
     ## Check alignment
+
+    ## Linear Sampling
+    # test = sitk.Resample(
+    #     stack_rigidly_aligned, reconstruction, sitk.Euler3DTransform(), sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
+    #     )
+
+    ## Nearest Neighbour Sampling
     test = sitk.Resample(
-        stack_rigidly_aligned, reconstruction, sitk.Euler3DTransform(), sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
+        stack_rigidly_aligned, reconstruction, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, reconstruction.GetPixelIDValue()
         )
     # test = sitk.Resample(
         # stack, reconstruction, transform_3D, sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
         # )
-    sitk.WriteImage(test, dir_output + filename_out + "_.nii.gz")
+    sitk.WriteImage(test, dir_output + filename_out + ".nii.gz")
 
     # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
     cmd = "itksnap " \
-            + "-g " + dir_output + filename_out + "_.nii.gz " \
+            + "-g " + dir_output + filename_out + ".nii.gz " \
             + "-o " +  filename_recon + ".nii.gz " + \
             "& "
-    # os.system(cmd)
+    os.system(cmd)
 
     ## 3D rigid transformation of slice
     slice_number = 4

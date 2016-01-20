@@ -8,6 +8,7 @@
 
 
 ## Import libraries 
+import itk
 import SimpleITK as sitk
 import numpy as np
 
@@ -83,6 +84,10 @@ def read_input_data(image_type):
 Main Function
 """
 if __name__ == '__main__':
+
+
+    ## Dummy to load itk for the first time (which takes 15 to 20 secs!)
+    image_type = itk.Image[itk.F, 2]
 
     """
     Choose variables

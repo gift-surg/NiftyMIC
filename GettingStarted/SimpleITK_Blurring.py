@@ -1,3 +1,12 @@
+## \file SimpleITK_Blurring.py
+#  \brief  Computation of own Gaussian Kernels in 3D
+#  \note Code tested against sitk.SmoothingRecursiveGaussianImageFilter 
+#       \par 2D images: satisfying results also for tested arbitrary spacings
+#       \par 3D images: satisfying results only for uniform spacings (cf unit tests)
+#
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
+#  \date December 2015
+
 import SimpleITK as sitk
 import numpy as np
 import unittest
@@ -143,17 +152,25 @@ def is_in_ellipsoid(points, origin, Sigma, cutoff_level):
 def get_scaled_variance_covariance_matrix(Sigma, scales):
 
     ## Perform SVD
-    U,s,V = np.linalg.svd(Sigma)
+    # U,s,V = np.linalg.svd(Sigma)
 
     ## Scale variances
     # print("Variances before scaling with factor(s)=%s: %s" %(scales,s))
-    s = scales*s;
+    # s = scales*s;
     # print("Variances after scaling with factor(s)=%s: %s" %(scales,s))
 
     ## Computed scaled variance covariance matrix
-    Sigma = U.dot(np.diag(s)).dot(np.transpose(V))
+    # Sigma = U.dot(np.diag(s)).dot(np.transpose(V))
 
+    # return Sigma
+
+    # Scaling = np.diag(scales)
+    # Scaling = np.diag(1/scales)
+
+    # Sigma =  Scaling.dot(Sigma).dot(Scaling)
+    # print Sigma
     return Sigma
+    # return Scaling.dot(Sigma).dot(Scaling_inv)
 
 
 ## get smoothing kernel
@@ -172,7 +189,7 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
     spacing = np.array(image_sitk.GetSpacing())
 
     ## Scale to image space with cutoff-sigma
-    scaling = 1/spacing
+    scaling = spacing
 
     Sigma_image = get_scaled_variance_covariance_matrix(Sigma, scaling)
     
@@ -205,7 +222,9 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
 
             ## Generate arrays of 2D points
             X,Y = np.meshgrid(x_interval, y_interval, indexing='ij')    # 'ij' yields vertical x-coordinate for image!
-            points = np.array([X.flatten(), Y.flatten()])
+            S = np.diag(spacing)
+            points = S.dot(np.array([X.flatten(), Y.flatten()]))
+            # points = np.array([X.flatten(), Y.flatten()])
 
             ## Determine points in ellipsoid
             bool, vals = is_in_ellipsoid(points, origin, Sigma_image, cutoff)
@@ -286,7 +305,9 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
 
             ## Generate arrays of 3D points
             X,Y,Z = np.meshgrid(x_interval, y_interval, z_interval, indexing='ij')    # 'ij' yields vertical x-coordinate for image!
-            points = np.array([X.flatten(), Y.flatten(), Z.flatten()])
+            S = np.diag(spacing)
+            points = S.dot(np.array([X.flatten(), Y.flatten(), Z.flatten()]))
+            # points = np.array([X.flatten(), Y.flatten(), Z.flatten()])
 
             ## Determine points in ellipsoid
             bool, vals = is_in_ellipsoid(points, origin, Sigma_image, cutoff)
@@ -298,11 +319,11 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
             Bool = bool.reshape(x_interval.size, y_interval.size, z_interval.size) 
             Vals = vals.reshape(x_interval.size, y_interval.size, z_interval.size) 
 
-            print("%s-Bool = \n%s" %(Bool.shape,Bool))
+            # print("%s-Bool = \n%s" %(Bool.shape,Bool))
             # print("%s-X = \n%s" %(X.shape,X))
             # print("%s-Y = \n%s" %(Y.shape,Y))
             # print("%s-Z = \n%s" %(Z.shape,Z))
-            print("%s-Vals = \n%s" %(Vals.shape,Vals))
+            # print("%s-Vals = \n%s" %(Vals.shape,Vals))
 
             ## Normalize values of kernel (rectangu)
             Phi_all = np.sum(Vals)*step**dim
@@ -460,8 +481,8 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
     print("confidence interval coverage by chosen kernel (approx) = %s" %Phi)
 
     if cutoff.size == 1:
-        print("cutoff 'radius' for ellipse = %s" %cutoff)
         print("possible confidence interval before eliminating values (approx) = %s" %Phi_all)
+        print("cutoff 'radius' for ellipse = %s" %cutoff)
 
 
     return kernel, reference
@@ -470,7 +491,7 @@ def get_smoothing_kernel(image_sitk, Sigma, origin, cutoff):
 
 
 ## Smooth image based on kernel
-def get_smoothed_image_by_hand(image_sitk, kernel, reference):
+def get_smoothed_2D_image_by_hand(image_sitk, kernel, reference):
 
     nda = sitk.GetArrayFromImage(image_sitk)
     nda_smoothed = np.zeros(nda.shape)
@@ -516,7 +537,8 @@ def get_smoothed_image_by_scipy(image_sitk, kernel, reference):
     ## TODO: https://github.com/scipy/scipy/issues/4580 for correct setting of origin
     origin = np.array(kernel.shape)/2 - reference
     print("Update of origin for scipy.ndimage.convole: origin = %s" % origin)
-    nda_smoothed_scipy = ndimage.convolve(nda, kernel, mode='constant', origin=origin)
+    nda_smoothed_scipy = ndimage.convolve(nda, kernel, mode='nearest', origin=origin) ##'nearest' resembles results of sitk.SmoothingRecursiveGaussianImageFilter best
+    # nda_smoothed_scipy = ndimage.convolve(nda, kernel, mode='mirror', origin=origin) ##'nearest' resembles results of sitk.SmoothingRecursiveGaussianImageFilter best
 
     image_sitk_smoothed = sitk.GetImageFromArray(nda_smoothed_scipy)
     image_sitk_smoothed.CopyInformation(image_sitk)
@@ -637,7 +659,7 @@ Unit Test Class
 """
 class TestUM(unittest.TestCase):
 
-    accuracy = 8
+    accuracy = 7
 
     def compute_single_value(self, point, origin, Sigma):
         return (point-origin).dot(np.linalg.inv(Sigma)).dot(point-origin)
@@ -686,14 +708,15 @@ class TestUM(unittest.TestCase):
 
 
     ## Square kernel (3 x 3)
-    def test_02_compare_smoothing_results_of_scipy_and_by_hand_square_kernel(self):
+    def test_02_2D_compare_smoothing_results_of_scipy_and_by_hand_square_kernel(self):
 
         dir_input = "data/"
         filename = "BrainWeb_2D"
         image_type = ".png"
 
         ## Read image
-        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
 
         kernel = np.array([\
             [ 0.08435869,  0.13908396,  0.08435869],
@@ -702,7 +725,7 @@ class TestUM(unittest.TestCase):
 
         reference = np.array([1,1])
 
-        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk = get_smoothed_2D_image_by_hand(image_sitk, kernel, reference)
         image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
 
         nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
@@ -720,21 +743,23 @@ class TestUM(unittest.TestCase):
                 , decimals = self.accuracy), 0 )
 
         except Exception as e:
-            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
             print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
             print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
             print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
 
 
     ## Rectangular kernel (3 x 5)
-    def test_02_compare_smoothing_results_of_scipy_and_by_hand_rectangular_kernel(self):
+    def test_02_2D_compare_smoothing_results_of_scipy_and_by_hand_rectangular_kernel(self):
 
         dir_input = "data/"
         filename = "BrainWeb_2D"
         image_type = ".png"
 
         ## Read image
-        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
 
         kernel = np.array([\
             [ 0.06935881,  0.10347119,  0.06935881,  0.02089047,  0.00282722],\
@@ -743,7 +768,7 @@ class TestUM(unittest.TestCase):
 
         reference = np.array([1,2])
 
-        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk = get_smoothed_2D_image_by_hand(image_sitk, kernel, reference)
         image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
 
         nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
@@ -761,21 +786,23 @@ class TestUM(unittest.TestCase):
                 , decimals = self.accuracy), 0 )
 
         except Exception as e:
-            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
             print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
             print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
             print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
 
 
     ## Rectangular kernel (3 x 5)
-    def test_02_compare_smoothing_results_of_scipy_and_by_hand_rectangular_kernel_altered_reference(self):
+    def test_02_2D_compare_smoothing_results_of_scipy_and_by_hand_rectangular_kernel_altered_reference(self):
 
         dir_input = "data/"
         filename = "BrainWeb_2D"
         image_type = ".png"
 
         ## Read image
-        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
 
         kernel = np.array([\
             [ 0.06935881,  0.10347119,  0.06935881,  0.02089047,  0.00282722],\
@@ -784,7 +811,7 @@ class TestUM(unittest.TestCase):
 
         reference = np.array([1,1])
 
-        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk = get_smoothed_2D_image_by_hand(image_sitk, kernel, reference)
         image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
 
         nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
@@ -802,23 +829,25 @@ class TestUM(unittest.TestCase):
                 , decimals = self.accuracy), 0 )
 
         except Exception as e:
-            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
             print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
             print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
             print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
 
 
     ## kernel based on 
     ##   - elliptic cutoff line with confidence level of alpha=0.65
     ##   - Sigma = [1, 0; 0 1.5**2]
-    def test_02_compare_smoothing_results_of_scipy_and_by_hand_elliptic_kernel(self):
+    def test_02_2D_compare_smoothing_results_of_scipy_and_by_hand_elliptic_kernel(self):
 
         dir_input = "data/"
         filename = "BrainWeb_2D"
         image_type = ".png"
 
         ## Read image
-        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
 
         kernel = np.array([\
             [ 0.        ,  0.0738165 ,  0.09218565,  0.0738165 ,  0.        ],\
@@ -826,7 +855,7 @@ class TestUM(unittest.TestCase):
             [ 0.        ,  0.0738165 ,  0.09218565,  0.0738165 ,  0.        ]])
         reference = np.array([1,2])
 
-        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk = get_smoothed_2D_image_by_hand(image_sitk, kernel, reference)
         image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
 
         nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
@@ -844,23 +873,25 @@ class TestUM(unittest.TestCase):
                 , decimals = self.accuracy), 0 )
 
         except Exception as e:
-            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
             print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
             print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
             print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
 
 
     ## kernel based on 
     ##   - elliptic cutoff line with confidence level of alpha=0.65
     ##   - Sigma = [1, 1; 1 1.5**2]
-    def test_02_compare_smoothing_results_of_scipy_and_by_hand_elliptic_kernel_skewed(self):
+    def test_02_2D_compare_smoothing_results_of_scipy_and_by_hand_elliptic_kernel_skewed(self):
 
         dir_input = "data/"
         filename = "BrainWeb_2D"
         image_type = ".png"
 
         ## Read image
-        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
 
         kernel = np.array([\
             [ 0.07848865,  0.11709131,  0.07848865,  0.        ,  0.        ],\
@@ -868,7 +899,7 @@ class TestUM(unittest.TestCase):
             [ 0.        ,  0.        ,  0.07848865,  0.11709131,  0.07848865]])
         reference = np.array([1,2])
 
-        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk = get_smoothed_2D_image_by_hand(image_sitk, kernel, reference)
         image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
 
         nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
@@ -886,23 +917,25 @@ class TestUM(unittest.TestCase):
                 , decimals = self.accuracy), 0 )
 
         except Exception as e:
-            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
             print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
             print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
             print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
 
 
     ## kernel based on 
     ##   - elliptic cutoff line with confidence level of alpha=0.65
     ##   - Sigma = [1, 1; 1 1.5**2]
-    def test_02_compare_smoothing_results_of_scipy_and_by_hand_elliptic_kernel_skewed_altered_reference(self):
+    def test_02_2D_compare_smoothing_results_of_scipy_and_by_hand_elliptic_kernel_skewed_altered_reference(self):
 
         dir_input = "data/"
         filename = "BrainWeb_2D"
         image_type = ".png"
 
         ## Read image
-        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
 
         kernel = np.array([\
             [ 0.07848865,  0.11709131,  0.07848865,  0.        ,  0.        ],\
@@ -910,7 +943,7 @@ class TestUM(unittest.TestCase):
             [ 0.        ,  0.        ,  0.07848865,  0.11709131,  0.07848865]])
         reference = np.array([1,3])
 
-        image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk = get_smoothed_2D_image_by_hand(image_sitk, kernel, reference)
         image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
 
         nda_hand = sitk.GetArrayFromImage(image_smoothed_sitk)
@@ -928,16 +961,17 @@ class TestUM(unittest.TestCase):
                 , decimals = self.accuracy), 0 )
 
         except Exception as e:
-            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
             print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
             print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
             print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
 
 
     ## kernel based on 
     ##   - elliptic cutoff line with confidence level of alpha=0.95
     ##   - Sigma = [5**2, 0; 0 5**2]
-    def test_02_compare_smoothing_results_of_scipy_and_recursive_gaussian_elliptic_kernel(self):
+    def test_02_2D_compare_smoothing_results_of_scipy_and_recursive_gaussian_elliptic_kernel(self):
 
         dir_input = "data/"
         filename = "BrainWeb_2D"
@@ -946,9 +980,10 @@ class TestUM(unittest.TestCase):
         sigma = 5
 
         ## Read image
-        image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
 
-        kernel = np.loadtxt(dir_input+"kernel_Sigma_" + str(sigma) + "_0_0_" + str(sigma) + ".txt")
+        kernel = np.loadtxt(dir_input+"kernel_2D_Sigma_" + str(sigma**2) + "_0_0_" + str(sigma**2) + ".txt")
         reference = np.array(kernel.shape)/2
 
         image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
@@ -972,9 +1007,266 @@ class TestUM(unittest.TestCase):
                 , decimals = self.accuracy), 0 )
 
         except Exception as e:
-            print("FAIL: " + self.id() + " failed given norm of difference = %.2f > 1e-%s" %(norm_diff,self.accuracy))
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
             print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
             print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    ## kernel based on 
+    ##   - elliptic cutoff line with confidence level of alpha=0.95
+    ##   - Sigma = [5**2, 0; 0 5**2]
+    ##   - Spacing = (1.5, 3)
+    def test_02_2D_compare_smoothing_results_of_scipy_and_recursive_gaussian_elliptic_kernel_nonuniform_spacing(self):
+
+        dir_input = "data/"
+        filename = "BrainWeb_2D"
+        image_type = ".png"
+
+        sigma = 5
+        spacing = (1.5, 3)
+
+        ## Read image
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
+        image_sitk.SetSpacing(spacing)
+
+        kernelname = "kernel_2D_Sigma_" + str(sigma**2) + "_0_0_" + str(sigma**2) 
+        kernelname += "_spacing_" + str(spacing[0]) + "_" + str(spacing[1])
+        kernel = np.loadtxt(dir_input + kernelname + ".txt")
+        reference = np.array(kernel.shape)/2
+
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+        
+        gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
+        gaussian.SetSigma(sigma)
+        image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
+        
+        nda_recursive = sitk.GetArrayFromImage(image_smoothed_recursive_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_recursive-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+
+    ## kernel based on 
+    ##   - elliptic cutoff line with confidence level of alpha=0.95
+    ##   - Sigma = [3**2, 0, 0; 0 3**2 0; 0, 0, 3**2]
+    ##   - Unit spacing
+    def test_03_3D_compare_smoothing_results_of_scipy_and_recursive_gaussian_elliptic_kernel_unit_spacing(self):
+
+        dir_input = "data/"
+        filename =  "fetal_brain_a"
+        image_type = ".nii.gz"
+
+        sigma = 3
+        spacing = (1, 1, 1)
+
+        ## Read image
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
+        image_sitk.SetSpacing(spacing)
+
+        kernelname = "kernel_3D_Sigma_9_0_0_0_9_0_0_0_9_spacing_1_1_1"
+
+        kernel = np.load(dir_input + kernelname + ".npy")
+        reference = np.array(kernel.shape)/2
+
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+        
+        gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
+        gaussian.SetSigma(sigma)
+        image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
+        
+        nda_recursive = sitk.GetArrayFromImage(image_smoothed_recursive_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_recursive-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    ## kernel based on 
+    ##   - elliptic cutoff line with confidence level of alpha=0.95
+    ##   - Sigma = [3**2, 0, 0; 0 3**2 0; 0, 0, 3**2]
+    ##   - Uniform spacing (1.7)
+    def test_03_3D_compare_smoothing_results_of_scipy_and_recursive_gaussian_elliptic_kernel_uniform_spacing_1(self):
+
+        dir_input = "data/"
+        filename =  "fetal_brain_a"
+        image_type = ".nii.gz"
+
+        sigma = 3
+        spacing = (1.7, 1.7, 1.7)
+
+        ## Read image
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
+        image_sitk.SetSpacing(spacing)
+
+        kernelname = "kernel_3D_Sigma_9_0_0_0_9_0_0_0_9_spacing_1.7_1.7_1.7"
+
+        kernel = np.load(dir_input + kernelname + ".npy")
+        reference = np.array(kernel.shape)/2
+
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+        
+        gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
+        gaussian.SetSigma(sigma)
+        image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
+        
+        nda_recursive = sitk.GetArrayFromImage(image_smoothed_recursive_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_recursive-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    ## kernel based on 
+    ##   - elliptic cutoff line with confidence level of alpha=0.95
+    ##   - Sigma = [3**2, 0, 0; 0 3**2 0; 0, 0, 3**2]
+    ##   - Uniform spacing (3)
+    def test_03_3D_compare_smoothing_results_of_scipy_and_recursive_gaussian_elliptic_kernel_uniform_spacing_2(self):
+
+        dir_input = "data/"
+        filename =  "fetal_brain_a"
+        image_type = ".nii.gz"
+
+        sigma = 3
+        spacing = (3, 3, 3)
+
+        ## Read image
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
+        image_sitk.SetSpacing(spacing)
+
+        kernelname = "kernel_3D_Sigma_9_0_0_0_9_0_0_0_9_spacing_3_3_3"
+
+        kernel = np.load(dir_input + kernelname + ".npy")
+        reference = np.array(kernel.shape)/2
+
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+        
+        gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
+        gaussian.SetSigma(sigma)
+        image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
+        
+        nda_recursive = sitk.GetArrayFromImage(image_smoothed_recursive_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_recursive-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    ## kernel based on 
+    ##   - elliptic cutoff line with confidence level of alpha=0.95
+    ##   - Sigma = [3**2, 0, 0; 0 3**2 0; 0, 0, 3**2]
+    ##   - original spacing
+    """
+    PROBLEM!!!
+    """
+    def test_03_3D_compare_smoothing_results_of_scipy_and_recursive_gaussian_elliptic_kernel(self):
+
+        dir_input = "data/"
+        filename =  "fetal_brain_a"
+        image_type = ".nii.gz"
+
+        sigma = 3
+        ## Read image
+        #  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+        image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
+
+        kernelname = "kernel_3D_Sigma_9_0_0_0_9_0_0_0_9"
+
+        kernel = np.load(dir_input + kernelname + ".npy")
+        reference = np.array(kernel.shape)/2
+
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+        
+        gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
+        gaussian.SetSigma(sigma)
+        image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
+        
+        nda_recursive = sitk.GetArrayFromImage(image_smoothed_recursive_sitk)
+        nda_scipy = sitk.GetArrayFromImage(image_smoothed_sitk_scipy)
+
+        diff = nda_recursive-nda_scipy
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+
+        ## Check results      
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
             print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
 
 
@@ -997,7 +1289,9 @@ filename =  "fetal_brain_a"
 image_type = ".nii.gz"
 
 ## Read image
-image_sitk = sitk.ReadImage(dir_input + filename + image_type)  
+#  (Float32 is default in sitk.SmoothingRecursiveGaussianImageFilter. Hence, use this data type for comparisons)
+image_sitk = sitk.ReadImage(dir_input + filename + image_type, sitk.sitkFloat32)
+# image_sitk = image_sitk[:,:,8]
 
 dim = image_sitk.GetDimension()
 
@@ -1006,8 +1300,8 @@ origin = np.zeros((dim,1))
 
 
 if dim == 2:
-    sigma_x = 1
-    sigma_y = 1
+    sigma_x = 5
+    sigma_y = 5
 
     Sigma[0,0] = sigma_x**2
     # Sigma[0,1] = 1
@@ -1019,10 +1313,14 @@ if dim == 2:
 
     kernel_size = (3,5)
 
+    # t = 2
+    # image_sitk.SetSpacing((t,t))  
+    image_sitk.SetSpacing((1.5,3))  
+
 elif dim == 3:
-    sigma_x = 1
-    sigma_y = 1
-    sigma_z = 1
+    sigma_x = 3
+    sigma_y = 3
+    sigma_z = 3
 
     Sigma[0,0] = sigma_x**2
     # Sigma[0,1] = 2
@@ -1041,13 +1339,16 @@ elif dim == 3:
     kernel_size = (3,5,3)
 
     ## Unit spacing for better comparison
-    image_sitk.SetSpacing((1,1,1))  
+    t = 3
+    image_sitk.SetSpacing((t,t,t))  
 
 
 
 try:
     if is_SPD(Sigma):
         print("Sigma = \n%s" %Sigma)
+
+        spacing = image_sitk.GetSpacing()
 
         ## Generate arrays of 2D points
         if dim == 2:
@@ -1086,9 +1387,9 @@ try:
 
 
         ## Get contour line level:
-        alpha = 0.3
+        alpha = 0.95
         cutoff_level = chi2.ppf(alpha, dim)
-        # print("cutoff_level = %s" %cutoff_level)
+        print("cutoff_level = %s" %cutoff_level)
 
         ## Check whether points are within ellipsoid
         # print is_in_ellipsoid(points[:,0], origin, Sigma, cutoff_level)
@@ -1096,8 +1397,30 @@ try:
         kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=cutoff_level)
         # kernel, reference = get_smoothing_kernel(image_sitk, Sigma, origin, cutoff=kernel_size)
 
-        # image_smoothed_sitk = get_smoothed_image_by_hand(image_sitk, kernel, reference)
-        # image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
+        save_kernel = 0
+        ## Used for later read-in for unit tests
+        if save_kernel:
+            ## write variance covariance matrix
+            name = "kernel_" + str(dim) + "D_Sigma_" + str(Sigma.flatten()[0].astype("uint8"))
+            for i in range(1, dim**2):
+                name = name + "_" + str(Sigma.flatten()[i].astype("uint8"))
+
+            ## write spacing information
+            name = name + "_spacing_" + str(spacing[0])
+            for i in range(1, dim):
+                name = name + "_" + str(spacing[1])
+
+            ## write as txt-file
+            if dim==2:
+                np.savetxt(dir_output +  name + ".txt", kernel)
+
+            ## np.savetxt does not work for more than 2 dimensions. Hence np.save => *.npy file
+            elif dim==3:
+                np.save(dir_output +  name , kernel)
+
+
+        # image_smoothed_sitk = get_smoothed_2D_image_by_hand(image_sitk, kernel, reference)
+        image_smoothed_sitk_scipy = get_smoothed_image_by_scipy(image_sitk, kernel, reference)
 
         # plot_comparison_of_images(image_smoothed_sitk, image_smoothed_sitk_scipy)
 
@@ -1105,13 +1428,24 @@ try:
         # sitkh.show_sitk_image(image_smoothed_sitk)
 
         gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
-        gaussian.SetSigma(sigma_x)
+        # gaussian.SetSigma(sigma_x/spacing[0]) #Sigma is measured in image spacing units!?
+        gaussian.SetSigma(sigma_x) #Sigma is measured in image spacing units!?
         image_smoothed_recursive_sitk = gaussian.Execute(image_sitk)
         
         # plot_comparison_of_images(image_smoothed_recursive_sitk, image_smoothed_sitk_scipy)
 
         # sitkh.show_sitk_image(image_sitk=image_smoothed_sitk, overlay_sitk=image_smoothed_recursive_sitk)
         # sitkh.show_sitk_image(image_sitk=image_smoothed_sitk)
+        # sitkh.show_sitk_image(image_sitk=image_smoothed_sitk_scipy, overlay_sitk=image_smoothed_recursive_sitk)
+
+        diff_sitk = image_smoothed_sitk_scipy-image_smoothed_recursive_sitk
+        sitkh.show_sitk_image(diff_sitk)
+
+        abs_diff = np.abs(sitk.GetArrayFromImage(diff_sitk))
+        print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+        print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
+        print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
 
 
         ## Scale variance-covariance matrix by given factor
@@ -1126,7 +1460,7 @@ try:
             x_interval = np.arange(-M_x,M_x+step,step)
             y_interval = np.arange(-M_y,M_y+step,step)
 
-            # plot_gaussian(Sigma_scale, origin, x_interval, y_interval, contour_plot=1)
+            # plot_gaussian(Sigma_scale, origin, x_interval, y_interval, contour_plot=0)
 
         print("alpha = %s" %alpha)
 
@@ -1149,4 +1483,4 @@ except ValueError as err:
 Unit tests:
 """
 print("\nUnit tests:\n--------------")
-# unittest.main()
+unittest.main()
