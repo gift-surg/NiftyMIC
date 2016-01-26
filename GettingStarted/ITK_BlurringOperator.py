@@ -59,6 +59,8 @@ def get_rotated_covariance_matrix(HR_volume_sitk, stack_sitk, Sigma_PSF):
 
     U = direction_matrix_HR_volume.transpose().dot(direction_matrix_stack)
 
+    print("U = \n%s" % U);
+
     return U.dot(Sigma_PSF).dot(U.transpose())
 
 
@@ -83,7 +85,7 @@ def compute_PSF_blurred_point(position, center, Sigma):
     return np.exp(-0.5* np.sum( (position-center)*Sigma.dot(position-center), 0))
 
 
-def get_interpolator(interpolator_type, HR_volume_sitk=None, stack_sitk=None):
+def get_interpolator(interpolator_type, HR_volume_sitk=None, slice_sitk=None):
 
     ## Nearest neighbour
     if interpolator_type is 'NearestNeighbour':
@@ -98,8 +100,8 @@ def get_interpolator(interpolator_type, HR_volume_sitk=None, stack_sitk=None):
     ## Gaussian
     elif interpolator_type is 'Gaussian':
 
-        Sigma_PSF = get_Sigma_PSF(stack_sitk)
-        Sigma_aligned = get_rotated_covariance_matrix(HR_volume_sitk, stack_sitk, Sigma_PSF)
+        Sigma_PSF = get_Sigma_PSF(slice_sitk)
+        Sigma_aligned = get_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
         Sigma_diag = Sigma_aligned.diagonal()
 
         print("Sigma_PSF = \n%s" %Sigma_PSF)
@@ -177,12 +179,12 @@ if __name__ == '__main__':
     input_image_type = itk.Image[input_pixel_type, input_dimension]
     output_image_type = itk.Image[output_pixel_type, output_dimension]
 
-    ## Instantiate types of reader and writer
+    ## Define types of reader and writer
     reader_type = itk.ImageFileReader[input_image_type]
     writer_type = itk.ImageFileWriter[output_image_type]
     image_IO_type = itk.NiftiImageIO
 
-    ## Create reader and writer
+    ## Instantiate reader and writer
     reader_HR_volume = reader_type.New()
     reader_stack = reader_type.New()
     reader_slice = reader_type.New()
@@ -231,7 +233,7 @@ if __name__ == '__main__':
     interpolator = get_interpolator(
         'Gaussian',
         HR_volume_sitk=HR_volume_sitk,
-        stack_sitk=stack_sitk)
+        slice_sitk=slice_sitk)
 
     ## Specify interpolator for filter
     filter.SetInterpolator(interpolator)
