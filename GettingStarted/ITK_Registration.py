@@ -1,3 +1,10 @@
+#!/usr/bin/python
+
+## \file ITK_Registration.py
+#  \brief Figure out how to register two images within WrapITK
+#
+#  \author: Michael Ebner (michael.ebner.14@ucl.ac.uk)
+#  \date: 
 
 ## import librarties
 import itk

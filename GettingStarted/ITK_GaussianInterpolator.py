@@ -87,7 +87,7 @@ if __name__ == '__main__':
     """
     Start for itkGaussianInterpolateImageFunction:
     """
-    sigma = 2
+    sigma = 5
     Sigma = np.array([sigma,sigma,sigma])
     alpha = 2
     cindex = np.array([10, 28, 0])
@@ -114,8 +114,8 @@ if __name__ == '__main__':
     for d in range(0, ImageDimension):
         BoundingBoxStart[d] = -0.5
         BoundingBoxEnd[d] = size[d] - 0.5
-        ScalingFactor[d] = 1/(np.sqrt(2)*Sigma[d]/spacing[d])
-        CutoffDistance[d] = Sigma[d]*alpha/spacing[d]
+        ScalingFactor[d] = 1/(np.sqrt(2)*Sigma[d]/spacing[d])   #used for computation later on
+        CutoffDistance[d] = Sigma[d]*alpha/spacing[d]           #cutoff distance in voxel space
         
     # CutoffDistance[:] = 2.2
 
@@ -163,12 +163,12 @@ if __name__ == '__main__':
 
 
     ## 
-    for i in range(0, ):
+    # for i in range(0, ):
         
 
-    # print erfArray[0]
-    # print erfArray[1]
-    # print erfArray[2]
+    print erfArray[0]
+    print erfArray[1]
+    print erfArray[2]
 
 
     """

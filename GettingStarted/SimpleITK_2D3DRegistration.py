@@ -425,11 +425,11 @@ if __name__ == '__main__':
     Set variables
     """
     ## Specify data
-    # dir_input = "../data/fetal_neck/"
-    dir_input = "../results/"
+    dir_input = "../data/fetal_neck/"
+    # dir_input = "../results/"
     dir_output = "results/"
-    filename =  "Reconstruction_0_without_in_plane_alignment"
-    filename_recon = "data/3TReconstruction" # result B. Kainz
+    filename =  "1"
+    filename_recon = "data/FetalBrain_reconstruction_4stacks" # result B. Kainz
     # filename_recon = "data/SRTV_fetalUCL_3V_NoNLM_bcorr_norm_lambda_0.1_deltat_0.001_loops_10_it1" # result S. Tourbier
     # filename_out = "2_registered"
     filename_out = filename + "_registered"
@@ -469,14 +469,15 @@ if __name__ == '__main__':
     # test = sitk.Resample(
         # stack, reconstruction, transform_3D, sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
         # )
-    sitk.WriteImage(test, dir_output + filename_out + ".nii.gz")
+    # sitk.WriteImage(test, dir_output + filename_out + ".nii.gz")
+    sitk.WriteImage(stack_rigidly_aligned, dir_output + filename_out + ".nii.gz")
 
     # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
     cmd = "itksnap " \
             + "-g " + dir_output + filename_out + ".nii.gz " \
             + "-o " +  filename_recon + ".nii.gz " + \
             "& "
-    os.system(cmd)
+    # os.system(cmd)
 
     ## 3D rigid transformation of slice
     slice_number = 4

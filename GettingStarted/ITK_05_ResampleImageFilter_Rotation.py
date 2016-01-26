@@ -1,3 +1,11 @@
+#!/usr/bin/python
+
+## \file ITK_05_ResampleImageFilter_Rotation.py
+#  \brief Figure out how to perform simple rotation of an image with subsequent resampling
+#
+#  \author: Michael Ebner (michael.ebner.14@ucl.ac.uk)
+#  \date: 
+
 import itk
 import numpy as np
 

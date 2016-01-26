@@ -3,6 +3,11 @@ function createRectangularMask()
 %% Input
 %Define range of rectangular mask (use fslview eg)
 
+%Mask for Image FetalNeck/R1/0.nii.gz -- Trachea
+% range_x = [100, 165];
+% range_y = [120, 170];
+% range_z = [6, 14];
+
 %Mask for Image FetalNeck/R2/0.nii.gz -- Brain+Neck
 % range_x = [95, 185];
 % range_y = [39, 161];
@@ -15,9 +20,24 @@ function createRectangularMask()
 % range_z = [4, 13];
 
 %Mask for Image FetalNeck/R2/0.nii.gz -- Trachea
-range_x = [90, 130];
-range_y = [120, 170];
-range_z = [8, 18];
+% range_x = [90, 130];
+% range_y = [120, 170];
+% range_z = [8, 18];
+
+%Mask for Image FetalNeck/R3/0.nii.gz -- Trachea
+% range_x = [130, 195];
+% range_y = [105, 170];
+% range_z = [11, 24];
+
+%Mask for Image FetalNeck/R4/0.nii.gz -- Trachea
+% range_x = [100, 170];
+% range_y = [117, 183];
+% range_z = [8, 16];
+
+%Mask for Image FetalNeck/R6B/0.nii.gz -- Trachea
+range_x = [100, 170];
+range_y = [95, 165];
+range_z = [9, 22];
 
 filename_mask = 'mask_trachea_rectangular';
 
@@ -29,13 +49,17 @@ else
     home = getenv('HOME');
 end
 
-dirData = [home '/UCL/Data/Fetal Neck Masses/FETAL_R2 (+, but cut brains)/NIfTI (selected)/'];
-dirSaveResults = [home '/Desktop/'];
+% dirData = [home '/UCL/Data/Fetal Neck Masses/FETAL_R1 (~)/NIfTI (selected)/'];
+% dirData = [home '/UCL/Data/Fetal Neck Masses/FETAL_R2 (+, but cut brains)/NIfTI (selected)/'];
+% dirData = [home '/UCL/Data/Fetal Neck Masses/FETAL_R3 (-)/NIfTI (selected, almost all corrupted, new export, nope -- not worth it after view of DICOM images)/'];
+% dirData = [home '/UCL/Data/Fetal Neck Masses/FETAL_R4 (+, but no orthogonal views)/NIfTI (selected)/'];
+dirData = [home '/UCL/Data/Fetal Neck Masses/FETAL_R6b (--)/NIfTI (selected)/'];
+% dirSaveResults = [home '/Desktop/'];
 dirSaveResults = dirData;
 
 % Load Image
 filename = '0.nii.gz';
-filenameShort = filename(1:end-7); %chop ".nii.gz" of filename
+filenameShort = filename(1:end-7); %crop ".nii.gz" from filename
 nii = load_untouch_nii([dirData filename]);
 
 % Extract image data (intensities)
