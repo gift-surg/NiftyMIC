@@ -16,9 +16,12 @@ if (ITKVtkGlue_LOADED)
 endif()
  
 add_executable(ResampleImageFilter ResampleImageFilter.cxx)
+# add_executable(itkOrientedGaussianInterpolateImageFunction itkOrientedGaussianInterpolateImageFunction.cxx)
  
 if( "${ITK_VERSION_MAJOR}" LESS 4 )
   target_link_libraries(ResampleImageFilter ITKReview ${ITK_LIBRARIES})
+  # target_link_libraries(itkOrientedGaussianInterpolateImageFunction ITKReview ${ITK_LIBRARIES})
 else( "${ITK_VERSION_MAJOR}" LESS 4 )
   target_link_libraries(ResampleImageFilter ${ITK_LIBRARIES})
+  # target_link_libraries(itkOrientedGaussianInterpolateImageFunction ${ITK_LIBRARIES})
 endif( "${ITK_VERSION_MAJOR}" LESS 4 )

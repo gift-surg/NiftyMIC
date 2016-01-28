@@ -47,17 +47,17 @@ def get_Sigma_PSF(stack_sitk):
 ## Compute rotated covariance matrix which expresses the PSF of the stack
 #  in the coordinates of the HR_volume
 #  \param[in] HR_volume_sitk current isotropic HR volume
-#  \param[in] stack_sitk stack which is aimed to be simulated according to the slice acquisition model
+#  \param[in] slice_sitk slice which is aimed to be simulated according to the slice acquisition model
 #  \param[in] Sigma_PSF Covariance matrix modelling the Gaussian PSF of an acquired slice
 #  \return Covariance matrix U*Sigma_diag*U' where U represents the
-#          orthogonal trafo between stack and HR_volume
-def get_rotated_covariance_matrix(HR_volume_sitk, stack_sitk, Sigma_PSF):
-    dim = stack_sitk.GetDimension()
+#          orthogonal trafo between slice and HR_volume
+def get_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF):
+    dim = slice_sitk.GetDimension()
 
     direction_matrix_HR_volume = np.array(HR_volume_sitk.GetDirection()).reshape(dim,dim)
-    direction_matrix_stack = np.array(stack_sitk.GetDirection()).reshape(dim,dim)
+    direction_matrix_slice = np.array(slice_sitk.GetDirection()).reshape(dim,dim)
 
-    U = direction_matrix_HR_volume.transpose().dot(direction_matrix_stack)
+    U = direction_matrix_HR_volume.transpose().dot(direction_matrix_slice)
 
     print("U = \n%s" % U);
 
@@ -67,22 +67,29 @@ def get_rotated_covariance_matrix(HR_volume_sitk, stack_sitk, Sigma_PSF):
 ## Compute covariance matrix ready to use for subsequent interpolation step
 #  within the resampling process
 #  \param[in] HR_volume_sitk current isotropic HR volume
-#  \param[in] stack_sitk stack which is aimed to be simulated according to the slice acquisition model
+#  \param[in] slice_sitk slice which is aimed to be simulated according to the slice acquisition model
 #  \param[in] Sigma_PSF Covariance matrix modelling the Gaussian PSF of an acquired slice
 #  \return Covariance matrix S*U*Sigma_diag*U'*S where U represents the
 #          orthogonal trafo between stack and HR_volume and S the scaling matrix
-def get_scaled_inverse_rotated_covariance_matrix(HR_volume_sitk, stack_sitk, Sigma_PSF):
+def get_scaled_inverse_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF):
     spacing = np.array(HR_volume_sitk.GetSpacing())
     S = np.diag(spacing)
-    Sigma_inv = np.linalg.inv(get_rotated_covariance_matrix(HR_volume_sitk, stack_sitk, Sigma_PSF))
+    Sigma_inv = np.linalg.inv(get_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF))
 
     return S.dot(Sigma_inv).dot(S)
 
 
-## Compute blurred point with respect to oriented PSF
+## Compute blurred index (voxel space) with respect to oriented PSF
+#  \param[in] index point in voxedl space
+#  \param[in] center
+#  \param[in] Sigma ouput of get_scaled_variance_covariance_matrix()
 #  \return value proportional to PSF blurred point
-def compute_PSF_blurred_point(position, center, Sigma):
-    return np.exp(-0.5* np.sum( (position-center)*Sigma.dot(position-center), 0))
+def compute_PSF_blurred_point(index, center, Sigma):
+    print("\nSigma = \n%s" % (Sigma))
+    print("\nSigma.dot(index-center) = \n%s" % (Sigma.dot(index-center)))
+    print("(index-center)'*Sigma.dot(index-center) = %s" % (np.sum( (index-center)*Sigma.dot(index-center), 0)))
+    print("exp(.) = %s" %(np.exp(-0.5* np.sum( (index-center)*Sigma.dot(index-center), 0))))
+    return np.exp(-0.5* np.sum( (index-center)*Sigma.dot(index-center), 0))
 
 
 def get_interpolator(interpolator_type, HR_volume_sitk=None, slice_sitk=None):
@@ -99,7 +106,7 @@ def get_interpolator(interpolator_type, HR_volume_sitk=None, slice_sitk=None):
 
     ## Gaussian
     elif interpolator_type is 'Gaussian':
-
+        alpha = 1
         Sigma_PSF = get_Sigma_PSF(slice_sitk)
         Sigma_aligned = get_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
         Sigma_diag = Sigma_aligned.diagonal()
@@ -108,7 +115,8 @@ def get_interpolator(interpolator_type, HR_volume_sitk=None, slice_sitk=None):
         print("Sigma_aligned = \n%s" %Sigma_aligned)
         print("Sigma_diag = \n%s" %Sigma_diag)
 
-        interpolator_type = itk.GaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
+        # interpolator_type = itk.GaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
+        interpolator_type = itk.OrientedGaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
         interpolator = interpolator_type.New()
         interpolator.SetAlpha(alpha)
         interpolator.SetSigma(Sigma_diag)
@@ -238,6 +246,13 @@ if __name__ == '__main__':
     ## Specify interpolator for filter
     filter.SetInterpolator(interpolator)
     filter.Update()
+
+    point = np.array([5,5,5])
+    center = np.array([3,3,3])
+    Sigma_PSF = get_Sigma_PSF(stack_sitk)
+    Sigma = get_scaled_inverse_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
+
+    compute_PSF_blurred_point(point, center, Sigma)
 
     ## Set covariance matrix
     # sigma_x2 = 1

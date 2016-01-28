@@ -1,8 +1,9 @@
 /*! \brief An adapted Resample Image Filter is coded based on the official ITK Examples.
  *
- *  The aim is to implement the slice-acquisition model to simulate one single
- *  given a current HR volume. The blurring operator (representing the PSF)
- *  shall be modelled as 3D Gaussian.
+ *  The aim is to implement the slice-acquisition model to simulate one single slice
+ *  given a current HR volume. The slice/stack is already registered to the volume. 
+ *  Hence, the blurring and downsampling step shall be performed in here whereby
+ *  the blurring operator (representing the PSF) is modelled as 3D Gaussian.
  *
  *  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
  *  \date January 2016
@@ -16,101 +17,40 @@
 #include <itkNiftiImageIO.h>
 #include <itkNearestNeighborInterpolateImageFunction.h>
 #include <itkGaussianInterpolateImageFunction.h>
+#include <itkOrientedGaussianInterpolateImageFunction.h>
 
 #include <string>
 #include <limits.h> /* PATH_MAX */
 #include <math.h>
 
-/* Does not work; Needs some debubbing */
-// template <typename TParametersValueType, typename NDimensions>
-// itk::AffineTransform<TParametersValueType, NDimensions>::Pointer 
-// getAffineTransform(const TParametersValueType angleInDegrees, const InputImageType * outputImage){
 
-//   /* Affine Transform */
-//   typedef itk::AffineTransform< TParametersValueType, Dimension >  TransformType;
-//   TransformType::Pointer transform = TransformType::New();
-
-
-//   const InputImageType::SpacingType & spacing = outputImage->GetSpacing();
-//   const InputImageType::PointType & origin = outputImage->GetOrigin();
-//   const InputImageType::SizeType size = outputImage->GetLargestPossibleRegion().GetSize();
-
-
-//   const TParametersValueType degreesToRadians = std::atan(1.0) / 45.0;
-//   const TParametersValueType angle = angleInDegrees * degreesToRadians;
-  
-//   const TParametersValueType imageCenterX = origin[0] + spacing[0] * size[0] / 2.0;
-//   const TParametersValueType imageCenterY = origin[1] + spacing[1] * size[1] / 2.0;
-
-//   TransformType::OutputVectorType translation1;
-//   translation1[0] =   -imageCenterX;
-//   translation1[1] =   -imageCenterY;
-
-//   transform->Translate( translation1 );
-//   transform->Rotate2D( -angle, false );
-
-//   std::cout << "imageCenterX = " << imageCenterX << std::endl;
-//   std::cout << "imageCenterY = " << imageCenterY << std::endl;
-  
-
-//   TransformType::OutputVectorType translation2;
-//   translation2[0] =   imageCenterX;
-//   translation2[1] =   imageCenterY;
-
-//   transform->Translate( translation2, false );
-
-//   return transform;
-// }
-
-template <typename ImageType> itk::Matrix<double,3,3> getSigmaPSF(ImageType *HR_volume, ImageType *slice);
+/* Put into header file */
+template <typename ImageType> itk::Matrix<double,3,3> getOrientedSigmaPSF(ImageType *HR_volume, ImageType *slice);
 template <typename ImageType> itk::Matrix<double,3,3> computeRotationMatrix(ImageType *HR_volume, ImageType *slice);
+itk::Vector<double, 3> computeExponential(itk::Vector<double, 3> point, itk::Vector<double, 3> center, itk::Matrix<double, 3, 3> Sigma); 
+template <typename ImageType> itk::AffineTransform<double, 3>::Pointer getRotationTransform3D(const double angleInDegrees, const ImageType *Image);
 
 
-template <typename ImageType> itk::Matrix<double,3,3> getSigmaPSF(ImageType *HR_volume, ImageType *slice){
+/* Put into cxx file */
+template <typename ImageType> itk::Matrix<double,3,3> getOrientedSigmaPSF(ImageType *HR_volume, ImageType *slice){
 
   const typename ImageType::SpacingType spacing = slice->GetSpacing();
   const typename ImageType::DirectionType U = computeRotationMatrix(HR_volume, slice);
 
   itk::Matrix<double,3,3> SigmaPSF;
-  itk::Matrix<double,3,3> S;
+  SigmaPSF.Fill(0.0);
 
-  /* Blurring modelled as axis-aligned Gaussian */
+  /* Blurring modelled as axis-oriented Gaussian */
   SigmaPSF(0,0) = pow(1.2*spacing[0], 2) / (8*log(2));
-  SigmaPSF(0,1) = 0.;
-  SigmaPSF(0,2) = 0.;
-
-  SigmaPSF(1,0) = 0.;
   SigmaPSF(1,1) = pow(1.2*spacing[1], 2) / (8*log(2));
-  SigmaPSF(1,2) = 0.;
-
-  SigmaPSF(2,0) = 0.;
-  SigmaPSF(2,1) = 0.;
   SigmaPSF(2,2) = pow(spacing[2], 2) / (8*log(2));
-
-  /* Scaling matrix */
-  S(0,0) = spacing[0];
-  S(0,1) = 0.;
-  S(0,2) = 0.;
-
-  S(1,0) = 0.;
-  S(1,1) = spacing[1];
-  S(1,2) = 0.;
-
-  S(2,0) = 0.;
-  S(2,1) = 0.;
-  S(2,2) = spacing[2];
 
   std::cout << "SigmaPSF = \n" << SigmaPSF << std::endl;
   std::cout << "U = \n" << U << std::endl;
 
   /* Rotate Gaussian relativ to main axis of the HR volume*/
   SigmaPSF = U * SigmaPSF * U.GetTranspose();
-  std::cout << "SigmaPSF_aligned = \n" << SigmaPSF << std::endl;
-
-  /* Scale rotated Gaussian */
-  SigmaPSF = S * SigmaPSF.GetInverse() * S;
-  std::cout << "SigmaPSF_aligned_scaled = \n" << SigmaPSF << std::endl;
-
+  std::cout << "SigmaPSF_oriented = \n" << SigmaPSF << std::endl;
 
   return SigmaPSF;
 }
@@ -129,6 +69,74 @@ template <typename ImageType> itk::Matrix<double,3,3> computeRotationMatrix(Imag
   return U;
 }
 
+itk::Vector<double, 3> computeExponential(itk::Vector<double, 3> point, itk::Vector<double, 3> center, itk::Matrix<double, 3, 3> Sigma){
+  
+  itk::Vector<double, 3> tmp;
+  double result;
+
+  tmp = Sigma*(point-center);
+  result = (point-center)*tmp;
+
+  std::cout << "Sigma*(point-center) = " << tmp << std::endl;
+  std::cout << "(point-center)'*Sigma*(point-center) = " << result << std::endl;
+
+  result = exp(-0.5*result);
+  std::cout << "exp(.) = " << result << std::endl;
+
+  return result;
+
+}
+
+
+template <typename ImageType>
+itk::AffineTransform<double, 3>::Pointer 
+getRotationTransform3D(const double angleInDegrees, const ImageType *Image){
+
+  // const int Dimension = Image->GetLargestPossibleRegion().GetImageDimension(); // does not work then
+  const int Dimension = 3;
+
+  /* Instantiate transform */
+  typedef itk::AffineTransform< double, Dimension >  TransformType;
+  typename TransformType::Pointer transform = TransformType::New();
+
+  /* Get image parameters */
+  const typename ImageType::SpacingType spacing = Image->GetSpacing();
+  const typename ImageType::PointType origin = Image->GetOrigin();
+  const typename ImageType::SizeType size = Image->GetLargestPossibleRegion().GetSize();
+
+  /* Compute offset for rotation */
+  double *imageCenter = new double[Dimension];  
+  typename TransformType::OutputVectorType translation1;
+  typename TransformType::OutputVectorType translation2;
+  
+  for (int i = 0; i < Dimension; ++i){
+    imageCenter[i] = origin[i] + spacing[i] * size[i] / 2.0;
+    translation1[i] = -imageCenter[i]; 
+    translation2[i] = imageCenter[i]; 
+
+    // std::cout << "imageCenter[" << i << "] = " << imageCenter[i] << std::endl;
+  }
+
+  /* Rotation angle in rad */
+  const double degreesToRadians = std::atan(1.0) / 45.0;
+  const double angle = angleInDegrees * degreesToRadians;
+
+  /* Define rotation around respective axis */
+  typename TransformType::OutputVectorType axis;
+  axis[0] = 1;
+  axis[1] = 0;
+  axis[2] = 0;
+
+  /* Set transformations */
+  transform->Translate( translation1 );
+  transform->Rotate3D( axis, -angle, false );
+  transform->Translate( translation2, false );
+
+  return transform;
+}
+
+
+
 int main( int argc, char * argv[] )
 {
   // if( argc < 4 )
@@ -136,9 +144,9 @@ int main( int argc, char * argv[] )
   //   std::cerr << "Usage: " << std::endl;
   //   std::cerr << argv[0] << "  inputImageFile  outputImageFile  degrees" << std::endl;
   //   return EXIT_FAILURE;
-  //   }
- 
+  //   } 
 
+  /* Define input and output */
   const std::string dir_input = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/data/";
   const std::string dir_output = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/results/";
 
@@ -219,30 +227,57 @@ int main( int argc, char * argv[] )
   // typedef itk::NearestNeighborInterpolateImageFunction< InputImageType, double >  InterpolatorType;
   // InterpolatorType::Pointer interpolator = InterpolatorType::New();
 
+  /* Get oriented PSF */
+  const itk::Matrix<double,3,3> SigmaPSF_oriented = getOrientedSigmaPSF(HR_volume, slice);
+
+  /* Scaling matrix */
+  const InputImageType::SpacingType spacing_HR_volume = HR_volume->GetSpacing();
+  itk::Matrix<double,3,3> S;
+  S.Fill(0.0);
+  S(0,0) = spacing_HR_volume[0];
+  S(1,1) = spacing_HR_volume[1];
+  S(2,2) = spacing_HR_volume[2];
+  std::cout << "S = \n" << S << std::endl;
+  
+  /* Scale rotated inverse Gaussian needed for exponential function */
+  itk::Matrix<double, 3, 3> SigmaPSF_oriented_scaled = S * SigmaPSF_oriented.GetInverse() * S;
+  std::cout << "SigmaPSF_oriented_scaled = \n" << SigmaPSF_oriented_scaled << std::endl;
+
+
+  /* Compute Gaussian */
+  itk::Vector<double, 3> point;
+  itk::Vector<double, 3> center;
+
+  point.Fill( 5.0 );
+  center.Fill( 3.0 );
+  itk::Vector<double, 3> weight = computeExponential(point, center, SigmaPSF_oriented_scaled);
+
+
+
   // Gaussian Interpolation
   const double alpha = 3;
-  const itk::Matrix<double,3,3> SigmaPSF = getSigmaPSF(HR_volume, slice);
-
-  // for (int i = 0; i < Dimension; ++i)
-  // {
-  //   std::cout << "SigmaPSF[" << i << "] = " << SigmaPSF[i] << std::endl;
-  // }
-
-  typedef itk::GaussianInterpolateImageFunction< InputImageType, double >  InterpolatorType;  
+  // typedef itk::GaussianInterpolateImageFunction< InputImageType, double >  InterpolatorType;  
+  typedef itk::OrientedGaussianInterpolateImageFunction< InputImageType, double >  InterpolatorType;  
   InterpolatorType::Pointer interpolator = InterpolatorType::New();
   interpolator->SetAlpha(alpha);
-  // interpolator->SetSigma(SigmaPSF);
+  interpolator->SetCovariance(SigmaPSF_oriented);
 
   /* Set interpolator */
   filter->SetInterpolator( interpolator );
   filter->SetDefaultPixelValue( 0 );  
 
+
+
+
+
   /* Affine Transform */
   typedef itk::AffineTransform< double, Dimension >  TransformType;
-  TransformType::Pointer transform = TransformType::New();
-  // TransformType::Pointer transform = getAffineTransform<double, Dimension>(angleInDegrees, inputImage);
+  const double angleInDegrees = 90;
+  TransformType::Pointer transform = getRotationTransform3D(angleInDegrees, HR_volume);
   // filter->SetTransform( transform );
 
+  // std::cout << HR_volume->GetLargestPossibleRegion().GetImageDimension() << std::endl;
+  // std::cout << HR_volume->GetLargestPossibleRegion().GetSize().GetSizeDimension() << std::endl;
 
   try{
     /* Write images */
