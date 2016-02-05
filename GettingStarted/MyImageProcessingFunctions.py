@@ -26,7 +26,7 @@ from SimilarityMeasures import *
 
 def myshow(img):
     nda = sitk.GetArrayFromImage(img)
-    imshow(nda, cmap=cm.gray)
+    plt.imshow(nda, cmap=cm.gray)
     plt.show()
 
 

@@ -130,9 +130,9 @@ def get_sitk_rigid_registration_transform_3D(fixed_3D, moving_3D):
     registration_method = sitk.ImageRegistrationMethod()
 
     ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
-    initial_transform = sitk.CenteredTransformInitializer(fixed_3D, moving_3D, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+    # initial_transform = sitk.CenteredTransformInitializer(fixed_3D, moving_3D, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
     # initial_transform = sitk.CenteredTransformInitializer(fixed_3D, moving_3D, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.MOMENTS)
-    # initial_transform = sitk.Euler3DTransform()
+    initial_transform = sitk.Euler3DTransform()
 
     ## Set the initial transform and parameters to optimize
     registration_method.SetInitialTransform(initial_transform)
@@ -425,14 +425,17 @@ if __name__ == '__main__':
     Set variables
     """
     ## Specify data
-    dir_input = "../data/fetal_neck/"
+    # dir_input = "../data/fetal_neck/"
+    dir_input = "/Users/mebner/UCL/UCL/Publications/2016_IPEM/FetalNeckMasses_Trachea/"
     # dir_input = "../results/"
-    dir_output = "results/"
-    filename =  "1"
-    filename_recon = "data/FetalBrain_reconstruction_4stacks" # result B. Kainz
+    dir_output = dir_input + "R2_ComparisonWithRecon/"
+    filename =  "R2/" + "0"
+
+    filename_recon = "Reconstructions/" + "R2_8stacks" # result B. Kainz
+    # filename_recon = "data/FetalBrain_reconstruction_4stacks" # result B. Kainz
     # filename_recon = "data/SRTV_fetalUCL_3V_NoNLM_bcorr_norm_lambda_0.1_deltat_0.001_loops_10_it1" # result S. Tourbier
     # filename_out = "2_registered"
-    filename_out = filename + "_registered"
+    filename_out = "0_aligned_resampled"
 
     accuracy = 6 # decimal places for accuracy of unit tests
 
@@ -440,7 +443,7 @@ if __name__ == '__main__':
     """
     Playground
     """
-    reconstruction = sitk.ReadImage(filename_recon + ".nii.gz", sitk.sitkFloat64)
+    reconstruction = sitk.ReadImage(dir_input + filename_recon + ".nii.gz", sitk.sitkFloat64)
     stack = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
 
     # sitkh.show_sitk_image(reconstruction)
@@ -448,7 +451,9 @@ if __name__ == '__main__':
 
 
     ## 3D rigid transformation of stack:
-    transform_3D = get_sitk_rigid_registration_transform_3D(fixed_3D=stack, moving_3D=reconstruction)
+    # transform_3D = get_sitk_rigid_registration_transform_3D(fixed_3D=stack, moving_3D=reconstruction)
+    transform_3D = get_sitk_rigid_registration_transform_3D(fixed_3D=reconstruction, moving_3D=stack)
+    tramsform_3D = sitkh.get_inverse_of_sitk_rigid_registration_transform(transform_3D)
     stack_rigidly_aligned = sitkh.get_transformed_image(stack, transform_3D)
 
     # stack_rigidly_aligned = sitk.ReadImage(dir_output + "stack_aligned.nii.gz", sitk.sitkFloat64)
@@ -458,43 +463,45 @@ if __name__ == '__main__':
     ## Check alignment
 
     ## Linear Sampling
-    # test = sitk.Resample(
+    # stack_aligned = sitk.Resample(
     #     stack_rigidly_aligned, reconstruction, sitk.Euler3DTransform(), sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
     #     )
 
     ## Nearest Neighbour Sampling
-    test = sitk.Resample(
+    stack_aligned_resampled_to_recon_space = sitk.Resample(
         stack_rigidly_aligned, reconstruction, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, reconstruction.GetPixelIDValue()
         )
-    # test = sitk.Resample(
-        # stack, reconstruction, transform_3D, sitk.sitkLinear, 0.0, reconstruction.GetPixelIDValue()
-        # )
-    # sitk.WriteImage(test, dir_output + filename_out + ".nii.gz")
-    sitk.WriteImage(stack_rigidly_aligned, dir_output + filename_out + ".nii.gz")
+
+    # stack_aligned_resampled_to_recon_space = sitk.Resample(
+    #     stack, reconstruction, transform_3D, sitk.sitkNearestNeighbor, 0.0, reconstruction.GetPixelIDValue()
+    #     )
+    # sitk.WriteImage(stack_aligned, dir_output + filename_out + ".nii.gz")
+    # sitk.WriteImage(stack_rigidly_aligned, dir_output + filename_out + ".nii.gz")
+    sitk.WriteImage(stack_aligned_resampled_to_recon_space, dir_output + filename_out + ".nii.gz")
 
     # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
     cmd = "itksnap " \
             + "-g " + dir_output + filename_out + ".nii.gz " \
-            + "-o " +  filename_recon + ".nii.gz " + \
+            + "-o " + dir_input + filename_recon + ".nii.gz " + \
             "& "
-    # os.system(cmd)
+    os.system(cmd)
 
     ## 3D rigid transformation of slice
-    slice_number = 4
-    slice_3D = stack_rigidly_aligned[:,:,slice_number:slice_number+1]
+    # slice_number = 4
+    # slice_3D = stack_rigidly_aligned[:,:,slice_number:slice_number+1]
 
-    spacing_HR = np.array(reconstruction.GetSpacing())
-    spacing_LR = np.array(slice_3D.GetSpacing())
+    # spacing_HR = np.array(reconstruction.GetSpacing())
+    # spacing_LR = np.array(slice_3D.GetSpacing())
 
-    size_resampled = np.array(slice_3D.GetSize())
-    size_resampled[2] = np.round(spacing_LR[2]/spacing_HR[2])
+    # size_resampled = np.array(slice_3D.GetSize())
+    # size_resampled[2] = np.round(spacing_LR[2]/spacing_HR[2])
 
-    slice_3D_HR_grid = sitk.Resample(slice_3D, size_resampled, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, slice_3D.GetOrigin(), spacing_HR, slice_3D.GetDirection(), 0.0, slice_3D.GetPixelIDValue())
+    # slice_3D_HR_grid = sitk.Resample(slice_3D, size_resampled, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, slice_3D.GetOrigin(), spacing_HR, slice_3D.GetDirection(), 0.0, slice_3D.GetPixelIDValue())
 
 
-    transform_3D_slice = get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D=slice_3D_HR_grid, moving_3D=reconstruction)
+    # transform_3D_slice = get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D=slice_3D_HR_grid, moving_3D=reconstruction)
 
-    sitkh.print_rigid_transformation(transform_3D_slice,"local alignment")
+    # sitkh.print_rigid_transformation(transform_3D_slice,"local alignment")
     
 
 

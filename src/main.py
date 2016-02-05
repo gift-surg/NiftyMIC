@@ -16,6 +16,8 @@ import numpy as np
 import ReconstructionManager as rm
 # import SliceStack
 
+## Change viewer for sitk.Show command
+#%env SITK_SHOW_COMMAND /Applications/ITK-SNAP.app/Contents/MacOS/ITK-SNAP
 
 def read_input_data(image_type):
     

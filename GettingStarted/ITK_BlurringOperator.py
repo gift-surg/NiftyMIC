@@ -22,6 +22,9 @@ sys.path.append("../src/")
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
 
+## Change viewer for sitk.Show command
+#%env SITK_SHOW_COMMAND /Applications/ITK-SNAP.app/Contents/MacOS/ITK-SNAP
+
 """
 Functions
 """
@@ -31,17 +34,23 @@ Functions
 #       FWHM = slice thickness (through-plane)
 #  \param[in] stack_sitk stack defining the PSF
 #  \return Matrix representing the PSF modelled as Gaussian
-def get_Sigma_PSF(stack_sitk):
+def get_PSF_covariance_matrix(stack_sitk):
     spacing = np.array(stack_sitk.GetSpacing())
 
     ## Compute Gaussian to approximate in-plane PSF:
     sigma_x2 = (1.2*spacing[0])**2/(8*np.log(2))
     sigma_y2 = (1.2*spacing[1])**2/(8*np.log(2))
 
-    ## Compute Gaussian to approximate through-plane PSF:
-    sigma_z2 = spacing[2]**2/(8*np.log(2))
+    if stack_sitk.GetDimension() > 2:
+        ## Compute Gaussian to approximate through-plane PSF:
+        sigma_z2 = spacing[2]**2/(8*np.log(2))
 
-    return np.diag([sigma_x2, sigma_y2, sigma_z2])
+        Sigma_PSF = np.diag([sigma_x2, sigma_y2, sigma_z2])
+
+    else:
+        Sigma_PSF = np.diag([sigma_x2, sigma_y2])
+
+    return Sigma_PSF
 
 
 ## Compute rotated covariance matrix which expresses the PSF of the stack
@@ -51,7 +60,7 @@ def get_Sigma_PSF(stack_sitk):
 #  \param[in] Sigma_PSF Covariance matrix modelling the Gaussian PSF of an acquired slice
 #  \return Covariance matrix U*Sigma_diag*U' where U represents the
 #          orthogonal trafo between slice and HR_volume
-def get_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF):
+def get_PSF_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF):
     dim = slice_sitk.GetDimension()
 
     direction_matrix_HR_volume = np.array(HR_volume_sitk.GetDirection()).reshape(dim,dim)
@@ -59,7 +68,7 @@ def get_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF):
 
     U = direction_matrix_HR_volume.transpose().dot(direction_matrix_slice)
 
-    print("U = \n%s" % U);
+    # print("U = \n%s" % U);
 
     return U.dot(Sigma_PSF).dot(U.transpose())
 
@@ -71,25 +80,13 @@ def get_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF):
 #  \param[in] Sigma_PSF Covariance matrix modelling the Gaussian PSF of an acquired slice
 #  \return Covariance matrix S*U*Sigma_diag*U'*S where U represents the
 #          orthogonal trafo between stack and HR_volume and S the scaling matrix
-def get_scaled_inverse_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF):
+def get_PSF_scaled_inverse_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF):
     spacing = np.array(HR_volume_sitk.GetSpacing())
     S = np.diag(spacing)
-    Sigma_inv = np.linalg.inv(get_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF))
+    Sigma_inv = np.linalg.inv(get_PSF_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF))
 
     return S.dot(Sigma_inv).dot(S)
 
-
-## Compute blurred index (voxel space) with respect to oriented PSF
-#  \param[in] index point in voxedl space
-#  \param[in] center
-#  \param[in] Sigma ouput of get_scaled_variance_covariance_matrix()
-#  \return value proportional to PSF blurred point
-def compute_PSF_blurred_point(index, center, Sigma):
-    print("\nSigma = \n%s" % (Sigma))
-    print("\nSigma.dot(index-center) = \n%s" % (Sigma.dot(index-center)))
-    print("(index-center)'*Sigma.dot(index-center) = %s" % (np.sum( (index-center)*Sigma.dot(index-center), 0)))
-    print("exp(.) = %s" %(np.exp(-0.5* np.sum( (index-center)*Sigma.dot(index-center), 0))))
-    return np.exp(-0.5* np.sum( (index-center)*Sigma.dot(index-center), 0))
 
 
 def get_interpolator(interpolator_type, HR_volume_sitk=None, slice_sitk=None):
@@ -107,16 +104,22 @@ def get_interpolator(interpolator_type, HR_volume_sitk=None, slice_sitk=None):
     ## Gaussian
     elif interpolator_type is 'Gaussian':
         alpha = 1
-        Sigma_PSF = get_Sigma_PSF(slice_sitk)
-        Sigma_aligned = get_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
-        Sigma_diag = Sigma_aligned.diagonal()
+        Sigma_PSF = get_PSF_covariance_matrix(slice_sitk)
+        Sigma_rotated = get_PSF_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
+        # Sigma_rotated = Sigma_PSF
+        Sigma_diag = np.sqrt(Sigma_rotated.diagonal())
 
         print("Sigma_PSF = \n%s" %Sigma_PSF)
-        print("Sigma_aligned = \n%s" %Sigma_aligned)
+        print("Sigma_rotated = \n%s" %Sigma_rotated)
         print("Sigma_diag = \n%s" %Sigma_diag)
 
+        ## Define type of input and output image
+        dim = HR_volume_sitk.GetDimension()
+        pixel_type = itk.D
+        image_type = itk.Image[pixel_type, dim]
+
+        interpolator_type = itk.GaussianInterpolateImageFunction[image_type, pixel_type]
         # interpolator_type = itk.GaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
-        interpolator_type = itk.OrientedGaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
         interpolator = interpolator_type.New()
         interpolator.SetAlpha(alpha)
         interpolator.SetSigma(Sigma_diag)
@@ -124,7 +127,371 @@ def get_interpolator(interpolator_type, HR_volume_sitk=None, slice_sitk=None):
         # print("alpha = %s" %interpolator.GetAlpha())
         # print("Sigma = %s" %interpolator.GetSigma())
 
+    ## Oriented Gaussian
+    elif interpolator_type is 'OrientedGaussian':
+        alpha = 1
+        Sigma_PSF = get_PSF_covariance_matrix(slice_sitk)
+        Sigma_rotated = get_PSF_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
+
+        Sigma_diag = np.sqrt(Sigma_rotated.diagonal())
+        Sigma = get_itk_matrix_from_numpy_array(Sigma_rotated)
+
+        print("Sigma_PSF = \n%s" %Sigma_PSF)
+        print("Sigma_rotated = \n%s" %Sigma_rotated)
+        print("Sigma_diag = \n%s" %Sigma_diag)
+
+        ## Define type of input and output image
+        dim = HR_volume_sitk.GetDimension()
+        pixel_type = itk.D
+        image_type = itk.Image[pixel_type, dim]
+
+        interpolator_type = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type]
+        # interpolator_type = itk.OrientedGaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
+        interpolator = interpolator_type.New()
+        interpolator.SetAlpha(alpha)
+        interpolator.SetCovariance(Sigma)
+
+        # print("alpha = %s" %interpolator.GetAlpha())
+        # print("Sigma = %s" %interpolator.GetSigma())
+
     return interpolator
+
+## Compute blurred index (voxel space) with respect to oriented PSF
+#  \param[in] index point in voxedl space
+#  \param[in] center
+#  \param[in] Sigma ouput of get_scaled_variance_covariance_matrix()
+#  \return value proportional to PSF blurred point
+def compute_PSF_blurred_point(index, center, Sigma):
+    print("\nSigma = \n%s" % (Sigma))
+    print("\nSigma.dot(index-center) = \n%s" % (Sigma.dot(index-center)))
+    print("(index-center)'*Sigma.dot(index-center) = %s" % (np.sum( (index-center)*Sigma.dot(index-center), 0)))
+    print("exp(.) = %s" %(np.exp(-0.5* np.sum( (index-center)*Sigma.dot(index-center), 0))))
+    return np.exp(-0.5* np.sum( (index-center)*Sigma.dot(index-center), 0))
+
+
+## Cast numpy array to itk::Matrix
+#  \param[in] matrix_np numpy array to cast
+#  \return matrix_itk
+def get_itk_matrix_from_numpy_array(matrix_np):
+    rows = matrix_np.shape[0]
+    cols = matrix_np.shape[1]
+
+    matrix_vnl = itk.vnl_matrix_fixed[itk.D, rows, cols]()
+
+    for i in range(0, rows):
+        for j in range(0, cols):
+            matrix_vnl.set(i, j, matrix_np[i,j])
+    
+    matrix_itk = itk.Matrix[itk.D, rows, cols](matrix_vnl)
+
+    return matrix_itk
+
+## Cast itk::Matrix to numpy array
+#  \param[in] matrix_itk itk::Matrix
+#  \return matrix_np
+def get_numpy_array_from_itk_matrix(matrix_itk):
+    matrix_vnl = matrix_itk.GetVnlMatrix()
+
+    cols = matrix_vnl.cols()
+    rows = matrix_vnl.rows()
+
+    if rows > 1:
+        matrix_np = np.zeros((rows,cols))
+
+        for i in range(0, rows):
+            for j in range(0, cols):
+                matrix_np[i,j] = matrix_itk(i,j)
+
+    else:
+        matrix_np = np.zeros(cols)
+
+        for j in range(0, cols):
+            matrix_np[j] = matrix_itk(j)
+
+    return matrix_np
+
+
+## Composite two itk::AffineTransformations
+#  \param[in] transform_outer
+#  \param[in] transfrom_inner
+#  \return transform_outer \circ transform_inner
+def get_composited_itk_affine_transform(transform_outer, transform_inner):
+    dim = transform_outer.GetCenter().GetPointDimension()
+
+    transform_type = itk.AffineTransform[itk.D, dim]
+    transform = transform_type.New()
+
+    fixed_parameters = transform_inner.GetFixedParameters()
+    parameters = transform_inner.GetParameters()
+
+    transform.SetParameters(parameters)
+    transform.SetFixedParameters(fixed_parameters)
+
+    transform.Compose(transform_outer)
+
+    return transform
+
+
+## Get itk::AffineTransform encoded in the image
+#  \param[in] image_itk
+#  \return itk::AffineTransform
+def get_itk_affine_transform_from_itk_image(image_itk):
+    origin_itk = image_itk.GetOrigin()
+    direction_itk = image_itk.GetDirection()
+    spacing_itk = image_itk.GetSpacing()
+    size_itk = image_itk.GetBufferedRegion().GetSize()
+    dim = image_itk.GetBufferedRegion().GetImageDimension()
+
+    S = np.diag(spacing_itk)
+
+    ## Get affine matrix from itk image
+    matrix_vnl = itk.vnl_matrix_fixed[itk.D, dim, dim]()
+    for i in range(0, dim):
+        for j in range(0, dim):
+            value = direction_itk(i,j)*spacing_itk[j]
+            matrix_vnl.set(i, j, value)
+            # print("M(%s,%s) = %s" %(i,j,value))
+
+    ## Create AffineTransform
+    transform_type = itk.AffineTransform[itk.D, dim]
+    transform = transform_type.New()
+    matrix_itk = itk.Matrix[itk.D, dim, dim](matrix_vnl)
+    transform.SetMatrix( matrix_itk )
+
+    transform.SetTranslation( origin_itk )
+    # print("origin_itk = (%s, %s)" %(origin_itk[0], origin_itk[1]))
+
+    return transform
+
+
+def get_itk_image_direction_matrix_from_itk_affine_transform(affine_transform_itk, image_itk):
+    dim = image_itk.GetBufferedRegion().GetImageDimension()
+    spacing = np.array(image_itk.GetSpacing())
+    S_inv = np.diag(1/spacing)
+
+    A = get_numpy_array_from_itk_matrix(affine_transform_itk.GetMatrix())
+
+    return get_itk_matrix_from_numpy_array( A.dot(S_inv) )
+
+
+def get_itk_image_origin_from_itk_affine_transform(affine_transform_itk, image_itk):
+    """
+    see sitkh.get_sitk_image_origin_from_sitk_affine_transform
+
+    Important: Only tested for center=\0! Not clear how it shall be implemented,
+            cf. Johnson2015a on page 551 vs page 107!
+
+    Mostly outcome of application of get_composited_sitk_affine_transform and first transform_inner is image. 
+    Therefore, center_composited is always zero on tested functions so far
+    """
+    dim = image_itk.GetBufferedRegion().GetImageDimension()    
+
+    affine_center = np.array(affine_transform_itk.GetCenter())
+    affine_translation = np.array(affine_transform_itk.GetTranslation())
+    
+    R = get_numpy_array_from_itk_matrix(affine_transform_itk.GetMatrix())
+
+    return affine_center + affine_translation 
+    # return affine_center + affine_translation - R.dot(affine_center)
+
+
+def get_transformed_image(image_itk, transform):
+    """
+    image_itk.New() and image_itk.Clone() do not work properly!!
+    """
+    dim = image_itk.GetImageDimension()
+
+    image_type = itk.Image[itk.D, dim]
+
+    image_duplicator = itk.ImageDuplicator[image_type].New()
+    image_duplicator.SetInputImage(image_itk)
+    image_duplicator.Update()
+    image = image_duplicator.GetOutput()
+
+    # image.CopyInformation(image_itk)
+
+    affine_transform = get_itk_affine_transform_from_itk_image(image)
+    transform = get_composited_itk_affine_transform(transform, affine_transform)
+
+    direction = get_itk_image_direction_matrix_from_itk_affine_transform(transform, image)
+    origin = get_itk_image_origin_from_itk_affine_transform(transform, image)
+
+    image.SetOrigin(origin)
+    image.SetDirection(direction)
+
+    return image
+
+
+## print itk::AffineTransform
+def print_affine_transform(affine_transform, text="affine transformation"):
+    dim = affine_transform.GetCenter().GetPointDimension()
+    matrix_itk = affine_transform.GetMatrix()
+    
+    translation = np.array(affine_transform.GetTranslation())
+    center = np.array(affine_transform.GetCenter())
+    parameters = np.array(affine_transform.GetParameters())
+
+    matrix = np.zeros((dim,dim))
+    for i in range(0, dim):
+        for j in range(0, dim):
+            matrix[i,j] = matrix_itk(i,j)
+
+    if isinstance(affine_transform, itk.Euler2DTransform[itk.D]) or \
+        isinstance(affine_transform, itk.Euler3DTransform[itk.D]):
+        print(text + ":")
+        print("matrix = \n" + str(matrix))
+        print("center = " + str(center))
+        print("angle_x, angle_y, angle_z =  (%s, %s, %s) deg" 
+            % (parameters[0]*180/np.pi, parameters[1]*180/np.pi, parameters[2]*180/np.pi))
+        print("translation = " + str(translation))
+
+    else:
+        print(text + ":")
+        print("matrix = \n" + str(matrix))
+        print("center = " + str(center))
+        print("translation = " + str(translation))
+
+    return None
+
+
+def get_centered_2D_rotation_itk(image_2D_itk, angle_in_deg):
+    origin_itk = image_2D_itk.GetOrigin()
+    # direction_itk = image_2D_itk.GetDirection()
+    spacing_itk = image_2D_itk.GetSpacing()
+    size_itk = image_2D_itk.GetBufferedRegion().GetSize()
+
+    ## Trafo to bring image back to origin with axis aligned image borders
+    affine = itk.AffineTransform.D2.New()
+    affine_inv = itk.AffineTransform.D2.New()
+
+    affine.SetMatrix(image_2D_itk.GetDirection())
+    affine.SetTranslation(image_2D_itk.GetOrigin())
+    affine.GetInverse(affine_inv)
+
+    ## Compute centering transformations
+    image_center = np.zeros(2)
+    image_center[0] = spacing_itk[0]*size_itk[0]/2.0
+    image_center[1] = spacing_itk[1]*size_itk[1]/2.0
+
+    translation1 = (-image_center[0], -image_center[1])
+    translation2 = ( image_center[0],  image_center[1])
+
+    ## Construct rotation transform for axis aligned image borders
+    transform_rot = itk.AffineTransform.D2.New()
+
+    transform_rot.Translate(translation1)
+    transform_rot.Rotate2D(angle_in_deg*np.pi/180, False) #False: apply rotation after current transform content
+    transform_rot.Translate(translation2, False)
+
+    ## Construct composite rotation transform
+    transform = get_composited_itk_affine_transform(transform_rot, affine_inv)
+    transform = get_composited_itk_affine_transform(affine, transform)
+
+    return transform
+
+
+def get_centered_2D_rotation_sitk(image_2D_sitk, angle_in_deg):
+    origin = np.array(image_2D_sitk.GetOrigin())
+    spacing = np.array(image_2D_sitk.GetSpacing())
+    size = np.array(image_2D_sitk.GetSize())
+
+    ## Trafo to bring image back to origin with axis aligned image borders
+    affine = sitk.AffineTransform(2)
+    affine.SetMatrix(image_2D_sitk.GetDirection())
+    affine.SetTranslation(image_2D_sitk.GetOrigin())
+    affine_inv = sitk.AffineTransform(affine.GetInverse())
+
+    ## Compute centering transformations
+    translation1 = sitk.AffineTransform(2)
+    translation2 = sitk.AffineTransform(2)
+    
+    image_center = spacing*size/2.0
+    translation1.SetTranslation(-image_center)
+    translation2.SetTranslation(image_center)
+
+    ## Define rotation
+    rotation = sitk.Euler2DTransform((0,0), angle_in_deg*np.pi/180, (0,0))
+
+    ## Construct composite rotation transform
+    transform = sitkh.get_composited_sitk_affine_transform(translation1, affine_inv)
+    transform = sitkh.get_composited_sitk_affine_transform(rotation, transform)
+    transform = sitkh.get_composited_sitk_affine_transform(translation2, transform)
+    transform = sitkh.get_composited_sitk_affine_transform(affine, transform)
+
+    return transform
+
+## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
+#  \param[in] image_itk image to show
+#  \param[in] segmentation_itk 
+#  \param[in] overlay_itk image which shall be overlayed onto image_itk (optional)
+#  \param[in] filename_out filename for file written to /tmp/ (optional)
+def show_itk_image(image_itk, segmentation_itk=None, overlay_itk=None, filename_out="test"):
+    
+    dir_output = "/tmp/"
+    # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
+
+    ## Define type of output image
+    pixel_type = itk.D
+    dim = image_itk.GetBufferedRegion().GetImageDimension()
+    image_type = itk.Image[pixel_type, dim]
+
+    ## Define writer
+    writer = itk.ImageFileWriter[image_type].New()
+    # writer_2D.Update()
+    # image_IO_type = itk.NiftiImageIO
+
+    ## Write image_itk
+    writer.SetInput(image_itk)
+    writer.SetFileName(dir_output + filename_out + ".nii.gz")
+    writer.Update()
+
+    if overlay_itk is not None and segmentation_itk is None:
+        ## Write overlay_itk:
+        writer.SetInput(overlay_itk)
+        writer.SetFileName(dir_output + filename_out + "_overlay.nii.gz")
+        writer.Update()
+
+        cmd = "itksnap " \
+            + "-g " + dir_output + filename_out + ".nii.gz " \
+            + "-o " + dir_output + filename_out + "_overlay.nii.gz " \
+            "& "
+    
+    elif overlay_itk is None and segmentation_itk is not None:
+        ## Write segmentation_itk:
+        writer.SetInput(segmentation_itk)
+        writer.SetFileName(dir_output + filename_out + "_segmentation.nii.gz")
+        writer.Update()
+
+        cmd = "itksnap " \
+            + "-g " + dir_output + filename_out + ".nii.gz " \
+            + "-s " + dir_output + filename_out + "_segmentation.nii.gz " \
+            + "& "
+
+    elif overlay_itk is not None and segmentation_itk is not None:
+        ## Write overlay_itk:
+        writer.SetInput(overlay_itk)
+        writer.SetFileName(dir_output + filename_out + "_overlay.nii.gz")
+        writer.Update()
+
+        ## Write segmentation_itk:
+        writer.SetInput(segmentation_itk)
+        writer.SetFileName(dir_output + filename_out + "_segmentation.nii.gz")
+        writer.Update()
+
+        cmd = "itksnap " \
+            + "-g " + dir_output + filename_out + ".nii.gz " \
+            + "-s " + dir_output + filename_out + "_segmentation.nii.gz " \
+            + "-o " + dir_output + filename_out + "_overlay.nii.gz " \
+            + "& "
+
+    else:
+        cmd = "itksnap " \
+            + "-g " + dir_output + filename_out + ".nii.gz " \
+            "& "
+
+    os.system(cmd)
+
+    return None
 
 """
 Unit Test Class
@@ -132,8 +499,9 @@ Unit Test Class
 
 class TestUM(unittest.TestCase):
 
-    accuracy = 7
+    accuracy = 10
     dir_input = "data/"
+    dir_output = "results/"
 
 
     def setUp(self):
@@ -145,7 +513,7 @@ class TestUM(unittest.TestCase):
         stack_sitk = sitk.ReadImage(self.dir_input + filename_stack + ".nii.gz", sitk.sitkFloat32)
         spacing = np.array(stack_sitk.GetSpacing())
         
-        Sigma = get_Sigma_PSF(stack_sitk)
+        Sigma = get_PSF_covariance_matrix(stack_sitk)
         FWHM = np.array([1.2*spacing[0], 1.2*spacing[1], spacing[2]])
 
         for i in range(0, len(Sigma)):
@@ -159,7 +527,695 @@ class TestUM(unittest.TestCase):
                 , decimals = self.accuracy), 0 )
 
 
+    def test_02_check_itkOrientedGaussianInterpolateImageFunction_2D(self):
+        filename_stack = "BrainWeb_2D"
+        Sigma = np.array([1,1])
+        alpha = 3
 
+        ## Define types of input and output pixels and state dimension of images
+        input_pixel_type = itk.D
+        output_pixel_type = input_pixel_type
+
+        input_dimension = 2
+        output_dimension = input_dimension
+
+        ## Define type of input and output image
+        input_image_type = itk.Image[input_pixel_type, input_dimension]
+        output_image_type = itk.Image[output_pixel_type, output_dimension]
+
+        ## Define types of reader and writer
+        reader_type = itk.ImageFileReader[input_image_type]
+        writer_type = itk.ImageFileWriter[output_image_type]
+        image_IO_type = itk.NiftiImageIO
+
+        ## Instantiate reader and writer
+        reader_stack = reader_type.New()
+        writer = writer_type.New()
+
+        ## Set image IO type to nifti
+        image_IO = image_IO_type.New()
+        reader_stack.SetImageIO(image_IO)
+
+        ## Read images
+        reader_stack.SetFileName(self.dir_input + filename_stack + ".nii.gz")
+        reader_stack.Update()
+
+        ## Get image
+        stack_itk = reader_stack.GetOutput()
+
+        ## Resample Image Filter and Interpolator
+        filter_type = itk.ResampleImageFilter[input_image_type, output_image_type]
+
+        filter_Gaussian = filter_type.New()
+        interpolator_type_Gaussian = itk.GaussianInterpolateImageFunction.ID2D #Input image type: Float 3D
+        interpolator_Gaussian = interpolator_type_Gaussian.New()
+
+        filter_OrientedGaussian = filter_type.New()
+        interpolator_type_OrientedGaussian = itk.OrientedGaussianInterpolateImageFunction.ID2D #Input image type: Float 3D
+        interpolator_OrientedGaussian = interpolator_type_OrientedGaussian.New()
+
+        ## Set interpolator parameter 
+        interpolator_Gaussian.SetAlpha(alpha)
+        interpolator_Gaussian.SetSigma(Sigma)
+
+        interpolator_OrientedGaussian.SetAlpha(alpha)
+        interpolator_OrientedGaussian.SetSigma(Sigma)
+
+        ## Set filter
+        filter_Gaussian.SetInput(stack_itk)
+        filter_Gaussian.SetOutputParametersFromImage(stack_itk)
+        filter_Gaussian.SetInterpolator(interpolator_Gaussian)
+        filter_Gaussian.Update()
+
+        filter_OrientedGaussian.SetInput(stack_itk)
+        filter_OrientedGaussian.SetOutputParametersFromImage(stack_itk)
+        filter_OrientedGaussian.SetInterpolator(interpolator_OrientedGaussian)
+        filter_OrientedGaussian.Update()
+
+        ## Set writer
+        writer.SetInput(filter_Gaussian.GetOutput())
+        writer.SetFileName(self.dir_output + "test_02_Gaussian_2D.nii.gz")
+        # writer.Update()
+
+        writer.SetInput(filter_OrientedGaussian.GetOutput())
+        writer.SetFileName(self.dir_output + "test_02_OrientedGaussian.nii.gz")
+        # writer.Update()
+
+        itk2np = itk.PyBuffer[input_image_type]
+        nda_Gaussian = itk2np.GetArrayFromImage(filter_Gaussian.GetOutput()) 
+        nda_OrientedGaussian = itk2np.GetArrayFromImage(filter_OrientedGaussian.GetOutput()) 
+
+        ## Check results      
+        diff = nda_Gaussian-nda_OrientedGaussian
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    def test_02_check_itkOrientedGaussianInterpolateImageFunction_2D_rotation(self):
+        # filename_stack = "BrainWeb_2D"
+        filename_stack = "SingleDot"
+
+        # sigma_x2 = 10
+        # sigma_y2 = 0.01
+        sigma_x2 = 2.673
+        sigma_y2 = 0.2678
+        alpha = 5
+        theta_in_degree = 20
+
+        Cov = np.zeros((2,2))
+        Cov[0,0] = sigma_x2
+        Cov[1,1] = sigma_y2
+
+        ## Rotation in mathematically negative direction, but appear then
+        #  mathematically positive in ITK-Snap
+        theta_in_rad = theta_in_degree*np.pi/180.0
+        R = np.zeros(Cov.shape)
+        R[0,0] = np.cos(theta_in_rad)
+        R[0,1] = np.sin(theta_in_rad)
+        R[1,0] = -np.sin(theta_in_rad)
+        R[1,1] = np.cos(theta_in_rad)
+
+        Cov_aligned = R.dot(Cov).dot(R.transpose())
+        Sigma_aligned = np.sqrt(Cov_aligned.diagonal())
+
+        ## Define types of input and output pixels and state dimension of images
+        input_pixel_type = itk.D
+        output_pixel_type = input_pixel_type
+
+        input_dimension = 2
+        output_dimension = input_dimension
+
+        ## Define type of input and output image
+        input_image_type = itk.Image[input_pixel_type, input_dimension]
+        output_image_type = itk.Image[output_pixel_type, output_dimension]
+
+        ## Define types of reader and writer
+        reader_type = itk.ImageFileReader[input_image_type]
+        writer_type = itk.ImageFileWriter[output_image_type]
+        image_IO_type = itk.NiftiImageIO
+
+        ## Instantiate reader and writer
+        reader_stack = reader_type.New()
+        writer = writer_type.New()
+
+        ## Set image IO type to nifti
+        image_IO = image_IO_type.New()
+        reader_stack.SetImageIO(image_IO)
+
+        ## Read images
+        reader_stack.SetFileName(self.dir_input + filename_stack + ".nii.gz")
+        reader_stack.Update()
+
+        ## Get image
+        stack_itk = reader_stack.GetOutput()
+
+        ## Resample Image Filter and Interpolator
+        filter_type = itk.ResampleImageFilter[input_image_type, output_image_type]
+
+        filter_Gaussian = filter_type.New()
+        interpolator_type_Gaussian = itk.GaussianInterpolateImageFunction.ID2D #Input image type: Float 3D
+        interpolator_Gaussian = interpolator_type_Gaussian.New()
+
+        filter_OrientedGaussian = filter_type.New()
+        interpolator_type_OrientedGaussian = itk.OrientedGaussianInterpolateImageFunction.ID2D #Input image type: Float 3D
+        interpolator_OrientedGaussian = interpolator_type_OrientedGaussian.New()
+
+        ## Set interpolator parameter 
+        interpolator_Gaussian.SetAlpha(alpha)
+        interpolator_Gaussian.SetSigma(Sigma_aligned)
+
+        interpolator_OrientedGaussian.SetAlpha(alpha)
+        interpolator_OrientedGaussian.SetCovariance(get_itk_matrix_from_numpy_array(Cov_aligned))
+
+        ## Set filter
+        filter_Gaussian.SetInput(stack_itk)
+        filter_Gaussian.SetOutputParametersFromImage(stack_itk)
+        filter_Gaussian.SetInterpolator(interpolator_Gaussian)
+        filter_Gaussian.Update()
+
+        filter_OrientedGaussian.SetInput(stack_itk)
+        filter_OrientedGaussian.SetOutputParametersFromImage(stack_itk)
+        filter_OrientedGaussian.SetInterpolator(interpolator_OrientedGaussian)
+        filter_OrientedGaussian.Update()
+
+        ## Set writer
+        writer.SetInput(filter_Gaussian.GetOutput())
+        writer.SetFileName(self.dir_output + "test_02_Gaussian_2D_rotation.nii.gz")
+        # writer.Update()
+
+        writer.SetInput(filter_OrientedGaussian.GetOutput())
+        writer.SetFileName(self.dir_output + "test_02_OrientedGaussian_rotation.nii.gz")
+        # writer.Update()
+
+        itk2np = itk.PyBuffer[input_image_type]
+        nda_Gaussian = itk2np.GetArrayFromImage(filter_Gaussian.GetOutput()) 
+        nda_OrientedGaussian = itk2np.GetArrayFromImage(filter_OrientedGaussian.GetOutput()) 
+
+        ## Check results      
+        diff = nda_Gaussian-nda_OrientedGaussian
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    def test_03_check_itkOrientedGaussianInterpolateImageFunction(self):
+        filename_stack = "FetalBrain_reconstruction_4stacks"
+        Sigma = np.array([1,1,1])
+        alpha = 3
+
+        ## Define types of input and output pixels and state dimension of images
+        input_pixel_type = itk.D
+        output_pixel_type = input_pixel_type
+
+        input_dimension = 3
+        output_dimension = input_dimension
+
+        ## Define type of input and output image
+        input_image_type = itk.Image[input_pixel_type, input_dimension]
+        output_image_type = itk.Image[output_pixel_type, output_dimension]
+
+        ## Define types of reader and writer
+        reader_type = itk.ImageFileReader[input_image_type]
+        writer_type = itk.ImageFileWriter[output_image_type]
+        image_IO_type = itk.NiftiImageIO
+
+        ## Instantiate reader and writer
+        reader_stack = reader_type.New()
+        writer = writer_type.New()
+
+        ## Set image IO type to nifti
+        image_IO = image_IO_type.New()
+        reader_stack.SetImageIO(image_IO)
+
+        ## Read images
+        reader_stack.SetFileName(self.dir_input + filename_stack + ".nii.gz")
+        reader_stack.Update()
+
+        ## Get image
+        stack_itk = reader_stack.GetOutput()
+
+        ## Resample Image Filter and Interpolator
+        filter_type = itk.ResampleImageFilter[input_image_type, output_image_type]
+
+        filter_Gaussian = filter_type.New()
+        interpolator_type_Gaussian = itk.GaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
+        interpolator_Gaussian = interpolator_type_Gaussian.New()
+
+        filter_OrientedGaussian = filter_type.New()
+        interpolator_type_OrientedGaussian = itk.OrientedGaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
+        interpolator_OrientedGaussian = interpolator_type_OrientedGaussian.New()
+
+        ## Set interpolator parameter 
+        interpolator_Gaussian.SetAlpha(alpha)
+        interpolator_Gaussian.SetSigma(Sigma)
+
+        interpolator_OrientedGaussian.SetAlpha(alpha)
+        interpolator_OrientedGaussian.SetSigma(Sigma)
+
+        ## Set filter
+        filter_Gaussian.SetInput(stack_itk)
+        filter_Gaussian.SetOutputParametersFromImage(stack_itk)
+        filter_Gaussian.SetInterpolator(interpolator_Gaussian)
+        filter_Gaussian.Update()
+
+        filter_OrientedGaussian.SetInput(stack_itk)
+        filter_OrientedGaussian.SetOutputParametersFromImage(stack_itk)
+        filter_OrientedGaussian.SetInterpolator(interpolator_OrientedGaussian)
+        filter_OrientedGaussian.Update()
+
+        ## Set writer
+        writer.SetInput(filter_Gaussian.GetOutput())
+        writer.SetFileName(self.dir_output + "test_03_Gaussian.nii.gz")
+        # writer.Update()
+
+        writer.SetInput(filter_OrientedGaussian.GetOutput())
+        writer.SetFileName(self.dir_output + "test_03_OrientedGaussian.nii.gz")
+        # writer.Update()
+
+        itk2np = itk.PyBuffer[input_image_type]
+        nda_Gaussian = itk2np.GetArrayFromImage(filter_Gaussian.GetOutput()) 
+        nda_OrientedGaussian = itk2np.GetArrayFromImage(filter_OrientedGaussian.GetOutput()) 
+
+        ## Check results      
+        diff = nda_Gaussian-nda_OrientedGaussian
+        abs_diff = abs(diff)
+        norm_diff = np.linalg.norm(diff)
+
+        try:
+            self.assertEqual(np.around(
+                norm_diff
+                , decimals = self.accuracy), 0 )
+
+        except Exception as e:
+            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
+            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
+            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
+            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
+            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
+
+
+    def test_04_get_centered_2D_rotation_itk(self):
+        filename_2D = "BrainWeb_2D"
+
+        angle_in_deg = 40
+
+        ## Define types of input and output pixels and state dimension of images
+        input_pixel_type = itk.D
+        output_pixel_type = input_pixel_type
+
+        input_dimension = 2
+        output_dimension = input_dimension
+
+        ## Define type of input and output image
+        input_image_type = itk.Image[input_pixel_type, input_dimension]
+        output_image_type = itk.Image[output_pixel_type, output_dimension]
+
+        ## Define types of reader and writer
+        reader_type = itk.ImageFileReader[input_image_type]
+        writer_type = itk.ImageFileWriter[output_image_type]
+        image_IO_type = itk.NiftiImageIO
+
+        ## Instantiate reader and writer
+        reader_stack = reader_type.New()
+        writer = writer_type.New()
+
+        ## Set image IO type to nifti
+        image_IO = image_IO_type.New()
+        reader_stack.SetImageIO(image_IO)
+
+        ## Read images
+        reader_stack.SetFileName(self.dir_input + filename_2D + ".nii.gz")
+        reader_stack.Update()
+
+        ## Get image
+        stack_itk = reader_stack.GetOutput()
+        stack_sitk = sitk.ReadImage(dir_input + filename_2D + ".nii.gz")
+
+        ## Compute rotation
+        rotation_itk = get_centered_2D_rotation_itk(stack_itk, angle_in_deg)
+        rotation_sitk = get_centered_2D_rotation_sitk(stack_sitk, angle_in_deg)
+
+        ## Fetch parameters
+        parameters_itk = np.array(rotation_itk.GetParameters())
+        fixed_parameters_itk = np.array(rotation_itk.GetFixedParameters())
+
+        parameters_sitk = np.array(rotation_sitk.GetParameters())
+        fixed_parameters_sitk = np.array(rotation_sitk.GetFixedParameters())
+
+        ## Test correspondences
+        self.assertEqual(np.around(
+            np.linalg.norm(parameters_sitk - parameters_itk)
+            , decimals = self.accuracy), 0 )
+
+        self.assertEqual(np.around(
+            np.linalg.norm(fixed_parameters_sitk - fixed_parameters_itk)
+            , decimals = self.accuracy), 0 )
+
+
+    def test_05_check_get_composited_itk_transform_2D(self):
+        filename_2D = "BrainWeb_2D"
+
+        angle_in_deg = 40
+
+        ## Define types of input and output pixels and state dimension of images
+        input_pixel_type = itk.D
+        output_pixel_type = input_pixel_type
+
+        input_dimension = 2
+        output_dimension = input_dimension
+
+        ## Define type of input and output image
+        input_image_type = itk.Image[input_pixel_type, input_dimension]
+        output_image_type = itk.Image[output_pixel_type, output_dimension]
+
+        ## Define types of reader and writer
+        reader_type = itk.ImageFileReader[input_image_type]
+        writer_type = itk.ImageFileWriter[output_image_type]
+        image_IO_type = itk.NiftiImageIO
+
+        ## Instantiate reader and writer
+        reader_stack = reader_type.New()
+        writer = writer_type.New()
+
+        ## Set image IO type to nifti
+        image_IO = image_IO_type.New()
+        reader_stack.SetImageIO(image_IO)
+
+        ## Read images
+        reader_stack.SetFileName(self.dir_input + filename_2D + ".nii.gz")
+        reader_stack.Update()
+
+        ## Get image
+        stack_itk = reader_stack.GetOutput()
+        stack_sitk = sitk.ReadImage(dir_input + filename_2D + ".nii.gz")
+
+        ## Compute rotation
+        rotation_itk = get_centered_2D_rotation_itk(stack_itk, angle_in_deg)
+        rotation_sitk = get_centered_2D_rotation_sitk(stack_sitk, angle_in_deg)
+
+        ## Get image transform
+        transform_image_itk = get_itk_affine_transform_from_itk_image(stack_itk)
+        transform_image_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(stack_sitk)
+
+        ## Get composited transform
+        transform_itk = get_composited_itk_affine_transform(rotation_itk, transform_image_itk)
+        transform_sitk = sitkh.get_composited_sitk_affine_transform(rotation_sitk, transform_image_sitk)
+
+        ## Fetch parameters
+        parameters_itk = np.array(transform_itk.GetParameters())
+        fixed_parameters_itk = np.array(transform_itk.GetFixedParameters())
+
+        parameters_sitk = np.array(transform_sitk.GetParameters())
+        fixed_parameters_sitk = np.array(transform_sitk.GetFixedParameters())
+
+        ## Test correspondences
+        self.assertEqual(np.around(
+            np.linalg.norm(parameters_sitk - parameters_itk)
+            , decimals = self.accuracy), 0 )
+
+        self.assertEqual(np.around(
+            np.linalg.norm(fixed_parameters_sitk - fixed_parameters_itk)
+            , decimals = self.accuracy), 0 )
+
+
+    def test_05_check_get_composited_itk_transform_3D(self):
+        filename_3D = "fetal_brain_a"
+
+        ## Define types of input and output pixels and state dimension of images
+        input_pixel_type = itk.D
+        output_pixel_type = input_pixel_type
+
+        input_dimension = 3
+        output_dimension = input_dimension
+
+        ## Define type of input and output image
+        input_image_type = itk.Image[input_pixel_type, input_dimension]
+        output_image_type = itk.Image[output_pixel_type, output_dimension]
+
+        ## Define types of reader and writer
+        reader_type = itk.ImageFileReader[input_image_type]
+        writer_type = itk.ImageFileWriter[output_image_type]
+        image_IO_type = itk.NiftiImageIO
+
+        ## Instantiate reader and writer
+        reader_stack = reader_type.New()
+        writer = writer_type.New()
+
+        ## Set image IO type to nifti
+        image_IO = image_IO_type.New()
+        reader_stack.SetImageIO(image_IO)
+
+        ## Read images
+        reader_stack.SetFileName(self.dir_input + filename_3D + ".nii.gz")
+        reader_stack.Update()
+
+        ## Get image
+        stack_itk = reader_stack.GetOutput()
+        stack_sitk = sitk.ReadImage(dir_input + filename_3D + ".nii.gz")
+
+        ## Define rigid trafo
+        angle_x_in_deg = 20
+        angle_y_in_deg = 40
+        angle_z_in_deg = 90
+        translation = (10,1,-10)
+        center = (0,10,0)
+
+        angles = np.array([angle_x_in_deg, angle_y_in_deg, angle_z_in_deg])*np.pi/180
+        tmp_sitk = sitk.Euler3DTransform(center, angles[0], angles[1], angles[2], translation)
+
+        matrix_sitk = np.array(tmp_sitk.GetMatrix()).reshape(3,3)
+        center_sitk = np.array(tmp_sitk.GetFixedParameters())
+        translation_sitk = np.array(tmp_sitk.GetTranslation())
+
+        ## Construct rigid trafo as affine transform for itk and sitk
+        rotation_sitk = sitk.AffineTransform(3)
+        rotation_sitk.SetMatrix(matrix_sitk.flatten())
+        rotation_sitk.SetCenter(center_sitk)
+        rotation_sitk.SetTranslation(translation_sitk)
+
+        rotation_itk = itk.AffineTransform[itk.D, 3].New()
+        rotation_itk.SetMatrix(get_itk_matrix_from_numpy_array(matrix_sitk))
+        rotation_itk.SetCenter(center_sitk)
+        rotation_itk.SetTranslation(translation_sitk)
+
+        ## Get image transform
+        transform_image_itk = get_itk_affine_transform_from_itk_image(stack_itk)
+        transform_image_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(stack_sitk)
+
+        ## Get composited transform
+        transform_itk = get_composited_itk_affine_transform(rotation_itk, transform_image_itk)
+        transform_sitk = sitkh.get_composited_sitk_affine_transform(rotation_sitk, transform_image_sitk)
+
+        ## Fetch parameters
+        parameters_itk = np.array(transform_itk.GetParameters())
+        fixed_parameters_itk = np.array(transform_itk.GetFixedParameters())
+
+        parameters_sitk = np.array(transform_sitk.GetParameters())
+        fixed_parameters_sitk = np.array(transform_sitk.GetFixedParameters())
+
+        ## Test correspondences
+        self.assertEqual(np.around(
+            np.linalg.norm(parameters_sitk - parameters_itk)
+            , decimals = self.accuracy), 0 )
+
+        self.assertEqual(np.around(
+            np.linalg.norm(fixed_parameters_sitk - fixed_parameters_itk)
+            , decimals = self.accuracy), 0 )
+
+
+
+    def test_06_get_transformed_image_2D(self):
+        filename_2D = "BrainWeb_2D"
+
+        angle_in_deg = 40
+
+        ## Define types of input and output pixels and state dimension of images
+        input_pixel_type = itk.D
+        output_pixel_type = input_pixel_type
+
+        input_dimension = 2
+        output_dimension = input_dimension
+
+        ## Define type of input and output image
+        input_image_type = itk.Image[input_pixel_type, input_dimension]
+        output_image_type = itk.Image[output_pixel_type, output_dimension]
+
+        ## Define types of reader and writer
+        reader_type = itk.ImageFileReader[input_image_type]
+        writer_type = itk.ImageFileWriter[output_image_type]
+        image_IO_type = itk.NiftiImageIO
+
+        ## Instantiate reader and writer
+        reader_stack = reader_type.New()
+        writer = writer_type.New()
+
+        ## Set image IO type to nifti
+        image_IO = image_IO_type.New()
+        reader_stack.SetImageIO(image_IO)
+
+        ## Read images
+        reader_stack.SetFileName(self.dir_input + filename_2D + ".nii.gz")
+        reader_stack.Update()
+
+        ## Get image
+        stack_itk = reader_stack.GetOutput()
+        stack_sitk = sitk.ReadImage(dir_input + filename_2D + ".nii.gz")
+
+        ## Compute rotation
+        rotation_itk = get_centered_2D_rotation_itk(stack_itk, angle_in_deg)
+        rotation_sitk = get_centered_2D_rotation_sitk(stack_sitk, angle_in_deg)
+
+        ## Get image transform
+        transform_image_itk = get_itk_affine_transform_from_itk_image(stack_itk)
+        transform_image_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(stack_sitk)
+
+        ## Get composited transform
+        transform_itk = get_composited_itk_affine_transform(rotation_itk, transform_image_itk)
+        transform_sitk = sitkh.get_composited_sitk_affine_transform(rotation_sitk, transform_image_sitk)
+
+        ## Warp image
+        image_warped_itk = get_transformed_image(stack_itk, transform_itk)
+        image_warped_sitk = sitkh.get_transformed_image(stack_sitk, transform_sitk)
+
+        ## Fetch parameters
+        direction_itk = get_numpy_array_from_itk_matrix(image_warped_itk.GetDirection())
+        origin_itk = np.array(image_warped_itk.GetOrigin())
+        spacing_itk = np.array(image_warped_itk.GetSpacing())
+
+        direction_sitk = np.array(image_warped_sitk.GetDirection()).reshape(2,2)
+        origin_sitk = np.array(image_warped_sitk.GetOrigin())
+        spacing_sitk = np.array(image_warped_sitk.GetSpacing())
+
+        ## Test correspondences
+        self.assertEqual(np.around(
+            np.linalg.norm(direction_sitk - direction_itk)
+            , decimals = self.accuracy), 0 )
+
+        self.assertEqual(np.around(
+            np.linalg.norm(origin_sitk - origin_itk)
+            , decimals = self.accuracy), 0 )
+
+        self.assertEqual(np.around(
+            np.linalg.norm(spacing_sitk - spacing_itk)
+            , decimals = self.accuracy), 0 )
+
+
+    def test_06_get_transformed_image_3D(self):
+        filename_3D = "fetal_brain_a"
+
+        ## Define types of input and output pixels and state dimension of images
+        input_pixel_type = itk.D
+        output_pixel_type = input_pixel_type
+
+        input_dimension = 3
+        output_dimension = input_dimension
+
+        ## Define type of input and output image
+        input_image_type = itk.Image[input_pixel_type, input_dimension]
+        output_image_type = itk.Image[output_pixel_type, output_dimension]
+
+        ## Define types of reader and writer
+        reader_type = itk.ImageFileReader[input_image_type]
+        writer_type = itk.ImageFileWriter[output_image_type]
+        image_IO_type = itk.NiftiImageIO
+
+        ## Instantiate reader and writer
+        reader_stack = reader_type.New()
+        writer = writer_type.New()
+
+        ## Set image IO type to nifti
+        image_IO = image_IO_type.New()
+        reader_stack.SetImageIO(image_IO)
+
+        ## Read images
+        reader_stack.SetFileName(self.dir_input + filename_3D + ".nii.gz")
+        reader_stack.Update()
+
+        ## Get image
+        stack_itk = reader_stack.GetOutput()
+        stack_sitk = sitk.ReadImage(dir_input + filename_3D + ".nii.gz")
+
+        ## Define rigid trafo
+        angle_x_in_deg = 20
+        angle_y_in_deg = 40
+        angle_z_in_deg = 90
+        translation = (10,1,-10)
+        center = (0,10,0)
+
+        angles = np.array([angle_x_in_deg, angle_y_in_deg, angle_z_in_deg])*np.pi/180
+        tmp_sitk = sitk.Euler3DTransform(center, angles[0], angles[1], angles[2], translation)
+
+        matrix_sitk = np.array(tmp_sitk.GetMatrix()).reshape(3,3)
+        center_sitk = np.array(tmp_sitk.GetFixedParameters())
+        translation_sitk = np.array(tmp_sitk.GetTranslation())
+
+        ## Construct rigid trafo as affine transform for itk and sitk
+        rotation_sitk = sitk.AffineTransform(3)
+        rotation_sitk.SetMatrix(matrix_sitk.flatten())
+        rotation_sitk.SetCenter(center_sitk)
+        rotation_sitk.SetTranslation(translation_sitk)
+
+        rotation_itk = itk.AffineTransform[itk.D, 3].New()
+        rotation_itk.SetMatrix(get_itk_matrix_from_numpy_array(matrix_sitk))
+        rotation_itk.SetCenter(center_sitk)
+        rotation_itk.SetTranslation(translation_sitk)
+
+        ## Get image transform
+        transform_image_itk = get_itk_affine_transform_from_itk_image(stack_itk)
+        transform_image_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(stack_sitk)
+
+        ## Get composited transform
+        transform_itk = get_composited_itk_affine_transform(rotation_itk, transform_image_itk)
+        transform_sitk = sitkh.get_composited_sitk_affine_transform(rotation_sitk, transform_image_sitk)
+
+        ## Warp image
+        image_warped_itk = get_transformed_image(stack_itk, transform_itk)
+        image_warped_sitk = sitkh.get_transformed_image(stack_sitk, transform_sitk)
+
+        ## Fetch parameters
+        direction_itk = get_numpy_array_from_itk_matrix(image_warped_itk.GetDirection())
+        origin_itk = np.array(image_warped_itk.GetOrigin())
+        spacing_itk = np.array(image_warped_itk.GetSpacing())
+
+        direction_sitk = np.array(image_warped_sitk.GetDirection()).reshape(3,3)
+        origin_sitk = np.array(image_warped_sitk.GetOrigin())
+        spacing_sitk = np.array(image_warped_sitk.GetSpacing())
+
+        ## Test correspondences
+        self.assertEqual(np.around(
+            np.linalg.norm(direction_sitk - direction_itk)
+            , decimals = self.accuracy), 0 )
+
+        self.assertEqual(np.around(
+            np.linalg.norm(origin_sitk - origin_itk)
+            , decimals = self.accuracy), 0 )
+
+        self.assertEqual(np.around(
+            np.linalg.norm(spacing_sitk - spacing_itk)
+            , decimals = self.accuracy), 0 )
 
 """
 Main Function
@@ -174,11 +1230,16 @@ if __name__ == '__main__':
     filename_HR_volume = "FetalBrain_reconstruction_4stacks"
     filename_stack = "FetalBrain_stack2_registered"
     filename_slice = "FetalBrain_stack2_registered_midslice"
+    # filename_2D = "BrainWeb_2D"
+    # filename_2D = "BrainWeb_2D_rotated"
+    filename_2D = "SingleDot"
+
     # filename = "CTL_0_baseline_deleted_0.5"
 
     ## Define types of input and output pixels and state dimension of images
-    input_pixel_type = itk.D
-    output_pixel_type = input_pixel_type
+    pixel_type = itk.D
+    input_pixel_type = pixel_type
+    output_pixel_type = pixel_type
 
     input_dimension = 3
     output_dimension = input_dimension
@@ -186,23 +1247,29 @@ if __name__ == '__main__':
     ## Define type of input and output image
     input_image_type = itk.Image[input_pixel_type, input_dimension]
     output_image_type = itk.Image[output_pixel_type, output_dimension]
+    image_type_2D = itk.Image[itk.D, 2]
 
     ## Define types of reader and writer
     reader_type = itk.ImageFileReader[input_image_type]
+    reader_type_2D = itk.ImageFileReader[image_type_2D]
     writer_type = itk.ImageFileWriter[output_image_type]
+    writer_type_2D = itk.ImageFileWriter[image_type_2D]
     image_IO_type = itk.NiftiImageIO
 
     ## Instantiate reader and writer
     reader_HR_volume = reader_type.New()
     reader_stack = reader_type.New()
     reader_slice = reader_type.New()
+    reader_2D = reader_type_2D.New()
     writer = writer_type.New()
+    writer_2D = writer_type_2D.New()
 
     ## Set image IO type to nifti
     image_IO = image_IO_type.New()
     reader_HR_volume.SetImageIO(image_IO)
     reader_stack.SetImageIO(image_IO)
     reader_slice.SetImageIO(image_IO)
+    reader_2D.SetImageIO(image_IO)
 
     ## Read images
     reader_HR_volume.SetFileName(dir_input + filename_HR_volume + ".nii.gz")
@@ -214,60 +1281,190 @@ if __name__ == '__main__':
     reader_slice.SetFileName(dir_input + filename_slice + ".nii.gz")
     reader_slice.Update()
 
+    reader_2D.SetFileName(dir_input + filename_2D + ".nii.gz")
+    reader_2D.Update()
+
     ## Get image
     HR_volume_itk = reader_HR_volume.GetOutput()
     stack_itk = reader_stack.GetOutput()
     slice_itk = reader_slice.GetOutput()
+    image_2D_itk = reader_2D.GetOutput()
 
     HR_volume_sitk = sitk.ReadImage(dir_input + filename_HR_volume + ".nii.gz", sitk.sitkFloat32)
     stack_sitk = sitk.ReadImage(dir_input + filename_stack + ".nii.gz", sitk.sitkFloat32)
     slice_sitk = sitk.ReadImage(dir_input + filename_slice + ".nii.gz", sitk.sitkFloat32)
+    image_2D_sitk = sitk.ReadImage(dir_input + filename_2D + ".nii.gz", sitk.sitkFloat32)
 
     """
     'Real' start:
-    """
-    ## Resample Image Filter
-    filter_type = itk.ResampleImageFilter[input_image_type, output_image_type]
-    filter = filter_type.New()
+    """  
+    # point = np.array([5,5,5])
+    # center = np.array([3,3,3])
+    # Sigma_PSF = get_PSF_covariance_matrix(stack_sitk)
+    # Sigma = get_PSF_scaled_inverse_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
 
-    ## Set input image
-    filter.SetInput(HR_volume_itk)
-    filter.SetOutputParametersFromImage(stack_itk)
-    # filter.Update()
+    # compute_PSF_blurred_point(point, center, Sigma)
 
-    ## Choose interpolator
-    s_interpolators = ['NearestNeighbour', 'Linear', 'Gaussian']
-    interpolator_type = s_interpolators[2]
-    interpolator = get_interpolator(
-        'Gaussian',
-        HR_volume_sitk=HR_volume_sitk,
-        slice_sitk=slice_sitk)
-
-    ## Specify interpolator for filter
-    filter.SetInterpolator(interpolator)
-    filter.Update()
-
-    point = np.array([5,5,5])
-    center = np.array([3,3,3])
-    Sigma_PSF = get_Sigma_PSF(stack_sitk)
-    Sigma = get_scaled_inverse_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
-
-    compute_PSF_blurred_point(point, center, Sigma)
-
-    ## Set covariance matrix
     # sigma_x2 = 1
     # sigma_y2 = 2
     # sigma_z2 = 3
     # Sigma = np.diag([sigma_x2,sigma_y2,sigma_z2])
+    
+    DIM = 3
 
-    ## Write warped image
-    # writer.SetFileName(dir_output + "test.nii.gz")
-    # writer.SetInput(filter.GetOutput())
-    # writer.Update()
+    angle_in_deg = 20
 
+    ## cutoff-distance
+    alpha = 10
+
+    ## Set covariance matrix
+    sigma_x2 = 10
+    sigma_y2 = 1
+    sigma_z2 = 10
+
+
+    # print_affine_transform(rotation_itk, "\n\nRotation 2D (ITK)")
+    # sitkh.print_rigid_transformation(rotation_sitk, "\nRotation 2D (SimpleITK)")
+
+    # print_affine_transform(transform_image_itk, "Image Transform (ITK)")
+    # sitkh.print_rigid_transformation(transform_image_sitk, "\nImage Transform (SimpleITK)")
+
+    # sitk.WriteImage(image_2D_rotated_sitk, dir_input + filename_2D + "_rotated.nii.gz")
+
+    # s_interpolators = ['NearestNeighbour', 'Linear', 'Gaussian', 'OrientedGaussian']
+    # interpolator_type = s_interpolators[2]
+
+    if DIM == 2:
+
+        Sigma_PSF = np.diag([sigma_x2,sigma_y2])
+
+        rotation_itk = get_centered_2D_rotation_itk(image_2D_itk, angle_in_deg)
+        rotation_sitk = get_centered_2D_rotation_sitk(image_2D_sitk, angle_in_deg)
+
+        image_2D_rotated_itk = get_transformed_image(image_2D_itk, rotation_itk)
+        image_2D_rotated_sitk = sitkh.get_transformed_image(image_2D_sitk, rotation_sitk)
+
+        transform_image_itk = get_itk_affine_transform_from_itk_image(image_2D_rotated_itk)
+        transform_image_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(image_2D_rotated_sitk)
+
+        # Sigma_PSF =  get_PSF_covariance_matrix(image_2D_sitk)
+        Sigma_aligned = get_PSF_rotated_covariance_matrix(image_2D_sitk, image_2D_rotated_sitk, Sigma_PSF)
+        Sigma = get_PSF_scaled_inverse_rotated_covariance_matrix(image_2D_sitk, image_2D_rotated_sitk, Sigma_PSF)
+
+        print("Sigma_PSF = \n%s" %Sigma_PSF)
+        print("Sigma_PSF_oriented = \n%s" %Sigma_aligned)
+        print("Sigma_PSF_oriented_aligned_scaled = \n%s" %Sigma)
+
+
+        ## Resample Image Filter
+        filter_type_2D = itk.ResampleImageFilter[image_type_2D, image_type_2D]
+        filter_Gaussian = filter_type_2D.New()
+        filter_OrientedGaussian = filter_type_2D.New()
+
+        ## Set input image
+        filter_Gaussian.SetInput(image_2D_rotated_itk)
+        filter_Gaussian.SetOutputParametersFromImage(image_2D_rotated_itk)
+        filter_Gaussian.Update()
+
+        filter_OrientedGaussian.SetInput(image_2D_itk)
+        filter_OrientedGaussian.SetOutputParametersFromImage(image_2D_rotated_itk)
+        filter_OrientedGaussian.Update()
+
+        ## Choose interpolator
+        interpolator_Gaussian = itk.GaussianInterpolateImageFunction[image_type_2D, pixel_type].New()
+        interpolator_Gaussian.SetAlpha(alpha)
+        interpolator_Gaussian.SetSigma(np.sqrt(Sigma_PSF.diagonal()))
+        filter_Gaussian.SetInterpolator(interpolator_Gaussian)
+
+        interpolator_OrientedGaussian = itk.OrientedGaussianInterpolateImageFunction[image_type_2D, pixel_type].New()
+        interpolator_OrientedGaussian.SetAlpha(alpha)
+        interpolator_OrientedGaussian.SetCovariance(get_itk_matrix_from_numpy_array(Sigma_aligned))
+        filter_OrientedGaussian.SetInterpolator(interpolator_OrientedGaussian)
+
+        ## Apply Filter
+        filter_Gaussian.Update()
+        filter_OrientedGaussian.Update()
+
+
+        # show_itk_image(image_itk=filter_Gaussian.GetOutput())
+        show_itk_image(image_itk=filter_Gaussian.GetOutput(), overlay_itk=filter_OrientedGaussian.GetOutput())
+
+        writer_2D.SetFileName(dir_output + "Interpolation_DiagCov_Gaussian.nii.gz")
+        writer_2D.SetInput(filter_Gaussian.GetOutput())
+        # writer_2D.Update()
+
+        writer_2D.SetFileName(dir_output + "Interpolation_DiagCov_OrientedGaussian.nii.gz")
+        writer_2D.SetInput(filter_OrientedGaussian.GetOutput())
+        # writer_2D.Update()
+        
+
+    elif DIM == 3:
+        # Sigma_PSF = np.diag([sigma_x2,sigma_y2,sigma_z2])
+
+        Sigma_PSF =  get_PSF_covariance_matrix(slice_sitk)
+        Sigma_aligned = get_PSF_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
+        Sigma = get_PSF_scaled_inverse_rotated_covariance_matrix(HR_volume_sitk, slice_sitk, Sigma_PSF)
+
+        print("Sigma_PSF = \n%s" %Sigma_PSF)
+        print("Sigma_PSF_oriented = \n%s" %Sigma_aligned)
+        print("Sigma_PSF_oriented_aligned_scaled = \n%s" %Sigma)
+
+        ## Resample Image Filter
+        filter_type = itk.ResampleImageFilter[input_image_type, output_image_type]
+        filter_Gaussian = filter_type.New()
+        filter_OrientedGaussian = filter_type.New()
+
+        ## Set input image
+        filter_Gaussian.SetInput(slice_itk)
+        filter_Gaussian.SetOutputParametersFromImage(slice_itk)
+        filter_Gaussian.Update()
+
+        filter_OrientedGaussian.SetInput(HR_volume_itk)
+        # filter_OrientedGaussian.SetInput(stack_itk)
+        filter_OrientedGaussian.SetOutputParametersFromImage(slice_itk)
+        filter_OrientedGaussian.Update()
+
+        ## Choose interpolator
+        # interpolator_Gaussian = get_interpolator(
+        #     'Gaussian',
+        #     HR_volume_sitk=HR_volume_sitk,
+        #     slice_sitk=slice_sitk)
+        # filter_Gaussian.SetInterpolator(interpolator_Gaussian)
+
+        # interpolator_OrientedGaussian = get_interpolator(
+        #     'OrientedGaussian',
+        #     HR_volume_sitk=HR_volume_sitk,
+        #     slice_sitk=slice_sitk)
+        # filter_OrientedGaussian.SetInterpolator(interpolator_OrientedGaussian)
+
+        ## Choose interpolator
+        interpolator_Gaussian = itk.GaussianInterpolateImageFunction[input_image_type, pixel_type].New()
+        interpolator_Gaussian.SetAlpha(alpha)
+        interpolator_Gaussian.SetSigma(np.sqrt(Sigma_PSF.diagonal()))
+        filter_Gaussian.SetInterpolator(interpolator_Gaussian)
+
+        interpolator_OrientedGaussian = itk.OrientedGaussianInterpolateImageFunction[input_image_type, pixel_type].New()
+        interpolator_OrientedGaussian.SetAlpha(alpha)
+        interpolator_OrientedGaussian.SetCovariance(get_itk_matrix_from_numpy_array(Sigma_aligned))
+        filter_OrientedGaussian.SetInterpolator(interpolator_OrientedGaussian)
+
+        ## Apply Filter
+        filter_Gaussian.Update()
+        filter_OrientedGaussian.Update()
+
+
+        show_itk_image(image_itk=filter_Gaussian.GetOutput(), overlay_itk=filter_OrientedGaussian.GetOutput())
+
+        writer.SetFileName(dir_output + "Interpolation_DiagCov_Gaussian.nii.gz")
+        writer.SetInput(filter_Gaussian.GetOutput())
+        # writer.Update()
+
+        writer.SetFileName(dir_output + "Interpolation_DiagCov_OrientedGaussian.nii.gz")
+        writer.SetInput(filter_OrientedGaussian.GetOutput())
+        # writer.Update()
 
     """
     Unit tests:
     """
     print("\nUnit tests:\n--------------")
-    unittest.main()
+    # unittest.main()

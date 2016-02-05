@@ -23,16 +23,81 @@
 #include <limits.h> /* PATH_MAX */
 #include <math.h>
 
+/// TODO: Put lines below into file header!!
 
-/* Put into header file */
-template <typename ImageType> itk::Matrix<double,3,3> getOrientedSigmaPSF(ImageType *HR_volume, ImageType *slice);
-template <typename ImageType> itk::Matrix<double,3,3> computeRotationMatrix(ImageType *HR_volume, ImageType *slice);
-itk::Vector<double, 3> computeExponential(itk::Vector<double, 3> point, itk::Vector<double, 3> center, itk::Matrix<double, 3, 3> Sigma); 
-template <typename ImageType> itk::AffineTransform<double, 3>::Pointer getRotationTransform3D(const double angleInDegrees, const ImageType *Image);
+//! Compute oriented Gaussian kernel given the relative position of slice and HR volume
+/*! 
+  Given the relativ position of the slice to the HR volume a 3D Gaussian kernel
+  is oriented such that the (rotated) PSF is expressed in the coordinate
+  system of the HR volume (where the interpolation happens when specified as
+  floating/source/moving image)
+
+  \param[in] HR_volume PSF is oriented relativ to HR volume coordinate system
+  \param[in] slice PSF is defined by slice dimensions and postition
+  \return 3x3 matrix defining the rotated covariance matrix representing the PSF
+ */
+template <typename ImageType> itk::Matrix<double,3,3> 
+  getOrientedSigmaPSF(ImageType *HR_volume, ImageType *slice);
+
+//! Compute rotation matrix such that slice-defined PSF is expressed in coordinate system of HR volume
+/*! 
+  \param[in] HR_volume PSF is oriented relativ to HR volume coordinate system
+  \param[in] slice PSF is defined by slice dimensions and postition
+ */
+template <typename ImageType> itk::Matrix<double,3,3> 
+  computeRotationMatrix(ImageType *HR_volume, ImageType *slice);
+
+//! Compute argument of exponential defining 3D Gaussian
+/*!
+  Evaluated function reads
+
+    exp( -0.5* (point-center)'*Sigma(point-center) )
+
+  Note: Sigma and not Sigma^{-1}!
+
+  \param[in] point 3D gaussian pdf proportional to this point
+  \param[in] center mean of 3D multivariate Gaussian
+  \param[in] Sigma Inverse covariance matrix of 3D multivariate Gaussian
+  \return evaluated exponential (scalar value)
+ */
+double 
+  computeExponential(itk::Vector<double, 3> point, 
+    itk::Vector<double, 3> center, itk::Matrix<double, 3, 3> Sigma); 
 
 
-/* Put into cxx file */
-template <typename ImageType> itk::Matrix<double,3,3> getOrientedSigmaPSF(ImageType *HR_volume, ImageType *slice){
+//! Returns 3D rotation transform given by angle
+/*!
+  TODO: Function just preliminary; Not generalized for arbitrary angles in
+  each respective dimension
+
+  \param[in] angleInDegrees Specifying rotation
+  \param[in] Image Image exhibiting same dimensions/spacing/orientation as
+             image to be rotated
+  \return get orthogonal 3x3 matrix defining the rotation
+*/
+template <typename ImageType> itk::AffineTransform<double, 3>::Pointer 
+  getRotationTransform3D(const double angleInDegrees, const ImageType *Image);
+
+
+
+
+
+
+/// TODO: Put into cxx file
+
+//! Compute oriented Gaussian kernel given the relative position of slice and HR volume
+/*! 
+  Given the relativ position of the slice to the HR volume a 3D Gaussian kernel
+  is oriented such that the (rotated) PSF is expressed in the coordinate
+  system of the HR volume (where the interpolation happens when specified as
+  floating/source/moving image)
+
+  \param[in] HR_volume PSF is oriented relativ to HR volume coordinate system
+  \param[in] slice PSF is defined by slice dimensions and postition
+  \return 3x3 matrix defining the rotated covariance matrix representing the PSF
+ */
+template <typename ImageType> itk::Matrix<double,3,3> 
+  getOrientedSigmaPSF(ImageType *HR_volume, ImageType *slice){
 
   const typename ImageType::SpacingType spacing = slice->GetSpacing();
   const typename ImageType::DirectionType U = computeRotationMatrix(HR_volume, slice);
@@ -55,8 +120,14 @@ template <typename ImageType> itk::Matrix<double,3,3> getOrientedSigmaPSF(ImageT
   return SigmaPSF;
 }
 
-
-template <typename ImageType> itk::Matrix<double,3,3> computeRotationMatrix(ImageType *HR_volume, ImageType *slice){
+//! Compute rotation matrix such that slice-defined PSF is expressed in coordinate system of HR volume
+/*! 
+  \param[in] HR_volume PSF is oriented relativ to HR volume coordinate system
+  \param[in] slice PSF is defined by slice dimensions and postition
+  \return get orthogonal 3x3 matrix defining the rotation
+ */
+template <typename ImageType> itk::Matrix<double,3,3> 
+  computeRotationMatrix(ImageType *HR_volume, ImageType *slice){
 
   const typename ImageType::DirectionType direction_HR_volume = HR_volume->GetDirection();
   const typename ImageType::DirectionType direction_slice = slice->GetDirection();
@@ -69,7 +140,21 @@ template <typename ImageType> itk::Matrix<double,3,3> computeRotationMatrix(Imag
   return U;
 }
 
-itk::Vector<double, 3> computeExponential(itk::Vector<double, 3> point, itk::Vector<double, 3> center, itk::Matrix<double, 3, 3> Sigma){
+//! Compute argument of exponential defining 3D Gaussian
+/*!
+  Evaluated function reads
+
+    exp( -0.5* (point-center)'*Sigma(point-center) )
+
+  Note: Sigma and not Sigma^{-1}!
+
+  \param[in] point 3D gaussian pdf proportional to this point
+  \param[in] center mean of 3D multivariate Gaussian
+  \param[in] Sigma Inverse covariance matrix of 3D multivariate Gaussian
+  \return evaluated exponential (scalar value)
+ */
+double 
+  computeExponential(itk::Vector<double, 3> point, itk::Vector<double, 3> center, itk::Matrix<double, 3, 3> Sigma){
   
   itk::Vector<double, 3> tmp;
   double result;
@@ -87,7 +172,16 @@ itk::Vector<double, 3> computeExponential(itk::Vector<double, 3> point, itk::Vec
 
 }
 
+//! Returns 3D rotation transform given by angle
+/*!
+  TODO: Function just preliminary; Not generalized for arbitrary angles in
+  each respective dimension
 
+  \param[in] angleInDegrees Specifying rotation
+  \param[in] Image Image exhibiting same dimensions/spacing/orientation as
+             image to be rotated
+  \return get orthogonal 3x3 matrix defining the rotation
+*/
 template <typename ImageType>
 itk::AffineTransform<double, 3>::Pointer 
 getRotationTransform3D(const double angleInDegrees, const ImageType *Image){
@@ -250,17 +344,28 @@ int main( int argc, char * argv[] )
 
   point.Fill( 5.0 );
   center.Fill( 3.0 );
-  itk::Vector<double, 3> weight = computeExponential(point, center, SigmaPSF_oriented_scaled);
+  double weight = computeExponential(point, center, SigmaPSF_oriented_scaled);
+  std::cout << weight << std::endl;
 
 
 
   // Gaussian Interpolation
   const double alpha = 3;
+  double Sigma[3];
+
+  for (int i = 0; i < 3; ++i)
+  {
+    Sigma[i] = sqrt(SigmaPSF_oriented(i,i));
+  }
+
   // typedef itk::GaussianInterpolateImageFunction< InputImageType, double >  InterpolatorType;  
-  typedef itk::OrientedGaussianInterpolateImageFunction< InputImageType, double >  InterpolatorType;  
+  typedef itk::OrientedGaussianInterpolateImageFunction< InputImageType, double >  InterpolatorType;
+
   InterpolatorType::Pointer interpolator = InterpolatorType::New();
   interpolator->SetAlpha(alpha);
-  interpolator->SetCovariance(SigmaPSF_oriented);
+  
+  interpolator->SetSigma(Sigma);
+  // interpolator->SetCovariance(SigmaPSF_oriented);
 
   /* Set interpolator */
   filter->SetInterpolator( interpolator );
