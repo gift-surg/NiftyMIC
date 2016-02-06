@@ -341,6 +341,11 @@ int main( int argc, char * argv[] )
   /* Compute Gaussian */
   itk::Vector<double, 3> point;
   itk::Vector<double, 3> center;
+  itk::Vector<double, 9> Covariance;
+  Covariance.Fill( 0.0 );
+  Covariance[0] = 9;
+  Covariance[4] = 4;
+  Covariance[8] = 1;
 
   point.Fill( 5.0 );
   center.Fill( 3.0 );
@@ -351,12 +356,14 @@ int main( int argc, char * argv[] )
 
   // Gaussian Interpolation
   const double alpha = 3;
-  double Sigma[3];
+  itk::Vector<double, 3> Sigma;
+  // double Sigma[3];
 
   for (int i = 0; i < 3; ++i)
   {
     Sigma[i] = sqrt(SigmaPSF_oriented(i,i));
   }
+  std::cout << "Sigma = " << Sigma << std::endl;
 
   // typedef itk::GaussianInterpolateImageFunction< InputImageType, double >  InterpolatorType;  
   typedef itk::OrientedGaussianInterpolateImageFunction< InputImageType, double >  InterpolatorType;
@@ -365,7 +372,14 @@ int main( int argc, char * argv[] )
   interpolator->SetAlpha(alpha);
   
   interpolator->SetSigma(Sigma);
+  std::cout << "GetSigma = " << interpolator->GetSigma() << std::endl;
+  std::cout << "GetCovariance = " << interpolator->GetCovariance() << std::endl;
+
   // interpolator->SetCovariance(SigmaPSF_oriented);
+  interpolator->SetCovariance(Covariance);
+  std::cout << "Covariance    = " << Covariance << std::endl;
+  std::cout << "GetCovariance = " << interpolator->GetCovariance() << std::endl;
+  std::cout << "GetSigma = " << interpolator->GetSigma() << std::endl;
 
   /* Set interpolator */
   filter->SetInterpolator( interpolator );
