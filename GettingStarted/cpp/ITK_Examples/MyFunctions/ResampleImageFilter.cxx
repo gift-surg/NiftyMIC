@@ -5,6 +5,11 @@
  *  Hence, the blurring and downsampling step shall be performed in here whereby
  *  the blurring operator (representing the PSF) is modelled as 3D Gaussian.
  *
+ *  \note The implementation of itkOrientedGaussianInterpolateImageFunction changed 
+ *  to read the covariance as a vector. Here, some code bits are still based on the 
+ *  previous version where a matrix was chosen. So be aware. Maybe kind of Matrix.flatten()
+ *  exists in ITK too?!
+ *
  *  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
  *  \date January 2016
  */
@@ -16,6 +21,7 @@
 #include "itkAffineTransform.h"
 #include <itkNiftiImageIO.h>
 #include <itkNearestNeighborInterpolateImageFunction.h>
+
 #include <itkGaussianInterpolateImageFunction.h>
 #include <itkOrientedGaussianInterpolateImageFunction.h>
 

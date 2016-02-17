@@ -1628,7 +1628,7 @@ class TestUM(unittest.TestCase):
         filter_OrientedGaussian.Update()
 
         time_elapsed = time.clock() - t0
-        print("Elapsed time = %s" %(time_elapsed))
+        print("Elapsed time = %s seconds" %(time_elapsed))
 
         ## Gaussian (for rough comparison)
         filter_Gaussian = filter_type.New()
@@ -1677,104 +1677,9 @@ class TestUM(unittest.TestCase):
             print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
 
 
-    def test_03_itkOrientedGaussianInterpolateImageFunction(self):
-        filename_stack = "FetalBrain_reconstruction_4stacks"
-        Sigma = np.array([1,1,1])
-        alpha = 3
-
-        ## Define types of input and output pixels and state dimension of images
-        input_pixel_type = itk.D
-        output_pixel_type = input_pixel_type
-
-        input_dimension = 3
-        output_dimension = input_dimension
-
-        ## Define type of input and output image
-        input_image_type = itk.Image[input_pixel_type, input_dimension]
-        output_image_type = itk.Image[output_pixel_type, output_dimension]
-
-        ## Define types of reader and writer
-        reader_type = itk.ImageFileReader[input_image_type]
-        writer_type = itk.ImageFileWriter[output_image_type]
-        image_IO_type = itk.NiftiImageIO
-
-        ## Instantiate reader and writer
-        reader_stack = reader_type.New()
-        writer = writer_type.New()
-
-        ## Set image IO type to nifti
-        image_IO = image_IO_type.New()
-        reader_stack.SetImageIO(image_IO)
-
-        ## Read images
-        reader_stack.SetFileName(self.dir_input + filename_stack + ".nii.gz")
-        reader_stack.Update()
-
-        ## Get image
-        stack_itk = reader_stack.GetOutput()
-
-        ## Resample Image Filter and Interpolator
-        filter_type = itk.ResampleImageFilter[input_image_type, output_image_type]
-
-        filter_Gaussian = filter_type.New()
-        interpolator_type_Gaussian = itk.GaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
-        interpolator_Gaussian = interpolator_type_Gaussian.New()
-
-        filter_OrientedGaussian = filter_type.New()
-        interpolator_type_OrientedGaussian = itk.OrientedGaussianInterpolateImageFunction.ID3D #Input image type: Float 3D
-        interpolator_OrientedGaussian = interpolator_type_OrientedGaussian.New()
-
-        ## Set interpolator parameter 
-        interpolator_Gaussian.SetAlpha(alpha)
-        interpolator_Gaussian.SetSigma(Sigma)
-
-        interpolator_OrientedGaussian.SetAlpha(alpha)
-        interpolator_OrientedGaussian.SetSigma(Sigma)
-
-        ## Set filter
-        filter_Gaussian.SetInput(stack_itk)
-        filter_Gaussian.SetOutputParametersFromImage(stack_itk)
-        filter_Gaussian.SetInterpolator(interpolator_Gaussian)
-        filter_Gaussian.Update()
-
-        filter_OrientedGaussian.SetInput(stack_itk)
-        filter_OrientedGaussian.SetOutputParametersFromImage(stack_itk)
-        filter_OrientedGaussian.SetInterpolator(interpolator_OrientedGaussian)
-        filter_OrientedGaussian.Update()
-
-        ## Set writer
-        writer.SetInput(filter_Gaussian.GetOutput())
-        writer.SetFileName(self.dir_output + "test_03_Gaussian.nii.gz")
-        # writer.Update()
-
-        writer.SetInput(filter_OrientedGaussian.GetOutput())
-        writer.SetFileName(self.dir_output + "test_03_OrientedGaussian.nii.gz")
-        # writer.Update()
-
-        itk2np = itk.PyBuffer[input_image_type]
-        nda_Gaussian = itk2np.GetArrayFromImage(filter_Gaussian.GetOutput()) 
-        nda_OrientedGaussian = itk2np.GetArrayFromImage(filter_OrientedGaussian.GetOutput()) 
-
-        ## Check results      
-        diff = nda_Gaussian-nda_OrientedGaussian
-        abs_diff = abs(diff)
-        norm_diff = np.linalg.norm(diff)
-
-        try:
-            self.assertEqual(np.around(
-                norm_diff
-                , decimals = self.accuracy), 0 )
-
-        except Exception as e:
-            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %(norm_diff,self.accuracy))
-            print("     Check statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
-            print("     Maximum absolute difference per voxel: %s" %abs_diff.max())
-            print("     Mean absolute difference per voxel: %s" %abs_diff.mean())
-            print("     Minimum absolute difference per voxel: %s" %abs_diff.min())
-
-
     ## Flip Cross_2D_50.nii.gz by 180 and resample image to check alignment
-    #  with original one.
+    #  with original one given the computations of
+    #  get_centered_rotation_itk and get_centered_rotation_sitk.
     def test_04_get_centered_rotation_2D(self):
         filename_2D = "Cross_2D_50"
 
@@ -1841,7 +1746,8 @@ class TestUM(unittest.TestCase):
             , decimals = self.accuracy), 0 )
 
 
-    ## Compares the values between SimpleITK and ITK computation
+    ## Compares the values between SimpleITK and ITK computation, i.e.
+    #  between get_centered_rotation_itk and get_centered_rotation_sitk
     def test_04_get_centered_rotation_2D_compare_SITK_ITK(self):
         filename_2D = "BrainWeb_2D"
 
@@ -2286,7 +2192,9 @@ class TestUM(unittest.TestCase):
             , decimals = self.accuracy), 0 )
 
 
-    def test_07_itkOrientedGaussianInterpolateImageFunction_2D(self):
+    ## Test APIs of itkOrientedGaussianInterpolateImageFunction in 2D. 
+    # In particular, set/get sigma and set/get covariance
+    def test_07_itkOrientedGaussianInterpolateImageFunction_2D_APIs(self):
 
         ## Define types of input and output pixels and state dimension of images
         pixel_type = itk.D
@@ -2352,8 +2260,9 @@ class TestUM(unittest.TestCase):
             np.linalg.norm(OrientedGaussian.GetCovariance() - Cov.flatten())
             , decimals = self.accuracy), 0 )
 
-
-    def test_07_itkOrientedGaussianInterpolateImageFunction_3D(self):
+    ## Test APIs of itkOrientedGaussianInterpolateImageFunction in 3D. 
+    # In particular, set/get sigma and set/get covariance
+    def test_07_itkOrientedGaussianInterpolateImageFunction_3D_APIs(self):
 
         ## Define types of input and output pixels and state dimension of images
         pixel_type = itk.D
