@@ -1,6 +1,5 @@
-cmake_minimum_required(VERSION 2.8)
- 
-project(itkTestCodes)
+
+project(TestCodes)
 
 ##***** Begin: Lines added by meb
 # Use development mode (1) -- faster to build -- or 
@@ -32,22 +31,26 @@ if (ITKVtkGlue_LOADED)
   include(${VTK_USE_FILE})
 endif()
  
+# add_executable(adjointOrientedGaussianInterpolateImageFilter adjointOrientedGaussianInterpolateImageFilter.cpp MyITKImageHelper.cpp ${MY_SRC_DIR}/itkAdjointOrientedGaussianInterpolateImageFilter.hxx)
+# add_executable(adjointOrientedGaussianInterpolateImageFilter adjointOrientedGaussianInterpolateImageFilter.cpp MyITKImageHelper.cpp)
+# target_link_libraries(adjointOrientedGaussianInterpolateImageFilter ITKReview ${ITK_LIBRARIES})
 
-add_executable(ResampleImageFilter ResampleImageFilter.cxx)
+
+add_executable(resampleImageFilter resampleImageFilter.cpp)
 
 if( ${MY_FLAG_ITK_DEV} )
-    add_executable(AdjointOrientedGaussianInterpolateImageFilter AdjointOrientedGaussianInterpolateImageFilter.cxx ${MY_SRC_DIR}/itkAdjointOrientedGaussianInterpolateImageFilter.hxx)
+    add_executable(adjointOrientedGaussianInterpolateImageFilter adjointOrientedGaussianInterpolateImageFilter.cpp MyITKImageHelper.cpp ${MY_SRC_DIR}/itkAdjointOrientedGaussianInterpolateImageFilter.hxx)
 else( ${MY_FLAG_ITK_DEV} )
-    add_executable(AdjointOrientedGaussianInterpolateImageFilter AdjointOrientedGaussianInterpolateImageFilter.cxx)
+    add_executable(adjointOrientedGaussianInterpolateImageFilter adjointOrientedGaussianInterpolateImageFilter.cpp MyITKImageHelper.cpp)
 endif( ${MY_FLAG_ITK_DEV} )
 
  
 if( "${ITK_VERSION_MAJOR}" LESS 4 )
-  target_link_libraries(ResampleImageFilter ITKReview ${ITK_LIBRARIES})
-  target_link_libraries(AdjointOrientedGaussianInterpolateImageFilter ITKReview ${ITK_LIBRARIES})
+  target_link_libraries(resampleImageFilter ITKReview ${ITK_LIBRARIES})
+  target_link_libraries(adjointOrientedGaussianInterpolateImageFilter ITKReview ${ITK_LIBRARIES})
   # target_link_libraries(itkOrientedGaussianInterpolateImageFunction ITKReview ${ITK_LIBRARIES})
 else( "${ITK_VERSION_MAJOR}" LESS 4 )
-  target_link_libraries(ResampleImageFilter ${ITK_LIBRARIES})
-  target_link_libraries(AdjointOrientedGaussianInterpolateImageFilter ${ITK_LIBRARIES})
+  target_link_libraries(resampleImageFilter ${ITK_LIBRARIES})
+  target_link_libraries(adjointOrientedGaussianInterpolateImageFilter ${ITK_LIBRARIES})
   # target_link_libraries(itkOrientedGaussianInterpolateImageFunction ${ITK_LIBRARIES})
 endif( "${ITK_VERSION_MAJOR}" LESS 4 )

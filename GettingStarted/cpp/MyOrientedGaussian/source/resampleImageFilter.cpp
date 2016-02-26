@@ -248,7 +248,7 @@ int main( int argc, char * argv[] )
 
   /* Define input and output */
   const std::string dir_input = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/data/";
-  const std::string dir_output = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/results/";
+  const std::string dir_output = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyOrientedGaussian/results/";
 
   // const std::string filename_HR_volume = "BrainWeb_2D.png";
   const std::string filename_HR_volume = "FetalBrain_reconstruction_4stacks.nii.gz";
