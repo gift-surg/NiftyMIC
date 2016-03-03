@@ -637,7 +637,8 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
 
     // MyITKImageHelper::showImage(filter_AdjointOrientedGaussian_2D->GetOutput());
 
-    // std::cout << "3D-RealisticImages (but higher Cov): |(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
+    std::cout << "\t|(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
+    std::cout << "\t|(Ax,y) - (x,A'y)|/(Ax,y) = " << std::abs(sum_LHS-sum_RHS)/sum_LHS << std::endl;
     // std::cout << "        (Ax,y) = " << sum_LHS << std::endl;
     // std::cout << "        (x,A'y) = " << sum_RHS << std::endl;
 
@@ -736,9 +737,9 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
 
     // MyITKImageHelper::showImage(filter_AdjointOrientedGaussian_2D->GetOutput());
 
-    // std::cout << "3D-RealisticImages: |(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
-    // std::cout << "        (Ax,y) = " << sum_LHS << std::endl;
-    // std::cout << "        (x,A'y) = " << sum_RHS << std::endl;
+
+    std::cout << "\t|(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
+    std::cout << "\t|(Ax,y) - (x,A'y)|/(Ax,y) = " << std::abs(sum_LHS-sum_RHS)/sum_LHS << std::endl;
 
     CHECK( abs_diff == Approx(0).epsilon(tolerance));
 }

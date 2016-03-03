@@ -57,7 +57,7 @@ typedef itk::StatisticsImageFilter<ImageType3D> StatisticsImageFilterType_3D;
 int main(int, char*[])
 {
 
-  /* Define input and output */
+  // Define input and output
   const std::string dir_input = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/data/";
   // const std::string dir_input = "../../../../data/";
 
@@ -86,7 +86,7 @@ int main(int, char*[])
 
   // MyITKImageHelper imageHelper;
 
-  /* Set filter parameters */
+  // Set filter parameters
   const double alpha = 2;
   
   itk::Vector<double, 2> Sigma_2D;
@@ -104,7 +104,7 @@ int main(int, char*[])
   Cov_3D[8] = 3;
   
 
-  /* Read images */
+  // Read images
   // 2D
   const ImageType2D::Pointer image_2D = MyITKImageHelper::readImage<ImageType2D>(dir_input + filename_image_2D);
 
@@ -120,13 +120,14 @@ int main(int, char*[])
   
 
   /////////////////////////////////////////////////////////////////////////////
-  /* Test whether adjoint operator, i.e. |(Ax,y) - (x,A'y)| = 0            */
+  // Test whether adjoint operator, i.e. |(Ax,y) - (x,A'y)| = 0           
   /////////////////////////////////////////////////////////////////////////////
 
-  // const bool choose_dimension_2D = true;
-  const bool choose_dimension_2D = false;
+  const bool choose_dimension_2D = true;
+  // const bool choose_dimension_2D = false;
 
-  /* 2D: Check |(Ax,y) - (x,A'y)| = 0 */
+
+  // 2D: Check |(Ax,y) - (x,A'y)| = 0
   if (choose_dimension_2D) {
 
     // Measure time: Start
@@ -268,7 +269,7 @@ int main(int, char*[])
 
   }
 
-  /* 3D: Check |(Ax,y) - (x,A'y)| = 0 */
+  // 3D: Check |(Ax,y) - (x,A'y)| = 0
   // x = HR volume
   // y = LR slice
   else {
@@ -279,9 +280,6 @@ int main(int, char*[])
     // Adjoint Oriented Gaussian Filter
     const FilterType_AdjointOrientedGaussian_3D::Pointer filter_AdjointOrientedGaussian_3D = FilterType_AdjointOrientedGaussian_3D::New();
 
-    // filter_AdjointOrientedGaussian_3D->SetOutputParametersFromImage(image_3D);
-    // filter_AdjointOrientedGaussian_3D->SetInput(image_3D);
-    
     filter_AdjointOrientedGaussian_3D->SetInput(slice);
     filter_AdjointOrientedGaussian_3D->SetOutputParametersFromImage(HR_volume);
 

@@ -274,46 +274,46 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
 #  \param[in] image_sitk image to show
 #  \param[in] segmentation_sitk 
 #  \param[in] overlay_sitk image which shall be overlayed onto image_sitk (optional)
-#  \param[in] filename_out filename for file written to /tmp/ (optional)
-def show_sitk_image(image_sitk, segmentation_sitk=None, overlay_sitk=None, filename_out="test"):
+#  \param[in] title filename for file written to /tmp/ (optional)
+def show_sitk_image(image_sitk, segmentation_sitk=None, overlay_sitk=None, title="test"):
     
     dir_output = "/tmp/"
-    # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
+    # cmd = "fslview " + dir_output + title + ".nii.gz & "
 
     if overlay_sitk is not None and segmentation_sitk is None:
-        sitk.WriteImage(image_sitk, dir_output + filename_out + ".nii.gz")
-        sitk.WriteImage(overlay_sitk, dir_output + filename_out + "_overlay.nii.gz")
+        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
+        sitk.WriteImage(overlay_sitk, dir_output + title + "_overlay.nii.gz")
 
         cmd = "itksnap " \
-            + "-g " + dir_output + filename_out + ".nii.gz " \
-            + "-o " + dir_output + filename_out + "_overlay.nii.gz " \
+            + "-g " + dir_output + title + ".nii.gz " \
+            + "-o " + dir_output + title + "_overlay.nii.gz " \
             + "& "
 
     elif overlay_sitk is None and segmentation_sitk is not None:
-        sitk.WriteImage(image_sitk, dir_output + filename_out + ".nii.gz")
-        sitk.WriteImage(segmentation_sitk, dir_output + filename_out + "_segmentation.nii.gz")
+        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
+        sitk.WriteImage(segmentation_sitk, dir_output + title + "_segmentation.nii.gz")
 
         cmd = "itksnap " \
-            + "-g " + dir_output + filename_out + ".nii.gz " \
-            + "-s " + dir_output + filename_out + "_segmentation.nii.gz " \
+            + "-g " + dir_output + title + ".nii.gz " \
+            + "-s " + dir_output + title + "_segmentation.nii.gz " \
             + "& "
 
     elif overlay_sitk is not None and segmentation_sitk is not None:
-        sitk.WriteImage(image_sitk, dir_output + filename_out + ".nii.gz")
-        sitk.WriteImage(segmentation_sitk, dir_output + filename_out + "_segmentation.nii.gz")
-        sitk.WriteImage(overlay_sitk, dir_output + filename_out + "_overlay.nii.gz")
+        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
+        sitk.WriteImage(segmentation_sitk, dir_output + title + "_segmentation.nii.gz")
+        sitk.WriteImage(overlay_sitk, dir_output + title + "_overlay.nii.gz")
 
         cmd = "itksnap " \
-            + "-g " + dir_output + filename_out + ".nii.gz " \
-            + "-s " + dir_output + filename_out + "_segmentation.nii.gz " \
-            + "-o " + dir_output + filename_out + "_overlay.nii.gz " \
+            + "-g " + dir_output + title + ".nii.gz " \
+            + "-s " + dir_output + title + "_segmentation.nii.gz " \
+            + "-o " + dir_output + title + "_overlay.nii.gz " \
             + "& "
 
     else:
-        sitk.WriteImage(image_sitk, dir_output + filename_out + ".nii.gz")
+        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
 
         cmd = "itksnap " \
-            + "-g " + dir_output + filename_out + ".nii.gz " \
+            + "-g " + dir_output + title + ".nii.gz " \
             + "& "
 
     os.system(cmd)
