@@ -1,6 +1,10 @@
 ## \file Optimization.py
 #  \brief  SciPy optimization library applied to problems I can generalize to 
-#       to my application
+#       to my application. Several regularziation approaches are implemented,
+#       like TK0 and TK1 in the standard and SPD version.
+#       The cases used here don't consider the physical space to a large extent.
+#       For scenarios which involve different oritentations, see
+#       ITK_ReconstructVolume.py
 #
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date March 2016
@@ -25,7 +29,7 @@ import SimpleITKHelper as sitkh
 """
 Functions
 """
-## Compute Gaussian kernel for 2D (TODO: or 3D) scenario
+## Compute Gaussian kernel for 2D and 3D scenario.
 #  Mean of multivariate Gaussian is assumed to be zero
 #  \param[in] Cov Variance-covariance matrix
 #  \param[in] alpha Cut-off distance
@@ -249,7 +253,7 @@ def get_blurred_noisy_image(image_sitk, Cov, alpha, noise_level=0.01, multiplica
 
     ## Blur image
     nda = sitk.GetArrayFromImage(image_sitk)
-    observed_nda = getAx(nda, kernel)
+    observed_nda = getA(nda, kernel)
 
     ## Add noise
     if multiplicative_noise:
@@ -279,7 +283,7 @@ def get_blurred_noisy_image(image_sitk, Cov, alpha, noise_level=0.01, multiplica
 #  \param[in] kernel Gaussian kernel for blurring
 #  \param[in] nda image array which will get blurred
 #  \return Gaussian blurred data array
-def getAx(nda, kernel):
+def getA(nda, kernel):
     return ndimage.convolve(nda, kernel, mode='wrap')
 
 
@@ -288,7 +292,7 @@ def getAx(nda, kernel):
 #  \param[in] kernel Gaussian kernel for blurring
 #  \param[in] nda image array which will get blurred
 #  \return Adjoint Gaussian blurred data array
-def getATx(nda, kernel):
+def getAT(nda, kernel):
     return ndimage.convolve(nda, kernel, mode='wrap')
 
 
@@ -312,8 +316,8 @@ def getDTx(nda, kernel_D_adj):
 ## Compute A'A(x), A being the Gaussian blurring
 #  \param[in] nda image array which will get blurred
 #  \param[in] kernel Gaussian kernel for blurring
-def getATAx(nda, kernel):
-    return getATx(getAx(nda,kernel), kernel)
+def getATA(nda, kernel):
+    return getAT(getA(nda,kernel), kernel)
 
 
 ## Compute D'D(x), D being the differential operator
@@ -372,7 +376,7 @@ def TK0(x_vec, g_vec, kernel, alpha, shape):
     x = x_vec.reshape(shape)
     
     ## Return J0(x) = 0.5*|| g - Ax ||^2 + 0.5*alpha*||x||^2
-    return 0.5*np.sum( (g_vec-getAx(x,kernel).flatten())**2 ) + 0.5*alpha*x_vec.dot(x_vec)
+    return 0.5*np.sum( (g_vec-getA(x,kernel).flatten())**2 ) + 0.5*alpha*x_vec.dot(x_vec)
 
 
 ## Compute gradient of cost function J0(x), i.e.
@@ -389,7 +393,7 @@ def TK0_grad(x_vec, ATg_vec, kernel, alpha, shape):
     x = x_vec.reshape(shape)
 
     ## Return grad J0(x) = A'(Ax - g) + alpha*x
-    return  getATAx(x,kernel).flatten() - ATg_vec + alpha*x_vec
+    return  getATA(x,kernel).flatten() - ATg_vec + alpha*x_vec
 
 
 ## Compute hessian matrix of cost function J0(x) applied on p, i.e.
@@ -406,7 +410,7 @@ def TK0_hess_p(x_vec, p_vec, kernel, alpha, shape):
     p = p_vec.reshape(shape)
 
     ## Return hess_p = A'A(p) + alpha*p
-    return getATAx(p,kernel).flatten() + alpha*p_vec
+    return getATA(p,kernel).flatten() + alpha*p_vec
 
 
 ## Compute cost function with SPD matrix
@@ -427,7 +431,7 @@ def TK0_SPD(x_vec, ATg_vec, kernel, alpha, shape):
     x = x_vec.reshape(shape)
     
     ## Compute op(x) := (A'A + alpha)x
-    op_x = getATAx(x,kernel).flatten() + alpha*x_vec
+    op_x = getATA(x,kernel).flatten() + alpha*x_vec
 
     ## Return || (A'A + alpha)x - A'g ||^2
     return np.sum((op_x-ATg_vec)**2)
@@ -447,10 +451,10 @@ def TK0_SPD_grad(x_vec, op_ATg, kernel, alpha, shape):
     x = x_vec.reshape(shape)
 
     ## Compute op(x) := (A'A + alpha)x
-    op_x = getATAx(x, kernel) + alpha*x
+    op_x = getATA(x, kernel) + alpha*x
     
     ## Compute (A'A + alpha)(A'A + alpha)x = (A'A + alpha)op_x
-    op_op_x = getATAx(op_x,kernel).flatten() + alpha*op_x.flatten()
+    op_op_x = getATA(op_x,kernel).flatten() + alpha*op_x.flatten()
 
     ## Return grad J0(x) = (A'A + alpha) ( (A'A + alpha)x - g )
     return  op_op_x - op_ATg
@@ -470,10 +474,10 @@ def TK0_SPD_hess_p(x_vec, p_vec, kernel, alpha, shape):
     p = p_vec.reshape(shape)
 
     ## Compute op(x) := (A'A + alpha)x
-    op_p = getATAx(p, kernel) + alpha*p
+    op_p = getATA(p, kernel) + alpha*p
     
     ## Return hess_p (A'A + alpha)(A'A + alpha)p = (A'A + alpha)op_p
-    return getATAx(op_p,kernel).flatten() + alpha*op_p.flatten()
+    return getATA(op_p,kernel).flatten() + alpha*op_p.flatten()
 
 
 ## Compute cost function 
@@ -510,7 +514,7 @@ def TK1(x_vec, g_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, kernel_Dz=None
         Dx2 = Dx_x**2 + Dy_x**2 + Dz_x**2
     
     ## Return J1(x) = 0.5*|| g - Ax ||^2 + 0.5*alpha*||Dx||^2
-    return 0.5*np.sum( (g_vec-getAx(x,kernel).flatten())**2 ) + 0.5*alpha*np.sum( Dx2 )
+    return 0.5*np.sum( (g_vec-getA(x,kernel).flatten())**2 ) + 0.5*alpha*np.sum( Dx2 )
 
 
 ## Compute gradient of cost function J1(x), i.e.
@@ -536,7 +540,7 @@ def TK1_grad(x_vec, ATg_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, kernel_
     DTDx = getDTDx(x, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, kernel_Dz, kernel_Dz_adj)
 
     ## Return grad J1(x) = A'(Ax - g) + alpha*D'Dx
-    return  getATAx(x,kernel).flatten() - ATg_vec + alpha*DTDx.flatten()
+    return  getATA(x,kernel).flatten() - ATg_vec + alpha*DTDx.flatten()
 
 
 ## Compute hessian matrix of cost function J1(x) applied on p, i.e.
@@ -562,7 +566,7 @@ def TK1_hess_p(x_vec, p_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, kernel_
     DTDp = getDTDx(p, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, kernel_Dz, kernel_Dz_adj)
 
     ## Return hess_p = A'A(p) + alpha*D'Dp
-    return getATAx(p,kernel).flatten() + alpha*DTDp.flatten()
+    return getATA(p,kernel).flatten() + alpha*DTDp.flatten()
 
 
 ## Compute cost function with SPD matrix
@@ -588,7 +592,7 @@ def TK1_SPD(x_vec, ATg_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, kernel_D
     DTDx = getDTDx(x, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, kernel_Dz, kernel_Dz_adj)
 
     ## Return J1(x) = || A'g - (A'A + alpha*D'D)x ||^2
-    return np.sum( ( ATg_vec - getATAx(x,kernel).flatten() - alpha*DTDx.flatten() )**2 )
+    return np.sum( ( ATg_vec - getATA(x,kernel).flatten() - alpha*DTDx.flatten() )**2 )
 
 
 ## Compute gradient of cost function with SPD matrix
@@ -612,12 +616,12 @@ def TK1_SPD_grad(x_vec, op_ATg_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, 
 
     ## 1) Compute tmp1 = (A'A + alpha*D'D)x
     DTDx = getDTDx(x, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, kernel_Dz, kernel_Dz_adj)
-    ATAx = getATAx(x, kernel)
+    ATAx = getATA(x, kernel)
     tmp1 = ATAx + alpha*DTDx
 
     ## 2) Compute tmp2 = (A'A + alpha*D'D)( (A'A + alpha*D'D)x ) = (A'A + alpha*D'D)tmp1
     DTDtmp1 = getDTDx(tmp1, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, kernel_Dz, kernel_Dz_adj)
-    ATAtmp1 = getATAx(tmp1, kernel)
+    ATAtmp1 = getATA(tmp1, kernel)
     tmp2 = ATAtmp1 + alpha*DTDtmp1
     
     ## Return grad J1(x) = (A'A + alpha*D'D)( (A'A + alpha*D'D)x - A'g )
@@ -645,12 +649,12 @@ def TK1_SPD_hess_p(x_vec, p_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, ker
 
     ## Compute tmp1 = (A'A + alpha*D'D)p
     DTDp = getDTDx(p, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, kernel_Dz, kernel_Dz_adj)
-    ATAp = getATAx(p, kernel)
+    ATAp = getATA(p, kernel)
     tmp1 = ATAp + alpha*DTDp
 
     ## Return (Hessian J1(x))p = (A'A + alpha*D'D)( (A'A + alpha*D'D)p ) = (A'A + alpha*D'D)tmp1
     DTDtmp1 = getDTDx(tmp1, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, kernel_Dz, kernel_Dz_adj)
-    ATAtmp1 = getATAx(tmp1, kernel)
+    ATAtmp1 = getATA(tmp1, kernel)
     
     return (ATAtmp1 + alpha*DTDtmp1).flatten()
 
@@ -661,7 +665,7 @@ def TK1_SPD_hess_p(x_vec, p_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, ker
     
 #     ## Compute[A; sqrt(alpha)]*x - [g; 0]
 #     val = np.zeros(2*x_vec.size)
-#     val[0:x_vec.size] = getAx(x,kernel).flatten() - g_vec
+#     val[0:x_vec.size] = getA(x,kernel).flatten() - g_vec
 #     val[x_vec.size:] = np.sqrt(alpha)*x_vec
 
 #     return val
@@ -684,21 +688,33 @@ def TK1_SPD_hess_p(x_vec, p_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, ker
 #  \return data array of reconstruction
 #  \return output of scipy.optimize.minimize function
 def get_reconstruction(fun, jac, hessp, x0, shape_solution, info_title=False):
-    iter_max = 20       # maximum number of iterations for solver
+    iter_max = 100       # maximum number of iterations for solver
     tol = 1e-8          # tolerance for solver
+
+    show_disp = False
+
+    ## Provide bounds for optimization, i.e. intensities >= 0
+    bounds = [[0,None]]*x0.size
 
     ## Start timing
     t0 = time.clock()
 
-    ## Find approximate solution    
+    ## Find approximate solution
+    ## Look at http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize
     # res = minimize(method='Powell',     fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max})
 
-    res = minimize(method='L-BFGS-B',   fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac)
+    # res = minimize(method='L-BFGS-B',   fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac)
     # res = minimize(method='CG',         fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac)
     # res = minimize(method='BFGS',       fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac)
 
+    ## Take incredibly long.
     # res = minimize(method='Newton-CG',  fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac, hessp=hessp)
     # res = minimize(method='trust-ncg',  fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac, hessp=hessp)
+
+    ## Find approximate solution using bounds
+    res = minimize(method='L-BFGS-B',   fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac, bounds=bounds)
+    # res = minimize(method='TNC',   fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max, 'disp': show_disp}, jac=jac, bounds=bounds)
+
 
     ## Stop timing
     time_elapsed = time.clock() - t0
@@ -719,38 +735,64 @@ def plot_array(nda,title="no_title"):
 
 
 def show_reconstruction_results(original_nda, observed_nda, reconstruction_nda, reconstruction_TK1_nda=None):
+    
+    l2_error_obs = np.linalg.norm(observed_nda-original_nda)
+    l2_error_TK0 = np.linalg.norm(reconstruction_nda-original_nda)
+
     fig = plt.figure()
     
     if reconstruction_TK1_nda is None:
-        plt.subplot(131)
-        plt.imshow(original_nda, cmap="Greys_r")
-        plt.title("original")
-
-        plt.subplot(132)
-        plt.imshow(observed_nda, cmap="Greys_r")
-        plt.title("observed")
-
-        plt.subplot(133)
-        plt.imshow(reconstruction_nda, cmap="Greys_r")
-        plt.title("reconstruction")
-
-    else:
         plt.subplot(221)
         plt.imshow(original_nda, cmap="Greys_r")
-        plt.title("original")
-
-        plt.subplot(222)
-        plt.imshow(observed_nda, cmap="Greys_r")
-        plt.title("observed")
+        plt.title("Original")
 
         plt.subplot(223)
-        plt.imshow(reconstruction_nda, cmap="Greys_r")
-        plt.title("TK0 reconstruction")
+        ax=plt.imshow(observed_nda, cmap="Greys_r")
+        plt.title("Observed\n l2-error = "+ str(l2_error_obs))
+        plt.colorbar(ax)
+
+        plt.subplot(222)
+        ax=plt.imshow(reconstruction_nda, cmap="Greys_r")
+        plt.title("Reconstruction\n l2-error = "+ str(l2_error_TK0))
+        plt.colorbar(ax)
 
         plt.subplot(224)
-        plt.imshow(reconstruction_TK1_nda, cmap="Greys_r")
-        plt.title("TK1 reconstruction")
+        ax=plt.imshow(abs(reconstruction_nda-original_nda), cmap="jet")
+        plt.title("TK0: abs(recon-original) ")
+        plt.colorbar(ax)
 
+    else:
+        l2_error_TK1 = np.linalg.norm(reconstruction_TK1_nda-original_nda)
+
+        plt.subplot(231)
+        ax=plt.imshow(original_nda, cmap="Greys_r")
+        plt.title("Original")
+        plt.colorbar(ax)
+
+        plt.subplot(234)
+        ax=plt.imshow(observed_nda, cmap="Greys_r")
+        plt.title("Observed\n l2-error = "+ str(l2_error_obs))
+        plt.colorbar(ax)
+
+        plt.subplot(232)
+        ax=plt.imshow(reconstruction_nda, cmap="Greys_r")
+        plt.title("TK0 reconstruction\n l2-error = "+ str(l2_error_TK0))
+        plt.colorbar(ax)
+
+        plt.subplot(235)
+        ax=plt.imshow(abs(reconstruction_nda-original_nda), cmap="jet")
+        plt.title("TK0: abs(recon-original) ")
+        plt.colorbar(ax)
+
+        plt.subplot(233)
+        ax=plt.imshow(reconstruction_TK1_nda, cmap="Greys_r")
+        plt.title("TK1 reconstruction\n l2-error = "+ str(l2_error_TK1))
+        plt.colorbar(ax)
+
+        plt.subplot(236)
+        ax=plt.imshow(abs(reconstruction_TK1_nda-original_nda), cmap="jet")
+        plt.title("TK1: abs(recon-original) ")
+        plt.colorbar(ax)
 
     plt.show(block=False)
 
@@ -919,8 +961,8 @@ class TestUM(unittest.TestCase):
         #     y = 255 * np.random.rand(nda.shape[0], nda.shape[1], nda.shape[2])
 
         ## Symmetric boundary conditions
-        Ax = getAx(x,kernel)
-        ATy = getATx(y,kernel)
+        Ax = getA(x,kernel)
+        ATy = getAT(y,kernel)
         abs_diff = np.abs( np.sum(Ax*y) - np.sum(ATy*x) )
 
         ## Check |(Ax,y) - (x,A'y)| = 0 
@@ -948,8 +990,8 @@ class TestUM(unittest.TestCase):
 
 
         ## Symmetric boundary conditions
-        Ax = getAx(x,kernel)
-        ATy = getATx(y,kernel)
+        Ax = getA(x,kernel)
+        ATy = getAT(y,kernel)
         abs_diff = np.abs( np.sum(Ax*y) - np.sum(ATy*x) )
 
         ## Check |(Ax,y) - (x,A'y)| = 0 
@@ -1292,33 +1334,41 @@ if __name__ == '__main__':
     filename_stack = "FetalBrain_stack2_registered"
     filename_slice = "FetalBrain_stack2_registered_midslice"
 
-    # filename = "2D_BrainWeb"
-    # filename = "2D_SingleDot_50"
-    filename = "2D_Cross_50"
-    # filename = "2D_Text"
-    # filename = "2D_Cameraman_256"
-    # filename = "2D_House_256"
-    # filename = "2D_SheppLoganPhantom_512"
-    # filename = "2D_Lena_512"
-    # filename = "2D_Boat_512"
-    # filename = "2D_Man_1024"
+    # filename_2D = "2D_BrainWeb"
+    # filename_2D = "2D_SingleDot_50"
+    # filename_2D = "2D_Cross_50"
+    # filename_2D = "2D_Text"
+    # filename_2D = "2D_Cameraman_256"
+    # filename_2D = "2D_House_256"
+    filename_2D = "2D_SheppLoganPhantom_512"
+    # filename_2D = "2D_Lena_512"
+    # filename_2D = "2D_Boat_512"
+    # filename_2D = "2D_Man_1024"
 
-    filename_3D = "FetalBrain_reconstruction_4stacks"
+    # filename_3D = "FetalBrain_reconstruction_4stacks"
     # filename_3D = "3D_SingleDot_50"
     # filename_3D = "3D_Cross_50"
-    # filename_3D = "3D_SheppLoganPhantom_64"
+    filename_3D = "3D_SheppLoganPhantom_64"
     # filename_3D = "3D_SheppLoganPhantom_128"
 
 
-    ## Set parameters used in here
-    noise_level = 1e-2                 ## Noise level for test image, default = 0.01
+    ## Choose set-up used in here
+    # filename = filename_2D
+    filename = filename_3D
+
+    noise_level = 0                 ## Noise level for test image, default = 0.01
     alpha_cut = 3                   ## Cut-off distance alpha_cut*sigma for gaussian kernel computation
-    alpha = 1e-3                       ## Regularization parameter
-    use_SPD_formulation = True
+    alpha = 0                      ## Regularization parameter
+    
+    use_SPD_formulation = False
+
+
+    if alpha is not 0:
+        use_SPD_formulation = True
     
     Cov_2D = np.zeros((2,2))
-    Cov_2D[0,0] = 2
-    Cov_2D[1,1] = 2
+    Cov_2D[0,0] = 9
+    Cov_2D[1,1] = 9
     # Sigma_2D = np.sqrt(Cov_2D.diagonal())
 
     Cov_3D = np.zeros((3,3))
@@ -1335,15 +1385,14 @@ if __name__ == '__main__':
     HR_volume_sitk = sitk.ReadImage(dir_input + filename_HR_volume + ".nii.gz", sitk.sitkFloat32)
     stack_sitk = sitk.ReadImage(dir_input + filename_stack + ".nii.gz", sitk.sitkFloat32)
     slice_sitk = sitk.ReadImage(dir_input + filename_slice + ".nii.gz", sitk.sitkFloat32)
-    
-    # image_sitk = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat32)
-    image_sitk = sitk.ReadImage(dir_input + filename_3D + ".nii.gz", sitk.sitkFloat32)    
-    
-    dim = image_sitk.GetDimension()
 
+    image_sitk = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat32)
+    
+
+    ## Define covariance matrix depending on dimensionality
+    dim = image_sitk.GetDimension()
     if dim is 2:
         Cov = Cov_2D
-
     else:
         Cov = Cov_3D
 
@@ -1351,7 +1400,7 @@ if __name__ == '__main__':
     kernel = get_gaussian_kernel(Cov, alpha_cut);
 
     ## Simulate observed image
-    image_observed_sitk = get_blurred_noisy_image(image_sitk, Cov, alpha_cut, noise_level, multiplicative_noise=True)
+    image_observed_sitk = get_blurred_noisy_image(image_sitk, Cov, alpha_cut, noise_level, multiplicative_noise=False)
 
     original_nda = sitk.GetArrayFromImage(image_sitk)
     observed_nda = sitk.GetArrayFromImage(image_observed_sitk)
@@ -1375,10 +1424,10 @@ if __name__ == '__main__':
     # plot_array(nda_dx)
 
     g = observed_nda
-    ATg = getATx(g,kernel)
+    ATg = getAT(g,kernel)
 
     ## Compute ATAATg = A'AA'g
-    ATAATg = getATAx(ATg, kernel) 
+    ATAATg = getATA(ATg, kernel) 
 
     ## Compute DTDATg = D'DA'g
     DTDATg = getDTDx(ATg, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, kernel_Dz, kernel_Dz_adj)
@@ -1421,7 +1470,7 @@ if __name__ == '__main__':
         f_TK1_hess_p = f_TK1_SPD_hess_p
 
     if dim is 3:
-        sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_observed_sitk, title="original+observed")
+        sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_observed_sitk, title=filename+"_original+observed")
 
     ## Compute TK0 solution
     [reconstruction_TK0_nda, res_minimizer_TK0] \
@@ -1431,8 +1480,8 @@ if __name__ == '__main__':
     image_reconstructed_TK0_sitk.CopyInformation(image_sitk)
 
     if dim is 3:
-        sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_reconstructed_TK0_sitk, title="original+TK0_recon")
-        # sitkh.show_sitk_image(image_sitk=image_observed_sitk, overlay_sitk=image_reconstructed_TK0_sitk, title="TK0_observed+recon")
+        sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_reconstructed_TK0_sitk, title=filename+"_original+TK0_recon_alpha"+str(alpha))
+        # sitkh.show_sitk_image(image_sitk=image_observed_sitk, overlay_sitk=image_reconstructed_TK0_sitk, title=filename+"_TK0_observed+recon")
         
 
     ## Compute TK1 solution
@@ -1443,11 +1492,12 @@ if __name__ == '__main__':
     image_reconstructed_TK1_sitk.CopyInformation(image_sitk)
 
     if dim is 3:
-        sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_reconstructed_TK1_sitk, title="original+TK1_recon")
-        # sitkh.show_sitk_image(image_sitk=image_observed_sitk, overlay_sitk=image_reconstructed_TK1_sitk, title="TK1_observed+recon")
+        sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_reconstructed_TK1_sitk, title=filename+"_original+TK1_recon_alpha"+str(alpha))
+        # sitkh.show_sitk_image(image_sitk=image_observed_sitk, overlay_sitk=image_reconstructed_TK1_sitk, title=filename+"_TK1_observed+recon")
     
 
     if dim is 2:
+        # show_reconstruction_results(original_nda=original_nda, observed_nda=observed_nda, reconstruction_nda=reconstruction_TK0_nda)
         show_reconstruction_results(original_nda=original_nda, observed_nda=observed_nda, reconstruction_nda=reconstruction_TK0_nda, reconstruction_TK1_nda=reconstruction_TK1_nda)
 
 

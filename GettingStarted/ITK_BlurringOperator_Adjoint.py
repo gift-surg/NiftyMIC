@@ -86,7 +86,7 @@ def get_PSF_rotated_covariance_matrix(HR_volume, slice, Cov):
     ## Compute rotation matrix to express the PSF in the coordinate system of the HR volume
     U = direction_matrix_HR_volume.transpose().dot(direction_matrix_slice)
 
-    # print("U = \n%s" % U);
+    # print("U = \n%s\ndet(U) = %s" % (U,np.linalg.det(U)))
 
     return U.dot(Cov).dot(U.transpose())
 
@@ -749,9 +749,9 @@ class TestUM(unittest.TestCase):
             , decimals = self.accuracy), 0 )
 
 
-    ## Test APIs of itkOrientedGaussianInterpolateImageFunction in 3D. 
+    ## Test APIs of itkAdjointOrientedGaussianInterpolateImageFunction in 3D. 
     # In particular, set/get sigma and set/get covariance
-    def test_01_itkOrientedGaussianInterpolateImageFunction_3D_APIs(self):
+    def test_01_itkAdjointOrientedGaussianInterpolateImageFunction_3D_APIs(self):
 
         ## Define types of input and output pixels and state dimension of images
         pixel_type = itk.D
@@ -1401,13 +1401,15 @@ if __name__ == '__main__':
     reader_2D.SetImageIO(image_IO)
 
     ## Read images
-    reader_HR_volume.SetFileName(dir_input + filename_HR_volume + ".nii.gz")
+    reader_HR_volume.SetFileName("results/HR_volume.nii.gz")
+    # reader_HR_volume.SetFileName(dir_input + filename_HR_volume + ".nii.gz")
     reader_HR_volume.Update()
     
     reader_stack.SetFileName(dir_input + filename_stack + ".nii.gz")
     reader_stack.Update()
 
-    reader_slice.SetFileName(dir_input + filename_slice + ".nii.gz")
+    reader_slice.SetFileName("results/slice_0.nii.gz")
+    # reader_slice.SetFileName(dir_input + filename_slice + ".nii.gz")
     reader_slice.Update()
 
     reader_2D.SetFileName(dir_input + filename_2D + ".nii.gz")
@@ -1421,6 +1423,7 @@ if __name__ == '__main__':
 
     HR_volume_sitk = sitk.ReadImage(dir_input + filename_HR_volume + ".nii.gz", sitk.sitkFloat32)
     stack_sitk = sitk.ReadImage(dir_input + filename_stack + ".nii.gz", sitk.sitkFloat32)
+
     slice_sitk = sitk.ReadImage(dir_input + filename_slice + ".nii.gz", sitk.sitkFloat32)
     image_2D_sitk = sitk.ReadImage(dir_input + filename_2D + ".nii.gz", sitk.sitkFloat32)
 
@@ -1515,8 +1518,11 @@ if __name__ == '__main__':
         
     else:
         N_in = 8
-        slice_itk_ = get_image_with_zero_border_3D(slice_itk,N_in,N_in,0)
-        HR_volume_itk_ = get_image_with_zero_border_3D(HR_volume_itk,N_in,N_in,N_in)
+        # slice_itk_ = get_image_with_zero_border_3D(slice_itk,N_in,N_in,0)
+        # HR_volume_itk_ = get_image_with_zero_border_3D(HR_volume_itk,N_in,N_in,N_in)
+
+        slice_itk_ = slice_itk
+        HR_volume_itk_ = HR_volume_itk
 
         # show_itk_image(image_itk=slice_itk_, overlay_itk=slice_itk, title="slice")
         # show_itk_image(image_itk=HR_volume_itk_, overlay_itk=HR_volume_itk, title="HR_volume")
@@ -1526,15 +1532,15 @@ if __name__ == '__main__':
 
 
         Cov = np.zeros((3,3))
-        # Cov[0,0] = 0.26786367
-        # Cov[1,1] = 0.26786367
-        # Cov[2,2] = 2.67304559
-        Cov[0,0] = 9
-        Cov[1,1] = 4
-        Cov[2,2] = 1
+        Cov[0,0] = 0.26786367
+        Cov[1,1] = 0.26786367
+        Cov[2,2] = 2.67304559
+        # Cov[0,0] = 9
+        # Cov[1,1] = 4
+        # Cov[2,2] = 1
         Sigma = np.sqrt(Cov.diagonal())
 
-        alpha = 2 #cutoff-distance
+        alpha = 3 #cutoff-distance
 
 
         ## Adjoint Oriented Gaussian
@@ -1558,6 +1564,10 @@ if __name__ == '__main__':
         filter_OrientedGaussian.SetDefaultPixelValue( 0.0 )
         filter_OrientedGaussian.Update()
 
+        print("BufferedRegion = %s" % ( filter_OrientedGaussian.GetOutput().GetBufferedRegion() ) )
+        print("LargestPossibleRegion = %s" % ( filter_OrientedGaussian.GetOutput().GetLargestPossibleRegion() ) )
+        print("RequestedRegion = %s" % ( filter_OrientedGaussian.GetOutput().GetRequestedRegion() ) )
+
         ## Get data arrays
         itk2np = itk.PyBuffer[image_type_3D]
         nda_Ax = itk2np.GetArrayFromImage(filter_OrientedGaussian.GetOutput()) 
@@ -1570,6 +1580,8 @@ if __name__ == '__main__':
         RHS = np.sum(nda_x*nda_Ady)
         abs_diff = abs(LHS-RHS)
 
+        # print filter_OrientedGaussian.GetOutput()
+
         print("3D-RealisticImages:\n\t|(Ax,y) - (x,A'y)| = %s" %abs_diff)
         print("\t|(Ax,y) - (x,A'y)|/(Ax,y) = %s" %(abs_diff/LHS))
         # print("(Ax,y) = %s" %LHS)
@@ -1580,4 +1592,4 @@ if __name__ == '__main__':
     Unit tests:
     """
     print("\nUnit tests:\n--------------")
-    unittest.main()
+    # unittest.main()

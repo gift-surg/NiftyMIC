@@ -75,7 +75,7 @@ int main(int, char*[])
 
   // const std::string filename_image_2D = "2D_Text.nii.gz";
 
-  const std::string filename_image_2D = "BrainWeb_2D.nii.gz";
+  const std::string filename_image_2D = "2D_BrainWeb.nii.gz";
   
   // const std::string filename_image_2D = "2D_Lena_512.nii.gz";
   // const std::string filename_image_2D = "2D_SheppLoganPhantom_512.nii.gz";
@@ -123,8 +123,8 @@ int main(int, char*[])
   // Test whether adjoint operator, i.e. |(Ax,y) - (x,A'y)| = 0           
   /////////////////////////////////////////////////////////////////////////////
 
-  const bool choose_dimension_2D = true;
-  // const bool choose_dimension_2D = false;
+  // const bool choose_dimension_2D = true;
+  const bool choose_dimension_2D = false;
 
 
   // 2D: Check |(Ax,y) - (x,A'y)| = 0
@@ -347,6 +347,8 @@ int main(int, char*[])
     std::cout << "        (Ax,y) = " << sum_LHS << std::endl;
     std::cout << "        (x,A'y) = " << sum_RHS << std::endl;
     std::cout << "        |(Ax,y) - (x,A'y)|/(Ax,y) = " << std::abs(sum_LHS-sum_RHS)/sum_LHS << std::endl;
+
+    std::cout << "slice->GetLargestPossibleRegion().GetIndex() = " << slice->GetLargestPossibleRegion().GetIndex() << std::endl;
 
 
     // MyITKImageHelper::showImage(LHS, "LHS");

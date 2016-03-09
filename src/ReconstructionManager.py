@@ -96,7 +96,7 @@ class ReconstructionManager:
         return None
 
 
-    ## Execute two-step rconstruction alignment approach
+    ## Execute two-step reconstruction alignment approach
     #  \param iterations amount of two-step reconstruction alignment steps
     def run_two_step_reconstruction_alignment_approach(self, iterations=1):
         print("\n--- Run two-step reconstruction alignment approach ---")
@@ -135,6 +135,15 @@ class ReconstructionManager:
 
     def get_stacks(self):
         return self._stack_manager.get_stacks()
+
+    ## 
+    #  \param[in] Current guess of HR volume, instance of Stack    
+    def set_HR_volume(self, HR_volume):
+        self._HR_volume = HR_volume
+
+
+    def get_HR_volume(self):
+        return self._HR_volume
 
 
     def write_results(self):

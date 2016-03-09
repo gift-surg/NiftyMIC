@@ -110,6 +110,17 @@ class Stack:
         return self._slices
 
 
+    ## Get one particular slice of current stack
+    #  \return requested 3D slice of stack as Slices object
+    def get_slice(self, index):
+        
+        index = int(index)
+        if index > self._N_slices - 1 or index < 0:
+            raise ValueError("Enter a valid index between 0 and %s. Tried: %s" %(self._N_slices-1, index))
+
+        return self._slices[index]
+
+
     ## Get name of directory where nifti was read from
     #  \return string of directory wher nifti was read from
     #  \bug Does not exist for all created instances! E.g. Stack.from_sitk_image
@@ -130,7 +141,7 @@ class Stack:
 
 
     ## Display stack with external viewer (ITK-Snap)
-    #  \param show_segmentation display stack with or without associated segmentation (default=0)
+    #  \param[in] show_segmentation display stack with or without associated segmentation (default=0)
     def show(self, show_segmentation=0):
         dir_output = "/tmp/"
 

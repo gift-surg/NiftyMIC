@@ -218,6 +218,66 @@ def check_sitk_mask_2D(mask_2D_sitk):
         return mask
 
 
+def get_transformed_image(image_init, transform):
+    image = sitk.Image(image_init)
+    
+    affine_transform = get_sitk_affine_transform_from_sitk_image(image)
+
+    transform = get_composited_sitk_affine_transform(transform, affine_transform)
+    # transform = get_composited_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform), affine_transform)
+
+    direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(transform, image)
+    origin = get_sitk_image_origin_from_sitk_affine_transform(transform, image)
+
+    image.SetOrigin(origin)
+    image.SetDirection(direction)
+
+    return image
+
+
+## Convert between direction matrix from sitk to itk
+#  \param[in] image_sitk SimpleITK image
+#  \return direction matrix as itkMatrix object
+def get_itk_direction_from_sitk_image(image_sitk):
+    dim = image_sitk.GetDimension()
+    direction_sitk = image_sitk.GetDirection()
+    m = itk.vnl_matrix_fixed[itk.D, dim, dim]()
+
+    for i in range(0, dim):
+        for j in range(0, dim):
+            m.set(i,j,direction_sitk[dim*i + j])
+
+    return itk.Matrix[itk.D, dim, dim](m)
+        
+
+## Convert SimpleITK image to ITK image
+#  TODO: Check whether it is sufficient to just set origin, spacing and direction!
+#  \param[in] image_sitk
+#  \return converted image as itk.Image
+def convert_sitk_to_itk_image(image_sitk):
+
+    ## Extract information ready to use for itk image
+    dimension = image_sitk.GetDimension()
+    origin = image_sitk.GetOrigin()
+    spacing = image_sitk.GetSpacing()
+    direction = get_itk_direction_from_sitk_image(image_sitk)
+    nda = sitk.GetArrayFromImage(image_sitk)
+
+    ## Create ITK image
+    pixel_type = itk.D
+    image_type = itk.Image[itk.D, dimension]
+
+    itk2np = itk.PyBuffer[image_type]
+    image_itk = itk2np.GetImageFromArray(nda) 
+
+    image_itk.SetOrigin(origin)
+    image_itk.SetSpacing(spacing)
+    image_itk.SetDirection(direction)
+
+    return image_itk
+
+
+
 def print_rigid_transformation(rigid_registration_transform, text="rigid transformation"):
     dim = rigid_registration_transform.GetDimension()
 
@@ -320,38 +380,80 @@ def show_sitk_image(image_sitk, segmentation_sitk=None, overlay_sitk=None, title
 
     return None
 
-
-def get_transformed_image(image_init, transform):
-    image = sitk.Image(image_init)
+## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
+#  \param[in] image_itk image to show
+#  \param[in] segmentation_itk 
+#  \param[in] overlay_itk image which shall be overlayed onto image_itk (optional)
+#  \param[in] title filename for file written to /tmp/ (optional)
+def show_itk_image(image_itk, segmentation_itk=None, overlay_itk=None, title="test"):
     
-    affine_transform = get_sitk_affine_transform_from_sitk_image(image)
+    dir_output = "/tmp/"
+    # cmd = "fslview " + dir_output + title + ".nii.gz & "
 
-    transform = get_composited_sitk_affine_transform(transform, affine_transform)
-    # transform = get_composited_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform), affine_transform)
+    ## Define type of output image
+    pixel_type = itk.D
+    dim = image_itk.GetBufferedRegion().GetImageDimension()
+    image_type = itk.Image[pixel_type, dim]
 
-    direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(transform, image)
-    origin = get_sitk_image_origin_from_sitk_affine_transform(transform, image)
+    ## Define writer
+    writer = itk.ImageFileWriter[image_type].New()
+    # writer_2D.Update()
+    # image_IO_type = itk.NiftiImageIO
 
-    image.SetOrigin(origin)
-    image.SetDirection(direction)
+    ## Write image_itk
+    writer.SetInput(image_itk)
+    writer.SetFileName(dir_output + title + ".nii.gz")
+    writer.Update()
 
-    return image
+    if overlay_itk is not None and segmentation_itk is None:
+        ## Write overlay_itk:
+        writer.SetInput(overlay_itk)
+        writer.SetFileName(dir_output + title + "_overlay.nii.gz")
+        writer.Update()
+
+        cmd = "itksnap " \
+            + "-g " + dir_output + title + ".nii.gz " \
+            + "-o " + dir_output + title + "_overlay.nii.gz " \
+            "& "
+    
+    elif overlay_itk is None and segmentation_itk is not None:
+        ## Write segmentation_itk:
+        writer.SetInput(segmentation_itk)
+        writer.SetFileName(dir_output + title + "_segmentation.nii.gz")
+        writer.Update()
+
+        cmd = "itksnap " \
+            + "-g " + dir_output + title + ".nii.gz " \
+            + "-s " + dir_output + title + "_segmentation.nii.gz " \
+            + "& "
+
+    elif overlay_itk is not None and segmentation_itk is not None:
+        ## Write overlay_itk:
+        writer.SetInput(overlay_itk)
+        writer.SetFileName(dir_output + title + "_overlay.nii.gz")
+        writer.Update()
+
+        ## Write segmentation_itk:
+        writer.SetInput(segmentation_itk)
+        writer.SetFileName(dir_output + title + "_segmentation.nii.gz")
+        writer.Update()
+
+        cmd = "itksnap " \
+            + "-g " + dir_output + title + ".nii.gz " \
+            + "-s " + dir_output + title + "_segmentation.nii.gz " \
+            + "-o " + dir_output + title + "_overlay.nii.gz " \
+            + "& "
+
+    else:
+        cmd = "itksnap " \
+            + "-g " + dir_output + title + ".nii.gz " \
+            "& "
+
+    os.system(cmd)
+
+    return None
 
 
-## Convert between direction matrix from sitk to itk
-#  \param[in] image_sitk SimpleITK image
-#  \return direction matrix as itkMatrix object
-def get_itk_direction_from_sitk_image(image_sitk):
-    dim = image_sitk.GetDimension()
-    direction_sitk = image_sitk.GetDirection()
-    m = itk.vnl_matrix_fixed[itk.D, dim, dim]()
-
-    for i in range(0, dim):
-        for j in range(0, dim):
-            m.set(i,j,direction_sitk[dim*i + j])
-
-    return itk.Matrix[itk.D, dim, dim](m)
-        
 
 
 

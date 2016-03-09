@@ -91,6 +91,33 @@ class Slice:
         return self._T_PP
 
 
+    ## Display slice with external viewer (ITK-Snap)
+    #  \param[in] show_segmentation display slice with or without associated segmentation (default=0)
+    def show(self, show_segmentation=0):
+        dir_output = "/tmp/"
+
+        if show_segmentation:
+            sitk.WriteImage(self.sitk, dir_output + self._filename + ".nii.gz")
+            sitk.WriteImage(self.sitk_mask, dir_output + self._filename + "_mask.nii.gz")
+
+            cmd = "itksnap " \
+                    + "-g " + dir_output + self._filename + ".nii.gz " \
+                    + "-s " +  dir_output + self._filename + "_mask.nii.gz " + \
+                    "& "
+
+        else:
+            sitk.WriteImage(self.sitk, dir_output + self._filename + ".nii.gz")
+
+            cmd = "itksnap " \
+                    + "-g " + dir_output + self._filename + ".nii.gz " \
+                    "& "
+
+        # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
+        os.system(cmd)
+
+        return None
+
+
     def write(self, directory="/tmp/", filename=None):
         if filename is None:
             filename_out = self._filename + "_" + str(self._slice_number)
