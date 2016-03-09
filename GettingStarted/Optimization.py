@@ -683,6 +683,7 @@ def TK1_SPD_hess_p(x_vec, p_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, ker
 #  \param[in] fun   objective function to minimize, returns scalar value
 #  \param[in] jac   jacobian of objective function, returns vector array
 #  \param[in] hessp hessian matrix of objective function applied on point p, returns vector array
+#  \param[in] x0    initial value for optimization, vector array
 #  \param[in] shape_solution shape of array of desired solution
 #  \param[in] info_title determines which title is used to print information (optional)
 #  \return data array of reconstruction
@@ -691,7 +692,7 @@ def get_reconstruction(fun, jac, hessp, x0, shape_solution, info_title=False):
     iter_max = 100       # maximum number of iterations for solver
     tol = 1e-8          # tolerance for solver
 
-    show_disp = False
+    show_disp = True
 
     ## Provide bounds for optimization, i.e. intensities >= 0
     bounds = [[0,None]]*x0.size
@@ -712,7 +713,7 @@ def get_reconstruction(fun, jac, hessp, x0, shape_solution, info_title=False):
     # res = minimize(method='trust-ncg',  fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac, hessp=hessp)
 
     ## Find approximate solution using bounds
-    res = minimize(method='L-BFGS-B',   fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac, bounds=bounds)
+    res = minimize(method='L-BFGS-B',   fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max, 'disp': show_disp}, jac=jac, bounds=bounds)
     # res = minimize(method='TNC',   fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max, 'disp': show_disp}, jac=jac, bounds=bounds)
 
 
@@ -797,6 +798,11 @@ def show_reconstruction_results(original_nda, observed_nda, reconstruction_nda, 
     plt.show(block=False)
 
 
+## Print information stored in the result variable obtained from
+#  scipy.optimize.minimize.
+#  \param[in] res output from scipy.optimize.minimize
+#  \param[in] time_elapsed measured time via time.clock() (optional)
+#  \param[in] title title printed on the screen for subsequent information
 def print_status_optimizer(res, time_elapsed=None, title="Overview"):
     print("Result optimization: %s" %(title))
     print("\t%s" % (res.message))

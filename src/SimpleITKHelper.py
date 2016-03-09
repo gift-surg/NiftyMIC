@@ -235,9 +235,10 @@ def get_transformed_image(image_init, transform):
     return image
 
 
-## Convert between direction matrix from sitk to itk
-#  \param[in] image_sitk SimpleITK image
-#  \return direction matrix as itkMatrix object
+## Extract direction from SimpleITK-image so that it can be injected into
+#  ITK-image
+#  \param[in] image_sitk sitk.Image object
+#  \return direction as itkMatrix object
 def get_itk_direction_from_sitk_image(image_sitk):
     dim = image_sitk.GetDimension()
     direction_sitk = image_sitk.GetDirection()
@@ -248,15 +249,34 @@ def get_itk_direction_from_sitk_image(image_sitk):
             m.set(i,j,direction_sitk[dim*i + j])
 
     return itk.Matrix[itk.D, dim, dim](m)
+
+
+## Extract direction from ITK-image so that it can be injected into
+#  SimpleITK-image
+#  \param[in] image_itk itk.Image object
+#  \return direction as 1D array of size dimension^2, np.array
+def get_sitk_direction_from_itk_image(image_itk):
+    dim = image_itk.GetLargestPossibleRegion().GetImageDimension()
+
+    tmp = image_itk.GetDirection()
+    direction_itk = tmp.GetVnlMatrix()
+
+    direction_sitk = np.zeros(dim*dim)
+    for i in range(0, dim):
+        for j in range(0, dim):
+            direction_sitk[i*dim + j] = direction_itk(i,j)
+
+    return direction_sitk
+
         
 
-## Convert SimpleITK image to ITK image
+## Convert SimpleITK-image to ITK-image
 #  TODO: Check whether it is sufficient to just set origin, spacing and direction!
-#  \param[in] image_sitk
-#  \return converted image as itk.Image
+#  \param[in] image_sitk SimpleITK-image to be converted, sitk.Image object
+#  \return converted image as itk.Image object
 def convert_sitk_to_itk_image(image_sitk):
 
-    ## Extract information ready to use for itk image
+    ## Extract information ready to use for ITK-image
     dimension = image_sitk.GetDimension()
     origin = image_sitk.GetOrigin()
     spacing = image_sitk.GetSpacing()
@@ -264,7 +284,6 @@ def convert_sitk_to_itk_image(image_sitk):
     nda = sitk.GetArrayFromImage(image_sitk)
 
     ## Create ITK image
-    pixel_type = itk.D
     image_type = itk.Image[itk.D, dimension]
 
     itk2np = itk.PyBuffer[image_type]
@@ -274,7 +293,35 @@ def convert_sitk_to_itk_image(image_sitk):
     image_itk.SetSpacing(spacing)
     image_itk.SetDirection(direction)
 
+    image_itk.DisconnectPipeline()
+
     return image_itk
+
+
+## Convert ITK-image to SimpleITK-image
+#  TODO: Check whether it is sufficient to just set origin, spacing and direction!
+#  \param[in] image_itk ITK-image to be converted, itk.Image object
+#  \return converted image as sitk.Image object
+def convert_itk_to_sitk_image(image_itk):
+
+    ## Extract information ready to use for SimpleITK-image
+    dimension = image_itk.GetLargestPossibleRegion().GetImageDimension()
+    origin = np.array(image_itk.GetOrigin())
+    spacing = np.array(image_itk.GetSpacing())
+    direction = get_sitk_direction_from_itk_image(image_itk)
+
+    image_type = itk.Image[itk.D, dimension]
+    itk2np = itk.PyBuffer[image_type]
+    nda = itk2np.GetArrayFromImage(image_itk)
+
+    ## Create SimpleITK-image
+    image_sitk = sitk.GetImageFromArray(nda)
+
+    image_sitk.SetOrigin(origin)
+    image_sitk.SetSpacing(spacing)
+    image_sitk.SetDirection(direction)
+
+    return image_sitk
 
 
 

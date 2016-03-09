@@ -1401,15 +1401,13 @@ if __name__ == '__main__':
     reader_2D.SetImageIO(image_IO)
 
     ## Read images
-    reader_HR_volume.SetFileName("results/HR_volume.nii.gz")
-    # reader_HR_volume.SetFileName(dir_input + filename_HR_volume + ".nii.gz")
+    reader_HR_volume.SetFileName(dir_input + filename_HR_volume + ".nii.gz")
     reader_HR_volume.Update()
     
     reader_stack.SetFileName(dir_input + filename_stack + ".nii.gz")
     reader_stack.Update()
 
-    reader_slice.SetFileName("results/slice_0.nii.gz")
-    # reader_slice.SetFileName(dir_input + filename_slice + ".nii.gz")
+    reader_slice.SetFileName(dir_input + filename_slice + ".nii.gz")
     reader_slice.Update()
 
     reader_2D.SetFileName(dir_input + filename_2D + ".nii.gz")
@@ -1563,10 +1561,6 @@ if __name__ == '__main__':
         filter_OrientedGaussian.SetInterpolator(interpolator_OrientedGaussian)
         filter_OrientedGaussian.SetDefaultPixelValue( 0.0 )
         filter_OrientedGaussian.Update()
-
-        print("BufferedRegion = %s" % ( filter_OrientedGaussian.GetOutput().GetBufferedRegion() ) )
-        print("LargestPossibleRegion = %s" % ( filter_OrientedGaussian.GetOutput().GetLargestPossibleRegion() ) )
-        print("RequestedRegion = %s" % ( filter_OrientedGaussian.GetOutput().GetRequestedRegion() ) )
 
         ## Get data arrays
         itk2np = itk.PyBuffer[image_type_3D]

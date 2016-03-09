@@ -1,0 +1,86 @@
+RUNNING THE L-BFGS-B CODE
+
+it    = iteration number
+nf    = number of function evaluations
+nseg  = number of segments explored during the Cauchy search
+nact  = number of active bounds at the generalized Cauchy point
+sub   = manner in which the subspace minimization terminated:
+        con = converged, bnd = a bound was reached
+itls  = number of iterations performed in the line search
+stepl = step length used
+tstep = norm of the displacement (total step)
+projg = norm of the projected gradient
+f     = function value
+
+           * * *
+
+Machine precision = 2.220E-16
+ N =  752400    M =  10
+
+   it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
+    0    1     -     -   -     -     -        -     5.667E+02  1.158E+09
+    1    8   166   849  ---    6  3.4E-01  5.5E+03  5.165E+02  9.934E+08
+    2    9   887  1570  bnd    0  1.0E+00  4.3E+04  1.206E+02  3.635E+08
+    3   10   615  2654  bnd    0  1.0E+00  1.6E+04  1.661E+02  2.639E+08
+    4   11  1242  4489  bnd    0  1.0E+00  3.5E+04  4.365E+02  1.675E+08
+    5   12   591  6739  bnd    0  1.0E+00  1.7E+04  4.485E+02  1.292E+08
+    6   13   677  9472  bnd    0  1.0E+00  4.5E+03  1.084E+02  1.105E+08
+    7   14   707  9931  bnd    0  1.0E+00  8.5E+03  9.556E+01  9.369E+07
+    8   15   382 10375  bnd    0  1.0E+00  1.0E+04  1.432E+02  8.115E+07
+    9   16   459 12514  bnd    0  1.0E+00  1.8E+04  1.661E+02  6.698E+07
+   10   17   655 16092  bnd    0  1.0E+00  1.0E+04  1.646E+02  6.095E+07
+   11   18   774 19969  bnd    0  1.0E+00  2.1E+03  3.568E+01  5.771E+07
+   12   19   974 21059  bnd    0  1.0E+00  4.5E+03  6.021E+01  5.445E+07
+   13   20   291 20743  bnd    0  1.0E+00  5.2E+03  7.755E+01  5.191E+07
+   14   21   280 21209  bnd    0  1.0E+00  1.1E+04  2.650E+01  4.809E+07
+   15   22   430 23656  bnd    0  1.0E+00  9.5E+03  1.012E+02  4.714E+07
+   16   23   563 25284  bnd    0  1.0E+00  1.8E+03  2.176E+01  4.538E+07
+   17   24   522 26861  bnd    0  1.0E+00  1.6E+03  2.235E+01  4.465E+07
+   18   25   396 27336  bnd    0  1.0E+00  3.6E+03  4.259E+01  4.366E+07
+   19   26   254 28054  bnd    0  1.0E+00  5.8E+03  5.079E+01  4.237E+07
+   20   27   319 29728  bnd    0  1.0E+00  1.0E+04  1.428E+02  4.213E+07
+   21   28   307 31184  bnd    0  1.0E+00  1.4E+03  2.861E+01  4.072E+07
+   22   29   237 32085  bnd    0  1.0E+00  1.1E+03  1.095E+01  4.040E+07
+   23   30   301 32228  bnd    0  1.0E+00  2.6E+03  1.560E+01  3.997E+07
+   24   31   156 31832  bnd    0  1.0E+00  4.2E+03  1.784E+01  3.940E+07
+   25   32   180 32616  bnd    0  1.0E+00  7.5E+03  1.622E+01  3.881E+07
+   26   33   283 32574  bnd    0  1.0E+00  2.2E+03  9.232E+00  3.830E+07
+RUNNING THE L-BFGS-B CODE
+
+it    = iteration number
+nf    = number of function evaluations
+nseg  = number of segments explored during the Cauchy search
+nact  = number of active bounds at the generalized Cauchy point
+sub   = manner in which the subspace minimization terminated:
+        con = converged, bnd = a bound was reached
+itls  = number of iterations performed in the line search
+stepl = step length used
+tstep = norm of the displacement (total step)
+projg = norm of the projected gradient
+f     = function value
+
+           * * *
+
+Machine precision = 2.220E-16
+ N =  752400    M =  10
+
+   it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
+    0    1     -     -   -     -     -        -     5.691E+02  1.176E+09
+    1    8   171   865  ---    6  3.3E-01  5.5E+03  4.956E+02  1.010E+09
+    2    9   878  1570  bnd    0  1.0E+00  4.3E+04  1.208E+02  3.655E+08
+    3   10   589  2628  bnd    0  1.0E+00  1.6E+04  1.196E+02  2.653E+08
+
+STOP: TOTAL NO. of ITERATIONS EXCEEDS LIMIT                 
+
+ Total User time 8.696E+01 seconds.
+
+RUNNING THE L-BFGS-B CODE
+
+it    = iteration number
+nf    = number of function evaluations
+nseg  = number of segments explored during the Cauchy search
+nact  = number of active bounds at the generalized Cauchy point
+sub   = manner in which the subspace minimization terminated:
+        con = converged, bnd = a bound was reached
+itls  = number of iterations performed in the line search
+stepl = step length 
