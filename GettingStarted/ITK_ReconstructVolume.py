@@ -44,13 +44,17 @@ class Optimize:
             self._HR_volume = HR_volume
             self._N_stacks = len(stacks)
 
-            self._alpha_cut = 3     # Cut-off distance for blurring filters
+            ## Cut-off distance for Gaussian blurring filter
+            self._alpha_cut = 3     
+
+            ## Settings for optimizer
             self._alpha = 0.01      # Regularization parameter
+            self._iter_max = 20     # Maximum iteration steps
+            self._reg_type = 'TK0'  # Either Tikhonov zero- or first-order
 
             ## Append itk objects
             self._append_itk_object_on_slices_of_stacks()
             self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk)
-
 
             ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
             self._filter_oriented_Gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
@@ -69,12 +73,35 @@ class Optimize:
             ## Create PyBuffer object for conversion between NumPy arrays and ITK images
             self._itk2np = itk.PyBuffer[image_type]
 
-
             ## Extract information ready to use for itk image conversion operations
             self._HR_shape_nda = sitk.GetArrayFromImage( self._HR_volume.sitk ).shape
             self._HR_origin_itk = self._HR_volume.sitk.GetOrigin()
             self._HR_spacing_itk = self._HR_volume.sitk.GetSpacing()
             self._HR_direction_itk = sitkh.get_itk_direction_from_sitk_image( self._HR_volume.sitk )
+
+            ## For TK1: Kernels for differentiation in image space, i.e. including scaling
+            spacing = self._HR_volume.sitk.GetSpacing()
+
+            # Forward difference kernels
+            kernel_Dxf = self._get_forward_diff_x_kernel() / spacing[0]
+            kernel_Dyf = self._get_forward_diff_y_kernel() / spacing[0]
+            kernel_Dzf = self._get_forward_diff_z_kernel() / spacing[0]
+
+            # Backward difference kernels
+            kernel_Dxb = self._get_backward_diff_x_kernel() / spacing[0]
+            kernel_Dyb = self._get_backward_diff_y_kernel() / spacing[0]
+            kernel_Dzb = self._get_backward_diff_z_kernel() / spacing[0]
+
+            # Laplace kernel
+            self._kernel_L   = self._get_laplacian_kernel() / (spacing[0]*spacing[0])
+
+            # Chosen difference kernel
+            self._kernel_Dx = kernel_Dxf
+            self._kernel_Dy = kernel_Dyf
+            self._kernel_Dz = kernel_Dzf
+            self._kernel_DTx = -kernel_Dxb
+            self._kernel_DTy = -kernel_Dyb
+            self._kernel_DTz = -kernel_Dzb
 
 
     ## Get current estimate of HR volume
@@ -109,6 +136,31 @@ class Optimize:
     def get_alpha(self):
         return self._alpha
 
+    ## Set maximum number of iterations for minimizer
+    #  \param[in] iter_max number of maximum iterations, scalar
+    def set_iter_max(self, iter_max):
+        self._iter_max = iter_max
+
+    ## Get chosen value of maximum number of iterations for minimizer
+    #  \return maximum number of iterations set for minimizer, scalar
+    def get_iter_max(self):
+        return self._iter_max
+
+
+    ## Set type or regularization. It can be either 'TK0' or 'TK1'
+    #  \param[in] reg_type Either 'TK0' or 'TK1', string
+    def set_regularization_type(self, reg_type):
+        if reg_type not in ["TK0", "TK1"]:
+            raise ValueError("Error: regularization type can only be either 'TK0' or 'TK1'")
+
+        self._reg_type = reg_type
+
+
+    ## Get chosen type of regularization.
+    #  \return regularization type as string
+    def get_regularization_type(self):
+        return self._reg_type
+
 
     ## Run reconstruction algorithm 
     def run_reconstruction(self):
@@ -116,16 +168,31 @@ class Optimize:
         ## Compute required variables prior the optimization step
         HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
         sum_ATy_itk = self._sum_ATy()
-        op_sum_ATy_itk = self._op(sum_ATy_itk, self._alpha)
 
-        ## Define function handles for optimization
-        f_TK0        = lambda x: self._TK0_SPD(x, sum_ATy_itk, self._alpha)
-        f_TK0_grad   = lambda x: self._TK0_SPD_grad(x, op_sum_ATy_itk, self._alpha)
-        f_TK0_hess_p = None
+        if self._reg_type in ["TK0"]:
+            print("Chosen regularization type: zero-order Tikhonov")
 
-        ## Compute TK0 solution
+            ## Provide constant variable for optimization
+            op0_sum_ATy_itk = self._op0(sum_ATy_itk, self._alpha)
+
+            ## Define function handles for optimization
+            f        = lambda x: self._TK0_SPD(x, sum_ATy_itk, self._alpha)
+            f_grad   = lambda x: self._TK0_SPD_grad(x, op0_sum_ATy_itk, self._alpha)
+            f_hess_p = None
+
+        elif self._reg_type in ["TK1"]:
+            print("Chosen regularization type: first-order Tikhonov")
+            ## Provide constant variable for optimization
+            op1_sum_ATy_itk = self._op1(sum_ATy_itk, HR_nda.flatten(), self._alpha)
+            
+            ## Define function handles for optimization
+            f        = lambda x: self._TK1_SPD(x, sum_ATy_itk, self._alpha)
+            f_grad   = lambda x: self._TK1_SPD_grad(x, op1_sum_ATy_itk, self._alpha)
+            f_hess_p = None
+
+        ## Compute approximate solution
         [HR_volume_itk, res_minimizer_TK0] \
-            = self._get_reconstruction(fun=f_TK0, jac=f_TK0_grad, hessp=f_TK0_hess_p, x0=HR_nda.flatten(), info_title="TK0")
+            = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), info_title="TK0")
 
         ## Update member attribute
         self._HR_volume.itk = HR_volume_itk
@@ -141,8 +208,8 @@ class Optimize:
     #  \return data array of reconstruction
     #  \return output of scipy.optimize.minimize function
     def _get_reconstruction(self, fun, jac, hessp, x0, info_title=False):
-        iter_max = 20      # maximum number of iterations for solver
-        tol = 1e-8          # tolerance for solver
+        iter_max = self._iter_max      # maximum number of iterations for minimizer
+        tol = 1e-8                     # tolerance for minimizer
 
         show_disp = True
 
@@ -224,7 +291,13 @@ class Optimize:
             for j in range(0, stack.get_number_of_slices()):
                 slice = slices[j]
 
-                slice.itk = sitkh.convert_sitk_to_itk_image(slice.sitk)
+                ## Only use segmented part of each slice (if available)
+                if slice.sitk_mask is not None:
+                    slice_masked_sitk = sitk.Cast(slice.sitk_mask, slice.sitk.GetPixelIDValue()) * slice.sitk
+                else:
+                    slice_masked_sitk = sitk.Image(slice.sitk)
+
+                slice.itk = sitkh.convert_sitk_to_itk_image(slice_masked_sitk)
                 
 
     ## Compute the covariance matrix modelling the PSF in-plane and 
@@ -485,13 +558,16 @@ class Optimize:
         return res
 
 
+    """
+    TK0-regularization functions
+    """
     ## Compute 
-    #       op(x) := ( sum_k [A_k' A_k] + alpha )*x
-    #                sum_k [A_k' A_k x] + alpha*x
+    #       op0(x) := ( sum_k [A_k' A_k] + alpha )*x
+    #                 sum_k [A_k' A_k x] + alpha*x
     #  \param[in] image_itk image which acts as x, itk.Image object
     #  \param[in] alpha regularization parameter, scalar
-    #  \return op(x) = ( sum_k [A_k' A_k] + alpha )*x as itk.Image object
-    def _op(self, image_itk, alpha):
+    #  \return op0(x) = ( sum_k [A_k' A_k] + alpha )*x as itk.Image object
+    def _op0(self, image_itk, alpha):
 
         ## Compute sum_k [A_k' A_k x]
         sum_ATAx_itk = self._sum_ATA(image_itk)        
@@ -500,44 +576,247 @@ class Optimize:
         return self._add_amplified_image(sum_ATAx_itk, alpha, image_itk)
 
 
-    ## Compute cost function with SPD matrix
+    ## Compute TK0 cost function with SPD matrix
     #       J0(x) = || sum_k [A_k' (A_k x - y_k)] + alpha*x ||^2
     #             = || (sum_k [A_k' A_k ] + alpha)x - sum_k A_k' y_k || ^2
+    #  \param[in] HR_nda_vec data array of HR image, 1D array shape
+    #  \param[in] sum_ATy_itk output of _sum_ATy
+    #  \param[in] alpha regularization parameter
+    #  \return J0(x) as scalar value
     def _TK0_SPD(self, HR_nda_vec, sum_ATy_itk, alpha):
 
         ## Convert HR data array back to itk.Image object
         x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
 
-        ## Compute op(x) = sum_k [A_k' A_k x] + alpha*x
-        op_x_itk = self._op(x_itk, alpha)
+        ## Compute op0(x) = sum_k [A_k' A_k x] + alpha*x
+        op0_x_itk = self._op0(x_itk, alpha)
 
         ## Compute sum_k [A_k' A_k x] + alpha*x - sum_k A_k' y_k 
-        J0_image_itk =  self._add_amplified_image(op_x_itk, -1, sum_ATy_itk)
+        J0_image_itk =  self._add_amplified_image(op0_x_itk, -1, sum_ATy_itk)
 
         ## J0 = || sum_k [A_k' A_k x] + alpha*x - sum_k A_k' y_k ||^2
         J0_nda = self._itk2np.GetArrayFromImage(J0_image_itk)
 
-        return np.sum((J0_nda)**2)
+        return np.sum( J0_nda**2 )
 
 
-    ## Compute gradient of cost function with SPD matrix
-    #       grad J0(x) = (sum_k [A_k' A_k] + alpha) ( (sum_k [A_k' A_k] + alpha)x - sum_k A_k' y_k  )
-    def _TK0_SPD_grad(self, HR_nda_vec, op_sum_ATy_itk, alpha):
+    ## Compute gradient of TK0 cost function with SPD matrix
+    #       grad J0(x) = (sum_k [A_k' A_k] + alpha) 
+    #                       ( (sum_k [A_k' A_k] + alpha)x - sum_k A_k' y_k  )
+    #  \param[in] HR_nda_vec data array of HR image, 1D array shape
+    #  \param[in] op0_sum_ATy_itk output of _op0(sum_ATy)
+    #  \param[in] alpha regularization parameter
+    #  \return grad J0(x) in voxel space as 1D data array
+    def _TK0_SPD_grad(self, HR_nda_vec, op0_sum_ATy_itk, alpha):
 
         ## Convert HR data array back to itk.Image object
         x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
 
-        ## Compute op(x) := sum_k [A_k' A_k x] + alpha*x
-        op_x_itk = self._op(x_itk, alpha)
+        ## Compute op0(x) = sum_k [A_k' A_k x] + alpha*x
+        op0_x_itk = self._op0(x_itk, alpha)
 
-        ## Compute op(op(x)) = sum_k [A_k' A_k op(x)] + alpha*op(x)
-        op_op_x_itk = self._op(op_x_itk, alpha)
+        ## Compute op0(op0(x)) = sum_k [A_k' A_k op0(x)] + alpha*op0(x)
+        op0_op0_x_itk = self._op0(op0_x_itk, alpha)
 
         ## Compute grad J0 in image space
-        grad_J0_image_itk = self._add_amplified_image(op_op_x_itk, -1, op_sum_ATy_itk)
+        grad_J0_image_itk = self._add_amplified_image(op0_op0_x_itk, -1, op0_sum_ATy_itk)
 
-        ## return grad J0 in voxel space
+        ## Return grad J0 in voxel space
         return self._itk2np.GetArrayFromImage(grad_J0_image_itk).flatten()
+
+
+    """
+    TK1-regularization functions
+    """
+    ## Compute forward difference quotient in x-direction to differentiate
+    #  array with array = array[z,y,x], i.e. the 'correct' direction
+    #  by viewing the resulting nifti-image differentiation. The resulting kernel
+    #  can be used via _convolve(nda) to differentiate image
+    #  \return kernel for 3-dimensional differentiation in x
+    def _get_forward_diff_x_kernel(self):
+        ## kernel = np.zeros((z,y,x))
+        kernel = np.zeros((1,1,2))
+        kernel[:] = np.array([1,-1])
+
+        return kernel
+
+
+    ## Compute backward difference quotient in x-direction to differentiate
+    #  array with array = array[z,y,x], i.e. the 'correct' direction
+    #  by viewing the resulting nifti-image differentiation. The resulting kernel
+    #  can be used via _convolve(nda) to differentiate image
+    #  \return kernel for 3-dimensional differentiation in x
+    def _get_backward_diff_x_kernel(self):
+        ## kernel = np.zeros((z,y,x))
+        kernel = np.zeros((1,1,3))
+        kernel[:] = np.array([0,1,-1])
+
+        return kernel
+
+
+    ## Compute forward difference quotient in y-direction to differentiate
+    #  array with array = array[z,y,x], i.e. the 'correct' direction
+    #  by viewing the resulting nifti-image differentiation. The resulting kernel
+    #  can be used via _convolve(kernel, nda) to differentiate image
+    #  \return kernel kernel for 3-dimensional differentiation in y
+    def _get_forward_diff_y_kernel(self):
+        ## kernel = np.zeros((z,y,x))
+        kernel = np.zeros((1,2,1))
+        kernel[:] = np.array([[1],[-1]])
+
+        return kernel
+
+
+    ## Compute backward difference quotient in y-direction to differentiate
+    #  array with array = array[z,y,x], i.e. the 'correct' direction
+    #  by viewing the resulting nifti-image differentiation. The resulting kernel
+    #  can be used via _convolve(kernel, nda) to differentiate image
+    #  \return kernel kernel for 3-dimensional differentiation in y
+    def _get_backward_diff_y_kernel(self):
+        ## kernel = np.zeros((z,y,x))
+        kernel = np.zeros((1,3,1))
+        kernel[:] = np.array([[0],[1],[-1]])
+
+        return kernel
+
+
+    ## Compute forward difference quotient in z-direction to differentiate
+    #  array with array = array[z,y,x], i.e. the 'correct' direction
+    #  by viewing the resulting nifti-image differentiation. The resulting kernel
+    #  can be used via _convolve(kernel, nda) to differentiate image
+    #  \return kernel kernel for 3-dimensional differentiation in z
+    def _get_forward_diff_z_kernel(self):
+        ## kernel = np.zeros((z,y,x))
+        kernel = np.zeros((2,1,1))
+        kernel[:] = np.array([[[1]],[[-1]]])
+
+        return kernel
+
+
+    ## Compute backward difference quotient in y-direction to differentiate
+    #  array with array = array[z,y,x], i.e. the 'correct' direction
+    #  by viewing the resulting nifti-image differentiation. The resulting kernel
+    #  can be used via _convolve(kernel, nda) to differentiate image
+    #  \return kernel kernel for 3-dimensional differentiation in z
+    def _get_backward_diff_z_kernel(self):
+        ## kernel = np.zeros((z,y,x))
+        kernel = np.zeros((3,1,1))
+        kernel[:] = np.array([[[0]],[[1]],[[-1]]])
+
+        return kernel
+
+
+    ## Compute Laplacian kernel to differentiate
+    #  array with array = array[z,y,x], i.e. the 'correct' direction
+    #  by viewing the resulting nifti-image differentiation. The resulting kernel
+    #  can be used via _convolve(kernel, nda) to differentiate image
+    #  \param[in] self spatial dimension
+    #  \return kernel kernel for Laplacian operation
+    def _get_laplacian_kernel(self):
+        ## kernel = np.zeros((z,y,x))
+        kernel = np.zeros((3,3,3))
+        kernel[0,1,1] = 1
+        kernel[1,:,:] = np.array([[0, 1, 0],[1, -6, 1],[0, 1, 0]])
+        kernel[2,1,1] = 1
+            
+        return kernel
+
+
+    ## Compute D'Dx. Chosen kernels already incorporate correct scaling 
+    #  to transform resulting data array back directly to image space
+    #  \param[in] nda data array of image
+    #  \return D'Dx as itk.Image object
+    def _DTD(self, nda):
+        
+        ## DTD via Laplacian
+        # DTD = self._convolve(nda, self._kernel_L)
+
+        ## DTDx via forward differences
+        Dx = self._convolve(nda, self._kernel_Dx)
+        Dy = self._convolve(nda, self._kernel_Dy)
+        Dz = self._convolve(nda, self._kernel_Dz)
+        DTDx = self._convolve(Dx, self._kernel_DTx)
+        DTDy = self._convolve(Dy, self._kernel_DTy)
+        DTDz = self._convolve(Dz, self._kernel_DTz)
+        DTD = (DTDx + DTDy + DTDz)
+
+        return self._get_HR_image_from_array_vec( DTD )
+        
+
+    ## Compute convolution of array based on given kernel via 
+    #  scipy.ndimage.convolve with "wrap" boundary conditions.
+    #  \param[in] nda data array
+    #  \param[in] kernel 
+    #  \return data array convolved by given kernel
+    def _convolve(self, nda, kernel):
+        return ndimage.convolve(nda, kernel, mode='wrap')
+
+
+    ## Compute 
+    #       op1(x) := ( sum_k [A_k' A_k] + alpha*D'D )*x
+    #                 sum_k [A_k' A_k x] + alpha*D'Dx
+    #  \param[in] image_itk image which acts as x, itk.Image object
+    #  \param[in] alpha regularization parameter, scalar
+    #  \return op0(x) = ( sum_k [A_k' A_k] + alpha*D'D )*x as itk.Image object
+    def _op1(self, image_itk, image_nda_vec, alpha):
+
+        ## Compute sum_k [A_k' A_k x]
+        sum_ATAx_itk = self._sum_ATA(image_itk)   
+
+        ## Compute D'Dx
+        DTDx_itk = self._DTD(image_nda_vec.reshape(self._HR_shape_nda))     
+
+        ## Compute sum_k [A_k' A_k x] + alpha*D'Dx
+        return self._add_amplified_image(sum_ATAx_itk, alpha, DTDx_itk)
+
+
+    ## Compute TK1 cost function with SPD matrix
+    #       J1(x) = || sum_k [A_k' (A_k x - y_k)] + alpha*B'Bx ||^2
+    #             = || (sum_k [A_k' A_k ] + alpha*B'B)x - sum_k A_k' y_k || ^2
+    #  \param[in] HR_nda_vec data array of HR image, 1D array shape
+    #  \param[in] sum_ATy_itk output of _sum_ATy
+    #  \param[in] alpha regularization parameter
+    #  \return J1(x) as scalar value
+    def _TK1_SPD(self, HR_nda_vec, sum_ATy_itk, alpha):
+
+        ## Convert HR data array back to itk.Image object
+        x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
+
+        ## Compute op1(x) = sum_k [A_k' A_k x] + alpha*B'Bx
+        op1_x_itk = self._op1(x_itk, HR_nda_vec, alpha)
+
+        ## Compute sum_k [A_k' A_k x] + alpha*B'Bx - sum_k A_k' y_k 
+        J1_image_itk =  self._add_amplified_image(op1_x_itk, -1, sum_ATy_itk)
+
+        ## J1 = || sum_k [A_k' A_k x] + alpha*B'Bx - sum_k A_k' y_k ||^2
+        J1_nda = self._itk2np.GetArrayFromImage(J1_image_itk)
+
+        return np.sum( J1_nda**2 )
+
+
+    ## Compute gradient of TK1 cost function with SPD matrix
+    #       grad J1(x) = (sum_k [A_k' A_k] + alpha*B'B) 
+    #                   ( (sum_k [A_k' A_k] + alpha*B'B)x - sum_k A_k' y_k  )
+    #  \param[in] HR_nda_vec data array of HR image, 1D array shape
+    #  \param[in] op1_sum_ATy_itk output of _op1(sum_ATy)
+    #  \param[in] alpha regularization parameter
+    #  \return grad J1(x) in voxel space as 1D data array
+    def _TK1_SPD_grad(self, HR_nda_vec, op1_sum_ATy_itk, alpha):
+
+        ## Convert HR data array back to itk.Image object
+        x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
+
+        ## Compute op1(x) = sum_k [A_k' A_k x] + alpha*B'Bx
+        op1_x_itk = self._op1(x_itk, HR_nda_vec, alpha)
+
+        ## Compute op1(op1(x)) = sum_k [A_k' A_k op1(x)] + alpha*op1(x)
+        op1_op1_x_itk = self._op1(op1_x_itk, HR_nda_vec, alpha)
+
+        ## Compute grad J1 in image space
+        grad_J1_image_itk = self._add_amplified_image(op1_op1_x_itk, -1, op1_sum_ATy_itk)
+
+        ## Return grad J1 in voxel space
+        return self._itk2np.GetArrayFromImage(grad_J1_image_itk).flatten()
 
 
 
@@ -545,29 +824,49 @@ class Optimize:
 Main Function
 """
 if __name__ == '__main__':
+
+    input_stack_types_available = ("pig", "fetalbrain" , "fetalbrain_registered")
     
-    PIG = False
-    # PIG = True
+    input_stack_type = input_stack_types_available[1]
+    write_results = 1
+
+    ## Settings for optimizer
+    iter_max = 20       # maximum iterations
+    alpha = 0.01        # regularization parameter
+    reg_type = "TK0"    # regularization type
     
-    if PIG:
-        ## Data of structural pig
+    ## Data of structural pig
+    if input_stack_type in ["pig"]:
         dir_input = "../data/StructuralData_Pig/"
         filenames = [
             "T22D3mm05x05hresCLEARs601a1006",
             "T22D3mm05x05hresCLEARs701a1007",
             "T22D3mm05x05hresCLEARs901a1009"
             ]
+        dir_ref = dir_input
         filename_HR_volume = "3DBrainViewT2SHCCLEARs1301a1013"
         filename_out = "pig"
 
     ## Data of GettingStarted folder
-    else:
+    elif input_stack_type in ["fetalbrain_registered"]:
         dir_input = "data/"
         filenames = [
             "FetalBrain_stack0_registered",
             "FetalBrain_stack1_registered",
             "FetalBrain_stack2_registered"
             ]
+        dir_ref = dir_input
+        filename_HR_volume = "FetalBrain_reconstruction_4stacks"
+        filename_out = "fetalbrain_registered"
+
+    elif input_stack_type in ["fetalbrain"]:
+        dir_input = "../data/fetal_neck/"
+        filenames = [
+            "0",
+            "1",
+            "2"
+            ]
+        dir_ref = "data/"
         filename_HR_volume = "FetalBrain_reconstruction_4stacks"
         filename_out = "fetalbrain"
 
@@ -590,10 +889,20 @@ if __name__ == '__main__':
     # HR_volume.show()
 
     ## HR volume reconstruction obtained from Kainz toolkit
-    HR_volume_Kainz = st.Stack.from_nifti(dir_input,filename_HR_volume)
+    HR_volume_ref = st.Stack.from_nifti(dir_ref,filename_HR_volume)
+
+    ## Write initial and reference volume before starting reconstruction algorithm
+    if write_results:
+        sitk.WriteImage(HR_volume.sitk, dir_output+filename_out+"_init.nii.gz")
+        sitk.WriteImage(HR_volume_ref.sitk, dir_output+filename_out+"_ref.nii.gz")
 
     ## Initialize optimizer with current state of motion estimation + guess of HR volume
     MyOptimizer = Optimize(reconstruction_manager.get_stacks(), HR_volume)
+
+    ## Set regularization parameter and maximum number of iterations
+    MyOptimizer.set_alpha( alpha )
+    MyOptimizer.set_iter_max( iter_max )
+    MyOptimizer.set_regularization_type( reg_type )
 
     ## Perform reconstruction
     print("\n--- Run reconstruction algorithm ---")
@@ -604,9 +913,10 @@ if __name__ == '__main__':
 
     sitkh.show_sitk_image(HR_init_sitk, overlay_sitk=recon.sitk, title="HR_init+recon")
 
-
-    sitk.WriteImage(recon.sitk,dir_output+filename_out+"_recon.nii.gz")
-    sitk.WriteImage(HR_volume.sitk,dir_output+filename_out+"_init.nii.gz")
+    ## Write reconstruction result
+    if write_results:
+        filename_out += "_" + reg_type+ "recon_alpha" + str(alpha) + "_iter" + str(iter_max)
+        sitk.WriteImage(recon.sitk, dir_output+filename_out+".nii.gz")
 
 
     # stacks = reconstruction_manager.get_stacks()

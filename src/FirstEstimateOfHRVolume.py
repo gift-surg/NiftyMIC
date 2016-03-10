@@ -31,8 +31,8 @@ import Stack as st
 class FirstEstimateOfHRVolume:
 
     ## Constructor
-    #  \param stack_manager instance of StackManager containing all stacks and additional information
-    #  \param filename_reconstructed_volume chosen filename for created HR volume (Stack object)
+    #  \param[in] stack_manager instance of StackManager containing all stacks and additional information
+    #  \param[in] filename_reconstructed_volume chosen filename for created HR volume (Stack object)
     def __init__(self, stack_manager, filename_reconstructed_volume):
         self._stack_manager = stack_manager
         self._stacks = stack_manager.get_stacks()
@@ -55,7 +55,7 @@ class FirstEstimateOfHRVolume:
     #  -# Register all (planarly-aligned) stacks to target-volume
     #  -# Create first HR volume estimate: Average all registered planarly-aligned stacks
     #  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
-    # \param use_in_plane_registration states whether in-plane registration is used prior registering (bool)
+    # \param[in] use_in_plane_registration states whether in-plane registration is used prior registering (bool)
     def compute_first_estimate_of_HR_volume(self, use_in_plane_registration=False):
 
         ## Array of rigid registrations from all stacks to the chosen target (HR volume)
@@ -131,7 +131,7 @@ class FirstEstimateOfHRVolume:
     ## Resample stack to isotropic grid
     #  The image and its mask gets resampled on isotropic grid 
     #  (in-plane resolution also in through-plane direction)
-    #  \param target_stack Stack being resampled
+    #  \param[in] target_stack Stack being resampled
     #  \return Isotropically resampled Stack
     def _get_isotropically_resampled_stack(self, target_stack):
         
@@ -193,9 +193,9 @@ class FirstEstimateOfHRVolume:
 
 
     ## Rigid registration routine based on SimpleITK
-    #  \param fixed_3D fixed Stack
-    #  \param moving_3D moving Stack
-    #  \param display_registration_info display registration summary at the end of execution (default=0)
+    #  \param[in] fixed_3D fixed Stack
+    #  \param[in] moving_3D moving Stack
+    #  \param[in] display_registration_info display registration summary at the end of execution (default=0)
     #  \return Rigid registration as sitk.Euler3DTransform object
     def _get_rigid_registration_transform_3D_sitk(self, fixed_3D, moving_3D, display_registration_info=0):
 
@@ -300,8 +300,8 @@ class FirstEstimateOfHRVolume:
 
 
     ## Compute average of all registered stacks and update _HR_volume
-    #  \param stacks_planarly_aligned stacks (type Stack) containing planarly aligned slices
-    #  \param rigid_registrations registrations (type sitk.Euler3DTransform) aligning the stacks with the HR volume
+    #  \param[in] stacks_planarly_aligned stacks (type Stack) containing planarly aligned slices
+    #  \param[in] rigid_registrations registrations (type sitk.Euler3DTransform) aligning the stacks with the HR volume
     def _update_estimate_of_HR_volume(self, stacks_planarly_aligned, rigid_registrations):
 
         default_pixel_value = 0.0

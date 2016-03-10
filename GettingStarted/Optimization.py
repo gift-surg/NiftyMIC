@@ -104,7 +104,7 @@ def get_gaussian_kernel(Cov, alpha, scaling=None):
 #  by viewing the resulting nifti-image differentiation. The resulting kernel
 #  can be used via getDx(kernel, nda) to differentiate image
 #  \param[in] dim spatial dimension
-#  \return kernel kernel for dim dimensional differentiation in x
+#  \return kernel for dim dimensional differentiation in x
 def get_forward_difference_x_kernel(dim):
     if dim is 2:
         ## kernel = np.zeros((y,x))
@@ -124,7 +124,7 @@ def get_forward_difference_x_kernel(dim):
 #  by viewing the resulting nifti-image differentiation. The resulting kernel
 #  can be used via getDx(kernel, nda) to differentiate image
 #  \param[in] dim spatial dimension
-#  \return kernel kernel for dim dimensional differentiation in x
+#  \return kernel for dim dimensional differentiation in x
 def get_backward_difference_x_kernel(dim):
     if dim is 2:
         ## kernel = np.zeros((y,x))
@@ -144,7 +144,7 @@ def get_backward_difference_x_kernel(dim):
 #  by viewing the resulting nifti-image differentiation. The resulting kernel
 #  can be used via getDx(kernel, nda) to differentiate image
 #  \param[in] dim spatial dimension
-#  \return kernel kernel for dim dimensional differentiation in y
+#  \return kernel for dim dimensional differentiation in y
 def get_forward_difference_y_kernel(dim):
     if dim is 2:
         ## kernel = np.zeros((y,x))
@@ -164,7 +164,7 @@ def get_forward_difference_y_kernel(dim):
 #  by viewing the resulting nifti-image differentiation. The resulting kernel
 #  can be used via getDx(kernel, nda) to differentiate image
 #  \param[in] dim spatial dimension
-#  \return kernel kernel for dim dimensional differentiation in y
+#  \return kernel for dim dimensional differentiation in y
 def get_backward_difference_y_kernel(dim):
     if dim is 2:
         ## kernel = np.zeros((y,x))
@@ -184,7 +184,7 @@ def get_backward_difference_y_kernel(dim):
 #  by viewing the resulting nifti-image differentiation. The resulting kernel
 #  can be used via getDx(kernel, nda) to differentiate image
 #  \param[in] dim spatial dimension
-#  \return kernel kernel for dim dimensional differentiation in z
+#  \return kernel for dim dimensional differentiation in z
 def get_forward_difference_z_kernel(dim):
     if dim is 2:
         raise ValueError("Error: Differentiation in z-direction requires a 3-dimensional space!")
@@ -202,7 +202,7 @@ def get_forward_difference_z_kernel(dim):
 #  by viewing the resulting nifti-image differentiation. The resulting kernel
 #  can be used via getDx(kernel, nda) to differentiate image
 #  \param[in] dim spatial dimension
-#  \return kernel kernel for dim dimensional differentiation in y
+#  \return kernel for dim dimensional differentiation in z
 def get_backward_difference_z_kernel(dim):
     if dim is 2:
         raise ValueError("Error: Differentiation in z-direction requires a 3-dimensional space!")
@@ -220,7 +220,7 @@ def get_backward_difference_z_kernel(dim):
 #  by viewing the resulting nifti-image differentiation. The resulting kernel
 #  can be used via getDx(kernel, nda) to differentiate image
 #  \param[in] dim spatial dimension
-#  \return kernel kernel for Laplacian operation
+#  \return kernel for Laplacian operation
 def get_laplacian_kernel(dim):
     if dim is 2:
         ## kernel = np.zeros((y,x))
@@ -689,8 +689,8 @@ def TK1_SPD_hess_p(x_vec, p_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, ker
 #  \return data array of reconstruction
 #  \return output of scipy.optimize.minimize function
 def get_reconstruction(fun, jac, hessp, x0, shape_solution, info_title=False):
-    iter_max = 100       # maximum number of iterations for solver
-    tol = 1e-8          # tolerance for solver
+    iter_max = 100       # maximum number of iterations for minimizer
+    tol = 1e-8          # tolerance for minimizer
 
     show_disp = True
 
@@ -1359,12 +1359,12 @@ if __name__ == '__main__':
 
 
     ## Choose set-up used in here
-    # filename = filename_2D
-    filename = filename_3D
+    filename = filename_2D
+    # filename = filename_3D
 
     noise_level = 0                 ## Noise level for test image, default = 0.01
     alpha_cut = 3                   ## Cut-off distance alpha_cut*sigma for gaussian kernel computation
-    alpha = 0                      ## Regularization parameter
+    alpha = 0.01                      ## Regularization parameter
     
     use_SPD_formulation = False
 
