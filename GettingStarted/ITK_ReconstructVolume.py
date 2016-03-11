@@ -79,29 +79,13 @@ class Optimize:
             self._HR_spacing_itk = self._HR_volume.sitk.GetSpacing()
             self._HR_direction_itk = sitkh.get_itk_direction_from_sitk_image( self._HR_volume.sitk )
 
-            ## For TK1: Kernels for differentiation in image space, i.e. including scaling
-            spacing = self._HR_volume.sitk.GetSpacing()
-
-            # Forward difference kernels
-            kernel_Dxf = self._get_forward_diff_x_kernel() / spacing[0]
-            kernel_Dyf = self._get_forward_diff_y_kernel() / spacing[0]
-            kernel_Dzf = self._get_forward_diff_z_kernel() / spacing[0]
-
-            # Backward difference kernels
-            kernel_Dxb = self._get_backward_diff_x_kernel() / spacing[0]
-            kernel_Dyb = self._get_backward_diff_y_kernel() / spacing[0]
-            kernel_Dzb = self._get_backward_diff_z_kernel() / spacing[0]
-
-            # Laplace kernel
-            self._kernel_L   = self._get_laplacian_kernel() / (spacing[0]*spacing[0])
-
-            # Chosen difference kernel
-            self._kernel_Dx = kernel_Dxf
-            self._kernel_Dy = kernel_Dyf
-            self._kernel_Dz = kernel_Dzf
-            self._kernel_DTx = -kernel_Dxb
-            self._kernel_DTy = -kernel_Dyb
-            self._kernel_DTz = -kernel_Dzb
+            ## Define dictionary to choose between two possible computations
+            #  of the differential operator D'D
+            self._DTD = {
+                "Laplace"           :   self._DTD_laplacian,
+                "FiniteDifference"  :   self._DTD_finite_diff
+            }
+            self._DTD_comp_type = "Laplace" #default value
 
 
     ## Get current estimate of HR volume
@@ -162,6 +146,24 @@ class Optimize:
         return self._reg_type
 
 
+    ## The differential operator D'D for TK1 regularization can be computed
+    #  via either a sequence of finited differences in each spatial 
+    #  direction or directly via a Laplacian stencil
+    #  \param[in] DTD_comp_type "Laplacian" or "FiniteDifference"
+    def set_DTD_computation_type(self, DTD_comp_type):
+
+        if DTD_comp_type not in ["Laplace", "FiniteDifference"]:
+            raise ValueError("Error: D'D computation type can only be either 'Laplace' or 'FiniteDifference'")
+
+        else:
+            self._DTD_comp_type = DTD_comp_type
+
+    ## Get chosen type of computation for differential operation D'D
+    #  \return type of D'D computation, string
+    def get_DTD_computation_type(self):
+        return self._DTD_comp_type
+
+
     ## Run reconstruction algorithm 
     def run_reconstruction(self):
 
@@ -169,6 +171,7 @@ class Optimize:
         HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
         sum_ATy_itk = self._sum_ATy()
 
+        ## TK0-regularization
         if self._reg_type in ["TK0"]:
             print("Chosen regularization type: zero-order Tikhonov")
 
@@ -180,8 +183,53 @@ class Optimize:
             f_grad   = lambda x: self._TK0_SPD_grad(x, op0_sum_ATy_itk, self._alpha)
             f_hess_p = None
 
+
+        ## TK1-regularization
         elif self._reg_type in ["TK1"]:
-            print("Chosen regularization type: first-order Tikhonov")
+            
+            ## Compute kernels for differentiation in image space, i.e. including scaling
+            spacing = self._HR_volume.sitk.GetSpacing()
+
+            ## DTD is computed direclty via Laplace stencil
+            if self._DTD_comp_type in ["Laplace"]:
+                print("Chosen regularization type: first-order Tikhonov via Laplace stencil")
+                
+                # Laplace kernel
+                self._kernel_L = self._get_laplacian_kernel() / (spacing[0]*spacing[0])
+
+                # Set finite difference kernels to None
+                self._kernel_Dx     = None
+                self._kernel_Dy     = None
+                self._kernel_Dz     = None
+                self._kernel_DTx    = None
+                self._kernel_DTy    = None
+                self._kernel_DTz    = None
+
+            ## DTD is computed as sequence of forward and backward operators
+            else:
+                print("Chosen regularization type: first-order Tikhonov via forward/backward finite differences")
+
+                # Forward difference kernels
+                kernel_Dxf = self._get_forward_diff_x_kernel() / spacing[0]
+                kernel_Dyf = self._get_forward_diff_y_kernel() / spacing[0]
+                kernel_Dzf = self._get_forward_diff_z_kernel() / spacing[0]
+
+                # Backward difference kernels
+                kernel_Dxb = self._get_backward_diff_x_kernel() / spacing[0]
+                kernel_Dyb = self._get_backward_diff_y_kernel() / spacing[0]
+                kernel_Dzb = self._get_backward_diff_z_kernel() / spacing[0]
+
+                # Finite difference kernels
+                self._kernel_Dx = kernel_Dxf
+                self._kernel_Dy = kernel_Dyf
+                self._kernel_Dz = kernel_Dzf
+                self._kernel_DTx = -kernel_Dxb
+                self._kernel_DTy = -kernel_Dyb
+                self._kernel_DTz = -kernel_Dzb
+
+                # Set Laplace kernel to None
+                self._kernel_L   = None
+
             ## Provide constant variable for optimization
             op1_sum_ATy_itk = self._op1(sum_ATy_itk, HR_nda.flatten(), self._alpha)
             
@@ -231,9 +279,10 @@ class Optimize:
         # res = minimize(method='Newton-CG',  fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac, hessp=hessp)
         # res = minimize(method='trust-ncg',  fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max}, jac=jac, hessp=hessp)
 
-        ## Find approximate solution using bounds
+        ## Constrained optimization
         res = minimize(method='L-BFGS-B',   fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max, 'disp': show_disp}, jac=jac, bounds=bounds)
-        # res = minimize(method='TNC',   fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max, 'disp': show_disp}, jac=jac, bounds=bounds)
+        # res = minimize(method='TNC',        fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max, 'disp': show_disp}, jac=jac, bounds=bounds) #useless; tnc: Maximum number of function evaluations reached
+        # res = minimize(method='SLSQP',      fun=fun, x0=x0, tol=tol, options={'maxiter': iter_max, 'disp': show_disp}, jac=jac, bounds=bounds) #crashes python
 
 
         ## Stop timing
@@ -722,26 +771,41 @@ class Optimize:
         return kernel
 
 
-    ## Compute D'Dx. Chosen kernels already incorporate correct scaling 
-    #  to transform resulting data array back directly to image space
+    ## Compute D'Dx directly via Laplacian stencil 
+    #  Chosen kernels already incorporate correct scaling to transform 
+    #  resulting data array back directly to image space.
     #  \param[in] nda data array of image
     #  \return D'Dx as itk.Image object
-    def _DTD(self, nda):
-        
-        ## DTD via Laplacian
-        # DTD = self._convolve(nda, self._kernel_L)
+    def _DTD_laplacian(self, nda):
 
-        ## DTDx via forward differences
+        ## DTDx via Laplacian stencil
+        DTD = self._convolve(nda, self._kernel_L)
+        
+        return self._get_HR_image_from_array_vec( DTD )
+
+
+    ## Compute D'Dx via a sequence of forward and backward finite differences.
+    #  Chosen kernels already incorporate correct scaling to transform 
+    #  resulting data array back directly to image space.
+    #  \param[in] nda data array of image
+    #  \return D'Dx as itk.Image object
+    def _DTD_finite_diff(self, nda):
+
+        ## Forward operation
         Dx = self._convolve(nda, self._kernel_Dx)
         Dy = self._convolve(nda, self._kernel_Dy)
         Dz = self._convolve(nda, self._kernel_Dz)
+
+        ## Adjoint operation
         DTDx = self._convolve(Dx, self._kernel_DTx)
         DTDy = self._convolve(Dy, self._kernel_DTy)
         DTDz = self._convolve(Dz, self._kernel_DTz)
+        
+        ## DTDx via forward and backward differences
         DTD = (DTDx + DTDy + DTDz)
 
         return self._get_HR_image_from_array_vec( DTD )
-        
+
 
     ## Compute convolution of array based on given kernel via 
     #  scipy.ndimage.convolve with "wrap" boundary conditions.
@@ -764,7 +828,7 @@ class Optimize:
         sum_ATAx_itk = self._sum_ATA(image_itk)   
 
         ## Compute D'Dx
-        DTDx_itk = self._DTD(image_nda_vec.reshape(self._HR_shape_nda))     
+        DTDx_itk = self._DTD[self._DTD_comp_type](image_nda_vec.reshape(self._HR_shape_nda))     
 
         ## Compute sum_k [A_k' A_k x] + alpha*D'Dx
         return self._add_amplified_image(sum_ATAx_itk, alpha, DTDx_itk)
@@ -825,15 +889,16 @@ Main Function
 """
 if __name__ == '__main__':
 
-    input_stack_types_available = ("pig", "fetalbrain" , "fetalbrain_registered")
+    input_stack_types_available = ("pig", "fetalbrain" , "fetaltrachea")
     
     input_stack_type = input_stack_types_available[1]
     write_results = 1
 
     ## Settings for optimizer
-    iter_max = 20       # maximum iterations
+    iter_max = 1       # maximum iterations
     alpha = 0.01        # regularization parameter
-    reg_type = "TK0"    # regularization type
+    reg_type = "TK1"    # regularization type; "TK0" or "TK1"
+    DTD_comp_type = "FiniteDifference" # "Laplace" or "FiniteDifference"
     
     ## Data of structural pig
     if input_stack_type in ["pig"]:
@@ -847,18 +912,7 @@ if __name__ == '__main__':
         filename_HR_volume = "3DBrainViewT2SHCCLEARs1301a1013"
         filename_out = "pig"
 
-    ## Data of GettingStarted folder
-    elif input_stack_type in ["fetalbrain_registered"]:
-        dir_input = "data/"
-        filenames = [
-            "FetalBrain_stack0_registered",
-            "FetalBrain_stack1_registered",
-            "FetalBrain_stack2_registered"
-            ]
-        dir_ref = dir_input
-        filename_HR_volume = "FetalBrain_reconstruction_4stacks"
-        filename_out = "fetalbrain_registered"
-
+    ## data of fetal brain
     elif input_stack_type in ["fetalbrain"]:
         dir_input = "../data/fetal_neck/"
         filenames = [
@@ -870,8 +924,22 @@ if __name__ == '__main__':
         filename_HR_volume = "FetalBrain_reconstruction_4stacks"
         filename_out = "fetalbrain"
 
+    ## data of fetal brain (but registered to HR volume alr)
+    elif input_stack_type in ["fetaltrachea"]:
+        dir_input = "VolumetricReconstructions/fetal_trachea/data/"
+        filenames = [
+            "croppedTemplate"
+            ,"cropped1"
+            ,"cropped2"
+            ,"cropped3"
+            ,"cropped4"
+            ]
+        dir_ref = dir_input
+        filename_HR_volume = "3TReconstruction"
+        filename_out = "fetaltrachea"
+
     ## Output folder
-    dir_output = "results/recon/"
+    dir_output = "VolumetricReconstructions/"
 
     ## Prepare output directory
     reconstruction_manager = rm.ReconstructionManager(dir_output)
@@ -903,6 +971,7 @@ if __name__ == '__main__':
     MyOptimizer.set_alpha( alpha )
     MyOptimizer.set_iter_max( iter_max )
     MyOptimizer.set_regularization_type( reg_type )
+    MyOptimizer.set_DTD_computation_type( DTD_comp_type)
 
     ## Perform reconstruction
     print("\n--- Run reconstruction algorithm ---")
@@ -915,9 +984,15 @@ if __name__ == '__main__':
 
     ## Write reconstruction result
     if write_results:
-        filename_out += "_" + reg_type+ "recon_alpha" + str(alpha) + "_iter" + str(iter_max)
-        sitk.WriteImage(recon.sitk, dir_output+filename_out+".nii.gz")
+        if reg_type in ["TK0"]:
+            filename_out += "_" + reg_type+ "recon_alpha" + str(alpha) + "_iter" + str(iter_max)
+        else:
+            if DTD_comp_type in ["Laplace"]:
+                filename_out += "_" + reg_type+ "recon_Laplace_alpha" + str(alpha) + "_iter" + str(iter_max)
+            else:
+                filename_out += "_" + reg_type+ "recon_DTD_alpha" + str(alpha) + "_iter" + str(iter_max)
 
+        sitk.WriteImage(recon.sitk, dir_output+filename_out+".nii.gz")
 
     # stacks = reconstruction_manager.get_stacks()
     # N_stacks = len(stacks)
