@@ -10,9 +10,7 @@ import os                       # used to execute terminal commands in python
 import sys
 import SimpleITK as sitk
 import numpy as np
-
 import matplotlib.pyplot as plt
-
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh

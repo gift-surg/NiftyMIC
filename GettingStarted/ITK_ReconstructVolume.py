@@ -35,6 +35,12 @@ Classes
 pixel_type = itk.D
 image_type = itk.Image[pixel_type, 3]
 
+
+## This class is used to compute an approximate solution to the inverse problem
+# \f[ \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) \rightarrow \min_x  \f]
+# \see \p itkAdjointOrientedGaussianInterpolateImageFilter of \p ITK
+# \see \p itOrientedGaussianInterpolateImageFunction of \p ITK
+# \warning HACK: Append slices as itk image on each object Slice
 class Optimize:
 
     def __init__(self, stacks, HR_volume):
@@ -193,6 +199,8 @@ class Optimize:
             ## DTD is computed direclty via Laplace stencil
             if self._DTD_comp_type in ["Laplace"]:
                 print("Chosen regularization type: first-order Tikhonov via Laplace stencil")
+                print("Regularization paramter = " + str(self._alpha))
+                print("Maximum number of iterations is set to " + str(self._iter_max))
                 
                 # Laplace kernel
                 self._kernel_L = self._get_laplacian_kernel() / (spacing[0]*spacing[0])
@@ -208,6 +216,8 @@ class Optimize:
             ## DTD is computed as sequence of forward and backward operators
             else:
                 print("Chosen regularization type: first-order Tikhonov via forward/backward finite differences")
+                print("Regularization paramter = " + str(self._alpha))
+                print("Maximum number of iterations is set to " + str(self._iter_max))
 
                 # Forward difference kernels
                 kernel_Dxf = self._get_forward_diff_x_kernel() / spacing[0]
@@ -239,8 +249,8 @@ class Optimize:
             f_hess_p = None
 
         ## Compute approximate solution
-        [HR_volume_itk, res_minimizer_TK0] \
-            = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), info_title="TK0")
+        [HR_volume_itk, res_minimizer] \
+            = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), info_title=False)
 
         ## Update member attribute
         self._HR_volume.itk = HR_volume_itk
@@ -289,7 +299,7 @@ class Optimize:
         time_elapsed = time.clock() - t0
 
         ## Print optimizer status
-        if info_title is not None:
+        if info_title is not False:
             self._print_status_optimizer(res, time_elapsed, info_title)
 
         ## Convert back to itk.Image object
@@ -330,7 +340,7 @@ class Optimize:
 
 
     ## Append slices as itk image on each object Slice
-    #  HACK!
+    # \warning HACK
     def _append_itk_object_on_slices_of_stacks(self):
 
         for i in range(0, self._N_stacks):
@@ -454,7 +464,7 @@ class Optimize:
         return self._AT( self._A(HR_volume_itk) )
 
 
-    ## Compute sum_{k=1}^K A_k' A_k x
+    ## Compute \f$ sum_{k=1}^K A_k' A_k x
     #  \param[in] HR_volume_itk HR image as itk.Image object
     #  \return sum of all forward an back projected operations of image
     #       in HR space as itk.Image object
@@ -889,16 +899,19 @@ Main Function
 """
 if __name__ == '__main__':
 
+    np.set_printoptions(precision=3)
+
     input_stack_types_available = ("pig", "fetalbrain" , "fetaltrachea")
     
     input_stack_type = input_stack_types_available[1]
     write_results = 1
 
     ## Settings for optimizer
-    iter_max = 1       # maximum iterations
-    alpha = 0.01        # regularization parameter
+    iter_max = 100       # maximum iterations
+    alpha = 0.1        # regularization parameter
     reg_type = "TK1"    # regularization type; "TK0" or "TK1"
-    DTD_comp_type = "FiniteDifference" # "Laplace" or "FiniteDifference"
+    DTD_comp_type = "Laplace" # "Laplace" or "FiniteDifference"
+    # DTD_comp_type = "FiniteDifference" # "Laplace" or "FiniteDifference"
     
     ## Data of structural pig
     if input_stack_type in ["pig"]:
@@ -914,17 +927,26 @@ if __name__ == '__main__':
 
     ## data of fetal brain
     elif input_stack_type in ["fetalbrain"]:
+        # dir_input = "../data/fetal_neck/"
+        # filenames = [
+        #     "0",
+        #     "1",
+        #     "2"
+        #     ]
+        # dir_ref = "data/"
+        # filename_HR_volume = "FetalBrain_reconstruction_4stacks"
+        # filename_out = "fetalbrain"
         dir_input = "../data/fetal_neck/"
         filenames = [
             "0",
             "1",
             "2"
             ]
-        dir_ref = "data/"
-        filename_HR_volume = "FetalBrain_reconstruction_4stacks"
+        dir_ref = "/Users/mebner/UCL/UCL/Other Toolkits/IRTK_BKainz/fetal_brain/brain_0_1_2_target0_inplaneres/"
+        filename_HR_volume = "3TReconstruction"
         filename_out = "fetalbrain"
 
-    ## data of fetal brain (but registered to HR volume alr)
+    ## data of fetal brain (but registered to HR volume)
     elif input_stack_type in ["fetaltrachea"]:
         dir_input = "VolumetricReconstructions/fetal_trachea/data/"
         filenames = [
@@ -945,10 +967,13 @@ if __name__ == '__main__':
     reconstruction_manager = rm.ReconstructionManager(dir_output)
 
     ## Read input data
-    reconstruction_manager.read_input_data(dir_input, filenames)
+    reconstruction_manager.read_input_stacks(dir_input, filenames)
 
     ## Compute first estimate of HR volume (averaged volume)
-    reconstruction_manager.compute_first_estimate_of_HR_volume(use_in_plane_registration=False)    
+    reconstruction_manager.set_off_in_plane_rigid_registration()
+    reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
+    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()    
+
     HR_volume = reconstruction_manager.get_HR_volume()
 
     ## Copy initial HR volume for comparison later on

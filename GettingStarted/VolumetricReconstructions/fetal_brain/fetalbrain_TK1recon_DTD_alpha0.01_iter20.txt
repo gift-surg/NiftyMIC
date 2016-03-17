@@ -1,34 +1,35 @@
-3 stacks were copied to directory results/recon/input_data/
+3 stacks were copied to directory VolumetricReconstructions/input_data/
 
 --- Compute first estimate of HR volume ---
-In-plane alignment of slices is NOT performed
+In-plane alignment of slices within each stack is NOT performed
+Rigid registration between each stack and target is performed
 rigid transformation:
 matrix = 
-[[  9.99999998e-01   5.76628479e-05  -2.53194032e-05]
- [ -5.76622598e-05   9.99999998e-01   2.32258644e-05]
- [  2.53207424e-05  -2.32244043e-05   9.99999999e-01]]
-center = (-5.8243666683788575, -32.52215966245352, -68.23695721050927)
-angle_x, angle_y, angle_z =  (-0.00133066035087, -0.00145077167356, -0.00330383782105) deg
-translation = [-0.0885068  -0.0201367   0.00728417]
+[[  1.000e+00   5.766e-05  -2.532e-05]
+ [ -5.766e-05   1.000e+00   2.323e-05]
+ [  2.532e-05  -2.322e-05   1.000e+00]]
+center = [ -5.824 -32.522 -68.237]
+angle_x, angle_y, angle_z = [-0.001 -0.001 -0.003] deg
+translation = [-0.089 -0.02   0.007]
 rigid transformation:
 matrix = 
-[[ 0.99996679 -0.00780991 -0.00232942]
- [ 0.00784858  0.99982326  0.01708382]
- [ 0.00219558 -0.01710153  0.99985135]]
-center = (-2.839548312647196, -27.198611007992973, -70.13236391430314)
-angle_x, angle_y, angle_z =  (-0.9798933491, -0.125816011106, 0.44754469984) deg
-translation = [-0.41373997 -0.06261874 -0.40063944]
+[[ 1.    -0.008 -0.002]
+ [ 0.008  1.     0.017]
+ [ 0.002 -0.017  1.   ]]
+center = [ -2.84  -27.199 -70.132]
+angle_x, angle_y, angle_z = [-0.98  -0.126  0.448] deg
+translation = [-0.414 -0.063 -0.401]
 rigid transformation:
 matrix = 
-[[ 0.99996716 -0.00387279 -0.00711964]
- [ 0.00379214  0.99992888 -0.01130704]
- [ 0.00716292  0.01127967  0.99991073]]
-center = (-5.0784095688809145, -35.634553100218746, -61.523023175864644)
-angle_x, angle_y, angle_z =  (0.646291386054, -0.410434839699, 0.221909201353) deg
-translation = [-0.22251038  0.20551503  0.1896694 ]
+[[ 1.    -0.004 -0.007]
+ [ 0.004  1.    -0.011]
+ [ 0.007  0.011  1.   ]]
+center = [ -5.078 -35.635 -61.523]
+angle_x, angle_y, angle_z = [ 0.646 -0.41   0.222] deg
+translation = [-0.223  0.206  0.19 ]
 
 --- Run reconstruction algorithm ---
-Chosen regularization type: first-order Tikhonov
+Chosen regularization type: first-order Tikhonov via forward/backward finite differences
 RUNNING THE L-BFGS-B CODE
 
            * * *
@@ -70,6 +71,9 @@ At iterate   14    f=  2.61655E+07    |proj g|=  4.29792E-01
 
 At iterate   15    f=  2.61587E+07    |proj g|=  5.31901E-01
 
+ Bad direction in the line search;
+   refresh the lbfgs memory and restart the iteration.
+
 At iterate   16    f=  2.61587E+07    |proj g|=  5.31901E-01
 
            * * *
@@ -85,7 +89,7 @@ F     = final function value
            * * *
 
    N    Tit     Tnf  Tnint  Skip  Nact     Projg        F
-*****     16     39  20658     0 *****   5.319E-01   2.616E+07
+*****     16     64  20663     0 *****   5.319E-01   2.616E+07
   F =  26158747.3
 
 CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH             
@@ -94,15 +98,15 @@ CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH
    evaluations in the last line search.  Termination
    may possibly be caused by a bad search direction.
 
- Cauchy                time 3.594E-01 seconds.
- Subspace minimization time 5.938E-01 seconds.
- Line search           time 3.125E+02 seconds.
+ Cauchy                time 3.750E-01 seconds.
+ Subspace minimization time 5.781E-01 seconds.
+ Line search           time 7.234E+02 seconds.
 
- Total User time 3.212E+02 seconds.
+ Total User time 7.356E+02 seconds.
 
 Result optimization: TK0
 	CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH
-	Current value of objective function: 26158747.2503
+	Current value of objective function: 26158747.2512
 	Iterations: 16
-	Function evaluations: 39
-	Elapsed time for optimization: 1992.141269 seconds
+	Function evaluations: 64
+	Elapsed time for optimization: 3463.05379 seconds

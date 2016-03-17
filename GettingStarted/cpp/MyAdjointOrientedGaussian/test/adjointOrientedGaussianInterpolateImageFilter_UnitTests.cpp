@@ -124,9 +124,9 @@ TEST_CASE( "Check 2D itkAdjointOrientedGaussianInterpolateImageFilter: Cross",
     /* compute |(Ax,y) - (x,A'y)| */
     const double abs_diff = std::abs(sum_LHS-sum_RHS);
 
-    // std::cout << "Filter: |(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
-    // std::cout << "        (Ax,y) = " << sum_LHS << std::endl;
-    // std::cout << "        (x,A'y) = " << sum_RHS << std::endl;
+    // std::cout << "Check 2D itkAdjointOrientedGaussianInterpolateImageFilter: Cross" << std::endl;
+    // std::cout << "\t|(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
+    // std::cout << "\t|(Ax,y) - (x,A'y)|/(Ax,y) = " << std::abs(sum_LHS-sum_RHS)/sum_LHS << std::endl;
 
     CHECK( abs_diff == Approx(0).epsilon(tolerance));
 }

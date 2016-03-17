@@ -13,8 +13,9 @@ import numpy as np
 ## Import modules from src-folder
 import Slice as sl
 
-## In addition to the stack as being stored as sitk.Image the class Stack
-#  also contains additional variables helpful to work with the data 
+## In addition to the nifti-image as being stored as sitk.Image for the whole
+#  stack volume \f$ \in R^3 \times R^3 \times R^3\f$ 
+#  the class Stack also contains additional variables helpful to work with the data 
 class Stack:
 
     # The constructor
@@ -26,9 +27,12 @@ class Stack:
     #     self._N_slices = None
 
 
-    ## Create Stack from file
-    #  \param dir_input string to input directory of nifti-file to read
-    #  \param filename string of nifti-file to read
+    ## Create Stack instance from file and add corresponding mask. Mask is
+    #  either provided in the directory or created as binary mask consisting
+    #  of ones.
+    #  \param[in] dir_input string to input directory of nifti-file to read
+    #  \param[in] filename string of nifti-file to read
+    #  \return Stack object including its slices with corresponding masks
     @classmethod
     def from_nifti(cls, dir_input, filename):
 
@@ -42,23 +46,27 @@ class Stack:
         stack._N_slices = stack.sitk.GetSize()[-1]
         stack._slices = [None]*stack._N_slices
 
-        ## If mask is provided
+        ## If mask is provided attach it to Stack
         if os.path.isfile(dir_input+filename+"_mask.nii.gz"):
             stack.sitk_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
-            stack._slices_masks = [None]*stack._N_slices
 
         ## If not: Generate binary mask consisting of ones
         else:
             stack.sitk_mask = stack._generate_binary_mask()
 
-        stack._extract_slices()
+        ## Extract all slices and their masks from the stack and store them 
+        stack._slices = stack._extract_slices()
 
         return stack
 
 
-    ## Create Stack from exisiting sitk.Image instance
-    #  \param image_sitk sitk.Image created from nifti-file
-    #  \param name string containing the chosen name
+    ## Create Stack instance from exisiting sitk.Image instance. Slices are
+    #  not extracted and stored separately in the object. The idea is to use
+    #  this function when the stack is regarded as entire volume (like the 
+    #  reconstructed HR volume). A mask can be added via self.add_mask then.
+    #  \param[in] image_sitk sitk.Image created from nifti-file
+    #  \param[in] name string containing the chosen name for the stack
+    #  \return Stack object without slice information
     @classmethod
     def from_sitk_image(cls, image_sitk, name):
         stack = cls()
@@ -83,25 +91,19 @@ class Stack:
         return stack
 
 
-    ## Burst the stack into its slices and store them
-    def _extract_slices(self):
-        ## Extract slices and add masks
-        for i in range(0, self._N_slices):
-            self._slices[i] = sl.Slice(
-                slice_sitk = self.sitk[:,:,i:i+1], 
-                dir_input = self._dir, 
-                filename = self._filename, 
-                slice_number = i,
-                slice_sitk_mask = self.sitk_mask[:,:,i:i+1])        
-
-        return None
-
-
-    ## Add a mask to the existing Stack instance
-    #  \param image_sitk_mask sitk.Image containing the mask
+    ## Add a mask to a existing Stack instance with no existing mask yet.
+    #  \param[in] image_sitk_mask sitk.Image representing the mask
     def add_mask(self, image_sitk_mask):
-        self.sitk_mask = image_sitk_mask
-        return None
+
+        try:
+            if self.sitk_mask is None:
+                self.sitk_mask = image_sitk_mask
+
+            else:
+                raise ValueError("Error: Attempt to override already existing mask")
+
+        except ValueError as err:
+            print(err.args)
 
 
     ## Get all slices of current stack
@@ -111,7 +113,7 @@ class Stack:
 
 
     ## Get one particular slice of current stack
-    #  \return requested 3D slice of stack as Slices object
+    #  \return requested 3D slice of stack as Slice object
     def get_slice(self, index):
         
         index = int(index)
@@ -141,7 +143,7 @@ class Stack:
 
 
     ## Display stack with external viewer (ITK-Snap)
-    #  \param[in] show_segmentation display stack with or without associated segmentation (default=0)
+    #  \param[in][in] show_segmentation display stack with or without associated segmentation (default=0)
     def show(self, show_segmentation=0):
         dir_output = "/tmp/"
 
@@ -164,12 +166,13 @@ class Stack:
         # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
         os.system(cmd)
 
-        return None
 
-    ## Write the sitk.Image object of Stack.
-    #  \param directory string specifying where the output will be written to (default="/tmp/")
-    #  \param filename string specifying the filename. If not given the assigned one within Stack will be chosen.
-    #  \param write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
+    ## Write information of Stack to HDD to given directory: 
+    #  - sitk.Image object as entire volume
+    #  - each single slice with its associated spatial transformation (optional)
+    #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
+    #  \param[in] filename string specifying the filename. If not given the assigned one within Stack will be chosen.
+    #  \param[in] write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
     def write(self, directory="/tmp/", filename=None, write_slices=False):
         if filename is None:
             filename = self._filename
@@ -196,10 +199,27 @@ class Stack:
             except ValueError as err:
                 print(err.message)
 
-        return None
+
+    ## Burst the stack into its slices and return all slices of the stack
+    #  return list of Slice objects
+    def _extract_slices(self):
+
+        slices = [None]*self._N_slices
+
+        ## Extract slices and add masks
+        for i in range(0, self._N_slices):
+            slices[i] = sl.Slice(
+                slice_sitk = self.sitk[:,:,i:i+1], 
+                dir_input = self._dir, 
+                filename = self._filename, 
+                slice_number = i,
+                slice_sitk_mask = self.sitk_mask[:,:,i:i+1])        
+
+        return slices
 
 
-    # \return binary_mask consisting of ones
+    ## Create a binary mask consisting of ones
+    #  \return binary_mask as sitk.Image object consisting of ones
     def _generate_binary_mask(self):
         shape = sitk.GetArrayFromImage(self.sitk).shape
         nda = np.ones(shape, dtype=np.uint8)

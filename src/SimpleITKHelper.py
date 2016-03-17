@@ -4,6 +4,7 @@
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date September 2015
 
+
 ## Import libraries
 import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
@@ -15,11 +16,10 @@ import matplotlib.pyplot as plt
 # import SimpleITKHelper as sitkh
 
 
-# http://insightsoftwareconsortium.github.io/SimpleITK-Notebooks/22_Transforms.html
-# AddTransform does not work! Python always crashes! Moreover, the composition
+## AddTransform does not work! Python always crashes! Moreover, the composition
 # of AddTransform is stack based, i.e. first in -- last applied. Wtf!?
-#
 # \param[in] sitk::simple::AffineTransform or EulerxDTransform for inner and outer transform
+# \see http://insightsoftwareconsortium.github.io/SimpleITK-Notebooks/22_Transforms.html
 def get_composited_sitk_affine_transform(transform_outer, transform_inner):
     
     ## Guarantee type sitk::simple::AffineTransform of transformations
@@ -271,7 +271,7 @@ def get_sitk_direction_from_itk_image(image_itk):
         
 
 ## Convert SimpleITK-image to ITK-image
-#  TODO: Check whether it is sufficient to just set origin, spacing and direction!
+#  \todo Check whether it is sufficient to just set origin, spacing and direction!
 #  \param[in] image_sitk SimpleITK-image to be converted, sitk.Image object
 #  \return converted image as itk.Image object
 def convert_sitk_to_itk_image(image_sitk):
@@ -299,7 +299,7 @@ def convert_sitk_to_itk_image(image_sitk):
 
 
 ## Convert ITK-image to SimpleITK-image
-#  TODO: Check whether it is sufficient to just set origin, spacing and direction!
+#  \todo Check whether it is sufficient to just set origin, spacing and direction!
 #  \param[in] image_itk ITK-image to be converted, itk.Image object
 #  \return converted image as sitk.Image object
 def convert_itk_to_sitk_image(image_itk):
@@ -331,20 +331,18 @@ def print_rigid_transformation(rigid_registration_transform, text="rigid transfo
     matrix = np.array(rigid_registration_transform.GetMatrix()).reshape(dim,dim)
     translation = np.array(rigid_registration_transform.GetTranslation())
 
+    parameters = np.array(rigid_registration_transform.GetParameters())
+    center = np.array(rigid_registration_transform.GetFixedParameters())
+
+    print(text + ":")
+    print("matrix = \n" + str(matrix))
+    print("center = " + str(center))
     if isinstance(rigid_registration_transform, sitk.Euler3DTransform):
-        parameters = rigid_registration_transform.GetParameters()
-        center = rigid_registration_transform.GetFixedParameters()
-        print(text + ":")
-        print("matrix = \n" + str(matrix))
-        print("center = " + str(center))
-        print("angle_x, angle_y, angle_z =  (%s, %s, %s) deg" 
-            % (parameters[0]*180/np.pi, parameters[1]*180/np.pi, parameters[2]*180/np.pi))
-        print("translation = " + str(translation))
+        print("angle_x, angle_y, angle_z = " + str(parameters[0:3]*180/np.pi) + " deg")
 
     else:
-        print(text + ":")
-        print("matrix = \n" + str(matrix))
-        print("translation = " + str(translation))
+        print("angle = " + str(parameters[0]*180/np.pi) + " deg")
+    print("translation = " + str(translation))
 
     return None
 

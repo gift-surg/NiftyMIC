@@ -19,6 +19,7 @@ import SimpleITKHelper as sitkh
 
 
 ## Class implementing the slice to volume registration algorithm
+#  \warning HACK: Upsample slices in k-direction to in-plane resolution
 class SliceToVolumeRegistration:
 
     ## Constructor
@@ -119,8 +120,6 @@ class SliceToVolumeRegistration:
 
                 # sitkh.print_rigid_transformation(rigid_transform)
                 
-        return None
-
 
     def _get_rigid_registration_transform_3D_NiftyReg(self, fixed_slice_3D, moving_3D):
         ## Save images prior to the use of NiftyReg

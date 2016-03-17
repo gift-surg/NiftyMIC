@@ -15,8 +15,12 @@ import FirstEstimateOfHRVolume as efhrv
 import SliceToVolumeRegistration as s2vr
 import VolumeReconstruction as vr
 
+
+## This class manages the whole reconstruction pipeline
 class ReconstructionManager:
 
+    ## Set up output directories to save reconstruction results
+    #  \param[in] dir_output output directory where all results will be stored
     def __init__(self, dir_output):
 
         self._dir_results = dir_output
@@ -34,8 +38,7 @@ class ReconstructionManager:
         ## Optional: Directory after all DP steps ready for reconstruction algorthm:
         # self._dir_results_input_data_dp_final = self._dir_results + "input_data_dp_final/"
 
-
-        ## Create folder if not already existing
+        ## Create directory if not already existing
         os.system("mkdir -p " + self._dir_results)
         os.system("mkdir -p " + self._dir_results_input_data)
         os.system("rm -rf " + self._dir_results_input_data + "*")
@@ -43,20 +46,26 @@ class ReconstructionManager:
         # os.system("mkdir -p " + self._dir_results_seg_prop)
         # os.system("mkdir -p " + self._dir_results_input_data)
 
+        ## Variables containing the respective classes
         self._in_plane_rigid_registration = None
         self._stack_manager = None
         self._HR_volume = None
 
-        return None
+        ## Pre-defined values
+        self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
+        self._flag_register_stacks_before_initial_volume_estimate = False
 
 
-    def read_input_data(self, dir_input_to_copy, filenames_to_copy):
+    ## Read input stacks stored from given directory
+    #  \param[in] dir_input_to_copy directory where stacks are stored
+    #  \param[in] filenames_to_copy filenames of stacks to be considered in that directory
+    def read_input_stacks(self, dir_input_to_copy, filenames_to_copy):
         N_stacks = len(filenames_to_copy)
         filenames = [str(i) for i in range(0, N_stacks)]
 
         self._stack_manager = sm.StackManager()
 
-        ## Copy files to dir_results_input_data:
+        ## Copy files to self._dir_results_input_data:
         ## (Filenames represent continuous numbering)
         for i in range(0, N_stacks):
             new_name = str(filenames[i])
@@ -76,28 +85,34 @@ class ReconstructionManager:
         print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
 
         ## Read stacks:
-        self._stack_manager.read_input_data(self._dir_results_input_data, filenames)
-
-        return None
+        self._stack_manager.read_input_stacks(self._dir_results_input_data, filenames)
 
 
-    def compute_first_estimate_of_HR_volume(self, use_in_plane_registration=False):
+    ## Compute first estimate of HR volume to initialize reconstruction algortihm
+    #  \post \p self._HR_volume is set to first estimate
+    def compute_first_estimate_of_HR_volume_from_stacks(self):
         print("\n--- Compute first estimate of HR volume ---")
         
         ## Instantiate object
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename)
 
+        ## Forward choice of whether or not in-plane registration within each
+        #  stack shall be performed before estimation of initial volume
+        first_estimate_of_HR_volume.use_in_plane_registration_for_initial_volume_estimate(self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate)
+        
+        ## Forward choice of whether or not stacks shall be registered to chosen
+        #  target stack or not prior the averaging of stacks for the initial volume estimation
+        first_estimate_of_HR_volume.register_stacks_before_initial_volume_estimate(self._flag_register_stacks_before_initial_volume_estimate)
+        
         ## Perform estimation of initial HR volume
-        first_estimate_of_HR_volume.compute_first_estimate_of_HR_volume(use_in_plane_registration)
+        first_estimate_of_HR_volume.compute_first_estimate_of_HR_volume()
 
         ## Get estimation
         self._HR_volume = first_estimate_of_HR_volume.get_first_estimate_of_HR_volume()
         
-        return None
-
 
     ## Execute two-step reconstruction alignment approach
-    #  \param iterations amount of two-step reconstruction alignment steps
+    #  \param[in] iterations amount of two-step reconstruction alignment steps
     def run_two_step_reconstruction_alignment_approach(self, iterations=1):
         print("\n--- Run two-step reconstruction alignment approach ---")
 
@@ -105,7 +120,7 @@ class ReconstructionManager:
         slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager)
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager)
 
-
+        ## Write
         self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_0")
 
         ## Run two-step reconstruction alignment:
@@ -118,19 +133,31 @@ class ReconstructionManager:
             volume_reconstruction.update_reconstructed_volume(self._HR_volume)
 
             self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_"+str(i+1))
-        return None
 
 
     def run_in_plane_rigid_registration(self):
         self._in_plane_rigid_registration = iprr.InPlaneRigidRegistration(self._stack_manager)
-        return None
 
 
     def write_resampled_stacks_after_2D_in_plane_registration(self):
         self._in_plane_rigid_registration.write_resampled_stacks(self._dir_results)
         print("Resampled stacks after in-plane registration successfully written to directory %r " % self._dir_results)
 
-        return None
+
+    def set_on_in_plane_rigid_registration(self):
+        self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = True
+
+
+    def set_off_in_plane_rigid_registration(self):
+        self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
+
+
+    def set_on_registration_of_stacks_before_estimating_initial_volume(self):
+        self._flag_register_stacks_before_initial_volume_estimate = True
+
+
+    def set_off_registration_of_stacks_before_estimating_initial_volume(self):
+        self._flag_register_stacks_before_initial_volume_estimate = False
 
 
     def get_stacks(self):
@@ -151,4 +178,3 @@ class ReconstructionManager:
 
         self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename)
 
-        return None

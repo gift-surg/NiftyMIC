@@ -87,6 +87,7 @@ Main Function
 """
 if __name__ == '__main__':
 
+    np.set_printoptions(precision=3)
 
     ## Dummy to load itk for the first time (which takes 15 to 20 secs!)
     image_type = itk.Image[itk.F, 2]
@@ -113,7 +114,7 @@ if __name__ == '__main__':
 
     ## Read input data
     dir_input, filenames = read_input_data(input_stacks_type)
-    reconstruction_manager.read_input_data(dir_input, filenames)
+    reconstruction_manager.read_input_stacks(dir_input, filenames)
 
     ## Compute first estimate of HR volume
     reconstruction_manager.compute_first_estimate_of_HR_volume(use_in_plane_registration=False)
