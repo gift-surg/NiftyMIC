@@ -23,29 +23,38 @@ import itk
 import SimpleITKHelper as sitkh
 
 
-## Define type of pixel and image in ITK
+## Pixel type of used 3D ITK image
 pixel_type = itk.D
+
+## ITK image type 
 image_type = itk.Image[pixel_type, 3]
 
 
-## This class is used to compute an approximate solution to the inverse problem \f$ y_k = A_k x \f$ for each slice \f$ y_k,\,k=1,\dots,K \f$ in the regularized form
-# \f[ 
+## This class is used to compute an approximate solution of the HR volume 
+#  \f$ x \f$  as defined by the inverse problem \f$ y_k = A_k x \f$ for every 
+#  slice \f$ y_k,\,k=1,\dots,K \f$ in the regularized form
+#  \f[ 
 #       \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
 #       = \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\, \frac{1}{2}\Vert Gx \Vert_{\ell^2}^2
 #       \rightarrow \min_x  
-# \f]
-# by reformulating it as
-# \f[
+#  \f]
+#  by reformulating it as
+#  \f[
 #       J(x) = \frac{1}{2} \Vert \Big(\sum_k A_k^* (A_k x - y_k) \Big) + \alpha\, G^*G x \Vert_{\ell^2}^2
 #             = \frac{1}{2} \Vert \Big(\sum_k A_k^* A_k + \alpha\, G^*G \Big)x - \sum_k A_k^* y_k \Vert_{\ell^2}^2
 #       \rightarrow \min_x 
-# \f]
-# where \f$A_k=D_k B_k\f$ denotes the combined blurring and downsampling operation and \f$G\f$ represents either the identity matrix \f$I\f$ (zero-order Tikhonov) or the gradient \f$ \nabla \f$ (first-order Tikhonov).
-# \see \p itkAdjointOrientedGaussianInterpolateImageFilter of \p ITK
-# \see \p itOrientedGaussianInterpolateImageFunction of \p ITK
-# \warning HACK: Append slices as itk image on each object Slice
+#  \f]
+#  where \f$A_k=D_k B_k\f$ denotes the combined blurring and downsampling 
+#  operation and \f$G\f$ represents either the identity matrix \f$I\f$ 
+#  (zero-order Tikhonov) or the gradient \f$ \nabla \f$ (first-order Tikhonov).
+#  \see \p itkAdjointOrientedGaussianInterpolateImageFilter of \p ITK
+#  \see \p itOrientedGaussianInterpolateImageFunction of \p ITK
+#  \warning HACK: Append slices as itk image on each object Slice
 class InverseProblemSolver:
 
+    ## Constructor
+    #  \param[in] stacks list of Stack objects containing all stacks used for the reconstruction
+    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume
     def __init__(self, stacks, HR_volume):
 
             ## Initialize variables
@@ -57,7 +66,7 @@ class InverseProblemSolver:
             self._alpha_cut = 3     
 
             ## Settings for optimizer
-            self._alpha = 0.01      # Regularization parameter
+            self._alpha = 0.1      # Regularization parameter
             self._iter_max = 20     # Maximum iteration steps
             self._reg_type = 'TK0'  # Either Tikhonov zero- or first-order
 
@@ -129,10 +138,12 @@ class InverseProblemSolver:
     def get_alpha(self):
         return self._alpha
 
+
     ## Set maximum number of iterations for minimizer
     #  \param[in] iter_max number of maximum iterations, scalar
     def set_iter_max(self, iter_max):
         self._iter_max = iter_max
+
 
     ## Get chosen value of maximum number of iterations for minimizer
     #  \return maximum number of iterations set for minimizer, scalar
@@ -167,6 +178,7 @@ class InverseProblemSolver:
         else:
             self._DTD_comp_type = DTD_comp_type
 
+
     ## Get chosen type of computation for differential operation D'D
     #  \return type of \f$ D^*D \f$ computation, string
     def get_DTD_computation_type(self):
@@ -183,6 +195,8 @@ class InverseProblemSolver:
         ## TK0-regularization
         if self._reg_type in ["TK0"]:
             print("Chosen regularization type: zero-order Tikhonov")
+            print("Regularization paramter = " + str(self._alpha))
+            print("Maximum number of iterations is set to " + str(self._iter_max))
 
             ## Provide constant variable for optimization
             op0_sum_ATy_itk = self._op0(sum_ATy_itk, self._alpha)

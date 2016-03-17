@@ -44,7 +44,7 @@ if __name__ == '__main__':
     ## Settings for optimizer
     iter_max = 100       # maximum iterations
     alpha = 0.1        # regularization parameter
-    reg_type = "TK0"    # regularization type; "TK0" or "TK1"
+    reg_type = "TK1"    # regularization type; "TK0" or "TK1"
     DTD_comp_type = "Laplace" # "Laplace" or "FiniteDifference"
     # DTD_comp_type = "FiniteDifference" # "Laplace" or "FiniteDifference"
     
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     reconstruction_manager.read_input_stacks(dir_input, filenames)
 
     ## Compute first estimate of HR volume (averaged volume)
-    reconstruction_manager.set_off_in_plane_rigid_registration()
+    reconstruction_manager.set_off_in_plane_rigid_registration_before_estimating_initial_volume()
     reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
     reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()    
 

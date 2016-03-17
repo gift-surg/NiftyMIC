@@ -24,10 +24,14 @@ class SliceToVolumeRegistration:
 
     ## Constructor
     #  \param[in,out] stack_manager instance of StackManager containing all stacks and additional information
-    def __init__(self, stack_manager):
+    def __init__(self, stack_manager, HR_volume):
+
+        ## Initialize variables
         self._stack_manager = stack_manager
         self._stacks = stack_manager.get_stacks()
         self._N_stacks = stack_manager.get_number_of_stacks()
+        self._HR_volume = HR_volume
+
 
         ## HACK:
         #  Upsample slices in k-direction to in-plane resolution in order to perform
@@ -76,8 +80,7 @@ class SliceToVolumeRegistration:
 
 
     ## Perform slice-to-volume registration of all slices to current estimate of HR volume reconstruction
-    #  \param HR_volume current estimate of reconstructed HR volume (Stack object)
-    def run_slice_to_volume_registration(self, HR_volume):
+    def run_slice_to_volume_registration(self):
         print("Slice-to-volume registration")
 
         use_NiftyReg = 0

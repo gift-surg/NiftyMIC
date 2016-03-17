@@ -117,8 +117,11 @@ class ReconstructionManager:
         print("\n--- Run two-step reconstruction alignment approach ---")
 
         ## Instantiate objects
-        slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager)
-        volume_reconstruction = vr.VolumeReconstruction(self._stack_manager)
+        slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager, self._HR_volume)
+        volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
+
+        ## Choose reconstruction approach
+        # volume_reconstruction.set_reconstruction_approach("Shepard")
 
         ## Write
         self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_0")
@@ -127,52 +130,79 @@ class ReconstructionManager:
         for i in range(0, iterations):   
             print(" iteration %s" %(i+1))
             ## Register all slices to current estimate of volume reconstruction
-            # slice_to_volume_registration.run_slice_to_volume_registration(self._HR_volume)
+            # slice_to_volume_registration.run_slice_to_volume_registration()
 
             ## Reconstruct new volume based on updated positions of slices
-            volume_reconstruction.update_reconstructed_volume(self._HR_volume)
+            volume_reconstruction.estimate_HR_volume()
 
             self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_"+str(i+1))
 
 
-    def run_in_plane_rigid_registration(self):
+    ## Execute in-plane rigid registration align slices planarly within stack 
+    #  to compensate for planarly occured motion. It used
+    #  \post Each slice is updated with new affine matrix defining its updated
+    #       spatial position
+    def run_in_plane_rigid_registration_within_stack(self):
         self._in_plane_rigid_registration = iprr.InPlaneRigidRegistration(self._stack_manager)
 
 
+    ## \todo Delete that function. It is used only to check results
     def write_resampled_stacks_after_2D_in_plane_registration(self):
         self._in_plane_rigid_registration.write_resampled_stacks(self._dir_results)
         print("Resampled stacks after in-plane registration successfully written to directory %r " % self._dir_results)
 
 
-    def set_on_in_plane_rigid_registration(self):
+    ## Perform in-plane rigid registration within each stack prior the first
+    #  estimate of the HR volume via compute_first_estimate_of_HR_volume_from_stacks
+    def set_on_in_plane_rigid_registration_before_estimating_initial_volume(self):
         self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = True
 
 
-    def set_off_in_plane_rigid_registration(self):
+    ## Do not perform in-plane rigid registration within each stack prior the first
+    #  estimate of the HR volume via compute_first_estimate_of_HR_volume_from_stacks
+    def set_off_in_plane_rigid_registration_before_estimating_initial_volume(self):
         self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
 
 
+    ## Rigidly register all stacks with chosen target volume prior the estimation
+    #  of first HR volume
     def set_on_registration_of_stacks_before_estimating_initial_volume(self):
         self._flag_register_stacks_before_initial_volume_estimate = True
 
 
+    ## Do not rigidly register all stacks with chosen target volume prior the estimation
+    #  of first HR volume
     def set_off_registration_of_stacks_before_estimating_initial_volume(self):
         self._flag_register_stacks_before_initial_volume_estimate = False
 
 
+    ## Request all stacks with all slices and their (header) information
+    #  \return list of Stack objects
     def get_stacks(self):
         return self._stack_manager.get_stacks()
 
-    ## 
-    #  \param[in] Current guess of HR volume, instance of Stack    
+
+    ## Set current estimate of HR volume by hand
+    #  \param[in] HR_volume current estimate of HR volume, instance of Stack
     def set_HR_volume(self, HR_volume):
         self._HR_volume = HR_volume
 
 
+    ## Get current estimate of HR volume
+    #  \return Stack object containing the current HR volume information
     def get_HR_volume(self):
-        return self._HR_volume
+
+        try: 
+            if self._HR_volume is None:
+                raise ValueError("Error: HR volume is not estimated/set yet")
+            else:
+                return self._HR_volume
+
+        except ValueError as err:
+            print(err.message)
 
 
+    ## Write all important results to predefined output directories
     def write_results(self):
         self._stack_manager.write(self._dir_results_slices)
 

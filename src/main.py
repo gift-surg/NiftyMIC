@@ -117,8 +117,9 @@ if __name__ == '__main__':
     reconstruction_manager.read_input_stacks(dir_input, filenames)
 
     ## Compute first estimate of HR volume
-    reconstruction_manager.compute_first_estimate_of_HR_volume(use_in_plane_registration=False)
-
+    reconstruction_manager.set_off_in_plane_rigid_registration_before_estimating_initial_volume()
+    reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
+    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
 
     ## Run tow step reconstruction alignment approach
     reconstruction_manager.run_two_step_reconstruction_alignment_approach()

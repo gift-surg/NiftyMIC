@@ -1,8 +1,11 @@
 ## \file VolumeReconstruction.py
-#  \brief Reconstruct volume given the current position of slices 
+#  \brief Reconstruct volume given the current position of slices. 
 # 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date December 2015
+# 
+#  \version Reconstruction of HR volume by using Shepard's like method, Dec 2015
+#  \version Reconstruction using Tikhonov regularization, Mar 2016
 
 
 ## Import libraries
@@ -16,45 +19,183 @@ import time
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
-# import Stack as st
-# import Slice as sl
+import InverseProblemSolver as ips
 
 
 ## Class implementing the volume reconstruction given the current position of slices
 class VolumeReconstruction:
 
     ## Constructor
-    #  \param stack_manager instance of StackManager containing all stacks and additional information
-    def __init__(self, stack_manager):
+    #  \param[in] stack_manager instance of StackManager containing all stacks and additional information
+    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume
+    def __init__(self, stack_manager, HR_volume):
+
+        ## Initialize variables
         self._stack_manager = stack_manager
         self._stacks = stack_manager.get_stacks()
         self._N_stacks = stack_manager.get_number_of_stacks()
+        self._HR_volume = HR_volume
+
+        ## Define dictionary to choose computational approach for reconstruction
+        self._run_reconstruction = {
+            "Shepard"           :   self._run_discrete_shepard_reconstruction,
+            "Shepard-Deriche"   :   self._run_discrete_shepard_based_on_Deriche_reconstruction,
+            "Tikhonov"          :   self._run_tikhonov_reconstruction
+        }
+        self._recon_approach = "Tikhonov"  # default reconstruction approach
+
+        ## 1) Tikhonov reconstruction settings:
+        self._solver = ips.InverseProblemSolver(self._stacks, self._HR_volume)
+
+        ## Cut-off distance for Gaussian blurring filter
+        self._alpha_cut = 3 
+
+        ## Settings for optimizer
+        self._alpha = 0.1               # Regularization parameter
+        self._iter_max = 20             # Maximum iteration steps
+        self._reg_type = 'TK0'          # Either Tikhonov zero- or first-order
+        self._DTD_comp_type = "Laplace" #default value
+
+
+
+    ## Get current estimate of HR volume
+    #  \return current estimate of HR volume, instance of Stack
+    def get_HR_volume(self):
+        return self._HR_volume
+
+
+    ## Set approach for reconstructing the HR volume. It can be either 
+    #  'Tikhonov', 'Shepard' or 'Shepard-Deriche'
+    #  \param[in] recon_approach either 'Tikhonov', 'Shepard' or 'Shepard-Deriche', string
+    def set_reconstruction_approach(self, recon_approach):
+        if recon_approach not in ["Tikhonov", "Shepard", "Shepard-Deriche"]:
+            raise ValueError("Error: regularization type can only be either 'Tikhonov', 'Shepard' or 'Shepard-Deriche'")
+
+        self._recon_approach = recon_approach
+
+
+    ## Get chosen type of regularization.
+    #  \return regularization type as string
+    def get_reconstruction_approach(self):
+        return self._recon_approach
 
 
     ## Computed reconstructed volume based on current estimated positions of slices
-    #  \param[in,out] HR_volume current estimate of reconstructed HR volume (Stack object)
-    def update_reconstructed_volume(self, HR_volume):
-        print("Update reconstructed volume")
+    def estimate_HR_volume(self):
+        print("Estimate HR volume")
 
         t0 = time.clock()
 
-        # self._use_discrete_shepard_based_on_Deriche(HR_volume)
-        self._use_discrete_shepard(HR_volume)
+        self._run_reconstruction[self._recon_approach]()
 
         time_elapsed = time.clock() - t0
         print("Elapsed time for SDA: %s seconds" %(time_elapsed))
 
-        HR_volume.show()
+        self._HR_volume.show()
 
 
+    """
+    Tikhonov regularization approach
+    """
+    ## Set cut-off distance
+    #  \param[in] alpha_cut scalar value
+    def set_alpha_cut(self, alpha_cut):
+        self._alpha_cut = alpha_cut
+
+        ## Update cut-off distance for both image filters
+        self._filter_oriented_Gaussian_interpolator.SetAlpha(alpha_cut)
+        self._filter_adjoint_oriented_Gaussian.SetAlpha(alpha_cut)
+
+
+    ## Get cut-off distance
+    #  \return scalar value
+    def get_alpha_cut(self):
+        return self._alpha_cut
+
+
+    ## Set regularization parameter
+    #  \param[in] alpha regularization parameter, scalar
+    def set_alpha(self, alpha):
+        self._alpha = alpha
+
+
+    ## Get value of chosen regularization parameter
+    #  \return regularization parameter, scalar
+    def get_alpha(self):
+        return self._alpha
+
+
+    ## Set maximum number of iterations for minimizer
+    #  \param[in] iter_max number of maximum iterations, scalar
+    def set_iter_max(self, iter_max):
+        self._iter_max = iter_max
+
+
+    ## Get chosen value of maximum number of iterations for minimizer
+    #  \return maximum number of iterations set for minimizer, scalar
+    def get_iter_max(self):
+        return self._iter_max
+
+
+    ## Set type or regularization. It can be either 'TK0' or 'TK1'
+    #  \param[in] reg_type Either 'TK0' or 'TK1', string
+    def set_regularization_type(self, reg_type):
+        if reg_type not in ["TK0", "TK1"]:
+            raise ValueError("Error: regularization type can only be either 'TK0' or 'TK1'")
+
+        self._reg_type = reg_type
+
+
+    ## Get chosen type of regularization.
+    #  \return regularization type as string
+    def get_regularization_type(self):
+        return self._reg_type
+
+
+    ## The differential operator \f$ D^*D \f$ for TK1 regularization can be computed
+    #  via either a sequence of finited differences in each spatial 
+    #  direction or directly via a Laplacian stencil
+    #  \param[in] DTD_comp_type "Laplacian" or "FiniteDifference"
+    def set_DTD_computation_type(self, DTD_comp_type):
+
+        if DTD_comp_type not in ["Laplace", "FiniteDifference"]:
+            raise ValueError("Error: D'D computation type can only be either 'Laplace' or 'FiniteDifference'")
+
+        else:
+            self._DTD_comp_type = DTD_comp_type
+
+
+    ## Get chosen type of computation for differential operation D'D
+    #  \return type of \f$ D^*D \f$ computation, string
+    def get_DTD_computation_type(self):
+        return self._DTD_comp_type
+
+
+    ## Estimate the HR volume via Tikhonov regularization
+    def _run_tikhonov_reconstruction(self):
+
+        ## Set regularization parameter and maximum number of iterations
+        self._solver.set_alpha( self._alpha )
+        self._solver.set_iter_max( self._iter_max )
+        self._solver.set_regularization_type( self._reg_type )
+        self._solver.set_DTD_computation_type( self._DTD_comp_type)
+
+        ## Perform reconstruction
+        print("\n--- Run Tikhonov reconstruction algorithm ---")
+        self._solver.run_reconstruction()
+
+
+    """
+    Shepard's like reconstruction approaches
+    """
     ## Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19).
     #  The computation here is based on the YVV variant of Recursive Gaussian Filter and executed
     #  via ITK
-    #  \param[in,out] HR_volume current estimate of reconstructed HR volume (Stack object)
-    def _use_discrete_shepard(self, HR_volume):
+    #  \remark Obtained intensity values are positive.
+    def _run_discrete_shepard_reconstruction(self):
         sigma = 0.5
 
-        shape = sitk.GetArrayFromImage(HR_volume.sitk).shape
+        shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
         helper_N_nda = np.zeros(shape)
         helper_D_nda = np.zeros(shape)
 
@@ -73,11 +214,11 @@ class VolumeReconstruction:
                 ## Nearest neighbour resampling of slice to target space (HR volume)
                 slice_resampled_sitk = sitk.Resample(
                     slice.sitk, 
-                    HR_volume.sitk, 
+                    self._HR_volume.sitk, 
                     sitk.Euler3DTransform(), 
                     sitk.sitkNearestNeighbor, 
                     default_pixel_value,
-                    HR_volume.sitk.GetPixelIDValue())
+                    self._HR_volume.sitk.GetPixelIDValue())
 
                 ## Extract array of pixel intensities
                 nda_slice = sitk.GetArrayFromImage(slice_resampled_sitk)
@@ -107,13 +248,13 @@ class VolumeReconstruction:
         helper_D = itk2np.GetImageFromArray(helper_D_nda) 
         # t2 = time.clock() - t0
 
-        helper_N.SetSpacing(HR_volume.sitk.GetSpacing())
-        helper_N.SetDirection(sitkh.get_itk_direction_from_sitk_image(HR_volume.sitk))
-        helper_N.SetOrigin(HR_volume.sitk.GetOrigin())
+        helper_N.SetSpacing(self._HR_volume.sitk.GetSpacing())
+        helper_N.SetDirection(sitkh.get_itk_direction_from_sitk_image(self._HR_volume.sitk))
+        helper_N.SetOrigin(self._HR_volume.sitk.GetOrigin())
 
-        helper_D.SetSpacing(HR_volume.sitk.GetSpacing())
-        helper_D.SetDirection(sitkh.get_itk_direction_from_sitk_image(HR_volume.sitk))
-        helper_D.SetOrigin(HR_volume.sitk.GetOrigin())
+        helper_D.SetSpacing(self._HR_volume.sitk.GetSpacing())
+        helper_D.SetDirection(sitkh.get_itk_direction_from_sitk_image(self._HR_volume.sitk))
+        helper_D.SetOrigin(self._HR_volume.sitk.GetOrigin())
         # t3 = time.clock() - t0
 
         ## Apply Recursive Gaussian YVV filter
@@ -142,17 +283,17 @@ class VolumeReconstruction:
         ## Compute data array of HR volume:
         # nda_D[nda_D==0]=1 
         nda = nda_N/nda_D.astype(float)
-        # HR_volume_update.CopyInformation(HR_volume.sitk)
+        # HR_volume_update.CopyInformation(self._HR_volume.sitk)
         # t7 = time.clock() - t0
 
 
         ## Update HR volume image file within Stack-object HR_volume
         HR_volume_update = sitk.GetImageFromArray(nda)
-        HR_volume_update.CopyInformation(HR_volume.sitk)
+        HR_volume_update.CopyInformation(self._HR_volume.sitk)
         # t8 = time.clock() - t0
 
         ## Link HR_volume.sitk to the updated volume
-        HR_volume.sitk = HR_volume_update
+        self._HR_volume.sitk = HR_volume_update
 
 
         # print("Elapsed time by image_type: %s seconds" %(t1a))
@@ -169,12 +310,12 @@ class VolumeReconstruction:
 
     ## Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19).
     #  The computation here is based on the Deriche variant of Recursive Gaussian Filter and executed
-    #  via SimpleITK
-    #  \param[in,out] HR_volume current estimate of reconstructed HR volume (Stack object)
-    def _use_discrete_shepard_based_on_Deriche(self, HR_volume):
+    #  via SimpleITK. 
+    #  \remark Obtained intensity values can be negative.
+    def _run_discrete_shepard_based_on_Deriche_reconstruction(self):
         sigma = 0.5
 
-        shape = sitk.GetArrayFromImage(HR_volume.sitk).shape
+        shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
         helper_N_nda = np.zeros(shape)
         helper_D_nda = np.zeros(shape)
 
@@ -193,11 +334,11 @@ class VolumeReconstruction:
                 ## Nearest neighbour resampling of slice to target space (HR volume)
                 slice_resampled_sitk = sitk.Resample(
                     slice.sitk, 
-                    HR_volume.sitk, 
+                    self._HR_volume.sitk, 
                     sitk.Euler3DTransform(), 
                     sitk.sitkNearestNeighbor, 
                     default_pixel_value,
-                    HR_volume.sitk.GetPixelIDValue())
+                    self._HR_volume.sitk.GetPixelIDValue())
 
                 ## Extract array of pixel intensities
                 nda_slice = sitk.GetArrayFromImage(slice_resampled_sitk)
@@ -217,8 +358,8 @@ class VolumeReconstruction:
         helper_N = sitk.GetImageFromArray(helper_N_nda) 
         helper_D = sitk.GetImageFromArray(helper_D_nda) 
 
-        helper_N.CopyInformation(HR_volume.sitk)
-        helper_D.CopyInformation(HR_volume.sitk)
+        helper_N.CopyInformation(self._HR_volume.sitk)
+        helper_D.CopyInformation(self._HR_volume.sitk)
 
         ## Apply recursive Gaussian smoothing
         gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
@@ -243,7 +384,7 @@ class VolumeReconstruction:
 
 
         HR_volume_update_D = sitk.GetImageFromArray(nda)
-        HR_volume_update_D.CopyInformation(HR_volume.sitk)
+        HR_volume_update_D.CopyInformation(self._HR_volume.sitk)
 
         ## HACK for numerator given that some intensities are negative!?
         nda = sitk.GetArrayFromImage(HR_volume_update_N)
@@ -257,10 +398,10 @@ class VolumeReconstruction:
         
         ## Compute HR volume based on scattered data approximation with correct header (might be redundant):
         HR_volume_update = HR_volume_update_N/HR_volume_update_D
-        HR_volume_update.CopyInformation(HR_volume.sitk)
+        HR_volume_update.CopyInformation(self._HR_volume.sitk)
 
         ## Update HR volume image file within Stack-object HR_volume
-        HR_volume.sitk = HR_volume_update
+        self._HR_volume.sitk = HR_volume_update
 
 
         """
