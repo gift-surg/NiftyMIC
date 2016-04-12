@@ -1,0 +1,271 @@
+3 stacks were copied to directory VolumetricReconstructions/input_data/
+
+--- Compute first estimate of HR volume ---
+In-plane alignment of slices within each stack is NOT performed
+Rigid registration between each stack and target is performed
+rigid transformation:
+matrix = 
+[[  1.000e+00   5.766e-05  -2.532e-05]
+ [ -5.766e-05   1.000e+00   2.323e-05]
+ [  2.532e-05  -2.322e-05   1.000e+00]]
+center = [ -5.824 -32.522 -68.237]
+angle_x, angle_y, angle_z = [-0.001 -0.001 -0.003] deg
+translation = [-0.089 -0.02   0.007]
+rigid transformation:
+matrix = 
+[[ 1.    -0.008 -0.002]
+ [ 0.008  1.     0.017]
+ [ 0.002 -0.017  1.   ]]
+center = [ -2.84  -27.199 -70.132]
+angle_x, angle_y, angle_z = [-0.98  -0.126  0.448] deg
+translation = [-0.414 -0.063 -0.401]
+rigid transformation:
+matrix = 
+[[ 1.    -0.004 -0.007]
+ [ 0.004  1.    -0.011]
+ [ 0.007  0.011  1.   ]]
+center = [ -5.078 -35.635 -61.523]
+angle_x, angle_y, angle_z = [ 0.646 -0.41   0.222] deg
+translation = [-0.223  0.206  0.19 ]
+
+--- Run reconstruction algorithm ---
+Chosen regularization type: zero-order Tikhonov
+RUNNING THE L-BFGS-B CODE
+
+           * * *
+
+Machine precision = 2.220E-16
+ N =  752400    M =  10
+
+At X0    520854 variables are exactly at the bounds
+
+At iterate    0    f=  4.20059E+08    |proj g|=  2.19571E+02
+
+At iterate    1    f=  3.07791E+08    |proj g|=  1.60890E+02
+
+At iterate    2    f=  7.38641E+07    |proj g|=  3.71788E+01
+
+At iterate    3    f=  5.55402E+07    |proj g|=  3.15741E+01
+
+At iterate    4    f=  3.12817E+07    |proj g|=  2.94548E+01
+
+At iterate    5    f=  2.71357E+07    |proj g|=  8.09253E+01
+
+At iterate    6    f=  2.26935E+07    |proj g|=  1.64799E+01
+
+At iterate    7    f=  2.03116E+07    |proj g|=  1.54738E+01
+
+At iterate    8    f=  1.84007E+07    |proj g|=  2.16222E+01
+
+At iterate    9    f=  1.59186E+07    |proj g|=  2.25021E+01
+
+At iterate   10    f=  1.49098E+07    |proj g|=  3.29219E+01
+
+At iterate   11    f=  1.33497E+07    |proj g|=  9.30111E+00
+
+At iterate   12    f=  1.29066E+07    |proj g|=  5.76458E+00
+
+At iterate   13    f=  1.24069E+07    |proj g|=  7.57937E+00
+
+At iterate   14    f=  1.17822E+07    |proj g|=  8.44782E+00
+
+At iterate   15    f=  1.14021E+07    |proj g|=  1.85049E+01
+
+At iterate   16    f=  1.10431E+07    |proj g|=  4.07398E+00
+
+At iterate   17    f=  1.08557E+07    |proj g|=  6.02741E+00
+
+At iterate   18    f=  1.06404E+07    |proj g|=  7.87837E+00
+
+At iterate   19    f=  1.03526E+07    |proj g|=  1.10217E+01
+
+At iterate   20    f=  1.01232E+07    |proj g|=  5.76567E+00
+
+At iterate   21    f=  1.00050E+07    |proj g|=  2.37611E+00
+
+At iterate   22    f=  9.85313E+06    |proj g|=  4.66086E+00
+
+At iterate   23    f=  9.74096E+06    |proj g|=  4.00831E+00
+
+At iterate   24    f=  9.59783E+06    |proj g|=  2.65709E+00
+
+At iterate   25    f=  9.48713E+06    |proj g|=  2.77175E+00
+
+At iterate   26    f=  9.39801E+06    |proj g|=  4.03752E+00
+
+At iterate   27    f=  9.32609E+06    |proj g|=  2.72153E+00
+
+At iterate   28    f=  9.24040E+06    |proj g|=  2.41250E+00
+
+At iterate   29    f=  9.17009E+06    |proj g|=  2.39678E+00
+
+At iterate   30    f=  9.11143E+06    |proj g|=  1.87870E+00
+
+At iterate   31    f=  9.06096E+06    |proj g|=  1.48236E+00
+
+At iterate   32    f=  9.01385E+06    |proj g|=  1.04873E+00
+
+At iterate   33    f=  8.96520E+06    |proj g|=  2.04207E+00
+
+At iterate   34    f=  8.92191E+06    |proj g|=  1.41920E+00
+
+At iterate   35    f=  8.88293E+06    |proj g|=  1.09838E+00
+
+At iterate   36    f=  8.85003E+06    |proj g|=  9.38636E-01
+
+At iterate   37    f=  8.81562E+06    |proj g|=  2.86358E+00
+
+At iterate   38    f=  8.78244E+06    |proj g|=  1.00537E+00
+
+At iterate   39    f=  8.75862E+06    |proj g|=  9.69975E-01
+
+At iterate   40    f=  8.73487E+06    |proj g|=  1.01115E+00
+
+At iterate   41    f=  8.71604E+06    |proj g|=  3.74497E+00
+
+At iterate   42    f=  8.68206E+06    |proj g|=  1.13024E+00
+
+At iterate   43    f=  8.66571E+06    |proj g|=  6.96118E-01
+
+At iterate   44    f=  8.64916E+06    |proj g|=  1.21784E+00
+
+At iterate   45    f=  8.62351E+06    |proj g|=  1.46188E+00
+
+At iterate   46    f=  8.61614E+06    |proj g|=  1.52728E+00
+
+At iterate   47    f=  8.58465E+06    |proj g|=  5.57309E-01
+
+At iterate   48    f=  8.57649E+06    |proj g|=  5.15759E-01
+
+At iterate   49    f=  8.56284E+06    |proj g|=  5.39710E-01
+
+At iterate   50    f=  8.54352E+06    |proj g|=  7.50585E-01
+
+At iterate   51    f=  8.53072E+06    |proj g|=  9.07906E-01
+
+At iterate   52    f=  8.51425E+06    |proj g|=  7.10605E-01
+
+At iterate   53    f=  8.50664E+06    |proj g|=  5.66634E-01
+
+At iterate   54    f=  8.49727E+06    |proj g|=  4.56325E-01
+
+At iterate   55    f=  8.48151E+06    |proj g|=  7.50978E-01
+
+At iterate   56    f=  8.46744E+06    |proj g|=  7.75339E-01
+
+At iterate   57    f=  8.45888E+06    |proj g|=  4.57326E-01
+
+At iterate   58    f=  8.44853E+06    |proj g|=  3.57854E-01
+
+At iterate   59    f=  8.44162E+06    |proj g|=  4.92721E-01
+
+At iterate   60    f=  8.43340E+06    |proj g|=  4.57139E-01
+
+At iterate   61    f=  8.42053E+06    |proj g|=  4.79294E-01
+
+At iterate   62    f=  8.41513E+06    |proj g|=  4.69020E-01
+
+At iterate   63    f=  8.40953E+06    |proj g|=  3.97832E-01
+
+At iterate   64    f=  8.40167E+06    |proj g|=  4.02848E-01
+
+At iterate   65    f=  8.39628E+06    |proj g|=  3.71834E-01
+
+At iterate   66    f=  8.38818E+06    |proj g|=  5.72057E-01
+
+At iterate   67    f=  8.38025E+06    |proj g|=  3.43964E-01
+
+At iterate   68    f=  8.37649E+06    |proj g|=  2.77514E-01
+
+At iterate   69    f=  8.37047E+06    |proj g|=  2.96871E-01
+
+At iterate   70    f=  8.36659E+06    |proj g|=  4.49008E-01
+
+At iterate   71    f=  8.36178E+06    |proj g|=  3.47460E-01
+
+At iterate   72    f=  8.35478E+06    |proj g|=  2.60903E-01
+
+At iterate   73    f=  8.35148E+06    |proj g|=  2.32771E-01
+
+At iterate   74    f=  8.34717E+06    |proj g|=  4.17236E-01
+
+At iterate   75    f=  8.34219E+06    |proj g|=  3.37265E-01
+
+At iterate   76    f=  8.33927E+06    |proj g|=  3.31980E-01
+
+At iterate   77    f=  8.33527E+06    |proj g|=  2.82262E-01
+
+At iterate   78    f=  8.33273E+06    |proj g|=  6.05121E-01
+
+At iterate   79    f=  8.32818E+06    |proj g|=  4.64751E-01
+
+At iterate   80    f=  8.32555E+06    |proj g|=  3.00102E-01
+
+At iterate   81    f=  8.32334E+06    |proj g|=  2.02057E-01
+
+At iterate   82    f=  8.31958E+06    |proj g|=  2.03456E-01
+
+At iterate   83    f=  8.31723E+06    |proj g|=  2.96965E-01
+
+At iterate   84    f=  8.31378E+06    |proj g|=  2.35816E-01
+
+At iterate   85    f=  8.31125E+06    |proj g|=  1.94963E-01
+
+At iterate   86    f=  8.30816E+06    |proj g|=  2.42844E-01
+
+At iterate   87    f=  8.30639E+06    |proj g|=  2.77672E-01
+
+At iterate   88    f=  8.30419E+06    |proj g|=  2.10880E-01
+
+At iterate   89    f=  8.30195E+06    |proj g|=  1.78562E-01
+
+At iterate   90    f=  8.30046E+06    |proj g|=  1.64145E-01
+
+At iterate   91    f=  8.29749E+06    |proj g|=  3.01486E-01
+
+At iterate   92    f=  8.29630E+06    |proj g|=  3.64920E-01
+
+At iterate   93    f=  8.29396E+06    |proj g|=  1.98756E-01
+
+At iterate   94    f=  8.29299E+06    |proj g|=  1.66382E-01
+
+At iterate   95    f=  8.29158E+06    |proj g|=  1.44387E-01
+
+At iterate   96    f=  8.28938E+06    |proj g|=  2.56414E-01
+
+At iterate   97    f=  8.28790E+06    |proj g|=  2.45921E-01
+
+At iterate   98    f=  8.28630E+06    |proj g|=  1.44440E-01
+
+At iterate   99    f=  8.28542E+06    |proj g|=  1.17757E-01
+
+At iterate  100    f=  8.28435E+06    |proj g|=  1.22739E-01
+
+At iterate  101    f=  8.28283E+06    |proj g|=  2.52353E-01
+
+At iterate  102    f=  8.28114E+06    |proj g|=  1.96263E-01
+
+           * * *
+
+Tit   = total number of iterations
+Tnf   = total number of function evaluations
+Tnint = total number of segments explored during Cauchy searches
+Skip  = number of BFGS updates skipped
+Nact  = number of active bounds at final generalized Cauchy point
+Projg = norm of the final projected gradient
+F     = final function value
+
+           * * *
+
+   N    Tit     Tnf  Tnint  Skip  Nact     Projg        F
+*****    102    110  17880     0 *****   1.963E-01   8.281E+06
+  F =  8281136.42
+
+STOP: TOTAL NO. of ITERATIONS EXCEEDS LIMIT                 
+
+ Cauchy                time 2.203E+00 seconds.
+ Subspace minimization time 4.297E+00 seconds.
+ Line search           time 1.173E+03 seconds.
+
+ Total User time 1.192E+03 seconds.
+

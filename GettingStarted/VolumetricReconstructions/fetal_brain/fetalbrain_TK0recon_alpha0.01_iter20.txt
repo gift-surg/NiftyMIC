@@ -1,0 +1,117 @@
+3 stacks were copied to directory VolumetricReconstructions/input_data/
+
+--- Compute first estimate of HR volume ---
+In-plane alignment of slices within each stack is NOT performed
+Rigid registration between each stack and target is performed
+rigid transformation:
+matrix = 
+[[  1.000e+00   5.766e-05  -2.532e-05]
+ [ -5.766e-05   1.000e+00   2.323e-05]
+ [  2.532e-05  -2.322e-05   1.000e+00]]
+center = [ -5.824 -32.522 -68.237]
+angle_x, angle_y, angle_z = [-0.001 -0.001 -0.003] deg
+translation = [-0.089 -0.02   0.007]
+rigid transformation:
+matrix = 
+[[ 1.    -0.008 -0.002]
+ [ 0.008  1.     0.017]
+ [ 0.002 -0.017  1.   ]]
+center = [ -2.84  -27.199 -70.132]
+angle_x, angle_y, angle_z = [-0.98  -0.126  0.448] deg
+translation = [-0.414 -0.063 -0.401]
+rigid transformation:
+matrix = 
+[[ 1.    -0.004 -0.007]
+ [ 0.004  1.    -0.011]
+ [ 0.007  0.011  1.   ]]
+center = [ -5.078 -35.635 -61.523]
+angle_x, angle_y, angle_z = [ 0.646 -0.41   0.222] deg
+translation = [-0.223  0.206  0.19 ]
+
+--- Run reconstruction algorithm ---
+Chosen regularization type: zero-order Tikhonov
+RUNNING THE L-BFGS-B CODE
+
+           * * *
+
+Machine precision = 2.220E-16
+ N =  752400    M =  10
+
+At X0    520854 variables are exactly at the bounds
+
+At iterate    0    f=  4.20059E+08    |proj g|=  2.19571E+02
+
+At iterate    1    f=  3.07791E+08    |proj g|=  1.60890E+02
+
+At iterate    2    f=  7.38641E+07    |proj g|=  3.71788E+01
+
+At iterate    3    f=  5.55402E+07    |proj g|=  3.15741E+01
+
+At iterate    4    f=  3.12817E+07    |proj g|=  2.94548E+01
+
+At iterate    5    f=  2.71357E+07    |proj g|=  8.09253E+01
+
+At iterate    6    f=  2.26935E+07    |proj g|=  1.64799E+01
+
+At iterate    7    f=  2.03116E+07    |proj g|=  1.54738E+01
+
+At iterate    8    f=  1.84007E+07    |proj g|=  2.16222E+01
+
+At iterate    9    f=  1.59186E+07    |proj g|=  2.25021E+01
+
+At iterate   10    f=  1.49098E+07    |proj g|=  3.29219E+01
+
+At iterate   11    f=  1.33497E+07    |proj g|=  9.30111E+00
+
+At iterate   12    f=  1.29066E+07    |proj g|=  5.76458E+00
+
+At iterate   13    f=  1.24069E+07    |proj g|=  7.57937E+00
+
+At iterate   14    f=  1.17822E+07    |proj g|=  8.44782E+00
+
+At iterate   15    f=  1.14021E+07    |proj g|=  1.85049E+01
+
+At iterate   16    f=  1.10431E+07    |proj g|=  4.07398E+00
+
+At iterate   17    f=  1.08557E+07    |proj g|=  6.02741E+00
+
+At iterate   18    f=  1.06404E+07    |proj g|=  7.87837E+00
+
+At iterate   19    f=  1.03526E+07    |proj g|=  1.10217E+01
+
+At iterate   20    f=  1.01232E+07    |proj g|=  5.76567E+00
+
+At iterate   21    f=  1.00050E+07    |proj g|=  2.37611E+00
+
+At iterate   22    f=  9.85313E+06    |proj g|=  4.66086E+00
+
+           * * *
+
+Tit   = total number of iterations
+Tnf   = total number of function evaluations
+Tnint = total number of segments explored during Cauchy searches
+Skip  = number of BFGS updates skipped
+Nact  = number of active bounds at final generalized Cauchy point
+Projg = norm of the final projected gradient
+F     = final function value
+
+           * * *
+
+   N    Tit     Tnf  Tnint  Skip  Nact     Projg        F
+*****     22     29  11912     0 *****   4.661E+00   9.853E+06
+  F =  9853132.19
+
+STOP: TOTAL NO. of ITERATIONS EXCEEDS LIMIT                 
+
+ Cauchy                time 4.688E-01 seconds.
+ Subspace minimization time 7.344E-01 seconds.
+ Line search           time 3.026E+02 seconds.
+
+ Total User time 3.148E+02 seconds.
+
+Result optimization: TK0
+	STOP: TOTAL NO. of ITERATIONS EXCEEDS LIMIT
+	Current value of objective function: 9853132.19402
+	Iterations: 21
+	Function evaluations: 29
+	Elapsed time for optimization: 1551.047945 seconds

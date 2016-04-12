@@ -1,7 +1,7 @@
 ## \file InPlaneRigidRegistration.py
 #  \brief  
 # 
-#  \author Michael Ebner
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date September 2015
 
 
@@ -10,13 +10,11 @@ import os                       # used to execute terminal commands in python
 import sys
 import SimpleITK as sitk
 import numpy as np
-
 import matplotlib.pyplot as plt
-
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
-import Stack as stk
+import Stack as st
 
 
 class InPlaneRigidRegistration:
@@ -26,7 +24,7 @@ class InPlaneRigidRegistration:
         self._stacks = stack_manager.get_stacks()
         self._N_stacks = stack_manager.get_number_of_stacks()
 
-        self._resampled_stacks_after_in_plane_alignment = [None]*len(self._stacks)
+        self._stacks_of_planarly_aligned_slices = [None]*len(self._stacks)
         # self._resampled_sitk_stacks_after_in_plane_alignment = [None]*len(self._stacks)
         # self._resampled_sitk_stack_masks_after_in_plane_alignment = [None]*len(self._stacks)
 
@@ -53,7 +51,7 @@ class InPlaneRigidRegistration:
         return None
 
 
-    ## Simpy register one slice to the previous one
+    ## Simply register one slice to the previous one
     def _apply_in_plane_rigid_registration_2D_approach_01(self, stack):
         slices = stack.get_slices()
         N_slices = stack.get_number_of_slices()
@@ -122,7 +120,7 @@ class InPlaneRigidRegistration:
             for j in np.concatenate((range(1, N_slices, 2),range(0, N_slices, 2))):
                 slice_3D = slices[j]
 
-                print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j,N_slices-1))
+                # print("Iteration %r/%r: Slice = %r/%r" %(iteration+1,iterations,j,N_slices-1))
 
                 ## Get copy of slices aligned to physical coordinate system
                 slice_3D_copy_sitk = self._get_copy_of_sitk_slice_with_aligned_physical_coordinate_system(slice_3D)
@@ -190,7 +188,7 @@ class InPlaneRigidRegistration:
                 slice_3D_copy_sitk_mask.SetOrigin(slice_3D_copy_sitk.GetOrigin())
                 slice_3D_copy_sitk_mask.SetDirection(slice_3D_copy_sitk.GetDirection())
 
-                ## Save images prior the use of NiftyReg
+                ## Save images prior to the use of NiftyReg
                 dir_tmp = ".tmp/" 
                 os.system("mkdir -p " + dir_tmp)
 
@@ -628,7 +626,7 @@ class InPlaneRigidRegistration:
         return None
 
 
-    def _resample_stacks_of_aligned_slices(self):
+    def _resample_stacks_of_planarly_aligned_slices(self):
 
         for i in range(0, self._N_stacks):
             stack = self._stacks[i]
@@ -672,9 +670,8 @@ class InPlaneRigidRegistration:
             # self._resampled_sitk_stacks_after_in_plane_alignment[i] = warped_stack
             # self._resampled_sitk_stack_masks_after_in_plane_alignment[i] = warped_stack_mask
 
-            # self._resampled_stacks_after_in_plane_alignment[i] = stk.Stack.create_from_sitk_image(warped_stack, stack.get_filename())
-            self._resampled_stacks_after_in_plane_alignment[i] = stk.Stack(warped_stack, stack.get_directory(), stack.get_filename())
-            self._resampled_stacks_after_in_plane_alignment[i].add_mask(warped_stack_mask)
+            self._stacks_of_planarly_aligned_slices[i] = st.Stack.from_sitk_image(warped_stack, stack.get_filename() + "planarly_aligned_slices")
+            self._stacks_of_planarly_aligned_slices[i].add_mask(warped_stack_mask)
 
         return None
 
@@ -682,16 +679,16 @@ class InPlaneRigidRegistration:
     # def _UT_get_resampled_stacks(self):
     def get_resampled_planarly_aligned_stacks(self):
         ## In case stacks have not been resample yet, do it
-        if all(i is None for i in self._resampled_stacks_after_in_plane_alignment):
-            self._resample_stacks_of_aligned_slices()
+        if all(i is None for i in self._stacks_of_planarly_aligned_slices):
+            self._resample_stacks_of_planarly_aligned_slices()
 
-        return self._resampled_stacks_after_in_plane_alignment
+        return self._stacks_of_planarly_aligned_slices
 
 
     def write_resampled_stacks(self, directory):
         ## In case stacks have not been resample yet, do it
         if all(i is None for i in self._resampled_sitk_stacks_after_in_plane_alignment):
-            self._resample_stacks_of_aligned_slices()
+            self._resample_stacks_of_planarly_aligned_slices()
 
         ## Write the resampled stacks
         for i in range(0, self._N_stacks):

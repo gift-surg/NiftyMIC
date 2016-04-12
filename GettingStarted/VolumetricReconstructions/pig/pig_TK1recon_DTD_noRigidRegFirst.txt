@@ -1,0 +1,77 @@
+3 stacks were copied to directory VolumetricReconstructions/input_data/
+
+--- Compute first estimate of HR volume ---
+In-plane alignment of slices is NOT performed
+Rigid registration between each stack and target is NOT performed
+
+--- Run reconstruction algorithm ---
+Chosen regularization type: first-order Tikhonov via forward/backward finite differences
+RUNNING THE L-BFGS-B CODE
+
+           * * *
+
+Machine precision = 2.220E-16
+ N =  7603200    M =  10
+
+At X0   1732875 variables are exactly at the bounds
+
+At iterate    0    f=  1.52790E+11    |proj g|=  1.50860E+03
+
+At iterate    1    f=  1.36864E+11    |proj g|=  1.13746E+03
+
+At iterate    2    f=  5.73565E+10    |proj g|=  2.58015E+02
+
+At iterate    3    f=  4.76514E+10    |proj g|=  6.00632E+02
+
+At iterate    4    f=  4.16164E+10    |proj g|=  2.88315E+02
+
+At iterate    5    f=  4.15754E+10    |proj g|=  1.92450E+02
+
+At iterate    6    f=  4.15405E+10    |proj g|=  1.48992E+02
+
+At iterate    7    f=  4.13981E+10    |proj g|=  4.46804E+02
+
+At iterate    8    f=  4.13229E+10    |proj g|=  8.49007E+01
+
+At iterate    9    f=  4.11170E+10    |proj g|=  6.20154E+01
+
+At iterate   10    f=  4.05380E+10    |proj g|=  8.59585E+01
+
+ Bad direction in the line search;
+   refresh the lbfgs memory and restart the iteration.
+
+           * * *
+
+Tit   = total number of iterations
+Tnf   = total number of function evaluations
+Tnint = total number of segments explored during Cauchy searches
+Skip  = number of BFGS updates skipped
+Nact  = number of active bounds at final generalized Cauchy point
+Projg = norm of the final projected gradient
+F     = final function value
+
+           * * *
+
+   N    Tit     Tnf  Tnint  Skip  Nact     Projg        F
+*****     11     62 487916     0 *****   8.596E+01   4.054E+10
+  F =  4.05379758E+10
+
+ABNORMAL_TERMINATION_IN_LNSRCH                              
+
+ Line search cannot locate an adequate point after 20 function
+  and gradient evaluations.  Previous x, f and g restored.
+ Possible causes: 1 error in function or gradient evaluation;
+                  2 rounding error dominate computation.
+
+ Cauchy                time 4.719E+00 seconds.
+ Subspace minimization time 6.172E+00 seconds.
+ Line search           time 2.582E+03 seconds.
+
+ Total User time 3.962E+03 seconds.
+
+Result optimization: TK0
+	ABNORMAL_TERMINATION_IN_LNSRCH
+	Current value of objective function: 40537975846.2
+	Iterations: 10
+	Function evaluations: 62
+	Elapsed time for optimization: 20444.709131 seconds

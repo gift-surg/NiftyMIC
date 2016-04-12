@@ -1,0 +1,73 @@
+3 stacks were copied to directory VolumetricReconstructions/input_data/
+
+--- Compute first estimate of HR volume ---
+In-plane alignment of slices within each stack is NOT performed
+Rigid registration between each stack and target is NOT performed
+
+--- Run reconstruction algorithm ---
+Chosen regularization type: first-order Tikhonov via Laplace stencil
+RUNNING THE L-BFGS-B CODE
+
+           * * *
+
+Machine precision = 2.220E-16
+ N =  7603200    M =  10
+
+At X0   1732875 variables are exactly at the bounds
+
+At iterate    0    f=  2.48001E+11    |proj g|=  1.57142E+03
+
+At iterate    1    f=  2.30417E+11    |proj g|=  1.37033E+03
+
+At iterate    2    f=  1.53446E+11    |proj g|=  2.63463E+03
+
+ Bad direction in the line search;
+   refresh the lbfgs memory and restart the iteration.
+
+At iterate    3    f=  1.44516E+11    |proj g|=  3.05284E+03
+  ys=-3.916E+08  -gs= 1.706E+10 BFGS update SKIPPED
+
+At iterate    4    f=  1.38867E+11    |proj g|=  3.54996E+03
+  ys=-9.596E+08  -gs= 1.792E+10 BFGS update SKIPPED
+
+At iterate    5    f=  1.35654E+11    |proj g|=  4.14630E+03
+  ys=-1.503E+09  -gs= 1.988E+10 BFGS update SKIPPED
+
+At iterate    6    f=  1.34435E+11    |proj g|=  4.86684E+03
+  ys=-2.083E+09  -gs= 2.286E+10 BFGS update SKIPPED
+
+           * * *
+
+Tit   = total number of iterations
+Tnf   = total number of function evaluations
+Tnint = total number of segments explored during Cauchy searches
+Skip  = number of BFGS updates skipped
+Nact  = number of active bounds at final generalized Cauchy point
+Projg = norm of the final projected gradient
+F     = final function value
+
+           * * *
+
+   N    Tit     Tnf  Tnint  Skip  Nact     Projg        F
+*****      7     56 889662     4 *****   4.867E+03   1.344E+11
+  F =  1.34434923E+11
+
+ABNORMAL_TERMINATION_IN_LNSRCH                              
+
+ Line search cannot locate an adequate point after 20 function
+  and gradient evaluations.  Previous x, f and g restored.
+ Possible causes: 1 error in function or gradient evaluation;
+                  2 rounding error dominate computation.
+
+ Cauchy                time 1.695E+00 seconds.
+ Subspace minimization time 4.141E-01 seconds.
+ Line search           time 1.849E+03 seconds.
+
+ Total User time 2.864E+03 seconds.
+
+Result optimization: TK0
+	ABNORMAL_TERMINATION_IN_LNSRCH
+	Current value of objective function: 134434923439.0
+	Iterations: 6
+	Function evaluations: 56
+	Elapsed time for optimization: 18854.008029 seconds

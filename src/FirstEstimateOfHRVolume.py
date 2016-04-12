@@ -1,8 +1,10 @@
 ## \file FirstEstimateOfHRVolume.py
-#  \brief  
+#  \brief Compute first estimate of HR volume based on given stacks
 # 
-#  \author Michael Ebner
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date November 2015
+#  \version{0.1} Estimate first HR volume based on averaging stacks, Nov 2015
+#  \version{0.2} Add possibility to not register stacks to target first, March 2016
 
 
 ## Import libraries
@@ -10,19 +12,28 @@ import os                       # used to execute terminal commands in python
 import sys
 import SimpleITK as sitk
 import numpy as np
-
 import matplotlib.pyplot as plt
-
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
 import InPlaneRigidRegistration as iprr
-import Stack as stack
+import Stack as st
 
 
+## Class to compute first estimate of HR volume. Steps included are:
+#  -# In-plane registration of all stacks (optional)
+#  -# (Resample in-plane registered stacks to 3D-volumes)
+#  -# Pick one (planarly-aligned) stack and assign it as target volume
+#  -# Resample target volume on isotropic grid
+#  -# Register all (planarly-aligned) stacks to target-volume (optional)
+#  -# Create first HR volume estimate: Average all registered planarly-aligned stacks
+#  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
 class FirstEstimateOfHRVolume:
 
-    def __init__(self, stack_manager, dir_results, filename_reconstructed_volume):
+    ## Constructor
+    #  \param[in] stack_manager instance of StackManager containing all stacks and additional information
+    #  \param[in] filename_reconstructed_volume chosen filename for created HR volume (Stack object)
+    def __init__(self, stack_manager, filename_reconstructed_volume):
         self._stack_manager = stack_manager
         self._stacks = stack_manager.get_stacks()
         self._N_stacks = stack_manager.get_number_of_stacks()
@@ -30,41 +41,93 @@ class FirstEstimateOfHRVolume:
         self._target_stack_number = 0
         self._HR_volume = None
 
-        self._dir_results = dir_results
         self._filename_reconstructed_volume = filename_reconstructed_volume
 
-        ## Compute first estimate of HR volume
-        self._compute_first_estimate_of_HR_volume()
-
-        return None
+        self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
+        self._flag_register_stacks_before_initial_volume_estimate = False
 
 
-    def _compute_first_estimate_of_HR_volume(self):
+    ## Set flag to use in-plane of all slices to each other within their stacks
+    def use_in_plane_registration_for_initial_volume_estimate(self, flag):
+        self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = flag
 
-        rigid_registrations = [None]*self._N_stacks
 
-        ## Run in-plane rigid registration of all stacks
-        in_plane_rigid_registration =  iprr.InPlaneRigidRegistration(self._stack_manager)
+    ## Set flag to globally register each stack with chosen target stack.
+    #  Otherwise, the initial positions as given from the original files are used
+    def register_stacks_before_initial_volume_estimate(self, flag):
+        self._flag_register_stacks_before_initial_volume_estimate = flag
 
-        ## Get resampled stacks of planarly aligned slices as Stack objects
-        stacks_aligned = in_plane_rigid_registration.get_resampled_planarly_aligned_stacks()
 
-        ## Get target stack as Stack object
-        
+    ## Execute computation for first estimate of HR volume.
+    #  This function steers the estimation of first HR volume which then updates
+    #  self._HR_volume
+    #  The process consists of several steps:
+    #  -# In-plane registration of all stacks (optional)
+    #  -# (Resample in-plane registered stacks to 3D-volumes)
+    #  -# Pick one (planarly-aligned) stack and assign it as target volume
+    #  -# Resample target volume on isotropic grid
+    #  -# Register all (planarly-aligned) stacks to target-volume (optional)
+    #  -# Create first HR volume estimate: Average all registered planarly-aligned stacks
+    #  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
+    # \param[in] use_in_plane_registration states whether in-plane registration is used prior registering (bool)
+    def compute_first_estimate_of_HR_volume(self):
+
+        ## Use stacks with in-plane aligned slices
+        if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
+            print("In-plane alignment of slices within each stack is performed")
+            ## Run in-plane rigid registration of all stacks
+            in_plane_rigid_registration =  iprr.InPlaneRigidRegistration(self._stack_manager)
+
+            ## Get resampled stacks of planarly aligned slices as Stack objects (3D volume)
+            stacks = in_plane_rigid_registration.get_resampled_planarly_aligned_stacks() # with in-plane alignment
+
+        ## Use "raw" stacks as given by their originally given physical positions
+        else:
+            print("In-plane alignment of slices within each stack is NOT performed")
+            stacks = self._stacks 
+
         ## Resample chosen target volume and its mask to isotropic grid
-        ## TODO: replace self._target_stack_number with "best choice" of stack
-        self._HR_volume = self._get_isotropically_resampled_stack(stacks_aligned[self._target_stack_number])
+        ## \todo replace self._target_stack_number with "best choice" of stack
+        self._HR_volume = self._get_isotropically_resampled_stack(stacks[self._target_stack_number])
 
-        ## Register all planarly aligned stacks to resampled target volume
-        rigid_registrations = self._get_rigid_registrations_of_all_stacks_to_HR_volume()
+        ## If desired: Register all (planarly) aligned stacks to resampled target volume
+        if self._flag_register_stacks_before_initial_volume_estimate:
+            print("Rigid registration between each stack and target is performed")
+            rigid_registrations = self._rigidly_register_all_stacks_to_HR_volume(print_trafos=False)
+        
+        ## No rigid registration, i.e. set to identity
+        else:
+            print("Rigid registration between each stack and target is NOT performed")
+            rigid_registrations = [sitk.Euler3DTransform()] * self._N_stacks
 
-        return None
+        ## Update HR volume: Compute average of all (registered) stacks
+        self._update_estimate_of_HR_volume(stacks, rigid_registrations)
+
+        ## Update all slice transformations of each stack according to rigid alignment with HR volume
+        self._update_slice_transformations(rigid_registrations)
 
 
+    ## Get first estimation of the HR volume.
+    #  \return Stack of HR volume
+    def get_first_estimate_of_HR_volume(self):
+        try:
+            if self._HR_volume is None:
+                raise ValueError("Error: First estimate of HR volume has not been computed yet.")
+
+            else:
+                return self._HR_volume
+
+        except ValueError as err:
+            print(err.message)
+
+
+    ## Resample stack to isotropic grid
+    #  The image and its mask get resampled to isotropic grid 
+    #  (in-plane resolution also in through-plane direction)
+    #  \param[in] target_stack Stack being resampled
+    #  \return Isotropically resampled Stack
     def _get_isotropically_resampled_stack(self, target_stack):
         
-        # HR_volume = stack.Stack(target_stack.sitk)
-
         ## Read original spacing (voxel dimension) and size of target stack:
         spacing = np.array(target_stack.sitk.GetSpacing())
         size = np.array(target_stack.sitk.GetSize())
@@ -73,7 +136,7 @@ class FirstEstimateOfHRVolume:
         size[2] = np.round(spacing[2]/spacing[0]*size[2])
         spacing[2] = spacing[0]
 
-        ## Resample to isotropic grid
+        ## Resample image and its mask to isotropic grid
         default_pixel_value = 0.0
 
         HR_volume_sitk =  sitk.Resample(
@@ -98,39 +161,38 @@ class FirstEstimateOfHRVolume:
             default_pixel_value,
             target_stack.sitk.GetPixelIDValue())
 
-        HR_volume = stack.Stack(HR_volume_sitk, self._dir_results, self._filename_reconstructed_volume)
+        ## Create Stack instance of HR_volume
+        HR_volume = st.Stack.from_sitk_image(HR_volume_sitk, self._filename_reconstructed_volume)
         HR_volume.add_mask(HR_volume_sitk_mask)
 
         return HR_volume
 
 
-    def _get_rigid_registrations_of_all_stacks_to_HR_volume(self):
+    ## Register all stacks to chosen target stack (HR volume)
+    #  \return list of rigid registrations (sitk.Euler3DTransform objects) 
+    #  for each given stack
+    def _rigidly_register_all_stacks_to_HR_volume(self, print_trafos=False):
+
+        ## Allocate list
         rigid_registrations = [None]*self._N_stacks
 
-        # self._stacks[0].show_stack(1)
-        # self._stacks[1].show_stack(1)
-        # self._HR_volume.show_stack(1)
-
-        # self._HR_volume.sitk = sitk.ReadImage("GettingStarted/data/3TReconstruction.nii.gz")
-
-
-        for i in xrange(0, self._N_stacks):
-
+        ## Compute rigid registrations aligning each stack with the HR volume
+        for i in range(0, self._N_stacks):
             rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(self._stacks[i], self._HR_volume)
 
-            test = sitk.Resample(sitkh.get_transformed_image(self._stacks[i].sitk, rigid_registrations[i]),
-                self._HR_volume.sitk, sitk.Euler3DTransform(), sitk.sitkLinear, 0.0, self._HR_volume.sitk.GetPixelIDValue())
+            ## Print rigid registration results (optional)
+            if print_trafos:
+                sitkh.print_rigid_transformation(rigid_registrations[i])
 
-            full_file_name = os.path.join("/tmp/", self._stacks[i].get_filename() + ".nii.gz")
-            sitk.WriteImage(test, full_file_name)
+        return rigid_registrations
 
-            sitkh.print_rigid_transformation(rigid_registrations[i])
 
-        sitk.WriteImage(self._HR_volume.sitk, "/tmp/HR_volume.nii.gz")
-
-            
-
-    def _get_rigid_registration_transform_3D_sitk(self, fixed_3D, moving_3D, print_registration_info=0):
+    ## Rigid registration routine based on SimpleITK
+    #  \param[in] fixed_3D fixed Stack representing acquired stacks
+    #  \param[in] moving_3D moving Stack representing current HR volume estimate
+    #  \param[in] display_registration_info display registration summary at the end of execution (default=0)
+    #  \return Rigid registration as sitk.Euler3DTransform object
+    def _get_rigid_registration_transform_3D_sitk(self, fixed_3D, moving_3D, display_registration_info=0):
 
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()
@@ -224,7 +286,7 @@ class FirstEstimateOfHRVolume:
         ## Execute 3D registration
         final_transform_3D_sitk = registration_method.Execute(fixed_3D.sitk, moving_3D.sitk) 
 
-        if print_registration_info:
+        if display_registration_info:
             print("SimpleITK Image Registration Method:")
             print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
             print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
@@ -232,6 +294,93 @@ class FirstEstimateOfHRVolume:
         return sitk.Euler3DTransform(final_transform_3D_sitk)
 
 
+    ## Compute average of all registered stacks and update self._HR_volume
+    #  \param[in] stacks_planarly_aligned stacks (type Stack) containing planarly aligned slices
+    #  \param[in] rigid_registrations registrations (type sitk.Euler3DTransform) aligning the stacks with the HR volume
+    #  \post self._HR_volume is overwritten with new estimate
+    def _update_estimate_of_HR_volume(self, stacks_planarly_aligned, rigid_registrations):
 
-    def get_first_estimate_of_HR_volume(self):
-        return self._HR_volume
+        default_pixel_value = 0.0
+
+        ## Define helpers to obtain averaged stack
+        shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
+        array = np.zeros(shape)
+        array_mask = np.zeros(shape)
+        ind = np.zeros(shape)
+
+        ## Average over domain specified by the joint mask ("union mask")
+        for i in range(0,self._N_stacks):
+            ## Resample warped stacks
+            stack_sitk =  sitk.Resample(
+                stacks_planarly_aligned[i].sitk,
+                self._HR_volume.sitk, 
+                rigid_registrations[i], 
+                sitk.sitkLinear, 
+                default_pixel_value,
+                self._HR_volume.sitk.GetPixelIDValue())
+
+            ## Resample warped stack masks
+            stack_sitk_mask =  sitk.Resample(
+                stacks_planarly_aligned[i].sitk_mask,
+                self._HR_volume.sitk, 
+                rigid_registrations[i], 
+                sitk.sitkNearestNeighbor, 
+                default_pixel_value,
+                stacks_planarly_aligned[i].sitk_mask.GetPixelIDValue())
+
+            ## Get arrays of resampled warped stack and mask
+            array_tmp = sitk.GetArrayFromImage(stack_sitk)
+            array_mask_tmp = sitk.GetArrayFromImage(stack_sitk_mask)
+
+            ## Sum intensities of stack and mask
+            array += array_tmp
+            array_mask += array_mask_tmp
+
+            ## Store indices of voxels with non-zero contribution
+            ind[np.nonzero(array_tmp)] += 1
+
+        ## Average over the amount of non-zero contributions of the stacks at each index
+        ind[ind==0] = 1                 # exclude division by zero
+        array = np.divide(array,ind.astype(float))    # elemenwise division
+
+        ## Create (joint) binary mask. Mask represents union of all masks
+        array_mask[array_mask>0] = 1
+
+        ## Set pixels of the image not specified by the mask to zero
+        array[array_mask==0] = 0
+
+        ## Update HR volume (sitk image)
+        helper = sitk.GetImageFromArray(array)
+        helper.CopyInformation(self._HR_volume.sitk)
+        self._HR_volume.sitk = helper
+
+        ## Update HR volume (sitk image mask)
+        helper = sitk.GetImageFromArray(array_mask)
+        helper.CopyInformation(self._HR_volume.sitk_mask)
+        self._HR_volume.sitk_mask = helper
+
+
+    ## Update all slice transformations of each stack given the rigid transformations
+    #  computed to align each stack with the HR volume
+    #  \param[in] rigid_registrations list of rigid registrations 
+    #             (sitk.Euler3DTransform objects) to align stack with HR volume
+    def _update_slice_transformations(self, rigid_registrations):
+
+        for i in range(0, self._N_stacks):
+            stack = self._stacks[i]
+
+            ## Rigid transformation to align stack i with target (HR volume)
+            T = rigid_registrations[i]
+
+            for j in range(0, stack.get_number_of_slices()):
+                slice = stack._slices[j]
+                
+                ## Trafo from physical origin to origin of slice j
+                slice_trafo = slice.get_affine_transform()
+
+                ## New affine transform of slice j with respect to rigid registration
+                affine_transform = sitkh.get_composited_sitk_affine_transform(T, slice_trafo)
+
+                ## Update affine transform of slice j
+                slice.set_affine_transform(affine_transform)
+
