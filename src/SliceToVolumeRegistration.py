@@ -99,16 +99,16 @@ class SliceToVolumeRegistration:
                 if use_NiftyReg:
                 # try:
                     rigid_transform = self._get_rigid_registration_transform_3D_NiftyReg(
-                        fixed_slice_3D=slice, moving_3D=HR_volume)
+                        fixed_slice_3D=slice, moving_3D=self._HR_volume)
                 else:
                 # except:
                     rigid_transform = self._get_rigid_registration_transform_3D_sitk(
-                        fixed_slice_3D=slice, moving_3D=HR_volume, display_registration_info=0)
+                        fixed_slice_3D=slice, moving_3D=self._HR_volume, display_registration_info=0)
 
                 ## print if translation is strange
                 translation = rigid_transform.GetTranslation()
                 if np.linalg.norm(translation)>10:
-                    print("Rigid registration of slice %s/%s within stack %s is odd:" %(j,N_slices-1,i))
+                    print("\tRigid registration of slice %s/%s within stack %s seems odd:" %(j,N_slices-1,i))
                     sitkh.print_rigid_transformation(rigid_transform)
 
                     continue

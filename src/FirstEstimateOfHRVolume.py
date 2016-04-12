@@ -93,7 +93,7 @@ class FirstEstimateOfHRVolume:
         ## If desired: Register all (planarly) aligned stacks to resampled target volume
         if self._flag_register_stacks_before_initial_volume_estimate:
             print("Rigid registration between each stack and target is performed")
-            rigid_registrations = self._rigidly_register_all_stacks_to_HR_volume(print_trafos=True)
+            rigid_registrations = self._rigidly_register_all_stacks_to_HR_volume(print_trafos=False)
         
         ## No rigid registration, i.e. set to identity
         else:

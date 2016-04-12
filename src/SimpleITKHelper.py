@@ -338,11 +338,11 @@ def print_rigid_transformation(rigid_registration_transform, text="rigid transfo
     # print("matrix = \n" + str(matrix))
     # print("center = " + str(center))
     if isinstance(rigid_registration_transform, sitk.Euler3DTransform):
-        print("angle_x, angle_y, angle_z = " + str(parameters[0:3]*180/np.pi) + " deg")
+        print("\tangle_x, angle_y, angle_z = " + str(parameters[0:3]*180/np.pi) + " deg")
 
     else:
-        print("angle = " + str(parameters[0]*180/np.pi) + " deg")
-    print("translation = " + str(translation))
+        print("\tangle = " + str(parameters[0]*180/np.pi) + " deg")
+    print("\ttranslation = " + str(translation))
 
     return None
 

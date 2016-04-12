@@ -121,7 +121,7 @@ class ReconstructionManager:
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
 
         ## Choose reconstruction approach
-        # volume_reconstruction.set_reconstruction_approach("Shepard")
+        volume_reconstruction.set_reconstruction_approach("Shepard")
 
         ## Write
         self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_0")
@@ -130,7 +130,7 @@ class ReconstructionManager:
         for i in range(0, iterations):   
             print(" iteration %s" %(i+1))
             ## Register all slices to current estimate of volume reconstruction
-            # slice_to_volume_registration.run_slice_to_volume_registration()
+            slice_to_volume_registration.run_slice_to_volume_registration()
 
             ## Reconstruct new volume based on updated positions of slices
             volume_reconstruction.estimate_HR_volume()

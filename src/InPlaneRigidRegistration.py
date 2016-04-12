@@ -51,7 +51,7 @@ class InPlaneRigidRegistration:
         return None
 
 
-    ## Simpy register one slice to the previous one
+    ## Simply register one slice to the previous one
     def _apply_in_plane_rigid_registration_2D_approach_01(self, stack):
         slices = stack.get_slices()
         N_slices = stack.get_number_of_slices()

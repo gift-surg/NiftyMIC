@@ -98,7 +98,7 @@ class VolumeReconstruction:
     Tikhonov regularization approach
     """
     ## Set cut-off distance
-    #  \param[in] alpha_cut scalar value
+    #  \param[in] alpha_cut scalar value used for Tikhonov regularization
     def set_alpha_cut(self, alpha_cut):
         self._alpha_cut = alpha_cut
 
@@ -107,37 +107,37 @@ class VolumeReconstruction:
         self._filter_adjoint_oriented_Gaussian.SetAlpha(alpha_cut)
 
 
-    ## Get cut-off distance
+    ## Get cut-off distance used for Tikhonov regularization
     #  \return scalar value
     def get_alpha_cut(self):
         return self._alpha_cut
 
 
-    ## Set regularization parameter
+    ## Set regularization parameter used for Tikhonov regularization
     #  \param[in] alpha regularization parameter, scalar
     def set_alpha(self, alpha):
         self._alpha = alpha
 
 
-    ## Get value of chosen regularization parameter
+    ## Get value of chosen regularization parameter used for Tikhonov regularization
     #  \return regularization parameter, scalar
     def get_alpha(self):
         return self._alpha
 
 
-    ## Set maximum number of iterations for minimizer
+    ## Set maximum number of iterations for minimizer used for Tikhonov regularization
     #  \param[in] iter_max number of maximum iterations, scalar
     def set_iter_max(self, iter_max):
         self._iter_max = iter_max
 
 
-    ## Get chosen value of maximum number of iterations for minimizer
+    ## Get chosen value of maximum number of iterations for minimizer used for Tikhonov regularization
     #  \return maximum number of iterations set for minimizer, scalar
     def get_iter_max(self):
         return self._iter_max
 
 
-    ## Set type or regularization. It can be either 'TK0' or 'TK1'
+    ## Set type or regularization used for Tikhonov regularization. It can be either 'TK0' or 'TK1'
     #  \param[in] reg_type Either 'TK0' or 'TK1', string
     def set_regularization_type(self, reg_type):
         if reg_type not in ["TK0", "TK1"]:
@@ -146,8 +146,8 @@ class VolumeReconstruction:
         self._reg_type = reg_type
 
 
-    ## Get chosen type of regularization.
-    #  \return regularization type as string
+    ## Get chosen type of regularization used for Tikhonov regularization.
+    #  \return regularization type as string. Either 'TK0' or 'TK1'
     def get_regularization_type(self):
         return self._reg_type
 
@@ -165,7 +165,7 @@ class VolumeReconstruction:
             self._DTD_comp_type = DTD_comp_type
 
 
-    ## Get chosen type of computation for differential operation D'D
+    ## Get chosen type of computation for differential operation D'D used for Tikhonov regularization
     #  \return type of \f$ D^*D \f$ computation, string
     def get_DTD_computation_type(self):
         return self._DTD_comp_type

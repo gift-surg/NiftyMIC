@@ -1,5 +1,5 @@
 #author: Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#date:   February 2016
+#date:   March 2016
 
 cmake_minimum_required(VERSION 2.8)
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")

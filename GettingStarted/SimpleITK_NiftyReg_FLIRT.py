@@ -9,7 +9,7 @@ import unittest
 
 import os                       # used to execute terminal commands in python
 import sys
-sys.path.append("../")
+sys.path.append("../src")
 
 # from scipy import ndimage       # For computation of center of mass for FLIRT coordinate system conversion
 import commands

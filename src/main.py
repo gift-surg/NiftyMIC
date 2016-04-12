@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
     ## Write results
     # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
-    # reconstruction_manager.write_results()
+    reconstruction_manager.write_results()
 
     """
     Playground

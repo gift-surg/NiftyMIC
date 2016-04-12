@@ -159,10 +159,10 @@ class Slice:
         ## Write slice:
         full_file_name = os.path.join(directory, filename_out + ".nii.gz")
         sitk.WriteImage(self.sitk, full_file_name)
-        print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
+        # print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
 
         ## Write transformation:
         full_file_name = os.path.join(directory, filename_out + ".tfm")
         sitk.WriteTransform(self._affine_transform_sitk, full_file_name)
-        print("Transformation of slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
+        # print("Transformation of slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
 

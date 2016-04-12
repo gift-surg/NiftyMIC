@@ -428,7 +428,8 @@ if __name__ == '__main__':
     # dir_input = "../data/fetal_neck/"
     dir_input = "/Users/mebner/UCL/UCL/Publications/2016_IPEM/FetalNeckMasses_Trachea/"
     # dir_input = "../results/"
-    dir_output = dir_input + "R2_ComparisonWithRecon/"
+    # dir_output = dir_input + "R2_ComparisonWithRecon/"
+    dir_output = "/tmp/"
     filename =  "R2/" + "0"
 
     filename_recon = "Reconstructions/" + "R2_8stacks" # result B. Kainz
@@ -480,11 +481,11 @@ if __name__ == '__main__':
     sitk.WriteImage(stack_aligned_resampled_to_recon_space, dir_output + filename_out + ".nii.gz")
 
     # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
-    cmd = "itksnap " \
-            + "-g " + dir_output + filename_out + ".nii.gz " \
-            + "-o " + dir_input + filename_recon + ".nii.gz " + \
-            "& "
-    os.system(cmd)
+    # cmd = "itksnap " \
+    #         + "-g " + dir_output + filename_out + ".nii.gz " \
+    #         + "-o " + dir_input + filename_recon + ".nii.gz " + \
+    #         "& "
+    # os.system(cmd)
 
     ## 3D rigid transformation of slice
     # slice_number = 4
@@ -513,11 +514,17 @@ if __name__ == '__main__':
 
     # sitk.WriteImage(test, dir_output + filename_out + ".nii.gz")
     # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
-    cmd = "itksnap " \
-            + "-g " + dir_output + filename_out + ".nii.gz " \
-            + "-o " +  filename_recon + ".nii.gz " + \
-            "& "
+    # cmd = "itksnap " \
+    #         + "-g " + dir_output + filename_out + ".nii.gz " \
+    #         + "-o " +  filename_recon + ".nii.gz " + \
+    #         "& "
     # os.system(cmd)
+
+    slices_all = stack[:,:,0:5]
+    slices_even = stack[:,:,0:5:2]
+    slices_odd = stack[:,:,1:5:2]
+
+    
 
 
     """
