@@ -6,6 +6,9 @@
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date September 2015
 
+## reload all changed modules every time before executing
+# %load_ext autoreload
+# %autoreload 2
 
 ## Import libraries 
 import itk
@@ -36,7 +39,7 @@ def read_input_data(image_type):
         #     ]
 
         # filenames = [str(i) for i in range(0, 8)]
-        filenames = [str(i) for i in range(0, 4)]
+        filenames = [str(i) for i in range(0, 3)]
 
 
     elif image_type in ["kidney"]:
@@ -104,6 +107,8 @@ if __name__ == '__main__':
     ## Choose input stacks and reference stack therein
     input_stacks_type = input_stack_types_available[0]
     reference_stack_id = 0
+    iterations_two_step_approach = 10
+
     print("Stacks chosen: %s" %input_stacks_type)
 
     """
@@ -122,11 +127,14 @@ if __name__ == '__main__':
     reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
 
     ## Run tow step reconstruction alignment approach
-    reconstruction_manager.run_two_step_reconstruction_alignment_approach()
+    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
 
     ## Write results
     # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
     reconstruction_manager.write_results()
+
+    HR_volume = reconstruction_manager.get_HR_volume()
+    HR_volume.show()
 
     """
     Playground

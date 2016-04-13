@@ -32,13 +32,14 @@ class FirstEstimateOfHRVolume:
 
     ## Constructor
     #  \param[in] stack_manager instance of StackManager containing all stacks and additional information
-    #  \param[in] filename_reconstructed_volume chosen filename for created HR volume (Stack object)
-    def __init__(self, stack_manager, filename_reconstructed_volume):
+    #  \param[in] filename_reconstructed_volume chosen filename for created HR volume, Stack object
+    #  \param[in] target_stack_number stack chosen to define space and coordinate system of HR reconstruction, integer
+    def __init__(self, stack_manager, filename_reconstructed_volume, target_stack_number):
         self._stack_manager = stack_manager
         self._stacks = stack_manager.get_stacks()
         self._N_stacks = stack_manager.get_number_of_stacks()
 
-        self._target_stack_number = 0
+        self._target_stack_number = target_stack_number
         self._HR_volume = None
 
         self._filename_reconstructed_volume = filename_reconstructed_volume

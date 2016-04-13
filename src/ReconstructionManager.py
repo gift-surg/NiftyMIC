@@ -14,6 +14,7 @@ import InPlaneRigidRegistration as iprr
 import FirstEstimateOfHRVolume as efhrv
 import SliceToVolumeRegistration as s2vr
 import VolumeReconstruction as vr
+import DataPreprocessing as dp
 
 
 ## This class manages the whole reconstruction pipeline
@@ -21,7 +22,8 @@ class ReconstructionManager:
 
     ## Set up output directories to save reconstruction results
     #  \param[in] dir_output output directory where all results will be stored
-    def __init__(self, dir_output):
+    #  \param[in] target_stack_number stack chosen to define space and coordinate system of HR reconstruction, integer (optional)
+    def __init__(self, dir_output, target_stack_number=0):
 
         self._dir_results = dir_output
         self._HR_volume_filename = "Reconstruction"
@@ -29,24 +31,28 @@ class ReconstructionManager:
         ## Directory of input data used for reconstruction algorithm
         self._dir_results_input_data = self._dir_results + "input_data/"
 
-        ## Directory to store slices and ther computed rigid registration transformations
+        ## Directory to store slices and their computed rigid registration transformations
         self._dir_results_slices = self._dir_results + "slices/"
 
         ## Optional: Directory of (intermediate) segmentation propagation data:
-        # self._dir_results_seg_prop = self._dir_results + "input_data_segmentation_prop/"
+        self._dir_results_input_data_processed = self._dir_results + "input_data_processed/"
 
         ## Optional: Directory after all DP steps ready for reconstruction algorthm:
         # self._dir_results_input_data_dp_final = self._dir_results + "input_data_dp_final/"
 
         ## Create directory if not already existing
         os.system("mkdir -p " + self._dir_results)
-        os.system("mkdir -p " + self._dir_results_input_data)
-        os.system("rm -rf " + self._dir_results_input_data + "*")
         os.system("mkdir -p " + self._dir_results_slices)
-        # os.system("mkdir -p " + self._dir_results_seg_prop)
+        os.system("mkdir -p " + self._dir_results_input_data)
+        os.system("mkdir -p " + self._dir_results_input_data_processed)
+
+        ## Delete files in folder
+        os.system("rm -rf " + self._dir_results_input_data + "*")
+        os.system("rm -rf " + self._dir_results_input_data_processed + "*")
         # os.system("mkdir -p " + self._dir_results_input_data)
 
         ## Variables containing the respective classes
+        self._data_preprocessing = dp.DataPreprocessing(self._dir_results_input_data, self._dir_results_input_data_processed, target_stack_number)
         self._in_plane_rigid_registration = None
         self._stack_manager = None
         self._HR_volume = None
@@ -54,6 +60,8 @@ class ReconstructionManager:
         ## Pre-defined values
         self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
         self._flag_register_stacks_before_initial_volume_estimate = False
+
+        self._target_stack_number = target_stack_number
 
 
     ## Read input stacks stored from given directory
@@ -68,7 +76,6 @@ class ReconstructionManager:
         ## Copy files to self._dir_results_input_data:
         ## (Filenames represent continuous numbering)
         for i in range(0, N_stacks):
-            new_name = str(filenames[i])
 
             ## 1) Copy images:
             cmd = "cp " + dir_input_to_copy + filenames_to_copy[i] + ".nii.gz " \
@@ -84,8 +91,12 @@ class ReconstructionManager:
             
         print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
 
+        ## Data preprocessing:
+        self._data_preprocessing.run_preprocessing(filenames)
+
         ## Read stacks:
-        self._stack_manager.read_input_stacks(self._dir_results_input_data, filenames)
+        # self._stack_manager.read_input_stacks(self._dir_results_input_data, filenames)
+        self._stack_manager.read_input_stacks(self._dir_results_input_data_processed, filenames)
 
 
     ## Compute first estimate of HR volume to initialize reconstruction algortihm
@@ -94,7 +105,7 @@ class ReconstructionManager:
         print("\n--- Compute first estimate of HR volume ---")
         
         ## Instantiate object
-        first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename)
+        first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename, self._target_stack_number)
 
         ## Forward choice of whether or not in-plane registration within each
         #  stack shall be performed before estimation of initial volume
@@ -113,7 +124,7 @@ class ReconstructionManager:
 
     ## Execute two-step reconstruction alignment approach
     #  \param[in] iterations amount of two-step reconstruction alignment steps
-    def run_two_step_reconstruction_alignment_approach(self, iterations=1):
+    def run_two_step_reconstruction_alignment_approach(self, iterations=5):
         print("\n--- Run two-step reconstruction alignment approach ---")
 
         ## Instantiate objects
@@ -128,7 +139,7 @@ class ReconstructionManager:
 
         ## Run two-step reconstruction alignment:
         for i in range(0, iterations):   
-            print(" iteration %s" %(i+1))
+            print(" iteration %s/%s" %(i+1,iterations))
             ## Register all slices to current estimate of volume reconstruction
             slice_to_volume_registration.run_slice_to_volume_registration()
 
@@ -136,6 +147,8 @@ class ReconstructionManager:
             volume_reconstruction.estimate_HR_volume()
 
             self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_"+str(i+1))
+
+            # self._HR_volume.show(title="recon_iter_"+str(i))
 
 
     ## Execute in-plane rigid registration align slices planarly within stack 

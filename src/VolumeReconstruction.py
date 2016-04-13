@@ -91,8 +91,6 @@ class VolumeReconstruction:
         time_elapsed = time.clock() - t0
         print("Elapsed time for SDA: %s seconds" %(time_elapsed))
 
-        self._HR_volume.show()
-
 
     """
     Tikhonov regularization approach
@@ -193,7 +191,7 @@ class VolumeReconstruction:
     #  via ITK
     #  \remark Obtained intensity values are positive.
     def _run_discrete_shepard_reconstruction(self):
-        sigma = 0.5
+        sigma = 0.7
 
         shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
         helper_N_nda = np.zeros(shape)
