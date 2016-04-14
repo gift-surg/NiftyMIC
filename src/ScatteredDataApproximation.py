@@ -38,10 +38,10 @@ class ScatteredDataApproximation:
 
         ## Define dictionary to choose computational approach for SDA
         self._run_reconstruction = {
-            "Shepard"           :   self._run_discrete_shepard_reconstruction,
+            "Shepard-YVV"           :   self._run_discrete_shepard_reconstruction,
             "Shepard-Deriche"   :   self._run_discrete_shepard_based_on_Deriche_reconstruction,
         }
-        self._sda_approach = "Shepard"    # default approximation approach
+        self._sda_approach = "Shepard-YVV"    # default approximation approach
 
 
     ## Set sigma used for recursive Gaussian smoothing
@@ -57,11 +57,11 @@ class ScatteredDataApproximation:
 
 
     ## Set approach for approximating the HR volume. It can be either 
-    #  'Shepard' or 'Shepard-Deriche'
-    #  \param[in] sda_approach either 'Shepard' or 'Shepard-Deriche', string
+    #  'Shepard-YVV' or 'Shepard-Deriche'
+    #  \param[in] sda_approach either 'Shepard-YVV' or 'Shepard-Deriche', string
     def set_approach(self, sda_approach):
-        if sda_approach not in ["Shepard", "Shepard-Deriche"]:
-            raise ValueError("Error: SDA approach can only be either 'Shepard' or 'Shepard-Deriche'")
+        if sda_approach not in ["Shepard-YVV", "Shepard-Deriche"]:
+            raise ValueError("Error: SDA approach can only be either 'Shepard-YVV' or 'Shepard-Deriche'")
 
         self._sda_approach = sda_approach
 
@@ -152,18 +152,13 @@ class ScatteredDataApproximation:
         helper_D_nda[helper_D_nda==0] = 1
 
         ## Create itk-images with correct header data
-        # t0 = time.clock()
         pixel_type = itk.D
         dimension = 3
         image_type = itk.Image[pixel_type, dimension]
-        # t1a = time.clock() - t0
 
         itk2np = itk.PyBuffer[image_type]
-        # t1 = time.clock() - t0
-
         helper_N = itk2np.GetImageFromArray(helper_N_nda) 
         helper_D = itk2np.GetImageFromArray(helper_D_nda) 
-        # t2 = time.clock() - t0
 
         helper_N.SetSpacing(self._HR_volume.sitk.GetSpacing())
         helper_N.SetDirection(sitkh.get_itk_direction_from_sitk_image(self._HR_volume.sitk))
@@ -172,7 +167,6 @@ class ScatteredDataApproximation:
         helper_D.SetSpacing(self._HR_volume.sitk.GetSpacing())
         helper_D.SetDirection(sitkh.get_itk_direction_from_sitk_image(self._HR_volume.sitk))
         helper_D.SetOrigin(self._HR_volume.sitk.GetOrigin())
-        # t3 = time.clock() - t0
 
         ## Apply Recursive Gaussian YVV filter
         gaussian = itk.SmoothingRecursiveYvvGaussianImageFilter[image_type, image_type].New()   # YVV-based Filter
@@ -181,48 +175,27 @@ class ScatteredDataApproximation:
         gaussian.SetInput(helper_N)
         gaussian.Update()
         HR_volume_update_N = gaussian.GetOutput()
-        # t4 = time.clock() - t0
+        HR_volume_update_N.DisconnectPipeline()
 
-        gaussian = itk.SmoothingRecursiveYvvGaussianImageFilter[image_type, image_type].New()   # YVV-based Filter
-        # gaussian = itk.SmoothingRecursiveGaussianImageFilter[image_type, image_type].New()    # Deriche-based Filter
-        gaussian.SetSigma(self._sigma)
         gaussian.SetInput(helper_D)
         gaussian.Update()
         HR_volume_update_D = gaussian.GetOutput()
-        # t5 = time.clock() - t0
+        HR_volume_update_D.DisconnectPipeline()
 
         ## Convert numerator and denominator back to data array
         nda_N = itk2np.GetArrayFromImage(HR_volume_update_N)
         nda_D = itk2np.GetArrayFromImage(HR_volume_update_D)
-        # t6 = time.clock() - t0
-
 
         ## Compute data array of HR volume:
         # nda_D[nda_D==0]=1 
         nda = nda_N/nda_D.astype(float)
-        # HR_volume_update.CopyInformation(self._HR_volume.sitk)
-        # t7 = time.clock() - t0
-
 
         ## Update HR volume image file within Stack-object HR_volume
         HR_volume_update = sitk.GetImageFromArray(nda)
         HR_volume_update.CopyInformation(self._HR_volume.sitk)
-        # t8 = time.clock() - t0
 
         ## Link HR_volume.sitk to the updated volume
         self._HR_volume.sitk = HR_volume_update
-
-
-        # print("Elapsed time by image_type: %s seconds" %(t1a))
-        # print("Elapsed time by initializing PyBuffer: %s seconds" %(t1))
-        # print("Elapsed time by generating images from data arrays: %s seconds" %(t2))
-        # print("Elapsed time by updating image headers: %s seconds" %(t3))
-        # print("Elapsed time by smoothing numerator (YVV filter): %s seconds" %(t4))
-        # print("Elapsed time by smoothing denominator (YVV filter): %s seconds" %(t5))
-        # print("Elapsed time by fetching numerator and denominator data arrays: %s seconds" %(t6))
-        # print("Elapsed time by division N/D: %s seconds" %(t7))
-        # print("Elapsed time overall (after generating approximated HR volume): %s seconds" %(t8))
-
 
 
     ## Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19).

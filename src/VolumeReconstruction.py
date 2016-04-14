@@ -41,7 +41,7 @@ class VolumeReconstruction:
         ## Define dictionary to choose computational approach for reconstruction
         self._run_reconstruction = {
             "SDA"   :   self._run_SDA,
-            "SRR"   :   self._run_SRR,
+            "SRR"   :   self._run_SRR
         }
         self._recon_approach = "SRR"        # default reconstruction approach
 
@@ -69,7 +69,7 @@ class VolumeReconstruction:
 
         ## Settings for SDA
         self._SDA_sigma = 1                 # sigma for recursive Gaussian smoothing
-        self._SDA_type = 'Shepard'          # Either 'Shepard' or 'Shepard-Deriche'
+        self._SDA_type = 'Shepard-YVV'      # Either 'Shepard-YVV' or 'Shepard-Deriche'
 
         self._SDA.set_sigma(self._SDA_sigma)
         self._SDA.set_approach(self._SDA_type)
@@ -207,7 +207,7 @@ class VolumeReconstruction:
 
 
     """
-    Shepard's like reconstruction approaches
+    Scattered Data Approximation: Shepard's like reconstruction approaches
     """
     ## Set sigma used for recursive Gaussian smoothing
     #  \param[in] sigma, scalar
@@ -227,8 +227,8 @@ class VolumeReconstruction:
     ## Set SDA approach. It can be either 'Shepard' or 'Shepard-Deriche'
     #  \param[in] SDA_approach either 'Shepard' or 'Shepard-Deriche', string
     def set_SDA_approach(self, SDA_approach):
-        if SDA_approach not in ["Shepard", "Shepard-Deriche"]:
-            raise ValueError("Error: SDA approach can only be either 'Shepard' or 'Shepard-Deriche'")
+        if SDA_approach not in ["Shepard-YVV", "Shepard-Deriche"]:
+            raise ValueError("Error: SDA approach can only be either 'Shepard-YVV' or 'Shepard-Deriche'")
 
         self._SDA_approach = SDA_approach
         self._SDA.set_approach(self._SDA_approach)

@@ -30,12 +30,11 @@ class InPlaneRigidRegistration:
 
         self._UT_2D_resampled_stacks = [None]*len(self._stacks)
 
-        self._run_in_plane_rigid_registration_2D_sitk_2D()
 
         return None
 
 
-    def _run_in_plane_rigid_registration_2D_sitk_2D(self):
+    def run_in_plane_rigid_registration(self):
 
         ## When running unit test
         # self._UT_apply_in_plane_rigid_registration_2D_approach_01()

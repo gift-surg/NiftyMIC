@@ -106,6 +106,11 @@ class ReconstructionManager:
         ## Instantiate object
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename, self._target_stack_number)
 
+        ## Choose reconstruction approach
+        first_estimate_of_HR_volume.set_reconstruction_approach("SDA") #"SDA" or "Average"
+        first_estimate_of_HR_volume.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
+        first_estimate_of_HR_volume.set_SDA_sigma(1)
+
         ## Forward choice of whether or not in-plane registration within each
         #  stack shall be performed before estimation of initial volume
         first_estimate_of_HR_volume.use_in_plane_registration_for_initial_volume_estimate(self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate)
@@ -118,7 +123,7 @@ class ReconstructionManager:
         first_estimate_of_HR_volume.compute_first_estimate_of_HR_volume()
 
         ## Get estimation
-        self._HR_volume = first_estimate_of_HR_volume.get_first_estimate_of_HR_volume()
+        self._HR_volume = first_estimate_of_HR_volume.get_HR_volume()
         
 
     ## Execute two-step reconstruction alignment approach
@@ -132,7 +137,7 @@ class ReconstructionManager:
 
         ## Choose reconstruction approach
         volume_reconstruction.set_reconstruction_approach("SDA")
-        # volume_reconstruction.set_SDA_approach("Shepard-Deriche") # "Shepard" or "Shepard-Deriche"
+        volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
         volume_reconstruction.set_SDA_sigma(0.6)
 
         # volume_reconstruction.set_reconstruction_approach("SRR")

@@ -11,6 +11,7 @@
 # %autoreload 2
 
 ## Import libraries 
+import pdb
 import itk
 import SimpleITK as sitk
 import numpy as np
@@ -101,7 +102,7 @@ if __name__ == '__main__':
     np.set_printoptions(precision=3)
 
     ## Dummy to load itk for the first time (which takes 15 to 20 secs!)
-    image_type = itk.Image[itk.F, 2]
+    image_type = itk.Image[itk.D, 3]
 
     """
     Choose variables
