@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import SimpleITKHelper as sitkh
 import InPlaneRigidRegistration as iprr
 import Stack as st
+import ScatteredDataApproximation as sda
 
 
 ## Class to compute first estimate of HR volume. Steps included are:
@@ -26,7 +27,7 @@ import Stack as st
 #  -# Pick one (planarly-aligned) stack and assign it as target volume
 #  -# Resample target volume on isotropic grid
 #  -# Register all (planarly-aligned) stacks to target-volume (optional)
-#  -# Create first HR volume estimate: Average all registered planarly-aligned stacks
+#  -# Create first HR volume estimate: Average all registered (planarly-aligned) stacks
 #  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
 class FirstEstimateOfHRVolume:
 
@@ -46,6 +47,14 @@ class FirstEstimateOfHRVolume:
 
         self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
         self._flag_register_stacks_before_initial_volume_estimate = False
+
+
+        ## Define dictionary to choose computational approach for estimating first HR volume
+        # self._run_reconstruction = {
+        #     "SDA"   :   self._run_SDA,
+        #     "Average"   :   self._run_SRR,
+        # }
+        # self._recon_approach = "SDA"        # default reconstruction approach
 
 
     ## Set flag to use in-plane of all slices to each other within their stacks
@@ -68,7 +77,7 @@ class FirstEstimateOfHRVolume:
     #  -# Pick one (planarly-aligned) stack and assign it as target volume
     #  -# Resample target volume on isotropic grid
     #  -# Register all (planarly-aligned) stacks to target-volume (optional)
-    #  -# Create first HR volume estimate: Average all registered planarly-aligned stacks
+    #  -# Create first HR volume estimate: Average all registered (planarly-aligned) stacks
     #  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
     # \param[in] use_in_plane_registration states whether in-plane registration is used prior registering (bool)
     def compute_first_estimate_of_HR_volume(self):

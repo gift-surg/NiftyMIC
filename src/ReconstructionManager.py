@@ -131,24 +131,32 @@ class ReconstructionManager:
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
 
         ## Choose reconstruction approach
-        # volume_reconstruction.set_reconstruction_approach("Shepard")
-        volume_reconstruction.set_reconstruction_approach("Tikhonov")
-        volume_reconstruction.set_regularization_type("TK1")
-        volume_reconstruction.set_DTD_computation_type("Laplace")
-        # volume_reconstruction.set_DTD_computation_type("FiniteDifference")
+        volume_reconstruction.set_reconstruction_approach("SDA")
+        # volume_reconstruction.set_SDA_approach("Shepard-Deriche") # "Shepard" or "Shepard-Deriche"
+        volume_reconstruction.set_SDA_sigma(0.6)
 
+        # volume_reconstruction.set_reconstruction_approach("SRR")
+        volume_reconstruction.set_SRR_iter_max(2)
+        volume_reconstruction.set_SRR_alpha(0.03)
+        volume_reconstruction.set_SRR_approach("TK0")       # "TK0" or "TK1"
+        volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
+        # volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
+
+
+        # volume_reconstruction.run_reconstruction()
 
         ## Write
         self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_0")
 
+
         ## Run two-step reconstruction alignment:
         for i in range(0, iterations):   
-            print(" iteration %s/%s" %(i+1,iterations))
+            print("*** iteration %s/%s" %(i+1,iterations))
             ## Register all slices to current estimate of volume reconstruction
-            slice_to_volume_registration.run_slice_to_volume_registration()
+            # slice_to_volume_registration.run_slice_to_volume_registration()
 
             ## Reconstruct new volume based on updated positions of slices
-            volume_reconstruction.estimate_HR_volume()
+            volume_reconstruction.run_reconstruction()
 
             self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_"+str(i+1))
 

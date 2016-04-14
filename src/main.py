@@ -45,7 +45,7 @@ def read_input_data(image_type):
 
     elif image_type in ["fetal_trachea"]:
         # dir_input = "../data/fetal_trachea/"
-        dir_input = "../data/fetal_trachea/cropped/"
+        dir_input = "../data/fetal_trachea/cropped2/"
 
         # filenames = [str(i) for i in range(0, 8)]
         filenames = [str(i) for i in range(0, 3)]
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     dir_output = "../results/"
 
     ## Choose input stacks and reference stack therein
-    input_stacks_type = input_stack_types_available[3]
+    input_stacks_type = input_stack_types_available[0]
     reference_stack_id = 0
     iterations_two_step_approach = 1
 

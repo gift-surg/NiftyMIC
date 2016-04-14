@@ -81,7 +81,7 @@ class SliceToVolumeRegistration:
 
     ## Perform slice-to-volume registration of all slices to current estimate of HR volume reconstruction
     def run_slice_to_volume_registration(self):
-        print("Slice-to-volume registration")
+        print("\n\t--- Slice-to-volume registration ---")
 
         use_NiftyReg = 0
 

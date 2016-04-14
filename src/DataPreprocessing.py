@@ -108,7 +108,7 @@ class DataPreprocessing:
     def _crop_stack_and_mask(self, stack_sitk, mask_sitk):
 
         ## Get rectangular region surrounding the masked voxels
-        [x_range, y_range, z_range] = self._get_rectangular_masked_region(mask_sitk, boundary=5)
+        [x_range, y_range, z_range] = self._get_rectangular_masked_region(mask_sitk, boundary=10)
 
         ## Crop stack and mask to defined image region
         stack_crop_sitk = self._crop_image_to_region(stack_sitk, x_range, y_range, z_range)

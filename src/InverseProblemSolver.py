@@ -54,7 +54,7 @@ class InverseProblemSolver:
 
     ## Constructor
     #  \param[in] stacks list of Stack objects containing all stacks used for the reconstruction
-    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume
+    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (used as initial value + space definition)
     def __init__(self, stacks, HR_volume):
 
             ## Initialize variables
@@ -126,6 +126,7 @@ class InverseProblemSolver:
     #  \return scalar value
     def get_alpha_cut(self):
         return self._alpha_cut
+
 
     ## Set regularization parameter
     #  \param[in] alpha regularization parameter, scalar
