@@ -81,19 +81,20 @@ class SliceToVolumeRegistration:
 
     ## Perform slice-to-volume registration of all slices to current estimate of HR volume reconstruction
     def run_slice_to_volume_registration(self):
-        print("Slice-to-volume registration")
+        print("\n\t--- Slice-to-volume registration ---")
 
         use_NiftyReg = 0
 
         for i in range(0, self._N_stacks):
-        # for i in range(0,1):
-            print("  Stack %s/%s" %(i,self._N_stacks-1))
+            print("\tStack %s/%s" %(i,self._N_stacks-1))
             stack = self._stacks[i]
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
             
             for j in range(0, N_slices):
                 slice = slices[j]
+
+                # print("\t\tSlice %s/%s" %(j,N_slices-1))
 
                 ## Register slice to current volume
                 if use_NiftyReg:
@@ -104,6 +105,9 @@ class SliceToVolumeRegistration:
                 # except:
                     rigid_transform = self._get_rigid_registration_transform_3D_sitk(
                         fixed_slice_3D=slice, moving_3D=self._HR_volume, display_registration_info=0)
+
+                sitkh.print_rigid_transformation(rigid_transform)
+
 
                 ## print if translation is strange
                 translation = rigid_transform.GetTranslation()
@@ -225,7 +229,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
 
         ## Use mutual information between two images
-        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=3)
+        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=1)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
         registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)
@@ -262,10 +266,10 @@ class SliceToVolumeRegistration:
         setup for the multi-resolution framework            
         """
         ## Set the shrink factors for each level where each level has the same shrink factor for each dimension
-        registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+        # registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
 
         ## Set the sigmas of Gaussian used for smoothing at each level
-        registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+        # registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
 
         ## Enable the smoothing sigmas for each level in physical units (default) or in terms of voxels (then *UnitsOff instead)
         registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()

@@ -144,23 +144,26 @@ class Stack:
 
     ## Display stack with external viewer (ITK-Snap)
     #  \param[in][in] show_segmentation display stack with or without associated segmentation (default=0)
-    def show(self, show_segmentation=0):
+    def show(self, show_segmentation=0, title=None):
         dir_output = "/tmp/"
 
+        if title is None:
+            title = self._filename
+
         if show_segmentation:
-            sitk.WriteImage(self.sitk, dir_output + self._filename + ".nii.gz")
-            sitk.WriteImage(self.sitk_mask, dir_output + self._filename + "_mask.nii.gz")
+            sitk.WriteImage(self.sitk, dir_output + title + ".nii.gz")
+            sitk.WriteImage(self.sitk_mask, dir_output + title + "_mask.nii.gz")
 
             cmd = "itksnap " \
-                    + "-g " + dir_output + self._filename + ".nii.gz " \
-                    + "-s " +  dir_output + self._filename + "_mask.nii.gz " + \
+                    + "-g " + dir_output + title + ".nii.gz " \
+                    + "-s " +  dir_output + title + "_mask.nii.gz " + \
                     "& "
 
         else:
-            sitk.WriteImage(self.sitk, dir_output + self._filename + ".nii.gz")
+            sitk.WriteImage(self.sitk, dir_output + title + ".nii.gz")
 
             cmd = "itksnap " \
-                    + "-g " + dir_output + self._filename + ".nii.gz " \
+                    + "-g " + dir_output + title + ".nii.gz " \
                     "& "
 
         # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "

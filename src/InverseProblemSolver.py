@@ -41,7 +41,7 @@ image_type = itk.Image[pixel_type, 3]
 #  by reformulating it as
 #  \f[
 #       J(x) = \frac{1}{2} \Vert \Big(\sum_k A_k^* (A_k x - y_k) \Big) + \alpha\, G^*G x \Vert_{\ell^2}^2
-#             = \frac{1}{2} \Vert \Big(\sum_k A_k^* A_k + \alpha\, G^*G \Big)x - \sum_k A_k^* y_k \Vert_{\ell^2}^2
+#             = \frac{1}{2} \Vert \Big(\sum_k A_k^* M_k A_k + \alpha\, G^*G \Big)x - \sum_k A_k^* M_k y_k \Vert_{\ell^2}^2
 #       \rightarrow \min_x 
 #  \f]
 #  where \f$A_k=D_k B_k\f$ denotes the combined blurring and downsampling 
@@ -54,7 +54,7 @@ class InverseProblemSolver:
 
     ## Constructor
     #  \param[in] stacks list of Stack objects containing all stacks used for the reconstruction
-    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume
+    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (used as initial value + space definition)
     def __init__(self, stacks, HR_volume):
 
             ## Initialize variables
@@ -127,6 +127,7 @@ class InverseProblemSolver:
     def get_alpha_cut(self):
         return self._alpha_cut
 
+
     ## Set regularization parameter
     #  \param[in] alpha regularization parameter, scalar
     def set_alpha(self, alpha):
@@ -190,7 +191,7 @@ class InverseProblemSolver:
 
         ## Compute required variables prior the optimization step
         HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
-        sum_ATy_itk = self._sum_ATy()
+        sum_ATMy_itk = self._sum_ATMy()
 
         ## TK0-regularization
         if self._reg_type in ["TK0"]:
@@ -199,11 +200,11 @@ class InverseProblemSolver:
             print("Maximum number of iterations is set to " + str(self._iter_max))
 
             ## Provide constant variable for optimization
-            op0_sum_ATy_itk = self._op0(sum_ATy_itk, self._alpha)
+            op0_sum_ATMy_itk = self._op0(sum_ATMy_itk, self._alpha)
 
             ## Define function handles for optimization
-            f        = lambda x: self._TK0_SPD(x, sum_ATy_itk, self._alpha)
-            f_grad   = lambda x: self._TK0_SPD_grad(x, op0_sum_ATy_itk, self._alpha)
+            f        = lambda x: self._TK0_SPD(x, sum_ATMy_itk, self._alpha)
+            f_grad   = lambda x: self._TK0_SPD_grad(x, op0_sum_ATMy_itk, self._alpha)
             f_hess_p = None
 
 
@@ -258,11 +259,11 @@ class InverseProblemSolver:
                 self._kernel_L   = None
 
             ## Provide constant variable for optimization
-            op1_sum_ATy_itk = self._op1(sum_ATy_itk, HR_nda.flatten(), self._alpha)
+            op1_sum_ATMy_itk = self._op1(sum_ATMy_itk, HR_nda.flatten(), self._alpha)
             
             ## Define function handles for optimization
-            f        = lambda x: self._TK1_SPD(x, sum_ATy_itk, self._alpha)
-            f_grad   = lambda x: self._TK1_SPD_grad(x, op1_sum_ATy_itk, self._alpha)
+            f        = lambda x: self._TK1_SPD(x, sum_ATMy_itk, self._alpha)
+            f_grad   = lambda x: self._TK1_SPD_grad(x, op1_sum_ATMy_itk, self._alpha)
             f_hess_p = None
 
         ## Compute approximate solution
@@ -367,13 +368,17 @@ class InverseProblemSolver:
             for j in range(0, stack.get_number_of_slices()):
                 slice = slices[j]
 
-                ## Only use segmented part of each slice (if available)
-                if slice.sitk_mask is not None:
-                    slice_masked_sitk = sitk.Cast(slice.sitk_mask, slice.sitk.GetPixelIDValue()) * slice.sitk
-                else:
-                    slice_masked_sitk = sitk.Image(slice.sitk)
+                slice_sitk      = sitk.Image(slice.sitk)
+                slice_sitk_mask = sitk.Image(slice.sitk_mask)
 
-                slice.itk = sitkh.convert_sitk_to_itk_image(slice_masked_sitk)
+                # ## Only use segmented part of each slice (if available)
+                # if slice.sitk_mask is not None:
+                #     slice_masked_sitk = sitk.Cast(slice.sitk_mask, slice.sitk.GetPixelIDValue()) * slice.sitk
+                # else:
+                #     slice_masked_sitk = sitk.Image(slice.sitk)
+
+                slice.itk       = sitkh.convert_sitk_to_itk_image(slice_sitk)
+                slice.itk_mask  = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
                 
 
     ## Compute the covariance matrix modelling the PSF in-plane and 
@@ -457,12 +462,21 @@ class InverseProblemSolver:
         return slice_itk
 
 
-    ## Perform backward operation on LR image, i.e. \f$z = B^*D^*y = A^*y \f$ with \f$ D^* \f$ and \f$ B^* \f$ being 
+    ## Perform backward operation on LR image, i.e. \f$z = B^*D^*My = A^*My \f$ with \f$ D^* \f$ and \f$ B^* \f$ being 
     #  the adjoint downsampling and blurring operator, respectively.
     #  \param[in] slice_itk LR image as itk.Image object
+    #  \param[in] mask_itk mask of LR image as itk.Image object
     #  \return image in HR space as itk.Image object after performed backward operation
-    def _AT(self, slice_itk):
-        self._filter_adjoint_oriented_Gaussian.SetInput( slice_itk )
+    def _ATM(self, slice_itk, mask_itk):
+
+        multiplier = itk.MultiplyImageFilter[image_type, image_type, image_type].New()
+
+        ## compute M y_k
+        multiplier.SetInput1( mask_itk )
+        multiplier.SetInput2( slice_itk  )
+        multiplier.Update()
+
+        self._filter_adjoint_oriented_Gaussian.SetInput( multiplier.GetOutput() )
         self._filter_adjoint_oriented_Gaussian.UpdateLargestPossibleRegion()
         self._filter_adjoint_oriented_Gaussian.Update()
 
@@ -472,20 +486,21 @@ class InverseProblemSolver:
         return HR_volume_itk
 
 
-    ## Perform the operation \f$ A^* Ax \f$ with \f$ A = DB \f$, i.e. the combination of
-    #  downsampling \f$D\f$ and blurring \f$B\f$.
+    ## Perform the operation \f$ A^* MAx \f$ with \f$ A = DB \f$, i.e. the combination of
+    #  downsampling \f$D\f$ and blurring \f$B\f$, and the masking operator \f$M\f$.
     #  \param[in] HR_volume_itk HR image as itk.Image object
+    #  \param[in] mask_slice_itk mask of slice as itk.Image object
     #  \return image in HR space as itk.Image object after performed forward 
     #          and backward operation
-    def _ATA(self, HR_volume_itk):
-        return self._AT( self._A(HR_volume_itk) )
+    def _ATMA(self, HR_volume_itk, mask_slice_itk):
+        return self._ATM( self._A(HR_volume_itk), mask_slice_itk )
 
 
-    ## Compute \f$ \sum_{k=1}^K A_k^* A_k x \f$
+    ## Compute \f$ \sum_{k=1}^K A_k^* M_k A_k x \f$
     #  \param[in] HR_volume_itk HR image as itk.Image object
     #  \return sum of all forward an back projected operations of image
     #       in HR space as itk.Image object
-    def _sum_ATA(self, HR_volume_itk):
+    def _sum_ATMA(self, HR_volume_itk):
 
         ## Create image adder
         adder = itk.AddImageFilter[image_type, image_type, image_type].New()
@@ -517,26 +532,26 @@ class InverseProblemSolver:
                 ## Update A_k and A_k' based on position of slice
                 self._update_oriented_adjoint_oriented_Gaussian_image_filters(slice)
 
-                ## Perform A_k'A_k(x) 
-                ATA_x = self._ATA(HR_volume_itk)
+                ## Perform A_k'MA_k(x) 
+                ATMA_x = self._ATMA(HR_volume_itk, slice.itk_mask)
 
                 ## Add contribution
-                adder.SetInput2(ATA_x)
+                adder.SetInput2(ATMA_x)
                 adder.Update()
 
-                sum_ATAx = adder.GetOutput()
-                sum_ATAx.DisconnectPipeline()
+                sum_ATMAx = adder.GetOutput()
+                sum_ATMAx.DisconnectPipeline()
 
                 ## Prepare for next cycle
-                adder.SetInput1(sum_ATAx)
+                adder.SetInput1(sum_ATMAx)
 
-        return sum_ATAx
+        return sum_ATMAx
 
 
-    ## Compute \f$ \sum_{k=1}^K A_k^* y_k \f$ for all slices \f$ y_k \f$.
+    ## Compute \f$ \sum_{k=1}^K A_k^* M_k y_k \f$ for all slices \f$ y_k \f$.
     #  \return sum of all back projected slices
     #       in HR space as itk.Image object
-    def _sum_ATy(self):
+    def _sum_ATMy(self):
 
         ## Create image adder
         adder = itk.AddImageFilter[image_type, image_type, image_type].New()
@@ -547,19 +562,19 @@ class InverseProblemSolver:
 
         ## Update A_k and A_k' based on position of slice
         self._update_oriented_adjoint_oriented_Gaussian_image_filters(slice0)
-        ATy = self._AT(slice0.itk)
+        ATMy = self._ATM(slice0.itk, slice0.itk_mask)
 
         ## Duplicate first slice of first stack with zero image buffer
         duplicator = itk.ImageDuplicator[image_type].New()
-        duplicator.SetInputImage(ATy)
+        duplicator.SetInputImage(ATMy)
         duplicator.Update()
 
-        sum_ATy = duplicator.GetOutput()
-        sum_ATy.DisconnectPipeline()
-        sum_ATy.FillBuffer(0.0)
+        sum_ATMy = duplicator.GetOutput()
+        sum_ATMy.DisconnectPipeline()
+        sum_ATMy.FillBuffer(0.0)
 
         ## Insert zero image for image adder
-        adder.SetInput1(sum_ATy)
+        adder.SetInput1(sum_ATMy)
 
 
         for i in range(0, self._N_stacks):
@@ -574,20 +589,20 @@ class InverseProblemSolver:
                 ## Update A_k and A_k' based on position of slice
                 self._update_oriented_adjoint_oriented_Gaussian_image_filters(slice)
 
-                ## Perform A_k'A_k(x) 
-                AT_y = self._AT(slice.itk)
+                ## Perform A_k'M_kA_k(x) 
+                ATM_y = self._ATM(slice.itk, slice.itk_mask)
 
                 ## Add contribution
-                adder.SetInput2(AT_y)
+                adder.SetInput2(ATM_y)
                 adder.Update()
 
-                sum_ATy = adder.GetOutput()
-                sum_ATy.DisconnectPipeline()
+                sum_ATMy = adder.GetOutput()
+                sum_ATMy.DisconnectPipeline()
 
                 ## Prepare for next cycle
-                adder.SetInput1(sum_ATy)
+                adder.SetInput1(sum_ATMy)
 
-        return sum_ATy
+        return sum_ATMy
 
 
     ## Convert HR data array (vector format) back to itk.Image object
@@ -639,42 +654,42 @@ class InverseProblemSolver:
     """
     ## Compute
     #  \f$
-    #         op_0(x):= \Big( \sum_k A_k^* A_k + \alpha \Big) x
-    #                 = \sum_k A_k^* A_k x + \alpha x
+    #         op_0(x):= \Big( \sum_k A_k^* M_k A_k + \alpha \Big) x
+    #                 = \sum_k A_k^* M_k A_k x + \alpha x
     #  \f$
     #  \param[in] image_itk image which acts as x, itk.Image object
     #  \param[in] alpha regularization parameter, scalar
     #  \return op0(x) as itk.Image object
     def _op0(self, image_itk, alpha):
 
-        ## Compute sum_k [A_k' A_k x]
-        sum_ATAx_itk = self._sum_ATA(image_itk)        
+        ## Compute sum_k [A_k' M_k A_k x]
+        sum_ATMAx_itk = self._sum_ATMA(image_itk)
 
-        ## Compute sum_k [A_k' A_k x] + alpha*x
-        return self._add_amplified_image(sum_ATAx_itk, alpha, image_itk)
+        ## Compute sum_k [A_k' M_k A_k x] + alpha*x
+        return self._add_amplified_image(sum_ATMAx_itk, alpha, image_itk)
 
 
     ## Compute TK0 cost function with SPD matrix
     # \f[   
-    #       J_0(x) = \frac{1}{2} \Vert \Big(\sum_k A_k^* (A_k x -y_k) \Big) + \alpha x \Vert_{\ell^2}^2
-    #             = \frac{1}{2} \Vert \Big(\sum_k A_k^* A_k + \alpha \Big)x - \sum_k A_k^* y_k \Vert_{\ell^2}^2
+    #       J_0(x) = \frac{1}{2} \Vert \Big(\sum_k A_k^* M_k (A_k x -y_k) \Big) + \alpha x \Vert_{\ell^2}^2
+    #             = \frac{1}{2} \Vert \Big(\sum_k A_k^* M_k A_k + \alpha \Big)x - \sum_k A_k^* M_k y_k \Vert_{\ell^2}^2
     # \f]
     #  \param[in] HR_nda_vec data array of HR image, 1D array shape
-    #  \param[in] sum_ATy_itk output of _sum_ATy
+    #  \param[in] sum_ATMy_itk output of _sum_ATMy
     #  \param[in] alpha regularization parameter
     #  \return J0(x) as scalar value
-    def _TK0_SPD(self, HR_nda_vec, sum_ATy_itk, alpha):
+    def _TK0_SPD(self, HR_nda_vec, sum_ATMy_itk, alpha):
 
         ## Convert HR data array back to itk.Image object
         x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
 
-        ## Compute op0(x) = sum_k [A_k' A_k x] + alpha*x
+        ## Compute op0(x) = sum_k [A_k' M_k A_k x] + alpha*x
         op0_x_itk = self._op0(x_itk, alpha)
 
-        ## Compute sum_k [A_k' A_k x] + alpha*x - sum_k A_k' y_k 
-        J0_image_itk =  self._add_amplified_image(op0_x_itk, -1, sum_ATy_itk)
+        ## Compute sum_k [A_k' M_k A_k x] + alpha*x - sum_k A_k' M_k y_k 
+        J0_image_itk =  self._add_amplified_image(op0_x_itk, -1, sum_ATMy_itk)
 
-        ## J0 = 0.5*|| sum_k [A_k' A_k x] + alpha*x - sum_k A_k' y_k ||^2
+        ## J0 = 0.5*|| sum_k [A_k' M_k A_k x] + alpha*x - sum_k A_k' M_k y_k ||^2
         J0_nda = self._itk2np.GetArrayFromImage(J0_image_itk)
 
         return 0.5*np.sum( J0_nda**2 )
@@ -682,26 +697,26 @@ class InverseProblemSolver:
 
     ## Compute gradient of TK0 cost function with SPD matrix
      # \f[
-    #       \nabla J_0(x) =  \Big(\sum_k A_k^* A_k + \alpha \Big)
-    #                        \Big(\big(\sum_k A_k^* A_k + \alpha \big)x - \sum_k A_k^* y_k \Big)
+    #       \nabla J_0(x) =  \Big(\sum_k A_k^* M_k A_k + \alpha \Big)
+    #                        \Big(\big(\sum_k A_k^* M_k A_k + \alpha \big)x - \sum_k A_k^* M_k y_k \Big)
     # \f]
     #  \param[in] HR_nda_vec data array of HR image, 1D array shape
-    #  \param[in] op0_sum_ATy_itk output of _op0(sum_ATy)
+    #  \param[in] op0_sum_ATMy_itk output of _op0(sum_ATMy)
     #  \param[in] alpha regularization parameter
     #  \return grad J0(x) in voxel space as 1D data array
-    def _TK0_SPD_grad(self, HR_nda_vec, op0_sum_ATy_itk, alpha):
+    def _TK0_SPD_grad(self, HR_nda_vec, op0_sum_ATMy_itk, alpha):
 
         ## Convert HR data array back to itk.Image object
         x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
 
-        ## Compute op0(x) = sum_k [A_k' A_k x] + alpha*x
+        ## Compute op0(x) = sum_k [A_k' M_k A_k x] + alpha*x
         op0_x_itk = self._op0(x_itk, alpha)
 
-        ## Compute op0(op0(x)) = sum_k [A_k' A_k op0(x)] + alpha*op0(x)
+        ## Compute op0(op0(x)) = sum_k [A_k' M_k A_k op0(x)] + alpha*op0(x)
         op0_op0_x_itk = self._op0(op0_x_itk, alpha)
 
         ## Compute grad J0 in image space
-        grad_J0_image_itk = self._add_amplified_image(op0_op0_x_itk, -1, op0_sum_ATy_itk)
+        grad_J0_image_itk = self._add_amplified_image(op0_op0_x_itk, -1, op0_sum_ATMy_itk)
 
         ## Return grad J0 in voxel space
         return self._itk2np.GetArrayFromImage(grad_J0_image_itk).flatten()
@@ -851,45 +866,45 @@ class InverseProblemSolver:
 
     ## Compute
     #  \f$
-    #         op_1(x):= \Big( \sum_k A_k^* A_k + \alpha\,D^*D \Big) x
-    #                 = \sum_k A_k^* A_k x + \alpha\,D^*D x
+    #         op_1(x):= \Big( \sum_k A_k^* M_k A_k + \alpha\,D^*D \Big) x
+    #                 = \sum_k A_k^* M_k A_k x + \alpha\,D^*D x
     #  \f$
     #  \param[in] image_itk image which acts as x, itk.Image object
     #  \param[in] alpha regularization parameter, scalar
     #  \return op1(x) as itk.Image object
     def _op1(self, image_itk, image_nda_vec, alpha):
 
-        ## Compute sum_k [A_k' A_k x]
-        sum_ATAx_itk = self._sum_ATA(image_itk)   
+        ## Compute sum_k [A_k' M_k A_k x]
+        sum_ATMAx_itk = self._sum_ATMA(image_itk)   
 
         ## Compute \f$ D^*Dx \f$
         DTDx_itk = self._DTD[self._DTD_comp_type](image_nda_vec.reshape(self._HR_shape_nda))     
 
-        ## Compute sum_k [A_k' A_k x] + alpha*D'Dx
-        return self._add_amplified_image(sum_ATAx_itk, alpha, DTDx_itk)
+        ## Compute sum_k [A_k' M_k A_k x] + alpha*D'Dx
+        return self._add_amplified_image(sum_ATMAx_itk, alpha, DTDx_itk)
 
 
     ## Compute TK1 cost function with SPD matrix
     # \f[
-    #       J_1(x) = \frac{1}{2} \Vert \Big(\sum_k A_k^* (A_k x -y_k) \Big) + \alpha\, D^*D x \Vert_{\ell^2}^2
-    #             = \frac{1}{2} \Vert \Big(\sum_k A_k^* A_k + \alpha\, D^*D \Big)x - \sum_k A_k^* y_k \Vert_{\ell^2}^2
+    #       J_1(x) = \frac{1}{2} \Vert \Big(\sum_k A_k^* M_k (A_k x -y_k) \Big) + \alpha\, D^*D x \Vert_{\ell^2}^2
+    #             = \frac{1}{2} \Vert \Big(\sum_k A_k^* M_k A_k + \alpha\, D^*D \Big)x - \sum_k A_k^* M_k y_k \Vert_{\ell^2}^2
     # \f]
     #  \param[in] HR_nda_vec data array of HR image, 1D array shape
-    #  \param[in] sum_ATy_itk output of _sum_ATy
+    #  \param[in] sum_ATMy_itk output of _sum_ATMy
     #  \param[in] alpha regularization parameter
     #  \return J1(x) as scalar value
-    def _TK1_SPD(self, HR_nda_vec, sum_ATy_itk, alpha):
+    def _TK1_SPD(self, HR_nda_vec, sum_ATMy_itk, alpha):
 
         ## Convert HR data array back to itk.Image object
         x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
 
-        ## Compute op1(x) = sum_k [A_k' A_k x] + alpha*B'Bx
+        ## Compute op1(x) = sum_k [A_k' M_k A_k x] + alpha*B'Bx
         op1_x_itk = self._op1(x_itk, HR_nda_vec, alpha)
 
-        ## Compute sum_k [A_k' A_k x] + alpha*B'Bx - sum_k A_k' y_k 
-        J1_image_itk =  self._add_amplified_image(op1_x_itk, -1, sum_ATy_itk)
+        ## Compute sum_k [A_k' M_k A_k x] + alpha*B'Bx - sum_k A_k' M_k y_k 
+        J1_image_itk =  self._add_amplified_image(op1_x_itk, -1, sum_ATMy_itk)
 
-        ## J1 = 0.5*|| sum_k [A_k' A_k x] + alpha*B'Bx - sum_k A_k' y_k ||^2
+        ## J1 = 0.5*|| sum_k [A_k' M_k A_k x] + alpha*B'Bx - sum_k A_k' M_k y_k ||^2
         J1_nda = self._itk2np.GetArrayFromImage(J1_image_itk)
 
         return 0.5*np.sum( J1_nda**2 )
@@ -897,26 +912,26 @@ class InverseProblemSolver:
 
     ## Compute gradient of TK1 cost function with SPD matrix
     # \f[
-    #       \nabla J_1(x) =  \Big(\sum_k A_k^* A_k + \alpha\, D^*D \Big)
-    #                        \Big(\big(\sum_k A_k^* A_k + \alpha\, D^*D \big)x - \sum_k A_k^* y_k \Big)
+    #       \nabla J_1(x) =  \Big(\sum_k A_k^* M_k A_k + \alpha\, D^*D \Big)
+    #                        \Big(\big(\sum_k A_k^* M_k A_k + \alpha\, D^*D \big)x - \sum_k A_k^* M_k y_k \Big)
     # \f]
     #  \param[in] HR_nda_vec data array of HR image, 1D array shape
-    #  \param[in] op1_sum_ATy_itk output of _op1(sum_ATy)
+    #  \param[in] op1_sum_ATMy_itk output of _op1(sum_ATMy)
     #  \param[in] alpha regularization parameter
     #  \return grad J1(x) in voxel space as 1D data array
-    def _TK1_SPD_grad(self, HR_nda_vec, op1_sum_ATy_itk, alpha):
+    def _TK1_SPD_grad(self, HR_nda_vec, op1_sum_ATMy_itk, alpha):
 
         ## Convert HR data array back to itk.Image object
         x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
 
-        ## Compute op1(x) = sum_k [A_k' A_k x] + alpha*B'Bx
+        ## Compute op1(x) = sum_k [A_k' M_k A_k x] + alpha*B'Bx
         op1_x_itk = self._op1(x_itk, HR_nda_vec, alpha)
 
-        ## Compute op1(op1(x)) = sum_k [A_k' A_k op1(x)] + alpha*op1(x)
+        ## Compute op1(op1(x)) = sum_k [A_k' M_k A_k op1(x)] + alpha*op1(x)
         op1_op1_x_itk = self._op1(op1_x_itk, HR_nda_vec, alpha)
 
         ## Compute grad J1 in image space
-        grad_J1_image_itk = self._add_amplified_image(op1_op1_x_itk, -1, op1_sum_ATy_itk)
+        grad_J1_image_itk = self._add_amplified_image(op1_op1_x_itk, -1, op1_sum_ATMy_itk)
 
         ## Return grad J1 in voxel space
         return self._itk2np.GetArrayFromImage(grad_J1_image_itk).flatten()

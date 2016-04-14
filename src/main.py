@@ -6,15 +6,21 @@
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date September 2015
 
+## for IPython: reload all changed modules every time before executing
+# %load_ext autoreload
+# %autoreload 2
 
 ## Import libraries 
+import pdb
 import itk
 import SimpleITK as sitk
 import numpy as np
 
 ## Import modules from src-folder
 import ReconstructionManager as rm
+import SimpleITKHelper as sitkh
 # import SliceStack
+
 
 ## Change viewer for sitk.Show command
 #%env SITK_SHOW_COMMAND /Applications/ITK-SNAP.app/Contents/MacOS/ITK-SNAP
@@ -36,8 +42,14 @@ def read_input_data(image_type):
         #     ]
 
         # filenames = [str(i) for i in range(0, 8)]
-        filenames = [str(i) for i in range(0, 4)]
+        filenames = [str(i) for i in range(0, 3)]
 
+    elif image_type in ["fetal_trachea"]:
+        # dir_input = "../data/fetal_trachea/"
+        dir_input = "../data/fetal_trachea/cropped2/"
+
+        # filenames = [str(i) for i in range(0, 8)]
+        filenames = [str(i) for i in range(0, 3)]
 
     elif image_type in ["kidney"]:
         ## Kidney Images:
@@ -60,7 +72,7 @@ def read_input_data(image_type):
         #     "SENSEs2401a1024",
         #     "SENSEs2301a1023"
         #     ]
-        filenames = [str(i) for i in range(0, 6)]
+        filenames = [str(i) for i in range(0, 3)]
 
     elif image_type in ["StructuralData_Pig"]:
         dir_input = "../data/StructuralData_Pig/"
@@ -90,13 +102,13 @@ if __name__ == '__main__':
     np.set_printoptions(precision=3)
 
     ## Dummy to load itk for the first time (which takes 15 to 20 secs!)
-    image_type = itk.Image[itk.F, 2]
+    image_type = itk.Image[itk.D, 3]
 
     """
     Choose variables
     """
     ## Types of input images to process
-    input_stack_types_available = ("fetal_neck", "StructuralData_Pig", "kidney", "placenta")
+    input_stack_types_available = ("fetal_neck", "fetal_trachea", "StructuralData_Pig", "kidney", "placenta")
 
     ## Directory to save obtained results
     dir_output = "../results/"
@@ -104,6 +116,8 @@ if __name__ == '__main__':
     ## Choose input stacks and reference stack therein
     input_stacks_type = input_stack_types_available[0]
     reference_stack_id = 0
+    iterations_two_step_approach = 1
+
     print("Stacks chosen: %s" %input_stacks_type)
 
     """
@@ -122,11 +136,14 @@ if __name__ == '__main__':
     reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
 
     ## Run tow step reconstruction alignment approach
-    reconstruction_manager.run_two_step_reconstruction_alignment_approach()
+    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
 
     ## Write results
     # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
     reconstruction_manager.write_results()
+
+    HR_volume = reconstruction_manager.get_HR_volume()
+    HR_volume.show()
 
     """
     Playground
