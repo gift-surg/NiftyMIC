@@ -54,7 +54,7 @@ class VolumeReconstruction:
         self._alpha = 0.1               # Regularization parameter
         self._iter_max = 20             # Maximum iteration steps
         self._reg_type = 'TK0'          # Either Tikhonov zero- or first-order
-        self._DTD_comp_type = "Laplace" #default value
+        self._DTD_comp_type = "Laplace" # Either 'Laplace' or 'FiniteDifference'
 
 
 
@@ -191,7 +191,7 @@ class VolumeReconstruction:
     #  via ITK
     #  \remark Obtained intensity values are positive.
     def _run_discrete_shepard_reconstruction(self):
-        sigma = 0.7
+        sigma = 0.5
 
         shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
         helper_N_nda = np.zeros(shape)
@@ -200,36 +200,51 @@ class VolumeReconstruction:
         default_pixel_value = 0.0
 
         for i in range(0, self._N_stacks):
-        # for i in range(0, 2):
+        # for i in range(0, 1):
             print("  Stack %s/%s" %(i,self._N_stacks-1))
             stack = self._stacks[i]
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
             
+            # for j in range(10, 11):
             for j in range(0, N_slices):
                 slice = slices[j]
 
+                slice_masked_sitk = slice.sitk*sitk.Cast(slice.sitk_mask,slice.sitk.GetPixelIDValue())
+                # slice_masked_sitk = slice.sitk
+
                 ## Nearest neighbour resampling of slice to target space (HR volume)
                 slice_resampled_sitk = sitk.Resample(
-                    slice.sitk, 
+                    slice_masked_sitk, 
                     self._HR_volume.sitk, 
                     sitk.Euler3DTransform(), 
                     sitk.sitkNearestNeighbor, 
                     default_pixel_value,
                     self._HR_volume.sitk.GetPixelIDValue())
 
+                # sitkh.show_sitk_image(slice_resampled_sitk)
+
                 ## Extract array of pixel intensities
                 nda_slice = sitk.GetArrayFromImage(slice_resampled_sitk)
 
-                ## Look for indices which are stroke by the slice in the isotropic grid
+                ## Get voxels in HR volume space which are stroke by the slice
                 ind_nonzero = nda_slice>0
 
                 ## update arrays of numerator and denominator
                 helper_N_nda[ind_nonzero] += nda_slice[ind_nonzero]
                 helper_D_nda[ind_nonzero] += 1
+
+                # test = sitk.GetImageFromArray(helper_N_nda)
+                # sitkh.show_sitk_image(test,title="N")
+
+                # test = sitk.GetImageFromArray(helper_D_nda)
+                # sitkh.show_sitk_image(test,title="D")
                 
                 # print("helper_N_nda: (min, max) = (%s, %s)" %(np.min(helper_N_nda), np.max(helper_N_nda)))
                 # print("helper_D_nda: (min, max) = (%s, %s)" %(np.min(helper_D_nda), np.max(helper_D_nda)))
+
+        ## Set zero entries to one for well defined division
+        helper_D_nda[helper_D_nda==0] = 1
 
 
         ## Create itk-images with correct header data

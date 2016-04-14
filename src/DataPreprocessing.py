@@ -108,7 +108,7 @@ class DataPreprocessing:
     def _crop_stack_and_mask(self, stack_sitk, mask_sitk):
 
         ## Get rectangular region surrounding the masked voxels
-        [x_range, y_range, z_range] = self._get_rectangular_masked_region(mask_sitk, boundary=0)
+        [x_range, y_range, z_range] = self._get_rectangular_masked_region(mask_sitk, boundary=5)
 
         ## Crop stack and mask to defined image region
         stack_crop_sitk = self._crop_image_to_region(stack_sitk, x_range, y_range, z_range)
@@ -119,11 +119,13 @@ class DataPreprocessing:
 
     ## Return rectangular region surrounding masked region. 
     #  \param[in] mask_sitk sitk.Image representing the mask
-    #  \param[in] boundary additional boundary surrounding mask (optional)
+    #  \param[in] boundary additional boundary surrounding mask in mm (optional)
     #  \return range_x pair defining x interval of mask in voxel space 
     #  \return range_y pair defining y interval of mask in voxel space
     #  \return range_z pair defining z interval of mask in voxel space
     def _get_rectangular_masked_region(self, mask_sitk, boundary=0):
+
+        spacing = np.array(mask_sitk.GetSpacing())
 
         ## Get mask array
         nda = sitk.GetArrayFromImage(mask_sitk)
@@ -131,10 +133,10 @@ class DataPreprocessing:
         ## Get shape defining the dimension in each direction
         shape = nda.shape
 
-        ## Set additional offset around identified masked region
-        offset_x = boundary
-        offset_y = boundary
-        offset_z = boundary
+        ## Set additional offset around identified masked region in voxels
+        offset_x = np.round(boundary/spacing[2])
+        offset_y = np.round(boundary/spacing[1])
+        offset_z = np.round(boundary/spacing[0])
 
         ## Compute sum of pixels of each slice along specified directions
         sum_xy = np.sum(nda, axis=(0,1)) # sum within x-y-plane

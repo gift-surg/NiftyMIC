@@ -107,7 +107,7 @@ class SliceToVolumeRegistration:
                         fixed_slice_3D=slice, moving_3D=self._HR_volume, display_registration_info=0)
 
                 sitkh.print_rigid_transformation(rigid_transform)
-                
+
 
                 ## print if translation is strange
                 translation = rigid_transform.GetTranslation()
@@ -229,7 +229,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
 
         ## Use mutual information between two images
-        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=3)
+        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=1)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
         registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)

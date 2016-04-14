@@ -95,7 +95,6 @@ class ReconstructionManager:
         self._data_preprocessing.run_preprocessing(filenames)
 
         ## Read stacks:
-        # self._stack_manager.read_input_stacks(self._dir_results_input_data, filenames)
         self._stack_manager.read_input_stacks(self._dir_results_input_data_processed, filenames)
 
 
@@ -132,7 +131,12 @@ class ReconstructionManager:
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
 
         ## Choose reconstruction approach
-        volume_reconstruction.set_reconstruction_approach("Shepard")
+        # volume_reconstruction.set_reconstruction_approach("Shepard")
+        volume_reconstruction.set_reconstruction_approach("Tikhonov")
+        volume_reconstruction.set_regularization_type("TK1")
+        volume_reconstruction.set_DTD_computation_type("Laplace")
+        # volume_reconstruction.set_DTD_computation_type("FiniteDifference")
+
 
         ## Write
         self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_0")
