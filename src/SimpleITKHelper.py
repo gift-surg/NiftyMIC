@@ -283,9 +283,15 @@ def convert_sitk_to_itk_image(image_sitk):
     direction = get_itk_direction_from_sitk_image(image_sitk)
     nda = sitk.GetArrayFromImage(image_sitk)
 
-    ## Create ITK image
-    image_type = itk.Image[itk.D, dimension]
+    ## Define ITK image type according to pixel type of sitk.Object
+    if image_sitk.GetPixelIDValue() is sitk.sitkFloat64:
+        ## image stack
+        image_type = itk.Image[itk.D, dimension]
+    else:
+        ## mask stack
+        image_type = itk.Image[itk.UC, dimension]
 
+    ## Create ITK image
     itk2np = itk.PyBuffer[image_type]
     image_itk = itk2np.GetImageFromArray(nda) 
 
@@ -435,20 +441,43 @@ def show_itk_image(image_itk, segmentation=None, overlay=None, title="test"):
     dir_output = "/tmp/"
     # cmd = "fslview " + dir_output + title + ".nii.gz & "
 
-    ## Define type of output image
-    pixel_type = itk.D
     dim = image_itk.GetBufferedRegion().GetImageDimension()
-    image_type = itk.Image[pixel_type, dim]
 
-    ## Define writer
-    writer = itk.ImageFileWriter[image_type].New()
-    # writer_2D.Update()
-    # image_IO_type = itk.NiftiImageIO
+    image_type_seg = itk.Image[itk.UC, dim]
+    writer_seg = itk.ImageFileWriter[image_type_seg].New()
 
-    ## Write image_itk
-    writer.SetInput(image_itk)
-    writer.SetFileName(dir_output + title + ".nii.gz")
-    writer.Update()
+    ## Define type of output image depending on what is used
+    #  If type is not aligned with image_itk subsequent writer throws error
+    try:
+        ## Image type is 64 bit float for image stack
+        pixel_type = itk.D
+        image_type = itk.Image[pixel_type, dim]
+
+        ## Define writer
+        writer = itk.ImageFileWriter[image_type].New()
+        # writer_2D.Update()
+        # image_IO_type = itk.NiftiImageIO
+
+        ## Write image_itk
+        writer.SetInput(image_itk)
+        writer.SetFileName(dir_output + title + ".nii.gz")
+        writer.Update()
+    except:
+        ## Image type is unsigned char for mask stacks (works for mask related 
+        #  operations like for itk.ImageMaskSpatialObject for registration)
+        pixel_type = itk.UC
+        image_type = itk.Image[pixel_type, dim]
+
+        ## Define writer
+        writer = itk.ImageFileWriter[image_type].New()
+        # writer_2D.Update()
+        # image_IO_type = itk.NiftiImageIO
+
+        ## Write image_itk
+        writer.SetInput(image_itk)
+        writer.SetFileName(dir_output + title + ".nii.gz")
+        writer.Update()
+
 
     if overlay is not None and segmentation is None:
         ## Write overlay:
@@ -463,9 +492,9 @@ def show_itk_image(image_itk, segmentation=None, overlay=None, title="test"):
     
     elif overlay is None and segmentation is not None:
         ## Write segmentation:
-        writer.SetInput(segmentation)
-        writer.SetFileName(dir_output + title + "_segmentation.nii.gz")
-        writer.Update()
+        writer_seg.SetInput(segmentation)
+        writer_seg.SetFileName(dir_output + title + "_segmentation.nii.gz")
+        writer_seg.Update()
 
         cmd = "itksnap " \
             + "-g " + dir_output + title + ".nii.gz " \
@@ -479,9 +508,9 @@ def show_itk_image(image_itk, segmentation=None, overlay=None, title="test"):
         writer.Update()
 
         ## Write segmentation:
-        writer.SetInput(segmentation)
-        writer.SetFileName(dir_output + title + "_segmentation.nii.gz")
-        writer.Update()
+        writer_seg.SetInput(segmentation)
+        writer_seg.SetFileName(dir_output + title + "_segmentation.nii.gz")
+        writer_seg.Update()
 
         cmd = "itksnap " \
             + "-g " + dir_output + title + ".nii.gz " \

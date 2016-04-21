@@ -7,11 +7,13 @@
 
 ## Import libraries
 import os                       # used to execute terminal commands in python
+import itk
 import SimpleITK as sitk
 import numpy as np
 
 ## Import modules from src-folder
 import Slice as sl
+import SimpleITKHelper as sitkh
 
 ## In addition to the nifti-image as being stored as sitk.Image for the whole
 #  stack volume \f$ \in R^3 \times R^3 \times R^3\f$ 
@@ -39,22 +41,23 @@ class Stack:
         stack = cls()
         # stack = []
 
-        stack.sitk = sitk.ReadImage(dir_input+filename+".nii.gz", sitk.sitkFloat64)
         stack._dir = dir_input
         stack._filename = filename
 
-        stack._N_slices = stack.sitk.GetSize()[-1]
-        stack._slices = [None]*stack._N_slices
+        ## Append stacks as SimpleITK and ITK Image objects
+        stack.sitk = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
+        stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
 
-        ## If mask is provided attach it to Stack
-        if os.path.isfile(dir_input+filename+"_mask.nii.gz"):
-            stack.sitk_mask = sitk.ReadImage(dir_input+filename+"_mask.nii.gz", sitk.sitkUInt8)
-
-        ## If not: Generate binary mask consisting of ones
+        ## Append masks (either provided or binary mask)
+        if os.path.isfile(dir_input + filename + "_mask.nii.gz"):
+            stack.sitk_mask = sitk.ReadImage(dir_input + filename + "_mask.nii.gz", sitk.sitkUInt8)
+            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
         else:
             stack.sitk_mask = stack._generate_binary_mask()
+            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
 
         ## Extract all slices and their masks from the stack and store them 
+        stack._N_slices = stack.sitk.GetSize()[-1]
         stack._slices = stack._extract_slices()
 
         return stack
@@ -72,12 +75,15 @@ class Stack:
         stack = cls()
         
         stack.sitk = sitk.Image(image_sitk)
+        stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
+
         stack._filename = name
 
         stack._N_slices = stack.sitk.GetSize()[-1]
         stack._slices = [None]*stack._N_slices
 
         stack.sitk_mask = None
+        stack.itk_mask = None
 
 
     #         self.sitk = sitk.Image(image_sitk)
@@ -98,6 +104,7 @@ class Stack:
         try:
             if self.sitk_mask is None:
                 self.sitk_mask = image_sitk_mask
+                self.itk_mask = sitkh.convert_sitk_to_itk_image(image_sitk_mask)
 
             else:
                 raise ValueError("Error: Attempt to override already existing mask")

@@ -114,7 +114,7 @@ if __name__ == '__main__':
     dir_output = "../results/"
 
     ## Choose input stacks and reference stack therein
-    input_stacks_type = input_stack_types_available[1]
+    input_stacks_type = input_stack_types_available[0]
     reference_stack_id = 0
     iterations_two_step_approach = 1
 
@@ -128,23 +128,23 @@ if __name__ == '__main__':
 
     ## Read input data (including data preprocessing)
     dir_input, filenames = read_input_data(input_stacks_type)
-    # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_brain")
-    reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_brain_rectangular")
+    reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_brain")
+    # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_brain_rectangular")
 
-    # ## Compute first estimate of HR volume
-    # reconstruction_manager.set_off_in_plane_rigid_registration_before_estimating_initial_volume()
-    # reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
-    # reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
+    ## Compute first estimate of HR volume
+    reconstruction_manager.set_off_in_plane_rigid_registration_before_estimating_initial_volume()
+    reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
+    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
 
-    # ## Run tow step reconstruction alignment approach
-    # reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
+    ## Run tow step reconstruction alignment approach
+    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
 
-    # ## Write results
-    # # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
-    # reconstruction_manager.write_results()
+    ## Write results
+    # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
+    reconstruction_manager.write_results()
 
-    # HR_volume = reconstruction_manager.get_HR_volume()
-    # HR_volume.show()
+    HR_volume = reconstruction_manager.get_HR_volume()
+    HR_volume.show()
 
     """
     Playground

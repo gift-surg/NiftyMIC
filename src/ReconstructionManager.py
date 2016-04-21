@@ -162,7 +162,7 @@ class ReconstructionManager:
         ## Final SRR step
         volume_reconstruction.set_SDA_sigma(0.5)
 
-        # volume_reconstruction.set_reconstruction_approach("SRR")
+        volume_reconstruction.set_reconstruction_approach("SRR")
         volume_reconstruction.set_SRR_iter_max(20)
         volume_reconstruction.set_SRR_alpha(0.1)
         volume_reconstruction.set_SRR_approach("TK0")       # "TK0" or "TK1"

@@ -73,7 +73,6 @@ class InverseProblemSolver:
         self._reg_type = 'TK0'  # Either Tikhonov zero- or first-order
 
         ## Append itk objects
-        self._append_itk_object_on_slices_of_stacks()
         self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk)
 
         ## Allocate and initialize Oriented Gaussian Interpolate Image Filter

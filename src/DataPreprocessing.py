@@ -47,7 +47,7 @@ class DataPreprocessing:
 
         ## Each stack is provided a mask
         if number_of_masks is N_stacks:
-            print("All given stacks and masks are cropped to their masked region.")
+            print("All masks provided. Stack and associated mask are cropped to their masked region.")
             self._run_preprocessing_all_masks_provided(filenames, suffix_mask)
 
         ## No stack is provided a mask. Hence, mask entire region of stack
@@ -57,12 +57,12 @@ class DataPreprocessing:
 
         ## Not all stacks are provided a mask. Propagate target stack mask to other stacks
         else:
-            print("Not all stacks are provided a mask. Mask of target stack is propagated to other masks.")
+            print("Not all stacks are provided a mask. Mask of target stack is propagated to other masks and cropped.")
             self._run_preprocessing_not_all_masks_provided(filenames, filenames_masks, suffix_mask)
 
 
-    ## Count number of masks given in directory
-    #  \return filenames of masks provided, list of strings
+    ## Get filenames of stacks with provided masks in input directory
+    #  \return filenames as list of strings
     def _get_mask_filenames_in_directory(self, suffix_mask):
 
         filenames = []
@@ -73,7 +73,7 @@ class DataPreprocessing:
         ## Count number of files labelled as masks
         for file in all_files:
 
-            if file.endswith( suffix_mask + ".nii.gz"):
+            if file.endswith(suffix_mask + ".nii.gz"):
 
                 filename = file.replace(suffix_mask + ".nii.gz","")
                 filenames.append(filename)

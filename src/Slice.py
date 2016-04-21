@@ -7,10 +7,12 @@
 
 ## Import libraries
 import os                       # used to execute terminal commands in python
+import itk
 import SimpleITK as sitk
-import SimpleITKHelper as sitkh
 import numpy as np
 
+## Import modules from src-folder
+import SimpleITKHelper as sitkh
 
 ## In addition to the nifti-image as being stored as sitk.Image for a single
 #  3D slice \f$ \in R^3 \times R^3 \times 1\f$ the class Slice
@@ -24,11 +26,18 @@ class Slice:
     #  \param[in] slice_number number of slice within parent stack, integer
     #  \param[in] slice_sitk_mask associated mask of slice, sitk.Image object (optional)
     def __init__(self, slice_sitk, dir_input, filename, slice_number, slice_sitk_mask = None):
-        self.sitk = slice_sitk
-        self.sitk_mask = slice_sitk_mask
+
         self._dir_input = dir_input
         self._filename = filename
         self._slice_number = slice_number
+
+        ## Append slices as sitk.Image objects
+        self.sitk = slice_sitk
+        self.sitk_mask = slice_sitk_mask
+
+        ## Append slices as itk.Image objects
+        self.itk = sitkh.convert_sitk_to_itk_image(slice_sitk)
+        self.itk_mask = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
 
         ## Store current affine transform of image
         self._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(self.sitk)
@@ -60,12 +69,23 @@ class Slice:
         ## Append transform to registration history
         self._registration_history_sitk.append(affine_transform_sitk)
 
-        ## Update origin and direction of 3D slice given the new spatial transform
+        ## Get origin and direction of transformed 3D slice given the new spatial transform
         origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
         direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
 
+        ## Update SimpleITK objects
         self.sitk.SetOrigin(origin)
         self.sitk.SetDirection(direction)
+
+        self.sitk_mask.SetOrigin(origin)
+        self.sitk_mask.SetDirection(direction)
+
+        ## Update ITK objects
+        self.itk.SetOrigin(origin)
+        self.itk.SetDirection(sitkh.get_itk_direction_from_sitk_image(self.sitk))
+
+        self.itk_mask.SetOrigin(origin)
+        self.itk_mask.SetDirection(sitkh.get_itk_direction_from_sitk_image(self.sitk))
 
         ## Update origin and direction of 3D slice mask
         if self.sitk_mask is not None:
