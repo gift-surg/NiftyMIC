@@ -7,6 +7,7 @@
 #  \date September 2015
 
 ## for IPython: reload all changed modules every time before executing
+## However, added in file ~/.ipython/profile_default/ipython_config.py
 # %load_ext autoreload
 # %autoreload 2
 
@@ -27,9 +28,9 @@ import SimpleITKHelper as sitkh
 
 def read_input_data(image_type):
     
-    if image_type in ["fetal_neck"]:
+    if image_type in ["fetal_neck_mass_brain"]:
         ## Fetal Neck Images:
-        dir_input = "../data/fetal_neck/"
+        dir_input = "../data/fetal_neck_mass_brain/"
         # filenames = [
         #     "20150115_161038s006a1001_crop",
         #     "20150115_161038s003a1001_crop",
@@ -44,9 +45,8 @@ def read_input_data(image_type):
         # filenames = [str(i) for i in range(0, 8)]
         filenames = [str(i) for i in range(0, 3)]
 
-    elif image_type in ["fetal_trachea"]:
-        # dir_input = "../data/fetal_trachea/"
-        dir_input = "../data/fetal_trachea/cropped2/"
+    elif image_type in ["fetal_neck_mass_subject"]:
+        dir_input = "../data/fetal_neck_mass_subject/"
 
         # filenames = [str(i) for i in range(0, 8)]
         filenames = [str(i) for i in range(0, 3)]
@@ -108,13 +108,13 @@ if __name__ == '__main__':
     Choose variables
     """
     ## Types of input images to process
-    input_stack_types_available = ("fetal_neck", "fetal_trachea", "StructuralData_Pig", "kidney", "placenta")
+    input_stack_types_available = ("fetal_neck_mass_brain", "fetal_neck_mass_subject", "StructuralData_Pig", "kidney", "placenta")
 
     ## Directory to save obtained results
     dir_output = "../results/"
 
     ## Choose input stacks and reference stack therein
-    input_stacks_type = input_stack_types_available[0]
+    input_stacks_type = input_stack_types_available[1]
     reference_stack_id = 0
     iterations_two_step_approach = 1
 
@@ -124,26 +124,27 @@ if __name__ == '__main__':
     Run reconstruction
     """
     ## Prepare output directory
-    reconstruction_manager = rm.ReconstructionManager(dir_output)
+    reconstruction_manager = rm.ReconstructionManager(dir_output, reference_stack_id, recon_name=input_stacks_type)
 
-    ## Read input data
+    ## Read input data (including data preprocessing)
     dir_input, filenames = read_input_data(input_stacks_type)
-    reconstruction_manager.read_input_stacks(dir_input, filenames)
+    # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_brain")
+    reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_brain_rectangular")
 
-    ## Compute first estimate of HR volume
-    reconstruction_manager.set_off_in_plane_rigid_registration_before_estimating_initial_volume()
-    reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
-    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
+    # ## Compute first estimate of HR volume
+    # reconstruction_manager.set_off_in_plane_rigid_registration_before_estimating_initial_volume()
+    # reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
+    # reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
 
-    ## Run tow step reconstruction alignment approach
-    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
+    # ## Run tow step reconstruction alignment approach
+    # reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
 
-    ## Write results
-    # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
-    reconstruction_manager.write_results()
+    # ## Write results
+    # # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
+    # reconstruction_manager.write_results()
 
-    HR_volume = reconstruction_manager.get_HR_volume()
-    HR_volume.show()
+    # HR_volume = reconstruction_manager.get_HR_volume()
+    # HR_volume.show()
 
     """
     Playground

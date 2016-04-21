@@ -35,58 +35,37 @@ class DataPreprocessing:
 
     ## Perform data preprocessing step
     #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
-    #  \todo Mask propagation
-    def run_preprocessing(self, filenames):
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    def run_preprocessing(self, filenames, suffix_mask):
+        
+        ## Number of stacks to be read
         N_stacks = len(filenames)
 
-        number_of_masks = self._get_number_of_masks_in_directory()
+        ## Number of masked stacks provided
+        filenames_masks = self._get_mask_filenames_in_directory(suffix_mask)
+        number_of_masks = len(filenames_masks)
 
         ## Each stack is provided a mask
         if number_of_masks is N_stacks:
             print("All given stacks and masks are cropped to their masked region.")
-
-            for i in range(0, N_stacks):
-                ## Read stack and mask from directory
-                stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz")
-                mask_sitk = sitk.ReadImage(self._dir_input + filenames[i] + "_mask.nii.gz", sitk.sitkUInt8)
-
-                ## Crop stack and mask based on the mask provided
-                [stack_sitk, mask_sitk] = self._crop_stack_and_mask(stack_sitk, mask_sitk)
-
-                ## Write preprocessed data to output directory
-                self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
+            self._run_preprocessing_all_masks_provided(filenames, suffix_mask)
 
         ## No stack is provided a mask. Hence, mask entire region of stack
         elif number_of_masks is 0:
             print("No mask is provided. Consider entire stack for reconstruction pipeline.")
-
-            for i in range(0, N_stacks):
-                ## Read stack from directory
-                stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz")
-
-                ## Create binary mask consisting of ones
-                shape = sitk.GetArrayFromImage(stack_sitk).shape
-                nda = np.ones(shape, dtype=np.uint8)
-
-                mask_sitk = sitk.GetImageFromArray(nda)
-                mask_sitk.CopyInformation(stack_sitk) 
-            
-                ## Write preprocessed data to output directory
-                self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
+            self._run_preprocessing_no_mask_provided(filenames)
 
         ## Not all stacks are provided a mask. Propagate target stack mask to other stacks
-        ## \todo Mask propagation
         else:
             print("Not all stacks are provided a mask. Mask of target stack is propagated to other masks.")
-            # if os.path.isfile(self._dir_input + filenames[i] + "_mask.nii.gz"):
-            raise ValueError("Error: Mask propagation not provided yet.")
+            self._run_preprocessing_not_all_masks_provided(filenames, filenames_masks, suffix_mask)
 
 
     ## Count number of masks given in directory
-    #  \return number of masks found in directory
-    def _get_number_of_masks_in_directory(self):
+    #  \return filenames of masks provided, list of strings
+    def _get_mask_filenames_in_directory(self, suffix_mask):
 
-        number_of_masks = 0
+        filenames = []
 
         ## List of all files in directory
         all_files = os.listdir(self._dir_input)
@@ -94,21 +73,296 @@ class DataPreprocessing:
         ## Count number of files labelled as masks
         for file in all_files:
 
-            if file.endswith("_mask.nii.gz"):
-                number_of_masks += 1
+            if file.endswith( suffix_mask + ".nii.gz"):
 
-        return number_of_masks
+                filename = file.replace(suffix_mask + ".nii.gz","")
+                filenames.append(filename)
+
+        return filenames
 
 
+    """
+    All masks provided
+    """
+    ## Perform data preprocessing step for case that all masks are provided
+    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    def _run_preprocessing_all_masks_provided(self, filenames, suffix_mask):
+
+        ## Number of stacks to be read
+        N_stacks = len(filenames)
+
+        for i in range(0, N_stacks):
+            ## Read stack and mask from directory
+            stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz", sitk.sitkFloat64)
+            mask_sitk = sitk.ReadImage(self._dir_input + filenames[i] + suffix_mask + ".nii.gz", sitk.sitkUInt8)
+
+            ## Crop stack and mask based on the mask provided
+            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(stack_sitk, mask_sitk, boundary=0)
+
+            ## Write preprocessed data to output directory
+            self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
+
+
+    """
+    No mask provided
+    """
+    ## Perform data preprocessing step for case that no mask is provided
+    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
+    def _run_preprocessing_no_mask_provided(self, filenames):
+        
+        ## Number of stacks to be read
+        N_stacks = len(filenames)
+
+        for i in range(0, N_stacks):
+            ## Read stack from directory
+            stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz", sitk.sitkFloat64)
+
+            ## Create binary mask consisting of ones
+            shape = sitk.GetArrayFromImage(stack_sitk).shape
+            nda = np.ones(shape, dtype=np.uint8)
+
+            mask_sitk = sitk.GetImageFromArray(nda)
+            mask_sitk.CopyInformation(stack_sitk) 
+        
+            ## Write preprocessed data to output directory
+            self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
+
+
+    """
+    Not all masks provided
+    """
+    ## Perform data preprocessing step for case that some masks are missing.
+    #  mask stored in self._target_stack_number is used as template mask for
+    #  mask propagation
+    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    def _run_preprocessing_not_all_masks_provided(self, filenames, filenames_masks, suffix_mask):
+
+
+        ## Exclude target stack in subsequent loop. Target stack mask is used
+        #  as template mask for mask propagation.
+        #  TODO: Only propagate mask(s) to stacks which do not have a mask. Here, only target stack excluded
+    
+        # if os.path.isfile(self._dir_input + filenames[i] + "_mask.nii.gz"):
+
+        range_prop_mask, range_prop_mask_complement = self._get_filename_indices_for_mask_propagation(filenames, filenames_masks)
+
+        ##*** Propagate masks
+
+        ## Read target stack and mask and use as template
+        template_sitk = sitk.ReadImage(self._dir_input + str(self._target_stack_number) + ".nii.gz", sitk.sitkFloat64)
+        template_mask_sitk = sitk.ReadImage(self._dir_input + str(self._target_stack_number) + suffix_mask + ".nii.gz", sitk.sitkUInt8)
+
+        for i in range_prop_mask:
+            ## Read stack from directory
+            stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz", sitk.sitkFloat64)
+
+            ## Propagate mask
+            mask_sitk = self._get_propagated_mask(stack_sitk, template_sitk, template_mask_sitk)
+
+            ## Dilate propagated mask (to smooth mask)
+            # mask_sitk = self._dilate_mask(mask_sitk)
+
+            ## Crop stack and mask based on the mask provided
+            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(stack_sitk, mask_sitk, boundary=0)
+
+            ## Write preprocessed data to output directory
+            self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
+
+        ##*** Do not propagate masks
+        for i in range_prop_mask_complement:
+            ## Read stack and mask from directory
+            stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz", sitk.sitkFloat64)
+            mask_sitk = sitk.ReadImage(self._dir_input + filenames[i] + suffix_mask + ".nii.gz", sitk.sitkUInt8)
+
+            ## Crop stack and mask based on the mask provided
+            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(stack_sitk, mask_sitk, boundary=0)
+
+            ## Write preprocessed data to output directory
+            self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
+
+
+    def _get_filename_indices_for_mask_propagation(self, filenames, filenames_masks):
+
+        ## Number of stacks to be read
+        N_stacks = len(filenames)
+
+        stacks_all = np.arange(0, N_stacks)
+
+
+        ## Get indices of filenames where mask is provided
+        indices = []
+
+        for i in stacks_all:
+            filename = filenames[i]
+
+            if bool(len(list(set(filename)-set(filenames_masks)))):
+                indices.append(i)
+
+        indices_complement = list(set(stacks_all)-set(indices))
+
+        print("indices for mask propagation = " + str(indices))
+        print("no mask propagation required = " + str(indices_complement))
+
+        return indices, indices_complement
+
+
+    ## Obtain propagated mask based on a given template (moving). The mask 
+    #  propagation is obtained via rigid registration.
+    #  \param[in] fixed_sitk stack as sitk.Image for which a mask is desired
+    #  \param[in] moving_sitk stack as sitk.Image for which a mask is available
+    #  \param[in] moving_mask_sitk mask of moving_sitk as sitk.Image to propagate
+    #  \return approximate mask of fixed_sitk based on the given template
+    def _get_propagated_mask(self, fixed_sitk, moving_sitk, moving_mask_sitk):
+
+        ## Get transform which aligns fixed_sitk with the template moving_sitk
+        transform = self._get_rigid_registration_transform_3D(fixed_sitk, moving_sitk)
+
+        ## Resample propagated mask to fixed_sitk grid
+        default_pixel_value = 0.0
+
+        # fixed_mask_prop_sitk = sitk.Resample(moving_mask_sitk, fixed_sitk, transform, sitk.sitkLinear, default_pixel_value, moving_mask_sitk.GetPixelIDValue())
+        fixed_mask_prop_sitk = sitk.Resample(moving_mask_sitk, fixed_sitk, transform, sitk.sitkNearestNeighbor, default_pixel_value, moving_mask_sitk.GetPixelIDValue())
+
+        return fixed_mask_prop_sitk
+
+
+    ## Rigid registration routine based on SimpleITK
+    #  \param fixed_3D_sitk upsampled fixed Slice
+    #  \param moving_3D_sitk moving Stack
+    #  \param display_registration_info display registration summary at the end of execution (default=0)
+    #  \return Rigid transform as sitk.Euler3DTransform object
+    def _get_rigid_registration_transform_3D(self, fixed_3D_sitk, moving_3D_sitk, display_registration_info=0):
+
+        ## Instantiate interface method to the modular ITKv4 registration framework
+        registration_method = sitk.ImageRegistrationMethod()
+
+        ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
+        # initial_transform = sitk.CenteredTransformInitializer(fixed_3D_sitk._sitk_upsampled, moving_3D_sitk.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+        initial_transform = sitk.Euler3DTransform()
+
+        ## Set the initial transform and parameters to optimize
+        registration_method.SetInitialTransform(initial_transform)
+
+        ## Set an image masks in order to restrict the sampled points for the metric
+        # registration_method.SetMetricFixedMask(fixed_3D_sitk._sitk_mask_upsampled)
+        # registration_method.SetMetricMovingMask(moving_3D_sitk.sitk_mask)
+
+        ## Set percentage of pixels sampled for metric evaluation
+        # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
+
+        ## Set interpolator to use
+        registration_method.SetInterpolator(sitk.sitkLinear)
+
+        """
+        similarity metric settings
+        """
+        ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
+        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
+        
+        ## Use negative normalized cross correlation image metric
+        # registration_method.SetMetricAsCorrelation()
+
+        ## Use demons image metric
+        # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
+
+        ## Use mutual information between two images
+        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=1)
+        
+        ## Use the mutual information between two images to be registered using the method of Mattes2001
+        registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)
+
+        ## Use negative means squares image metric
+        # registration_method.SetMetricAsMeanSquares()
+        
+        """
+        optimizer settings
+        """
+        ## Set optimizer to Nelder-Mead downhill simplex algorithm
+        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
+
+        ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
+        # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
+
+        ## Set the optimizer to sample the metric at regular steps
+        # registration_method.SetOptimizerAsExhaustive(numberOfSteps=50, stepLength=1.0)
+
+        ## Gradient descent optimizer with a golden section line search
+        # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
+
+        ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
+        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
+
+        ## Regular Step Gradient descent optimizer
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=2000)
+
+        ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
+        ## (Many more possibilities to estimate scales)
+        registration_method.SetOptimizerScalesFromPhysicalShift()
+        
+        """
+        setup for the multi-resolution framework            
+        """
+        ## Set the shrink factors for each level where each level has the same shrink factor for each dimension
+        # registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+
+        ## Set the sigmas of Gaussian used for smoothing at each level
+        # registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+
+        ## Enable the smoothing sigmas for each level in physical units (default) or in terms of voxels (then *UnitsOff instead)
+        registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+
+        ## Connect all of the observers so that we can perform plotting during registration
+        # registration_method.AddCommand(sitk.sitkStartEvent, start_plot)
+        # registration_method.AddCommand(sitk.sitkEndEvent, end_plot)
+        # registration_method.AddCommand(sitk.sitkMultiResolutionIterationEvent, update_multires_iterations) 
+        # registration_method.AddCommand(sitk.sitkIterationEvent, lambda: plot_values(registration_method))
+
+        # print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
+        # print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+        # print("\n")
+
+        ## Execute 3D registration
+        final_transform_3D_sitk = registration_method.Execute(fixed_3D_sitk, moving_3D_sitk) 
+
+        if display_registration_info:
+            print("SimpleITK Image Registration Method:")
+            print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
+            print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+
+        return final_transform_3D_sitk
+
+
+    ## Dilate mask
+    #  \param[in] mask_sitk mask to be dilated
+    #  \return dilated mask
+    def _dilate_mask(self, mask_sitk):
+        filter = sitk.BinaryDilateImageFilter()
+        filter.SetKernelType(sitk.sitkBall)
+        # filter.SetKernelType(sitk.sitkBox)
+        # filter.SetKernelType(sitk.sitkAnnulus)
+        # filter.SetKernelType(sitk.sitkCross)
+        filter.SetKernelRadius(1)
+        filter.SetForegroundValue(1)
+        dilated = filter.Execute(mask_sitk)
+
+        return dilated
+
+
+    """
+    Helpers for all "_run_preprocessing_*" types
+    """
     ## Crop stack and mask to region given my mask
     #  \param[in] stack_sitk stack as sitk.Image object
     #  \param[in] mask_sitk mask as sitk.Image object
+    #  \param[in] boundary additional boundary surrounding mask in mm (optional)
     #  \return cropped stack as sitk.Object
     #  \return cropped mask as sitk.Object
-    def _crop_stack_and_mask(self, stack_sitk, mask_sitk):
+    def _crop_stack_and_mask(self, stack_sitk, mask_sitk, boundary=0):
 
         ## Get rectangular region surrounding the masked voxels
-        [x_range, y_range, z_range] = self._get_rectangular_masked_region(mask_sitk, boundary=10)
+        [x_range, y_range, z_range] = self._get_rectangular_masked_region(mask_sitk, boundary)
 
         ## Crop stack and mask to defined image region
         stack_crop_sitk = self._crop_image_to_region(stack_sitk, x_range, y_range, z_range)
@@ -195,4 +449,5 @@ class DataPreprocessing:
 
         ## Write mask
         sitk.WriteImage(mask_sitk, self._dir_output + filename + "_mask.nii.gz")
+
 

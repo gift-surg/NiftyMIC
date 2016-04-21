@@ -17,10 +17,9 @@ from scipy.optimize import minimize
 from scipy import ndimage
 import matplotlib.pyplot as plt
 
-import itk
-
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
+import PSF as psf
 
 
 ## Pixel type of used 3D ITK image
@@ -57,53 +56,56 @@ class InverseProblemSolver:
     #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (used as initial value + space definition)
     def __init__(self, stacks, HR_volume):
 
-            ## Initialize variables
-            self._stacks = stacks
-            self._HR_volume = HR_volume
-            self._N_stacks = len(stacks)
+        ## Initialize variables
+        self._stacks = stacks
+        self._HR_volume = HR_volume
+        self._N_stacks = len(stacks)
 
-            ## Cut-off distance for Gaussian blurring filter
-            self._alpha_cut = 3     
+        ## Used for PSF modelling
+        self._psf = psf.PSF()
 
-            ## Settings for optimizer
-            self._alpha = 0.1      # Regularization parameter
-            self._iter_max = 20     # Maximum iteration steps
-            self._reg_type = 'TK0'  # Either Tikhonov zero- or first-order
+        ## Cut-off distance for Gaussian blurring filter
+        self._alpha_cut = 3     
 
-            ## Append itk objects
-            self._append_itk_object_on_slices_of_stacks()
-            self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk)
+        ## Settings for optimizer
+        self._alpha = 0.1      # Regularization parameter
+        self._iter_max = 20     # Maximum iteration steps
+        self._reg_type = 'TK0'  # Either Tikhonov zero- or first-order
 
-            ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
-            self._filter_oriented_Gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
-            self._filter_oriented_Gaussian_interpolator.SetAlpha(self._alpha_cut)
-            
-            self._filter_oriented_Gaussian = itk.ResampleImageFilter[image_type, image_type].New()
-            self._filter_oriented_Gaussian.SetInterpolator(self._filter_oriented_Gaussian_interpolator)
-            self._filter_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
+        ## Append itk objects
+        self._append_itk_object_on_slices_of_stacks()
+        self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk)
 
-            ## Allocate and initialize Adjoint Oriented Gaussian Interpolate Image Filter
-            self._filter_adjoint_oriented_Gaussian = itk.AdjointOrientedGaussianInterpolateImageFilter[image_type, image_type].New()
-            self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
-            self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
-            self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage( self._HR_volume.itk )
+        ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
+        self._filter_oriented_Gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
+        self._filter_oriented_Gaussian_interpolator.SetAlpha(self._alpha_cut)
+        
+        self._filter_oriented_Gaussian = itk.ResampleImageFilter[image_type, image_type].New()
+        self._filter_oriented_Gaussian.SetInterpolator(self._filter_oriented_Gaussian_interpolator)
+        self._filter_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
 
-            ## Create PyBuffer object for conversion between NumPy arrays and ITK images
-            self._itk2np = itk.PyBuffer[image_type]
+        ## Allocate and initialize Adjoint Oriented Gaussian Interpolate Image Filter
+        self._filter_adjoint_oriented_Gaussian = itk.AdjointOrientedGaussianInterpolateImageFilter[image_type, image_type].New()
+        self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
+        self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
+        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage( self._HR_volume.itk )
 
-            ## Extract information ready to use for itk image conversion operations
-            self._HR_shape_nda = sitk.GetArrayFromImage( self._HR_volume.sitk ).shape
-            self._HR_origin_itk = self._HR_volume.sitk.GetOrigin()
-            self._HR_spacing_itk = self._HR_volume.sitk.GetSpacing()
-            self._HR_direction_itk = sitkh.get_itk_direction_from_sitk_image( self._HR_volume.sitk )
+        ## Create PyBuffer object for conversion between NumPy arrays and ITK images
+        self._itk2np = itk.PyBuffer[image_type]
 
-            ## Define dictionary to choose between two possible computations
-            #  of the differential operator D'D
-            self._DTD = {
-                "Laplace"           :   self._DTD_laplacian,
-                "FiniteDifference"  :   self._DTD_finite_diff
-            }
-            self._DTD_comp_type = "Laplace" #default value
+        ## Extract information ready to use for itk image conversion operations
+        self._HR_shape_nda = sitk.GetArrayFromImage( self._HR_volume.sitk ).shape
+        self._HR_origin_itk = self._HR_volume.sitk.GetOrigin()
+        self._HR_spacing_itk = self._HR_volume.sitk.GetSpacing()
+        self._HR_direction_itk = sitkh.get_itk_direction_from_sitk_image( self._HR_volume.sitk )
+
+        ## Define dictionary to choose between two possible computations
+        #  of the differential operator D'D
+        self._DTD = {
+            "Laplace"           :   self._DTD_laplacian,
+            "FiniteDifference"  :   self._DTD_finite_diff
+        }
+        self._DTD_comp_type = "Laplace" #default value
 
 
     ## Get current estimate of HR volume
@@ -381,54 +383,12 @@ class InverseProblemSolver:
                 slice.itk_mask  = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
                 
 
-    ## Compute the covariance matrix modelling the PSF in-plane and 
-    #  through-plane of a slice.
-    #  The PSF is modelled as Gaussian with
-    #       FWHM = 1.2*in-plane-resolution (in-plane)
-    #       FWHM = slice thickness (through-plane)
-    #  \param[in] slice Slice instance defining the PSF
-    #  \return Covariance matrix representing the PSF modelled as Gaussian
-    def _get_PSF_covariance_matrix(self, slice):
-        spacing = np.array(slice.sitk.GetSpacing())
-
-        ## Compute Gaussian to approximate in-plane PSF:
-        sigma_x2 = (1.2*spacing[0])**2/(8*np.log(2))
-        sigma_y2 = (1.2*spacing[1])**2/(8*np.log(2))
-
-        ## Compute Gaussian to approximate through-plane PSF:
-        sigma_z2 = spacing[2]**2/(8*np.log(2))
-
-        return np.diag([sigma_x2, sigma_y2, sigma_z2])
-
-
-    ## Compute rotated covariance matrix which expresses the PSF of the slice
-    #  in the coordinates of the HR_volume
-    #  \param[in] slice slice which is aimed to be simulated according to the slice acquisition model
-    #  \return Covariance matrix U*Sigma_diag*U' where U represents the
-    #          orthogonal trafo between slice and HR_volume
-    def _get_PSF_covariance_matrix_HR_volume_coordinates(self, slice):
-
-        ## Compute rotation matrix to express the PSF in the coordinate system of the HR volume
-        dim = slice.sitk.GetDimension()
-        direction_matrix_HR_volume = np.array(self._HR_volume.sitk.GetDirection()).reshape(dim,dim)
-        direction_matrix_slice = np.array(slice.sitk.GetDirection()).reshape(dim,dim)
-
-        U = direction_matrix_HR_volume.transpose().dot(direction_matrix_slice)
-        # print("U = \n%s\ndet(U) = %s" % (U,np.linalg.det(U)))
-
-        ## Get axis algined PSF
-        cov = self._get_PSF_covariance_matrix(slice)
-
-        ## Return Gaussian blurring variance covariance matrix of slice in HR volume coordinates 
-        return U.dot(cov).dot(U.transpose())
-
-
-    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image Filter parameters 
+    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image Filter parameters. Hence, update combined Downsample and Blur Operator
     #  according to the relative position between slice and HR volume
     #  \param[in] slice Slice object
     def _update_oriented_adjoint_oriented_Gaussian_image_filters(self, slice):
         ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates
-        Cov_HR_coord = self._get_PSF_covariance_matrix_HR_volume_coordinates( slice )
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( slice, self._HR_volume )
 
         ## Update parameters of forward operator A
         self._filter_oriented_Gaussian_interpolator.SetCovariance( Cov_HR_coord.flatten() )

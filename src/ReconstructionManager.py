@@ -23,10 +23,10 @@ class ReconstructionManager:
     ## Set up output directories to save reconstruction results
     #  \param[in] dir_output output directory where all results will be stored
     #  \param[in] target_stack_number stack chosen to define space and coordinate system of HR reconstruction, integer (optional)
-    def __init__(self, dir_output, target_stack_number=0):
+    def __init__(self, dir_output, target_stack_number=0, recon_name="Reconstruction"):
 
         self._dir_results = dir_output
-        self._HR_volume_filename = "Reconstruction"
+        self._HR_volume_filename = "recon_" + recon_name
         
         ## Directory of input data used for reconstruction algorithm
         self._dir_results_input_data = self._dir_results + "input_data/"
@@ -67,7 +67,8 @@ class ReconstructionManager:
     ## Read input stacks stored from given directory
     #  \param[in] dir_input_to_copy directory where stacks are stored
     #  \param[in] filenames_to_copy filenames of stacks to be considered in that directory
-    def read_input_stacks(self, dir_input_to_copy, filenames_to_copy):
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    def read_input_stacks(self, dir_input_to_copy, filenames_to_copy, suffix_mask="_mask"):
         N_stacks = len(filenames_to_copy)
         filenames = [str(i) for i in range(0, N_stacks)]
 
@@ -84,15 +85,15 @@ class ReconstructionManager:
             os.system(cmd)
 
             ## 2) Copy masks:
-            if os.path.isfile(dir_input_to_copy + filenames_to_copy[i] + "_mask.nii.gz"):
-                cmd = "cp " + dir_input_to_copy + filenames_to_copy[i] + "_mask.nii.gz " \
-                            + self._dir_results_input_data + filenames[i] + "_mask.nii.gz"
+            if os.path.isfile(dir_input_to_copy + filenames_to_copy[i] + suffix_mask + ".nii.gz"):
+                cmd = "cp " + dir_input_to_copy + filenames_to_copy[i] + suffix_mask + ".nii.gz " \
+                            + self._dir_results_input_data + filenames[i] + suffix_mask + ".nii.gz"
                 os.system(cmd)
             
         print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
 
         ## Data preprocessing:
-        self._data_preprocessing.run_preprocessing(filenames)
+        self._data_preprocessing.run_preprocessing(filenames, suffix_mask)
 
         ## Read stacks:
         self._stack_manager.read_input_stacks(self._dir_results_input_data_processed, filenames)
@@ -107,7 +108,8 @@ class ReconstructionManager:
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename, self._target_stack_number)
 
         ## Choose reconstruction approach
-        first_estimate_of_HR_volume.set_reconstruction_approach("SDA") #"SDA" or "Average"
+        recon_approach = "SDA"
+        first_estimate_of_HR_volume.set_reconstruction_approach(recon_approach) #"SDA" or "Average"
         first_estimate_of_HR_volume.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
         first_estimate_of_HR_volume.set_SDA_sigma(1)
 
@@ -124,6 +126,10 @@ class ReconstructionManager:
 
         ## Get estimation
         self._HR_volume = first_estimate_of_HR_volume.get_HR_volume()
+
+        ## Write
+        filename = self._HR_volume_filename + "_0_" + recon_approach
+        self._HR_volume.write(directory=self._dir_results, filename=filename)
         
 
     ## Execute two-step reconstruction alignment approach
@@ -136,36 +142,38 @@ class ReconstructionManager:
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
 
         ## Choose reconstruction approach
-        volume_reconstruction.set_reconstruction_approach("SDA")
+        recon_approach = "SDA"
+        volume_reconstruction.set_reconstruction_approach(recon_approach)
         volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
-        volume_reconstruction.set_SDA_sigma(0.6)
-
-        # volume_reconstruction.set_reconstruction_approach("SRR")
-        volume_reconstruction.set_SRR_iter_max(2)
-        volume_reconstruction.set_SRR_alpha(0.03)
-        volume_reconstruction.set_SRR_approach("TK0")       # "TK0" or "TK1"
-        volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
-        # volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
-
-
-        # volume_reconstruction.run_reconstruction()
-
-        ## Write
-        self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_0")
-
+        volume_reconstruction.set_SDA_sigma(1)
 
         ## Run two-step reconstruction alignment:
         for i in range(0, iterations):   
             print("*** iteration %s/%s" %(i+1,iterations))
             ## Register all slices to current estimate of volume reconstruction
-            # slice_to_volume_registration.run_slice_to_volume_registration()
+            slice_to_volume_registration.run_slice_to_volume_registration()
 
             ## Reconstruct new volume based on updated positions of slices
             volume_reconstruction.run_reconstruction()
 
-            self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename+"_"+str(i+1))
+            filename = self._HR_volume_filename + "_" + str(i+1) + "_" + recon_approach
+            self._HR_volume.write(directory=self._dir_results, filename=filename)
 
-            # self._HR_volume.show(title="recon_iter_"+str(i))
+        ## Final SRR step
+        volume_reconstruction.set_SDA_sigma(0.5)
+
+        # volume_reconstruction.set_reconstruction_approach("SRR")
+        volume_reconstruction.set_SRR_iter_max(20)
+        volume_reconstruction.set_SRR_alpha(0.1)
+        volume_reconstruction.set_SRR_approach("TK0")       # "TK0" or "TK1"
+        # volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
+        # volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
+
+
+
+        volume_reconstruction.run_reconstruction()
+        filename = self._HR_volume_filename + "_" + str(iterations) + "_" + recon_approach
+        self._HR_volume.write(directory=self._dir_results, filename=filename)
 
 
     ## Execute in-plane rigid registration align slices planarly within stack 

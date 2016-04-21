@@ -8,15 +8,21 @@
 ## Import libraries
 import os                       # used to execute terminal commands in python
 import sys
+import itk
 import SimpleITK as sitk
 import numpy as np
 
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
+import PSF as psf
+import ScatteredDataApproximation as sda
 # import Stack as st
 # import Slice as sl
 
+
+pixel_type = itk.D
+image_type = itk.Image[pixel_type, 3]
 
 ## Class implementing the slice to volume registration algorithm
 #  \warning HACK: Upsample slices in k-direction to in-plane resolution
@@ -32,6 +38,10 @@ class SliceToVolumeRegistration:
         self._N_stacks = stack_manager.get_number_of_stacks()
         self._HR_volume = HR_volume
 
+        ## Used for PSF modelling and smoothign w.r.t. relative alignment between
+        #  one single slice and HR volume grid
+        self._psf = psf.PSF()
+        self._gaussian_yvv = itk.SmoothingRecursiveYvvGaussianImageFilter[image_type, image_type].New()   # YVV-based Filter
 
         ## HACK:
         #  Upsample slices in k-direction to in-plane resolution in order to perform
@@ -85,6 +95,8 @@ class SliceToVolumeRegistration:
 
         use_NiftyReg = 0
 
+        self._gaussian_yvv.SetInput(sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk))
+
         for i in range(0, self._N_stacks):
             print("\tStack %s/%s" %(i,self._N_stacks-1))
             stack = self._stacks[i]
@@ -100,11 +112,10 @@ class SliceToVolumeRegistration:
                 if use_NiftyReg:
                 # try:
                     rigid_transform = self._get_rigid_registration_transform_3D_NiftyReg(
-                        fixed_slice_3D=slice, moving_3D=self._HR_volume)
+                        fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume)
                 else:
-                # except:
                     rigid_transform = self._get_rigid_registration_transform_3D_sitk(
-                        fixed_slice_3D=slice, moving_3D=self._HR_volume, display_registration_info=0)
+                        fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume, display_registration_info=0)
 
                 sitkh.print_rigid_transformation(rigid_transform)
 
@@ -128,7 +139,7 @@ class SliceToVolumeRegistration:
                 # sitkh.print_rigid_transformation(rigid_transform)
                 
 
-    def _get_rigid_registration_transform_3D_NiftyReg(self, fixed_slice_3D, moving_3D):
+    def _get_rigid_registration_transform_3D_NiftyReg(self, fixed_slice_3D, moving_HR_volume_3D):
         ## Save images prior to the use of NiftyReg
         dir_tmp = "../results/tmp/" 
         os.system("mkdir -p " + dir_tmp)
@@ -142,9 +153,9 @@ class SliceToVolumeRegistration:
 
         # sitk.WriteImage(fixed_slice_3D._sitk_upsampled, dir_tmp+fixed_str+".nii.gz")
         sitk.WriteImage(fixed_slice_3D.sitk, dir_tmp+fixed_str+".nii.gz")
-        sitk.WriteImage(moving_3D.sitk, dir_tmp+moving_str+".nii.gz")
+        sitk.WriteImage(moving_HR_volume_3D.sitk, dir_tmp+moving_str+".nii.gz")
         # sitk.WriteImage(fixed_slice_3D._sitk_mask_upsampled, dir_tmp+fixed_mask_str+".nii.gz")
-        # sitk.WriteImage(moving_3D.sitk_mask, dir_tmp+moving_mask_str+".nii.gz")
+        # sitk.WriteImage(moving_HR_volume_3D.sitk_mask, dir_tmp+moving_mask_str+".nii.gz")
 
         ## NiftyReg: Global affine registration:
         #  \param[in] -ref reference image
@@ -191,16 +202,26 @@ class SliceToVolumeRegistration:
 
     ## Rigid registration routine based on SimpleITK
     #  \param fixed_slice_3D upsampled fixed Slice
-    #  \param moving_3D moving Stack
+    #  \param moving_HR_volume_3D moving Stack
     #  \param display_registration_info display registration summary at the end of execution (default=0)
     #  \return Rigid registration as sitk.Euler3DTransform object
-    def _get_rigid_registration_transform_3D_sitk(self, fixed_slice_3D, moving_3D, display_registration_info=0):
+    def _get_rigid_registration_transform_3D_sitk(self, fixed_slice_3D, moving_HR_volume_3D, display_registration_info=0):
+
+        ## Blur 
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( fixed_slice_3D, moving_HR_volume_3D )
+
+        self._gaussian_yvv.SetSigmaArray(np.sqrt(np.diagonal(Cov_HR_coord)))
+        self._gaussian_yvv.Update()
+        moving_3D_itk = self._gaussian_yvv.GetOutput()
+        moving_3D_itk.DisconnectPipeline()
+
+        moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
 
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()
 
         ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
-        # initial_transform = sitk.CenteredTransformInitializer(fixed_slice_3D._sitk_upsampled, moving_3D.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+        # initial_transform = sitk.CenteredTransformInitializer(fixed_slice_3D._sitk_upsampled, moving_HR_volume_3D.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
         initial_transform = sitk.Euler3DTransform()
 
         ## Set the initial transform and parameters to optimize
@@ -208,7 +229,7 @@ class SliceToVolumeRegistration:
 
         ## Set an image masks in order to restrict the sampled points for the metric
         # registration_method.SetMetricFixedMask(fixed_slice_3D._sitk_mask_upsampled)
-        # registration_method.SetMetricMovingMask(moving_3D.sitk_mask)
+        # registration_method.SetMetricMovingMask(moving_HR_volume_3D.sitk_mask)
 
         ## Set percentage of pixels sampled for metric evaluation
         # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
@@ -285,7 +306,7 @@ class SliceToVolumeRegistration:
         # print("\n")
 
         ## Execute 3D registration
-        final_transform_3D_sitk = registration_method.Execute(fixed_slice_3D._sitk_upsampled, moving_3D.sitk) 
+        final_transform_3D_sitk = registration_method.Execute(fixed_slice_3D._sitk_upsampled, moving_3D_sitk) 
 
         if display_registration_info:
             print("SimpleITK Image Registration Method:")

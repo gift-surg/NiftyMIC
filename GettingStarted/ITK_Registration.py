@@ -10,22 +10,44 @@
 import itk
 import numpy as np
 
+import sys
+sys.path.append("../src")
+
+import SimpleITKHelper as sitkh
+import PSF as psf
+
+pixel_type = itk.D
+image_type = itk.Image[pixel_type, 3]
+
 """
 Functions
 """
+def read_itk_image(filename):
+    # image_IO_type = itk.NiftiImageIO
+
+    reader = itk.ImageFileReader[image_type].New()
+    reader.SetFileName(filename)
+    reader.Update()
+    image_itk = reader.GetOutput()
+    image_itk.DisconnectPipeline()
+
+    return image_itk
+
 def get_rigid_registration_transform_3D(fixed_itk, moving_itk):
-    pixel_type = itk.D
-    dimension = 3
-    image_type = itk.Image[pixel_type, dimension]
 
     registration = itk.ImageRegistrationMethod[image_type, image_type].New()
 
     # initial_transform = itk.CenteredTransformInitializer[fixed_itk, moving_itk, itk.Euler3DTransform.New()].New()
     initial_transform = itk.Euler3DTransform.New()
 
-    interpolator = itk.LinearInterpolateImageFunction[image_type, pixel_type].New()
+    # interpolator = itk.LinearInterpolateImageFunction[image_type, pixel_type].New()
+    interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
+    Cov = np.eye(3)*3;
+    interpolator.SetCovariance(Cov.flatten())
+
     
-    metric = itk.MeanSquaresImageToImageMetric[image_type, image_type].New()
+    # metric = itk.MeanSquaresImageToImageMetric[image_type, image_type].New()
+    metric = itk.NormalizedCorrelationImageToImageMetric[image_type, image_type].New()
 
     optimizer = itk.RegularStepGradientDescentOptimizer.New()
     # optimizer.SetMaximumStepLength( 4.00 )
@@ -50,15 +72,15 @@ def get_rigid_registration_transform_3D(fixed_itk, moving_itk):
 
 
 def get_resampled_image(fixed_itk, moving_itk, transformation):
-    resampler = itk.ResampleImageFilter.New()
+    resampler = itk.ResampleImageFilter[image_type, image_type].New()
 
     resampler.SetInput(moving_itk)
     resampler.SetTransform(transformation)
-
-    resampler.SetSize(fixed_itk.GetLargestPossibleRegion().GetSize())
-    resampler.SetOutputOrigin(fixed_itk.GetOrigin())
-    resampler.SetOutputSpacing(fixed_itk.GetSpacing())
-    resampler.SetOutputDirection(fixed_itk.GetDirection())
+    resampler.SetOutputParametersFromImage(fixed_itk)
+    # resampler.SetSize(fixed_itk.GetLargestPossibleRegion().GetSize())
+    # resampler.SetOutputOrigin(fixed_itk.GetOrigin())
+    # resampler.SetOutputSpacing(fixed_itk.GetSpacing())
+    # resampler.SetOutputDirection(fixed_itk.GetDirection())
     resampler.SetDefaultPixelValue(0.0)
 
     warped_itk = resampler.GetOutput()
@@ -74,40 +96,8 @@ dir_input = "data/"
 dir_output = "results/"
 filename = "fetal_brain_a"
 
-## Define types of input and output pixels and state dimension of images
-input_pixel_type = itk.D
-output_pixel_type = input_pixel_type
-
-input_dimension = 3
-output_dimension = input_dimension
-
-## Define type of input and output image
-input_image_type = itk.Image[input_pixel_type, input_dimension]
-output_image_type = itk.Image[output_pixel_type, output_dimension]
-
-## Instantiate types of reader and writer
-reader_type = itk.ImageFileReader[input_image_type]
-writer_type = itk.ImageFileWriter[output_image_type]
-image_IO_type = itk.NiftiImageIO
-
-## Create reader and writer
-reader_fixed = reader_type.New()
-reader_moving = reader_type.New()
-writer = writer_type.New()
-
-## Set image IO type to nifti
-image_IO = image_IO_type.New()
-reader_fixed.SetImageIO(image_IO)
-reader_moving.SetImageIO(image_IO)
-
-## Read images
-reader_fixed.SetFileName(dir_input + filename + ".nii.gz")
-reader_fixed.Update()
-fixed_itk = reader_fixed.GetOutput()
-
-reader_moving.SetFileName(dir_input + filename + "_rotated_angle_z.nii.gz")
-reader_moving.Update()
-moving_itk = reader_moving.GetOutput()
+fixed_itk = read_itk_image(dir_input + filename + ".nii.gz")
+moving_itk = read_itk_image(dir_input + filename + "_rotated_angle_z.nii.gz")
 
 ## Register images
 rigid_transform_3D = get_rigid_registration_transform_3D(fixed_itk, moving_itk)
@@ -120,7 +110,9 @@ warped_itk = get_resampled_image(fixed_itk, moving_itk, rigid_transform_3D)
 
 
 ## Write warped image
-writer.SetFileName(dir_output + filename + "_test.nii.gz")
-writer.SetInput(warped_itk)
-writer.Update()
+# writer.SetFileName(dir_output + filename + "_test.nii.gz")
+# writer.SetInput(warped_itk)
+# writer.Update()
+
+sitkh.show_itk_image(fixed_itk,overlay=warped_itk)
 
