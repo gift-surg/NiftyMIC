@@ -25,28 +25,18 @@ image_type = itk.Image[pixel_type, 3]
 """
 Functions
 """
-def read_itk_image(filename):
-    # image_IO_type = itk.NiftiImageIO
-
-    reader = itk.ImageFileReader[image_type].New()
-    reader.SetFileName(filename)
-    reader.Update()
-    image_itk = reader.GetOutput()
-    image_itk.DisconnectPipeline()
-
-    return image_itk
-
 def get_rigid_registration_transform_3D(fixed, moving):
     ## Look at http://www.itk.org/Doxygen/html/Examples_2RegistrationITKv3_2ImageRegistration8_8cxx-example.html#_a10
 
     registration = itk.ImageRegistrationMethod[image_type, image_type].New()
 
     ## Create Spatial Objects for masks so that they can be used within metric
-    mask_object_type = itk.ImageMaskSpatialObject[3]
-    fixed_mask_object = mask_object_type.New()
-    moving_mask_object = mask_object_type.New()
-    fixed_mask_object.SetImage(fixed.itk_mask)
-    moving_mask_object.SetImage(moving.itk_mask)
+    caster = itk.CastImageFilter[itk.Image[itk.D,3],itk.Image[itk.UC,3]].New()
+    caster.SetInput(fixed.itk_mask)
+    caster.Update()
+
+    fixed_mask_object = itk.ImageMaskSpatialObject[3].New()
+    fixed_mask_object.SetImage(caster.GetOutput())
 
     ## Initial transform: Variant A
     # transform_type = itk.VersorRigid3DTransform.D
@@ -69,19 +59,26 @@ def get_rigid_registration_transform_3D(fixed, moving):
 
     
     # metric = itk.MeanSquaresImageToImageMetric[image_type, image_type].New()
-    # metric = itk.NormalizedMutualInformationHistogramImageToImageMetric[image_type, image_type].New()
-    # metric = itk.MutualInformationImageToImageMetric[image_type, image_type].New()
     # metric = itk.NormalizedCorrelationImageToImageMetric[image_type, image_type].New()
-    metric = itk.MattesMutualInformationImageToImageMetric[image_type, image_type].New()
+    
+    # metric = itk.MutualInformationImageToImageMetric[image_type, image_type].New()
+    
+    # metric = itk.MattesMutualInformationImageToImageMetric[image_type, image_type].New()
     # metric.SetNumberOfHistogramBins(200)
-    # metric.SetFixedImageMask(fixed_mask_object)
-    # metric.SetMovingImageMask(moving_mask_object)
 
-    # optimizer = itk.RegularStepGradientDescentOptimizer.New()
-    optimizer = itk.ConjugateGradientOptimizer.New()
-    # optimizer.SetMaximumStepLength(1.00)
-    # optimizer.SetMinimumStepLength(0.01)
-    # optimizer.SetNumberOfIterations(200)
+    metric = itk.NormalizedMutualInformationHistogramImageToImageMetric[image_type, image_type].New()
+    scales = np.ones(initial_transform.GetParameters().GetNumberOfElements())
+    metric.SetHistogramSize(100*np.ones(3))
+    metric.SetDerivativeStepLengthScales(scales)
+
+    ## Add masks
+    metric.SetFixedImageMask(fixed_mask_object)
+
+    # optimizer = itk.ConjugateGradientOptimizer.New()
+    optimizer = itk.RegularStepGradientDescentOptimizer.New()
+    optimizer.SetMaximumStepLength(1.00)
+    optimizer.SetMinimumStepLength(0.01)
+    optimizer.SetNumberOfIterations(200)
 
     registration.SetInitialTransformParameters(initial_transform.GetParameters())
     registration.SetFixedImageRegion(fixed.itk.GetBufferedRegion())
@@ -139,11 +136,11 @@ fixed = st.Stack.from_nifti(dir_input, filename)
 # moving = st.Stack.from_nifti(dir_input, filename + "_rotated_angle_z")
 moving = st.Stack.from_nifti(dir_input, "2")
 
-# fixed_itk = read_itk_image(dir_input + filename + ".nii.gz")
-# moving_itk = read_itk_image(dir_input + "2.nii.gz")
-# moving_mask_itk = read_itk_image(dir_input + "2_mask.nii.gz")
+# fixed_itk = sitkh.read_itk_image(dir_input + filename + ".nii.gz")
+# moving_itk = sitkh.read_itk_image(dir_input + "2.nii.gz")
+# moving_mask_itk = sitkh.read_itk_image(dir_input + "2_mask.nii.gz")
 # moving_mask_sitk = sitk.ReadImage(dir_input + "2_mask.nii.gz")
-# moving_itk = read_itk_image(dir_input + filename + "_rotated_angle_z.nii.gz")
+# moving_itk = sitkh.read_itk_image(dir_input + filename + "_rotated_angle_z.nii.gz")
 
 ## Register images
 rigid_transform_3D = get_rigid_registration_transform_3D(fixed, moving)
@@ -152,12 +149,22 @@ rigid_transform_3D = get_rigid_registration_transform_3D(fixed, moving)
 warped_itk = get_resampled_image(fixed.itk, moving.itk, rigid_transform_3D)
 # warped_itk = get_resampled_image(fixed.itk, moving.itk, itk.Euler3DTransform.New())
 
-# trafo = itk.Euler3DTransform.New()
 # writer_transformation = itk.TransformFileWriterTemplate[itk.D].New()
 
-sitkh.show_itk_image(warped_itk)
-
 itk.OptimizerParameterScalesEstimatorTemplate.D
+
+transform = itk.Euler3DTransform.New()
+
+
+metric_type = itk.NormalizedMutualInformationHistogramImageToImageMetric[image_type, image_type]
+metric = metric_type.New()
+
+scales = np.ones(transform.GetParameters().GetNumberOfElements())
+metric.SetHistogramSize(100*np.ones(3))
+metric.SetDerivativeStepLengthScales(scales)
+
+optimizer_type = itk.RegularStepGradientDescentOptimizer
+optimizer = optimizer_type.New()
 
 
 ## Write warped image
@@ -166,6 +173,10 @@ itk.OptimizerParameterScalesEstimatorTemplate.D
 # writer.Update()
 
 # sitkh.show_itk_image(fixed.itk,overlay=warped_itk)
+
+print sitkh.get_sitk_Euler3DTransform_from_itk_Euler3DTransform(rigid_transform_3D)
+print rigid_transform_3D
+
 
 
 # print fixed.sitk.GetPixelIDValue()

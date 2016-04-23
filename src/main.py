@@ -86,9 +86,10 @@ def read_input_data(image_type):
 
     else:
         ## Fetal Neck Images:
-        dir_input = "../data/placenta_in-plane_Guotai/"
+        dir_input = "../data/placenta/"
         filenames = [
-            "a13_15"
+            "a23_04",
+            "a23_05"
             ]
 
     return dir_input, filenames
@@ -128,11 +129,11 @@ if __name__ == '__main__':
 
     ## Read input data (including data preprocessing)
     dir_input, filenames = read_input_data(input_stacks_type)
-    reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_brain")
-    # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_brain_rectangular")
+    reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask")
+    # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_trachea_rectangular")
 
     ## Compute first estimate of HR volume
-    reconstruction_manager.set_off_in_plane_rigid_registration_before_estimating_initial_volume()
+    reconstruction_manager.set_on_in_plane_rigid_registration_before_estimating_initial_volume()
     reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
     reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
 

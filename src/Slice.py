@@ -31,13 +31,31 @@ class Slice:
         self._filename = filename
         self._slice_number = slice_number
 
-        ## Append slices as sitk.Image objects
+        ## Append stacks as SimpleITK and ITK Image objects
         self.sitk = slice_sitk
-        self.sitk_mask = slice_sitk_mask
-
-        ## Append slices as itk.Image objects
         self.itk = sitkh.convert_sitk_to_itk_image(slice_sitk)
-        self.itk_mask = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
+
+        ## Append masks (if provided)
+        if slice_sitk_mask is not None:
+            self.sitk_mask = slice_sitk_mask
+            self.itk_mask = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
+        else:
+            self.sitk_mask = None
+            self.itk_mask = None
+
+        self._sitk_upsampled = None
+
+        ## HACK (for current Slice-to-Volume Registration)
+        #  See class SliceToVolumeRegistration
+        # self._sitk_upsampled = self._get_upsampled_isotropic_resolution_slice(slice_sitk)
+        # self._itk_upsampled = sitkh.convert_sitk_to_itk_image(self._sitk_upsampled)
+
+        # if slice_sitk_mask is not None:
+        #     self._sitk_mask_upsampled = self._get_upsampled_isotropic_resolution_slice(slice_sitk_mask)
+        #     self._itk_mask_upsampled = sitkh.convert_sitk_to_itk_image(self._sitk_mask_upsampled)
+        # else:
+        #     self._sitk_mask_upsampled = None
+        #     self._itk_mask_upsampled = None
 
         ## Store current affine transform of image
         self._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(self.sitk)
@@ -51,17 +69,12 @@ class Slice:
         #  Used for in-plane registration, i.e. class InPlaneRigidRegistration
         self._T_PP = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(self.sitk)
 
-        ## HACK (for current slice-to-volume registration)
-        #  See class SliceToVolumeRegistration
-        self._sitk_upsampled = None
-        self._sitk_mask_upsampled = None
-
 
     ## Update slice with new affine transform, specifying updated spatial
     #  position of slice in physical space. The transform is obtained via
     #  slice-to-volume registration step, e.g.
     #  \param[in] affine_transform_sitk affine transform as sitk-object
-    def set_affine_transform(self, affine_transform_sitk):
+    def update_affine_transform(self, affine_transform_sitk):
 
         ## Ensure correct object type
         self._affine_transform_sitk = sitk.AffineTransform(affine_transform_sitk)
@@ -73,24 +86,20 @@ class Slice:
         origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
         direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
 
-        ## Update SimpleITK objects
+        ## Update image objects
         self.sitk.SetOrigin(origin)
         self.sitk.SetDirection(direction)
 
-        self.sitk_mask.SetOrigin(origin)
-        self.sitk_mask.SetDirection(direction)
-
-        ## Update ITK objects
         self.itk.SetOrigin(origin)
-        self.itk.SetDirection(sitkh.get_itk_direction_from_sitk_image(self.sitk))
+        self.itk.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
 
-        self.itk_mask.SetOrigin(origin)
-        self.itk_mask.SetDirection(sitkh.get_itk_direction_from_sitk_image(self.sitk))
-
-        ## Update origin and direction of 3D slice mask
+        ## Update image mask objects
         if self.sitk_mask is not None:
             self.sitk_mask.SetOrigin(origin)
             self.sitk_mask.SetDirection(direction)
+
+            self.itk_mask.SetOrigin(origin)
+            self.itk_mask.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
 
         ## HACK (for current slice-to-volume registration)
         #  See class SliceToVolumeRegistration
@@ -98,8 +107,15 @@ class Slice:
             self._sitk_upsampled.SetOrigin(origin)
             self._sitk_upsampled.SetDirection(direction)
 
-            self._sitk_mask_upsampled.SetOrigin(origin)
-            self._sitk_mask_upsampled.SetDirection(direction)
+            self._itk_upsampled.SetOrigin(origin)
+            self._itk_upsampled.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+
+            if self.sitk_mask is not None:
+                self._sitk_mask_upsampled.SetOrigin(origin)
+                self._sitk_mask_upsampled.SetDirection(direction)
+
+                self._itk_mask_upsampled.SetOrigin(origin)
+                self._itk_mask_upsampled.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
 
 
     ## Get filename of slice, e.g. name of parent stack
@@ -176,13 +192,47 @@ class Slice:
         else:
             filename_out = filename + "_" + str(self._slice_number)
 
-        ## Write slice:
-        full_file_name = os.path.join(directory, filename_out + ".nii.gz")
-        sitk.WriteImage(self.sitk, full_file_name)
-        # print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
+        ## Define filename
+        full_file_name = os.path.join(directory, filename_out)
 
-        ## Write transformation:
-        full_file_name = os.path.join(directory, filename_out + ".tfm")
-        sitk.WriteTransform(self._affine_transform_sitk, full_file_name)
+        ## Write slice with mask and affine transform
+        sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
+        sitk.WriteImage(self.sitk_mask, full_file_name + "_mask.nii.gz")
+        sitk.WriteTransform(self._affine_transform_sitk, full_file_name + ".tfm")
+
+        # print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
         # print("Transformation of slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
+
+
+    ## Upsample slices in k-direction to in-plane resolution.
+    #  \param[in] slice_sitk slice as sitk.Image object to be upsampled
+    #  \return upsampled slice as sitk.Image object
+    #  \warning only used for Slice-to-Volume Registration and shall me removed at some point
+    def _get_upsampled_isotropic_resolution_slice(self, slice_sitk):
+    
+        ## Fetch info used for upsampling
+        spacing = np.array(slice_sitk.GetSpacing())
+        size = np.array(slice_sitk.GetSize())
+
+        ## Set dimension of each slice in k-direction accordingly
+        size[2] = np.round(spacing[2]/spacing[0])
+
+        ## Update spacing in k-direction to be equal to in-plane spacing
+        spacing[2] = spacing[0]
+
+        ## Upsample slice to isotropic resolution
+        default_pixel_value = 0
+
+        slice_upsampled_sitk = sitk.Resample(
+            slice_sitk, 
+            size, 
+            sitk.Euler3DTransform(), 
+            sitk.sitkNearestNeighbor, 
+            slice_sitk.GetOrigin(), 
+            spacing, 
+            slice_sitk.GetDirection(), 
+            default_pixel_value,
+            slice_sitk.GetPixelIDValue())
+
+        return slice_upsampled_sitk
 

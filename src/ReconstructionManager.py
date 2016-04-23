@@ -7,6 +7,7 @@
 
 ## Import libraries
 import os                       # used to execute terminal commands in python
+import numpy as np
 
 ## Import modules from src-folder
 import StackManager as sm
@@ -81,7 +82,7 @@ class ReconstructionManager:
             ## 1) Copy images:
             cmd = "cp " + dir_input_to_copy + filenames_to_copy[i] + ".nii.gz " \
                         + self._dir_results_input_data + filenames[i] + ".nii.gz"
-            # print cmd
+            print cmd
             os.system(cmd)
 
             ## 2) Copy masks:
@@ -111,7 +112,7 @@ class ReconstructionManager:
         recon_approach = "SDA"
         first_estimate_of_HR_volume.set_reconstruction_approach(recon_approach) #"SDA" or "Average"
         first_estimate_of_HR_volume.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
-        first_estimate_of_HR_volume.set_SDA_sigma(1)
+        first_estimate_of_HR_volume.set_SDA_sigma(2)
 
         ## Forward choice of whether or not in-plane registration within each
         #  stack shall be performed before estimation of initial volume
@@ -143,13 +144,20 @@ class ReconstructionManager:
 
         ## Choose reconstruction approach
         recon_approach = "SDA"
+        sigma = 1.5
         volume_reconstruction.set_reconstruction_approach(recon_approach)
         volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
-        volume_reconstruction.set_SDA_sigma(1)
+        volume_reconstruction.set_SDA_sigma(sigma)
+
+        self._HR_volume.show(title="HR_recon_iter0")
 
         ## Run two-step reconstruction alignment:
         for i in range(0, iterations):   
             print("*** iteration %s/%s" %(i+1,iterations))
+
+            sigma = np.max((0.8,sigma-0.1))
+            volume_reconstruction.set_SDA_sigma(sigma)
+
             ## Register all slices to current estimate of volume reconstruction
             slice_to_volume_registration.run_slice_to_volume_registration()
 
@@ -159,17 +167,17 @@ class ReconstructionManager:
             filename = self._HR_volume_filename + "_" + str(i+1) + "_" + recon_approach
             self._HR_volume.write(directory=self._dir_results, filename=filename)
 
+            self._HR_volume.show(title="HR_recon_iter"+str(i+1))
+
         ## Final SRR step
-        volume_reconstruction.set_SDA_sigma(0.5)
+        volume_reconstruction.set_SDA_sigma(0.7)
 
         volume_reconstruction.set_reconstruction_approach("SRR")
         volume_reconstruction.set_SRR_iter_max(20)
         volume_reconstruction.set_SRR_alpha(0.1)
-        volume_reconstruction.set_SRR_approach("TK0")       # "TK0" or "TK1"
-        # volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
+        volume_reconstruction.set_SRR_approach("TK1")       # "TK0" or "TK1"
+        volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
         # volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
-
-
 
         volume_reconstruction.run_reconstruction()
         filename = self._HR_volume_filename + "_" + str(iterations) + "_" + recon_approach

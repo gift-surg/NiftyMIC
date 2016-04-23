@@ -239,7 +239,7 @@ class FirstEstimateOfHRVolume:
                 affine_transform = sitkh.get_composited_sitk_affine_transform(T, slice_trafo)
 
                 ## Update affine transform of slice j
-                slice.set_affine_transform(affine_transform)
+                slice.update_affine_transform(affine_transform)
 
 
     ## Rigid registration routine based on SimpleITK
@@ -416,11 +416,12 @@ class FirstEstimateOfHRVolume:
         helper = sitk.GetImageFromArray(array)
         helper.CopyInformation(self._HR_volume.sitk)
         self._HR_volume.sitk = helper
+        self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(helper)
 
         ## Update HR volume (sitk image mask)
-        helper = sitk.GetImageFromArray(array_mask)
-        helper.CopyInformation(self._HR_volume.sitk_mask)
-        self._HR_volume.sitk_mask = helper
+        # helper = sitk.GetImageFromArray(array_mask)
+        # helper.CopyInformation(self._HR_volume.sitk_mask)
+        # self._HR_volume.sitk_mask = helper
 
 
     """

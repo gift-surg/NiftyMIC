@@ -73,7 +73,7 @@ class InverseProblemSolver:
         self._reg_type = 'TK0'  # Either Tikhonov zero- or first-order
 
         ## Append itk objects
-        self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk)
+        # self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk)
 
         ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
         self._filter_oriented_Gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
@@ -197,7 +197,7 @@ class InverseProblemSolver:
         ## TK0-regularization
         if self._reg_type in ["TK0"]:
             print("Chosen regularization type: zero-order Tikhonov")
-            print("Regularization paramter = " + str(self._alpha))
+            print("Regularization parameter = " + str(self._alpha))
             print("Maximum number of iterations is set to " + str(self._iter_max))
 
             ## Provide constant variable for optimization
@@ -218,7 +218,7 @@ class InverseProblemSolver:
             ## DTD is computed direclty via Laplace stencil
             if self._DTD_comp_type in ["Laplace"]:
                 print("Chosen regularization type: first-order Tikhonov via Laplace stencil")
-                print("Regularization paramter = " + str(self._alpha))
+                print("Regularization parameter = " + str(self._alpha))
                 print("Maximum number of iterations is set to " + str(self._iter_max))
                 
                 # Laplace kernel
@@ -235,7 +235,7 @@ class InverseProblemSolver:
             ## DTD is computed as sequence of forward and backward operators
             else:
                 print("Chosen regularization type: first-order Tikhonov via forward/backward finite differences")
-                print("Regularization paramter = " + str(self._alpha))
+                print("Regularization parameter = " + str(self._alpha))
                 print("Maximum number of iterations is set to " + str(self._iter_max))
 
                 # Forward difference kernels
@@ -428,6 +428,12 @@ class InverseProblemSolver:
     #  \return image in HR space as itk.Image object after performed backward operation
     def _ATM(self, slice_itk, mask_itk):
 
+        ## TODO: Write itkBinaryFunctorImageFilter to multiply quicker
+        ## Also, by changing to 
+        ## itk.MultiplyImageFilter[itk.Image[itk.UC,3], image_type, image_type].New()
+        ## the mask could be considered a different type, see sitkh.convert_sitk_to_itk_image
+        ## (which in turn could help mask-based registration with ITK objects)
+        # multiplier = itk.MultiplyImageFilter[itk.Image[itk.UC,3], image_type, image_type].New()
         multiplier = itk.MultiplyImageFilter[image_type, image_type, image_type].New()
 
         ## compute M y_k

@@ -104,7 +104,7 @@ class InPlaneRigidRegistration:
                 T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
 
                 ## Update T_PI of slice s.t. it is aligned with slice_3D_ref
-                slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
+                slice_3D.update_affine_transform(T_PI_in_plane_rotation_3D)
 
         return None
 
@@ -155,7 +155,7 @@ class InPlaneRigidRegistration:
                 T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
 
                 ## Update T_PI of slice s.t. it is aligned with slice_3D_ref
-                slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
+                slice_3D.update_affine_transform(T_PI_in_plane_rotation_3D)
 
         return None
 
@@ -281,7 +281,7 @@ class InPlaneRigidRegistration:
                 T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
 
                 ## Update T_PI of slice s.t. it is aligned with slice_3D_ref
-                slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
+                slice_3D.update_affine_transform(T_PI_in_plane_rotation_3D)
 
                 """
                 """
@@ -603,7 +603,7 @@ class InPlaneRigidRegistration:
                 T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
 
                 ## Update slice with the obtained transformation
-                slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
+                slice_3D.update_affine_transform(T_PI_in_plane_rotation_3D)
 
                 ## * Unit Test add on
                 UT_warped_2D = sitk.Resample(moving_2D_sitk, fixed_2D_sitk, rigid_transform_2D, sitk.sitkLinear, 0.0, moving_2D_sitk.GetPixelIDValue())

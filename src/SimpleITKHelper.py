@@ -235,20 +235,48 @@ def get_transformed_image(image_init, transform):
     return image
 
 
+## Read image from file and return as ITK obejct
+#  \param[in] filename filename of image to read
+#  \param[in] pixel_type itk pixel types, like itk.D, itk.F, itk.UC etc
+#  \example read_itk_image("image.nii.gz", itk.D, 3) to read image stack
+#  \example read_itk_image("mask.nii.gz", itk.UC, 3) to read image stack mask
+def read_itk_image(filename, pixel_type=itk.D, dim=3):
+    image_type = itk.Image[pixel_type, dim]
+    # image_IO_type = itk.NiftiImageIO
+
+    reader = itk.ImageFileReader[image_type].New()
+    reader.SetFileName(filename)
+    # reader.SetImageIO(image_IO)
+
+    reader.Update()
+    image_itk = reader.GetOutput()
+    image_itk.DisconnectPipeline()
+
+    return image_itk
+
+
 ## Extract direction from SimpleITK-image so that it can be injected into
 #  ITK-image
 #  \param[in] image_sitk sitk.Image object
 #  \return direction as itkMatrix object
 def get_itk_direction_from_sitk_image(image_sitk):
-    dim = image_sitk.GetDimension()
     direction_sitk = image_sitk.GetDirection()
+
+    return get_itk_direction_form_sitk_direction(direction_sitk)
+
+
+## Convert direction from sitk.Image to itk.Image direction format
+#  \param[in] direction_sitk direction obtained via GetDirection() of sitk.Image
+#  \return direction which can be set as SetDirection() at itk.Image
+def get_itk_direction_form_sitk_direction(direction_sitk):
+    dim = np.sqrt(len(direction_sitk)).astype('int')
     m = itk.vnl_matrix_fixed[itk.D, dim, dim]()
 
     for i in range(0, dim):
         for j in range(0, dim):
             m.set(i,j,direction_sitk[dim*i + j])
 
-    return itk.Matrix[itk.D, dim, dim](m)
+    return itk.Matrix[itk.D, dim, dim](m)    
 
 
 ## Extract direction from ITK-image so that it can be injected into
@@ -256,17 +284,48 @@ def get_itk_direction_from_sitk_image(image_sitk):
 #  \param[in] image_itk itk.Image object
 #  \return direction as 1D array of size dimension^2, np.array
 def get_sitk_direction_from_itk_image(image_itk):
-    dim = image_itk.GetLargestPossibleRegion().GetImageDimension()
+    direction_itk = image_itk.GetDirection()
 
-    tmp = image_itk.GetDirection()
-    direction_itk = tmp.GetVnlMatrix()
+    return get_sitk_direction_from_itk_direction(direction_itk)
+    
+
+## Convert direction from itk.Image to sitk.Image direction format
+#  \param[in] direction_itk direction obtained via GetDirection() of itk.Image
+#  \return direction which can be set as SetDirection() at sitk.Image
+def get_sitk_direction_from_itk_direction(direction_itk):
+    vnl_matrix = direction_itk.GetVnlMatrix()
+    dim = np.sqrt(vnl_matrix.size()).astype('int')
 
     direction_sitk = np.zeros(dim*dim)
     for i in range(0, dim):
         for j in range(0, dim):
-            direction_sitk[i*dim + j] = direction_itk(i,j)
+            direction_sitk[i*dim + j] = vnl_matrix(i,j)
 
     return direction_sitk
+
+
+def get_sitk_Euler3DTransform_from_itk_Euler3DTransform(Euler3DTransform_itk):
+    parameters_itk = Euler3DTransform_itk.GetParameters()
+    fixed_parameters_itk = Euler3DTransform_itk.GetFixedParameters()
+    
+    N_params = parameters_itk.GetNumberOfElements()
+    N_fixedparams = fixed_parameters_itk.GetNumberOfElements()
+    
+    parameters_sitk = np.zeros(N_params)
+    fixed_parameters_sitk = np.zeros(N_fixedparams)
+
+    for i in range(0, N_params):
+        parameters_sitk[i] = parameters_itk.GetElement(i)
+
+    for i in range(0, N_fixedparams):
+        fixed_parameters_sitk[i] = fixed_parameters_itk.GetElement(i)
+
+
+    Euler3DTransform_sitk = sitk.Euler3DTransform()
+    Euler3DTransform_sitk.SetParameters(parameters_sitk)
+    Euler3DTransform_sitk.SetFixedParameters(fixed_parameters_sitk)
+
+    return Euler3DTransform_sitk
 
         
 
@@ -289,6 +348,12 @@ def convert_sitk_to_itk_image(image_sitk):
         image_type = itk.Image[itk.D, dimension]
     else:
         ## mask stack
+        ## Couldn't use itk.UC (which apparently is used for masks normally)
+        ## or any other "smaller format than itk.D" since 
+        ## itk.MultiplyImageFilter[itk.UC, itk.D] does not work! (But
+        ## which I need within InverseProblemSolver)
+        # image_type = itk.Image[itk.D, dimension]
+        # image_type = itk.Image[itk.UI, dimension]
         image_type = itk.Image[itk.UC, dimension]
 
     ## Create ITK image

@@ -211,6 +211,7 @@ class ScatteredDataApproximation:
 
         ## Link HR_volume.sitk to the updated volume
         self._HR_volume.sitk = HR_volume_update
+        self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(HR_volume_update)
 
 
     ## Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19).

@@ -4,3 +4,5 @@ backups/
 doc/html/
 doc/latex/
 .*
+*.nii.gz
+*.nii

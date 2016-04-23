@@ -30,7 +30,6 @@ class Test_SimpleITKHelper(unittest.TestCase):
 
     ## Specify input data
     dir_input = "data/SimpleITKHelper/"
-    filenames = ["stack0","stack0_rotated_angle_z_is_pi_over_10"]
 
     accuracy = 8
 
@@ -38,8 +37,11 @@ class Test_SimpleITKHelper(unittest.TestCase):
         pass
 
     def test_get_correct_itk_orientation_from_sitk_image(self):
+        filename = "stack0"
+        # filename = "stack0_rotated_angle_z_is_pi_over_10"
+
         ## Read image via sitk
-        image_sitk = sitk.ReadImage(self.dir_input + self.filenames[0] + ".nii.gz")
+        image_sitk = sitk.ReadImage(self.dir_input + filename + ".nii.gz")
 
         ## Read image via itk
         dimension = 3
@@ -50,7 +52,7 @@ class Test_SimpleITKHelper(unittest.TestCase):
 
         reader = reader_type.New()
         reader.SetImageIO(image_IO)
-        reader.SetFileName(self.dir_input + self.filenames[0] + ".nii.gz")
+        reader.SetFileName(self.dir_input + filename + ".nii.gz")
         reader.Update()
         image_itk = reader.GetOutput()
 

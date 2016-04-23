@@ -62,6 +62,7 @@ class DataPreprocessing:
 
 
     ## Get filenames of stacks with provided masks in input directory
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     #  \return filenames as list of strings
     def _get_mask_filenames_in_directory(self, suffix_mask):
 
@@ -136,16 +137,12 @@ class DataPreprocessing:
     #  mask stored in self._target_stack_number is used as template mask for
     #  mask propagation
     #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
+    #  \param[in] filenames_masks list of filenames which come with a mask
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     def _run_preprocessing_not_all_masks_provided(self, filenames, filenames_masks, suffix_mask):
 
-
-        ## Exclude target stack in subsequent loop. Target stack mask is used
+        ## Find stacks which require a mask. Target stack mask is used
         #  as template mask for mask propagation.
-        #  TODO: Only propagate mask(s) to stacks which do not have a mask. Here, only target stack excluded
-    
-        # if os.path.isfile(self._dir_input + filenames[i] + "_mask.nii.gz"):
-
         range_prop_mask, range_prop_mask_complement = self._get_filename_indices_for_mask_propagation(filenames, filenames_masks)
 
         ##*** Propagate masks
@@ -183,13 +180,18 @@ class DataPreprocessing:
             self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
 
 
+    ## Get filenames of stacks which require masks
+    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
+    #  \param[in] filenames_masks list of filenames which come with a mask
+    #  \return list of indices which require a mask
+    #  \return complementary list which already have a mask (no mask propagation required on those)
     def _get_filename_indices_for_mask_propagation(self, filenames, filenames_masks):
 
         ## Number of stacks to be read
         N_stacks = len(filenames)
 
+        ## Indices of all stacks
         stacks_all = np.arange(0, N_stacks)
-
 
         ## Get indices of filenames where mask is provided
         indices = []
@@ -197,13 +199,14 @@ class DataPreprocessing:
         for i in stacks_all:
             filename = filenames[i]
 
+            ## if mask does not exist, add corresponding index
             if bool(len(list(set(filename)-set(filenames_masks)))):
                 indices.append(i)
 
         indices_complement = list(set(stacks_all)-set(indices))
 
-        print("indices for mask propagation = " + str(indices))
-        print("no mask propagation required = " + str(indices_complement))
+        print("Indices for mask propagation = " + str(indices))
+        print("No mask propagation required = " + str(indices_complement))
 
         return indices, indices_complement
 
