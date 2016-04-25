@@ -68,7 +68,7 @@ class StackAverage:
     ## Specify whether non masked voxels shall be set to zero
     def set_mask_volume_voxels(self, mask_volume_voxels):
         self._mask_volume_voxels = mask_volume_voxels
-        
+
 
     ## Compute average of all given stacks over specified target stack
     def run_averaging(self):
@@ -120,7 +120,6 @@ class StackAverage:
         array_mask[array_mask>0] = 1
 
         ## Set pixels of the image not specified by the mask to zero
-
         if self._mask_volume_voxels:
             array[array_mask==0] = 0
 

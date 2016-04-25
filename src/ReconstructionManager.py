@@ -110,8 +110,8 @@ class ReconstructionManager:
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename, self._target_stack_number)
 
         ## Choose reconstruction approach
-        # recon_approach = "SDA"
-        recon_approach = "Average"
+        recon_approach = "SDA"
+        # recon_approach = "Average"
         first_estimate_of_HR_volume.set_reconstruction_approach(recon_approach) #"SDA" or "Average"
         first_estimate_of_HR_volume.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
         first_estimate_of_HR_volume.set_SDA_sigma(2)
@@ -140,11 +140,12 @@ class ReconstructionManager:
     def run_two_step_reconstruction_alignment_approach(self, iterations=5):
         print("\n--- Run two-step reconstruction alignment approach ---")
 
-        ## Instantiate objects
+        ## 1) Instantiate objects
         slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager, self._HR_volume)
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
+        hierarchical_slice_alignment = hsa.HierarchicalSliceAlignment(self._stack_manager, self._HR_volume)
 
-        ## Choose reconstruction approach
+        ## 2) Choose reconstruction approach
         recon_approach = "SDA"
         sigma = 1.5
         volume_reconstruction.set_reconstruction_approach(recon_approach)
@@ -153,7 +154,19 @@ class ReconstructionManager:
 
         self._HR_volume.show(title="HR_recon_iter0")
 
-        ## Run two-step reconstruction alignment:
+        ## 3) Run hierarchical alignment of slices within stack
+        hierarchical_slice_alignment.run_hierarchical_alignment()
+
+        ## Reconstruct new volume based on updated positions of slices
+        volume_reconstruction.run_reconstruction()
+
+        ## Write
+        filename = self._HR_volume_filename + "_0_hierarchical_alignment_" + recon_approach
+        self._HR_volume.write(directory=self._dir_results, filename=filename)
+        self._HR_volume.show(title=filename)
+
+
+        ## 4) Run two-step reconstruction alignment:
         for i in range(0, iterations):   
             print("*** iteration %s/%s" %(i+1,iterations))
 
@@ -172,14 +185,16 @@ class ReconstructionManager:
             self._HR_volume.show(title="HR_recon_iter"+str(i+1))
 
         ## Final SRR step
+        recon_approach = "SRR"
+        volume_reconstruction.set_reconstruction_approach(recon_approach)
+        
         volume_reconstruction.set_SDA_sigma(0.7)
 
-        volume_reconstruction.set_reconstruction_approach("SRR")
         volume_reconstruction.set_SRR_iter_max(20)
         volume_reconstruction.set_SRR_alpha(0.1)
-        volume_reconstruction.set_SRR_approach("TK1")       # "TK0" or "TK1"
-        volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
-        # volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
+        volume_reconstruction.set_SRR_approach("TK0")       # "TK0" or "TK1"
+        # volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
+        volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
 
         volume_reconstruction.run_reconstruction()
         filename = self._HR_volume_filename + "_" + str(iterations) + "_" + recon_approach

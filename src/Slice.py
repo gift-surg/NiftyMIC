@@ -215,7 +215,7 @@ class Slice:
     #  \param[in] filename string specifyig the filename. If not given, filename of parent stack is used
     def write(self, directory="/tmp/", filename=None):
         if filename is None:
-            filename_out = filename + "_" + str(self._slice_number)
+            filename_out = self._filename + "_" + str(self._slice_number)
         else:
             filename_out = filename + "_" + str(self._slice_number)
 
