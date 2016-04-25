@@ -19,8 +19,11 @@ import numpy as np
 
 ## Import modules from src-folder
 import ReconstructionManager as rm
+import StackManager as sm
+import HierarchicalSliceAlignment as hsa
 import SimpleITKHelper as sitkh
-# import SliceStack
+import Stack as st
+import Slice as sl
 
 
 ## Change viewer for sitk.Show command
@@ -115,7 +118,7 @@ if __name__ == '__main__':
     dir_output = "../results/"
 
     ## Choose input stacks and reference stack therein
-    input_stacks_type = input_stack_types_available[0]
+    input_stacks_type = input_stack_types_available[-1]
     reference_stack_id = 0
     iterations_two_step_approach = 1
 
@@ -132,25 +135,28 @@ if __name__ == '__main__':
     reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask")
     # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_trachea_rectangular")
 
-    ## Compute first estimate of HR volume
-    reconstruction_manager.set_on_in_plane_rigid_registration_before_estimating_initial_volume()
-    reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
-    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
+    # ## Compute first estimate of HR volume
+    # reconstruction_manager.set_off_in_plane_rigid_registration_before_estimating_initial_volume()
+    # # reconstruction_manager.set_on_hierarchical_slice_alignment()
+    # reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
+    # reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
 
-    ## Run tow step reconstruction alignment approach
-    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
+    # ## Run tow step reconstruction alignment approach
+    # reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
 
-    ## Write results
-    # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
-    reconstruction_manager.write_results()
+    # ## Write results
+    # # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
+    # reconstruction_manager.write_results()
 
-    HR_volume = reconstruction_manager.get_HR_volume()
-    HR_volume.show()
+    # HR_volume = reconstruction_manager.get_HR_volume()
+    # HR_volume.show()
 
     """
     Playground
     """
     stacks = reconstruction_manager.get_stacks()
     slices = stacks[0].get_slices()
-    # print stacks[0.sitk
-    # print slices[-1].sitk
+
+
+    hierarchical_slice_alignment = hsa.HierarchicalSliceAlignment(sm.StackManager.from_stacks(stacks), stacks[0].get_isotropically_resampled_stack_from_slices())
+    hierarchical_slice_alignment.run_hierarchical_alignment()

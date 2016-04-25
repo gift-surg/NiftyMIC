@@ -17,8 +17,10 @@ import matplotlib.pyplot as plt
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
 import InPlaneRigidRegistration as iprr
+import StackManager as sm
 import Stack as st
 import ScatteredDataApproximation as sda
+import StackAverage as sa
 
 
 ## Class to compute first estimate of HR volume. Steps included are:
@@ -63,13 +65,8 @@ class FirstEstimateOfHRVolume:
         self._recon_approach = "SDA"        # default reconstruction approach
 
         ## SDA reconstruction settings:
-        self._SDA = sda.ScatteredDataApproximation(self._stack_manager, self._HR_volume)
-
         self._SDA_sigma = 0.6                 # sigma for recursive Gaussian smoothing
         self._SDA_type = 'Shepard-YVV'      # Either 'Shepard-YVV' or 'Shepard-Deriche'
-
-        self._SDA.set_sigma(self._SDA_sigma)
-        self._SDA.set_approach(self._SDA_type)
 
 
     ## Set flag to use in-plane of all slices to each other within their stacks
@@ -123,17 +120,22 @@ class FirstEstimateOfHRVolume:
         if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
             print("In-plane alignment of slices within each stack is performed")
             ## Run in-plane rigid registration of all stacks
+
+            # self._stacks[1].show(1)
+
             self._in_plane_rigid_registration =  iprr.InPlaneRigidRegistration(self._stack_manager)
             self._in_plane_rigid_registration.run_in_plane_rigid_registration()
-            stacks = self._in_plane_rigid_registration.get_resampled_planarly_aligned_stacks()
+            # stacks = self._in_plane_rigid_registration.get_resampled_planarly_aligned_stacks()
 
-            ## Update HR volume and its mask
-            self._HR_volume = self._get_isotropically_resampled_stack(stacks[self._target_stack_number])
+            ## Update HR volume and its mask after planar alignment of slices
+            self._HR_volume.show(title="upsampled_target_stack_BEFORE_in_plane_reg")
+            target_stack_aligned = self._stacks[self._target_stack_number].get_resampled_stack_from_slices()
+            self._HR_volume = self._get_isotropically_resampled_stack(target_stack_aligned)
+            self._HR_volume.show(title="upsampled_target_stack_AFTER_in_plane_reg")
 
         ## Use "raw" stacks as given by their originally given physical positions
         else:
             print("In-plane alignment of slices within each stack is NOT performed")
-            stacks = self._stacks 
 
         ## If desired: Register all (planarly) aligned stacks to resampled target volume
         if self._flag_register_stacks_before_initial_volume_estimate:
@@ -186,7 +188,7 @@ class FirstEstimateOfHRVolume:
             spacing,
             target_stack.sitk.GetDirection(),
             default_pixel_value,
-            target_stack.sitk.GetPixelIDValue())
+            target_stack.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance of HR_volume
         HR_volume = st.Stack.from_sitk_image(HR_volume_sitk, self._filename_reconstructed_volume)
@@ -199,16 +201,16 @@ class FirstEstimateOfHRVolume:
     #  \post each Slice is updated according to obtained registration
     def _rigidly_register_all_stacks_to_HR_volume(self, print_trafos=False):
 
-        if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
-            ## Get resampled stacks of planarly aligned slices as Stack objects (3D volume)
-            stacks = self._in_plane_rigid_registration.get_resampled_planarly_aligned_stacks() # with in-plane alignment
-
-        else:
-            stacks = self._stacks
-
         ## Compute rigid registrations aligning each stack with the HR volume
         for i in range(0, self._N_stacks):
-            self._rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(stacks[i], self._HR_volume)
+            if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
+                ## Get resampled stacks of planarly aligned slices as Stack objects (3D volume)
+                stack = self._stacks[i].get_resampled_stack_from_slices()
+
+            else:
+                stack = self._stacks[i]
+
+            self._rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(stack, self._HR_volume)
 
             ## Print rigid registration results (optional)
             if print_trafos:
@@ -355,73 +357,24 @@ class FirstEstimateOfHRVolume:
     ## Compute average of all registered stacks and update self._HR_volume
     #  \post self._HR_volume is overwritten with new estimate
     def _run_averaging(self):
-        print("\n\t--- Run averaging of stacks ---")
-        default_pixel_value = 0.0
-
-        ## Define helpers to obtain averaged stack
-        shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
-        array = np.zeros(shape)
-        array_mask = np.zeros(shape)
-        ind = np.zeros(shape)
-
+        
+        ## Use planarly aligned stacks for average if given
         if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
-            ## Get resampled stacks of planarly aligned slices as Stack objects (3D volume)
-            stacks = self._in_plane_rigid_registration.get_resampled_planarly_aligned_stacks() # with in-plane alignment
+            stacks = [None]*self._N_stacks
+            for i in range(0, self._N_stacks):
+                stacks[i] = self._stacks[i].get_resampled_stack_from_slices()
 
         else:
             stacks = self._stacks
 
-        ## Average over domain specified by the joint mask ("union mask")
-        for i in range(0,self._N_stacks):
-            ## Resample warped stacks
-            stack_sitk =  sitk.Resample(
-                stacks[i].sitk,
-                self._HR_volume.sitk, 
-                self._rigid_registrations[i], 
-                sitk.sitkLinear, 
-                default_pixel_value,
-                self._HR_volume.sitk.GetPixelIDValue())
+        self._sa = sa.StackAverage(sm.StackManager.from_stacks(stacks), self._HR_volume)
+        self._sa.set_averaged_volume_name(self._filename_reconstructed_volume)
+        self._sa.set_stack_transformations(self._rigid_registrations)
 
-            ## Resample warped stack masks
-            stack_sitk_mask =  sitk.Resample(
-                stacks[i].sitk_mask,
-                self._HR_volume.sitk, 
-                self._rigid_registrations[i], 
-                sitk.sitkNearestNeighbor, 
-                default_pixel_value,
-                stacks[i].sitk_mask.GetPixelIDValue())
-
-            ## Get arrays of resampled warped stack and mask
-            array_tmp = sitk.GetArrayFromImage(stack_sitk)
-            array_mask_tmp = sitk.GetArrayFromImage(stack_sitk_mask)
-
-            ## Sum intensities of stack and mask
-            array += array_tmp
-            array_mask += array_mask_tmp
-
-            ## Store indices of voxels with non-zero contribution
-            ind[np.nonzero(array_tmp)] += 1
-
-        ## Average over the amount of non-zero contributions of the stacks at each index
-        ind[ind==0] = 1                 # exclude division by zero
-        array = np.divide(array,ind.astype(float))    # elemenwise division
-
-        ## Create (joint) binary mask. Mask represents union of all masks
-        array_mask[array_mask>0] = 1
-
-        ## Set pixels of the image not specified by the mask to zero
-        array[array_mask==0] = 0
-
-        ## Update HR volume (sitk image)
-        helper = sitk.GetImageFromArray(array)
-        helper.CopyInformation(self._HR_volume.sitk)
-        self._HR_volume.sitk = helper
-        self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(helper)
-
-        ## Update HR volume (sitk image mask)
-        # helper = sitk.GetImageFromArray(array_mask)
-        # helper.CopyInformation(self._HR_volume.sitk_mask)
-        # self._HR_volume.sitk_mask = helper
+        print("\n\t--- Run averaging of stacks ---")
+        self._sa.run_averaging()
+        self._HR_volume = self._sa.get_averaged_volume()
+        
 
 
     """
@@ -431,9 +384,6 @@ class FirstEstimateOfHRVolume:
     #  \param[in] sigma, scalar
     def set_SDA_sigma(self, sigma):
         self._SDA_sigma = sigma
-
-        ## Update SDA approach
-        self._SDA.set_sigma(self._SDA_sigma)
 
 
     ## Get sigma used for recursive Gaussian smoothing
@@ -449,12 +399,15 @@ class FirstEstimateOfHRVolume:
             raise ValueError("Error: SDA approach can only be either 'Shepard-YVV' or 'Shepard-Deriche'")
 
         self._SDA_approach = SDA_approach
-        self._SDA.set_approach(self._SDA_approach)
-
 
 
     ## Estimate the HR volume via SDA approach
+    #  \post self._HR_volume is overwritten with new estimate
     def _run_SDA(self):
+
+        self._SDA = sda.ScatteredDataApproximation(self._stack_manager, self._HR_volume)
+        self._SDA.set_sigma(self._SDA_sigma)
+        self._SDA.set_approach(self._SDA_type)
         
         ## Perform reconstruction via SDA
         print("\n\t--- Run Scattered Data Approximation algorithm ---")

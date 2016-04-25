@@ -438,10 +438,10 @@ class InPlaneRigidRegistration:
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
 
         ## Use mutual information between two images
-        registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=50, varianceForJointPDFSmoothing=3)
+        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=50, varianceForJointPDFSmoothing=3)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
-        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+        registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
 
         ## Use negative means squares image metric
         # registration_method.SetMetricAsMeanSquares()
@@ -625,63 +625,63 @@ class InPlaneRigidRegistration:
         return None
 
 
-    def _resample_stacks_of_planarly_aligned_slices(self):
+    # def _resample_stacks_of_planarly_aligned_slices(self):
 
-        for i in range(0, self._N_stacks):
-            stack = self._stacks[i]
-            slices = stack.get_slices()
-            N_slices = stack.get_number_of_slices()
+    #     for i in range(0, self._N_stacks):
+    #         stack = self._stacks[i]
+    #         slices = stack.get_slices()
+    #         N_slices = stack.get_number_of_slices()
 
-            warped_stack_nda = sitk.GetArrayFromImage(stack.sitk)
-            warped_stack_mask_nda = sitk.GetArrayFromImage(stack.sitk_mask)
-
-
-            # Identity transform since trafo is already updated in image header
-            transform = sitk.Euler3DTransform()
-
-            for j in range(0, N_slices):
-                ## Image    
-                fixed_sitk = stack.sitk[:,:,j:j+1]
-                moving_sitk = slices[j].sitk
-
-                warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
-                warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
-                warped_stack_nda[j,:,:] = warped_slice_nda[0,:,:]
-
-                ## Mask
-                fixed_sitk = stack.sitk_mask[:,:,j:j+1]
-                moving_sitk = slices[j].sitk_mask
-
-                warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
-                warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
-                warped_stack_mask_nda[j,:,:] = warped_slice_nda[0,:,:]
+    #         warped_stack_nda = sitk.GetArrayFromImage(stack.sitk)
+    #         warped_stack_mask_nda = sitk.GetArrayFromImage(stack.sitk_mask)
 
 
-            ## Image
-            warped_stack = sitk.GetImageFromArray(warped_stack_nda)
-            warped_stack.CopyInformation(stack.sitk)
+    #         # Identity transform since trafo is already updated in image header
+    #         transform = sitk.Euler3DTransform()
 
-            ## Mask
-            warped_stack_mask = sitk.GetImageFromArray(warped_stack_mask_nda)
-            warped_stack_mask.CopyInformation(stack.sitk_mask)
+    #         for j in range(0, N_slices):
+    #             ## Image    
+    #             fixed_sitk = stack.sitk[:,:,j:j+1]
+    #             moving_sitk = slices[j].sitk
 
-            ## Update member variables
-            # self._resampled_sitk_stacks_after_in_plane_alignment[i] = warped_stack
-            # self._resampled_sitk_stack_masks_after_in_plane_alignment[i] = warped_stack_mask
+    #             warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
+    #             warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
+    #             warped_stack_nda[j,:,:] = warped_slice_nda[0,:,:]
 
-            self._stacks_of_planarly_aligned_slices[i] = st.Stack.from_sitk_image(warped_stack, stack.get_filename() + "planarly_aligned_slices")
-            self._stacks_of_planarly_aligned_slices[i].add_mask(warped_stack_mask)
+    #             ## Mask
+    #             fixed_sitk = stack.sitk_mask[:,:,j:j+1]
+    #             moving_sitk = slices[j].sitk_mask
 
-        return None
+    #             warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
+    #             warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
+    #             warped_stack_mask_nda[j,:,:] = warped_slice_nda[0,:,:]
+
+
+    #         ## Image
+    #         warped_stack = sitk.GetImageFromArray(warped_stack_nda)
+    #         warped_stack.CopyInformation(stack.sitk)
+
+    #         ## Mask
+    #         warped_stack_mask = sitk.GetImageFromArray(warped_stack_mask_nda)
+    #         warped_stack_mask.CopyInformation(stack.sitk_mask)
+
+    #         ## Update member variables
+    #         # self._resampled_sitk_stacks_after_in_plane_alignment[i] = warped_stack
+    #         # self._resampled_sitk_stack_masks_after_in_plane_alignment[i] = warped_stack_mask
+
+    #         self._stacks_of_planarly_aligned_slices[i] = st.Stack.from_sitk_image(warped_stack, stack.get_filename() + "planarly_aligned_slices")
+    #         self._stacks_of_planarly_aligned_slices[i].add_mask(warped_stack_mask)
+
+    #     return None
 
 
     # def _UT_get_resampled_stacks(self):
-    def get_resampled_planarly_aligned_stacks(self):
-        ## In case stacks have not been resample yet, do it
-        if all(i is None for i in self._stacks_of_planarly_aligned_slices):
-            self._resample_stacks_of_planarly_aligned_slices()
+    # def get_resampled_planarly_aligned_stacks(self):
+    #     ## In case stacks have not been resample yet, do it
+    #     if all(i is None for i in self._stacks_of_planarly_aligned_slices):
+    #         self._resample_stacks_of_planarly_aligned_slices()
 
-        return self._stacks_of_planarly_aligned_slices
+    #     return self._stacks_of_planarly_aligned_slices
 
 
     def write_resampled_stacks(self, directory):

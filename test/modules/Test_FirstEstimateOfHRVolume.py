@@ -50,7 +50,7 @@ class Test_FirstEstimateOfHRVolume(unittest.TestCase):
         ## Update slices according to given test data
         for j in range(0, stack.get_number_of_slices()):
             slices_sitk[j] = sitk.ReadImage(self.dir_input + self.filenames[i] + "_" + str(j) + ".nii.gz")
-            stack._slices[j] = sl.Slice(sitk.Image(slices_sitk[j]), self.dir_input, self.filenames[i], j)
+            stack._slices[j] = sl.Slice.from_sitk_image(sitk.Image(slices_sitk[j]), self.dir_input, self.filenames[i], j)
 
         ## Fetch rigid registration
         rigid_registrations = [None]*stack_manager.get_number_of_stacks()

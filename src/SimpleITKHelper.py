@@ -352,9 +352,9 @@ def convert_sitk_to_itk_image(image_sitk):
         ## or any other "smaller format than itk.D" since 
         ## itk.MultiplyImageFilter[itk.UC, itk.D] does not work! (But
         ## which I need within InverseProblemSolver)
-        # image_type = itk.Image[itk.D, dimension]
+        image_type = itk.Image[itk.D, dimension]
         # image_type = itk.Image[itk.UI, dimension]
-        image_type = itk.Image[itk.UC, dimension]
+        # image_type = itk.Image[itk.UC, dimension]
 
     ## Create ITK image
     itk2np = itk.PyBuffer[image_type]

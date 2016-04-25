@@ -22,9 +22,9 @@ import matplotlib.pyplot as plt
 # import InPlaneRigidRegistration as inplaneRR
 
 ## Import modules for unit testing
-from Test_FirstEstimateOfHRVolume import *
-from Test_SimpleITKHelper import *
-# from Test_Stack import *
+# from Test_FirstEstimateOfHRVolume import *
+# from Test_SimpleITKHelper import *
+from Test_Stack import *
 
 
 """ ###########################################################################

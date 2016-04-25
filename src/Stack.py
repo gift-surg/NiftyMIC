@@ -10,6 +10,7 @@ import os                       # used to execute terminal commands in python
 import itk
 import SimpleITK as sitk
 import numpy as np
+import copy
 
 ## Import modules from src-folder
 import Slice as sl
@@ -34,9 +35,10 @@ class Stack:
     #  of ones.
     #  \param[in] dir_input string to input directory of nifti-file to read
     #  \param[in] filename string of nifti-file to read
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     #  \return Stack object including its slices with corresponding masks
     @classmethod
-    def from_nifti(cls, dir_input, filename):
+    def from_nifti(cls, dir_input, filename, suffix_mask=None):
 
         stack = cls()
         # stack = []
@@ -49,8 +51,8 @@ class Stack:
         stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
 
         ## Append masks (either provided or binary mask)
-        if os.path.isfile(dir_input + filename + "_mask.nii.gz"):
-            stack.sitk_mask = sitk.ReadImage(dir_input + filename + "_mask.nii.gz", sitk.sitkUInt8)
+        if os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
+            stack.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
             stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
         else:
             stack.sitk_mask = stack._generate_binary_mask()
@@ -69,9 +71,10 @@ class Stack:
     #  reconstructed HR volume). A mask can be added via self.add_mask then.
     #  \param[in] image_sitk sitk.Image created from nifti-file
     #  \param[in] name string containing the chosen name for the stack
+    #  \param[in] image_sitk_mask associated mask of stack, sitk.Image object (optional)
     #  \return Stack object without slice information
     @classmethod
-    def from_sitk_image(cls, image_sitk, name):
+    def from_sitk_image(cls, image_sitk, name, image_sitk_mask=None):
         stack = cls()
         
         stack.sitk = sitk.Image(image_sitk)
@@ -82,19 +85,58 @@ class Stack:
         stack._N_slices = stack.sitk.GetSize()[-1]
         stack._slices = [None]*stack._N_slices
 
-        stack.sitk_mask = None
-        stack.itk_mask = None
-
-
-    #         self.sitk = sitk.Image(image_sitk)
-    #         self._filename = filename
-
-    #         self._N_slices = None
-    #         self._slices = None
-
-    #         self.sitk_mask = None
+        ## Append masks (if provided)
+        if image_sitk_mask is not None:
+            stack.sitk_mask = image_sitk_mask
+            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+        else:
+            stack.sitk_mask = None
+            stack.itk_mask = None
 
         return stack
+
+
+    ## Copy constructor
+    #  \param[in] stack_to_copy Stack object to be copied
+    #  \return copied Stack object
+    # TODO: That's not really well done!
+    @classmethod
+    def from_stack(cls, stack_to_copy):
+        stack = cls()
+        
+        ## Copy image stack and mask
+        stack.sitk = sitk.Image(stack_to_copy.sitk)
+        stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
+
+        stack.sitk_mask = sitk.Image(stack_to_copy.sitk_mask)
+        stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+
+        stack._filename = "copy_" + stack_to_copy.get_filename()
+
+        stack._N_slices = stack_to_copy.sitk.GetSize()[-1]
+        stack._slices = [None]*stack._N_slices
+
+        ## Extract all slices and their masks from the stack and store them if given
+        if not all(x is None for x in stack_to_copy.get_slices()):
+            slices_to_copy = stack_to_copy.get_slices()
+            
+            for i in range(0, stack._N_slices):
+                stack._slices[i] = sl.Slice.from_slice(slices_to_copy[i])
+
+        return stack
+
+
+    # @classmethod
+    # def from_Stack(cls, class_instance):
+    #     data = copy.deepcopy(class_instance) # if deepcopy is necessary
+    #     return cls(data)
+
+    # def __deepcopy__(self, memo):
+    #     print '__deepcopy__(%s)' % str(memo)
+    #     return Stack(copy.deepcopy(memo))
+
+    # def copy(self):
+        # return copy.deepcopy(self)
 
 
     ## Add a mask to a existing Stack instance with no existing mask yet.
@@ -135,6 +177,11 @@ class Stack:
     #  \bug Does not exist for all created instances! E.g. Stack.from_sitk_image
     def get_directory(self):
         return self._dir
+
+
+    #  \return string of filename
+    def set_filename(self, filename):
+        self._filename = filename
 
 
     ## Get filename of read/assigned nifti file (Stack.from_nifti vs Stack.from_sitk_image)
@@ -210,6 +257,126 @@ class Stack:
                 print(err.message)
 
 
+    ## After slice-based registrations slice j does not correspond to the physical
+    #  space of stack[:,:,j:j+1] anymore. With this method resample all containing
+    #  slices to the physical space defined by the stack. Overlapping slices get 
+    #  averaged
+    #  \return resampled stack based on current position of slices as Stack object
+    def get_resampled_stack_from_slices(self):
+
+        ## Get shape of image data array
+        nda_shape = self.sitk.GetSize()[::-1]
+
+        ## Create zero image and its mask aligned with sitk.Image
+        nda = np.zeros(nda_shape)
+        
+        stack_resampled_sitk = sitk.GetImageFromArray(nda)
+        stack_resampled_sitk.CopyInformation(self.sitk)
+
+        stack_resampled_sitk_mask = sitk.GetImageFromArray(nda.astype("uint8"))
+        stack_resampled_sitk_mask.CopyInformation(self.sitk_mask)
+
+        ## Create helper used for normalization at the end
+        nda_stack_covered_indices = np.zeros(nda_shape)
+
+
+        default_pixel_value = 0.0
+
+        for i in range(0, self._N_slices):
+            slice = self._slices[i]
+
+            ## Resample slice and its mask to stack space
+            stack_resampled_slice_sitk = sitk.Resample(
+                slice.sitk, 
+                self.sitk, 
+                sitk.Euler3DTransform(), 
+                sitk.sitkNearestNeighbor, 
+                default_pixel_value, 
+                self.sitk.GetPixelIDValue())
+
+            stack_resampled_slice_sitk_mask = sitk.Resample(
+                slice.sitk_mask, 
+                self.sitk_mask, 
+                sitk.Euler3DTransform(), 
+                sitk.sitkNearestNeighbor, 
+                default_pixel_value, 
+                self.sitk_mask.GetPixelIDValue())
+
+            ## Add resampled slice and mask to stack space
+            stack_resampled_sitk += stack_resampled_slice_sitk
+            stack_resampled_sitk_mask += stack_resampled_slice_sitk_mask
+
+            ## Get indices which are updated in stack space
+            nda_stack_resampled_slice_ind = sitk.GetArrayFromImage(stack_resampled_slice_sitk)
+            ind = np.nonzero(nda_stack_resampled_slice_ind)
+
+            ## Increment counter for respective updated voxels
+            nda_stack_covered_indices[ind] += 1
+            
+        ## Set voxels with zero counter to 1 so as to have well-defined normalization
+        nda_stack_covered_indices[nda_stack_covered_indices==0] = 1
+
+        ## Normalize resampled image
+        stack_normalization = sitk.GetImageFromArray(nda_stack_covered_indices)
+        stack_normalization.CopyInformation(self.sitk)
+        stack_resampled_sitk /= stack_normalization
+
+        ## Get valid binary mask
+        stack_resampled_slice_sitk_mask /= stack_resampled_slice_sitk_mask
+
+        stack = self.from_sitk_image(stack_resampled_sitk,"resampled_"+self._filename)
+        stack.add_mask(stack_resampled_sitk_mask)
+
+        return stack
+
+
+    ## Get stack resampled on isotropic grid based on the actual position of
+    #  its slices
+    #  \return isotropically, resampled stack as Stack object
+    def get_isotropically_resampled_stack_from_slices(self):
+        resampled_stack = self.get_resampled_stack_from_slices()
+
+        ## Read original spacing (voxel dimension) and size of target stack:
+        spacing = np.array(resampled_stack.sitk.GetSpacing())
+        size = np.array(resampled_stack.sitk.GetSize())
+
+        ## Update information according to isotropic resolution
+        size[2] = np.round(spacing[2]/spacing[0]*size[2])
+        spacing[2] = spacing[0]
+
+        ## Resample image and its mask to isotropic grid
+        default_pixel_value = 0.0
+
+        isotropic_resampled_stack_sitk =  sitk.Resample(
+            resampled_stack.sitk, 
+            size, 
+            sitk.Euler3DTransform(), 
+            sitk.sitkNearestNeighbor, 
+            resampled_stack.sitk.GetOrigin(), 
+            spacing,
+            resampled_stack.sitk.GetDirection(),
+            default_pixel_value,
+            resampled_stack.sitk.GetPixelIDValue())
+
+        isotropic_resampled_stack_sitk_mask =  sitk.Resample(
+            resampled_stack.sitk_mask, 
+            size, 
+            sitk.Euler3DTransform(), 
+            sitk.sitkNearestNeighbor, 
+            resampled_stack.sitk.GetOrigin(), 
+            spacing,
+            resampled_stack.sitk.GetDirection(),
+            default_pixel_value,
+            resampled_stack.sitk_mask.GetPixelIDValue())
+
+        ## Create Stack instance of HR_volume
+        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, "isotropic_resampled_"+self._filename)
+        stack.add_mask(isotropic_resampled_stack_sitk_mask)
+
+        return stack
+
+
+
     ## Burst the stack into its slices and return all slices of the stack
     #  return list of Slice objects
     def _extract_slices(self):
@@ -218,7 +385,7 @@ class Stack:
 
         ## Extract slices and add masks
         for i in range(0, self._N_slices):
-            slices[i] = sl.Slice(
+            slices[i] = sl.Slice.from_sitk_image(
                 slice_sitk = self.sitk[:,:,i:i+1], 
                 dir_input = self._dir, 
                 filename = self._filename, 

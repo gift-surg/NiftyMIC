@@ -15,10 +15,10 @@ f     = function value
            * * *
 
 Machine precision = 2.220E-16
- N =  515034    M =  10
+ N =  463536    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.147E+03  6.516E+08
+    0    1     -     -   -     -     -        -     1.552E+02  8.034E+07
 RUNNING THE L-BFGS-B CODE
 
 it    = iteration number
@@ -36,15 +36,11 @@ f     = function value
            * * *
 
 Machine precision = 2.220E-16
- N =  515034    M =  10
+ N =  463536    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.780E+03  9.207E+08
-RUNNING THE L-BFGS-B CODE
-
-it    = iteration number
-nf    = number of function evaluations
-nseg  = number of segments explored during the Cauchy search
+    0    1     -     -   -     -     -        -     1.291E+02  8.494E+07
+ of segments explored during the Cauchy search
 nact  = number of active bounds at the generalized Cauchy point
 sub   = manner in which the subspace minimization terminated:
         con = converged, bnd = a bound was reached
@@ -57,9 +53,11 @@ f     = function value
            * * *
 
 Machine precision = 2.220E-16
- N =  515034    M =  10
+ N =  463536    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
+    0    1     -     -   -     -     -        -     1.635E+02  9.450E+07
+epl    tstep     projg        f
     0    1     -     -   -     -     -        -     8.711E+02  1.108E+09
 RUNNING THE L-BFGS-B CODE
 

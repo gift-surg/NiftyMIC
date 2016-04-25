@@ -143,7 +143,7 @@ moving = st.Stack.from_nifti(dir_input, "2")
 # moving_itk = sitkh.read_itk_image(dir_input + filename + "_rotated_angle_z.nii.gz")
 
 ## Register images
-rigid_transform_3D = get_rigid_registration_transform_3D(fixed, moving)
+# rigid_transform_3D = get_rigid_registration_transform_3D(fixed, moving)
 
 ## Resample image
 warped_itk = get_resampled_image(fixed.itk, moving.itk, rigid_transform_3D)
@@ -176,6 +176,15 @@ optimizer = optimizer_type.New()
 
 print sitkh.get_sitk_Euler3DTransform_from_itk_Euler3DTransform(rigid_transform_3D)
 print rigid_transform_3D
+
+stack_sitk = fixed.sitk
+stack_resampled_sitk = fixed.get_resampled_sitk_stack_from_slices()
+
+
+# m = copy.deepcopy(moving)
+# m = moving.copy()
+# m = st.Stack.from_Stack(moving)
+# sitkh.show_sitk_image(stack_sitk, overlay=stack_resampled_sitk)
 
 
 

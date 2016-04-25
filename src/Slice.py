@@ -25,49 +25,75 @@ class Slice:
     #  \param[in] filename of parent stack, string
     #  \param[in] slice_number number of slice within parent stack, integer
     #  \param[in] slice_sitk_mask associated mask of slice, sitk.Image object (optional)
-    def __init__(self, slice_sitk, dir_input, filename, slice_number, slice_sitk_mask = None):
+    @classmethod
+    def from_sitk_image(cls, slice_sitk, dir_input, filename, slice_number, slice_sitk_mask = None):
 
-        self._dir_input = dir_input
-        self._filename = filename
-        self._slice_number = slice_number
+        slice = cls()
+
+        slice._dir_input = dir_input
+        slice._filename = filename
+        slice._slice_number = slice_number
 
         ## Append stacks as SimpleITK and ITK Image objects
-        self.sitk = slice_sitk
-        self.itk = sitkh.convert_sitk_to_itk_image(slice_sitk)
+        slice.sitk = slice_sitk
+        slice.itk = sitkh.convert_sitk_to_itk_image(slice_sitk)
 
         ## Append masks (if provided)
         if slice_sitk_mask is not None:
-            self.sitk_mask = slice_sitk_mask
-            self.itk_mask = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
+            slice.sitk_mask = slice_sitk_mask
+            slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
         else:
-            self.sitk_mask = None
-            self.itk_mask = None
+            slice.sitk_mask = None
+            slice.itk_mask = None
 
-        self._sitk_upsampled = None
+        slice._sitk_upsampled = None
 
         ## HACK (for current Slice-to-Volume Registration)
         #  See class SliceToVolumeRegistration
-        # self._sitk_upsampled = self._get_upsampled_isotropic_resolution_slice(slice_sitk)
-        # self._itk_upsampled = sitkh.convert_sitk_to_itk_image(self._sitk_upsampled)
+        # slice._sitk_upsampled = slice._get_upsampled_isotropic_resolution_slice(slice_sitk)
+        # slice._itk_upsampled = sitkh.convert_sitk_to_itk_image(slice._sitk_upsampled)
 
         # if slice_sitk_mask is not None:
-        #     self._sitk_mask_upsampled = self._get_upsampled_isotropic_resolution_slice(slice_sitk_mask)
-        #     self._itk_mask_upsampled = sitkh.convert_sitk_to_itk_image(self._sitk_mask_upsampled)
+        #     slice._sitk_mask_upsampled = slice._get_upsampled_isotropic_resolution_slice(slice_sitk_mask)
+        #     slice._itk_mask_upsampled = sitkh.convert_sitk_to_itk_image(slice._sitk_mask_upsampled)
         # else:
-        #     self._sitk_mask_upsampled = None
-        #     self._itk_mask_upsampled = None
+        #     slice._sitk_mask_upsampled = None
+        #     slice._itk_mask_upsampled = None
 
         ## Store current affine transform of image
-        self._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(self.sitk)
+        slice._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(slice.sitk)
 
         ## Prepare history of spatial transformations in the course of the 
         #  registration/reconstruction process
-        self._registration_history_sitk = []
-        self._registration_history_sitk.append(self._affine_transform_sitk)
+        slice._registration_history_sitk = []
+        slice._registration_history_sitk.append(slice._affine_transform_sitk)
 
         ## Get transform to align original (!) stack with axes of physical coordinate system
         #  Used for in-plane registration, i.e. class InPlaneRigidRegistration
-        self._T_PP = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(self.sitk)
+        slice._T_PP = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(slice.sitk)
+
+        return slice
+
+
+    ## Copy constructor
+    #  \param[in] slice_to_copy Slice object to be copied
+    #  \return copied Slice object
+    # TODO: That's not really well done!
+    @classmethod
+    def from_slice(cls, slice_to_copy):
+        slice = cls()
+        
+        ## Copy image slice and mask
+        slice.sitk = sitk.Image(slice_to_copy.sitk)
+        slice.itk = sitkh.convert_sitk_to_itk_image(slice.sitk)
+
+        slice.sitk_mask = sitk.Image(slice_to_copy.sitk_mask)
+        slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
+        
+        slice._filename = "copy_" + slice_to_copy.get_filename()
+        slice._slice_number = slice_to_copy.get_slice_number()
+
+        return slice
 
 
     ## Update slice with new affine transform, specifying updated spatial
@@ -161,20 +187,21 @@ class Slice:
     def show(self, show_segmentation=0):
         dir_output = "/tmp/"
 
+        filename_out = self._filename + "_" + str(self._slice_number)
         if show_segmentation:
-            sitk.WriteImage(self.sitk, dir_output + self._filename + ".nii.gz")
-            sitk.WriteImage(self.sitk_mask, dir_output + self._filename + "_mask.nii.gz")
+            sitk.WriteImage(self.sitk, dir_output + filename_out + ".nii.gz")
+            sitk.WriteImage(self.sitk_mask, dir_output + filename_out + "_mask.nii.gz")
 
             cmd = "itksnap " \
-                    + "-g " + dir_output + self._filename + ".nii.gz " \
-                    + "-s " +  dir_output + self._filename + "_mask.nii.gz " + \
+                    + "-g " + dir_output + filename_out + ".nii.gz " \
+                    + "-s " +  dir_output + filename_out + "_mask.nii.gz " + \
                     "& "
 
         else:
-            sitk.WriteImage(self.sitk, dir_output + self._filename + ".nii.gz")
+            sitk.WriteImage(self.sitk, dir_output + filename_out + ".nii.gz")
 
             cmd = "itksnap " \
-                    + "-g " + dir_output + self._filename + ".nii.gz " \
+                    + "-g " + dir_output + filename_out + ".nii.gz " \
                     "& "
 
         # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
@@ -188,7 +215,7 @@ class Slice:
     #  \param[in] filename string specifyig the filename. If not given, filename of parent stack is used
     def write(self, directory="/tmp/", filename=None):
         if filename is None:
-            filename_out = self._filename + "_" + str(self._slice_number)
+            filename_out = filename + "_" + str(self._slice_number)
         else:
             filename_out = filename + "_" + str(self._slice_number)
 

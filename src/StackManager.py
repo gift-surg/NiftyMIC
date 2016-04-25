@@ -12,25 +12,39 @@ import SimpleITK as sitk
 ## Import modules from src-folder
 import Stack as st
 
+
 ## StackManager contains all Stack objects and additional information which
 #  shall enable an easier handling with stack-specific information
 class StackManager:
 
+    ## Constructor
     def __init__(self):
         self._stacks = None
         self._N_stacks = 0
 
 
+    ## Constructor
+    ## \param[in] stacks list of Stack objects
+    @classmethod
+    def from_stacks(cls, stacks):
+        stack_manager = cls()
+        stack_manager._stacks = stacks
+        stack_manager._N_stacks = len(stacks)
+
+        return stack_manager
+
+
     ## Read input stacks and create list of Stack objects
     #  \param[in] dir_input directory where stacks are stored
     #  \param[in] filenames filenames of stacks to be considered in that directory
-    def read_input_stacks(self, dir_input, filenames):
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    def read_input_stacks(self, dir_input, filenames, suffix_mask):
         self._N_stacks = len(filenames)
 
         self._stacks = [None]*self._N_stacks
 
         for i in range(0, self._N_stacks):
-            self._stacks[i] = st.Stack.from_nifti(dir_input, filenames[i])
+            self._stacks[i] = st.Stack.from_nifti(dir_input, filenames[i], suffix_mask)
 
 
     ## Get list of stored Stack objects

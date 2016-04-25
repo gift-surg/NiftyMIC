@@ -16,6 +16,7 @@ import FirstEstimateOfHRVolume as efhrv
 import SliceToVolumeRegistration as s2vr
 import VolumeReconstruction as vr
 import DataPreprocessing as dp
+import HierarchicalSliceAlignment as hsa
 
 
 ## This class manages the whole reconstruction pipeline
@@ -97,7 +98,7 @@ class ReconstructionManager:
         self._data_preprocessing.run_preprocessing(filenames, suffix_mask)
 
         ## Read stacks:
-        self._stack_manager.read_input_stacks(self._dir_results_input_data_processed, filenames)
+        self._stack_manager.read_input_stacks(self._dir_results_input_data_processed, filenames, suffix_mask)
 
 
     ## Compute first estimate of HR volume to initialize reconstruction algortihm
@@ -109,7 +110,8 @@ class ReconstructionManager:
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename, self._target_stack_number)
 
         ## Choose reconstruction approach
-        recon_approach = "SDA"
+        # recon_approach = "SDA"
+        recon_approach = "Average"
         first_estimate_of_HR_volume.set_reconstruction_approach(recon_approach) #"SDA" or "Average"
         first_estimate_of_HR_volume.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
         first_estimate_of_HR_volume.set_SDA_sigma(2)
@@ -155,7 +157,7 @@ class ReconstructionManager:
         for i in range(0, iterations):   
             print("*** iteration %s/%s" %(i+1,iterations))
 
-            sigma = np.max((0.8,sigma-0.1))
+            sigma = np.max((1,sigma-0.1))
             volume_reconstruction.set_SDA_sigma(sigma)
 
             ## Register all slices to current estimate of volume reconstruction

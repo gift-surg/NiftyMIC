@@ -14,7 +14,6 @@ import SimpleITK as sitk
 import numpy as np
 import time                     
 
-
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
 
