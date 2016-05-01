@@ -103,6 +103,32 @@ class ReconstructionManager:
         self._stack_manager.read_input_stacks(self._dir_results_input_data_processed, filenames, suffix_mask)
 
 
+    ## Read input stacks stored from given directory from separate slices
+    #  \param[in] dir_input_to_copy directory where stacks are stored
+    #  \param[in] file_prefixes_to_copy filenames of stacks to be considered in that directory
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    def read_input_stacks_from_slices(self, dir_input_to_copy, file_prefixes_to_copy, suffix_mask="_mask"):
+        N_stacks = len(file_prefixes_to_copy)
+
+        self._stack_manager = sm.StackManager()
+
+        for i in range(0, N_stacks):
+
+            ## Copy all slices and associated masks (if available):
+            cmd = "cp " + dir_input_to_copy + file_prefixes_to_copy[i] + "*.nii.gz " \
+                        + self._dir_results_input_data
+            os.system(cmd)
+
+            
+        print(str(N_stacks) + " stacks as bundle of slices were copied to directory " + self._dir_results_input_data)
+
+        ## Data preprocessing:
+        # self._data_preprocessing.run_preprocessing(filenames, suffix_mask)
+
+        ## Read stacks as bundle of slices:
+        self._stack_manager.read_input_stacks_from_slices(self._dir_results_input_data, file_prefixes_to_copy, suffix_mask)
+
+
     ## Compute first estimate of HR volume to initialize reconstruction algortihm
     #  \post \p self._HR_volume is set to first estimate
     def compute_first_estimate_of_HR_volume_from_stacks(self):
@@ -224,24 +250,29 @@ class ReconstructionManager:
 
         ## Final SRR step
         recon_approach = "SRR"
-        SRR_approach = "TK0"        # "TK0" or "TK1"
-        volume_reconstruction.set_reconstruction_approach(recon_approach)
-        
-        volume_reconstruction.set_SDA_sigma(0.7)
+        SRR_approach = "TK1"        # "TK0" or "TK1"
+        SRR_iter_max = 20
+        SRR_regularisation_param = 0.1
 
-        volume_reconstruction.set_SRR_iter_max(20)
-        volume_reconstruction.set_SRR_alpha(0.1)
+        volume_reconstruction.set_reconstruction_approach(recon_approach)
+        volume_reconstruction.set_SRR_iter_max(SRR_iter_max)
+        volume_reconstruction.set_SRR_alpha(SRR_regularisation_param)
         volume_reconstruction.set_SRR_approach(SRR_approach)       
         volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
         # volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
 
         volume_reconstruction.run_reconstruction()
-        filename = self._HR_volume_filename + "_" + str(iterations) + "_" + recon_approach + "_" + SRR_approach
+
+        ## Update filename of HR reconstruction based on chosen options
+        filename =  self._HR_volume_filename + "_cycles" + str(iterations)
+        filename +=  "_SRR_" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
+
+        self._HR_volume_filename = filename
         self._HR_volume.write(directory=self._dir_results, filename=filename)
 
 
     ## Execute in-plane rigid registration align slices planarly within stack 
-    #  to compensate for planarly occured motion. It used
+    #  to compensate for planarly occurred motion. It used
     #  \post Each slice is updated with new affine matrix defining its updated
     #       spatial position
     def run_in_plane_rigid_registration_within_stack(self):
@@ -287,7 +318,7 @@ class ReconstructionManager:
     ## Set current estimate of HR volume by hand
     #  \param[in] HR_volume current estimate of HR volume, instance of Stack
     def set_HR_volume(self, HR_volume):
-        self._HR_volume = HR_volume
+        self._HR_volume = st.Stack.from_stack(HR_volume)
 
 
     ## Get current estimate of HR volume

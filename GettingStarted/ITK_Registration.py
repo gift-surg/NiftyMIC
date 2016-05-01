@@ -132,9 +132,9 @@ dir_output = "results/"
 filename = "fetal_brain_a"
 filename = "0"
 
-fixed = st.Stack.from_nifti(dir_input, filename)
-# moving = st.Stack.from_nifti(dir_input, filename + "_rotated_angle_z")
-moving = st.Stack.from_nifti(dir_input, "2")
+fixed = st.Stack.from_filename(dir_input, filename)
+# moving = st.Stack.from_filename(dir_input, filename + "_rotated_angle_z")
+moving = st.Stack.from_filename(dir_input, "2")
 
 # fixed_itk = sitkh.read_itk_image(dir_input + filename + ".nii.gz")
 # moving_itk = sitkh.read_itk_image(dir_input + "2.nii.gz")

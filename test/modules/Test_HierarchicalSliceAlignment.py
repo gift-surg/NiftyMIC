@@ -39,7 +39,7 @@ class Stack(unittest.TestCase):
         stacks = [None]*N_stacks
 
         for i in range(0, N_stacks):
-            stacks[i] = st.Stack.from_nifti(self.dir_input, filenames[i], suffix_mask)
+            stacks[i] = st.Stack.from_filename(self.dir_input, filenames[i], suffix_mask)
 
         stack_manager = sm.StackManager.from_stack(stacks)
 

@@ -120,9 +120,10 @@ if __name__ == '__main__':
     ## Choose input stacks and reference stack therein
     input_stacks_type = input_stack_types_available[0]
     reference_stack_id = 0
-    iterations_two_step_approach = 0
+    iterations_two_step_approach = 1
 
     print("Stacks chosen: %s" %input_stacks_type)
+    dir_input, filenames = read_input_data(input_stacks_type)
 
     """
     Run reconstruction
@@ -130,23 +131,27 @@ if __name__ == '__main__':
     ## Prepare output directory
     reconstruction_manager = rm.ReconstructionManager(dir_output, reference_stack_id, recon_name=input_stacks_type)
 
-    ## Read input data (including data preprocessing)
-    dir_input, filenames = read_input_data(input_stacks_type)
-    reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask")
+    ## Read input stack data (including data preprocessing)
+    reconstruction_manager.read_input_stacks(dir_input, filenames, suffix_mask="_mask")
     # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_trachea_rectangular")
 
-    ## Compute first estimate of HR volume
-    reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
-    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
-    
-    ## Run hierarchical slice alignment strategy
-    # reconstruction_manager.run_hierarchical_alignment_of_slices(step=2)
+    ## Read input stack data as bundle of slices (without data preprocessing)
+    # reconstruction_manager.read_input_stacks_from_slices("../results/slices/", filenames, suffix_mask="_mask")
+    # reconstruction_manager.set_HR_volume(st.Stack.from_filename(dir_output, "recon_fetal_neck_mass_brain_0_SRR_TK0"))
 
-    ## Run tow step reconstruction alignment approach
+
+    # ## Compute first estimate of HR volume
+    # reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
+    # reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
+    
+    # ## Run hierarchical slice alignment strategy
+    reconstruction_manager.run_hierarchical_alignment_of_slices(step=2)
+
+    # ## Run tow step reconstruction alignment approach
     reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
 
-    ## Write results
-    # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
+    # ## Write results
+    # # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
     reconstruction_manager.write_results()
 
     HR_volume = reconstruction_manager.get_HR_volume()
@@ -155,9 +160,9 @@ if __name__ == '__main__':
     """
     Playground
     """
-    # stacks = reconstruction_manager.get_stacks()
-    # stack = stacks[0]
-    # slices = stack.get_slices()
+    stacks = reconstruction_manager.get_stacks()
+    stack = stacks[0]
+    slices = stack.get_slices()
 
 
     # hierarchical_slice_alignment = hsa.HierarchicalSliceAlignment(sm.StackManager.from_stacks(stacks), stacks[0].get_isotropically_resampled_stack_from_slices())

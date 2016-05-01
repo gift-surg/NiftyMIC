@@ -44,7 +44,21 @@ class StackManager:
         self._stacks = [None]*self._N_stacks
 
         for i in range(0, self._N_stacks):
-            self._stacks[i] = st.Stack.from_nifti(dir_input, filenames[i], suffix_mask)
+            self._stacks[i] = st.Stack.from_filename(dir_input, filenames[i], suffix_mask)
+
+
+    ## Read input stacks and create list of Stack objects
+    #  \param[in] dir_input string to input directory where bundle of slices are stored
+    #  \param[in] prefixes_stacks prefixes of stacks as list of strings indicating the corresponding stacks
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    #  \example mask (suffix_mask) of slice j of stack i (prefix_stack) reads: i_j_mask.nii.gz
+    def read_input_stacks_from_slices(self, dir_input, prefixes_stacks, suffix_mask):
+        self._N_stacks = len(prefixes_stacks)
+
+        self._stacks = [None]*self._N_stacks
+
+        for i in range(0, self._N_stacks):
+            self._stacks[i] = st.Stack.from_slice_filenames(dir_input, prefixes_stacks[i], suffix_mask)
 
 
     ## Get list of stored Stack objects

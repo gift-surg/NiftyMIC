@@ -117,7 +117,7 @@ if __name__ == '__main__':
     # HR_volume.show()
 
     ## HR volume reconstruction obtained from Kainz toolkit
-    HR_volume_ref = st.Stack.from_nifti(dir_ref,filename_HR_volume)
+    HR_volume_ref = st.Stack.from_filename(dir_ref,filename_HR_volume)
 
     ## Write initial and reference volume before starting reconstruction algorithm
     if write_results:

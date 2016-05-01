@@ -107,6 +107,7 @@ class SliceToVolumeRegistration:
         moving_3D_itk.DisconnectPipeline()
 
         moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
+        # moving_3D_sitk = moving_HR_volume_3D.sitk
 
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()

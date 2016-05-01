@@ -33,7 +33,7 @@ class Stack(unittest.TestCase):
 
         filename = "stack0"
 
-        stack = st.Stack.from_nifti(self.dir_input, filename, "_mask")
+        stack = st.Stack.from_filename(self.dir_input, filename, "_mask")
 
         nda_stack = sitk.GetArrayFromImage(stack.sitk)
         nda_stack_mask = sitk.GetArrayFromImage(stack.sitk_mask)

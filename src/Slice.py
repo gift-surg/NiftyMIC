@@ -71,6 +71,49 @@ class Slice:
         return slice
 
 
+    ## Create Stack instance from file and add corresponding mask. Mask is
+    #  either provided in the directory or created as binary mask consisting
+    #  of ones.
+    #  \param[in] dir_input string to input directory of nifti-file to read
+    #  \param[in] filename string of nifti-file to read
+    #  \param[in] stack_filename filename extension of parent stack, string
+    #  \param[in] slice_number number of slice within parent stack, integer
+    #  \param[in] suffix_mask extension of slice filename which indicates associated mask
+    #  \return Stack object including its slices with corresponding masks
+    @classmethod
+    def from_filename(cls, dir_input, filename, stack_filename, slice_number, suffix_mask=None):
+
+        slice = cls()
+        # slice = []
+
+        slice._dir = dir_input
+        slice._filename = stack_filename
+        slice._slice_number = slice_number
+
+        ## Append stacks as SimpleITK and ITK Image objects
+        slice.sitk = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
+        slice.itk = sitkh.convert_sitk_to_itk_image(slice.sitk)
+
+        ## Append masks (if provided)
+        if suffix_mask is not None and os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
+            slice.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
+            slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
+        else:
+            slice.sitk_mask = None
+            slice.itk_mask = None
+
+        slice._sitk_upsampled = None
+
+        ## Store current affine transform of image
+        slice._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(slice.sitk)
+
+        ## Prepare history of spatial transformations in the course of the 
+        #  registration/reconstruction process
+        slice._registration_history_sitk = []
+        slice._registration_history_sitk.append(slice._affine_transform_sitk)
+
+        return slice
+
     ## Copy constructor
     #  \param[in] slice_to_copy Slice object to be copied
     #  \return copied Slice object

@@ -7,6 +7,7 @@
 
 ## Import libraries
 import os                       # used to execute terminal commands in python
+import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
@@ -38,7 +39,7 @@ class Stack:
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     #  \return Stack object including its slices with corresponding masks
     @classmethod
-    def from_nifti(cls, dir_input, filename, suffix_mask=None):
+    def from_filename(cls, dir_input, filename, suffix_mask=None):
 
         stack = cls()
         # stack = []
@@ -51,7 +52,7 @@ class Stack:
         stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
 
         ## Append masks (either provided or binary mask)
-        if os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
+        if suffix_mask is not None and os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
             stack.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
             stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
         else:
@@ -61,6 +62,38 @@ class Stack:
         ## Extract all slices and their masks from the stack and store them 
         stack._N_slices = stack.sitk.GetSize()[-1]
         stack._slices = stack._extract_slices()
+
+        return stack
+
+
+    ## Create Stack instance from stack slices in specified directory and add corresponding mask.
+    #  \param[in] dir_input string to input directory where bundle of slices are stored
+    #  \param[in] prefix_stack prefix indicating the corresponding stack
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    #  \return Stack object including its slices with corresponding masks
+    #  \example mask (suffix_mask) of slice j of stack i (prefix_stack) reads: i_j_mask.nii.gz
+    @classmethod
+    def from_slice_filenames(cls, dir_input, prefix_stack, suffix_mask=None):
+
+        stack = cls()
+
+        stack._dir = dir_input
+        stack._filename = prefix_stack
+
+        ## Get filenames of slices
+        filenames_slices = stack._get_slice_filenames(dir_input, prefix_stack, suffix_mask)
+
+        ## There exists no entire image volume.
+        stack.sitk = None
+        stack.itk = None
+
+        stack._N_slices = len(filenames_slices)
+        stack._slices = [None] * stack._N_slices
+
+        ## Append slices as Slice objects
+        for i in range(0, stack._N_slices):
+            filename_slice = prefix_stack + "_" + filenames_slices[i]
+            stack._slices[i] = sl.Slice.from_filename(dir_input, filename_slice, stack._filename, i, suffix_mask)
 
         return stack
 
@@ -139,6 +172,48 @@ class Stack:
         # return copy.deepcopy(self)
 
 
+    ## Get filenames of slices in specified directory.
+    #  Assumption: Filenames constitute of subsequent numbering
+    #  \param[in] dir_input string to input directory of nifti-file to read
+    #  \param[in] prefix_stack prefix indicating the corresponding stack
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    #  \return filenames as list of strings
+    def _get_slice_filenames(self, dir_input, prefix_stack, suffix_mask):
+
+        filenames = []
+
+        ## List of all files in directory
+        all_files = os.listdir(dir_input)
+
+        ## Number of symbols of stack prefix which defines sought slices
+        prefix_stack_len = len(prefix_stack)
+
+        for file in all_files:
+
+            ## Only consider nifti images without their mask
+            if file.endswith(".nii.gz") and file.startswith(prefix_stack) and not file.endswith(suffix_mask + ".nii.gz"):
+                
+                filename = file
+
+                ## Chop off prefix + underscore
+                filename = filename[prefix_stack_len+1:]
+
+                ## Chop off ending
+                filename = filename.replace(".nii.gz","")
+
+                ## Filename consits only of slice filename
+                filenames.append(filename)
+
+        ## Assumption of subsequent numbering
+        N = len(filenames)
+
+        ## Create filenames as list of strings
+        filenames = [str(i) for i in range(0, N)]
+
+        return filenames
+
+
+
     ## Add a mask to a existing Stack instance with no existing mask yet.
     #  \param[in] image_sitk_mask sitk.Image representing the mask
     def add_mask(self, image_sitk_mask):
@@ -184,7 +259,7 @@ class Stack:
         self._filename = filename
 
 
-    ## Get filename of read/assigned nifti file (Stack.from_nifti vs Stack.from_sitk_image)
+    ## Get filename of read/assigned nifti file (Stack.from_filename vs Stack.from_sitk_image)
     #  \return string of filename
     def get_filename(self):
         return self._filename
