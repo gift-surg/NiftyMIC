@@ -128,10 +128,12 @@ class FirstEstimateOfHRVolume:
             # stacks = self._in_plane_rigid_registration.get_resampled_planarly_aligned_stacks()
 
             ## Update HR volume and its mask after planar alignment of slices
-            self._HR_volume.show(title="upsampled_target_stack_BEFORE_in_plane_reg")
+            foo = st.Stack.from_stack(self._HR_volume) ## only for show_sitk_image to have comparison before-after
+
             target_stack_aligned = self._stacks[self._target_stack_number].get_resampled_stack_from_slices()
             self._HR_volume = self._get_isotropically_resampled_stack(target_stack_aligned)
-            self._HR_volume.show(title="upsampled_target_stack_AFTER_in_plane_reg")
+
+            sitkh.show_sitk_image(foo.sitk, overlay=self._HR_volume.sitk, title="upsampled_target_stack_before_and_after_in_plane_reg")
 
         ## Use "raw" stacks as given by their originally given physical positions
         else:
@@ -297,7 +299,7 @@ class FirstEstimateOfHRVolume:
         optimizer settings
         """
         ## Set optimizer to Nelder-Mead downhill simplex algorithm
-        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
+        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withRestarts=False)
 
         ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
         # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
@@ -309,14 +311,16 @@ class FirstEstimateOfHRVolume:
         # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
 
         ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
-        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
+        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
         registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=0.5, minStep=0.05, numberOfIterations=2000)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
-        registration_method.SetOptimizerScalesFromPhysicalShift()
+        # registration_method.SetOptimizerScalesFromPhysicalShift()
+        registration_method.SetOptimizerScalesFromJacobian()
+        
         
         """
         setup for the multi-resolution framework            

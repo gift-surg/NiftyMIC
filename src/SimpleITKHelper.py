@@ -92,73 +92,6 @@ def get_sitk_affine_transform_from_sitk_image(image_sitk):
     return sitk.AffineTransform(A,t)
 
 
-def get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk):
-    # Get parameters of 2D registration
-    angle_z, translation_x, translation_y = rigid_transform_2D_sitk.GetParameters()
-    center_x, center_y = rigid_transform_2D_sitk.GetFixedParameters()
-
-    # Expand obtained translation to 3D vector
-    translation_3D = (translation_x, translation_y, 0)
-    center_3D = (center_x, center_y, 0)
-
-    # Create 3D rigid transform based on 2D
-    rigid_transform_3D = sitk.Euler3DTransform()
-    rigid_transform_3D.SetRotation(0,0,angle_z)
-    rigid_transform_3D.SetTranslation(translation_3D)
-    rigid_transform_3D.SetFixedParameters(center_3D)
-    
-    return rigid_transform_3D
-
-
-def get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D):
-    ## Extract origin and direction matrix from slice:
-    origin_3D = np.array(slice_3D.GetOrigin())
-    direction_3D = np.array(slice_3D.GetDirection())
-
-    ## Generate inverse transformations for translation and orthogonal transformations
-    T_translation = sitk.AffineTransform(3)
-    T_translation.SetTranslation(-origin_3D)
-
-    T_rotation = sitk.AffineTransform(3)
-    direction_inv = np.linalg.inv(direction_3D.reshape(3,3)).flatten()
-    T_rotation.SetMatrix(direction_inv)
-
-    ## T = T_rotation_inv o T_origin_inv
-    T = get_composited_sitk_affine_transform(T_rotation,T_translation)
-
-    return T
-
-
-def get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk, T, slice_3D_sitk):
-    ## Extract affine transformation to transform from Image to Physical Space
-    T_PI = get_sitk_affine_transform_from_sitk_image(slice_3D_sitk)
-
-    ## T = T_rotation_inv o T_origin_inv
-    # T = get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D)
-    # T = slice_3D.get_transform_to_align_with_physical_coordinate_system()
-    T_inv = sitk.AffineTransform(T.GetInverse())
-
-    ## T_PI_align = T_rotation_inv o T_origin_inv o T_PI: Trafo to align stack with physical coordinate system
-    ## (Hence, T_PI_align(\i) = \spacing*\i)
-    T_PI_align = get_composited_sitk_affine_transform(T, T_PI)
-
-    ## Extract direction matrix and origin so that slice is oriented according to T_PI_align (i.e. with physical axes)
-    # origin_PI_align = get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,slice_3D)
-    # direction_PI_align = get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,slice_3D)
-
-    ## Extend to 3D rigid transform
-    rigid_transform_3D = get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk) 
-
-    ## T_PI_in_plane_rotation_3D 
-    ##    = T_origin o T_rotation o T_in_plane_rotation_2D_space 
-    ##                      o T_rotation_inv o T_origin_inv o T_PI
-    T_PI_in_plane_rotation_3D = sitk.AffineTransform(3)
-    T_PI_in_plane_rotation_3D = get_composited_sitk_affine_transform(rigid_transform_3D, T_PI_align)
-    T_PI_in_plane_rotation_3D = get_composited_sitk_affine_transform(T_inv, T_PI_in_plane_rotation_3D)
-
-    return T_PI_in_plane_rotation_3D
-
-
 ## rigid_transform_*D (object type  Transform) as output of object sitk.ImageRegistrationMethod does not contain the
 ## member functions GetCenter, GetTranslation, GetMatrix whereas the objects sitk.Euler*DTransform does.
 ## Hence, create an instance sitk.Euler*D so that it can be used for composition of transforms as coded 
@@ -199,40 +132,26 @@ def get_inverse_of_sitk_rigid_registration_transform(rigid_registration_transfor
         ## Return inverse of rigid_transform_3D as instance of Euler3DTransform
         return sitk.Euler3DTransform(center, angle_x, angle_y, angle_z, (translation_x, translation_y, translation_z))
  
+
+## Get transformed (deepcopied) image
+#  \param[in] image_init_sitk image as sitk.Image object to be transformed
+#  \param[in] transform_sitk transform to be applied as sitk.AffineTransform object
+#  \return transformed image as sitk.Image object
+def get_transformed_image(image_init_sitk, transform_sitk):
+    image_sitk = sitk.Image(image_init_sitk)
     
+    affine_transform_sitk = get_sitk_affine_transform_from_sitk_image(image_sitk)
 
+    transform_sitk = get_composited_sitk_affine_transform(transform_sitk, affine_transform_sitk)
+    # transform_sitk = get_composited_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform_sitk), affine_transform_sitk)
 
-def check_sitk_mask_2D(mask_2D_sitk):
+    direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(transform_sitk, image_sitk)
+    origin = get_sitk_image_origin_from_sitk_affine_transform(transform_sitk, image_sitk)
 
-    mask_nda = sitk.GetArrayFromImage(mask_2D_sitk)
+    image_sitk.SetOrigin(origin)
+    image_sitk.SetDirection(direction)
 
-    if np.sum(mask_nda) > 1:
-        return mask_2D_sitk
-
-    else:
-        mask_nda[:] = 1
-
-        mask = sitk.GetImageFromArray(mask_nda)
-        mask.CopyInformation(mask_2D_sitk)
-
-        return mask
-
-
-def get_transformed_image(image_init, transform):
-    image = sitk.Image(image_init)
-    
-    affine_transform = get_sitk_affine_transform_from_sitk_image(image)
-
-    transform = get_composited_sitk_affine_transform(transform, affine_transform)
-    # transform = get_composited_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform), affine_transform)
-
-    direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(transform, image)
-    origin = get_sitk_image_origin_from_sitk_affine_transform(transform, image)
-
-    image.SetOrigin(origin)
-    image.SetDirection(direction)
-
-    return image
+    return image_sitk
 
 
 ## Read image from file and return as ITK obejct
@@ -304,6 +223,9 @@ def get_sitk_direction_from_itk_direction(direction_itk):
     return direction_sitk
 
 
+## Convert itk.Euler3DTransform to sitk.Euler3DTransform instance
+#  \param[in] Euler3DTransform_itk itk.Euler3DTransform instance
+#  \return converted sitk.Euler3DTransform instance
 def get_sitk_Euler3DTransform_from_itk_Euler3DTransform(Euler3DTransform_itk):
     parameters_itk = Euler3DTransform_itk.GetParameters()
     fixed_parameters_itk = Euler3DTransform_itk.GetFixedParameters()
@@ -446,6 +368,7 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
                                     # of file to be visible
     return fig
 
+
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
 #  \param[in] image_sitk image to show
 #  \param[in] segmentation 
@@ -495,6 +418,7 @@ def show_sitk_image(image_sitk, segmentation=None, overlay=None, title="test"):
     os.system(cmd)
 
     return None
+
 
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
 #  \param[in] image_itk image to show

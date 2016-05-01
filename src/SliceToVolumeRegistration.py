@@ -152,7 +152,7 @@ class SliceToVolumeRegistration:
         optimizer settings
         """
         ## Set optimizer to Nelder-Mead downhill simplex algorithm
-        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
+        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withRestarts=False)
 
         ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
         # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
@@ -164,14 +164,15 @@ class SliceToVolumeRegistration:
         # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
 
         ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
-        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
+        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
         registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=2000)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
-        registration_method.SetOptimizerScalesFromPhysicalShift()
+        # registration_method.SetOptimizerScalesFromPhysicalShift()
+        registration_method.SetOptimizerScalesFromJacobian()
         
         """
         setup for the multi-resolution framework            
@@ -238,10 +239,10 @@ class SliceToVolumeRegistration:
         ## Initial transform: Variant B
         initial_transform = itk.Euler3DTransform.New()
 
-        interpolator = itk.LinearInterpolateImageFunction[image_type, pixel_type].New()
-        # interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
+        # interpolator = itk.LinearInterpolateImageFunction[image_type, pixel_type].New()
+        interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
         # Cov = np.eye(3)*1.1;
-        # interpolator.SetCovariance(Cov.flatten())
+        interpolator.SetCovariance(Cov.flatten())
 
         
         # metric = itk.MeanSquaresImageToImageMetric[image_type, image_type].New()

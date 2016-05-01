@@ -68,10 +68,6 @@ class Slice:
         slice._registration_history_sitk = []
         slice._registration_history_sitk.append(slice._affine_transform_sitk)
 
-        ## Get transform to align original (!) stack with axes of physical coordinate system
-        #  Used for in-plane registration, i.e. class InPlaneRigidRegistration
-        slice._T_PP = sitkh.get_3D_transform_to_align_stack_with_physical_coordinate_system(slice.sitk)
-
         return slice
 
 
@@ -174,12 +170,6 @@ class Slice:
     #  \return list of sitk.AffineTransform objects
     def get_registration_history(self):
         return self._registration_history_sitk
-
-
-    ## Get transform to align original (!) stack with axes of physical coordinate system
-    #  Used for in-plane registration, i.e. class InPlaneRigidRegistration
-    def get_transform_to_align_with_physical_coordinate_system(self):
-        return self._T_PP
 
 
     ## Display slice with external viewer (ITK-Snap)

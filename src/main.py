@@ -136,13 +136,15 @@ if __name__ == '__main__':
     # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_trachea_rectangular")
 
     ## Compute first estimate of HR volume
-    reconstruction_manager.set_off_in_plane_rigid_registration_before_estimating_initial_volume()
-    # reconstruction_manager.set_on_hierarchical_slice_alignment()
+    # reconstruction_manager.set_on_in_plane_rigid_registration_before_estimating_initial_volume()
     reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
     reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
+    
+    ## Run hierarchical slice alignment strategy
+    reconstruction_manager.run_hierarchical_alignment_of_slices(step=2)
 
     ## Run tow step reconstruction alignment approach
-    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
+    # reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
 
     ## Write results
     # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()

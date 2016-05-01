@@ -10,6 +10,7 @@ import os                       # used to execute terminal commands in python
 import numpy as np
 
 ## Import modules from src-folder
+import Stack as st
 import StackManager as sm
 import InPlaneRigidRegistration as iprr
 import FirstEstimateOfHRVolume as efhrv
@@ -17,6 +18,7 @@ import SliceToVolumeRegistration as s2vr
 import VolumeReconstruction as vr
 import DataPreprocessing as dp
 import HierarchicalSliceAlignment as hsa
+import SimpleITKHelper as sitkh
 
 
 ## This class manages the whole reconstruction pipeline
@@ -112,9 +114,12 @@ class ReconstructionManager:
         ## Choose reconstruction approach
         recon_approach = "SDA"
         # recon_approach = "Average"
+
+        sigma = 1
+
         first_estimate_of_HR_volume.set_reconstruction_approach(recon_approach) #"SDA" or "Average"
         first_estimate_of_HR_volume.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
-        first_estimate_of_HR_volume.set_SDA_sigma(2)
+        first_estimate_of_HR_volume.set_SDA_sigma(sigma)
 
         ## Forward choice of whether or not in-plane registration within each
         #  stack shall be performed before estimation of initial volume
@@ -135,38 +140,71 @@ class ReconstructionManager:
         self._HR_volume.write(directory=self._dir_results, filename=filename)
         
 
-    ## Execute two-step reconstruction alignment approach
-    #  \param[in] iterations amount of two-step reconstruction alignment steps
-    def run_two_step_reconstruction_alignment_approach(self, iterations=5):
-        print("\n--- Run two-step reconstruction alignment approach ---")
+    ## Run hierarchical alignment of slices
+    #  \param[in] step step size of interleaved acquisition used for hierarchical alignment
+    #  \param[in] use_static_volume_estimate use same HR volume for all stacks 
+    #  \post Each slice has updated affine transformation specifying its new spatial position
+    #  \post HR volume is updated according to updated slice positions
+    def run_hierarchical_alignment_of_slices(self, step, use_static_volume_estimate=True):
+        if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
+            raise ValueError("Error: Hierarchical alignment of slices not possible after performed in-plane alignment of slices")
 
-        ## 1) Instantiate objects
-        slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager, self._HR_volume)
-        volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
+        print("\n--- Run hierarchical slice alignment approach ---")
+
+        if use_static_volume_estimate:
+            print("Current estimate of HR volume is used for all stacks and their hierarchical alignment")
+
+        else:
+            print("Current stack to be hierarchically aligned is left out for the volume estimate")
+
+        ## Copy stack for comparison before-after
+        foo = st.Stack.from_stack(self._HR_volume)
+
+        ## Initialize object
         hierarchical_slice_alignment = hsa.HierarchicalSliceAlignment(self._stack_manager, self._HR_volume)
 
-        ## 2) Choose reconstruction approach
-        recon_approach = "SDA"
-        sigma = 1.5
+        ## Run hierarchical alignment of slices within stack
+        hierarchical_slice_alignment.run_hierarchical_alignment(step, use_static_volume_estimate)
+
+        ## Update HR estimate after hierarchical alignment
+        volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
+
+        recon_approach = "SDA" # "SDA" or "SRR" possible
+        sigma = 1
         volume_reconstruction.set_reconstruction_approach(recon_approach)
         volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
         volume_reconstruction.set_SDA_sigma(sigma)
-
-        self._HR_volume.show(title="HR_recon_iter0")
-
-        ## 3) Run hierarchical alignment of slices within stack
-        hierarchical_slice_alignment.run_hierarchical_alignment()
 
         ## Reconstruct new volume based on updated positions of slices
         volume_reconstruction.run_reconstruction()
 
         ## Write
-        filename = self._HR_volume_filename + "_0_hierarchical_alignment_" + recon_approach
+        filename = self._HR_volume_filename + "_0_" + recon_approach + "_hierarchical_alignment"
         self._HR_volume.write(directory=self._dir_results, filename=filename)
+
+        sitkh.show_sitk_image(foo.sitk, overlay=self._HR_volume.sitk, title="HR_volume_before_and_after_hierarchical_alignment")
+
+
+    ## Execute two-step reconstruction alignment approach
+    #  \param[in] iterations amount of two-step reconstruction alignment steps
+    def run_two_step_reconstruction_alignment_approach(self, iterations=5):
+        print("\n--- Run two-step reconstruction alignment approach ---")
+
+        ## Show initialization for two-step reconstruction alignment approach
+        filename = self._HR_volume_filename + "_init_2step_approach"
         self._HR_volume.show(title=filename)
 
+        ## Instantiate objects
+        slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager, self._HR_volume)
+        volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
 
-        ## 4) Run two-step reconstruction alignment:
+        recon_approach = "SDA" # "SDA" or "SRR" possible
+        sigma = 1.5
+        volume_reconstruction.set_reconstruction_approach(recon_approach)
+        volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
+        volume_reconstruction.set_SDA_sigma(sigma)
+
+        ## Run two-step reconstruction alignment:
         for i in range(0, iterations):   
             print("*** iteration %s/%s" %(i+1,iterations))
 

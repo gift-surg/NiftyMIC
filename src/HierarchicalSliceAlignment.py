@@ -52,48 +52,36 @@ class HierarchicalSliceAlignment:
         self._SDA_type = 'Shepard-YVV'      # Either 'Shepard-YVV' or 'Shepard-Deriche'
 
 
-    ## Perform hierarchical alignment for each stack
-    def run_hierarchical_alignment(self):
-
-        step = 2
+    ## Perform hierarchical alignment for each stack.
+    #  \param[in] step step size of interleaved acquisition used for hierarchical alignment
+    #  \param[in] use_static_volume_estimate use same HR volume for all stacks 
+    def run_hierarchical_alignment(self, step, use_static_volume_estimate):
 
         HR_volume = st.Stack.from_stack(self._HR_volume)
 
         stacks_ind_all = np.arange(0, self._N_stacks)
 
-        ## Obtain first HR volume estimate for comparison
-        self._SDA = sda.ScatteredDataApproximation(self._stack_manager, HR_volume)
-        self._SDA.set_sigma(1)
-        self._SDA.set_approach(self._SDA_type)
-        self._SDA.run_reconstruction()    
-        vol0_sitk = sitk.Image(self._SDA.get_HR_volume().sitk)
-
-        # for i in range(0, 1):
-        # for i in range(1, self._N_stacks):
         for i in range(0, self._N_stacks):
 
-            ## Get all stacks apart from current one
-            stacks_ind = list(set(stacks_ind_all) - set([i]))
-            stacks = [ self._stacks[j] for j in stacks_ind ]
+            ## Use same volume for all
+            if use_static_volume_estimate:
+                volume_estimate = HR_volume
 
-            ## Obtain estimated volume based on those stacks
-            volume_estimate = self._get_volume_estimate[self._volume_estimate_approach](stacks, HR_volume)
+            ## Volume estimate is obtained from all stacks but the one which is about to be aligned
+            else:
+                ## Get all stacks apart from current one
+                stacks_ind = list(set(stacks_ind_all) - set([i]))
+                stacks = [ self._stacks[j] for j in stacks_ind ]
 
-            # volume_estimate.show(title="VolumeEstimate_"+str(i))
+                ## Obtain estimated volume based on those stacks and their current slice positions
+                volume_estimate = self._get_volume_estimate[self._volume_estimate_approach](stacks, HR_volume)
+                
+                # volume_estimate.show(title="VolumeEstimate_"+str(i))
+            
 
+            ## Perform hierarchical slice alignment approach applied to specific stack and volume estimate
             self._hierarchically_align_stack(self._stacks[i], volume_estimate, step)
 
-
-        # self._SDA = sda.ScatteredDataApproximation(self._stack_manager, HR_volume)
-        self._SDA.run_reconstruction()    
-        vol = self._SDA.get_HR_volume()
-
-        sitkh.show_sitk_image(vol.sitk, overlay=vol0_sitk,title="comparison")
-        
-        ## Perform reconstruction via SDA
-        print("\n\t--- Run Scattered Data Approximation algorithm ---")
-
-        return st.Stack.from_stack(self._SDA.get_HR_volume())
 
         return None
 
@@ -104,13 +92,15 @@ class HierarchicalSliceAlignment:
     #  \post Slice objects of group carry updated affine transformation
     def _hierarchically_align_stack(self, stack, volume_estimate, step):
 
+        print("\n\t--- Run hierarchical slice alignment approach for stack %s ---" %(stack.get_filename()))
+
         slices = stack.get_slices()
 
         i_min = 0
         i_max = len(slices)
 
         ## 1) Register entire stack with volume estimate
-        sitk.WriteImage(stack.sitk_mask, "/tmp/bla.nii.gz")
+        # sitk.WriteImage(stack.sitk_mask, "/tmp/bla.nii.gz")
         ### WTF!?!?! The line below works when line above is there!? Otherwise not!?
         transform = self._get_rigid_registration_transform(stack, volume_estimate, 1)
 
@@ -222,7 +212,7 @@ class HierarchicalSliceAlignment:
 
     ## Compute average of all registered stacks
     #  \param[in] stacks stacks as Stack objects used for average
-    #  \param[in] HR_volume Stack object used for specifying the phyiscal space for averaging
+    #  \param[in] HR_volume Stack object used for specifying the physical space for averaging
     #  \return averaged volume as Stack object
     def _get_volume_estimate_averaging(self, stacks, HR_volume):
         
@@ -241,7 +231,7 @@ class HierarchicalSliceAlignment:
 
     ## Estimate the HR volume via SDA approach
     #  \param[in] stacks stacks as Stack objects used for average
-    #  \param[in] HR_volume Stack object used for specifying the phyiscal space for SDA
+    #  \param[in] HR_volume Stack object used for specifying the physical space for SDA
     #  \return averaged volume as Stack object
     def _get_volume_estimate_SDA(self, stacks, HR_volume):
 
@@ -264,7 +254,6 @@ class HierarchicalSliceAlignment:
     #  \param[in] display_registration_info display registration summary at the end of execution (default=0)
     #  \return Rigid registration as sitk.Euler3DTransform object
     def _get_rigid_registration_transform(self, fixed_3D, moving_3D, display_registration_info=0):
-
 
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()
@@ -291,10 +280,10 @@ class HierarchicalSliceAlignment:
         similarity metric settings
         """
         ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
-        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=10)
+        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=10)
         
         ## Use negative normalized cross correlation image metric
-        registration_method.SetMetricAsCorrelation()
+        # registration_method.SetMetricAsCorrelation()
 
         ## Use demons image metric
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
@@ -312,7 +301,7 @@ class HierarchicalSliceAlignment:
         optimizer settings
         """
         ## Set optimizer to Nelder-Mead downhill simplex algorithm
-        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
+        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withRestarts=False)
 
         ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
         # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
@@ -324,14 +313,15 @@ class HierarchicalSliceAlignment:
         # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
 
         ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
-        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
+        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=100, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=1000, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=0.1, minStep=0.01, numberOfIterations=20)
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.01, numberOfIterations=100)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
-        registration_method.SetOptimizerScalesFromPhysicalShift()
+        # registration_method.SetOptimizerScalesFromPhysicalShift()
+        registration_method.SetOptimizerScalesFromJacobian()
         
         """
         setup for the multi-resolution framework            

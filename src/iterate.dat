@@ -18,7 +18,7 @@ Machine precision = 2.220E-16
  N =  463536    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.552E+02  8.034E+07
+    0    1     -     -   -     -     -        -     1.341E+02  1.111E+08
 RUNNING THE L-BFGS-B CODE
 
 it    = iteration number
@@ -39,26 +39,8 @@ Machine precision = 2.220E-16
  N =  463536    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.291E+02  8.494E+07
- of segments explored during the Cauchy search
-nact  = number of active bounds at the generalized Cauchy point
-sub   = manner in which the subspace minimization terminated:
-        con = converged, bnd = a bound was reached
-itls  = number of iterations performed in the line search
-stepl = step length used
-tstep = norm of the displacement (total step)
-projg = norm of the projected gradient
-f     = function value
-
-           * * *
-
-Machine precision = 2.220E-16
- N =  463536    M =  10
-
-   it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.635E+02  9.450E+07
-epl    tstep     projg        f
-    0    1     -     -   -     -     -        -     8.711E+02  1.108E+09
+    0    1     -     -   -     -     -        -     1.476E+02  1.106E+08
+    1    8     1     0  ---    6  4.9E-01  5.5E+03  1.168E+02  6.175E+07
 RUNNING THE L-BFGS-B CODE
 
 it    = iteration number
@@ -79,9 +61,9 @@ Machine precision = 2.220E-16
  N =  463536    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.197E+02  1.198E+08
-    1    8     1     0  ---    6  4.9E-01  5.5E+03  1.041E+02  6.963E+07
-    2    9     1     0  con    0  1.0E+00  1.2E+04  6.869E+01  2.159E+07
+    0    1     -     -   -     -     -        -     1.428E+02  1.108E+08
+    1    8     1     0  ---    6  4.9E-01  5.5E+03  1.112E+02  6.180E+07
+    2    9     1     0  bnd    0  1.0E+00  1.1E+04  5.285E+01  1.932E+07
 RUNNING THE L-BFGS-B CODE
 
 it    = iteration number
@@ -102,11 +84,20 @@ Machine precision = 2.220E-16
  N =  463536    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.343E+02  1.221E+08
-    1    8     1     0  ---    6  4.8E-01  5.5E+03  1.104E+02  7.121E+07
-    2    9     1     0  con    0  1.0E+00  1.2E+04  5.484E+01  2.233E+07
-    3   10     2     1  bnd    0  1.0E+00  4.6E+03  4.232E+01  1.466E+07
-    4   11     4    10  bnd    0  1.0E+00  9.6E+03  7.633E+01  7.469E+06
+    0    1     -     -   -     -     -        -     2.141E+02  1.293E+08
+    1    8     1     0  ---    6  4.8E-01  5.5E+03  1.835E+02  7.803E+07
+    2    9     1     0  bnd    0  1.0E+00  1.3E+04  1.057E+02  2.563E+07
+    3   10     6     8  bnd    0  1.0E+00  4.9E+03  7.999E+01  1.704E+07
+    4   11     3    12  bnd    0  1.0E+00  1.0E+04  3.765E+01  7.516E+06
+    5   13     1     0  bnd    1  5.1E-01  3.9E+03  3.217E+01  5.789E+06
+    6   14     3     9  bnd    0  1.0E+00  3.1E+03  2.880E+01  4.319E+06
+    7   15    10    29  bnd    0  1.0E+00  3.8E+03  2.302E+01  3.146E+06
+    8   16     2    44  bnd    0  1.0E+00  4.0E+03  1.898E+01  2.304E+06
+    9   17     3    54  bnd    0  1.0E+00  5.4E+03  1.654E+01  1.763E+06
+   10   18     3    61  bnd    0  1.0E+00  1.3E+03  1.441E+01  1.313E+06
+   11   19     5    79  bnd    0  1.0E+00  1.4E+03  1.362E+01  1.061E+06
+   12   20     7    94  bnd    0  1.0E+00  2.4E+03  1.181E+01  7.736E+05
+   13   22     5   127  bnd    1  5.0E-01  2.2E+03  9.940 7.633E+01  7.469E+06
     5   13     1     1  bnd    1  5.1E-01  3.2E+03  2.980E+01  5.574E+06
     6   14     1     2  con    0  1.0E+00  1.4E+03  2.154E+01  4.724E+06
     7   15     7     8  bnd    0  1.0E+00  4.4E+03  1.977E+01  3.269E+06
