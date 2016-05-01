@@ -120,7 +120,7 @@ if __name__ == '__main__':
     ## Choose input stacks and reference stack therein
     input_stacks_type = input_stack_types_available[0]
     reference_stack_id = 0
-    iterations_two_step_approach = 1
+    iterations_two_step_approach = 0
 
     print("Stacks chosen: %s" %input_stacks_type)
 
@@ -136,15 +136,14 @@ if __name__ == '__main__':
     # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_trachea_rectangular")
 
     ## Compute first estimate of HR volume
-    # reconstruction_manager.set_on_in_plane_rigid_registration_before_estimating_initial_volume()
     reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
     reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
     
     ## Run hierarchical slice alignment strategy
-    reconstruction_manager.run_hierarchical_alignment_of_slices(step=2)
+    # reconstruction_manager.run_hierarchical_alignment_of_slices(step=2)
 
     ## Run tow step reconstruction alignment approach
-    # reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
+    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
 
     ## Write results
     # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
@@ -157,7 +156,8 @@ if __name__ == '__main__':
     Playground
     """
     # stacks = reconstruction_manager.get_stacks()
-    # slices = stacks[0].get_slices()
+    # stack = stacks[0]
+    # slices = stack.get_slices()
 
 
     # hierarchical_slice_alignment = hsa.HierarchicalSliceAlignment(sm.StackManager.from_stacks(stacks), stacks[0].get_isotropically_resampled_stack_from_slices())

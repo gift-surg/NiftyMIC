@@ -224,18 +224,19 @@ class ReconstructionManager:
 
         ## Final SRR step
         recon_approach = "SRR"
+        SRR_approach = "TK0"        # "TK0" or "TK1"
         volume_reconstruction.set_reconstruction_approach(recon_approach)
         
         volume_reconstruction.set_SDA_sigma(0.7)
 
         volume_reconstruction.set_SRR_iter_max(20)
         volume_reconstruction.set_SRR_alpha(0.1)
-        volume_reconstruction.set_SRR_approach("TK0")       # "TK0" or "TK1"
-        # volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
-        volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
+        volume_reconstruction.set_SRR_approach(SRR_approach)       
+        volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
+        # volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
 
         volume_reconstruction.run_reconstruction()
-        filename = self._HR_volume_filename + "_" + str(iterations) + "_" + recon_approach
+        filename = self._HR_volume_filename + "_" + str(iterations) + "_" + recon_approach + "_" + SRR_approach
         self._HR_volume.write(directory=self._dir_results, filename=filename)
 
 

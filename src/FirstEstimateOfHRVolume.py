@@ -45,9 +45,12 @@ class FirstEstimateOfHRVolume:
         self._filename_reconstructed_volume = filename_reconstructed_volume
         self._target_stack_number = target_stack_number
 
-        ## Resample chosen target volume and its mask to isotropic grid
+        ## additional boundary surrounding the stack in mm (used to get additional black frame)
+        boundary = 5 
+
+        ## Resample chosen target volume and its mask to isotropic grid with optional additional boundary
         ## \todo replace self._target_stack_number with "best choice" of stack
-        self._HR_volume = self._get_isotropically_resampled_stack(self._stacks[self._target_stack_number])
+        self._HR_volume = self._get_isotropically_resampled_stack(self._stacks[self._target_stack_number], boundary)
 
         ## Flags indicating whether or not these options are selected
         self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
@@ -156,38 +159,75 @@ class FirstEstimateOfHRVolume:
     #  The image and its mask get resampled to isotropic grid 
     #  (in-plane resolution also in through-plane direction)
     #  \param[in] target_stack Stack being resampled
+    #  \param[in] boundary additional boundary surrounding stack in mm 
     #  \return Isotropically resampled Stack
-    def _get_isotropically_resampled_stack(self, target_stack):
+    def _get_isotropically_resampled_stack(self, target_stack, boundary):
         
         ## Read original spacing (voxel dimension) and size of target stack:
         spacing = np.array(target_stack.sitk.GetSpacing())
         size = np.array(target_stack.sitk.GetSize())
+        origin = np.array(target_stack.sitk.GetOrigin())
 
-        ## Update information according to isotropic resolution
-        size[2] = np.round(spacing[2]/spacing[0]*size[2])
-        spacing[2] = spacing[0]
+        ## Isotropic resolution for HR volume
+        spacing_HR_volume = spacing[0]*np.ones(3)
+
+        ## Update information according to isotropic resolution if no boundary is given
+        size_HR_volume_z_exact = spacing[2]/spacing[0]*size[2]
+        size_HR_volume = np.array((size[0], size[1], np.ceil(size_HR_volume_z_exact))).astype('int')
+
+        ## Compensate for residual in z-direction in physical space
+        residual = size_HR_volume[2] - size_HR_volume_z_exact
+        a_z = target_stack.sitk.TransformIndexToPhysicalPoint((0,0,1)) - origin
+        e_z = a_z/np.linalg.norm(a_z) ## unit direction of z-axis in physical space
+
+        ## Add spacing to residual (due to discretization) to get translation
+        translation = e_z * (residual+spacing[0])
+
+        ## Updated origin for HR "to not lose information due to discretization"
+        origin_HR_volume = origin - translation
+
+
+        ## Add additional boundary if desired
+        if boundary is not 0:
+            ## Get boundary in voxel space
+            boundary_vox = np.round(boundary/spacing[0]).astype("int")
+            
+            ## Compute size of resampled stack by considering additional boundary
+            size_HR_volume += + 2*boundary_vox
+
+            ## Compute origin of resampled stack by considering additional boundary
+            a_x = target_stack.sitk.TransformIndexToPhysicalPoint((1,0,0)) - origin
+            a_y = target_stack.sitk.TransformIndexToPhysicalPoint((0,1,0)) - origin
+            a_z = target_stack.sitk.TransformIndexToPhysicalPoint((0,0,1)) - origin
+            e_x = a_x/np.linalg.norm(a_x)
+            e_y = a_y/np.linalg.norm(a_y)
+            e_z = a_z/np.linalg.norm(a_z)
+
+            translation += (e_x + e_y + e_z)*boundary_vox*spacing[0]
+
+            origin_HR_volume = origin - translation
 
         ## Resample image and its mask to isotropic grid
         default_pixel_value = 0.0
 
         HR_volume_sitk =  sitk.Resample(
             target_stack.sitk, 
-            size, 
+            size_HR_volume, 
             sitk.Euler3DTransform(), 
             sitk.sitkNearestNeighbor, 
-            target_stack.sitk.GetOrigin(), 
-            spacing,
+            origin_HR_volume, 
+            spacing_HR_volume,
             target_stack.sitk.GetDirection(),
             default_pixel_value,
             target_stack.sitk.GetPixelIDValue())
 
         HR_volume_sitk_mask =  sitk.Resample(
             target_stack.sitk_mask, 
-            size, 
+            size_HR_volume, 
             sitk.Euler3DTransform(), 
             sitk.sitkNearestNeighbor, 
-            target_stack.sitk.GetOrigin(), 
-            spacing,
+            origin_HR_volume, 
+            spacing_HR_volume,
             target_stack.sitk.GetDirection(),
             default_pixel_value,
             target_stack.sitk_mask.GetPixelIDValue())

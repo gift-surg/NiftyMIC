@@ -18,7 +18,7 @@ Machine precision = 2.220E-16
  N =  463536    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.341E+02  1.111E+08
+    0    1     -     -   -     -     -        -     2.243E+02  1.305E+08
 RUNNING THE L-BFGS-B CODE
 
 it    = iteration number
@@ -36,11 +36,37 @@ f     = function value
            * * *
 
 Machine precision = 2.220E-16
- N =  463536    M =  10
+ N =  675024    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.476E+02  1.106E+08
-    1    8     1     0  ---    6  4.9E-01  5.5E+03  1.168E+02  6.175E+07
+    0    1     -     -   -     -     -        -     9.795E+01  1.019E+08
+    1    8     1     0  ---    6  5.0E-01  5.5E+03  7.172E+01  5.364E+07
+    2    9     1     0  con    0  1.0E+00  1.0E+04  2.500E+01  1.609E+07
+    3   10     2     1  bnd    0  1.0E+00  3.6E+03  1.634E+01  1.063E+07
+    4   11     6     9  bnd    0  1.0E+00  8.3E+03  2.429E+01  4.469E+06
+    5   13     1    14  bnd    1  4.4E-01  2.6E+03  2.734E+01  3.409E+06
+    6   14     1     4  bnd    0  1.0E+00  1.7E+03  1.205E+01  2.693E+06
+    7   15     7    12  bnd    0  1.0E+00  3.2E+03  4.398E+00  1.865E+06
+    8   16     8    37  bnd    0  1.0E+00  2.7E+03  1.417E+01  1.394E+06
+    9   17     5    74  bnd    0  1.0E+00  4.0E+03  1.433E+01  1.083E+06
+   10   18     5    86  bnd    0  1.0E+00  8.8E+02  3.274E+00  8.268E+05
+   11   19     1    86  bnd    0  1.0E+00  1.0E+03  4.744E+00  6.815E+05
+   12   20     1    81  bnd    0  1.0E+00  1.9E+03  7.665E+00  4.996E+05
+   13   22     4    93  bnd    1  4.8E-01  1.8E+03  7.996E+00  3.975E+05
+   14   23     5    84  bnd    0  1.0E+00  2.1E+03  2.289E+00  2.606E+05
+   15   24     2   139  bnd    0  1.0E+00  1.2E+03  1.739E+00  1.901E+05
+   16   25     9   158  bnd    0  1.0E+00  1.6E+03  4.227E+00  1.284E+05
+   17   26     3   192  bnd    0  1.0E+00  1.2E+03  5.398E+00  9.307E+04
+   18   27     2   217  bnd    0  1.0E+00  2.8E+02  1.357E+00  6.715E+04
+   19   28     4   220  bnd    0  1.0E+00  5.0E+02  1.170E+00  4.636E+04
+   20   29     1   229  bnd    0  1.0E+00  4.9E+02  2.022E+00  3.374E+04
+   21   31     2   244  bnd    1  5.0E-01  6.0E+02  2.411E+00  2.380E+04
+   22   32     2   246  bnd    0  1.0E+00  5.1E+02  4.822E-01  1.454E+04
+
+STOP: TOTAL NO. of ITERATIONS EXCEEDS LIMIT                 
+
+ Total User time 2.881E+02 seconds.
+
 RUNNING THE L-BFGS-B CODE
 
 it    = iteration number
@@ -58,46 +84,16 @@ f     = function value
            * * *
 
 Machine precision = 2.220E-16
- N =  463536    M =  10
+ N =  675024    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     1.428E+02  1.108E+08
-    1    8     1     0  ---    6  4.9E-01  5.5E+03  1.112E+02  6.180E+07
-    2    9     1     0  bnd    0  1.0E+00  1.1E+04  5.285E+01  1.932E+07
+    0    1     -     -   -     -     -        -     1.092E+02  8.226E+07
 RUNNING THE L-BFGS-B CODE
 
 it    = iteration number
 nf    = number of function evaluations
 nseg  = number of segments explored during the Cauchy search
-nact  = number of active bounds at the generalized Cauchy point
-sub   = manner in which the subspace minimization terminated:
-        con = converged, bnd = a bound was reached
-itls  = number of iterations performed in the line search
-stepl = step length used
-tstep = norm of the displacement (total step)
-projg = norm of the projected gradient
-f     = function value
-
-           * * *
-
-Machine precision = 2.220E-16
- N =  463536    M =  10
-
-   it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     2.141E+02  1.293E+08
-    1    8     1     0  ---    6  4.8E-01  5.5E+03  1.835E+02  7.803E+07
-    2    9     1     0  bnd    0  1.0E+00  1.3E+04  1.057E+02  2.563E+07
-    3   10     6     8  bnd    0  1.0E+00  4.9E+03  7.999E+01  1.704E+07
-    4   11     3    12  bnd    0  1.0E+00  1.0E+04  3.765E+01  7.516E+06
-    5   13     1     0  bnd    1  5.1E-01  3.9E+03  3.217E+01  5.789E+06
-    6   14     3     9  bnd    0  1.0E+00  3.1E+03  2.880E+01  4.319E+06
-    7   15    10    29  bnd    0  1.0E+00  3.8E+03  2.302E+01  3.146E+06
-    8   16     2    44  bnd    0  1.0E+00  4.0E+03  1.898E+01  2.304E+06
-    9   17     3    54  bnd    0  1.0E+00  5.4E+03  1.654E+01  1.763E+06
-   10   18     3    61  bnd    0  1.0E+00  1.3E+03  1.441E+01  1.313E+06
-   11   19     5    79  bnd    0  1.0E+00  1.4E+03  1.362E+01  1.061E+06
-   12   20     7    94  bnd    0  1.0E+00  2.4E+03  1.181E+01  7.736E+05
-   13   22     5   127  bnd    1  5.0E-01  2.2E+03  9.940 7.633E+01  7.469E+06
+nact  = number of active bound 7.633E+01  7.469E+06
     5   13     1     1  bnd    1  5.1E-01  3.2E+03  2.980E+01  5.574E+06
     6   14     1     2  con    0  1.0E+00  1.4E+03  2.154E+01  4.724E+06
     7   15     7     8  bnd    0  1.0E+00  4.4E+03  1.977E+01  3.269E+06
