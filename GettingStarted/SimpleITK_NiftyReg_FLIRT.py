@@ -32,7 +32,7 @@ def get_transformed_image(image_init, rigid_transform_2D):
 
     transform = sitkh.get_composited_sitk_affine_transform(sitkh.get_inverse_of_sitk_rigid_registration_transform(rigid_transform_2D), affine_transform)
 
-    direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(transform, image)
+    direction = sitkh.get_sitk_image_direction_from_sitk_affine_transform(transform, image)
     origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(transform, image)
 
     image.SetOrigin(origin)

@@ -76,6 +76,8 @@ class SliceAcqusition(unittest.TestCase):
         self.assertEqual(np.round( np.linalg.norm(direction - direction_test), decimals = self.accuracy), 0)
 
 
+    ## Test whether the slices, and hence stacks, are correctly simulated 
+    #  in each orthogonal direction by assuming no subject motion
     def test_run_simulation_view(self):
 
         filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
@@ -84,6 +86,7 @@ class SliceAcqusition(unittest.TestCase):
         ## 1) Test for Nearest Neighbor Interpolator
         slice_acquistion = sa.SliceAcqusition(HR_volume)
         slice_acquistion.set_interpolator_type("NearestNeighbor")
+        slice_acquistion.set_motion_type("NoMotion")
 
         slice_acquistion.run_simulation_view_1()
         slice_acquistion.run_simulation_view_2()
@@ -104,6 +107,7 @@ class SliceAcqusition(unittest.TestCase):
         ## 2) Test for Linear Interpolator
         slice_acquistion = sa.SliceAcqusition(HR_volume)
         slice_acquistion.set_interpolator_type("Linear")
+        slice_acquistion.set_motion_type("NoMotion")
 
         slice_acquistion.run_simulation_view_1()
         slice_acquistion.run_simulation_view_2()
@@ -124,6 +128,7 @@ class SliceAcqusition(unittest.TestCase):
         ## 3) Test for Oriented Gaussian Interpolator
         slice_acquistion = sa.SliceAcqusition(HR_volume)
         slice_acquistion.set_interpolator_type("OrientedGaussian")
+        slice_acquistion.set_motion_type("NoMotion")
 
         slice_acquistion.run_simulation_view_1()
         slice_acquistion.run_simulation_view_2()
@@ -144,7 +149,7 @@ class SliceAcqusition(unittest.TestCase):
 
         for i in range(0, len(stacks_simulated)):
             resampler.SetOutputParametersFromImage( stacks_simulated[i].itk )
-            
+
             ## Set covariance based on oblique PSF
             Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(stacks_simulated[i], HR_volume)
             interpolator.SetCovariance(Cov_HR_coord.flatten())
@@ -159,3 +164,102 @@ class SliceAcqusition(unittest.TestCase):
             np.linalg.norm(sitk.GetArrayFromImage(stacks_simulated[i].sitk - HR_volume_resampled_sitk))
             , decimals = self.accuracy), 0)
         
+
+    ## Test whether the ground truth affine transforms set during the
+    #  simulation correspond to the actually acquired positions within the 
+    #  sliced volume whereby no motion is applied to the HR volume
+    def test_ground_truth_affine_transforms_no_motion(self):
+
+        filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
+        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume)
+
+        ## Run simulation for Nearest Neighbor interpolation (shouldn't not matter anyway and is quicker)
+        slice_acquistion = sa.SliceAcqusition(HR_volume)
+        slice_acquistion.set_interpolator_type("NearestNeighbor")
+        slice_acquistion.set_motion_type("NoMotion")
+
+        slice_acquistion.run_simulation_view_1()
+        slice_acquistion.run_simulation_view_2()
+        slice_acquistion.run_simulation_view_3()
+
+        ## Get simulated stack of slices + corresponding ground truth affine
+        #  transforms indicating the correct acquisition of the slice
+        #  within the volume
+        stacks_simulated = slice_acquistion.get_simulated_stacks()
+        affine_transforms_all_stacks = slice_acquistion.get_ground_truth_affine_transforms()
+
+        for i in range(0, len(stacks_simulated)):
+            stack = stacks_simulated[i]
+            affine_transforms = affine_transforms_all_stacks[i]
+
+            slices = stack.get_slices()
+            N_slices = stack.get_number_of_slices()
+
+            for j in range(0, N_slices):
+                # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
+                slice_sitk = sitk.Image(slices[j].sitk)
+
+                origin_sitk = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transforms[j], slice_sitk)
+                direction_sitk = sitkh.get_sitk_image_direction_from_sitk_affine_transform(affine_transforms[j], slice_sitk)
+
+                slice_sitk.SetOrigin(origin_sitk)
+                slice_sitk.SetDirection(direction_sitk)
+
+                HR_volume_resampled_slice_sitk = sitk.Resample(
+                    HR_volume.sitk, slice_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_sitk.GetPixelIDValue()
+                    )
+
+                self.assertEqual(np.round(
+                    np.linalg.norm(sitk.GetArrayFromImage(slice_sitk - HR_volume_resampled_slice_sitk))
+                    , decimals = self.accuracy), 0)
+
+
+    ## Test whether the ground truth affine transforms set during the
+    #  simulation correspond to the actually acquired positions within the 
+    #  sliced volume whereby motion is applied to the HR volume
+    def test_ground_truth_affine_transforms_with_motion(self):
+
+        filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
+        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume)
+
+        ## Run simulation for Nearest Neighbor interpolation (shouldn't not matter anyway and is quicker)
+        slice_acquistion = sa.SliceAcqusition(HR_volume)
+        slice_acquistion.set_interpolator_type("NearestNeighbor")
+        slice_acquistion.set_motion_type("Random")
+
+        slice_acquistion.run_simulation_view_1()
+        slice_acquistion.run_simulation_view_2()
+        slice_acquistion.run_simulation_view_3()
+
+        ## Get simulated stack of slices + corresponding ground truth affine
+        #  transforms indicating the correct acquisition of the slice
+        #  within the volume
+        stacks_simulated = slice_acquistion.get_simulated_stacks()
+        affine_transforms_all_stacks = slice_acquistion.get_ground_truth_affine_transforms()
+
+        for i in range(0, len(stacks_simulated)):
+            stack = stacks_simulated[i]
+            affine_transforms = affine_transforms_all_stacks[i]
+
+            slices = stack.get_slices()
+            N_slices = stack.get_number_of_slices()
+
+            for j in range(0, N_slices):
+                # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
+                slice_sitk = sitk.Image(slices[j].sitk)
+
+                origin_sitk = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transforms[j], slice_sitk)
+                direction_sitk = sitkh.get_sitk_image_direction_from_sitk_affine_transform(affine_transforms[j], slice_sitk)
+
+                slice_sitk.SetOrigin(origin_sitk)
+                slice_sitk.SetDirection(direction_sitk)
+
+                HR_volume_resampled_slice_sitk = sitk.Resample(
+                    HR_volume.sitk, slice_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_sitk.GetPixelIDValue()
+                    )
+
+                self.assertEqual(np.round(
+                    np.linalg.norm(sitk.GetArrayFromImage(slice_sitk - HR_volume_resampled_slice_sitk))
+                    , decimals = self.accuracy), 0)
+
+

@@ -93,3 +93,27 @@ class Test_SimpleITKHelper(unittest.TestCase):
             np.linalg.norm(np.array(image_sitk_from_itk.GetDirection()) - image_sitk.GetDirection())
             , decimals = self.accuracy), 0 )
 
+
+    def test_get_sitk_affine_transform_from_sitk_direction_and_origin(self):
+        filename = "stack0"
+
+        ## Read image via sitk
+        image_sitk = sitk.ReadImage(self.dir_input + filename + ".nii.gz")
+
+        origin = image_sitk.GetOrigin()
+        direction = image_sitk.GetDirection()
+
+        affine_transform_ref = sitkh.get_sitk_affine_transform_from_sitk_image(image_sitk)
+        affine_transform = sitkh.get_sitk_affine_transform_from_sitk_direction_and_origin(direction, origin, image_sitk)
+
+        ## Check Fixed Parameters
+        self.assertEqual(np.around(
+            np.linalg.norm(np.array(affine_transform_ref.GetFixedParameters()) - affine_transform.GetFixedParameters())
+            , decimals = self.accuracy), 0 )
+
+        ## Check Parameters
+        self.assertEqual(np.around(
+            np.linalg.norm(np.array(affine_transform_ref.GetParameters()) - affine_transform.GetParameters())
+            , decimals = self.accuracy), 0 )
+
+

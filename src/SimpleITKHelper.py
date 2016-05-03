@@ -43,7 +43,14 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
     return sitk.AffineTransform(A_composited.flatten(), t_composited, c_composited)
 
 
-def get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
+## Get direction for sitk.Image object from sitk.AffineTransform instance.
+#  The information of the image is required to extract spacing information and 
+#  associated image dimension
+#  \param[in] affine_transform_sitk sitk.AffineTransform instance
+#  \param[in] image_sitk image as sitk.Image object sought to be updated
+#  \return image direction which can be used to update the sitk.Image via
+#          image_sitk.SetDirection(direction)
+def get_sitk_image_direction_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
     dim = len(image_sitk.GetSize())
     spacing_sitk = np.array(image_sitk.GetSpacing())
     S_inv_sitk = np.diag(1/spacing_sitk)
@@ -53,6 +60,13 @@ def get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_
     return A.dot(S_inv_sitk).flatten()
 
 
+## Get origin for sitk.Image object from sitk.AffineTransform instance.
+#  The information of the image is required to extract spacing information and 
+#  associated image dimension
+#  \param[in] affine_transform_sitk sitk.AffineTransform instance
+#  \param[in] image_sitk image as sitk.Image object sought to be updated
+#  \return image origin which can be used to update the sitk.Image via
+#          image_sitk.SetOrigin(origin)
 def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
     """
     Important: Only tested for center=\0! Not clear how it shall be implemented,
@@ -90,6 +104,25 @@ def get_sitk_affine_transform_from_sitk_image(image_sitk):
     t = get_sitk_affine_translation_from_sitk_image(image_sitk)
 
     return sitk.AffineTransform(A,t)
+
+
+## Get sitk.AffineTransform object based on direction and origin. The idea is,
+#  to get the affine transform which describes the physical position of the
+#  respective image.
+#  The information of the image is required to extract spacing information and 
+#  associated image dimension
+#  \param[in] direction_sitk direction obtained via GetDirection() of sitk.Image or similar
+#  \param[in] origin_sitk origin obtained via GetOrigin() of sitk.Image or similar
+#  \return Affine transform as sitk.AffineTransform object
+def get_sitk_affine_transform_from_sitk_direction_and_origin(direction_sitk, origin_sitk, image_sitk):
+    dim = image_sitk.GetDimension()
+    spacing_sitk = np.array(image_sitk.GetSpacing())
+    S_sitk = np.diag(spacing_sitk)
+
+    direction_matrix_sitk = np.array(direction_sitk).reshape(dim,dim)
+    affine_matrix_sitk = direction_matrix_sitk.dot(S_sitk).flatten()
+
+    return sitk.AffineTransform(affine_matrix_sitk, origin_sitk)
 
 
 ## rigid_transform_*D (object type  Transform) as output of object sitk.ImageRegistrationMethod does not contain the
@@ -145,7 +178,7 @@ def get_transformed_image(image_init_sitk, transform_sitk):
     transform_sitk = get_composited_sitk_affine_transform(transform_sitk, affine_transform_sitk)
     # transform_sitk = get_composited_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform_sitk), affine_transform_sitk)
 
-    direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(transform_sitk, image_sitk)
+    direction = get_sitk_image_direction_from_sitk_affine_transform(transform_sitk, image_sitk)
     origin = get_sitk_image_origin_from_sitk_affine_transform(transform_sitk, image_sitk)
 
     image_sitk.SetOrigin(origin)
@@ -248,6 +281,37 @@ def get_sitk_Euler3DTransform_from_itk_Euler3DTransform(Euler3DTransform_itk):
     Euler3DTransform_sitk.SetFixedParameters(fixed_parameters_sitk)
 
     return Euler3DTransform_sitk
+
+
+## Convert itk.AffineTransform to sitk.AffineTransform instance
+#  \param[in] AffineTransform_itk itk.AffineTransform instance
+#  \return converted sitk.AffineTransform instance
+def get_sitk_AffineTransform_from_itk_AffineTransform(AffineTransform_itk):
+
+    dim = len(AffineTransform_itk.GetTranslation())
+
+    parameters_itk = AffineTransform_itk.GetParameters()
+    fixed_parameters_itk = AffineTransform_itk.GetFixedParameters()
+    
+    N_params = parameters_itk.GetNumberOfElements()
+    N_fixedparams = fixed_parameters_itk.GetNumberOfElements()
+    
+    parameters_sitk = np.zeros(N_params)
+    fixed_parameters_sitk = np.zeros(N_fixedparams)
+
+    for i in range(0, N_params):
+        parameters_sitk[i] = parameters_itk.GetElement(i)
+
+    for i in range(0, N_fixedparams):
+        fixed_parameters_sitk[i] = fixed_parameters_itk.GetElement(i)
+
+
+    AffineTransform_sitk = sitk.AffineTransform(dim)
+    AffineTransform_sitk.SetParameters(parameters_sitk)
+    AffineTransform_sitk.SetFixedParameters(fixed_parameters_sitk)
+
+    return AffineTransform_sitk
+
 
         
 

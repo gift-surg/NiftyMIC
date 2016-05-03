@@ -328,11 +328,20 @@ class Stack:
         if filename is None:
             filename = self._filename
 
-        full_file_name = os.path.join(directory, filename + ".nii.gz")
+        full_file_name = os.path.join(directory, filename)
 
         ## Write file to specified location
-        sitk.WriteImage(self.sitk, full_file_name)
-        print("Stack was successfully written to %s" %(full_file_name))
+        sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
+
+        ## Write mask to specified location if given
+        if self.sitk_mask is not None:
+            nda = sitk.GetArrayFromImage(self.sitk_mask)
+
+            ## Write mask if it does not consist of only ones
+            if not np.all(nda):
+                sitk.WriteImage(self.sitk_mask, full_file_name + "_mask.nii.gz")
+
+        print("Stack was successfully written to %s.nii.gz" %(full_file_name))
 
         ## Write each separate Slice of stack (if they exist)
         if write_slices:
@@ -340,7 +349,7 @@ class Stack:
                 ## Check whether variable exists
                 # if 'self._slices' not in locals() or all(i is None for i in self._slices):
                 if not hasattr(self,'_slices'):
-                    raise ValueError("Error occurred in attempt to write %s: No separate slices of object Slice are found" % (full_file_name))
+                    raise ValueError("Error occurred in attempt to write %s.nii.gz: No separate slices of object Slice are found" % (full_file_name))
 
                 ## Write slices
                 else:

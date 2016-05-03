@@ -72,7 +72,7 @@ class ReconstructionManager:
     #  \param[in] dir_input_to_copy directory where stacks are stored
     #  \param[in] filenames_to_copy filenames of stacks to be considered in that directory
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
-    def read_input_stacks(self, dir_input_to_copy, filenames_to_copy, suffix_mask="_mask"):
+    def read_input_stacks_from_filenames(self, dir_input_to_copy, filenames_to_copy, suffix_mask="_mask"):
         N_stacks = len(filenames_to_copy)
         filenames = [str(i) for i in range(0, N_stacks)]
 
@@ -107,7 +107,30 @@ class ReconstructionManager:
     #  \param[in] dir_input_to_copy directory where stacks are stored
     #  \param[in] file_prefixes_to_copy filenames of stacks to be considered in that directory
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
-    def read_input_stacks_from_slices(self, dir_input_to_copy, file_prefixes_to_copy, suffix_mask="_mask"):
+    def read_input_stacks_from_stacks(self, stacks, suffix_mask="_mask"):
+        N_stacks = len(stacks)
+        filenames = [str(i) for i in range(0, N_stacks)]
+
+        self._stack_manager = sm.StackManager()
+
+        ## Write files to self._dir_results_input_data:
+        for i in range(0, N_stacks):
+            stacks[i].write(directory=self._dir_results_input_data, filename=str(i))
+
+        print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
+
+        ## Data preprocessing:
+        self._data_preprocessing.run_preprocessing(filenames, suffix_mask)
+
+        ## Read stacks as bundle of slices:
+        self._stack_manager.read_input_stacks(self._dir_results_input_data, filenames, suffix_mask)
+
+
+    ## Read input stacks stored from given directory from separate slices
+    #  \param[in] dir_input_to_copy directory where stacks are stored
+    #  \param[in] file_prefixes_to_copy filenames of stacks to be considered in that directory
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    def read_input_stacks_from_slice_filenames(self, dir_input_to_copy, file_prefixes_to_copy, suffix_mask="_mask"):
         N_stacks = len(file_prefixes_to_copy)
 
         self._stack_manager = sm.StackManager()

@@ -132,11 +132,11 @@ if __name__ == '__main__':
     reconstruction_manager = rm.ReconstructionManager(dir_output, reference_stack_id, recon_name=input_stacks_type)
 
     ## Read input stack data (including data preprocessing)
-    reconstruction_manager.read_input_stacks(dir_input, filenames, suffix_mask="_mask")
-    # reconstruction_manager.read_input_stacks(dir_input, filenames,suffix_mask="_mask_trachea_rectangular")
+    reconstruction_manager.read_input_stacks_from_filenames(dir_input, filenames, suffix_mask="_mask")
+    # reconstruction_manager.read_input_stacks_from_filenames(dir_input, filenames,suffix_mask="_mask_trachea_rectangular")
 
     ## Read input stack data as bundle of slices (without data preprocessing)
-    # reconstruction_manager.read_input_stacks_from_slices("../results/slices/", filenames, suffix_mask="_mask")
+    # reconstruction_manager.read_input_stacks_from_slice_filenames("../results/slices/", filenames, suffix_mask="_mask")
     # reconstruction_manager.set_HR_volume(st.Stack.from_filename(dir_output, "recon_fetal_neck_mass_brain_0_SRR_TK0"))
 
 

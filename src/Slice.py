@@ -149,7 +149,7 @@ class Slice:
 
         ## Get origin and direction of transformed 3D slice given the new spatial transform
         origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
-        direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
+        direction = sitkh.get_sitk_image_direction_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
 
         ## Update image objects
         self.sitk.SetOrigin(origin)
@@ -255,10 +255,17 @@ class Slice:
         ## Define filename
         full_file_name = os.path.join(directory, filename_out)
 
-        ## Write slice with mask and affine transform
+        ## Write slice and affine transform
         sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
-        sitk.WriteImage(self.sitk_mask, full_file_name + "_mask.nii.gz")
         sitk.WriteTransform(self._affine_transform_sitk, full_file_name + ".tfm")
+
+        ## Write mask to specified location if given
+        if self.sitk_mask is not None:
+            nda = sitk.GetArrayFromImage(self.sitk_mask)
+
+            ## Write mask if it does not consist of only ones
+            if not np.all(nda):
+                sitk.WriteImage(self.sitk_mask, full_file_name + "_mask.nii.gz")
 
         # print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
         # print("Transformation of slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))

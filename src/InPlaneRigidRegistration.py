@@ -124,7 +124,7 @@ class InPlaneRigidRegistration:
 
         ## Extract direction matrix and origin so that slice is oriented according to T_PI_align (i.e. with physical axes)
         # origin_PI_align = get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,slice_3D)
-        # direction_PI_align = get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,slice_3D)
+        # direction_PI_align = get_sitk_image_direction_from_sitk_affine_transform(T_PI_align,slice_3D)
 
         ## Extend to 3D rigid transform
         rigid_transform_3D = self._get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk) 
@@ -579,7 +579,7 @@ class InPlaneRigidRegistration:
         T_PI_align = sitkh.get_composited_sitk_affine_transform(T_PP, T_PI)
 
         ## Set direction and origin of image accordingly
-        direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align, slice_3D.sitk)
+        direction = sitkh.get_sitk_image_direction_from_sitk_affine_transform(T_PI_align, slice_3D.sitk)
         origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align, slice_3D.sitk)
 
         slice_3D_sitk_copy.SetDirection(direction)

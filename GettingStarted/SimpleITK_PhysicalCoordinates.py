@@ -49,7 +49,7 @@ def get_sitk_affine_transform_from_sitk_image(image_sitk):
     return sitk.AffineTransform(A,t)
 
 
-def get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
+def get_sitk_image_direction_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
     spacing_sitk = np.array(image_sitk.GetSpacing())
     S_inv_sitk = np.diag(1/spacing_sitk)
 
@@ -367,7 +367,7 @@ class TestUM(unittest.TestCase):
 
         # Convert back to sitk image data (test valid in combination with test_10 and test_11):
         origin = get_sitk_image_origin_from_sitk_affine_transform(affine_transform, stack_sitk)
-        direction = get_sitk_image_direction_matrix_from_sitk_affine_transform(affine_transform, stack_sitk)
+        direction = get_sitk_image_direction_from_sitk_affine_transform(affine_transform, stack_sitk)
 
         self.assertEqual(np.around(
             np.sum(abs(origin - stack_sitk_origin))
