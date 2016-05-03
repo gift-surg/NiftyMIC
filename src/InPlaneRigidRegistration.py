@@ -753,8 +753,7 @@ class InPlaneRigidRegistration:
     #         # self._resampled_sitk_stacks_after_in_plane_alignment[i] = warped_stack
     #         # self._resampled_sitk_stack_masks_after_in_plane_alignment[i] = warped_stack_mask
 
-    #         self._stacks_of_planarly_aligned_slices[i] = st.Stack.from_sitk_image(warped_stack, stack.get_filename() + "planarly_aligned_slices")
-    #         self._stacks_of_planarly_aligned_slices[i].add_mask(warped_stack_mask)
+    #         self._stacks_of_planarly_aligned_slices[i] = st.Stack.from_sitk_image(warped_stack, stack.get_filename() + "planarly_aligned_slices", warped_stack_mask)
 
     #     return None
 

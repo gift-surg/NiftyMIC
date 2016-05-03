@@ -172,6 +172,9 @@ class ReconstructionManager:
     #  \post Each slice has updated affine transformation specifying its new spatial position
     #  \post HR volume is updated according to updated slice positions
     def run_hierarchical_alignment_of_slices(self, step, use_static_volume_estimate=True):
+        if self._HR_volume is None:
+            raise ValueError("Error: Initial estimate of HR volume has not been computed yet")
+
         if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
             raise ValueError("Error: Hierarchical alignment of slices not possible after performed in-plane alignment of slices")
 
@@ -214,6 +217,10 @@ class ReconstructionManager:
     ## Execute two-step reconstruction alignment approach
     #  \param[in] iterations amount of two-step reconstruction alignment steps
     def run_two_step_reconstruction_alignment_approach(self, iterations=5):
+        if self._HR_volume is None:
+            raise ValueError("Error: Initial estimate of HR volume has not been computed yet")
+
+
         print("\n--- Run two-step reconstruction alignment approach ---")
 
         ## Show initialization for two-step reconstruction alignment approach
@@ -225,7 +232,7 @@ class ReconstructionManager:
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
 
         recon_approach = "SDA" # "SDA" or "SRR" possible
-        sigma = 1.5
+        sigma = 1.2
         volume_reconstruction.set_reconstruction_approach(recon_approach)
         volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
         volume_reconstruction.set_SDA_sigma(sigma)
@@ -250,7 +257,7 @@ class ReconstructionManager:
 
         ## Final SRR step
         recon_approach = "SRR"
-        SRR_approach = "TK1"        # "TK0" or "TK1"
+        SRR_approach = "TK0"        # "TK0" or "TK1"
         SRR_iter_max = 20
         SRR_regularisation_param = 0.1
 
@@ -258,8 +265,8 @@ class ReconstructionManager:
         volume_reconstruction.set_SRR_iter_max(SRR_iter_max)
         volume_reconstruction.set_SRR_alpha(SRR_regularisation_param)
         volume_reconstruction.set_SRR_approach(SRR_approach)       
-        volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
-        # volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
+        # volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
+        volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
 
         volume_reconstruction.run_reconstruction()
 
@@ -337,6 +344,9 @@ class ReconstructionManager:
 
     ## Write all important results to predefined output directories
     def write_results(self):
+        if self._HR_volume is None:
+            raise ValueError("Error: Initial estimate of HR volume has not been computed yet")
+
         self._stack_manager.write(self._dir_results_slices)
 
         self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename)

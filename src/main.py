@@ -12,7 +12,7 @@
 # %autoreload 2
 
 ## Import libraries 
-import pdb
+import pdb # set "pdb.set_trace()" to break into the debugger from a running program
 import itk
 import SimpleITK as sitk
 import numpy as np
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     ## Choose input stacks and reference stack therein
     input_stacks_type = input_stack_types_available[0]
     reference_stack_id = 0
-    iterations_two_step_approach = 1
+    iterations_two_step_approach = 0
 
     print("Stacks chosen: %s" %input_stacks_type)
     dir_input, filenames = read_input_data(input_stacks_type)
@@ -141,11 +141,11 @@ if __name__ == '__main__':
 
 
     # ## Compute first estimate of HR volume
-    # reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
-    # reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
+    reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
+    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
     
     # ## Run hierarchical slice alignment strategy
-    reconstruction_manager.run_hierarchical_alignment_of_slices(step=2)
+    # reconstruction_manager.run_hierarchical_alignment_of_slices(step=2)
 
     # ## Run tow step reconstruction alignment approach
     reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)

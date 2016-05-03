@@ -43,8 +43,8 @@ class Slice:
             slice.sitk_mask = slice_sitk_mask
             slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
         else:
-            slice.sitk_mask = None
-            slice.itk_mask = None
+            slice.sitk_mask = slice._generate_binary_mask()
+            slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
 
         slice._sitk_upsampled = None
 
@@ -99,8 +99,8 @@ class Slice:
             slice.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
             slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
         else:
-            slice.sitk_mask = None
-            slice.itk_mask = None
+            slice.sitk_mask = slice._generate_binary_mask()
+            slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
 
         slice._sitk_upsampled = None
 
@@ -295,4 +295,16 @@ class Slice:
             slice_sitk.GetPixelIDValue())
 
         return slice_upsampled_sitk
+
+
+    ## Create a binary mask consisting of ones
+    #  \return binary_mask as sitk.Image object consisting of ones
+    def _generate_binary_mask(self):
+        shape = sitk.GetArrayFromImage(self.sitk).shape
+        nda = np.ones(shape, dtype=np.uint8)
+
+        binary_mask = sitk.GetImageFromArray(nda)
+        binary_mask.CopyInformation(self.sitk)
+
+        return binary_mask
 

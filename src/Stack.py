@@ -98,10 +98,44 @@ class Stack:
         return stack
 
 
+    ## Create Stack instance from a bundle of Slice objects.
+    #  \param[in] slices list of Slice objects
+    #  \param[in] stack_sitk optional volumetric stack as sitk.Image object
+    #  \param[in] mask_sitk optional associated mask of volumetric stack as sitk.Image object
+    #  \return Stack object based on Slice objects
+    @classmethod
+    def from_slices(cls, slices, stack_sitk=None, mask_sitk=None):
+
+        stack = cls()
+
+        stack._dir = slices[0].get_directory()
+        stack._filename = slices[0].get_filename()
+
+        if stack_sitk is None:
+            stack.sitk = None
+            stack.itk = None
+        else:
+            stack.sitk = stack_sitk
+            stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
+
+        stack._N_slices = len(slices)
+        stack._slices = slices
+
+        ## Append masks (if provided)
+        if mask_sitk is not None:
+            stack.sitk_mask = mask_sitk
+            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+        else:
+            stack.sitk_mask = stack._generate_binary_mask()
+            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+
+        return stack
+
+
     ## Create Stack instance from exisiting sitk.Image instance. Slices are
     #  not extracted and stored separately in the object. The idea is to use
     #  this function when the stack is regarded as entire volume (like the 
-    #  reconstructed HR volume). A mask can be added via self.add_mask then.
+    #  reconstructed HR volume).
     #  \param[in] image_sitk sitk.Image created from nifti-file
     #  \param[in] name string containing the chosen name for the stack
     #  \param[in] image_sitk_mask associated mask of stack, sitk.Image object (optional)
@@ -114,17 +148,19 @@ class Stack:
         stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
 
         stack._filename = name
-
-        stack._N_slices = stack.sitk.GetSize()[-1]
-        stack._slices = [None]*stack._N_slices
+        stack._dir = None
 
         ## Append masks (if provided)
         if image_sitk_mask is not None:
             stack.sitk_mask = image_sitk_mask
             stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
         else:
-            stack.sitk_mask = None
-            stack.itk_mask = None
+            stack.sitk_mask = stack._generate_binary_mask()
+            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+
+        ## Extract all slices and their masks from the stack and store them 
+        stack._N_slices = stack.sitk.GetSize()[-1]
+        stack._slices = stack._extract_slices()
 
         return stack
 
@@ -211,23 +247,6 @@ class Stack:
         filenames = [str(i) for i in range(0, N)]
 
         return filenames
-
-
-
-    ## Add a mask to a existing Stack instance with no existing mask yet.
-    #  \param[in] image_sitk_mask sitk.Image representing the mask
-    def add_mask(self, image_sitk_mask):
-
-        try:
-            if self.sitk_mask is None:
-                self.sitk_mask = image_sitk_mask
-                self.itk_mask = sitkh.convert_sitk_to_itk_image(image_sitk_mask)
-
-            else:
-                raise ValueError("Error: Attempt to override already existing mask")
-
-        except ValueError as err:
-            print(err.args)
 
 
     ## Get all slices of current stack
@@ -399,8 +418,7 @@ class Stack:
         ## Get valid binary mask
         stack_resampled_slice_sitk_mask /= stack_resampled_slice_sitk_mask
 
-        stack = self.from_sitk_image(stack_resampled_sitk,"resampled_"+self._filename)
-        stack.add_mask(stack_resampled_sitk_mask)
+        stack = self.from_sitk_image(stack_resampled_sitk, "resampled_"+self._filename, stack_resampled_sitk_mask)
 
         return stack
 
@@ -445,8 +463,7 @@ class Stack:
             resampled_stack.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance of HR_volume
-        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, "isotropic_resampled_"+self._filename)
-        stack.add_mask(isotropic_resampled_stack_sitk_mask)
+        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, "isotropic_resampled_"+self._filename, isotropic_resampled_stack_sitk_mask)
 
         return stack
 

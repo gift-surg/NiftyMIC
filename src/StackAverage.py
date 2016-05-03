@@ -176,7 +176,6 @@ class StackAverage:
             target_stack.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance of HR_volume
-        HR_volume = st.Stack.from_sitk_image(HR_volume_sitk, self._averaged_volume_name)
-        HR_volume.add_mask(HR_volume_sitk_mask)
+        HR_volume = st.Stack.from_sitk_image(HR_volume_sitk, self._averaged_volume_name, HR_volume_sitk_mask)
 
         return HR_volume

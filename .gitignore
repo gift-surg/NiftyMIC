@@ -6,3 +6,4 @@ doc/latex/
 .*
 *.nii.gz
 *.nii
+*iterate.dat

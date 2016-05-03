@@ -22,23 +22,37 @@ class PSF:
 
 
     ## Compute rotated covariance matrix which expresses the PSF of the slice
-    #  in the coordinates of the HR_volume
+    #  in the coordinates of the HR volume
     #  \param[in] slice Slice object which is aimed to be simulated according to the slice acquisition model
     #  \param[in] HR_volume Stack object containing the HR volume
     #  \return Covariance matrix U*Sigma_diag*U' where U represents the
     #          orthogonal trafo between slice and HR_volume
     def get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(self, slice, HR_volume):
 
+        spacing_slice = np.array(slice.sitk.GetSpacing())
+        direction_slice = np.array(slice.sitk.GetDirection())
+
+        return self.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction_slice, spacing_slice, HR_volume)
+
+
+    ## Compute rotated covariance marix which expresses the PSF of the slice,
+    #  given by its directon and spacing, in the coordinates of the HR volume
+    #  \param[in] direction_slice information obtained by GetDirection() from slice
+    #  \param[in] spacing_slice voxel dimension of slice as np.array
+    #  \return Covariance matrix U*Sigma_diag*U' where U represents the
+    #          orthogonal trafo between slice and HR_volume
+    def get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(self, direction_slice, spacing_slice, HR_volume):
+
         ## Compute rotation matrix to express the PSF in the coordinate system of the HR volume
-        dim = slice.sitk.GetDimension()
+        dim = HR_volume.sitk.GetDimension()
         direction_matrix_HR_volume = np.array(HR_volume.sitk.GetDirection()).reshape(dim,dim)
-        direction_matrix_slice = np.array(slice.sitk.GetDirection()).reshape(dim,dim)
+        direction_matrix_slice = np.array(direction_slice).reshape(dim,dim)
 
         U = direction_matrix_HR_volume.transpose().dot(direction_matrix_slice)
         # print("U = \n%s\ndet(U) = %s" % (U,np.linalg.det(U)))
 
         ## Get axis algined PSF
-        cov = self._get_gaussian_PSF_covariance_matrix(slice)
+        cov = self._get_gaussian_PSF_covariance_matrix_from_spacing(spacing_slice)
 
         ## Return Gaussian blurring variance covariance matrix of slice in HR volume coordinates 
         return U.dot(cov).dot(U.transpose())
@@ -54,6 +68,14 @@ class PSF:
     def _get_gaussian_PSF_covariance_matrix(self, slice):
         spacing = np.array(slice.sitk.GetSpacing())
 
+        return self._get_gaussian_PSF_covariance_matrix_from_spacing(spacing)
+
+
+    ## Compute (axis aligned) covariance matrix from spacing
+    #  \param[in] spacing 3D array containing in-plane and through-plane dimensions
+    #  \return get (axis aligned) covariance matrix as 3x3 np.array
+    def _get_gaussian_PSF_covariance_matrix_from_spacing(self, spacing):
+        
         ## Compute Gaussian to approximate in-plane PSF:
         sigma_x2 = (1.2*spacing[0])**2/(8*np.log(2))
         sigma_y2 = (1.2*spacing[1])**2/(8*np.log(2))
