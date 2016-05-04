@@ -19,6 +19,7 @@ import VolumeReconstruction as vr
 import DataPreprocessing as dp
 import HierarchicalSliceAlignment as hsa
 import SimpleITKHelper as sitkh
+import PSF as psf
 
 
 ## This class manages the whole reconstruction pipeline
@@ -123,7 +124,7 @@ class ReconstructionManager:
         self._data_preprocessing.run_preprocessing(filenames, suffix_mask)
 
         ## Read stacks as bundle of slices:
-        self._stack_manager.read_input_stacks(self._dir_results_input_data, filenames, suffix_mask)
+        self._stack_manager.read_input_stacks(self._dir_results_input_data_processed, filenames, suffix_mask)
 
 
     ## Read input stacks stored from given directory from separate slices
@@ -153,10 +154,14 @@ class ReconstructionManager:
 
 
     ## Compute first estimate of HR volume to initialize reconstruction algortihm
+    #  \param[in] display_info display information of registration results as we go along
     #  \post \p self._HR_volume is set to first estimate
-    def compute_first_estimate_of_HR_volume_from_stacks(self):
+    def compute_first_estimate_of_HR_volume_from_stacks(self, display_info=0):
         print("\n--- Compute first estimate of HR volume ---")
-        
+
+        ## Append number of stacks
+        self._HR_volume_filename += "_stacks" + str(self._stack_manager.get_number_of_stacks())
+
         ## Instantiate object
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename, self._target_stack_number)
 
@@ -164,7 +169,15 @@ class ReconstructionManager:
         recon_approach = "SDA"
         # recon_approach = "Average"
 
-        sigma = 1
+        ## Get sigma value based on through-plane direction
+        PSF = psf.PSF()
+        stacks = self._stack_manager.get_stacks()
+        cov_matrix = PSF.get_gaussian_PSF_covariance_matrix_from_spacing(stacks[0].sitk.GetSpacing())
+        sigma_array = np.sqrt(cov_matrix.diagonal())
+        print ("sigma_array = " + str(sigma_array))
+
+        # sigma = np.mean(sigma_array)
+        sigma = sigma_array[2]
 
         first_estimate_of_HR_volume.set_reconstruction_approach(recon_approach) #"SDA" or "Average"
         first_estimate_of_HR_volume.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
@@ -179,22 +192,28 @@ class ReconstructionManager:
         first_estimate_of_HR_volume.register_stacks_before_initial_volume_estimate(self._flag_register_stacks_before_initial_volume_estimate)
         
         ## Perform estimation of initial HR volume
-        first_estimate_of_HR_volume.compute_first_estimate_of_HR_volume()
+        first_estimate_of_HR_volume.compute_first_estimate_of_HR_volume(display_info=display_info)
 
         ## Get estimation
         self._HR_volume = first_estimate_of_HR_volume.get_HR_volume()
 
         ## Write
-        filename = self._HR_volume_filename + "_0_" + recon_approach
-        self._HR_volume.write(directory=self._dir_results, filename=filename)
+        filename = self._HR_volume_filename + "_0"
+        if recon_approach in ["SDA"]:
+            filename += "_SDA_sigma" + str(np.round(sigma, decimals=1))
+        else:
+            filename +=  "_Average"
+
+        self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
         
 
     ## Run hierarchical alignment of slices
-    #  \param[in] step step size of interleaved acquisition used for hierarchical alignment
+    #  \param[in] interleave step of interleaved stack acquisition used for hierarchical alignment
     #  \param[in] use_static_volume_estimate use same HR volume for all stacks 
+    #  \param[in] display_info display information of registration results as we go along
     #  \post Each slice has updated affine transformation specifying its new spatial position
     #  \post HR volume is updated according to updated slice positions
-    def run_hierarchical_alignment_of_slices(self, step, use_static_volume_estimate=True):
+    def run_hierarchical_alignment_of_slices(self, interleave, use_static_volume_estimate=True, display_info=0):
         if self._HR_volume is None:
             raise ValueError("Error: Initial estimate of HR volume has not been computed yet")
 
@@ -216,13 +235,20 @@ class ReconstructionManager:
         hierarchical_slice_alignment = hsa.HierarchicalSliceAlignment(self._stack_manager, self._HR_volume)
 
         ## Run hierarchical alignment of slices within stack
-        hierarchical_slice_alignment.run_hierarchical_alignment(step, use_static_volume_estimate)
+        hierarchical_slice_alignment.run_hierarchical_alignment(interleave, use_static_volume_estimate, display_info=display_info)
+
+        ## Get sigma value based on through-plane direction
+        PSF = psf.PSF()
+        stacks = self._stack_manager.get_stacks()
+        cov_matrix = PSF.get_gaussian_PSF_covariance_matrix_from_spacing(stacks[0].sitk.GetSpacing())
+        sigma_array = np.sqrt(cov_matrix.diagonal())
+        # print ("sigma_array = %s",%(sigma_array))
+
+        sigma = sigma_array[2]
 
         ## Update HR estimate after hierarchical alignment
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
-
         recon_approach = "SDA" # "SDA" or "SRR" possible
-        sigma = 1
         volume_reconstruction.set_reconstruction_approach(recon_approach)
         volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
         volume_reconstruction.set_SDA_sigma(sigma)
@@ -231,18 +257,24 @@ class ReconstructionManager:
         volume_reconstruction.run_reconstruction()
 
         ## Write
-        filename = self._HR_volume_filename + "_0_" + recon_approach + "_hierarchical_alignment"
-        self._HR_volume.write(directory=self._dir_results, filename=filename)
+        filename = self._HR_volume_filename + "_0"
+        if recon_approach in ["SDA"]:
+            filename += "_SDA_sigma" + str(np.round(sigma, decimals=1))
+        else:
+            filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
+        filename +=  "_hierarchical_alignment"
+            
+        self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
 
         sitkh.show_sitk_image(foo.sitk, overlay=self._HR_volume.sitk, title="HR_volume_before_and_after_hierarchical_alignment")
 
 
     ## Execute two-step reconstruction alignment approach
     #  \param[in] iterations amount of two-step reconstruction alignment steps
-    def run_two_step_reconstruction_alignment_approach(self, iterations=5):
+    #  \param[in] display_info display information of registration results as we go along
+    def run_two_step_reconstruction_alignment_approach(self, iterations=5, display_info=0):
         if self._HR_volume is None:
             raise ValueError("Error: Initial estimate of HR volume has not been computed yet")
-
 
         print("\n--- Run two-step reconstruction alignment approach ---")
 
@@ -254,34 +286,73 @@ class ReconstructionManager:
         slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager, self._HR_volume)
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
 
-        recon_approach = "SDA" # "SDA" or "SRR" possible
-        sigma = 1.2
-        volume_reconstruction.set_reconstruction_approach(recon_approach)
-        volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
-        volume_reconstruction.set_SDA_sigma(sigma)
+        ## Chose reconstruction approach 
+        recon_approach = "SRR" # "SDA" or "SRR" possible
+
+        ## Define static volumetric reconstruction settings
+        if recon_approach in ["SDA"]:
+            ## Get sigma value based on through-plane direction
+            PSF = psf.PSF()
+            stacks = self._stack_manager.get_stacks()
+            cov_matrix = PSF.get_gaussian_PSF_covariance_matrix_from_spacing(stacks[0].sitk.GetSpacing())
+            sigma_array = np.sqrt(cov_matrix.diagonal())
+            print ("sigma_array = " + str(sigma_array))
+
+            # sigma = sigma_array[2]
+            sigma = 1.5
+            volume_reconstruction.set_reconstruction_approach(recon_approach)
+            volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
+            volume_reconstruction.set_SDA_sigma(sigma)
+        else:
+            SRR_approach = "TK1"        # "TK0" or "TK1"
+            SRR_iter_max = 5
+            SRR_regularisation_param = 0.1
+
+            volume_reconstruction.set_reconstruction_approach(recon_approach)
+            volume_reconstruction.set_SRR_iter_max(SRR_iter_max)
+            volume_reconstruction.set_SRR_alpha(SRR_regularisation_param)
+            volume_reconstruction.set_SRR_approach(SRR_approach)       
+            # volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
+            volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference") 
+            ## More stable: Finite Difference
+            ## Less complaints like "Bad direction in the line search; refresh the lbfgs memory and restart the iteration."
+
 
         ## Run two-step reconstruction alignment:
         for i in range(0, iterations):   
-            print("*** iteration %s/%s" %(i+1,iterations))
 
-            sigma = np.max((1,sigma-0.1))
-            volume_reconstruction.set_SDA_sigma(sigma)
+            ## Prepare filename            
+            filename = self._HR_volume_filename 
+            filename += "_" + str(i+1)
 
-            ## Register all slices to current estimate of volume reconstruction
-            slice_to_volume_registration.run_slice_to_volume_registration()
+            ## Configure chosen reconstruction approach            
+            if recon_approach in ["SDA"]:
+                sigma = np.max((1.2,sigma-0.05))
+                volume_reconstruction.set_SDA_sigma(sigma)
+                
+                filename += "_SDA_sigma" + str(np.round(sigma, decimals=1))
 
-            ## Reconstruct new volume based on updated positions of slices
+            else:
+                filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
+
+            ## Slice-to-Volume Registration: Register all slices to current HR estimate
+            print("\n*** Iteration %s/%s: Slice-to-Volume Registration" %(i+1,iterations))
+            slice_to_volume_registration.run_slice_to_volume_registration(display_info=display_info)
+
+            ## Volumetric Reconstruction: Estimate HR volume based on updated position of slices
+            print("\n*** Iteration %s/%s: Volumetric Reconstruction" %(i+1,iterations))
             volume_reconstruction.run_reconstruction()
 
-            filename = self._HR_volume_filename + "_" + str(i+1) + "_" + recon_approach
-            self._HR_volume.write(directory=self._dir_results, filename=filename)
+            ## Write result to output directory
+            self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
 
             self._HR_volume.show(title="HR_recon_iter"+str(i+1))
+
 
         ## Final SRR step
         recon_approach = "SRR"
         SRR_approach = "TK0"        # "TK0" or "TK1"
-        SRR_iter_max = 20
+        SRR_iter_max = 30
         SRR_regularisation_param = 0.1
 
         volume_reconstruction.set_reconstruction_approach(recon_approach)
@@ -293,12 +364,16 @@ class ReconstructionManager:
 
         volume_reconstruction.run_reconstruction()
 
-        ## Update filename of HR reconstruction based on chosen options
-        filename =  self._HR_volume_filename + "_cycles" + str(iterations)
-        filename +=  "_SRR_" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
+        ## Prepare filename
+        filename =  self._HR_volume_filename 
+        filename += "_cycles" + str(iterations)
+        filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
 
+        ## Update filename of HR reconstruction based on chosen options
         self._HR_volume_filename = filename
-        self._HR_volume.write(directory=self._dir_results, filename=filename)
+
+        ## Write result
+        self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
 
 
     ## Execute in-plane rigid registration align slices planarly within stack 

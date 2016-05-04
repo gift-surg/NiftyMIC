@@ -52,10 +52,25 @@ class PSF:
         # print("U = \n%s\ndet(U) = %s" % (U,np.linalg.det(U)))
 
         ## Get axis algined PSF
-        cov = self._get_gaussian_PSF_covariance_matrix_from_spacing(spacing_slice)
+        cov = self.get_gaussian_PSF_covariance_matrix_from_spacing(spacing_slice)
 
         ## Return Gaussian blurring variance covariance matrix of slice in HR volume coordinates 
         return U.dot(cov).dot(U.transpose())
+
+
+    ## Compute (axis aligned) covariance matrix from spacing
+    #  \param[in] spacing 3D array containing in-plane and through-plane dimensions
+    #  \return get (axis aligned) covariance matrix as 3x3 np.array
+    def get_gaussian_PSF_covariance_matrix_from_spacing(self, spacing):
+        
+        ## Compute Gaussian to approximate in-plane PSF:
+        sigma_x2 = (1.2*spacing[0])**2/(8*np.log(2))
+        sigma_y2 = (1.2*spacing[1])**2/(8*np.log(2))
+
+        ## Compute Gaussian to approximate through-plane PSF:
+        sigma_z2 = spacing[2]**2/(8*np.log(2))
+
+        return np.diag([sigma_x2, sigma_y2, sigma_z2])
 
 
     ## Compute the covariance matrix modelling the PSF in-plane and 
@@ -68,21 +83,6 @@ class PSF:
     def _get_gaussian_PSF_covariance_matrix(self, slice):
         spacing = np.array(slice.sitk.GetSpacing())
 
-        return self._get_gaussian_PSF_covariance_matrix_from_spacing(spacing)
-
-
-    ## Compute (axis aligned) covariance matrix from spacing
-    #  \param[in] spacing 3D array containing in-plane and through-plane dimensions
-    #  \return get (axis aligned) covariance matrix as 3x3 np.array
-    def _get_gaussian_PSF_covariance_matrix_from_spacing(self, spacing):
-        
-        ## Compute Gaussian to approximate in-plane PSF:
-        sigma_x2 = (1.2*spacing[0])**2/(8*np.log(2))
-        sigma_y2 = (1.2*spacing[1])**2/(8*np.log(2))
-
-        ## Compute Gaussian to approximate through-plane PSF:
-        sigma_z2 = spacing[2]**2/(8*np.log(2))
-
-        return np.diag([sigma_x2, sigma_y2, sigma_z2])
+        return self.get_gaussian_PSF_covariance_matrix_from_spacing(spacing)
 
 

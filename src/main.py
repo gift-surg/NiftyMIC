@@ -120,7 +120,6 @@ if __name__ == '__main__':
     ## Choose input stacks and reference stack therein
     input_stacks_type = input_stack_types_available[0]
     reference_stack_id = 0
-    iterations_two_step_approach = 0
 
     print("Stacks chosen: %s" %input_stacks_type)
     dir_input, filenames = read_input_data(input_stacks_type)
@@ -140,18 +139,18 @@ if __name__ == '__main__':
     # reconstruction_manager.set_HR_volume(st.Stack.from_filename(dir_output, "recon_fetal_neck_mass_brain_0_SRR_TK0"))
 
 
-    # ## Compute first estimate of HR volume
+    ## Compute first estimate of HR volume
     reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
-    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks()
+    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks(display_info=0)
     
-    # ## Run hierarchical slice alignment strategy
-    # reconstruction_manager.run_hierarchical_alignment_of_slices(step=2)
+    ## Run hierarchical slice alignment strategy
+    # reconstruction_manager.run_hierarchical_alignment_of_slices(interleave=2, display_info=0)
 
-    # ## Run tow step reconstruction alignment approach
-    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=iterations_two_step_approach)
+    ## Run two step reconstruction alignment approach
+    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=3, display_info=0)
 
-    # ## Write results
-    # # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
+    ## Write results
+    # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
     reconstruction_manager.write_results()
 
     HR_volume = reconstruction_manager.get_HR_volume()

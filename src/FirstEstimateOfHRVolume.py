@@ -116,8 +116,8 @@ class FirstEstimateOfHRVolume:
     #  -# Register all (planarly-aligned) stacks to target-volume (optional)
     #  -# Create first HR volume estimate: Average all registered (planarly-aligned) stacks
     #  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
-    # \param[in] use_in_plane_registration states whether in-plane registration is used prior registering (bool)
-    def compute_first_estimate_of_HR_volume(self):
+    #  \param[in] display_info display information of registration results as we go along
+    def compute_first_estimate_of_HR_volume(self, display_info=0):
 
         ## Use stacks with in-plane aligned slices
         if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
@@ -145,7 +145,7 @@ class FirstEstimateOfHRVolume:
         ## If desired: Register all (planarly) aligned stacks to resampled target volume
         if self._flag_register_stacks_before_initial_volume_estimate:
             print("Rigid registration between each stack and target is performed")
-            self._rigidly_register_all_stacks_to_HR_volume(print_trafos=True)
+            self._rigidly_register_all_stacks_to_HR_volume(print_trafos=display_info)
 
         ## No rigid registration
         else:
@@ -240,7 +240,7 @@ class FirstEstimateOfHRVolume:
 
     ## Register all stacks to chosen target stack (HR volume)
     #  \post each Slice is updated according to obtained registration
-    def _rigidly_register_all_stacks_to_HR_volume(self, print_trafos=False):
+    def _rigidly_register_all_stacks_to_HR_volume(self, print_trafos):
 
         ## Compute rigid registrations aligning each stack with the HR volume
         for i in range(0, self._N_stacks):

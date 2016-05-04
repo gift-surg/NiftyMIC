@@ -57,7 +57,11 @@ class ScatteredDataApproximation:
     #     return self._sigma_array
 
 
-    ## Set sigma array used for recursive Gaussian smoothing for each direction. Sigmas are measured in the units of image spacing.
+    ## Set array of standard deviations used for recursive Gaussian smoothing 
+    #  in each direction. Sigmas are measured in the units of image spacing.
+    #  You may use the method SetSigma to set the same value across each axis or
+    #  use the method SetSigmaArray if you need different values along each axis
+    #  \param[in] sigma_array 3D array containing the standard deviation in each direction
     def set_sigma_array(self, sigma_array):
         if len(sigma_array) is not 3:
             raise ValueError("Error: Sigma array must contain 3 elements")
@@ -65,7 +69,8 @@ class ScatteredDataApproximation:
         self._sigma_array = np.array(sigma_array)
 
 
-    ## Get sigma array used for recursive Gaussian smoothing.
+    ## Get array of standard deviations used for recursive Gaussian smoothing
+    #  in each direction. Sigmas are measured in the units of image spacing.
     #  \return sigma array, numpy array
     def get_sigma_array(self):
         return self._sigma_array

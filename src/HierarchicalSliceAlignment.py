@@ -53,9 +53,10 @@ class HierarchicalSliceAlignment:
 
 
     ## Perform hierarchical alignment for each stack.
-    #  \param[in] step step size of interleaved acquisition used for hierarchical alignment
+    #  \param[in] interleave step of interleaved stack acquisition used for hierarchical alignment
     #  \param[in] use_static_volume_estimate use same HR volume for all stacks 
-    def run_hierarchical_alignment(self, step, use_static_volume_estimate):
+    #  \param[in] display_info display information of registration results as we go along
+    def run_hierarchical_alignment(self, interleave, use_static_volume_estimate, display_info=0):
 
         HR_volume = st.Stack.from_stack(self._HR_volume)
 
@@ -80,7 +81,7 @@ class HierarchicalSliceAlignment:
             
 
             ## Perform hierarchical slice alignment approach applied to specific stack and volume estimate
-            self._hierarchically_align_stack(self._stacks[i], volume_estimate, step)
+            self._hierarchically_align_stack(self._stacks[i], volume_estimate, interleave, display_info)
 
 
         return None
@@ -88,9 +89,10 @@ class HierarchicalSliceAlignment:
     ## Perform hierarchical strategy to align slices within stack
     #  \param[in] stack stack as Stack object whose slices will be aligned
     #  \param[in] volume_estimate stack as Stack object which will serve as moving object for registration
-    #  \param[in] step interleaved acquisition step
+    #  \param[in] interleave step of interleaved stack acquisition used for hierarchical alignment
+    #  \param[in] display_info display information of registration results as we go along
     #  \post Slice objects of group carry updated affine transformation
-    def _hierarchically_align_stack(self, stack, volume_estimate, step):
+    def _hierarchically_align_stack(self, stack, volume_estimate, interleave, display_info):
 
         print("\n\t--- Run hierarchical slice alignment approach for stack %s ---" %(stack.get_filename()))
 
@@ -102,18 +104,18 @@ class HierarchicalSliceAlignment:
         ## 1) Register entire stack with volume estimate
         # sitk.WriteImage(stack.sitk_mask, "/tmp/bla.nii.gz")
         ### WTF!?!?! The line below works when line above is there!? Otherwise not!?
-        transform = self._get_rigid_registration_transform(stack, volume_estimate, 1)
-
-        sitkh.print_rigid_transformation(transform)
+        transform = self._get_rigid_registration_transform(stack, volume_estimate, display_info)
         self._update_slice_transformations_of_group(stack, volume_estimate, range(0, len(slices)), transform)
+        if display_info:
+            sitkh.print_rigid_transformation(transform)
 
         ## 2) Hierarchical Alignment Strategy
-        for i in range(0, step):
+        for i in range(0, interleave):
             ## get indices of slices which are grouped together based on interleaved acquisition
-            ind = np.arange(i_min+i, i_max, step)
+            ind = np.arange(i_min+i, i_max, interleave)
 
             ## Perform recursive alignment strategy for those indices within chosen stack
-            self._apply_recursive_alignment_of_group(stack, volume_estimate, ind)
+            self._apply_recursive_alignment_of_group(stack, volume_estimate, ind, display_info)
 
 
     ## Perform recursive alignment in order to perform hierarchical registration strategy
@@ -121,8 +123,9 @@ class HierarchicalSliceAlignment:
     #  \param[in] stack stack as Stack object whose slices will be aligned
     #  \param[in] volume_estimate stack as Stack object which will serve as moving object for registration
     #  \param[in] ind list of indices specifying the hierarchical group of slices
+    #  \param[in] display_info display information of registration results as we go along
     #  \post Slice objects of group carry updated affine transformation
-    def _apply_recursive_alignment_of_group(self, stack, volume_estimate, ind):
+    def _apply_recursive_alignment_of_group(self, stack, volume_estimate, ind, display_info):
 
         print("Register group of slices " + str(ind))
 
@@ -132,22 +135,24 @@ class HierarchicalSliceAlignment:
         ## If more than one slice, register and half into two subgroups afterwards
         if N > 1:
             ## Register group
-            transform = self._get_rigid_registration_transform_of_hierarchical_group(stack, volume_estimate, ind)
-            sitkh.print_rigid_transformation(transform)
+            transform = self._get_rigid_registration_transform_of_hierarchical_group(stack, volume_estimate, ind, display_info)
             self._update_slice_transformations_of_group(stack, volume_estimate, ind, transform)
+            if display_info:
+                sitkh.print_rigid_transformation(transform)
 
             ## Half into subgroups and run recursive alignment
             mid = N/2
 
-            self._apply_recursive_alignment_of_group(stack, volume_estimate, ind[0:mid])
-            self._apply_recursive_alignment_of_group(stack, volume_estimate, ind[mid:])
+            self._apply_recursive_alignment_of_group(stack, volume_estimate, ind[0:mid], display_info)
+            self._apply_recursive_alignment_of_group(stack, volume_estimate, ind[mid:], display_info)
 
         ## If only one slice in group, only register that single slice
         elif N is 1:
             ## Register single slice
-            transform = self._get_rigid_registration_transform(stack.get_slice(ind[0]), volume_estimate,1)
-            sitkh.print_rigid_transformation(transform)
+            transform = self._get_rigid_registration_transform(stack.get_slice(ind[0]), volume_estimate, display_info)
             self._update_slice_transformations_of_group(stack, volume_estimate, ind, transform)
+            if display_info:
+                sitkh.print_rigid_transformation(transform)
 
 
 
@@ -155,20 +160,21 @@ class HierarchicalSliceAlignment:
     #  \param[in] stack stack as Stack object whose slices will be aligned
     #  \param[in] volume_estimate stack as Stack object which will serve as moving object for registration
     #  \param[in] ind indices of slices within stack which will be registered to volume_estimate
+    #  \param[in] display_info display information of registration results as we go along
     #  \return registration transforms aligning stack[ind] with volume_estimate
-    def _get_rigid_registration_transform_of_hierarchical_group(self, stack, volume_estimate, ind):
+    def _get_rigid_registration_transform_of_hierarchical_group(self, stack, volume_estimate, ind, display_info):
         slices = stack.get_slices()
 
         ## Retrieve indices
         i_min = ind[0]
         i_max = ind[-1]+1
-        step = ind[1]-ind[0]
+        interleave = ind[1]-ind[0]
 
-        # print np.arange(i_min, i_max, step)
+        # print np.arange(i_min, i_max, interleave)
 
         ## Create image stack and mask based on group
-        group_sitk = stack.sitk[:,:,i_min:i_max:step]
-        group_sitk_mask = stack.sitk_mask[:,:,i_min:i_max:step]
+        group_sitk = stack.sitk[:,:,i_min:i_max:interleave]
+        group_sitk_mask = stack.sitk_mask[:,:,i_min:i_max:interleave]
 
         ## Update position of grouped stack based on "basis" slice
         origin = slices[i_min].sitk.GetOrigin()
@@ -181,10 +187,10 @@ class HierarchicalSliceAlignment:
         group_sitk_mask.SetDirection(direction)
 
         ## Create Stack object
-        group = st.Stack.from_sitk_image(group_sitk, str(i_min)+"_"+str(step)+"_"+str(i_max), group_sitk_mask)
+        group = st.Stack.from_sitk_image(group_sitk, str(i_min)+"_"+str(interleave)+"_"+str(i_max), group_sitk_mask)
 
         ## Get rigid registration transform
-        transform = self._get_rigid_registration_transform(group, volume_estimate, 1)
+        transform = self._get_rigid_registration_transform(group, volume_estimate, display_info)
         
         return transform
 

@@ -202,7 +202,7 @@ class VolumeReconstruction:
     def _run_SRR(self):
 
         ## Perform reconstruction
-        print("\n\t--- Run Super-Resolution Reconstruction algorithm (Tikhonov) ---")
+        print("\t--- Super-Resolution Reconstruction (Tikhonov) ---")
         self._SRR.run_reconstruction()
 
 
@@ -239,6 +239,6 @@ class VolumeReconstruction:
     def _run_SDA(self):
         
         ## Perform reconstruction via SDA
-        print("\n\t--- Run Scattered Data Approximation algorithm ---")
+        print("\t--- Scattered Data Approximation ---")
         self._SDA.run_reconstruction()
 

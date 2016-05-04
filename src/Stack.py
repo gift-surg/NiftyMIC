@@ -324,7 +324,7 @@ class Stack:
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifying the filename. If not given the assigned one within Stack will be chosen.
     #  \param[in] write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
-    def write(self, directory="/tmp/", filename=None, write_slices=False):
+    def write(self, directory="/tmp/", filename=None, write_mask=True, write_slices=False):
         if filename is None:
             filename = self._filename
 
@@ -338,7 +338,7 @@ class Stack:
             nda = sitk.GetArrayFromImage(self.sitk_mask)
 
             ## Write mask if it does not consist of only ones
-            if not np.all(nda):
+            if not np.all(nda) and write_mask:
                 sitk.WriteImage(self.sitk_mask, full_file_name + "_mask.nii.gz")
 
         print("Stack was successfully written to %s.nii.gz" %(full_file_name))

@@ -52,12 +52,14 @@ class SliceToVolumeRegistration:
 
         self._registration_approach = "SimpleITK"    # default registration approach
         # self._registration_approach = "ITK"    # default registration approach
+        # self._registration_approach = "NiftyReg"    # default registration approach
 
 
 
     ## Perform slice-to-volume registration of all slices to current estimate of HR volume reconstruction
-    def run_slice_to_volume_registration(self):
-        print("\n\t--- Slice-to-volume registration ---")
+    #  \param[in] display_info display information of registration results as we go along
+    def run_slice_to_volume_registration(self, display_info=0):
+        print("\t--- Slice-to-Volume Registration ---")
 
         self._gaussian_yvv.SetInput(sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk))
 
@@ -68,11 +70,12 @@ class SliceToVolumeRegistration:
             N_slices = stack.get_number_of_slices()
             
             for j in range(0, N_slices):
-                print("\t\tSlice %s/%s" %(j,N_slices-1))
+                print("\t\tSVR of slice %s/%s" %(j,N_slices-1))
                 slice = slices[j]
 
-                rigid_transform = self._get_rigid_registration_transform[self._registration_approach](fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume)
-                sitkh.print_rigid_transformation(rigid_transform)
+                rigid_transform = self._get_rigid_registration_transform[self._registration_approach](fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume, display_registration_info=display_info)
+                if display_info:
+                    sitkh.print_rigid_transformation(rigid_transform)
 
                 ## print if translation is strange
                 translation = rigid_transform.GetTranslation()
@@ -96,7 +99,7 @@ class SliceToVolumeRegistration:
     #  \param moving_HR_volume_3D moving Stack
     #  \param display_registration_info display registration summary at the end of execution (default=0)
     #  \return Rigid registration as sitk.Euler3DTransform object
-    def _get_rigid_registration_transform_sitk(self, fixed_slice_3D, moving_HR_volume_3D, display_registration_info=1):
+    def _get_rigid_registration_transform_sitk(self, fixed_slice_3D, moving_HR_volume_3D, display_registration_info=0):
 
         ## Blur 
         Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( fixed_slice_3D, moving_HR_volume_3D )
@@ -106,8 +109,8 @@ class SliceToVolumeRegistration:
         moving_3D_itk = self._gaussian_yvv.GetOutput()
         moving_3D_itk.DisconnectPipeline()
 
-        moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
-        # moving_3D_sitk = moving_HR_volume_3D.sitk
+        # moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
+        moving_3D_sitk = moving_HR_volume_3D.sitk
 
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()
@@ -132,7 +135,7 @@ class SliceToVolumeRegistration:
         similarity metric settings
         """
         ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
-        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=10)
+        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=15)
         
         ## Use negative normalized cross correlation image metric
         # registration_method.SetMetricAsCorrelation()
@@ -213,7 +216,7 @@ class SliceToVolumeRegistration:
     #  \param moving_HR_volume_3D moving Stack
     #  \param display_registration_info display registration summary at the end of execution (default=0)
     #  \return Rigid registration as sitk.Euler3DTransform object
-    def _get_rigid_registration_transform_itk(self, fixed_slice_3D, moving_HR_volume_3D):
+    def _get_rigid_registration_transform_itk(self, fixed_slice_3D, moving_HR_volume_3D, display_registration_info=0):
         ## Look at http://www.itk.org/Doxygen/html/Examples_2RegistrationITKv3_2ImageRegistration8_8cxx-example.html#_a10
 
         registration = itk.ImageRegistrationMethod[image_type, image_type].New()
@@ -294,7 +297,7 @@ class SliceToVolumeRegistration:
         return sitkh.get_sitk_Euler3DTransform_from_itk_Euler3DTransform(rigid_registration_3D_itk)
 
 
-    def _get_rigid_registration_transform_NiftyReg(self, fixed_slice_3D, moving_HR_volume_3D):
+    def _get_rigid_registration_transform_NiftyReg(self, fixed_slice_3D, moving_HR_volume_3D, display_registration_info=0):
         ## Save images prior to the use of NiftyReg
         dir_tmp = "../results/tmp/" 
         os.system("mkdir -p " + dir_tmp)
@@ -308,9 +311,9 @@ class SliceToVolumeRegistration:
 
         # sitk.WriteImage(fixed_slice_3D._sitk_upsampled, dir_tmp+fixed_str+".nii.gz")
         sitk.WriteImage(fixed_slice_3D.sitk, dir_tmp+fixed_str+".nii.gz")
+        sitk.WriteImage(fixed_slice_3D.sitk_mask, dir_tmp+fixed_mask_str+".nii.gz")
         sitk.WriteImage(moving_HR_volume_3D.sitk, dir_tmp+moving_str+".nii.gz")
-        # sitk.WriteImage(fixed_slice_3D._sitk_mask_upsampled, dir_tmp+fixed_mask_str+".nii.gz")
-        # sitk.WriteImage(moving_HR_volume_3D.sitk_mask, dir_tmp+moving_mask_str+".nii.gz")
+        sitk.WriteImage(moving_HR_volume_3D.sitk_mask, dir_tmp+moving_mask_str+".nii.gz")
 
         ## NiftyReg: Global affine registration:
         #  \param[in] -ref reference image
