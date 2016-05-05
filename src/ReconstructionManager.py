@@ -200,11 +200,13 @@ class ReconstructionManager:
         ## Write
         filename = self._HR_volume_filename + "_0"
         if recon_approach in ["SDA"]:
-            filename += "_SDA_sigma" + str(np.round(sigma, decimals=1))
+            filename += "_SDA_sigma" + str(np.round(sigma, decimals=2))
         else:
             filename +=  "_Average"
 
         self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
+        self._HR_volume.show(title=filename)
+
         
 
     ## Run hierarchical alignment of slices
@@ -259,7 +261,7 @@ class ReconstructionManager:
         ## Write
         filename = self._HR_volume_filename + "_0"
         if recon_approach in ["SDA"]:
-            filename += "_SDA_sigma" + str(np.round(sigma, decimals=1))
+            filename += "_SDA_sigma" + str(np.round(sigma, decimals=2))
         else:
             filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
         filename +=  "_hierarchical_alignment"
@@ -279,15 +281,15 @@ class ReconstructionManager:
         print("\n--- Run two-step reconstruction alignment approach ---")
 
         ## Show initialization for two-step reconstruction alignment approach
-        filename = self._HR_volume_filename + "_init_2step_approach"
-        self._HR_volume.show(title=filename)
+        # filename = self._HR_volume_filename + "_init_2step_approach"
+        # self._HR_volume.show(title=filename)
 
         ## Instantiate objects
         slice_to_volume_registration = s2vr.SliceToVolumeRegistration(self._stack_manager, self._HR_volume)
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
 
         ## Chose reconstruction approach 
-        recon_approach = "SRR" # "SDA" or "SRR" possible
+        recon_approach = "SDA" # "SDA" or "SRR" possible
 
         ## Define static volumetric reconstruction settings
         if recon_approach in ["SDA"]:
@@ -299,7 +301,7 @@ class ReconstructionManager:
             print ("sigma_array = " + str(sigma_array))
 
             # sigma = sigma_array[2]
-            sigma = 1.5
+            sigma = 1
             volume_reconstruction.set_reconstruction_approach(recon_approach)
             volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
             volume_reconstruction.set_SDA_sigma(sigma)
@@ -327,10 +329,10 @@ class ReconstructionManager:
 
             ## Configure chosen reconstruction approach            
             if recon_approach in ["SDA"]:
-                sigma = np.max((1.2,sigma-0.05))
+                sigma = np.max((0.7,sigma-0.05))
                 volume_reconstruction.set_SDA_sigma(sigma)
                 
-                filename += "_SDA_sigma" + str(np.round(sigma, decimals=1))
+                filename += "_SDA_sigma" + str(np.round(sigma, decimals=2))
 
             else:
                 filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
@@ -346,12 +348,13 @@ class ReconstructionManager:
             ## Write result to output directory
             self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
 
-            self._HR_volume.show(title="HR_recon_iter"+str(i+1))
+            self._HR_volume.show(title=filename)
 
 
         ## Final SRR step
         recon_approach = "SRR"
         SRR_approach = "TK0"        # "TK0" or "TK1"
+        # SRR_approach = "TK1"        # "TK0" or "TK1"
         SRR_iter_max = 30
         SRR_regularisation_param = 0.1
 
@@ -447,5 +450,5 @@ class ReconstructionManager:
 
         self._stack_manager.write(self._dir_results_slices)
 
-        self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename)
+        self._HR_volume.write(directory=self._dir_results, filename=self._HR_volume_filename, write_mask=False)
 

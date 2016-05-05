@@ -70,11 +70,11 @@ class SliceToVolumeRegistration:
             N_slices = stack.get_number_of_slices()
             
             for j in range(0, N_slices):
-                print("\t\tSVR of slice %s/%s" %(j,N_slices-1))
                 slice = slices[j]
 
                 rigid_transform = self._get_rigid_registration_transform[self._registration_approach](fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume, display_registration_info=display_info)
                 if display_info:
+                    print("\t\tSVR of slice %s/%s done" %(j,N_slices-1))
                     sitkh.print_rigid_transformation(rigid_transform)
 
                 ## print if translation is strange
@@ -102,12 +102,12 @@ class SliceToVolumeRegistration:
     def _get_rigid_registration_transform_sitk(self, fixed_slice_3D, moving_HR_volume_3D, display_registration_info=0):
 
         ## Blur 
-        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( fixed_slice_3D, moving_HR_volume_3D )
+        # Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( fixed_slice_3D, moving_HR_volume_3D )
 
-        self._gaussian_yvv.SetSigmaArray(np.sqrt(np.diagonal(Cov_HR_coord)))
-        self._gaussian_yvv.Update()
-        moving_3D_itk = self._gaussian_yvv.GetOutput()
-        moving_3D_itk.DisconnectPipeline()
+        # self._gaussian_yvv.SetSigmaArray(np.sqrt(np.diagonal(Cov_HR_coord)))
+        # self._gaussian_yvv.Update()
+        # moving_3D_itk = self._gaussian_yvv.GetOutput()
+        # moving_3D_itk.DisconnectPipeline()
 
         # moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
         moving_3D_sitk = moving_HR_volume_3D.sitk

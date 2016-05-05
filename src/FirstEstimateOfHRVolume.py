@@ -317,7 +317,7 @@ class FirstEstimateOfHRVolume:
         similarity metric settings
         """
         ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
-        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
+        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
         
         ## Use negative normalized cross correlation image metric
         # registration_method.SetMetricAsCorrelation()
@@ -329,7 +329,7 @@ class FirstEstimateOfHRVolume:
         # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=3)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
-        registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)
+        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=200)
 
         ## Use negative means squares image metric
         # registration_method.SetMetricAsMeanSquares()

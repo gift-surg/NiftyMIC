@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # reconstruction_manager.run_hierarchical_alignment_of_slices(interleave=2, display_info=0)
 
     ## Run two step reconstruction alignment approach
-    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=3, display_info=0)
+    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=5, display_info=0)
 
     ## Write results
     # reconstruction_manager.write_resampled_stacks_after_2D_in_plane_registration()
