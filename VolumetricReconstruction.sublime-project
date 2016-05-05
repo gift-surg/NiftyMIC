@@ -1,0 +1,34 @@
+{
+	"build_systems":
+	[
+		{
+			"cmd":
+			[
+				"python",
+				"-u",
+				"main.py"
+			],
+			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
+			"name": "VolumetricReconstruction",
+			"selector": "source.python"
+		}
+	],
+	"folders":
+	[
+		{
+			"path": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src"
+		},
+		{
+			"path": "backups"
+		},
+		{
+			"path": "test"
+		},
+		{
+			"path": "GettingStarted"
+		},
+		{
+			"path": "studies"
+		}
+	]
+}
