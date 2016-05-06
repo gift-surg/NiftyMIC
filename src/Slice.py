@@ -46,7 +46,7 @@ class Slice:
             slice.sitk_mask = slice._generate_binary_mask()
             slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
 
-        slice._sitk_upsampled = None
+        # slice._sitk_upsampled = None
 
         ## HACK (for current Slice-to-Volume Registration)
         #  See class SliceToVolumeRegistration
@@ -102,7 +102,7 @@ class Slice:
             slice.sitk_mask = slice._generate_binary_mask()
             slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
 
-        slice._sitk_upsampled = None
+        # slice._sitk_upsampled = None
 
         ## Store current affine transform of image
         slice._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(slice.sitk)
@@ -131,6 +131,8 @@ class Slice:
         
         slice._filename = "copy_" + slice_to_copy.get_filename()
         slice._slice_number = slice_to_copy.get_slice_number()
+
+        slice._registration_history_sitk = slice_to_copy.get_registration_history()
 
         return slice
 
@@ -168,19 +170,19 @@ class Slice:
 
         ## HACK (for current slice-to-volume registration)
         #  See class SliceToVolumeRegistration
-        if self._sitk_upsampled is not None:
-            self._sitk_upsampled.SetOrigin(origin)
-            self._sitk_upsampled.SetDirection(direction)
+        # if self._sitk_upsampled is not None:
+        #     self._sitk_upsampled.SetOrigin(origin)
+        #     self._sitk_upsampled.SetDirection(direction)
 
-            self._itk_upsampled.SetOrigin(origin)
-            self._itk_upsampled.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+        #     self._itk_upsampled.SetOrigin(origin)
+        #     self._itk_upsampled.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
 
-            if self.sitk_mask is not None:
-                self._sitk_mask_upsampled.SetOrigin(origin)
-                self._sitk_mask_upsampled.SetDirection(direction)
+        #     if self.sitk_mask is not None:
+        #         self._sitk_mask_upsampled.SetOrigin(origin)
+        #         self._sitk_mask_upsampled.SetDirection(direction)
 
-                self._itk_mask_upsampled.SetOrigin(origin)
-                self._itk_mask_upsampled.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+        #         self._itk_mask_upsampled.SetOrigin(origin)
+        #         self._itk_mask_upsampled.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
 
 
     ## Get filename of slice, e.g. name of parent stack

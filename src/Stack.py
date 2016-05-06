@@ -141,13 +141,16 @@ class Stack:
     #  \param[in] image_sitk_mask associated mask of stack, sitk.Image object (optional)
     #  \return Stack object without slice information
     @classmethod
-    def from_sitk_image(cls, image_sitk, name, image_sitk_mask=None):
+    def from_sitk_image(cls, image_sitk, name=None, image_sitk_mask=None):
         stack = cls()
         
         stack.sitk = sitk.Image(image_sitk)
         stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
 
-        stack._filename = name
+        if name is None:
+            stack._filename = "unknown"
+        else:
+            stack._filename = name
         stack._dir = None
 
         ## Append masks (if provided)

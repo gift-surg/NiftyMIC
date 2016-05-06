@@ -186,31 +186,25 @@ class SliceAcqusition(unittest.TestCase):
         #  transforms indicating the correct acquisition of the slice
         #  within the volume
         stacks_simulated = slice_acquistion.get_simulated_stacks()
-        affine_transforms_all_stacks = slice_acquistion.get_ground_truth_affine_transforms()
+        affine_transforms_ground_truth = slice_acquistion.get_ground_truth_affine_transforms()
 
         for i in range(0, len(stacks_simulated)):
-            stack = stacks_simulated[i]
-            affine_transforms = affine_transforms_all_stacks[i]
+            stack = st.Stack.from_stack(stacks_simulated[i])
 
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
 
             for j in range(0, N_slices):
                 # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
-                slice_sitk = sitk.Image(slices[j].sitk)
-
-                origin_sitk = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transforms[j], slice_sitk)
-                direction_sitk = sitkh.get_sitk_image_direction_from_sitk_affine_transform(affine_transforms[j], slice_sitk)
-
-                slice_sitk.SetOrigin(origin_sitk)
-                slice_sitk.SetDirection(direction_sitk)
+                slice = slices[j]
+                # slice.update_affine_transform(affine_transforms_ground_truth[i][j])
 
                 HR_volume_resampled_slice_sitk = sitk.Resample(
-                    HR_volume.sitk, slice_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_sitk.GetPixelIDValue()
+                    HR_volume.sitk, slice.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice.sitk.GetPixelIDValue()
                     )
 
                 self.assertEqual(np.round(
-                    np.linalg.norm(sitk.GetArrayFromImage(slice_sitk - HR_volume_resampled_slice_sitk))
+                    np.linalg.norm(sitk.GetArrayFromImage(slice.sitk - HR_volume_resampled_slice_sitk))
                     , decimals = self.accuracy), 0)
 
 
@@ -235,31 +229,25 @@ class SliceAcqusition(unittest.TestCase):
         #  transforms indicating the correct acquisition of the slice
         #  within the volume
         stacks_simulated = slice_acquistion.get_simulated_stacks()
-        affine_transforms_all_stacks = slice_acquistion.get_ground_truth_affine_transforms()
+        affine_transforms_ground_truth = slice_acquistion.get_ground_truth_affine_transforms()
 
         for i in range(0, len(stacks_simulated)):
             stack = stacks_simulated[i]
-            affine_transforms = affine_transforms_all_stacks[i]
 
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
 
             for j in range(0, N_slices):
                 # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
-                slice_sitk = sitk.Image(slices[j].sitk)
-
-                origin_sitk = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transforms[j], slice_sitk)
-                direction_sitk = sitkh.get_sitk_image_direction_from_sitk_affine_transform(affine_transforms[j], slice_sitk)
-
-                slice_sitk.SetOrigin(origin_sitk)
-                slice_sitk.SetDirection(direction_sitk)
+                slice = slices[j]
+                slice.update_affine_transform(affine_transforms_ground_truth[i][j])
 
                 HR_volume_resampled_slice_sitk = sitk.Resample(
-                    HR_volume.sitk, slice_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_sitk.GetPixelIDValue()
+                    HR_volume.sitk, slice.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice.sitk.GetPixelIDValue()
                     )
 
                 self.assertEqual(np.round(
-                    np.linalg.norm(sitk.GetArrayFromImage(slice_sitk - HR_volume_resampled_slice_sitk))
+                    np.linalg.norm(sitk.GetArrayFromImage(slice.sitk - HR_volume_resampled_slice_sitk))
                     , decimals = self.accuracy), 0)
 
 

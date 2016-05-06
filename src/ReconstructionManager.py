@@ -423,6 +423,15 @@ class ReconstructionManager:
         return self._stack_manager.get_stacks()
 
 
+    ## Get affine transforms of each slice gathered during the entire
+    #  evolution of the reconstruction algorithm
+    #  \return list of list of list of sitk.AffineTransform objects
+    #  \example transform[i][j][k] refers to the k-th estimated position,
+    #       i.e. affine transform, of slice j of stack i
+    def get_slice_affine_transforms_of_stacks(self):
+        return self._stack_manager.get_slice_affine_transforms_of_stacks()
+
+
     ## Set current estimate of HR volume by hand
     #  \param[in] HR_volume current estimate of HR volume, instance of Stack
     def set_HR_volume(self, HR_volume):

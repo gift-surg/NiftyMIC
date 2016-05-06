@@ -73,6 +73,36 @@ class StackManager:
         return self._N_stacks
 
 
+    ## Get affine transforms of each slice gathered during the entire
+    #  evolution of the reconstruction algorithm
+    #  \return list of list of list of sitk.AffineTransform objects
+    #  \example transform[i][j][k] refers to the k-th estimated position,
+    #       i.e. affine transform, of slice j of stack i
+    def get_slice_affine_transforms_of_stacks(self):
+        affine_transforms = [None]*self._N_stacks
+
+        for i in range(0, self._N_stacks):
+            stack = self._stacks[i]
+            slices = stack.get_slices()
+            N_slices = stack.get_number_of_slices()
+
+            affine_transforms[i] = [None]*N_slices
+            
+            for j in range(0, N_slices):
+                slice = slices[j]
+                slice_affine_transforms = slice.get_registration_history()
+
+                N_cycles = len(slice_affine_transforms)
+
+                affine_transforms[i][j] = [None]*N_cycles
+
+                for k in range(0, N_cycles):
+                    affine_transforms[i][j][k] = slice_affine_transforms[k]
+
+
+        return affine_transforms
+        
+
     ## Write all slices within all stacks (with current spatial transformations)
     #  to specified directory
     #  \param[in] directory directory where slices are written
@@ -87,4 +117,14 @@ class StackManager:
                 slices[j].write(directory=directory)
 
         print("All aligned slices successfully written to directory %s" % directory)
+
+
+    ## Write all stacks to specified output directory
+    #  to specified directory
+    #  \param[in] directory directory where slices are written
+    def write_stacks(self, directory):
+
+        ## Write all slices
+        for i in range(0, self._N_stacks):
+            slices = self._stacks[i].write(directory=directory, filename=str(i), write_mask=True, write_slices=False)
 
