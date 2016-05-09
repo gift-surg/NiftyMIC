@@ -176,8 +176,9 @@ class ReconstructionManager:
         sigma_array = np.sqrt(cov_matrix.diagonal())
         print ("sigma_array = " + str(sigma_array))
 
-        # sigma = np.mean(sigma_array)
-        sigma = sigma_array[2]
+        # sigma = sigma_array[2]
+        # sigma = np.mean(sigma_array[1:])
+        sigma = sigma_array[1] + 0.5*(sigma_array[2]-sigma_array[1])
 
         first_estimate_of_HR_volume.set_reconstruction_approach(recon_approach) #"SDA" or "Average"
         first_estimate_of_HR_volume.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
@@ -246,7 +247,8 @@ class ReconstructionManager:
         sigma_array = np.sqrt(cov_matrix.diagonal())
         # print ("sigma_array = %s",%(sigma_array))
 
-        sigma = sigma_array[2]
+        # sigma = sigma_array[2]
+        sigma = np.mean(sigma_array[1:])
 
         ## Update HR estimate after hierarchical alignment
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
@@ -301,7 +303,8 @@ class ReconstructionManager:
             print ("sigma_array = " + str(sigma_array))
 
             # sigma = sigma_array[2]
-            sigma = 1
+            sigma = sigma_array[1] + 0.5*(sigma_array[2]-sigma_array[1])
+            # sigma = 1.1
             volume_reconstruction.set_reconstruction_approach(recon_approach)
             volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
             volume_reconstruction.set_SDA_sigma(sigma)
@@ -329,7 +332,7 @@ class ReconstructionManager:
 
             ## Configure chosen reconstruction approach            
             if recon_approach in ["SDA"]:
-                sigma = np.max((0.7,sigma-0.05))
+                sigma = np.max((sigma_array[1:].mean(),sigma-0.02))
                 volume_reconstruction.set_SDA_sigma(sigma)
                 
                 filename += "_SDA_sigma" + str(np.round(sigma, decimals=2))

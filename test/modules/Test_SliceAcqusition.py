@@ -211,7 +211,7 @@ class SliceAcqusition(unittest.TestCase):
     ## Test whether the ground truth affine transforms set during the
     #  simulation correspond to the actually acquired positions within the 
     #  sliced volume whereby motion is applied to the HR volume
-    def test_ground_truth_affine_transforms_with_motion(self):
+    def test_ground_truth_affine_transforms_with_motion_NearestNeighbor(self):
 
         filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
         HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume)
@@ -249,5 +249,80 @@ class SliceAcqusition(unittest.TestCase):
                 self.assertEqual(np.round(
                     np.linalg.norm(sitk.GetArrayFromImage(slice.sitk - HR_volume_resampled_slice_sitk))
                     , decimals = self.accuracy), 0)
+
+
+    ## Test whether the ground truth affine transforms set during the
+    #  simulation correspond to the actually acquired positions within the 
+    #  sliced volume whereby motion is applied to the HR volume
+    def test_ground_truth_affine_transforms_with_motion_OrientedGaussian(self):
+
+        filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
+        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume)
+
+        ## Run simulation for Oriented Gaussian interpolation, hence more "realistic" case
+        slice_acquistion = sa.SliceAcqusition(HR_volume)
+        slice_acquistion.set_interpolator_type("OrientedGaussian")
+        # slice_acquistion.set_interpolator_type("NearestNeighbor")
+        # slice_acquistion.set_interpolator_type("Linear")
+        slice_acquistion.set_motion_type("Random")
+        # slice_acquistion.set_motion_type("NoMotion")
+
+        slice_acquistion.run_simulation_view_1()
+        slice_acquistion.run_simulation_view_2()
+        slice_acquistion.run_simulation_view_3()
+
+        ## Get simulated stack of slices + corresponding ground truth affine
+        #  transforms indicating the correct acquisition of the slice
+        #  within the volume
+        stacks_simulated = slice_acquistion.get_simulated_stacks()
+        affine_transforms_ground_truth = slice_acquistion.get_ground_truth_affine_transforms()
+
+        resampler = itk.ResampleImageFilter[image_type, image_type].New()
+        resampler.SetDefaultPixelValue( 0.0 )
+        resampler.SetInput( HR_volume.itk )
+
+        interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
+        alpha_cut = 3
+        interpolator.SetAlpha(alpha_cut)
+        # interpolator = itk.LinearInterpolateImageFunction[image_type, pixel_type].New()
+        # interpolator = itk.NearestNeighborInterpolateImageFunction[image_type, pixel_type].New()
+        resampler.SetInterpolator(interpolator)
+
+        PSF = psf.PSF()
+
+        for i in range(0, len(stacks_simulated)):
+            stack = stacks_simulated[i]
+
+            slices = stack.get_slices()
+            N_slices = stack.get_number_of_slices()
+
+            for j in range(0, N_slices):
+                # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
+                slice = slices[j]
+                slice.update_affine_transform(affine_transforms_ground_truth[i][j])
+
+                ## Get covariance based on oblique PSF
+                Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(slice, HR_volume)
+
+                ## Update resampler
+                interpolator.SetCovariance(Cov_HR_coord.flatten())
+                resampler.SetOutputParametersFromImage( slice.itk )
+                resampler.UpdateLargestPossibleRegion()
+                resampler.Update()
+
+                HR_volume_resampled_slice_itk = resampler.GetOutput()
+                HR_volume_resampled_slice_sitk = sitkh.convert_itk_to_sitk_image(HR_volume_resampled_slice_itk)
+
+                # HR_volume_resampled_slice_sitk = sitk.Resample(
+                #     HR_volume.sitk, slice.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice.sitk.GetPixelIDValue()
+                #     )
+
+                norm_diff = np.linalg.norm(sitk.GetArrayFromImage(slice.sitk - HR_volume_resampled_slice_sitk))
+                try:
+                    self.assertEqual(np.round(norm_diff, decimals = self.accuracy), 0)
+                except:
+                    print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
+
+                    print norm_diff
 
 

@@ -47,12 +47,16 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
 #  The information of the image is required to extract spacing information and 
 #  associated image dimension
 #  \param[in] affine_transform_sitk sitk.AffineTransform instance
-#  \param[in] image_sitk image as sitk.Image object sought to be updated
+#  \param[in] image_or_spacing_sitk provide entire image as sitk object or spacing directly
 #  \return image direction which can be used to update the sitk.Image via
 #          image_sitk.SetDirection(direction)
-def get_sitk_image_direction_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
-    dim = len(image_sitk.GetSize())
-    spacing_sitk = np.array(image_sitk.GetSpacing())
+def get_sitk_image_direction_from_sitk_affine_transform(affine_transform_sitk, image_or_spacing_sitk):
+    dim = affine_transform_sitk.GetDimension()
+    try:
+        spacing_sitk = np.array(image_or_spacing_sitk.GetSpacing())
+    except:
+        spacing_sitk = np.array(image_or_spacing_sitk)
+
     S_inv_sitk = np.diag(1/spacing_sitk)
 
     A = np.array(affine_transform_sitk.GetMatrix()).reshape(dim,dim)
@@ -113,10 +117,15 @@ def get_sitk_affine_transform_from_sitk_image(image_sitk):
 #  associated image dimension
 #  \param[in] direction_sitk direction obtained via GetDirection() of sitk.Image or similar
 #  \param[in] origin_sitk origin obtained via GetOrigin() of sitk.Image or similar
+#  \param[in] image_or_spacing_sitk provide entire image as sitk object or spacing directly
 #  \return Affine transform as sitk.AffineTransform object
-def get_sitk_affine_transform_from_sitk_direction_and_origin(direction_sitk, origin_sitk, image_sitk):
-    dim = image_sitk.GetDimension()
-    spacing_sitk = np.array(image_sitk.GetSpacing())
+def get_sitk_affine_transform_from_sitk_direction_and_origin(direction_sitk, origin_sitk, image_or_spacing_sitk):
+    dim = len(origin_sitk)
+    try:
+        spacing_sitk = np.array(image_or_spacing_sitk.GetSpacing())
+    except:
+        spacing_sitk = np.array(image_or_spacing_sitk)
+
     S_sitk = np.diag(spacing_sitk)
 
     direction_matrix_sitk = np.array(direction_sitk).reshape(dim,dim)
