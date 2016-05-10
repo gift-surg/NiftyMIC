@@ -63,10 +63,14 @@ class Slice:
         ## Store current affine transform of image
         slice._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(slice.sitk)
 
-        ## Prepare history of spatial transformations in the course of the 
-        #  registration/reconstruction process
-        slice._registration_history_sitk = []
-        slice._registration_history_sitk.append(slice._affine_transform_sitk)
+        ## Prepare history of affine transforms, i.e. encoded spatial 
+        #  position+orientation of slice, and rigid motion estimates of slice 
+        #  obtained in the course of the registration/reconstruction process
+        slice._history_affine_transforms = []
+        slice._history_affine_transforms.append(slice._affine_transform_sitk)
+
+        slice._history_rigid_motion_estimates = []
+        slice._history_rigid_motion_estimates.append(sitk.Euler3DTransform())
 
         return slice
 
@@ -107,10 +111,14 @@ class Slice:
         ## Store current affine transform of image
         slice._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(slice.sitk)
 
-        ## Prepare history of spatial transformations in the course of the 
-        #  registration/reconstruction process
-        slice._registration_history_sitk = []
-        slice._registration_history_sitk.append(slice._affine_transform_sitk)
+        ## Prepare history of affine transforms, i.e. encoded spatial 
+        #  position+orientation of slice, and rigid motion estimates of slice 
+        #  obtained in the course of the registration/reconstruction process
+        slice._history_affine_transforms = []
+        slice._history_affine_transforms.append(slice._affine_transform_sitk)
+
+        slice._history_rigid_motion_estimates = []
+        slice._history_rigid_motion_estimates.append(sitk.Euler3DTransform())
 
         return slice
 
@@ -132,57 +140,26 @@ class Slice:
         slice._filename = "copy_" + slice_to_copy.get_filename()
         slice._slice_number = slice_to_copy.get_slice_number()
 
-        slice._registration_history_sitk = slice_to_copy.get_registration_history()
+        slice._history_affine_transforms, slice._history_rigid_motion_estimates = slice_to_copy.get_registration_history()
 
         return slice
 
 
-    ## Update slice with new affine transform, specifying updated spatial
-    #  position of slice in physical space. The transform is obtained via
-    #  slice-to-volume registration step, e.g.
-    #  \param[in] affine_transform_sitk affine transform as sitk-object
-    def update_affine_transform(self, affine_transform_sitk):
+    ## Update rigid motion estimate of slice and update its position in
+    #  physical space accordingly.
+    #  \param[in] rigid_transform_sitk rigid transform as sitk object
+    #  \post origin and direction of slice gets updated based on rigid transform
+    def update_rigid_motion_estimate(self, rigid_transform_sitk):
 
-        ## Ensure correct object type
-        self._affine_transform_sitk = sitk.AffineTransform(affine_transform_sitk)
+        ## Update rigid motion estimate
+        current_rigid_motion_estimate = sitkh.get_composited_sitk_affine_transform(rigid_transform_sitk, self._history_rigid_motion_estimates[-1])
+        self._history_rigid_motion_estimates.append(current_rigid_motion_estimate)
 
-        ## Append transform to registration history
-        self._registration_history_sitk.append(affine_transform_sitk)
+        ## New affine transform of slice after rigid motion correction
+        affine_transform = sitkh.get_composited_sitk_affine_transform(rigid_transform_sitk, self._affine_transform_sitk)
 
-        ## Get origin and direction of transformed 3D slice given the new spatial transform
-        origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
-        direction = sitkh.get_sitk_image_direction_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
-
-        ## Update image objects
-        self.sitk.SetOrigin(origin)
-        self.sitk.SetDirection(direction)
-
-        self.itk.SetOrigin(origin)
-        self.itk.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
-
-        ## Update image mask objects
-        if self.sitk_mask is not None:
-            self.sitk_mask.SetOrigin(origin)
-            self.sitk_mask.SetDirection(direction)
-
-            self.itk_mask.SetOrigin(origin)
-            self.itk_mask.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
-
-        ## HACK (for current slice-to-volume registration)
-        #  See class SliceToVolumeRegistration
-        # if self._sitk_upsampled is not None:
-        #     self._sitk_upsampled.SetOrigin(origin)
-        #     self._sitk_upsampled.SetDirection(direction)
-
-        #     self._itk_upsampled.SetOrigin(origin)
-        #     self._itk_upsampled.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
-
-        #     if self.sitk_mask is not None:
-        #         self._sitk_mask_upsampled.SetOrigin(origin)
-        #         self._sitk_mask_upsampled.SetDirection(direction)
-
-        #         self._itk_mask_upsampled.SetOrigin(origin)
-        #         self._itk_mask_upsampled.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+        ## Update affine transform of slice, i.e. change image origin and direction in physical space
+        self._update_affine_transform(affine_transform)
 
 
     ## Get filename of slice, e.g. name of parent stack
@@ -210,11 +187,12 @@ class Slice:
         return self._affine_transform_sitk
 
 
-    ## Get history of registrations the slice underwent in the course of
-    #  registration/reconstruction steps
-    #  \return list of sitk.AffineTransform objects
+    ## Get history history of affine transforms, i.e. encoded spatial 
+    #  position+orientation of slice, and rigid motion estimates of slice 
+    #  obtained in the course of the registration/reconstruction process
+    #  \return list of sitk.AffineTransform and sitk.Euler3DTransform objects
     def get_registration_history(self):
-        return self._registration_history_sitk
+        return self._history_affine_transforms, self._history_rigid_motion_estimates
 
 
     ## Display slice with external viewer (ITK-Snap)
@@ -273,37 +251,69 @@ class Slice:
         # print("Transformation of slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
 
 
-    ## Upsample slices in k-direction to in-plane resolution.
-    #  \param[in] slice_sitk slice as sitk.Image object to be upsampled
-    #  \return upsampled slice as sitk.Image object
-    #  \warning only used for Slice-to-Volume Registration and shall me removed at some point
-    def _get_upsampled_isotropic_resolution_slice(self, slice_sitk):
+    ## Update slice with new affine transform, specifying updated spatial
+    #  position of slice in physical space. The transform is obtained via
+    #  slice-to-volume registration step, e.g.
+    #  \param[in] affine_transform_sitk affine transform as sitk-object
+    def _update_affine_transform(self, affine_transform_sitk):
+
+        ## Ensure correct object type
+        self._affine_transform_sitk = sitk.AffineTransform(affine_transform_sitk)
+
+        ## Append transform to registration history
+        self._history_affine_transforms.append(affine_transform_sitk)
+
+        ## Get origin and direction of transformed 3D slice given the new spatial transform
+        origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
+        direction = sitkh.get_sitk_image_direction_from_sitk_affine_transform(affine_transform_sitk, self.sitk)
+
+        ## Update image objects
+        self.sitk.SetOrigin(origin)
+        self.sitk.SetDirection(direction)
+
+        self.itk.SetOrigin(origin)
+        self.itk.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+
+        ## Update image mask objects
+        if self.sitk_mask is not None:
+            self.sitk_mask.SetOrigin(origin)
+            self.sitk_mask.SetDirection(direction)
+
+            self.itk_mask.SetOrigin(origin)
+            self.itk_mask.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+            
+
+    # ## Upsample slices in k-direction to in-plane resolution.
+    # #  \param[in] slice_sitk slice as sitk.Image object to be upsampled
+    # #  \return upsampled slice as sitk.Image object
+    # #  \warning only used for Slice-to-Volume Registration and shall me removed at some point
+    # def _get_upsampled_isotropic_resolution_slice(self, slice_sitk):
     
-        ## Fetch info used for upsampling
-        spacing = np.array(slice_sitk.GetSpacing())
-        size = np.array(slice_sitk.GetSize())
+    #     ## Fetch info used for upsampling
+    #     spacing = np.array(slice_sitk.GetSpacing())
+    #     size = np.array(slice_sitk.GetSize())
 
-        ## Set dimension of each slice in k-direction accordingly
-        size[2] = np.round(spacing[2]/spacing[0])
+    #     ## Set dimension of each slice in k-direction accordingly
+    #     size[2] = np.round(spacing[2]/spacing[0])
 
-        ## Update spacing in k-direction to be equal to in-plane spacing
-        spacing[2] = spacing[0]
+    #     ## Update spacing in k-direction to be equal to in-plane spacing
+    #     spacing[2] = spacing[0]
 
-        ## Upsample slice to isotropic resolution
-        default_pixel_value = 0
+    #     ## Upsample slice to isotropic resolution
+    #     default_pixel_value = 0
 
-        slice_upsampled_sitk = sitk.Resample(
-            slice_sitk, 
-            size, 
-            sitk.Euler3DTransform(), 
-            sitk.sitkNearestNeighbor, 
-            slice_sitk.GetOrigin(), 
-            spacing, 
-            slice_sitk.GetDirection(), 
-            default_pixel_value,
-            slice_sitk.GetPixelIDValue())
+    #     slice_upsampled_sitk = sitk.Resample(
+    #         slice_sitk, 
+    #         size, 
+    #         sitk.Euler3DTransform(), 
+    #         sitk.sitkNearestNeighbor, 
+    #         slice_sitk.GetOrigin(), 
+    #         spacing, 
+    #         slice_sitk.GetDirection(), 
+    #         default_pixel_value,
+    #         slice_sitk.GetPixelIDValue())
 
-        return slice_upsampled_sitk
+    #     return slice_upsampled_sitk
 
 
     ## Create a binary mask consisting of ones

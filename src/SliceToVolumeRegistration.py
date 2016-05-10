@@ -84,14 +84,12 @@ class SliceToVolumeRegistration:
                     sitkh.print_rigid_transformation(rigid_transform)
 
                     continue
-                ## Trafo from physical origin to origin of slice j
-                slice_trafo = slice.get_affine_transform()
 
-                ## New affine transform of slice j with respect to rigid registration
-                affine_transform = sitkh.get_composited_sitk_affine_transform(rigid_transform, slice_trafo)
+                ## Update rigid motion estimate for current slice and update its 
+                #  position in physical space accordingly
+                slice.update_rigid_motion_estimate(rigid_transform)
 
-                ## Update affine transform of slice j
-                slice.update_affine_transform(affine_transform)
+                
 
 
     ## Rigid registration routine based on SimpleITK

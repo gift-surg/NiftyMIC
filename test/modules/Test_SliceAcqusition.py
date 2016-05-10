@@ -186,7 +186,7 @@ class SliceAcqusition(unittest.TestCase):
         #  transforms indicating the correct acquisition of the slice
         #  within the volume
         stacks_simulated = slice_acquistion.get_simulated_stacks()
-        affine_transforms_ground_truth = slice_acquistion.get_ground_truth_affine_transforms()
+        affine_transforms_ground_truth, rigid_motion_transforms_ground_truth = slice_acquistion.get_ground_truth_data()
 
         for i in range(0, len(stacks_simulated)):
             stack = st.Stack.from_stack(stacks_simulated[i])
@@ -197,7 +197,7 @@ class SliceAcqusition(unittest.TestCase):
             for j in range(0, N_slices):
                 # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
                 slice = slices[j]
-                # slice.update_affine_transform(affine_transforms_ground_truth[i][j])
+                # slice.update_rigid_motion_estimate(rigid_motion_transforms_ground_truth[i][j])
 
                 HR_volume_resampled_slice_sitk = sitk.Resample(
                     HR_volume.sitk, slice.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice.sitk.GetPixelIDValue()
@@ -229,7 +229,7 @@ class SliceAcqusition(unittest.TestCase):
         #  transforms indicating the correct acquisition of the slice
         #  within the volume
         stacks_simulated = slice_acquistion.get_simulated_stacks()
-        affine_transforms_ground_truth = slice_acquistion.get_ground_truth_affine_transforms()
+        affine_transforms_ground_truth, rigid_motion_transforms_ground_truth = slice_acquistion.get_ground_truth_data()
 
         for i in range(0, len(stacks_simulated)):
             stack = stacks_simulated[i]
@@ -240,7 +240,7 @@ class SliceAcqusition(unittest.TestCase):
             for j in range(0, N_slices):
                 # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
                 slice = slices[j]
-                slice.update_affine_transform(affine_transforms_ground_truth[i][j])
+                slice.update_rigid_motion_estimate(rigid_motion_transforms_ground_truth[i][j])
 
                 HR_volume_resampled_slice_sitk = sitk.Resample(
                     HR_volume.sitk, slice.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice.sitk.GetPixelIDValue()
@@ -275,7 +275,7 @@ class SliceAcqusition(unittest.TestCase):
         #  transforms indicating the correct acquisition of the slice
         #  within the volume
         stacks_simulated = slice_acquistion.get_simulated_stacks()
-        affine_transforms_ground_truth = slice_acquistion.get_ground_truth_affine_transforms()
+        affine_transforms_ground_truth, rigid_motion_transforms_ground_truth = slice_acquistion.get_ground_truth_data()
 
         resampler = itk.ResampleImageFilter[image_type, image_type].New()
         resampler.SetDefaultPixelValue( 0.0 )
@@ -299,7 +299,7 @@ class SliceAcqusition(unittest.TestCase):
             for j in range(0, N_slices):
                 # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
                 slice = slices[j]
-                slice.update_affine_transform(affine_transforms_ground_truth[i][j])
+                slice.update_rigid_motion_estimate(rigid_motion_transforms_ground_truth[i][j])
 
                 ## Get covariance based on oblique PSF
                 Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(slice, HR_volume)

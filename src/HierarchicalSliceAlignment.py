@@ -206,14 +206,10 @@ class HierarchicalSliceAlignment:
 
         ## Update transforms within group of slices        
         for i in ind:
-            slice = slices[i]
 
-            ## Compute new affine transform for slice
-            slice_transform = slice.get_affine_transform()
-            affine_transform = sitkh.get_composited_sitk_affine_transform(transform, slice_transform)
-
-            ## Update affine transform of slice
-            slice.update_affine_transform(affine_transform)
+            ## Update rigid motion estimate for current slice and update its 
+            #  position in physical space accordingly
+            slices[i].update_rigid_motion_estimate(transform)
 
 
     ## Compute average of all registered stacks

@@ -138,13 +138,12 @@ if __name__ == '__main__':
     # reconstruction_manager.read_input_stacks_from_slice_filenames("../results/slices/", filenames, suffix_mask="_mask")
     # reconstruction_manager.set_HR_volume(st.Stack.from_filename(dir_output, "recon_fetal_neck_mass_brain_0_SRR_TK0"))
 
-
     ## Compute first estimate of HR volume
     reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
     reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks(display_info=0)
     
     ## Run hierarchical slice alignment strategy
-    # reconstruction_manager.run_hierarchical_alignment_of_slices(interleave=2, display_info=0)
+    reconstruction_manager.run_hierarchical_alignment_of_slices(interleave=2, display_info=0)
 
     ## Run two step reconstruction alignment approach
     reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=5, display_info=0)
