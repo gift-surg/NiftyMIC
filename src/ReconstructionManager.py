@@ -31,7 +31,8 @@ class ReconstructionManager:
 
         self._dir_results = dir_output
         self._HR_volume_filename = "recon_" + recon_name
-        
+        self._target_stack_number = target_stack_number
+
         ## Directory of input data used for reconstruction algorithm
         self._dir_results_input_data = self._dir_results + "input_data/"
 
@@ -39,7 +40,7 @@ class ReconstructionManager:
         self._dir_results_slices = self._dir_results + "slices/"
 
         ## Optional: Directory of (intermediate) segmentation propagation data:
-        self._dir_results_input_data_processed = self._dir_results + "input_data_processed/"
+        self._dir_results_input_data_processed = self._dir_results + "input_data_preprocessed/"
 
         ## Optional: Directory after all DP steps ready for reconstruction algorthm:
         # self._dir_results_input_data_dp_final = self._dir_results + "input_data_dp_final/"
@@ -56,15 +57,13 @@ class ReconstructionManager:
         # os.system("mkdir -p " + self._dir_results_input_data)
 
         ## Variables containing the respective classes
-        self._data_preprocessing = dp.DataPreprocessing(self._dir_results_input_data, self._dir_results_input_data_processed, target_stack_number)
+        self._data_preprocessing = None
         self._in_plane_rigid_registration = None
         self._stack_manager = None
         self._HR_volume = None
 
         ## Pre-defined values
         self._flag_register_stacks_before_initial_volume_estimate = False
-
-        self._target_stack_number = target_stack_number
 
 
     ## Read input stacks stored from given directory
@@ -96,7 +95,9 @@ class ReconstructionManager:
         print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
 
         ## Data preprocessing:
-        self._data_preprocessing.run_preprocessing(filenames, suffix_mask)
+        self._data_preprocessing = dp.DataPreprocessing.from_filenames(dir_input=self._dir_results_input_data, filenames=filenames, suffix_mask=suffix_mask)
+        self._data_preprocessing.run_preprocessing(target_stack_number=self._target_stack_number, boundary=0)
+        self._data_preprocessing.write_preprocessed_data(dir_output=self._dir_results_input_data_processed)
 
         ## Read stacks:
         self._stack_manager.read_input_stacks(self._dir_results_input_data_processed, filenames, suffix_mask)
@@ -119,7 +120,9 @@ class ReconstructionManager:
         print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
 
         ## Data preprocessing:
-        self._data_preprocessing.run_preprocessing(filenames, suffix_mask)
+        self._data_preprocessing = dp.DataPreprocessing.from_filenames(dir_input=self._dir_results_input_data, filenames=filenames, suffix_mask=suffix_mask)
+        self._data_preprocessing.run_preprocessing(target_stack_number=self._target_stack_number, boundary=0)
+        self._data_preprocessing.write_preprocessed_data(dir_output=self._dir_results_input_data_processed)
 
         ## Read stacks as bundle of slices:
         self._stack_manager.read_input_stacks(self._dir_results_input_data_processed, filenames, suffix_mask)
@@ -145,7 +148,7 @@ class ReconstructionManager:
         print(str(N_stacks) + " stacks as bundle of slices were copied to directory " + self._dir_results_input_data)
 
         ## Data preprocessing:
-        # self._data_preprocessing.run_preprocessing(filenames, suffix_mask)
+        # self._data_preprocessing.run_preprocessing_from_filenames(dir_input= self._dir_results_input_data, filenames=filenames, suffix_mask=suffix_mask, target_stack_number=self._target_stack_number)
 
         ## Read stacks as bundle of slices:
         self._stack_manager.read_input_stacks_from_slices(self._dir_results_input_data, file_prefixes_to_copy, suffix_mask)

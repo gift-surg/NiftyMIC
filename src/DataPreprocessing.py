@@ -14,62 +14,139 @@ import numpy as np
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
-# import Stack as st
-# import Slice as sl
+import Stack as st
 
 
 ## Class implementing data preprocessing steps
-#  -# Crop stacks to region marked by mask
 class DataPreprocessing:
 
     ## Constructor
+    def __init__(self):
+
+        ## Define dictionary for possible types of data preprocessing
+        self._run_preprocessing = {
+            "AllMasksProvided"      : self._run_preprocessing_all_masks_provided,
+            "NoMaskProvided"        : self._run_preprocessing_no_mask_provided,
+            "NotAllMasksProvided"   : self._run_preprocessing_not_all_masks_provided
+        }        
+        self._preprocessing_approach = "NoMaskProvided" # default
+
+
+    ## Initialize data preprocessing class based on filenames, i.e. data used
+    #  is going to be read from the hard disk. 
     #  \param[in] dir_input directory where data is stored for preprocessing
-    #  \param[in] dir_output directory in which preprocessed data gets written
-    #  \param[in] target_stack_number in case only one mask is given (optional)
-    def __init__(self, dir_input, dir_output, target_stack_number=0):
-
-        self._dir_input = dir_input
-        self._dir_output = dir_output
-        self._target_stack_number = target_stack_number
-
-
-    ## Perform data preprocessing step
     #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
-    def run_preprocessing(self, filenames, suffix_mask):
-        
+    @classmethod
+    def from_filenames(cls, dir_input, filenames, suffix_mask):
+
+        self = cls()
+
         ## Number of stacks to be read
-        N_stacks = len(filenames)
+        self._N_stacks = len(filenames)
+
+        ## Read stacks and their masks (if no mask is found a binary image is created automatically)
+        self._stacks = [None]*self._N_stacks
+
+        for i in range(0, self._N_stacks):
+            self._stacks[i] = st.Stack.from_filename(dir_input, filenames[i], suffix_mask)
+
+        print("%s stacks were read for data preprocessing." %(self._N_stacks))
+
+        ## Prepare list for preprocessed stacks
+        self._stacks_preprocessed = [None]*self._N_stacks
 
         ## Number of masked stacks provided
-        filenames_masks = self._get_mask_filenames_in_directory(suffix_mask)
+        filenames_masks = self._get_mask_filenames_in_directory(dir_input, suffix_mask)
         number_of_masks = len(filenames_masks)
 
         ## Each stack is provided a mask
-        if number_of_masks is N_stacks:
-            print("All masks provided. Stack and associated mask are cropped to their masked region.")
-            self._run_preprocessing_all_masks_provided(filenames, suffix_mask)
+        if number_of_masks is self._N_stacks:
+            self._preprocessing_approach = "AllMasksProvided"
+            self._boundary = 0
 
         ## No stack is provided a mask. Hence, mask entire region of stack
         elif number_of_masks is 0:
-            print("No mask is provided. Consider entire stack for reconstruction pipeline.")
-            self._run_preprocessing_no_mask_provided(filenames)
+            self._preprocessing_approach = "NoMaskProvided"
+            self._boundary = 0
 
         ## Not all stacks are provided a mask. Propagate target stack mask to other stacks
         else:
-            print("Not all stacks are provided a mask. Mask of target stack is propagated to other masks and cropped.")
-            self._run_preprocessing_not_all_masks_provided(filenames, filenames_masks, suffix_mask)
+            self._preprocessing_approach = "NotAllMasksProvided"
+            self._filenames_masks = filenames_masks
+            self._filenames = filenames
+            self._target_stack_number = 0
+
+        return self
+
+
+    ## Initialize data preprocessing class based on stacks, i.e. those stacks
+    #  are going to be preprocessed
+    #  \param[in] stacks list of Stack objects
+    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
+    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
+    @classmethod
+    def from_stacks(cls, stacks):
+
+        self = cls()
+
+        ## Number of stacks
+        self._N_stacks = len(stacks)
+
+        ## Use stacks provided
+        self._stacks = stacks
+
+        print("%s stacks were loaded for data preprocessing." %(self._N_stacks))
+
+        ## Prepare list for preprocessed stacks
+        self._stacks_preprocessed = [None]*self._N_stacks
+
+        ## All masks are used as given in the stack objects
+        self._preprocessing_approach = "AllMasksProvided"
+        self._boundary = 0
+
+        return self
+
+
+    ## Perform data preprocessing step by reading images from files
+    #  \param[in] target_stack_number relevant in case not all masks are given (optional). Indicates stack for mask propagation.
+    #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
+    def run_preprocessing(self, target_stack_number=0, boundary=0):
+        
+        # self._dir_input = dir_input
+        self._target_stack_number = target_stack_number
+        self._boundary = boundary
+
+        self._run_preprocessing[self._preprocessing_approach]()
+
+
+    ## Get preprocessed stacks
+    #  \return preprocessed stacks as list of Stack objects
+    def get_processed_stacks(self):
+        return self._stacks_preprocessed
+
+
+    ## Write preprocessed data to specified output directory
+    #  \param[in] dir_output output directory
+    def write_preprocessed_data(self, dir_output):
+        if all(x is None for x in self._stacks_preprocessed):
+            raise ValueError("Error: Run preprocessing first")
+
+        ## Write all slices
+        for i in range(0, self._N_stacks):
+            slices = self._stacks_preprocessed[i].write(directory=dir_output, write_mask=True, write_slices=False)
 
 
     ## Get filenames of stacks with provided masks in input directory
+    #  \param[in] dir_input directory where data is stored for preprocessing
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     #  \return filenames as list of strings
-    def _get_mask_filenames_in_directory(self, suffix_mask):
+    def _get_mask_filenames_in_directory(self, dir_input, suffix_mask):
 
         filenames = []
 
         ## List of all files in directory
-        all_files = os.listdir(self._dir_input)
+        all_files = os.listdir(dir_input)
 
         ## Count number of files labelled as masks
         for file in all_files:
@@ -86,98 +163,75 @@ class DataPreprocessing:
     All masks provided
     """
     ## Perform data preprocessing step for case that all masks are provided
-    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
-    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
-    def _run_preprocessing_all_masks_provided(self, filenames, suffix_mask):
+    def _run_preprocessing_all_masks_provided(self):
 
-        ## Number of stacks to be read
-        N_stacks = len(filenames)
+        print("All masks provided. Stack and associated mask are cropped to their masked region.")
 
-        for i in range(0, N_stacks):
-            ## Read stack and mask from directory
-            stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz", sitk.sitkFloat64)
-            mask_sitk = sitk.ReadImage(self._dir_input + filenames[i] + suffix_mask + ".nii.gz", sitk.sitkUInt8)
+        for i in range(0, self._N_stacks):
 
             ## Crop stack and mask based on the mask provided
-            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(stack_sitk, mask_sitk, boundary=0)
+            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, self._stacks[i].sitk_mask, boundary=self._boundary)
 
-            ## Write preprocessed data to output directory
-            self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
-
+            ## Create preprocessed stack
+            self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+            
 
     """
     No mask provided
     """
     ## Perform data preprocessing step for case that no mask is provided
-    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
-    def _run_preprocessing_no_mask_provided(self, filenames):
+    def _run_preprocessing_no_mask_provided(self):
         
-        ## Number of stacks to be read
-        N_stacks = len(filenames)
-
-        for i in range(0, N_stacks):
-            ## Read stack from directory
-            stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz", sitk.sitkFloat64)
-
-            ## Create binary mask consisting of ones
-            shape = sitk.GetArrayFromImage(stack_sitk).shape
-            nda = np.ones(shape, dtype=np.uint8)
-
-            mask_sitk = sitk.GetImageFromArray(nda)
-            mask_sitk.CopyInformation(stack_sitk) 
+        print("No mask is provided. Consider entire stack for binary mask.")
         
-            ## Write preprocessed data to output directory
-            self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
+        for i in range(0, self._N_stacks):
+
+            ## Preprocessed stack consists of untouched image and full binary mask
+            self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=self._stacks[i].sitk, name=str(i), image_sitk_mask=self._stacks[i].sitk_mask)
 
 
     """
     Not all masks provided
     """
     ## Perform data preprocessing step for case that some masks are missing.
-    #  mask stored in self._target_stack_number is used as template mask for
+    #  Mask stored in self._target_stack_number is used as template mask for
     #  mask propagation
-    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
-    #  \param[in] filenames_masks list of filenames which come with a mask
-    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
-    def _run_preprocessing_not_all_masks_provided(self, filenames, filenames_masks, suffix_mask):
+    def _run_preprocessing_not_all_masks_provided(self):
+
+        print("Not all stacks are provided a mask. Mask of target stack is propagated to other masks and cropped.")
 
         ## Find stacks which require a mask. Target stack mask is used
         #  as template mask for mask propagation.
-        range_prop_mask, range_prop_mask_complement = self._get_filename_indices_for_mask_propagation(filenames, filenames_masks)
+        range_prop_mask, range_prop_mask_complement = self._get_filename_indices_for_mask_propagation(self._filenames, self._filenames_masks)
 
         ##*** Propagate masks
 
-        ## Read target stack and mask and use as template
-        template_sitk = sitk.ReadImage(self._dir_input + str(self._target_stack_number) + ".nii.gz", sitk.sitkFloat64)
-        template_mask_sitk = sitk.ReadImage(self._dir_input + str(self._target_stack_number) + suffix_mask + ".nii.gz", sitk.sitkUInt8)
+        ## Specify target stack and mask to be used as template
+        template_sitk = self._stacks[self._target_stack_number].sitk
+        template_mask_sitk = self._stacks[self._target_stack_number].sitk_mask
 
         for i in range_prop_mask:
-            ## Read stack from directory
-            stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz", sitk.sitkFloat64)
 
             ## Propagate mask
-            mask_sitk = self._get_propagated_mask(stack_sitk, template_sitk, template_mask_sitk)
+            mask_sitk = self._get_propagated_mask(self._stacks[i].sitk, template_sitk, template_mask_sitk)
 
             ## Dilate propagated mask (to smooth mask)
             # mask_sitk = self._dilate_mask(mask_sitk)
 
             ## Crop stack and mask based on the mask provided
-            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(stack_sitk, mask_sitk, boundary=0)
+            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, mask_sitk, boundary=self._boundary)
 
-            ## Write preprocessed data to output directory
-            self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
+            ## Create preprocessed stack
+            self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
 
-        ##*** Do not propagate masks
+        ##*** Do not propagate masks (includes template stack)
         for i in range_prop_mask_complement:
-            ## Read stack and mask from directory
-            stack_sitk = sitk.ReadImage(self._dir_input + filenames[i] + ".nii.gz", sitk.sitkFloat64)
-            mask_sitk = sitk.ReadImage(self._dir_input + filenames[i] + suffix_mask + ".nii.gz", sitk.sitkUInt8)
 
             ## Crop stack and mask based on the mask provided
-            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(stack_sitk, mask_sitk, boundary=0)
+            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, self._stacks[i].sitk_mask, boundary=self._boundary)
 
-            ## Write preprocessed data to output directory
-            self._write_preprocessed_stack_and_mask(stack_sitk, mask_sitk, filenames[i])
+            ## Create preprocessed stack
+            self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
 
 
     ## Get filenames of stacks which require masks
@@ -359,7 +413,7 @@ class DataPreprocessing:
     ## Crop stack and mask to region given my mask
     #  \param[in] stack_sitk stack as sitk.Image object
     #  \param[in] mask_sitk mask as sitk.Image object
-    #  \param[in] boundary additional boundary surrounding mask in mm (optional)
+    #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
     #  \return cropped stack as sitk.Object
     #  \return cropped mask as sitk.Object
     def _crop_stack_and_mask(self, stack_sitk, mask_sitk, boundary=0):
@@ -376,7 +430,7 @@ class DataPreprocessing:
 
     ## Return rectangular region surrounding masked region. 
     #  \param[in] mask_sitk sitk.Image representing the mask
-    #  \param[in] boundary additional boundary surrounding mask in mm (optional)
+    #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
     #  \return range_x pair defining x interval of mask in voxel space 
     #  \return range_y pair defining y interval of mask in voxel space
     #  \return range_z pair defining z interval of mask in voxel space
@@ -439,18 +493,3 @@ class DataPreprocessing:
                             ]
 
         return image_cropped_sitk
-
-
-    ## Write preprocessed stack and mask to given output folder
-    #  \param[in] stack_sitk stack to be written
-    #  \param[in] stack_sitk mask to be written
-    #  \param[in] filename filename to be used
-    def _write_preprocessed_stack_and_mask(self, stack_sitk, mask_sitk, filename):
-
-        ## Write stack
-        sitk.WriteImage(stack_sitk, self._dir_output + filename + ".nii.gz")
-
-        ## Write mask
-        sitk.WriteImage(mask_sitk, self._dir_output + filename + "_mask.nii.gz")
-
-
