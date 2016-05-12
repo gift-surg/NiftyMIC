@@ -133,7 +133,7 @@ class SliceToVolumeRegistration:
         similarity metric settings
         """
         ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
-        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=15)
+        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=10)
         
         ## Use negative normalized cross correlation image metric
         # registration_method.SetMetricAsCorrelation()
@@ -148,7 +148,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
 
         ## Use negative means squares image metric
-        # registration_method.SetMetricAsMeanSquares()
+        registration_method.SetMetricAsMeanSquares()
         
         """
         optimizer settings
@@ -169,7 +169,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=2000)
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1e-4, numberOfIterations=500)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
@@ -180,10 +180,10 @@ class SliceToVolumeRegistration:
         setup for the multi-resolution framework            
         """
         ## Set the shrink factors for each level where each level has the same shrink factor for each dimension
-        # registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+        registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
 
         ## Set the sigmas of Gaussian used for smoothing at each level
-        # registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+        registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
 
         ## Enable the smoothing sigmas for each level in physical units (default) or in terms of voxels (then *UnitsOff instead)
         registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
@@ -243,12 +243,12 @@ class SliceToVolumeRegistration:
 
         # interpolator = itk.LinearInterpolateImageFunction[image_type, pixel_type].New()
         interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
-        # Cov = np.eye(3)*1.1;
+        Cov = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( fixed_slice_3D, moving_HR_volume_3D )
         interpolator.SetCovariance(Cov.flatten())
 
         
-        # metric = itk.MeanSquaresImageToImageMetric[image_type, image_type].New()
-        metric = itk.NormalizedCorrelationImageToImageMetric[image_type, image_type].New()
+        metric = itk.MeanSquaresImageToImageMetric[image_type, image_type].New()
+        # metric = itk.NormalizedCorrelationImageToImageMetric[image_type, image_type].New()
         
         # metric = itk.MutualInformationImageToImageMetric[image_type, image_type].New()
         

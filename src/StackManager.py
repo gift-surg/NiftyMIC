@@ -24,12 +24,20 @@ class StackManager:
 
 
     ## Constructor
-    ## \param[in] stacks list of Stack objects
+    ## \param[in] stacks_to_copy list of Stack objects
     @classmethod
-    def from_stacks(cls, stacks):
+    def from_stacks(cls, stacks_to_copy):
         stack_manager = cls()
+
+        N_stacks = len(stacks_to_copy)
+        
+        stacks = [None]*N_stacks
+        for i in range(0, N_stacks):
+            stack = st.Stack.from_stack(stacks_to_copy[i])
+            stacks[i] = stack
+
         stack_manager._stacks = stacks
-        stack_manager._N_stacks = len(stacks)
+        stack_manager._N_stacks = N_stacks 
 
         return stack_manager
 
@@ -73,13 +81,17 @@ class StackManager:
         return self._N_stacks
 
 
-    ## Get affine transforms of each slice gathered during the entire
-    #  evolution of the reconstruction algorithm
-    #  \return list of list of list of sitk.AffineTransform objects
-    #  \example transform[i][j][k] refers to the k-th estimated position,
-    #       i.e. affine transform, of slice j of stack i
-    def get_slice_affine_transforms_of_stacks(self):
+    ## Get affine transforms and corresponding rigid motion transform estimates 
+    #  of each slice gathered during the entire evolution of the reconstruction
+    #  algorithm.
+    #  \return tuple of list of list of list of sitk.AffineTransform and sitk.Euler3DTransform objects
+    #  \example return [affine_transforms, rigid_motion_transforms] with 
+    #       affine_transforms[i][j][k] referring to the k-th estimated position,
+    #       i.e. affine transform, of slice j of stack i and analog for
+    #       rigid_motion_transforms
+    def get_slice_registration_history_of_stacks(self):
         affine_transforms = [None]*self._N_stacks
+        rigid_motion_transforms = [None]*self._N_stacks
 
         for i in range(0, self._N_stacks):
             stack = self._stacks[i]
@@ -87,20 +99,23 @@ class StackManager:
             N_slices = stack.get_number_of_slices()
 
             affine_transforms[i] = [None]*N_slices
+            rigid_motion_transforms[i] = [None]*N_slices
             
             for j in range(0, N_slices):
                 slice = slices[j]
-                slice_affine_transforms = slice.get_registration_history()
+                slice_affine_transforms, slice_rigid_motion_transforms = slice.get_registration_history()
 
                 N_cycles = len(slice_affine_transforms)
 
                 affine_transforms[i][j] = [None]*N_cycles
+                rigid_motion_transforms[i][j] = [None]*N_cycles
 
                 for k in range(0, N_cycles):
                     affine_transforms[i][j][k] = slice_affine_transforms[k]
+                    rigid_motion_transforms[i][j][k] = slice_rigid_motion_transforms[k]
 
 
-        return affine_transforms
+        return affine_transforms, rigid_motion_transforms
         
 
     ## Write all slices within all stacks (with current spatial transformations)

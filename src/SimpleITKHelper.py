@@ -43,6 +43,39 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
     return sitk.AffineTransform(A_composited.flatten(), t_composited, c_composited)
 
 
+## Composite two Euler Transforms
+# \param[in] transform_outer as sitk::simple::EulerxDTransform
+# \param[in] transform_inner as sitk::simple::EulerxDTransform
+# \return \p tranform_outer \f$ \circ \f$ \p transform_inner as sitk.EulerxDTransform
+# \see http://insightsoftwareconsortium.github.io/SimpleITK-Notebooks/22_Transforms.html
+def get_composited_sitk_euler_transform(transform_outer, transform_inner):
+    
+    ## Guarantee type sitk::simple::AffineTransform of transformations
+    # transform_outer = sitk.AffineTransform(transform_outer)
+    # transform_inner = sitk.AffineTransform(transform_inner)
+
+    dim = transform_outer.GetDimension()
+
+    A_inner = np.asarray(transform_inner.GetMatrix()).reshape(dim,dim)
+    c_inner = np.asarray(transform_inner.GetCenter())
+    t_inner = np.asarray(transform_inner.GetTranslation())
+
+    A_outer = np.asarray(transform_outer.GetMatrix()).reshape(dim,dim)
+    c_outer = np.asarray(transform_outer.GetCenter())
+    t_outer = np.asarray(transform_outer.GetTranslation())
+
+    A_composited = A_outer.dot(A_inner)
+    c_composited = c_inner
+    t_composited = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
+
+    euler = sitk.Euler3DTransform()
+    euler.SetMatrix(A_composited.flatten())
+    euler.SetTranslation(t_composited)
+    euler.SetCenter(c_composited)
+
+    return euler
+
+
 ## Get direction for sitk.Image object from sitk.AffineTransform instance.
 #  The information of the image is required to extract spacing information and 
 #  associated image dimension

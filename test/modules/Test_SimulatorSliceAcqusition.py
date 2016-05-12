@@ -1,4 +1,4 @@
-## \file Test_SliceAcqusition.py
+## \file Test_SimulatorSliceAcqusition.py
 #  \brief  Class containing unit tests for module SliceAcqusition
 # 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)

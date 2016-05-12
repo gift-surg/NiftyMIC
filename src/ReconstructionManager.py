@@ -12,7 +12,6 @@ import numpy as np
 ## Import modules from src-folder
 import Stack as st
 import StackManager as sm
-# import InPlaneRigidRegistration as iprr
 import FirstEstimateOfHRVolume as efhrv
 import SliceToVolumeRegistration as s2vr
 import VolumeReconstruction as vr
@@ -63,7 +62,6 @@ class ReconstructionManager:
         self._HR_volume = None
 
         ## Pre-defined values
-        self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
         self._flag_register_stacks_before_initial_volume_estimate = False
 
         self._target_stack_number = target_stack_number
@@ -184,10 +182,6 @@ class ReconstructionManager:
         first_estimate_of_HR_volume.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
         first_estimate_of_HR_volume.set_SDA_sigma(sigma)
 
-        # ## Forward choice of whether or not in-plane registration within each
-        # #  stack shall be performed before estimation of initial volume
-        # first_estimate_of_HR_volume.use_in_plane_registration_for_initial_volume_estimate(self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate)
-        
         ## Forward choice of whether or not stacks shall be registered to chosen
         #  target stack or not prior the averaging of stacks for the initial volume estimation
         first_estimate_of_HR_volume.register_stacks_before_initial_volume_estimate(self._flag_register_stacks_before_initial_volume_estimate)
@@ -219,9 +213,6 @@ class ReconstructionManager:
     def run_hierarchical_alignment_of_slices(self, interleave, use_static_volume_estimate=True, display_info=0):
         if self._HR_volume is None:
             raise ValueError("Error: Initial estimate of HR volume has not been computed yet")
-
-        # if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
-        #     raise ValueError("Error: Hierarchical alignment of slices not possible after performed in-plane alignment of slices")
 
         print("\n--- Run hierarchical slice alignment approach ---")
 
@@ -355,7 +346,8 @@ class ReconstructionManager:
 
 
         ## Final SRR step
-        recon_approach = "SRR"
+        # recon_approach = "SRR"
+        recon_approach = "SDA"
         SRR_approach = "TK0"        # "TK0" or "TK1"
         # SRR_approach = "TK1"        # "TK0" or "TK1"
         SRR_iter_max = 30
@@ -373,39 +365,13 @@ class ReconstructionManager:
         ## Prepare filename
         filename =  self._HR_volume_filename 
         filename += "_cycles" + str(iterations)
-        filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
+        filename +=  "_" + recon_approach + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
 
         ## Update filename of HR reconstruction based on chosen options
         self._HR_volume_filename = filename
 
         ## Write result
         self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
-
-
-    # ## Execute in-plane rigid registration align slices planarly within stack 
-    # #  to compensate for planarly occurred motion. It used
-    # #  \post Each slice is updated with new affine matrix defining its updated
-    # #       spatial position
-    # def run_in_plane_rigid_registration_within_stack(self):
-    #     self._in_plane_rigid_registration = iprr.InPlaneRigidRegistration(self._stack_manager)
-
-
-    # ## \todo Delete that function. It is used only to check results
-    # def write_resampled_stacks_after_2D_in_plane_registration(self):
-    #     self._in_plane_rigid_registration.write_resampled_stacks(self._dir_results)
-    #     print("Resampled stacks after in-plane registration successfully written to directory %r " % self._dir_results)
-
-
-    # ## Perform in-plane rigid registration within each stack prior the first
-    # #  estimate of the HR volume via compute_first_estimate_of_HR_volume_from_stacks
-    # def set_on_in_plane_rigid_registration_before_estimating_initial_volume(self):
-    #     self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = True
-
-
-    # ## Do not perform in-plane rigid registration within each stack prior the first
-    # #  estimate of the HR volume via compute_first_estimate_of_HR_volume_from_stacks
-    # def set_off_in_plane_rigid_registration_before_estimating_initial_volume(self):
-    #     self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
 
 
     ## Rigidly register all stacks with chosen target volume prior the estimation
@@ -426,13 +392,16 @@ class ReconstructionManager:
         return self._stack_manager.get_stacks()
 
 
-    ## Get affine transforms of each slice gathered during the entire
-    #  evolution of the reconstruction algorithm
-    #  \return list of list of list of sitk.AffineTransform objects
-    #  \example transform[i][j][k] refers to the k-th estimated position,
-    #       i.e. affine transform, of slice j of stack i
-    def get_slice_affine_transforms_of_stacks(self):
-        return self._stack_manager.get_slice_affine_transforms_of_stacks()
+    ## Get affine transforms and corresponding rigid motion transform estimates 
+    #  of each slice gathered during the entire evolution of the reconstruction
+    #  algorithm.
+    #  \return tuple of list of list of list of sitk.AffineTransform and sitk.Euler3DTransform objects
+    #  \example return [affine_transforms, rigid_motion_transforms] with 
+    #       affine_transforms[i][j][k] referring to the k-th estimated position,
+    #       i.e. affine transform, of slice j of stack i and analog for
+    #       rigid_motion_transforms
+    def get_slice_registration_history_of_stacks(self):
+        return self._stack_manager.get_slice_registration_history_of_stacks()
 
 
     ## Set current estimate of HR volume by hand

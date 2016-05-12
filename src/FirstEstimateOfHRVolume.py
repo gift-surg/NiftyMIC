@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
-# import InPlaneRigidRegistration as iprr
 import StackManager as sm
 import Stack as st
 import ScatteredDataApproximation as sda
@@ -53,7 +52,6 @@ class FirstEstimateOfHRVolume:
         self._HR_volume = self._get_isotropically_resampled_stack(self._stacks[self._target_stack_number], boundary)
 
         ## Flags indicating whether or not these options are selected
-        # self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
         self._flag_register_stacks_before_initial_volume_estimate = False
 
         ## Rigid registrations obtained after registering each stack to (upsampled) target stack
@@ -70,11 +68,6 @@ class FirstEstimateOfHRVolume:
         ## SDA reconstruction settings:
         self._SDA_sigma = 0.6                 # sigma for recursive Gaussian smoothing
         self._SDA_type = 'Shepard-YVV'      # Either 'Shepard-YVV' or 'Shepard-Deriche'
-
-
-    # ## Set flag to use in-plane of all slices to each other within their stacks
-    # def use_in_plane_registration_for_initial_volume_estimate(self, flag):
-    #     self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = flag
 
 
     ## Set flag to globally register each stack with chosen target stack.
@@ -118,30 +111,6 @@ class FirstEstimateOfHRVolume:
     #  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
     #  \param[in] display_info display information of registration results as we go along
     def compute_first_estimate_of_HR_volume(self, display_info=0):
-
-        # In-Plane Rigid Registration not used anymore
-        # ## Use stacks with in-plane aligned slices
-        # if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
-        #     print("In-plane alignment of slices within each stack is performed")
-        #     ## Run in-plane rigid registration of all stacks
-
-        #     # self._stacks[1].show(1)
-
-        #     self._in_plane_rigid_registration =  iprr.InPlaneRigidRegistration(self._stack_manager)
-        #     self._in_plane_rigid_registration.run_in_plane_rigid_registration()
-        #     # stacks = self._in_plane_rigid_registration.get_resampled_planarly_aligned_stacks()
-
-        #     ## Update HR volume and its mask after planar alignment of slices
-        #     foo = st.Stack.from_stack(self._HR_volume) ## only for show_sitk_image to have comparison before-after
-
-        #     target_stack_aligned = self._stacks[self._target_stack_number].get_resampled_stack_from_slices()
-        #     self._HR_volume = self._get_isotropically_resampled_stack(target_stack_aligned)
-
-        #     sitkh.show_sitk_image(foo.sitk, overlay=self._HR_volume.sitk, title="upsampled_target_stack_before_and_after_in_plane_reg")
-
-        # ## Use "raw" stacks as given by their originally given physical positions
-        # else:
-        #     print("In-plane alignment of slices within each stack is NOT performed")
 
         ## If desired: Register all (planarly) aligned stacks to resampled target volume
         if self._flag_register_stacks_before_initial_volume_estimate:
@@ -245,11 +214,6 @@ class FirstEstimateOfHRVolume:
 
         ## Compute rigid registrations aligning each stack with the HR volume
         for i in range(0, self._N_stacks):
-            # if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
-            #     ## Get resampled stacks of planarly aligned slices as Stack objects (3D volume)
-            #     stack = self._stacks[i].get_resampled_stack_from_slices()
-
-            # else:
             stack = self._stacks[i]
 
             self._rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(stack, self._HR_volume)
@@ -349,7 +313,7 @@ class FirstEstimateOfHRVolume:
         # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=0.5, minStep=0.05, numberOfIterations=2000)
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=0.5, minStep=0.05, numberOfIterations=100)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
@@ -397,13 +361,6 @@ class FirstEstimateOfHRVolume:
     #  \post self._HR_volume is overwritten with new estimate
     def _run_averaging(self):
         
-        # ## Use planarly aligned stacks for average if given
-        # if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
-        #     stacks = [None]*self._N_stacks
-        #     for i in range(0, self._N_stacks):
-        #         stacks[i] = self._stacks[i].get_resampled_stack_from_slices()
-
-        # else:
         stacks = self._stacks
 
         self._sa = sa.StackAverage(sm.StackManager.from_stacks(stacks), self._HR_volume)

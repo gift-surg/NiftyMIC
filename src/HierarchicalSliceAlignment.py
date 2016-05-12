@@ -329,10 +329,10 @@ class HierarchicalSliceAlignment:
         setup for the multi-resolution framework            
         """
         ## Set the shrink factors for each level where each level has the same shrink factor for each dimension
-        # registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+        registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
 
         ## Set the sigmas of Gaussian used for smoothing at each level
-        # registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
+        registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
 
         ## Enable the smoothing sigmas for each level in physical units (default) or in terms of voxels (then *UnitsOff instead)
         registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
