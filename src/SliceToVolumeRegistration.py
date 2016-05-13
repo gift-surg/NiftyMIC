@@ -72,18 +72,17 @@ class SliceToVolumeRegistration:
             for j in range(0, N_slices):
                 slice = slices[j]
 
-                rigid_transform = self._get_rigid_registration_transform[self._registration_approach](fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume, display_registration_info=display_info)
                 if display_info:
-                    print("\t\tSVR of slice %s/%s done" %(j,N_slices-1))
-                    sitkh.print_rigid_transformation(rigid_transform)
+                    print("\t\tSVR of slice %s/%s:" %(j,N_slices-1))
+                rigid_transform = self._get_rigid_registration_transform[self._registration_approach](fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume, display_registration_info=display_info)
 
                 ## print if translation is strange
-                translation = rigid_transform.GetTranslation()
-                if np.linalg.norm(translation)>10:
-                    print("\tRigid registration of slice %s/%s within stack %s seems odd:" %(j,N_slices-1,i))
-                    sitkh.print_rigid_transformation(rigid_transform)
+                # translation = rigid_transform.GetTranslation()
+                # if np.linalg.norm(translation)>10:
+                #     print("\t\tRigid registration of slice %s/%s within stack %s seems odd:" %(j,N_slices-1,i))
+                #     sitkh.print_rigid_transformation(rigid_transform)
 
-                    continue
+                #     continue
 
                 ## Update rigid motion estimate for current slice and update its 
                 #  position in physical space accordingly
@@ -100,15 +99,15 @@ class SliceToVolumeRegistration:
     def _get_rigid_registration_transform_sitk(self, fixed_slice_3D, moving_HR_volume_3D, display_registration_info=0):
 
         ## Blur 
-        # Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( fixed_slice_3D, moving_HR_volume_3D )
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( fixed_slice_3D, moving_HR_volume_3D )
 
-        # self._gaussian_yvv.SetSigmaArray(np.sqrt(np.diagonal(Cov_HR_coord)))
-        # self._gaussian_yvv.Update()
-        # moving_3D_itk = self._gaussian_yvv.GetOutput()
-        # moving_3D_itk.DisconnectPipeline()
+        self._gaussian_yvv.SetSigmaArray(np.sqrt(np.diagonal(Cov_HR_coord)))
+        self._gaussian_yvv.Update()
+        moving_3D_itk = self._gaussian_yvv.GetOutput()
+        moving_3D_itk.DisconnectPipeline()
 
-        # moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
-        moving_3D_sitk = moving_HR_volume_3D.sitk
+        moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
+        # moving_3D_sitk = moving_HR_volume_3D.sitk
 
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()
@@ -136,7 +135,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=10)
         
         ## Use negative normalized cross correlation image metric
-        # registration_method.SetMetricAsCorrelation()
+        registration_method.SetMetricAsCorrelation()
 
         ## Use demons image metric
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
@@ -148,7 +147,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
 
         ## Use negative means squares image metric
-        registration_method.SetMetricAsMeanSquares()
+        # registration_method.SetMetricAsMeanSquares()
         
         """
         optimizer settings
@@ -169,10 +168,11 @@ class SliceToVolumeRegistration:
         # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1e-4, numberOfIterations=500)
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1e-4, numberOfIterations=500, gradientMagnitudeTolerance=1e-4)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
+        # registration_method.SetOptimizerScalesFromIndexShift()
         # registration_method.SetOptimizerScalesFromPhysicalShift()
         registration_method.SetOptimizerScalesFromJacobian()
         
@@ -180,7 +180,7 @@ class SliceToVolumeRegistration:
         setup for the multi-resolution framework            
         """
         ## Set the shrink factors for each level where each level has the same shrink factor for each dimension
-        registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+        registration_method.SetShrinkFactorsPerLevel(shrinkFactors=[4,2,1])
 
         ## Set the sigmas of Gaussian used for smoothing at each level
         registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
@@ -199,14 +199,17 @@ class SliceToVolumeRegistration:
         # print("\n")
 
         ## Execute 3D registration
-        final_transform_3D_sitk = registration_method.Execute(fixed_slice_3D.sitk, moving_3D_sitk) 
+        final_transform_3D_sitk = sitk.Euler3DTransform(registration_method.Execute(fixed_slice_3D.sitk, moving_3D_sitk))
 
         if display_registration_info:
-            print("SimpleITK Image Registration Method:")
-            print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
-            print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+            print("\t\tSimpleITK Image Registration Method:")
+            print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
+            print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
-        return sitk.Euler3DTransform(final_transform_3D_sitk)
+            sitkh.print_rigid_transformation(final_transform_3D_sitk)
+
+
+        return final_transform_3D_sitk
 
 
     ## Rigid registration routine based on ITK
@@ -247,8 +250,8 @@ class SliceToVolumeRegistration:
         interpolator.SetCovariance(Cov.flatten())
 
         
-        metric = itk.MeanSquaresImageToImageMetric[image_type, image_type].New()
-        # metric = itk.NormalizedCorrelationImageToImageMetric[image_type, image_type].New()
+        # metric = itk.MeanSquaresImageToImageMetric[image_type, image_type].New()
+        metric = itk.NormalizedCorrelationImageToImageMetric[image_type, image_type].New()
         
         # metric = itk.MutualInformationImageToImageMetric[image_type, image_type].New()
         

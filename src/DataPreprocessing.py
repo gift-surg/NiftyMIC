@@ -122,7 +122,7 @@ class DataPreprocessing:
 
     ## Get preprocessed stacks
     #  \return preprocessed stacks as list of Stack objects
-    def get_processed_stacks(self):
+    def get_preprocessed_stacks(self):
         return self._stacks_preprocessed
 
 

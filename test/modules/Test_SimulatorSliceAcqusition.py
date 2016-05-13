@@ -18,7 +18,7 @@ sys.path.append("data/")
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
 import Stack as st
-import SliceAcqusition as sa
+import SimulatorSliceAcqusition as sa
 import PSF as psf
 
 
@@ -45,8 +45,8 @@ class SliceAcqusition(unittest.TestCase):
 
     def test_conversion_image_direction(self):
 
-        filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
-        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume)
+        filename_HR_volume = "HR_volume_postmortem"
+        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume, "_mask")
 
         ## Get unit vectors defining image grid in physical space and construct direction matrix
         origin_HR_volume = np.array(HR_volume.sitk.GetOrigin())
@@ -80,8 +80,8 @@ class SliceAcqusition(unittest.TestCase):
     #  in each orthogonal direction by assuming no subject motion
     def test_run_simulation_view(self):
 
-        filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
-        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume)
+        filename_HR_volume = "HR_volume_postmortem"
+        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume, "_mask")
 
         ## 1) Test for Nearest Neighbor Interpolator
         slice_acquistion = sa.SliceAcqusition(HR_volume)
@@ -170,8 +170,8 @@ class SliceAcqusition(unittest.TestCase):
     #  sliced volume whereby no motion is applied to the HR volume
     def test_ground_truth_affine_transforms_no_motion(self):
 
-        filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
-        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume)
+        filename_HR_volume = "HR_volume_postmortem"
+        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume, "_mask")
 
         ## Run simulation for Nearest Neighbor interpolation (shouldn't not matter anyway and is quicker)
         slice_acquistion = sa.SliceAcqusition(HR_volume)
@@ -213,8 +213,8 @@ class SliceAcqusition(unittest.TestCase):
     #  sliced volume whereby motion is applied to the HR volume
     def test_ground_truth_affine_transforms_with_motion_NearestNeighbor(self):
 
-        filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
-        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume)
+        filename_HR_volume = "HR_volume_postmortem"
+        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume, "_mask")
 
         ## Run simulation for Nearest Neighbor interpolation (shouldn't not matter anyway and is quicker)
         slice_acquistion = sa.SliceAcqusition(HR_volume)
@@ -256,8 +256,8 @@ class SliceAcqusition(unittest.TestCase):
     #  sliced volume whereby motion is applied to the HR volume
     def test_ground_truth_affine_transforms_with_motion_OrientedGaussian(self):
 
-        filename_HR_volume = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
-        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume)
+        filename_HR_volume = "HR_volume_postmortem"
+        HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume, "_mask")
 
         ## Run simulation for Oriented Gaussian interpolation, hence more "realistic" case
         slice_acquistion = sa.SliceAcqusition(HR_volume)
@@ -318,11 +318,11 @@ class SliceAcqusition(unittest.TestCase):
                 #     )
 
                 norm_diff = np.linalg.norm(sitk.GetArrayFromImage(slice.sitk - HR_volume_resampled_slice_sitk))
-                try:
-                    self.assertEqual(np.round(norm_diff, decimals = self.accuracy), 0)
-                except:
-                    print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
+                # try:
+                self.assertEqual(np.round(norm_diff, decimals = self.accuracy), 0)
+                # except:
+                #     print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
 
-                    print norm_diff
+                #     print norm_diff
 
 

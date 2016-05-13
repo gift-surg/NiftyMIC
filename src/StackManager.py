@@ -8,6 +8,7 @@
 ## Import libraries
 import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
+import numpy as np
 
 ## Import modules from src-folder
 import Stack as st
@@ -117,6 +118,21 @@ class StackManager:
 
         return affine_transforms, rigid_motion_transforms
         
+
+    ## Get total amount of slices and begin of every new stack therein
+    #  \return tuple containing total number of slices as integer and an array
+    #       indicating the index of the first slice/beginning of each stack 
+    def get_total_number_of_slices(self):
+        N_slices_total = 0
+
+        N_begin_new_stack_array = np.zeros(self._N_stacks)
+
+        for i in range(0, self._N_stacks):
+            N_slices_total += self._stacks[i].get_number_of_slices()
+            N_begin_new_stack_array[i] = N_slices_total - self._stacks[i].get_number_of_slices()
+
+        return N_slices_total, N_begin_new_stack_array
+
 
     ## Write all slices within all stacks (with current spatial transformations)
     #  to specified directory
