@@ -3,8 +3,8 @@
 
 #---- Define variables ------------------------------
 ## Location of ITK-build folder
-# set (CMAKE_PREFIX_PATH "~/development/ITK/ITK-build_dev/")
-set (CMAKE_PREFIX_PATH "~/development/ITK/ITK-build/")
+set (CMAKE_PREFIX_PATH "~/development/ITK/ITK-build_dev/")
+# set (CMAKE_PREFIX_PATH "~/development/ITK/ITK-build/")
 
 ## Location of itkAdjointOrientedGaussianInterpolateImageFilter.h and hxx
 set (MY_SRC_DIR "~/development/ITK/ITK/Modules/Filtering/ImageGrid/include")
@@ -28,18 +28,17 @@ set ( MY_MAIN_FILE_2_SOURCES
 
 message (STATUS "Use ITK-directory " ${CMAKE_PREFIX_PATH})
 
-
-project( ${MY_PROJ_NAME} )
-
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) 
-
-
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
 if (ITKVtkGlue_LOADED)
   find_package(VTK REQUIRED)
   include(${VTK_USE_FILE})
 endif()
+
+project( ${MY_PROJ_NAME} )
+
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) 
+
  
 
 

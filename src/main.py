@@ -45,8 +45,10 @@ def read_input_data(image_type):
         #     "20150115_161038s5007a1001_crop"
         #     ]
 
-        # filenames = [str(i) for i in range(0, 8)]
-        filenames = [str(i) for i in range(0, 3)]
+        filenames = [str(i) for i in range(0, 8)]
+        filenames.remove("6")
+
+        # filenames = [str(i) for i in range(0, 3)]
 
     elif image_type in ["fetal_neck_mass_subject"]:
         dir_input = "../data/fetal_neck_mass_subject/"
@@ -140,13 +142,13 @@ if __name__ == '__main__':
 
     ## Compute first estimate of HR volume
     reconstruction_manager.set_on_registration_of_stacks_before_estimating_initial_volume()
-    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks(display_info=0)
+    reconstruction_manager.compute_first_estimate_of_HR_volume_from_stacks(display_info=1)
     
     ## Run hierarchical slice alignment strategy
-    # reconstruction_manager.run_hierarchical_alignment_of_slices(interleave=2, display_info=0)
+    # reconstruction_manager.run_hierarchical_alignment_of_slices(interleave=2, display_info=1)
 
     ## Run two step reconstruction alignment approach
-    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=5, display_info=0)
+    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=3, display_info=1)
 
     ## Write results
     reconstruction_manager.write_results()

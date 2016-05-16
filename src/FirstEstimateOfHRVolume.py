@@ -214,13 +214,10 @@ class FirstEstimateOfHRVolume:
 
         ## Compute rigid registrations aligning each stack with the HR volume
         for i in range(0, self._N_stacks):
+            print("\tStack %s/%s" %(i, self._N_stacks-1))
             stack = self._stacks[i]
 
-            self._rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(stack, self._HR_volume)
-
-            ## Print rigid registration results (optional)
-            if print_trafos:
-                sitkh.print_rigid_transformation(self._rigid_registrations[i])
+            self._rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(stack, self._HR_volume, print_trafos)
 
         ## Update all slice transformations based on obtaine registration
         #  Note: trafos of self._stack do not get updated!
@@ -256,6 +253,8 @@ class FirstEstimateOfHRVolume:
         registration_method = sitk.ImageRegistrationMethod()
 
         ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
+        # fixed_3D.show()
+        # moving_3D.show()
         initial_transform = sitk.CenteredTransformInitializer(fixed_3D.sitk, moving_3D.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
 
         # initial_transform = sitk.Euler3DTransform()
@@ -264,7 +263,7 @@ class FirstEstimateOfHRVolume:
         registration_method.SetInitialTransform(initial_transform)
 
         ## Set an image masks in order to restrict the sampled points for the metric
-        # registration_method.SetMetricFixedMask(fixed_3D.sitk_mask)
+        registration_method.SetMetricFixedMask(fixed_3D.sitk_mask)
         # registration_method.SetMetricMovingMask(moving_3D.sitk_mask)
 
         ## Set percentage of pixels sampled for metric evaluation
@@ -277,10 +276,10 @@ class FirstEstimateOfHRVolume:
         similarity metric settings
         """
         ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
-        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
+        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
         
         ## Use negative normalized cross correlation image metric
-        # registration_method.SetMetricAsCorrelation()
+        registration_method.SetMetricAsCorrelation()
 
         ## Use demons image metric
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
@@ -289,7 +288,7 @@ class FirstEstimateOfHRVolume:
         # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=3)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
-        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=200)
+        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
 
         ## Use negative means squares image metric
         # registration_method.SetMetricAsMeanSquares()
@@ -313,12 +312,12 @@ class FirstEstimateOfHRVolume:
         # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=0.5, minStep=0.05, numberOfIterations=100)
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=100)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
-        # registration_method.SetOptimizerScalesFromPhysicalShift()
-        registration_method.SetOptimizerScalesFromJacobian()
+        registration_method.SetOptimizerScalesFromPhysicalShift()
+        # registration_method.SetOptimizerScalesFromJacobian()
         
         
         """
@@ -344,14 +343,16 @@ class FirstEstimateOfHRVolume:
         # print("\n")
 
         ## Execute 3D registration
-        final_transform_3D_sitk = registration_method.Execute(fixed_3D.sitk, moving_3D.sitk) 
+        final_transform_3D_sitk = sitk.Euler3DTransform(registration_method.Execute(fixed_3D.sitk, moving_3D.sitk))
 
         if display_registration_info:
-            print("SimpleITK Image Registration Method:")
-            print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
-            print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+            print("\t\tSimpleITK Image Registration Method:")
+            print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
+            print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
-        return sitk.Euler3DTransform(final_transform_3D_sitk)
+            sitkh.print_rigid_transformation(final_transform_3D_sitk)
+
+        return final_transform_3D_sitk
 
 
     """

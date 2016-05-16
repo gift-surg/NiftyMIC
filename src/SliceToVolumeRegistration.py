@@ -21,7 +21,10 @@ import ScatteredDataApproximation as sda
 # import Slice as sl
 
 
+## Pixel type of used 3D ITK image
 pixel_type = itk.D
+
+## ITK image type 
 image_type = itk.Image[pixel_type, 3]
 
 ## Class implementing the slice to volume registration algorithm
@@ -88,8 +91,6 @@ class SliceToVolumeRegistration:
                 #  position in physical space accordingly
                 slice.update_rigid_motion_estimate(rigid_transform)
 
-                
-
 
     ## Rigid registration routine based on SimpleITK
     #  \param fixed_slice_3D upsampled fixed Slice
@@ -144,7 +145,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=1)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
-        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)
 
         ## Use negative means squares image metric
         # registration_method.SetMetricAsMeanSquares()

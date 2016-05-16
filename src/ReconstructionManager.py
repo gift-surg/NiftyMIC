@@ -95,6 +95,7 @@ class ReconstructionManager:
         print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
 
         ## Data preprocessing:
+        print("\n--- Run Data Preprocessing ---")
         self._data_preprocessing = dp.DataPreprocessing.from_filenames(dir_input=self._dir_results_input_data, filenames=filenames, suffix_mask=suffix_mask)
         self._data_preprocessing.run_preprocessing(target_stack_number=self._target_stack_number, boundary=0)
         self._data_preprocessing.write_preprocessed_data(dir_output=self._dir_results_input_data_processed)
@@ -120,6 +121,7 @@ class ReconstructionManager:
         print(str(N_stacks) + " stacks were copied to directory " + self._dir_results_input_data)
 
         ## Data preprocessing:
+        print("\n--- Run Data Preprocessing ---")
         self._data_preprocessing = dp.DataPreprocessing.from_filenames(dir_input=self._dir_results_input_data, filenames=filenames, suffix_mask=suffix_mask)
         self._data_preprocessing.run_preprocessing(target_stack_number=self._target_stack_number, boundary=0)
         self._data_preprocessing.write_preprocessed_data(dir_output=self._dir_results_input_data_processed)
@@ -148,6 +150,7 @@ class ReconstructionManager:
         print(str(N_stacks) + " stacks as bundle of slices were copied to directory " + self._dir_results_input_data)
 
         ## Data preprocessing:
+        # print("\n--- Run Data Preprocessing ---")
         # self._data_preprocessing.run_preprocessing_from_filenames(dir_input= self._dir_results_input_data, filenames=filenames, suffix_mask=suffix_mask, target_stack_number=self._target_stack_number)
 
         ## Read stacks as bundle of slices:
@@ -349,8 +352,8 @@ class ReconstructionManager:
 
 
         ## Final SRR step
-        # recon_approach = "SRR"
-        recon_approach = "SDA"
+        recon_approach = "SRR"
+        # recon_approach = "SDA"
         SRR_approach = "TK0"        # "TK0" or "TK1"
         # SRR_approach = "TK1"        # "TK0" or "TK1"
         SRR_iter_max = 30

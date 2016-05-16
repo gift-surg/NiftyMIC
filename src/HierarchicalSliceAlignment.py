@@ -9,6 +9,7 @@
 import os                       # used to execute terminal commands in python
 import sys
 import SimpleITK as sitk
+import itk
 import numpy as np
 
 ## Import modules from src-folder
@@ -17,7 +18,14 @@ import StackManager as sm
 import ScatteredDataApproximation as sda
 import StackAverage as sa
 import Stack as st
+import PSF as psf
 
+
+## Pixel type of used 3D ITK image
+pixel_type = itk.D
+
+## ITK image type 
+image_type = itk.Image[pixel_type, 3]
 
 ## Class to implement hierarchical alignment of slices before slice to volume
 #  registration. Idea: Take advantage of knowledge of interleaved acquisition.
@@ -51,6 +59,11 @@ class HierarchicalSliceAlignment:
         self._SDA_sigma = 1                 # sigma for recursive Gaussian smoothing
         self._SDA_type = 'Shepard-YVV'      # Either 'Shepard-YVV' or 'Shepard-Deriche'
 
+        ## Used for PSF modelling and smoothign w.r.t. relative alignment between
+        #  one single slice and HR volume grid
+        self._psf = psf.PSF()
+        self._gaussian_yvv = itk.SmoothingRecursiveYvvGaussianImageFilter[image_type, image_type].New()   # YVV-based Filter
+
 
     ## Perform hierarchical alignment for each stack.
     #  \param[in] interleave step of interleaved stack acquisition used for hierarchical alignment
@@ -76,9 +89,10 @@ class HierarchicalSliceAlignment:
 
                 ## Obtain estimated volume based on those stacks and their current slice positions
                 volume_estimate = self._get_volume_estimate[self._volume_estimate_approach](stacks, HR_volume)
-                
                 # volume_estimate.show(title="VolumeEstimate_"+str(i))
-            
+
+            ## Set input for oriented Gaussian PSF blurring
+            self._gaussian_yvv.SetInput(volume_estimate.itk)
 
             ## Perform hierarchical slice alignment approach applied to specific stack and volume estimate
             self._hierarchically_align_stack(self._stacks[i], volume_estimate, interleave, display_info)
@@ -106,8 +120,6 @@ class HierarchicalSliceAlignment:
         ### WTF!?!?! The line below works when line above is there!? Otherwise not!?
         transform = self._get_rigid_registration_transform(stack, volume_estimate, display_info)
         self._update_slice_transformations_of_group(stack, volume_estimate, range(0, len(slices)), transform)
-        if display_info:
-            sitkh.print_rigid_transformation(transform)
 
         ## 2) Hierarchical Alignment Strategy
         for i in range(0, interleave):
@@ -137,8 +149,6 @@ class HierarchicalSliceAlignment:
             ## Register group
             transform = self._get_rigid_registration_transform_of_hierarchical_group(stack, volume_estimate, ind, display_info)
             self._update_slice_transformations_of_group(stack, volume_estimate, ind, transform)
-            if display_info:
-                sitkh.print_rigid_transformation(transform)
 
             ## Half into subgroups and run recursive alignment
             mid = N/2
@@ -151,9 +161,6 @@ class HierarchicalSliceAlignment:
             ## Register single slice
             transform = self._get_rigid_registration_transform(stack.get_slice(ind[0]), volume_estimate, display_info)
             self._update_slice_transformations_of_group(stack, volume_estimate, ind, transform)
-            if display_info:
-                sitkh.print_rigid_transformation(transform)
-
 
 
     ## Register group of slices to volume estimate to update
@@ -257,12 +264,22 @@ class HierarchicalSliceAlignment:
     #  \return Rigid registration as sitk.Euler3DTransform object
     def _get_rigid_registration_transform(self, fixed_3D, moving_3D, display_registration_info=0):
 
+        ## Blur 
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( fixed_3D, moving_3D )
+
+        self._gaussian_yvv.SetSigmaArray(np.sqrt(np.diagonal(Cov_HR_coord)))
+        self._gaussian_yvv.Update()
+        moving_3D_itk = self._gaussian_yvv.GetOutput()
+        moving_3D_itk.DisconnectPipeline()
+
+        moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
+        # moving_3D_sitk = moving_3D.sitk
+
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()
 
         ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
         # initial_transform = sitk.CenteredTransformInitializer(fixed_3D.sitk, moving_3D.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
-
         initial_transform = sitk.Euler3DTransform()
 
         ## Set the initial transform and parameters to optimize
@@ -270,7 +287,6 @@ class HierarchicalSliceAlignment:
 
         ## Set an image masks in order to restrict the sampled points for the metric
         registration_method.SetMetricFixedMask(fixed_3D.sitk_mask)
-        # registration_method.SetMetricMovingMask(moving_3D.sitk_mask)
 
         ## Set percentage of pixels sampled for metric evaluation
         # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
@@ -282,19 +298,19 @@ class HierarchicalSliceAlignment:
         similarity metric settings
         """
         ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
-        registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=10)
+        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=10)
         
         ## Use negative normalized cross correlation image metric
-        # registration_method.SetMetricAsCorrelation()
+        registration_method.SetMetricAsCorrelation()
 
         ## Use demons image metric
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
 
         ## Use mutual information between two images
-        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=3)
+        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=1)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
-        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=200)
+        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
 
         ## Use negative means squares image metric
         # registration_method.SetMetricAsMeanSquares()
@@ -315,13 +331,14 @@ class HierarchicalSliceAlignment:
         # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
 
         ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
-        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=100, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=1000, costFunctionConvergenceFactor=1e+7)
+        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.01, numberOfIterations=100)
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1e-4, numberOfIterations=100, gradientMagnitudeTolerance=1e-4)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
+        # registration_method.SetOptimizerScalesFromIndexShift()
         # registration_method.SetOptimizerScalesFromPhysicalShift()
         registration_method.SetOptimizerScalesFromJacobian()
         
@@ -329,7 +346,7 @@ class HierarchicalSliceAlignment:
         setup for the multi-resolution framework            
         """
         ## Set the shrink factors for each level where each level has the same shrink factor for each dimension
-        registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
+        registration_method.SetShrinkFactorsPerLevel(shrinkFactors=[4,2,1])
 
         ## Set the sigmas of Gaussian used for smoothing at each level
         registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
@@ -348,11 +365,14 @@ class HierarchicalSliceAlignment:
         # print("\n")
 
         ## Execute 3D registration
-        final_transform_3D_sitk = registration_method.Execute(fixed_3D.sitk, moving_3D.sitk) 
+        final_transform_3D_sitk = sitk.Euler3DTransform(registration_method.Execute(fixed_3D.sitk, moving_3D_sitk))
 
         if display_registration_info:
-            print("SimpleITK Image Registration Method:")
-            print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
-            print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+            print("\t\tSimpleITK Image Registration Method:")
+            print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
+            print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
-        return sitk.Euler3DTransform(final_transform_3D_sitk)
+            sitkh.print_rigid_transformation(final_transform_3D_sitk)
+
+
+        return final_transform_3D_sitk

@@ -94,6 +94,7 @@ class Test_SimpleITKHelper(unittest.TestCase):
             , decimals = self.accuracy), 0 )
 
 
+    ## Test conversion from sitk direction and sitk origin to sitk affine transform
     def test_get_sitk_affine_transform_from_sitk_direction_and_origin(self):
         filename = "stack0"
 
@@ -115,5 +116,67 @@ class Test_SimpleITKHelper(unittest.TestCase):
         self.assertEqual(np.around(
             np.linalg.norm(np.array(affine_transform_ref.GetParameters()) - affine_transform.GetParameters())
             , decimals = self.accuracy), 0 )
+
+
+    def test_get_sitk_affine_transform_from_sitk_image(self):
+        filename = "stack0"
+
+        ## Read image via sitk
+        image_sitk = sitk.ReadImage(self.dir_input + filename + ".nii.gz")
+
+        ## Get indices with intensities greater than 0
+        #  indices \in \R^{dim, N_points}
+        indices = np.array(np.where(sitk.GetArrayFromImage(image_sitk)[::-1]>0))
+        N_points = indices.shape[1]
+
+        ## Get sitk affine transform from image first (the way it is used in Slice.py)
+        affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(image_sitk)
+
+        for i in range(0, N_points):
+            index = indices[:,i]
+
+            ## Check Alignment
+            self.assertEqual(np.around(
+                np.linalg.norm(np.array(affine_transform_sitk.TransformPoint(index)) - image_sitk.TransformIndexToPhysicalPoint(index))
+                , decimals = self.accuracy), 0 )
+
+
+    ## Test whether physical position of voxel obtained via affine transform
+    #  corresponds to the one obtained by the image directly
+    def test_computation_point_physical_space_via_affine_transform(self):
+        filename = "stack0"
+
+        ## Read image via sitk
+        image_sitk = sitk.ReadImage(self.dir_input + filename + ".nii.gz")
+
+        ## Get indices with intensities greater than 0
+        #  indices \in \R^{dim, N_points}
+        indices = np.array(np.where(sitk.GetArrayFromImage(image_sitk)[::-1]>0))
+        N_points = indices.shape[1]
+
+        ## Get sitk affine transform from image first (the way it is used in Slice.py)
+        affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(image_sitk)
+
+        dim = image_sitk.GetDimension()
+        A = np.array(affine_transform_sitk.GetMatrix()).reshape(dim,dim)
+        t = np.array(affine_transform_sitk.GetTranslation()).reshape(3,1)
+
+        for i in range(0, N_points):
+            index = indices[:,i].reshape(dim,1)
+
+            ## Check Alignment
+            self.assertEqual(np.around(
+                np.linalg.norm((A.dot(index) + t).flatten() - image_sitk.TransformIndexToPhysicalPoint(index.flatten()))
+                , decimals = self.accuracy), 0 )
+
+
+
+
+
+
+
+
+
+
 
 
