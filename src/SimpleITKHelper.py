@@ -449,7 +449,6 @@ def convert_itk_to_sitk_image(image_itk):
     return image_sitk
 
 
-
 def print_rigid_transformation(rigid_registration_transform, text="rigid transformation"):
     dim = rigid_registration_transform.GetDimension()
 
@@ -461,7 +460,7 @@ def print_rigid_transformation(rigid_registration_transform, text="rigid transfo
 
     print("\t\t" + text + ":")
     # print("matrix = \n" + str(matrix))
-    # print("center = " + str(center))
+    print("center = " + str(center))
     if isinstance(rigid_registration_transform, sitk.Euler3DTransform):
         print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[0:3]*180/np.pi) + " deg")
 

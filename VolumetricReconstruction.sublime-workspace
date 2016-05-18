@@ -635,7 +635,7 @@
 			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
 			"settings":
 			{
-				"buffer_size": 23474,
+				"buffer_size": 23472,
 				"line_ending": "Unix"
 			}
 		}
@@ -857,6 +857,10 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"elastix_exampleout",
+			"elastix_exampleou",
+			"elastix_exampleoutGGG",
+			"elastix_exampleout",
 			"_DTD",
 			"_op1",
 			"str(N_cycles)",
@@ -980,11 +984,7 @@
 			"_get_rigid_registration_transform",
 			"affine_transforms",
 			"k-th cycle",
-			"slice j",
-			"k-th cycle",
-			"HR_volume_estimated",
-			"sigma_array[1] + 0.7*(sigma_array[2]-sigma_array[1])",
-			"sigma_array[1] + 0.5*(sigma_array[2]-sigma_array[1])"
+			"slice j"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1045,7 +1045,7 @@
 	"groups":
 	[
 		{
-			"selected": 8,
+			"selected": 1,
 			"sheets":
 			[
 				{
@@ -1110,8 +1110,8 @@
 						"selection":
 						[
 							[
-								355,
-								355
+								1314,
+								1314
 							]
 						],
 						"settings":
@@ -1119,7 +1119,7 @@
 							"syntax": "Packages/CMake/CMake.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 143.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1149,8 +1149,8 @@
 						"selection":
 						[
 							[
-								4776,
-								4776
+								8020,
+								8020
 							]
 						],
 						"settings":
@@ -1160,7 +1160,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1171.0,
+						"translation.y": 2170.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1216,7 +1216,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 170.0,
+						"translation.y": 207.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1233,8 +1233,8 @@
 						"selection":
 						[
 							[
-								713,
-								713
+								16545,
+								16545
 							]
 						],
 						"settings":
@@ -1244,7 +1244,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 3865.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1328,7 +1328,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 9657.0,
+						"translation.y": 9722.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1336,7 +1336,7 @@
 			]
 		},
 		{
-			"selected": 1,
+			"selected": 5,
 			"sheets":
 			[
 				{
@@ -1484,7 +1484,7 @@
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
 					"settings":
 					{
-						"buffer_size": 23474,
+						"buffer_size": 23472,
 						"regions":
 						{
 							"bookmarks":
@@ -1498,8 +1498,8 @@
 										11437
 									],
 									[
-										22112,
-										22112
+										22110,
+										22110
 									]
 								],
 								"scope": "bookmarks"
@@ -1508,8 +1508,8 @@
 						"selection":
 						[
 							[
-								4573,
-								4573
+								18262,
+								18262
 							]
 						],
 						"settings":
@@ -1520,7 +1520,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1144.0,
+						"translation.y": 5745.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"

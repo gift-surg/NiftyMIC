@@ -320,6 +320,57 @@ def getATA(nda, kernel):
     return getAT(getA(nda,kernel), kernel)
 
 
+## Compute derivative of array with Neumann boundary conditions in 2D 
+#  in x-direction (as alternative to getDx etc)
+#  \param[in] nda image array which will get differentiated
+#  \return derivative of nda in x-direction by considering Neumann bc
+def getDx_neumann_bc_x(nda):
+    kernel = get_forward_difference_x_kernel(2)
+    return ndimage.convolve(nda, kernel, mode="reflect")
+
+
+## Compute derivative of array with Neumann boundary conditions in 2D 
+#  in y-direction (as alternative to getDx etc)
+#  \param[in] nda image array which will get differentiated
+#  \return derivative of nda in y-direction by considering Neumann bc
+def getDx_neumann_bc_y(nda):
+    kernel = get_forward_difference_y_kernel(2)
+    return ndimage.convolve(nda, kernel, mode="reflect")
+
+
+## Compute adjoint derivative of array with Neumann boundary conditions in 2D 
+#  in x-direction (as alternative to getDx etc)
+#  \param[in] nda image array which will get differentiated
+#  \return derivative of nda in x-direction by considering Neumann bc
+def getDTx_neumann_bc_x(nda):
+    ## Formula taken from Inverse Problems coursework 2
+    return np.concatenate((-nda[:,0].reshape(-1,1), -np.diff(nda[:,:-1],1,1), nda[:,-2].reshape(-1,1)),1)
+
+
+## Compute adjoint derivative of array with Neumann boundary conditions in 2D 
+#  in y-direction (as alternative to getDx etc)
+#  \param[in] nda image array which will get differentiated
+#  \return derivative of nda in y-direction by considering Neumann bc
+def getDTx_neumann_bc_y(nda):
+    ## Formula taken from Inverse Problems coursework 2
+    return np.concatenate((-nda[0,:].reshape(1,-1), -np.diff(nda[0:-1,:],1,0), nda[-2,:].reshape(1,-1)),0)
+
+
+## Compute D'D(x), D being the differential operator with Neumann
+#  boundary conditions in 2D (as alternative to getDTDx)
+#  \param[in] nda image array which will get differentiated
+#  \return Laplace of nda
+def getDTDx_neumann_bc(nda):
+
+    Dx_nda = getDx_neumann_bc_x(nda)
+    Dy_nda = getDx_neumann_bc_y(nda)
+
+    DTDx_nda = getDTx_neumann_bc_x(Dx_nda)
+    DTDy_nda = getDTx_neumann_bc_y(Dy_nda)
+
+    return DTDx_nda + DTDy_nda
+
+
 ## Compute D'D(x), D being the differential operator
 #  \param[in] nda image array which will get differentiated
 #  \param[in] kernel_Dx kernel used for differentiation in x-coordinate
@@ -328,6 +379,7 @@ def getATA(nda, kernel):
 #  \param[in] kernel_Dy_adj adjoint kernel of kernel_Dy
 #  \param[in] kernel_Dz kernel used for differentiation in z-coordinate (optional)
 #  \param[in] kernel_Dz_adj adjoint kernel of kernel_Dz (optional)
+#  \return Laplace of nda
 def getDTDx(nda, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, kernel_Dz=None, kernel_Dz_adj=None):
     if kernel_Dz is None:
 
@@ -678,32 +730,19 @@ def TK1_SPD_hess_p(x_vec, p_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, ker
 
     ## Return [A; ]
 
-
-def get_difference_quotient_x_neumann_bc(nda):
-    kernel = get_forward_difference_x_kernel(2)
-    return ndimage.convolve(nda, kernel, mode="reflect")
-
-def get_difference_quotient_y_neumann_bc(nda):
-    kernel = get_forward_difference_y_kernel(2)
-    return ndimage.convolve(nda, kernel, mode="reflect")
-
-def get_adjoint_difference_quotient_x_neumann_bc(nda):
-    return np.concatenate((-nda[:,0].reshape(-1,1), -np.diff(nda[:,:-1],1,1), nda[:,-2].reshape(-1,1)),1)
-
-def get_adjoint_difference_quotient_y_neumann_bc(nda):
-    return np.concatenate((-nda[0,:].reshape(1,-1), -np.diff(nda[0:-1,:],1,0), nda[-2,:].reshape(1,-1)),0)
-
-def getDTDx_neumann(nda):
-
-    Dx_nda = get_difference_quotient_x_neumann_bc(nda)
-    Dy_nda = get_difference_quotient_y_neumann_bc(nda)
-
-    DTDx_nda = get_adjoint_difference_quotient_x_neumann_bc(Dx_nda)
-    DTDy_nda = get_adjoint_difference_quotient_y_neumann_bc(Dy_nda)
-
-    return DTDx_nda + DTDy_nda
-
-##
+"""
+TV-L2
+"""
+## Run TV-L2 algorithm via ADMM (Alternating Direction Method of Multipliers)
+#  in 2D (However, 3D should be quite canonical to add at some point)
+#  \param[in] alpha regularisation parameter for primal problem
+#  \param[in] rho regularisation parameter for augmented Lagrangian term
+#  \param[in] nda array \f$ \in \mathbb{R}^{\text{dim}_x\times \text{dim}_y} \f$ 
+#       of 2D image to be solved for
+#  \param[in] vx auxiliary variable for decoupled but constrained primal problem 
+#       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term
+#  \param[in] vy
+#  \param[in] wx scaled dual variable (by \p rho) originating from augmented Lagrangian
 def run_TVADMM(alpha, rho, iterations, nda, vx, vy, wx, wy, observed_nda, kernel, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, original_nda):
 
     AT_observed_nda = getAT(observed_nda, kernel)
@@ -713,8 +752,14 @@ def run_TVADMM(alpha, rho, iterations, nda, vx, vy, wx, wy, observed_nda, kernel
 
         fig = plt.figure(1)
         fig.clf()
+        plt.suptitle("TV-L2 reconstruction at iteration " + str(iter+1))
+        plt.subplot(121)
         plt.imshow(nda, cmap="Greys_r")
-        plt.title("TV1 recon at iteration " + str(iter+1))
+        plt.title("TV-L2 recon")
+        plt.subplot(122)
+        ax=plt.imshow(nda-original_nda, cmap="jet")
+        plt.title("Difference to ground truth")
+        plt.colorbar(ax)
         plt.draw()
         plt.pause(0.5)
 
@@ -732,33 +777,44 @@ def run_TVADMM(alpha, rho, iterations, nda, vx, vy, wx, wy, observed_nda, kernel
         plt.draw()
         plt.pause(0.5)
 
-##
+
+## Perform one ADMM step
 def perform_ADMM_step(nda, vx, vy, wx, wy, AT_observed_nda, alpha, rho, kernel, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj):
 
-    DxTv = getDTx(vx, kernel_Dx_adj)
-    DyTv = getDTx(vy, kernel_Dy_adj)
+    ## Indicate whether Neumann boundary conditions shall be used.
+    #  However, TK1 operators not with them and solver converges better by
+    #  not using them. Probably would need to change everything to Neumann bc then
+    flag_use_neumann_bc = 0
 
-    DxTw = getDTx(wx, kernel_Dx_adj)
-    DyTw = getDTx(wy, kernel_Dy_adj)
+    if flag_use_neumann_bc:
+        DxTv = getDTx_neumann_bc_x(vx)
+        DyTv = getDTx_neumann_bc_y(vy)
 
-    # DxTv = get_adjoint_difference_quotient_x_neumann_bc(vx)
-    # DyTv = get_adjoint_difference_quotient_y_neumann_bc(vy)
+        DxTw = getDTx_neumann_bc_x(wx)
+        DyTw = getDTx_neumann_bc_y(wy)
+    else:
+        ## Use "reflected" boundary conditions
+        DxTv = getDTx(vx, kernel_Dx_adj)
+        DyTv = getDTx(vy, kernel_Dy_adj)
 
-    # DxTw = get_adjoint_difference_quotient_x_neumann_bc(wx)
-    # DyTw = get_adjoint_difference_quotient_y_neumann_bc(wy)
+        DxTw = getDTx(wx, kernel_Dx_adj)
+        DyTw = getDTx(wy, kernel_Dy_adj)
+
 
     # tol = 1e-10
     # iter_max = 20
 
-    ## 1) Solve for x^{k+1}
+    ## 1) Solve for f^{k+1} by using first order Tikhonov regularisation
     x0 = nda.flatten()
 
     ## Compute RHS
     RHS = AT_observed_nda + rho*(DxTv + DyTv - DxTw - DyTw)
 
     ## Compute (A'A + alpha*D'D)(RHS)
-    # op_RHS = getATA(RHS, kernel) + rho*getDTDx_neumann(RHS)
-    op_RHS = getATA(RHS, kernel) + rho*getDTDx(RHS, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj)
+    if flag_use_neumann_bc:
+        op_RHS = getATA(RHS, kernel) + rho*getDTDx_neumann_bc(RHS)
+    else:
+        op_RHS = getATA(RHS, kernel) + rho*getDTDx(RHS, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj)
 
 
     fun = lambda x: TK1_SPD(x, RHS.flatten(), kernel, rho, nda.shape, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj)
@@ -767,15 +823,17 @@ def perform_ADMM_step(nda, vx, vy, wx, wy, AT_observed_nda, alpha, rho, kernel, 
     nda = get_reconstruction(fun=fun, jac=jac, hessp=None, x0=x0, shape_solution=nda.shape, info_title=True)[0]
 
     ## 2) Solve for v^{k+1}
-    Dxnda = getDx(nda, kernel_Dx)
-    Dynda = getDx(nda, kernel_Dy)
-    # Dxnda = get_difference_quotient_x_neumann_bc(nda)
-    # Dynda = get_difference_quotient_y_neumann_bc(nda)
+    if flag_use_neumann_bc:
+        Dxnda = getDx_neumann_bc_x(nda)
+        Dynda = getDx_neumann_bc_y(nda)
+    else:
+        Dxnda = getDx(nda, kernel_Dx)
+        Dynda = getDx(nda, kernel_Dy)
 
     tx = Dxnda + wx
     ty = Dynda + wy
 
-    vx, vy = get_vectorial_soft_threshold(alpha/rho, tx, ty)
+    vx, vy = get_vectorial_soft_threshold_2D(alpha/rho, tx, ty)
 
     ## 3) Solve for w^{k+1}, i.e. scaled dual variable
     wx = wx + Dxnda - vx
@@ -784,28 +842,43 @@ def perform_ADMM_step(nda, vx, vy, wx, wy, AT_observed_nda, alpha, rho, kernel, 
     return nda, vx, vy, wx, wy
 
 
-##
-#  \param[in] ell scalar > 0
-#  \param[in] t \f$ \in\mathbb{R}^{\text{dim} \times N} \f$
-#  \return vectorial soft thresholded value \f$ \in\mathbb{R}^{\text{dim} \times N} \f$
-def get_vectorial_soft_threshold(ell, tx, ty):
+## Get vectorial soft threshold based on \p get_soft_threshold \f$ S_\ell \f$
+#  \param[in] ell scalar > 0 defining the threshold
+#  \param[in] tx x-coordinate of auxiliary variable as numpy array \f$ \in \mathbb{R}^{\text{dim}_x\times \text{dim}_y} \f$
+#  \param[in] ty y-coordinate of auxiliary variable as numpy array \f$ \in \mathbb{R}^{\text{dim}_x\times \text{dim}_y} \f$
+#  \return vectorial soft threshold
+#       \f[ \vec{S_\ell}(\vec{t}) = \begin{cases}
+#           \frac{S_\ell(\Vert \vec{t} \Vert_2)}{\Vert \vec{t} \Vert_2} \vec{t},& \text{if } \Vert \vec{t} \Vert_2 > \ell \\
+#           0, & \text{otherwise}
+#       \end{cases}
+#       \f]
+def get_vectorial_soft_threshold_2D(ell, tx, ty):
     Sx = np.zeros(tx.shape)
     Sy = np.zeros(ty.shape)
     t_norm = np.sqrt(tx**2 + ty**2)
 
     ind = t_norm > ell
 
-    Sx[ind] = get_IST_threshold(ell, t_norm[ind])/t_norm[ind]*tx[ind]
-    Sy[ind] = get_IST_threshold(ell, t_norm[ind])/t_norm[ind]*ty[ind]
+    Sx[ind] = get_soft_threshold(ell, t_norm[ind])*tx[ind]/t_norm[ind]
+    Sy[ind] = get_soft_threshold(ell, t_norm[ind])*ty[ind]/t_norm[ind]
 
     return Sx, Sy
 
 
-##
-#  \param[in] ell scalar > 0
-#  \param[in] x \f$ \in\mathbb{R}^{1 \times N} \f$
-def get_IST_threshold(ell, x):
-    return np.maximum(np.abs(x) - ell, 0)*np.sign(x)
+## Get soft threshold
+#  \param[in] ell threshold as scalar > 0
+#  \param[in] t array containing the values to be thresholded
+#  \return soft threshold
+#       \f[ S_\ell(t) 
+#       =  \max(|t|-\ell,0)\,\text{sgn}(t)
+#       = \begin{cases}
+#           t-\ell,& \text{if } t>\ell \\
+#           0,& \text{if } |t|\le\ell \\
+#           t+\ell,& \text{if } t<\ell
+#       \end{cases}
+#       \f]
+def get_soft_threshold(ell, t):
+    return np.maximum(np.abs(t) - ell, 0)*np.sign(t)
 
 
 ## Use scipy.optimize.minimize to get an approximate solution
@@ -1470,8 +1543,8 @@ class TestUM(unittest.TestCase):
 
         ## 1) Check forward difference in x-direction
         ## Symmetric boundary conditions
-        Ax = get_difference_quotient_x_neumann_bc(x)
-        ATy = get_adjoint_difference_quotient_x_neumann_bc(y)
+        Ax = getDx_neumann_bc_x(x)
+        ATy = getDTx_neumann_bc_x(y)
         abs_diff = np.abs( np.sum(Ax*y) - np.sum(ATy*x) )
 
         ## Check|(Lx,y) - (x,Ly)| = 0 
@@ -1481,8 +1554,8 @@ class TestUM(unittest.TestCase):
 
         ## 2) Check forward difference in y-direction
         ## Symmetric boundary conditions
-        Ax = get_difference_quotient_y_neumann_bc(x)
-        ATy = get_adjoint_difference_quotient_y_neumann_bc(y)
+        Ax = getDx_neumann_bc_y(x)
+        ATy = getDTx_neumann_bc_y(y)
         abs_diff = np.abs( np.sum(Ax*y) - np.sum(ATy*x) )
 
         ## Check|(Lx,y) - (x,Ly)| = 0 
@@ -1671,7 +1744,7 @@ if __name__ == '__main__':
     """
     TVL2 regularisation
     """
-    alpha = 0.1
+    alpha = 10
     rho = 10
     iterations = 20
 
