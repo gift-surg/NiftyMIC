@@ -4,6 +4,46 @@
 		"selected_items":
 		[
 			[
+				"N_",
+				"N_params"
+			],
+			[
+				"_dir",
+				"_dir_results_figures"
+			],
+			[
+				"ind",
+				"index"
+			],
+			[
+				"Transform",
+				"TransformIndexToPhysicalPoint	(FirstEstimateOfHRVolume.py)"
+			],
+			[
+				"in",
+				"index"
+			],
+			[
+				"image",
+				"image_sitk"
+			],
+			[
+				"GetD",
+				"GetDimension	(sitkSimpleTransformix.cxx)"
+			],
+			[
+				"affine_transform_",
+				"affine_transform_sitk"
+			],
+			[
+				"ty",
+				"type_image_itk"
+			],
+			[
+				"GetI",
+				"GetImageDimension"
+			],
+			[
 				"Prepro",
 				"preprocessing"
 			],
@@ -18,10 +58,6 @@
 			[
 				"RMS",
 				"RMS_mean"
-			],
-			[
-				"N_",
-				"N_cycles"
 			],
 			[
 				"points_",
@@ -478,42 +514,6 @@
 			[
 				"slice_it",
 				"slice_itk_mask"
-			],
-			[
-				"suf",
-				"suffix_mask=\"_mask	(main.py)"
-			],
-			[
-				"read_in",
-				"read_input_stacks_from_stacks	(ReconstructionManager.py)"
-			],
-			[
-				"refer",
-				"reference_stack_id	(main.py)"
-			],
-			[
-				"read_input_stacks_from",
-				"read_input_stacks_from_filenames	(main.py)"
-			],
-			[
-				"angle_",
-				"angle_z"
-			],
-			[
-				"angl",
-				"angle_y"
-			],
-			[
-				"affine_t",
-				"affine_transform_slice"
-			],
-			[
-				"output_di",
-				"output_direction_sitk"
-			],
-			[
-				"affine_tras",
-				"affine_transform"
 			]
 		]
 	},
@@ -560,14 +560,6 @@
 			}
 		},
 		{
-			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
-			"settings":
-			{
-				"buffer_size": 23942,
-				"line_ending": "Unix"
-			}
-		},
-		{
 			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/FirstEstimateOfHRVolume.py",
 			"settings":
 			{
@@ -579,7 +571,23 @@
 			"file": "studies/simulateAcquisition.py",
 			"settings":
 			{
-				"buffer_size": 13068,
+				"buffer_size": 13066,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "test/modules/Test_SimpleITKHelper.py",
+			"settings":
+			{
+				"buffer_size": 6190,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/InverseProblemSolver.py",
+			"settings":
+			{
+				"buffer_size": 37446,
 				"line_ending": "Unix"
 			}
 		},
@@ -595,7 +603,7 @@
 			"file": "studies/ValidationRegistration.py",
 			"settings":
 			{
-				"buffer_size": 9442,
+				"buffer_size": 10246,
 				"line_ending": "Unix"
 			}
 		},
@@ -620,6 +628,14 @@
 			"settings":
 			{
 				"buffer_size": 5806,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
+			"settings":
+			{
+				"buffer_size": 23474,
 				"line_ending": "Unix"
 			}
 		}
@@ -684,6 +700,12 @@
 	},
 	"file_history":
 	[
+		"/Users/mebner/development/SimpleElastix/SimpleElastix/Code/Elastix/src/sitkSimpleTransformix.cxx",
+		"/Users/mebner/development/ITK/runCmake.sh",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/test/Test_main.py",
+		"/Users/mebner/development/SimpleElastix/SimpleElastix/Code/Elastix/include/sitkSimpleTransformix.h",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
+		"/Users/mebner/development/SimpleElastix/runCmake.sh",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/data/fetal_neck_mass_brain/data.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/SimpleITK_Blurring.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/ITK_BlurringOperator.py",
@@ -695,19 +717,15 @@
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Stack.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/StackManager.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/test/modules/Test_SimulatorSliceAcqusition.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/test/Test_main.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Slice.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/HierarchicalSliceAlignment.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/main.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/ScatteredDataApproximation.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SliceToVolumeRegistration.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/SliceAcqusition.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/ReconstructionValidation.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/ReconstructionManager.py",
-		"/Users/mebner/development/ITK/runCmake.sh",
-		"/Users/mebner/development/SimpleElastix/runCmake.sh",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/test/modules/Test_SliceAcqusition.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/InPlaneRigidRegistration.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/InverseProblemSolver.py",
@@ -809,9 +827,7 @@
 		"/Users/mebner/Desktop/FLIRT/affine_matrix_identity.txt",
 		"/Users/mebner/Desktop/FLIRT/affine_matrix_FLIRT copy.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/GettingStarted/SimpleITK_ScatteredDataReconstruction.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/GettingStarted/SimpleITK_2D3DRegistration.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/data/StructuralData_Pig/data.txt",
-		"/Users/mebner/Library/Application Support/Sublime Text 2/Packages/Python/for.sublime-snippet"
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/GettingStarted/SimpleITK_2D3DRegistration.py"
 	],
 	"find":
 	{
@@ -841,6 +857,15 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"_DTD",
+			"_op1",
+			"str(N_cycles)",
+			"str(1)",
+			"legend",
+			"_dir_plot_results",
+			"OutputDirectory",
+			"get_sitk_affine_transform_from_sitk_direction_and_origin",
+			"GCC",
 			"Data preprocessing",
 			"_get_isotropically_resampled_stack",
 			"_get_rigid_registration_transform_3D_sitk",
@@ -959,16 +984,7 @@
 			"k-th cycle",
 			"HR_volume_estimated",
 			"sigma_array[1] + 0.7*(sigma_array[2]-sigma_array[1])",
-			"sigma_array[1] + 0.5*(sigma_array[2]-sigma_array[1])",
-			"affine_transforms_ground_truth",
-			"get_ground_truth_affine_transforms",
-			"update_affine_transform",
-			"_get_simulated_stacks_with_ground_truth_data",
-			"ground_truth_affine_transforms",
-			"_get_simulated_stacks_with_ground_truth_data",
-			"_get_simulated_stacks_with_ground_truth_affine_transforms",
-			"affine",
-			"get_ground_truth_affine_transforms"
+			"sigma_array[1] + 0.5*(sigma_array[2]-sigma_array[1])"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1029,7 +1045,7 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 8,
 			"sheets":
 			[
 				{
@@ -1065,8 +1081,8 @@
 						"selection":
 						[
 							[
-								16212,
-								16212
+								649,
+								649
 							]
 						],
 						"settings":
@@ -1077,7 +1093,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 4149.0,
+						"translation.y": 56.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1094,8 +1110,8 @@
 						"selection":
 						[
 							[
-								1232,
-								1232
+								355,
+								355
 							]
 						],
 						"settings":
@@ -1189,8 +1205,8 @@
 						"selection":
 						[
 							[
-								221,
-								221
+								1682,
+								1682
 							]
 						],
 						"settings":
@@ -1200,25 +1216,25 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 170.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 5,
-					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/FirstEstimateOfHRVolume.py",
 					"settings":
 					{
-						"buffer_size": 23942,
+						"buffer_size": 19306,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1400,
-								1400
+								713,
+								713
 							]
 						],
 						"settings":
@@ -1235,18 +1251,18 @@
 				},
 				{
 					"buffer": 6,
-					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/FirstEstimateOfHRVolume.py",
+					"file": "studies/simulateAcquisition.py",
 					"settings":
 					{
-						"buffer_size": 19306,
+						"buffer_size": 13066,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								11228,
-								11228
+								6771,
+								6771
 							]
 						],
 						"settings":
@@ -1256,25 +1272,25 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2881.0,
+						"translation.y": 1807.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 7,
-					"file": "studies/simulateAcquisition.py",
+					"file": "test/modules/Test_SimpleITKHelper.py",
 					"settings":
 					{
-						"buffer_size": 13068,
+						"buffer_size": 6190,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								8179,
-								8179
+								3133,
+								3133
 							]
 						],
 						"settings":
@@ -1284,7 +1300,35 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2315.0,
+						"translation.y": 1269.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/InverseProblemSolver.py",
+					"settings":
+					{
+						"buffer_size": 37446,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								33120,
+								33120
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 9657.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1292,11 +1336,11 @@
 			]
 		},
 		{
-			"selected": 4,
+			"selected": 1,
 			"sheets":
 			[
 				{
-					"buffer": 8,
+					"buffer": 9,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/HierarchicalSliceAlignment.py",
 					"settings":
 					{
@@ -1318,25 +1362,25 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 4123.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
-					"buffer": 9,
+					"buffer": 10,
 					"file": "studies/ValidationRegistration.py",
 					"settings":
 					{
-						"buffer_size": 9442,
+						"buffer_size": 10246,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								593,
-								482
+								6076,
+								6076
 							]
 						],
 						"settings":
@@ -1346,13 +1390,13 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1361.0,
+						"translation.y": 1250.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
-					"buffer": 10,
+					"buffer": 11,
 					"file": "studies/ValidationReconstruction.py",
 					"settings":
 					{
@@ -1380,7 +1424,7 @@
 					"type": "text"
 				},
 				{
-					"buffer": 11,
+					"buffer": 12,
 					"file": "studies/SimulatorSliceAcqusition.py",
 					"settings":
 					{
@@ -1391,8 +1435,8 @@
 						"selection":
 						[
 							[
-								17572,
-								17572
+								621,
+								621
 							]
 						],
 						"settings":
@@ -1402,13 +1446,13 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 5062.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
-					"buffer": 12,
+					"buffer": 13,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/main.py",
 					"settings":
 					{
@@ -1419,8 +1463,8 @@
 						"selection":
 						[
 							[
-								1558,
-								1558
+								722,
+								722
 							]
 						],
 						"settings":
@@ -1431,6 +1475,52 @@
 						},
 						"translation.x": 0.0,
 						"translation.y": 100.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 14,
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
+					"settings":
+					{
+						"buffer_size": 23474,
+						"regions":
+						{
+							"bookmarks":
+							{
+								"flags": 144,
+								"icon": "bookmark",
+								"regions":
+								[
+									[
+										11437,
+										11437
+									],
+									[
+										22112,
+										22112
+									]
+								],
+								"scope": "bookmarks"
+							}
+						},
+						"selection":
+						[
+							[
+								4573,
+								4573
+							]
+						],
+						"settings":
+						{
+							"spell_check": false,
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1144.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1495,6 +1585,22 @@
 		"selected_items":
 		[
 			[
+				"inver",
+				"src/InverseProblemSolver.py"
+			],
+			[
+				"test_",
+				"test/Test_main.py"
+			],
+			[
+				"simpletransformix.h",
+				"SimpleElastix/Code/Elastix/include/sitkSimpleTransformix.h"
+			],
+			[
+				"simp",
+				"src/SimpleITKHelper.py"
+			],
+			[
 				"simu",
 				"studies/simulateAcquisition.py"
 			],
@@ -1533,10 +1639,6 @@
 			[
 				"stac",
 				"src/StackManager.py"
-			],
-			[
-				"simp",
-				"src/SimpleITKHelper.py"
 			],
 			[
 				"sitk",
@@ -1597,10 +1699,6 @@
 			[
 				"sda",
 				"src/ScatteredDataApproximation.py"
-			],
-			[
-				"inver",
-				"src/InverseProblemSolver.py"
 			],
 			[
 				"slice.",
@@ -1800,7 +1898,7 @@
 	"show_minimap": false,
 	"show_open_files": true,
 	"show_tabs": true,
-	"side_bar_visible": false,
+	"side_bar_visible": true,
 	"side_bar_width": 209.0,
 	"status_bar_visible": true
 }

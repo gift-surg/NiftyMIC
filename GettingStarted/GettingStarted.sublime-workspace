@@ -4,6 +4,42 @@
 		"selected_items":
 		[
 			[
+				"dir",
+				"dir_output"
+			],
+			[
+				"My",
+				"MyITKImageHelper::writeImage	(MyITKImageHelper.cpp)"
+			],
+			[
+				"image3",
+				"image_3D_corrected"
+			],
+			[
+				"image_3",
+				"image_3D"
+			],
+			[
+				"MyI",
+				"MyITKImageHelper::showImage"
+			],
+			[
+				"Di",
+				"DisconnectPipeline"
+			],
+			[
+				"ImageT",
+				"ImageType3D"
+			],
+			[
+				"std",
+				"std::endl	(runN4BiasFieldCorrectionImageFilter.cpp)"
+			],
+			[
+				"inc",
+				"include"
+			],
+			[
 				"moving_m",
 				"moving_mask_object"
 			],
@@ -116,10 +152,6 @@
 				"GetRequestedRegion"
 			],
 			[
-				"std",
-				"std::endl"
-			],
-			[
 				"valid",
 				"validThreads"
 			],
@@ -198,10 +230,6 @@
 			[
 				"Py",
 				"PyBuffer"
-			],
-			[
-				"dir",
-				"direction_itk"
 			],
 			[
 				"dire",
@@ -486,44 +514,24 @@
 			[
 				"obser",
 				"observed_nda"
-			],
-			[
-				"get_k",
-				"get_forward_difference_x_kernel"
-			],
-			[
-				"nda_",
-				"nda_dx"
-			],
-			[
-				"GetIm",
-				"GetImageFromArray"
-			],
-			[
-				"cmap",
-				"cmap=\"Greys_r	(SimpleITK_Blurring.py)"
-			],
-			[
-				"k",
-				"kernel_dx"
-			],
-			[
-				"Fet",
-				"FetalBrain_reconstruction_4stacks"
-			],
-			[
-				"z_",
-				"z_interval"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageGrid/include/itkAdjointOrientedGaussianInterpolateImageFilter.h",
+			"file": "/Users/mebner/development/ITK/ITK/Wrapping/WrapITKTypes.cmake",
 			"settings":
 			{
-				"buffer_size": 20629,
+				"buffer_size": 12367,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cpp/MyN4BiasFieldCorrectionImageFilter/source/runN4BiasFieldCorrectionImageFilter.cpp",
+			"settings":
+			{
+				"buffer_size": 4019,
 				"line_ending": "Unix"
 			}
 		},
@@ -536,90 +544,18 @@
 			}
 		},
 		{
-			"file": "cpp/MyAdjointOrientedGaussian/test/adjointOrientedGaussianInterpolateImageFilter_UnitTests.cpp",
-			"settings":
-			{
-				"buffer_size": 34276,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageFilterBase/include/itkBinaryFunctorImageFilter.hxx",
-			"settings":
-			{
-				"buffer_size": 10034,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "SimpleITK_2D3DRegistration.py",
-			"settings":
-			{
-				"buffer_size": 25353,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "DataPreprocessing.py",
-			"settings":
-			{
-				"buffer_size": 9734,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/Users/mebner/development/ITK/ITK/Modules/Numerics/Optimizersv4/include/itkRegistrationParameterScalesFromPhysicalShift.h",
-			"settings":
-			{
-				"buffer_size": 3557,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/Users/mebner/development/ITK/ITK/Modules/Numerics/Optimizersv4/include/itkRegistrationParameterScalesEstimator.h",
-			"settings":
-			{
-				"buffer_size": 11688,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/Users/mebner/development/ITK/ITK/Modules/Numerics/Optimizersv4/wrapping/itkOptimizerParameterScalesEstimator.wrap",
-			"settings":
-			{
-				"buffer_size": 318,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/Users/mebner/development/ITK/ITK/Wrapping/WrapITKTypes.cmake",
-			"settings":
-			{
-				"buffer_size": 12367,
-				"line_ending": "Unix"
-			}
-		},
-		{
 			"file": "Optimization.py",
 			"settings":
 			{
-				"buffer_size": 57641,
+				"buffer_size": 57763,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "ITK_BlurringOperator_Adjoint.py",
+			"file": "/Users/mebner/development/ITK/ITK/Modules/Filtering/BiasCorrection/test/itkN4BiasFieldCorrectionImageFilterTest.cxx",
 			"settings":
 			{
-				"buffer_size": 61146,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "ITK_BlurringOperator.py",
-			"settings":
-			{
-				"buffer_size": 101903,
+				"buffer_size": 11735,
 				"line_ending": "Unix"
 			}
 		}
@@ -680,7 +616,27 @@
 	},
 	"file_history":
 	[
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/ITK_BlurringOperator_Adjoint.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/ITK_BlurringOperator.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/include/MyITKImageHelper.tpp",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/include/MyITKImageHelper.h",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/source/MyITKImageHelper.cpp",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/source/CMakeLists.txt",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/CMakeLists.txt",
+		"/Users/mebner/development/ITK/ITK/Modules/Filtering/BiasCorrection/include/itkN4BiasFieldCorrectionImageFilter.h",
+		"/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageGrid/include/itkAdjointOrientedGaussianInterpolateImageFilter.h",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/build/bin/runN4BiasFieldCorrectionImageFilter",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/source/CMakeLists.txt",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/CMakeLists.txt",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/source/adjointOrientedGaussianInterpolateImageFilter.cpp",
+		"/Users/mebner/development/ITK/ITK/Modules/Numerics/Optimizersv4/wrapping/itkOptimizerParameterScalesEstimator.wrap",
+		"/Users/mebner/development/ITK/ITK/Modules/Numerics/Optimizersv4/include/itkRegistrationParameterScalesFromPhysicalShift.h",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/DataPreprocessing.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/SimpleITK_2D3DRegistration.py",
+		"/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageFilterBase/include/itkBinaryFunctorImageFilter.hxx",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/source/adjointOrientedGaussianInterpolateImageFilter.cpp",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/test/adjointOrientedGaussianInterpolateImageFilter_UnitTests.cpp",
+		"/Users/mebner/development/ITK/ITK/Modules/Numerics/Optimizersv4/include/itkRegistrationParameterScalesEstimator.h",
 		"/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageGrid/include/itkAdjointOrientedGaussianInterpolateImageFilter.hxx",
 		"/Users/mebner/development/ITK/ITK/Modules/Registration/Common/include/itkNormalizedMutualInformationHistogramImageToImageMetric.h",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/SimpleITK_NiftyReg_FLIRT.py",
@@ -697,8 +653,6 @@
 		"/Users/mebner/development/ITK/ITK/Modules/Registration/Common/include/itkHistogramImageToImageMetric.h",
 		"/Users/mebner/development/ITK/ITK/Modules/Registration/Common/wrapping/itkNormalizedCorrelationImageToImageMetric.wrap",
 		"/Users/mebner/development/ITK/ITK/Modules/Registration/Common/wrapping/itkNormalizedMutualInformationHistogramImageToImageMetric.wrap",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/ITK_BlurringOperator.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/ITK_BlurringOperator_Adjoint.py",
 		"/Users/mebner/development/ITK/ITK/Modules/Core/Common/include/itkImageSource.hxx",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/Optimization.py",
 		"/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageIntensity/include/itkAddImageFilter.h",
@@ -753,12 +707,10 @@
 		"/Users/mebner/UCL/UCL/Courses/Inverse Problems in Imaging/Courseworks/cw01/getKernel2D.m",
 		"/Users/mebner/development/ITK/ITK/Modules/Core/Common/include/itkProcessObject.h",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/include/MyITKImageHelper.tpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/CMakeLists.txt",
 		"/Users/mebner/development/ITK/ITK/Documentation/Migration/ImageToImageFilterVerifyInputs.xml",
 		"/Users/mebner/development/ITK/ITK/Modules/Core/ImageFunction/include/itkOrientedGaussianInterpolateImageFunction.h",
 		"/Users/mebner/development/ITK/ITK/Modules/Remote/SmoothingRecursiveYvvGaussianFilter/include/itkRecursiveLineYvvGaussianImageFilter.h",
 		"/Users/mebner/development/ITK/ITK/Modules/Remote/SmoothingRecursiveYvvGaussianFilter/include/itkRecursiveLineYvvGaussianImageFilter.hxx",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/source/CMakeLists.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/build/CMakeCache.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/build/foo.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/build/toto.txt",
@@ -791,23 +743,7 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyOrientedGaussian/source/resampleImageFilter.cpp",
 		"/Users/mebner/development/valgrind-3.11.0/README.aarch64",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/CMakeLists.txt",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/source/CMakeLists.txt",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/include/MyITKImageHelper.tpp",
-		"/Users/mebner/UCL/UCL/Courses/Research Computing with C++/courseworks/02_Conways Game of Life/test/main_UnitTests.cc",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/test/CMakeLists.txt",
-		"/Users/mebner/UCL/UCL/Courses/Research Computing with C++/courseworks/02_Conways Game of Life/CMakeLists.txt",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/include/MyTemplateClassExample.tpp",
-		"/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageGrid/wrapping/itkAdjointOrientedGaussianInterpolateImageFilter.wrap",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/source/ImageFactory_old.cpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/source/ImageFactory.cpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/include/ImageFactory.cpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/include/MyITKImageHelper.cpp",
-		"/usr/local/fsl/bin/fslhd",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/source/resampleImageFilter.cpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/source/itkImageHelper.cpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/include/itkImageHelper.h",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/source/ImageHelper.cpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/include/ImageHelper.h"
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/source/CMakeLists.txt"
 	],
 	"find":
 	{
@@ -856,6 +792,29 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"nii.gz",
+			"correcter",
+			"CommandIterationUpdate",
+			"CorrecterType",
+			"maskImage",
+			"correcter",
+			"CorrecterType",
+			"ImageType",
+			"ThresholderType",
+			"inputImage",
+			"maskImage",
+			"MaskReaderType2D",
+			"2D",
+			"overlay",
+			"ImageType2D",
+			"ImageType3D",
+			"ImageType2D",
+			"geTyp",
+			"Ima",
+			"ImageTy",
+			"Pix",
+			"_1",
+			"ImageType2D",
 			"image_IO_type",
 			"metric",
 			"ITKM",
@@ -960,30 +919,7 @@
 			"TK1",
 			"return kernel kernel",
 			"regularization",
-			"TK0",
-			"f_TK0_hess_p",
-			"f_TK0_grad",
-			"f_TK0",
-			"regularization",
-			"_regularization",
-			"mode",
-			"*",
-			"erence",
-			"x",
-			"convolveifference",
-			"_D",
-			"getDx",
-			"_Dx",
-			"get_",
-			"dim",
-			"[(z,)y,x]",
-			"dim d",
-			"cast",
-			"max_iter",
-			"solver",
-			"HR_volume_Kainz",
-			"ITK image",
-			"_get_HR_image_from_array_vec"
+			"TK0"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1027,28 +963,28 @@
 	"groups":
 	[
 		{
-			"selected": 7,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageGrid/include/itkAdjointOrientedGaussianInterpolateImageFilter.h",
+					"file": "/Users/mebner/development/ITK/ITK/Wrapping/WrapITKTypes.cmake",
 					"settings":
 					{
-						"buffer_size": 20629,
+						"buffer_size": 12367,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								247,
+								247
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/C++/C++.tmLanguage",
+							"syntax": "Packages/CMake/CMake.tmLanguage",
 							"tab_size": 2,
 							"translate_tabs_to_spaces": true
 						},
@@ -1060,35 +996,18 @@
 				},
 				{
 					"buffer": 1,
-					"file": "cpp/MyAdjointOrientedGaussian/source/adjointOrientedGaussianInterpolateImageFilter.cpp",
+					"file": "cpp/MyN4BiasFieldCorrectionImageFilter/source/runN4BiasFieldCorrectionImageFilter.cpp",
 					"settings":
 					{
-						"buffer_size": 16537,
+						"buffer_size": 4019,
 						"regions":
 						{
-							"bookmarks":
-							{
-								"flags": 144,
-								"icon": "bookmark",
-								"regions":
-								[
-									[
-										5238,
-										5238
-									],
-									[
-										12464,
-										12464
-									]
-								],
-								"scope": "bookmarks"
-							}
 						},
 						"selection":
 						[
 							[
-								108,
-								108
+								715,
+								715
 							]
 						],
 						"settings":
@@ -1102,13 +1021,19 @@
 						"zoom_level": 1.0
 					},
 					"type": "text"
-				},
+				}
+			]
+		},
+		{
+			"selected": 1,
+			"sheets":
+			[
 				{
 					"buffer": 2,
-					"file": "cpp/MyAdjointOrientedGaussian/test/adjointOrientedGaussianInterpolateImageFilter_UnitTests.cpp",
+					"file": "cpp/MyAdjointOrientedGaussian/source/adjointOrientedGaussianInterpolateImageFilter.cpp",
 					"settings":
 					{
-						"buffer_size": 34276,
+						"buffer_size": 16537,
 						"regions":
 						{
 						},
@@ -1122,113 +1047,57 @@
 						"settings":
 						{
 							"syntax": "Packages/C++/C++.tmLanguage",
-							"tab_size": 4,
+							"tab_size": 2,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 1301.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 3,
-					"file": "/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageFilterBase/include/itkBinaryFunctorImageFilter.hxx",
+					"file": "Optimization.py",
 					"settings":
 					{
-						"buffer_size": 10034,
+						"buffer_size": 57763,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								630,
-								630
+								28841,
+								28841
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/C++/C++.tmLanguage",
-							"tab_size": 2,
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 13673.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 4,
-					"file": "SimpleITK_2D3DRegistration.py",
+					"file": "/Users/mebner/development/ITK/ITK/Modules/Filtering/BiasCorrection/test/itkN4BiasFieldCorrectionImageFilterTest.cxx",
 					"settings":
 					{
-						"buffer_size": 25353,
+						"buffer_size": 11735,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								8128,
-								8128
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2099.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"file": "DataPreprocessing.py",
-					"settings":
-					{
-						"buffer_size": 9734,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								7520,
-								7520
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2819.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"file": "/Users/mebner/development/ITK/ITK/Modules/Numerics/Optimizersv4/include/itkRegistrationParameterScalesFromPhysicalShift.h",
-					"settings":
-					{
-						"buffer_size": 3557,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1609,
-								1609
+								9336,
+								9336
 							]
 						],
 						"settings":
@@ -1238,179 +1107,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 86.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 7,
-					"file": "/Users/mebner/development/ITK/ITK/Modules/Numerics/Optimizersv4/include/itkRegistrationParameterScalesEstimator.h",
-					"settings":
-					{
-						"buffer_size": 11688,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								7625,
-								7625
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C++.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2175.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 8,
-					"file": "/Users/mebner/development/ITK/ITK/Modules/Numerics/Optimizersv4/wrapping/itkOptimizerParameterScalesEstimator.wrap",
-					"settings":
-					{
-						"buffer_size": 318,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								206,
-								206
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 9,
-					"file": "/Users/mebner/development/ITK/ITK/Wrapping/WrapITKTypes.cmake",
-					"settings":
-					{
-						"buffer_size": 12367,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								6824,
-								6824
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/CMake/CMake.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2510.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				}
-			]
-		},
-		{
-			"selected": 1,
-			"sheets":
-			[
-				{
-					"buffer": 10,
-					"file": "Optimization.py",
-					"settings":
-					{
-						"buffer_size": 57641,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								49034,
-								49034
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 17682.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 11,
-					"file": "ITK_BlurringOperator_Adjoint.py",
-					"settings":
-					{
-						"buffer_size": 61146,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								53606,
-								53606
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 18019.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 12,
-					"file": "ITK_BlurringOperator.py",
-					"settings":
-					{
-						"buffer_size": 101903,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								24750,
-								24750
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 9170.0,
+						"translation.y": 2593.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1474,6 +1171,30 @@
 		"height": 0.0,
 		"selected_items":
 		[
+			[
+				"n4bias",
+				"ITK/Modules/Filtering/BiasCorrection/include/itkN4BiasFieldCorrectionImageFilter.h"
+			],
+			[
+				"adjoi",
+				"GettingStarted/cpp/MyAdjointOrientedGaussian/source/adjointOrientedGaussianInterpolateImageFilter.cpp"
+			],
+			[
+				"myitki",
+				"GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/include/MyITKImageHelper.tpp"
+			],
+			[
+				"runn",
+				"GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/source/runN4BiasFieldCorrectionImageFilter.cpp"
+			],
+			[
+				"run",
+				"GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/build/bin/runN4BiasFieldCorrectionImageFilter"
+			],
+			[
+				"itkadjoin",
+				"ITK/Modules/Filtering/ImageGrid/include/itkAdjointOrientedGaussianInterpolateImageFilter.h"
+			],
 			[
 				"registrationparameterscalesfromphysicalshift",
 				"ITK/Modules/Numerics/Optimizersv4/include/itkRegistrationParameterScalesFromPhysicalShift.h"
@@ -1633,10 +1354,6 @@
 			[
 				"blurrin",
 				"GettingStarted/SimpleITK_Blurring.py"
-			],
-			[
-				"run",
-				"Inverse Problems in Imaging/Courseworks/cw01/cw01_run.m"
 			],
 			[
 				"o",

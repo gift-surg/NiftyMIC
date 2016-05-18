@@ -679,6 +679,135 @@ def TK1_SPD_hess_p(x_vec, p_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, ker
     ## Return [A; ]
 
 
+def get_difference_quotient_x_neumann_bc(nda):
+    kernel = get_forward_difference_x_kernel(2)
+    return ndimage.convolve(nda, kernel, mode="reflect")
+
+def get_difference_quotient_y_neumann_bc(nda):
+    kernel = get_forward_difference_y_kernel(2)
+    return ndimage.convolve(nda, kernel, mode="reflect")
+
+def get_adjoint_difference_quotient_x_neumann_bc(nda):
+    return np.concatenate((-nda[:,0].reshape(-1,1), -np.diff(nda[:,:-1],1,1), nda[:,-2].reshape(-1,1)),1)
+
+def get_adjoint_difference_quotient_y_neumann_bc(nda):
+    return np.concatenate((-nda[0,:].reshape(1,-1), -np.diff(nda[0:-1,:],1,0), nda[-2,:].reshape(1,-1)),0)
+
+def getDTDx_neumann(nda):
+
+    Dx_nda = get_difference_quotient_x_neumann_bc(nda)
+    Dy_nda = get_difference_quotient_y_neumann_bc(nda)
+
+    DTDx_nda = get_adjoint_difference_quotient_x_neumann_bc(Dx_nda)
+    DTDy_nda = get_adjoint_difference_quotient_y_neumann_bc(Dy_nda)
+
+    return DTDx_nda + DTDy_nda
+
+##
+def run_TVADMM(alpha, rho, iterations, nda, vx, vy, wx, wy, observed_nda, kernel, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, original_nda):
+
+    AT_observed_nda = getAT(observed_nda, kernel)
+
+    for iter in range(0, iterations):
+        nda, vx, vy, wx, wy = perform_ADMM_step(nda, vx, vy, wx, wy, AT_observed_nda, alpha, rho, kernel, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj)
+
+        fig = plt.figure(1)
+        fig.clf()
+        plt.imshow(nda, cmap="Greys_r")
+        plt.title("TV1 recon at iteration " + str(iter+1))
+        plt.draw()
+        plt.pause(0.5)
+
+        fig = plt.figure(2)
+        fig.clf()
+        plt.suptitle("Iteration " + str(iter+1))
+        plt.subplot(121)
+        ax=plt.imshow(vx, cmap="jet")
+        plt.title("vx")
+        plt.colorbar(ax)
+        plt.subplot(122)
+        ax=plt.imshow(vy, cmap="jet")
+        plt.title("vy")
+        plt.colorbar(ax)
+        plt.draw()
+        plt.pause(0.5)
+
+##
+def perform_ADMM_step(nda, vx, vy, wx, wy, AT_observed_nda, alpha, rho, kernel, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj):
+
+    DxTv = getDTx(vx, kernel_Dx_adj)
+    DyTv = getDTx(vy, kernel_Dy_adj)
+
+    DxTw = getDTx(wx, kernel_Dx_adj)
+    DyTw = getDTx(wy, kernel_Dy_adj)
+
+    # DxTv = get_adjoint_difference_quotient_x_neumann_bc(vx)
+    # DyTv = get_adjoint_difference_quotient_y_neumann_bc(vy)
+
+    # DxTw = get_adjoint_difference_quotient_x_neumann_bc(wx)
+    # DyTw = get_adjoint_difference_quotient_y_neumann_bc(wy)
+
+    # tol = 1e-10
+    # iter_max = 20
+
+    ## 1) Solve for x^{k+1}
+    x0 = nda.flatten()
+
+    ## Compute RHS
+    RHS = AT_observed_nda + rho*(DxTv + DyTv - DxTw - DyTw)
+
+    ## Compute (A'A + alpha*D'D)(RHS)
+    # op_RHS = getATA(RHS, kernel) + rho*getDTDx_neumann(RHS)
+    op_RHS = getATA(RHS, kernel) + rho*getDTDx(RHS, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj)
+
+
+    fun = lambda x: TK1_SPD(x, RHS.flatten(), kernel, rho, nda.shape, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj)
+    jac = lambda x: TK1_SPD_grad(x, op_RHS.flatten(), kernel, rho, nda.shape, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj)
+
+    nda = get_reconstruction(fun=fun, jac=jac, hessp=None, x0=x0, shape_solution=nda.shape, info_title=True)[0]
+
+    ## 2) Solve for v^{k+1}
+    Dxnda = getDx(nda, kernel_Dx)
+    Dynda = getDx(nda, kernel_Dy)
+    # Dxnda = get_difference_quotient_x_neumann_bc(nda)
+    # Dynda = get_difference_quotient_y_neumann_bc(nda)
+
+    tx = Dxnda + wx
+    ty = Dynda + wy
+
+    vx, vy = get_vectorial_soft_threshold(alpha/rho, tx, ty)
+
+    ## 3) Solve for w^{k+1}, i.e. scaled dual variable
+    wx = wx + Dxnda - vx
+    wy = wy + Dynda - vy
+
+    return nda, vx, vy, wx, wy
+
+
+##
+#  \param[in] ell scalar > 0
+#  \param[in] t \f$ \in\mathbb{R}^{\text{dim} \times N} \f$
+#  \return vectorial soft thresholded value \f$ \in\mathbb{R}^{\text{dim} \times N} \f$
+def get_vectorial_soft_threshold(ell, tx, ty):
+    Sx = np.zeros(tx.shape)
+    Sy = np.zeros(ty.shape)
+    t_norm = np.sqrt(tx**2 + ty**2)
+
+    ind = t_norm > ell
+
+    Sx[ind] = get_IST_threshold(ell, t_norm[ind])/t_norm[ind]*tx[ind]
+    Sy[ind] = get_IST_threshold(ell, t_norm[ind])/t_norm[ind]*ty[ind]
+
+    return Sx, Sy
+
+
+##
+#  \param[in] ell scalar > 0
+#  \param[in] x \f$ \in\mathbb{R}^{1 \times N} \f$
+def get_IST_threshold(ell, x):
+    return np.maximum(np.abs(x) - ell, 0)*np.sign(x)
+
+
 ## Use scipy.optimize.minimize to get an approximate solution
 #  \param[in] fun   objective function to minimize, returns scalar value
 #  \param[in] jac   jacobian of objective function, returns vector array
@@ -689,7 +818,7 @@ def TK1_SPD_hess_p(x_vec, p_vec, kernel, alpha, shape, kernel_Dx, kernel_Dy, ker
 #  \return data array of reconstruction
 #  \return output of scipy.optimize.minimize function
 def get_reconstruction(fun, jac, hessp, x0, shape_solution, info_title=False):
-    iter_max = 100       # maximum number of iterations for minimizer
+    iter_max = 10       # maximum number of iterations for minimizer
     tol = 1e-8          # tolerance for minimizer
 
     show_disp = True
@@ -732,7 +861,9 @@ def plot_array(nda,title="no_title"):
     
     plt.imshow(nda, cmap="Greys_r")
     plt.title(title)
-    plt.show(block=False)
+    # plt.show(block=False)
+    plt.draw()
+    plt.pause(0.5)
 
 
 def show_reconstruction_results(original_nda, observed_nda, reconstruction_nda, reconstruction_TK1_nda=None):
@@ -795,7 +926,8 @@ def show_reconstruction_results(original_nda, observed_nda, reconstruction_nda, 
         plt.title("TK1: abs(recon-original) ")
         plt.colorbar(ax)
 
-    plt.show(block=False)
+    plt.draw()
+    plt.pause(0.5) ## important! otherwise fig is not shown. Also needs plt.show() at the end of the file to keep figure open
 
 
 ## Print information stored in the result variable obtained from
@@ -1329,12 +1461,42 @@ class TestUM(unittest.TestCase):
             , decimals = self.accuracy), 0 )
 
 
+    def test_05_AdjointDifferenceQuotientNeumann_2D(self):
+        dim = 2
+        shape = (50,60)
+
+        x = 255 * np.random.rand(shape[0],shape[1])
+        y = 255 * np.random.rand(shape[0],shape[1])
+
+        ## 1) Check forward difference in x-direction
+        ## Symmetric boundary conditions
+        Ax = get_difference_quotient_x_neumann_bc(x)
+        ATy = get_adjoint_difference_quotient_x_neumann_bc(y)
+        abs_diff = np.abs( np.sum(Ax*y) - np.sum(ATy*x) )
+
+        ## Check|(Lx,y) - (x,Ly)| = 0 
+        self.assertEqual(np.around(
+            abs_diff
+            , decimals = self.accuracy), 0 )
+
+        ## 2) Check forward difference in y-direction
+        ## Symmetric boundary conditions
+        Ax = get_difference_quotient_y_neumann_bc(x)
+        ATy = get_adjoint_difference_quotient_y_neumann_bc(y)
+        abs_diff = np.abs( np.sum(Ax*y) - np.sum(ATy*x) )
+
+        ## Check|(Lx,y) - (x,Ly)| = 0 
+        self.assertEqual(np.around(
+            abs_diff
+            , decimals = self.accuracy), 0 )
+
+
 """
 Main Function
 """
 if __name__ == '__main__':
 
-    dir_input = "data/"
+    dir_input = "../data/test/"
     dir_output = "results/"
     filename_HR_volume = "FetalBrain_reconstruction_4stacks"
     filename_stack = "FetalBrain_stack2_registered"
@@ -1346,8 +1508,8 @@ if __name__ == '__main__':
     # filename_2D = "2D_Text"
     # filename_2D = "2D_Cameraman_256"
     # filename_2D = "2D_House_256"
-    filename_2D = "2D_SheppLoganPhantom_512"
-    # filename_2D = "2D_Lena_512"
+    # filename_2D = "2D_SheppLoganPhantom_512"
+    filename_2D = "2D_Lena_512"
     # filename_2D = "2D_Boat_512"
     # filename_2D = "2D_Man_1024"
 
@@ -1362,19 +1524,19 @@ if __name__ == '__main__':
     filename = filename_2D
     # filename = filename_3D
 
-    noise_level = 0                 ## Noise level for test image, default = 0.01
+    noise_level = 0.01                 ## Noise level for test image, default = 0.01
     alpha_cut = 3                   ## Cut-off distance alpha_cut*sigma for gaussian kernel computation
-    alpha = 0.01                      ## Regularization parameter
+    alpha = 0.1                      ## Regularization parameter
     
-    use_SPD_formulation = False
+    use_SPD_formulation = True
 
 
     if alpha is not 0:
         use_SPD_formulation = True
     
     Cov_2D = np.zeros((2,2))
-    Cov_2D[0,0] = 9
-    Cov_2D[1,1] = 9
+    Cov_2D[0,0] = 1
+    Cov_2D[1,1] = 1
     # Sigma_2D = np.sqrt(Cov_2D.diagonal())
 
     Cov_3D = np.zeros((3,3))
@@ -1479,11 +1641,11 @@ if __name__ == '__main__':
         sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_observed_sitk, title=filename+"_original+observed")
 
     ## Compute TK0 solution
-    [reconstruction_TK0_nda, res_minimizer_TK0] \
-        = get_reconstruction(fun=f_TK0, jac=f_TK0_grad, hessp=f_TK0_hess_p, x0=ATg.flatten(), shape_solution=ATg.shape, info_title="TK0")
+    # [reconstruction_TK0_nda, res_minimizer_TK0] \
+    #     = get_reconstruction(fun=f_TK0, jac=f_TK0_grad, hessp=f_TK0_hess_p, x0=ATg.flatten(), shape_solution=ATg.shape, info_title="TK0")
 
-    image_reconstructed_TK0_sitk = sitk.GetImageFromArray(reconstruction_TK0_nda)
-    image_reconstructed_TK0_sitk.CopyInformation(image_sitk)
+    # image_reconstructed_TK0_sitk = sitk.GetImageFromArray(reconstruction_TK0_nda)
+    # image_reconstructed_TK0_sitk.CopyInformation(image_sitk)
 
     if dim is 3:
         sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_reconstructed_TK0_sitk, title=filename+"_original+TK0_recon_alpha"+str(alpha))
@@ -1491,23 +1653,35 @@ if __name__ == '__main__':
         
 
     ## Compute TK1 solution
-    [reconstruction_TK1_nda, res_minimizer_TK1] \
-        = get_reconstruction(fun=f_TK1, jac=f_TK1_grad, hessp=f_TK1_hess_p, x0=ATg.flatten(), shape_solution=ATg.shape, info_title="TK1")
+    # [reconstruction_TK1_nda, res_minimizer_TK1] \
+    #     = get_reconstruction(fun=f_TK1, jac=f_TK1_grad, hessp=f_TK1_hess_p, x0=ATg.flatten(), shape_solution=ATg.shape, info_title="TK1")
 
-    image_reconstructed_TK1_sitk = sitk.GetImageFromArray(reconstruction_TK1_nda)
-    image_reconstructed_TK1_sitk.CopyInformation(image_sitk)
+    # image_reconstructed_TK1_sitk = sitk.GetImageFromArray(reconstruction_TK1_nda)
+    # image_reconstructed_TK1_sitk.CopyInformation(image_sitk)
 
     if dim is 3:
         sitkh.show_sitk_image(image_sitk=image_sitk, overlay_sitk=image_reconstructed_TK1_sitk, title=filename+"_original+TK1_recon_alpha"+str(alpha))
         # sitkh.show_sitk_image(image_sitk=image_observed_sitk, overlay_sitk=image_reconstructed_TK1_sitk, title=filename+"_TK1_observed+recon")
     
 
-    if dim is 2:
-        # show_reconstruction_results(original_nda=original_nda, observed_nda=observed_nda, reconstruction_nda=reconstruction_TK0_nda)
-        show_reconstruction_results(original_nda=original_nda, observed_nda=observed_nda, reconstruction_nda=reconstruction_TK0_nda, reconstruction_TK1_nda=reconstruction_TK1_nda)
+    # if dim is 2:
+    #     # show_reconstruction_results(original_nda=original_nda, observed_nda=observed_nda, reconstruction_nda=reconstruction_TK0_nda)
+    #     show_reconstruction_results(original_nda=original_nda, observed_nda=observed_nda, reconstruction_nda=reconstruction_TK0_nda, reconstruction_TK1_nda=reconstruction_TK1_nda)
 
+    """
+    TVL2 regularisation
+    """
+    alpha = 0.1
+    rho = 10
+    iterations = 20
 
-    
+    nda0 = getAT(observed_nda, kernel)
+    vx0 = getDx(nda0, kernel_Dx)
+    vy0 = getDx(nda0, kernel_Dy)
+    wx0 = np.zeros_like(vx0)
+    wy0 = np.zeros_like(vy0)
+
+    run_TVADMM(alpha, rho, iterations, nda0, vx0, vy0, wx0, wy0, observed_nda, kernel, kernel_Dx, kernel_Dy, kernel_Dx_adj, kernel_Dy_adj, original_nda)
 
     
     # res = minimize(fun=f_TK0, jac=f_TK0_grad, hessp=f_TK0_hess_p, x0=ATg.flatten(), method='trust-ncg', tol=tol)
@@ -1542,6 +1716,13 @@ if __name__ == '__main__':
 
     # check_adjoint_Gaussian_blurring_boundary_conditions(kernel, image_sitk)
     # check_adjoint_differentiation_boundary_conditions(kernel_Dx, kernel_Dx_adj, image_sitk)
+
+    test=np.arange(1,21).reshape(4,5)
+    ndimage.convolve(test, kernel_Dx, mode="reflect") #getDifferenceQuotient_x_NeumannBC
+    ndimage.convolve(test, kernel_Dy, mode="reflect") #getDifferenceQuotient_y_NeumannBC
+
+    ndimage.convolve(test, -kernel_Dx, mode="reflect") #getAdjointDifferenceQuotient_x_NeumannBC (up to boundary!)
+    ndimage.convolve(test, -kernel_Dy, mode="reflect") #getAdjointDifferenceQuotient_y_NeumannBC
 
     """
     Unit tests:
