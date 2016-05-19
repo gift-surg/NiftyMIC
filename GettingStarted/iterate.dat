@@ -3395,34 +3395,15 @@ Machine precision = 2.220E-16
     5    7     1     0  con    0  1.0E+00  2.5E+00  9.057E+01  3.660E+05
     6    8     1     0  con    0  1.0E+00  2.7E+00  8.131E+01  3.520E+05
     7    9     1     0  con    0  1.0E+00  4.6E+00  7.087E+01  3.357E+05
-    8   10     1     0  con    0  1.0E+00  9.1E+00  1.th used
-tstep = norm of the displacement (total step)
-projg = norm of the projected gradient
-f     = function value
-
-           * * *
-
-Machine precision = 2.220E-16
- N =  262144    M =  10
-
-   it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     3.227E+00  1.867E+05
-    1    3     1     0  ---    1  2.1E-02  5.0E+00  2.673E+00  1.846E+05
-    2    4     1     0  con    0  1.0E+00  3.4E+01  8.495E+00  1.747E+05
-    3    5     1     0  con    0  1.0E+00  6.1E+01  1.390E+01  1.597E+05
-    4    6     1     0  con    0  1.0E+00  1.7E+02  1.649E+01  1.260E+05
-    5    8     1     0  con    1  5.0E-01  1.7E+02  2.607E+01  1.034E+05
-    6    9     1     0  con    0  1.0E+00  1.1E+02  1.063E+01  7.766E+04
-    7   10     1     0  con    0  1.0E+00  7.9E+01  4.585E+00  6.284E+04
-    8   11     1     0  con    0  1.0E+00  2.5E+01  5.872E+00  5.808E+04
-    9   12     1     0  con    0  1.0E+00  3.5E+01  4.292E+00  5.206E+04
-   10   13     1     0  con    0  1.0E+00  5.8E+01  5.331E+00  4.543E+04
-   11   14     1     0  con    0  1.0E+00  5.9E+01  3.596E+00  3.914E+04
-   12   15     1     0  con    0  1.0E+00  3.0E+01  3.228E+00  3.446E+04
+    8   10     1     0  con    0  1.0E+00  9.1E+00  1.775E+02  3.272E+05
+    9   11     1     0  con    0  1.0E+00  2.0E+00  6.832E+01  3.085E+05
+   10   12     1     0  con    0  1.0E+00  2.4E+00  5.343E+01  2.996E+05
+   11   13     1     0  con    0  1.0E+00  5.1E+00  7.023E+01  2.881E+05
+   12   14     1     0  con    0  1.0E+00  8.9E+00  9.056E+01  2.704E+05
 
 STOP: TOTAL NO. of ITERATIONS EXCEEDS LIMIT                 
 
- Total User time 8.750E+00 seconds.
+ Total User time 2.281E+00 seconds.
 
 RUNNING THE L-BFGS-B CODE
 
@@ -3444,23 +3425,23 @@ Machine precision = 2.220E-16
  N =  262144    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     5.484E+00  8.082E+04
-    1    2     1     0  ---    0  5.4E-03  1.0E+00  3.984E+00  8.047E+04
-    2    3     1     0  con    0  1.0E+00  1.4E+01  5.906E+00  7.740E+04
-    3    4     1     0  con    0  1.0E+00  1.6E+01  9.632E+00  7.458E+04
-    4    5     1     0  con    0  1.0E+00  6.5E+01  1.374E+01  6.532E+04
-    5    6     1     0  con    0  1.0E+00  1.3E+02  3.733E+01  6.076E+04
-    6    7     1     0  con    0  1.0E+00  3.5E+01  1.395E+01  4.665E+04
-    7    8     1     0  con    0  1.0E+00  3.8E+01  4.689E+00  3.960E+04
-    8    9     1     0  con    0  1.0E+00  4.3E+01  5.977E+00  3.576E+04
-    9   10     1     0  con    0  1.0E+00  3.9E+01  5.210E+00  3.225E+04
-   10   11     1     0  con    0  1.0E+00  7.4E+01  9.375E+00  2.885E+04
-   11   12     1     0  con    0  1.0E+00  3.5E+01  3.789E+00  2.455E+04
-   12   13     1     0  con    0  1.0E+00  1.3E+01  3.641E+00  2.223E+04
+    0    1     -     -   -     -     -        -     8.609E+02  8.654E+05
+    1    3 11094 11093  ---    1  2.0E-04  5.0E+00  4.685E+02  6.523E+05
+    2    4     1     0  con    0  1.0E+00  9.1E+00  2.270E+02  4.610E+05
+    3    5     1     0  con    0  1.0E+00  6.6E+00  1.985E+02  3.901E+05
+    4    6     1     0  con    0  1.0E+00  7.5E+00  1.952E+02  3.533E+05
+    5    7     1     0  con    0  1.0E+00  2.3E+00  8.929E+01  3.323E+05
+    6    8     1     0  con    0  1.0E+00  2.6E+00  7.653E+01  3.198E+05
+    7    9     1     0  con    0  1.0E+00  4.2E+00  7.097E+01  3.058E+05
+    8   10     1     0  con    0  1.0E+00  8.6E+00  1.958E+02  2.979E+05
+    9   11     1     0  con    0  1.0E+00  2.0E+00  6.111E+01  2.816E+05
+   10   12     1     0  con    0  1.0E+00  2.2E+00  4.675E+01  2.738E+05
+   11   13     1     0  con    0  1.0E+00  4.8E+00  6.454E+01  2.635E+05
+   12   14     1     0  con    0  1.0E+00  8.5E+00  8.633E+01  2.479E+05
 
 STOP: TOTAL NO. of ITERATIONS EXCEEDS LIMIT                 
 
- Total User time 7.672E+00 seconds.
+ Total User time 2.234E+00 seconds.
 
 RUNNING THE L-BFGS-B CODE
 
@@ -3482,12 +3463,35 @@ Machine precision = 2.220E-16
  N =  262144    M =  10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     4.380E+00  4.965E+04
-    1    2     1     0  ---    0  6.5E-03  1.0E+00  3.119E+00  4.936E+04
-    2    3     1     0  con    0  1.0E+00  1.3E+01  4.842E+00  4.698E+04
-    3    4     1     0  con    0  1.0E+00  1.5E+01  7.870E+00  4.483E+04
-    4    5     1     0  con    0  1.0E+00  5.7E+01  8.558E+00  3.874E+04
-    5    6     1     0  con    0  1.0E+00  9.9E+01  2.775E+01  3.672E+04
+    0    1     -     -   -     -     -        -     2.332E+02  2.145E+06
+    1    4  1775  1774  ---    2  2.1E-03  2.1E+01  1.552E+02  1.788E+06
+    2    6     1     0  con    1  2.8E-01  2.6E+01  9.419E+02  1.516E+06
+    3    7     1     0  con    0  1.0E+00  5.6E+01  6.416E+02  1.233E+06
+    4    8     1     0  con    0  1.0E+00  1.0E+01  7.606E+02  1.166E+06
+    5    9     1     0  con    0  1.0E+00  4.8E+00  3.524E+02  1.096E+06
+RUNNING THE L-BFGS-B CODE
+
+it    = iteration number
+nf    = number of function evaluations
+nseg  = number of segments explored during the Cauchy search
+nact  = number of active bounds at the generalized Cauchy point
+sub   = manner in which the subspace minimization terminated:
+        con = converged, bnd = a bound was reached
+itls  = number of iterations performed in the line search
+stepl = step length used
+tstep = norm of the displacement (total step)
+projg = norm of the projected gradient
+f     = function value
+
+           * * *
+
+Machine precision = 2.220E-16
+ N =  262144    M =  10
+
+   it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
+    0    1     -     -   -     -     -        -     2.335E+02  2.144E+06
+    1    4  1784  1783  ---    2  2.1E-03  2.1E+01  1.606E+02  1.788E+06
+    2    6     1     0  con    1  2.8E-01  2.6E+01  9.730E+02  01  2.775E+01  3.672E+04
     6    7     1     0  con    0  1.0E+00  1.1E+01  8.525E+00  2.945E+04
     7    8     1     0  con    0  1.0E+00  1.5E+01  4.433E+00  2.665E+04
     8    9     1     0  con    0  1.0E+00  2.5E+01  5.234E+00  2.476E+04

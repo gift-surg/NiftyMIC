@@ -4,6 +4,98 @@
 		"selected_items":
 		[
 			[
+				"DTDy_",
+				"DTDy_nda"
+			],
+			[
+				"DTDx_",
+				"DTDx_nda"
+			],
+			[
+				"get_ad",
+				"get_adjoint_difference_quotient_y_neumann_bc"
+			],
+			[
+				"Dx_",
+				"Dx_nda"
+			],
+			[
+				"get_a",
+				"get_adjoint_difference_quotient_x_neumann_bc"
+			],
+			[
+				"get_diff",
+				"get_difference_quotient_x_neumann_bc"
+			],
+			[
+				"get_d",
+				"get_difference_quotient_y_neumann_bc"
+			],
+			[
+				"get_dif",
+				"get_difference_quotient_x_neumann_bc"
+			],
+			[
+				"ker",
+				"kernel"
+			],
+			[
+				"getAT",
+				"getATA"
+			],
+			[
+				"kernel",
+				"kernel_Dx"
+			],
+			[
+				"getD",
+				"getDTDx"
+			],
+			[
+				"f_TK_",
+				"f_TK1_grad"
+			],
+			[
+				"f_TK1_",
+				"f_TK1_SPD"
+			],
+			[
+				"f_T",
+				"f_TK1_SPD"
+			],
+			[
+				"kerne",
+				"kernel_Dx"
+			],
+			[
+				"observ",
+				"observed_nda"
+			],
+			[
+				"ori",
+				"original_nda"
+			],
+			[
+				"kern",
+				"kernel_Dx"
+			],
+			[
+				"info",
+				"info_title"
+			],
+			[
+				"DyT",
+				"DyTw"
+			],
+			[
+				"DxT",
+				"DxTw"
+			],
+			[
+				"kere",
+				"kernel_Dz"
+			],
+			[
 				"dir",
 				"dir_output"
 			],
@@ -422,98 +514,6 @@
 			[
 				"reconst",
 				"reconstruction_manager"
-			],
-			[
-				"_get_P",
-				"_get_PSF_covariance_matrix_HR_volume_coordinates"
-			],
-			[
-				"filenam",
-				"filename_HR_volume"
-			],
-			[
-				"from",
-				"from_nifti	(Stack.py)"
-			],
-			[
-				"color",
-				"colorbar	(getAnisotropicDerivativeFilter.m)"
-			],
-			[
-				"norm",
-				"norm_diff_TK0"
-			],
-			[
-				"recon",
-				"reconstruction_TK0_nda"
-			],
-			[
-				"f_TK1_SP",
-				"f_TK1_SPD_hess_p"
-			],
-			[
-				"DTD",
-				"DTDATg"
-			],
-			[
-				"ATA",
-				"ATAATg"
-			],
-			[
-				"op_AT",
-				"op_ATg_vec"
-			],
-			[
-				"reconstr",
-				"reconstruction_nda"
-			],
-			[
-				"Dfy",
-				"Dfy_x"
-			],
-			[
-				"Dbx",
-				"Dbx_x"
-			],
-			[
-				"ker",
-				"kernel_L"
-			],
-			[
-				"get_for",
-				"get_forward_difference_x_kernel"
-			],
-			[
-				"get",
-				"getATx"
-			],
-			[
-				"get_back",
-				"get_backward_difference_x_kernel"
-			],
-			[
-				"op_",
-				"op_ATg"
-			],
-			[
-				"time",
-				"time_elapsed"
-			],
-			[
-				"reco",
-				"reconstruction_TK1_nda"
-			],
-			[
-				"optimi",
-				"optimization"
-			],
-			[
-				"recons",
-				"reconstruction_nda"
-			],
-			[
-				"obser",
-				"observed_nda"
 			]
 		]
 	},
@@ -540,14 +540,6 @@
 			"settings":
 			{
 				"buffer_size": 16537,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "Optimization.py",
-			"settings":
-			{
-				"buffer_size": 57763,
 				"line_ending": "Unix"
 			}
 		},
@@ -616,6 +608,7 @@
 	},
 	"file_history":
 	[
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/Optimization.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/ITK_BlurringOperator_Adjoint.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/ITK_BlurringOperator.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/include/MyITKImageHelper.tpp",
@@ -654,7 +647,6 @@
 		"/Users/mebner/development/ITK/ITK/Modules/Registration/Common/wrapping/itkNormalizedCorrelationImageToImageMetric.wrap",
 		"/Users/mebner/development/ITK/ITK/Modules/Registration/Common/wrapping/itkNormalizedMutualInformationHistogramImageToImageMetric.wrap",
 		"/Users/mebner/development/ITK/ITK/Modules/Core/Common/include/itkImageSource.hxx",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/Optimization.py",
 		"/Users/mebner/development/ITK/ITK/Modules/Filtering/ImageIntensity/include/itkAddImageFilter.h",
 		"/Users/mebner/development/ITK/ITK/Modules/Core/Common/include/itkInPlaceImageFilter.hxx",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/Stack.py",
@@ -751,9 +743,10 @@
 	},
 	"find_in_files":
 	{
-		"height": 0.0,
+		"height": 93.0,
 		"where_history":
 		[
+			"*.py",
 			"*.h",
 			"",
 			"*.py",
@@ -792,6 +785,53 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"getDTDx_neumann",
+			"get_adjoint_difference_quotient_y_neumann_bc",
+			"get_adjoint_difference_quotient_x_neumann_bc",
+			"get_difference_quotient_y_neumann_bc",
+			"get_difference_quotient_x_neumann_bc",
+			"getDTDx_neumann",
+			"x",
+			"get_iterative_soft_threshold",
+			"get_vectorial_soft_threshold",
+			"get_ist_threshold",
+			"get_IST_threshold",
+			"t_norm[ind]",
+			"noise_level",
+			"getDTDx",
+			"alpha",
+			"x",
+			"v",
+			"test",
+			"kernel_Dx",
+			"BC",
+			"f",
+			"test",
+			"getDifference",
+			"wrap",
+			"iter",
+			"kernel_Dz_adj",
+			"kernel_Dz",
+			"shape",
+			"suptitle",
+			"clear",
+			"get_reconstruction",
+			",",
+			"x",
+			"v",
+			"x",
+			"jet",
+			"draw",
+			"ATg",
+			"iter",
+			"0",
+			"x",
+			"v",
+			"kernel",
+			"TK0",
+			"h",
+			"$\n",
+			"ell",
 			"nii.gz",
 			"correcter",
 			"CommandIterationUpdate",
@@ -872,54 +912,7 @@
 			"setbufferedregion",
 			"buffered",
 			"GetOutput",
-			"OutputImagePointer",
-			"numberOfThreads",
-			"generatedata",
-			"m_outputPtrThread",
-			"multithreader",
-			"multithreader\n",
-			"OutputImagePointer",
-			"outputPtrThread",
-			"10",
-			",   f",
-			" =",
-			"Chosen difference",
-			"=",
-			"_DTD_type",
-			"DTD_type",
-			"set_DTD_computation",
-			"set_DTD_type",
-			"self._DTD",
-			"_DTD_laplacian",
-			"_DTD_diffquot",
-			"results/recon",
-			"results",
-			"_DTD",
-			"Functions used for",
-			"## return",
-			"return grad",
-			"0",
-			"op0",
-			"x",
-			"kernel_Dx_adj",
-			"x",
-			"1",
-			"self._k",
-			"self._",
-			"_get_forward_diff_x_kernel",
-			"getDTDx",
-			"J0",
-			"alpha*x",
-			"op_sum_ATy_itk",
-			"op(",
-			"op0",
-			"op0_sum_ATy_itk",
-			"op_",
-			"_op",
-			"TK1",
-			"return kernel kernel",
-			"regularization",
-			"TK0"
+			"OutputImagePointer"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1006,8 +999,8 @@
 						"selection":
 						[
 							[
-								715,
-								715
+								377,
+								377
 							]
 						],
 						"settings":
@@ -1025,7 +1018,7 @@
 			]
 		},
 		{
-			"selected": 1,
+			"selected": 0,
 			"sheets":
 			[
 				{
@@ -1051,41 +1044,13 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1301.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 3,
-					"file": "Optimization.py",
-					"settings":
-					{
-						"buffer_size": 57763,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								28841,
-								28841
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 13673.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 4,
 					"file": "/Users/mebner/development/ITK/ITK/Modules/Filtering/BiasCorrection/test/itkN4BiasFieldCorrectionImageFilterTest.cxx",
 					"settings":
 					{
@@ -1096,8 +1061,8 @@
 						"selection":
 						[
 							[
-								9336,
-								9336
+								846,
+								846
 							]
 						],
 						"settings":
@@ -1107,7 +1072,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2593.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1143,7 +1108,7 @@
 		"cols":
 		[
 			0.0,
-			0.467367017998,
+			0.4414312509,
 			1.0
 		],
 		"rows":
@@ -1171,6 +1136,10 @@
 		"height": 0.0,
 		"selected_items":
 		[
+			[
+				"optimiz",
+				"GettingStarted/Optimization.py"
+			],
 			[
 				"n4bias",
 				"ITK/Modules/Filtering/BiasCorrection/include/itkN4BiasFieldCorrectionImageFilter.h"
@@ -1578,6 +1547,6 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 322.0,
+	"side_bar_width": 242.0,
 	"status_bar_visible": true
 }

@@ -354,9 +354,9 @@ class ReconstructionManager:
         ## Final SRR step
         recon_approach = "SRR"
         # recon_approach = "SDA"
-        SRR_approach = "TK0"        # "TK0" or "TK1"
-        # SRR_approach = "TK1"        # "TK0" or "TK1"
-        SRR_iter_max = 30
+        # SRR_approach = "TK0"        # "TK0" or "TK1"
+        SRR_approach = "TK1"        # "TK0" or "TK1"
+        SRR_iter_max = 5
         SRR_regularisation_param = 0.1
 
         volume_reconstruction.set_reconstruction_approach(recon_approach)

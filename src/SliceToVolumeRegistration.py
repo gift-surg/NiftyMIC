@@ -114,8 +114,14 @@ class SliceToVolumeRegistration:
         registration_method = sitk.ImageRegistrationMethod()
 
         ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
-        # initial_transform = sitk.CenteredTransformInitializer(fixed_slice_3D.sitk, moving_HR_volume_3D.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+        initial_transform = sitk.CenteredTransformInitializer(fixed_slice_3D.sitk, moving_HR_volume_3D.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+
+        ## Use computed center for (identity) initialization transform
+        #  Remark: Center is taken into consideration for composited transforms,
+        #  see SimpleITKHelper
+        center = initial_transform.GetFixedParameters()
         initial_transform = sitk.Euler3DTransform()
+        initial_transform.SetCenter(center)
 
         ## Set the initial transform and parameters to optimize
         registration_method.SetInitialTransform(initial_transform)
@@ -136,7 +142,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=10)
         
         ## Use negative normalized cross correlation image metric
-        registration_method.SetMetricAsCorrelation()
+        # registration_method.SetMetricAsCorrelation()
 
         ## Use demons image metric
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
@@ -148,7 +154,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)
 
         ## Use negative means squares image metric
-        # registration_method.SetMetricAsMeanSquares()
+        registration_method.SetMetricAsMeanSquares()
         
         """
         optimizer settings

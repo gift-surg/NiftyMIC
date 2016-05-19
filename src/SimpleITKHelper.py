@@ -459,8 +459,8 @@ def print_rigid_transformation(rigid_registration_transform, text="rigid transfo
     center = np.array(rigid_registration_transform.GetFixedParameters())
 
     print("\t\t" + text + ":")
-    # print("matrix = \n" + str(matrix))
-    print("center = " + str(center))
+    # print("\t\t\tmatrix = \n" + str(matrix))
+    print("\t\t\tcenter = " + str(center))
     if isinstance(rigid_registration_transform, sitk.Euler3DTransform):
         print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[0:3]*180/np.pi) + " deg")
 

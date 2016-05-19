@@ -1,10 +1,10 @@
 ## \file Optimization.py
 #  \brief  SciPy optimization library applied to problems I can generalize to 
 #       to my application. Several regularziation approaches are implemented,
-#       like TK0 and TK1 in the standard and SPD version.
+#       like TK0 and TK1 in the standard and SPD version (2D and 3D) + TV-L2 (2D)
 #       The cases used here don't consider the physical space to a large extent.
 #       For scenarios which involve different oritentations, see
-#       ITK_ReconstructVolume.py
+#       reconstructVolume.py
 #
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date March 2016
