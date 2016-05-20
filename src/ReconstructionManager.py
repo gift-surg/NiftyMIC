@@ -262,12 +262,12 @@ class ReconstructionManager:
         if recon_approach in ["SDA"]:
             filename += "_SDA_sigma" + str(np.round(sigma, decimals=2))
         else:
-            filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
+            filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_alpha)
         filename +=  "_hierarchical_alignment"
             
         self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
 
-        sitkh.show_sitk_image(foo.sitk, overlay=self._HR_volume.sitk, title="HR_volume_before_and_after_hierarchical_alignment")
+        # sitkh.show_sitk_image(foo.sitk, overlay=self._HR_volume.sitk, title="HR_volume_before_and_after_hierarchical_alignment")
 
 
     ## Execute two-step reconstruction alignment approach
@@ -306,13 +306,13 @@ class ReconstructionManager:
             volume_reconstruction.set_SDA_approach("Shepard-YVV") # "Shepard-YVV" or "Shepard-Deriche"
             volume_reconstruction.set_SDA_sigma(sigma)
         else:
-            SRR_approach = "TK1"        # "TK0" or "TK1"
+            SRR_approach = "TK1"        # "TK0", "TK1" or "TV-L2"
             SRR_iter_max = 5
-            SRR_regularisation_param = 0.1
+            SRR_regularisation_alpha = 0.1
 
             volume_reconstruction.set_reconstruction_approach(recon_approach)
             volume_reconstruction.set_SRR_iter_max(SRR_iter_max)
-            volume_reconstruction.set_SRR_alpha(SRR_regularisation_param)
+            volume_reconstruction.set_SRR_alpha(SRR_regularisation_alpha)
             volume_reconstruction.set_SRR_approach(SRR_approach)       
             # volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
             volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference") 
@@ -335,7 +335,7 @@ class ReconstructionManager:
                 filename += "_SDA_sigma" + str(np.round(sigma, decimals=2))
 
             else:
-                filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
+                filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_alpha)
 
             ## Slice-to-Volume Registration: Register all slices to current HR estimate
             print("\n*** Iteration %s/%s: Slice-to-Volume Registration" %(i+1,iterations))
@@ -353,31 +353,77 @@ class ReconstructionManager:
 
         ## Final SRR step
         recon_approach = "SRR"
-        # recon_approach = "SDA"
-        # SRR_approach = "TK0"        # "TK0" or "TK1"
-        SRR_approach = "TK1"        # "TK0" or "TK1"
-        SRR_iter_max = 5
-        SRR_regularisation_param = 0.1
 
+        # SRR_approach = "TK0"        # "TK0", "TK1" or "TV-L2"
+        # SRR_approach = "TK1"        # "TK0", "TK1" or "TV-L2"
+        SRR_approach = "TV-L2"        # "TK0", "TK1" or "TV-L2"
+
+        ## Choose parameters for respective SRR approach
+        if SRR_approach in ["TK0"]:
+            SRR_tolerance = 1e-4
+            SRR_iter_max = 30
+            SRR_regularisation_alpha = 0.05      #0.1 yields visually good results
+            SRR_DTD_computation_type = "FiniteDifference" #not used
+            SRR_regularisation_rho = None
+            SRR_ADMM_iterations = None
+            SRR_ADMM_iterations_output_dir = None
+            SRR_ADMM_iterations_output_filename_prefix = "TV-L2" #not used
+
+        elif SRR_approach in ["TK1"]:
+            SRR_tolerance = 1e-4
+            SRR_iter_max = 30
+            SRR_regularisation_alpha = 0.05     #0.05 yields visually good results
+            SRR_DTD_computation_type = "FiniteDifference"
+            SRR_regularisation_rho = None
+            SRR_ADMM_iterations = None
+            SRR_ADMM_iterations_output_dir = None
+            SRR_ADMM_iterations_output_filename_prefix = "TV-L2" #not used
+
+        elif SRR_approach in ["TV-L2"]:
+            SRR_tolerance = 1e-4
+            SRR_iter_max = 5
+            SRR_regularisation_alpha = 0.1     #0.1 yields visually good results
+            SRR_DTD_computation_type = "FiniteDifference"
+            SRR_regularisation_rho = 0.5       #0.5 yields visually good results
+            SRR_ADMM_iterations = 5
+            SRR_ADMM_iterations_output_dir = self._dir_results + "TV-L2/" #print output of ADMM iterations there
+            SRR_ADMM_iterations_output_filename_prefix = "TV-L2"
+            
+        ## Set parameters
         volume_reconstruction.set_reconstruction_approach(recon_approach)
+        volume_reconstruction.set_SRR_approach(SRR_approach)
+        volume_reconstruction.set_SRR_tolerance(SRR_tolerance)
         volume_reconstruction.set_SRR_iter_max(SRR_iter_max)
-        volume_reconstruction.set_SRR_alpha(SRR_regularisation_param)
-        volume_reconstruction.set_SRR_approach(SRR_approach)       
-        # volume_reconstruction.set_SRR_DTD_computation_type("Laplace")
-        volume_reconstruction.set_SRR_DTD_computation_type("FiniteDifference")
+        volume_reconstruction.set_SRR_alpha(SRR_regularisation_alpha)
+        volume_reconstruction.set_SRR_DTD_computation_type(SRR_DTD_computation_type)
+        volume_reconstruction.set_SRR_rho(SRR_regularisation_rho)
+        volume_reconstruction.set_SRR_ADMM_iterations(SRR_ADMM_iterations)
+        volume_reconstruction.set_SRR_ADMM_iterations_output_dir(SRR_ADMM_iterations_output_dir)
+        volume_reconstruction.set_SRR_ADMM_iterations_output_filename_prefix(SRR_ADMM_iterations_output_filename_prefix)
 
+        ## Run reconstruction (self._HR_volume gets updated automatically)
         volume_reconstruction.run_reconstruction()
 
-        ## Prepare filename
-        filename =  self._HR_volume_filename 
-        filename += "_cycles" + str(iterations)
-        filename +=  "_" + recon_approach + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_param)
+        ## Prepare filename for reconstructed volume 
+        if SRR_approach in ["TK0", "TK1"]:
+            filename =  self._HR_volume_filename 
+            filename += "_cycles" + str(iterations)
+            filename +=  "_" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_alpha)
+
+        elif SRR_approach in ["TV-L2"]:
+            filename =  self._HR_volume_filename
+            filename += "_cycles" + str(iterations)
+            filename += "_" + SRR_approach
+            filename += "_alpha" + str(SRR_regularisation_alpha)
+            filename += "_rho" + str(SRR_regularisation_rho)
+            filename += "_ADMM_iterations" + str(SRR_ADMM_iterations)
 
         ## Update filename of HR reconstruction based on chosen options
         self._HR_volume_filename = filename
 
         ## Write result
         self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
+        self._HR_volume.show()
 
 
     ## Rigidly register all stacks with chosen target volume prior the estimation

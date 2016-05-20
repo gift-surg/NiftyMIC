@@ -150,9 +150,6 @@ if __name__ == '__main__':
     ## Write results
     reconstruction_manager.write_results()
 
-    HR_volume = reconstruction_manager.get_HR_volume()
-    HR_volume.show()
-
     """
     Playground
     """

@@ -30,6 +30,7 @@ image_type = itk.Image[pixel_type, 3]
 
 
 ## This class is used to compute an approximate solution of the HR volume 
+#  TODO: Update accordingly based on new TV-L2 recon possibility
 #  \f$ x \f$  as defined by the inverse problem \f$ y_k = A_k x \f$ for every 
 #  slice \f$ y_k,\,k=1,\dots,K \f$ in the regularized form
 #  \f[ 
@@ -67,16 +68,6 @@ class InverseProblemSolver:
         ## Cut-off distance for Gaussian blurring filter
         self._alpha_cut = 3     
 
-        ## Settings for optimizer
-        self._reg_type = 'TK0'  # Either Tikhonov ('TK0', 'TK1') or isotropic Total Variation (TV-L2)
-        self._alpha = 0.1       # Regularization parameter for primal problem
-        self._iter_max = 20     # Maximum iteration steps
-        
-        self._rho = 1               # Regularization parameter of augmented Lagrangian term (only for TV-L2)
-        self._ADMM_iterations = 5   # Number of performed ADMM iterations
-        self._TV_dir_output = None
-        self._TV_filename = "TV-L2"
-
         ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
         self._filter_oriented_Gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
         self._filter_oriented_Gaussian_interpolator.SetAlpha(self._alpha_cut)
@@ -99,6 +90,17 @@ class InverseProblemSolver:
         self._HR_origin_itk = self._HR_volume.sitk.GetOrigin()
         self._HR_spacing_itk = self._HR_volume.sitk.GetSpacing()
         self._HR_direction_itk = sitkh.get_itk_direction_from_sitk_image( self._HR_volume.sitk )
+
+        ## Settings for optimizer
+        self._reg_type = 'TK1'  # Either Tikhonov ('TK0', 'TK1') or isotropic Total Variation ('TV-L2')
+        self._alpha = 0.1       # Regularization parameter for primal problem
+        self._iter_max = 20     # Maximum iteration steps
+        self._tolerance = 1e-8  # Tolerance for optimizer
+        
+        self._rho = 1               # Regularization parameter of augmented Lagrangian term (only for TV-L2)
+        self._ADMM_iterations = 5   # Number of performed ADMM iterations
+        self._ADMM_iterations_output_dir = None
+        self._ADMM_iterations_output_filename_prefix = "TV-L2"
 
         ## Define dictionary to choose between two possible computations
         #  of the differential operator D'D
@@ -143,25 +145,39 @@ class InverseProblemSolver:
         return self._alpha
 
 
-    ## Set regularization parameter of augmented Lagrangian term for TV-L2
-    #  \param[in] rho regularization parameter Lagrange, scalar
+    ## Set tolerance for optimizer
+    #  \param[in] tol tolerance, scalar > 0
+    def set_tolerance(self, tol):
+        self._tolerance = tol
+
+
+    ## Set regularization parameter used for augmented Lagrangian in TV-L2 regularization
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
+    #  \]$
+    #  \param[in] rho regularization parameter of augmented Lagrangian term, scalar
     def set_rho(self, rho):
         self._rho = rho
 
 
-    ## Get value of chosen regularization parameter of augmented Lagrangian term
-    #  \return regularization parameter of augmented Lagrangian term
+    ## Get regularization parameter used for augmented Lagrangian in TV-L2 regularization
+    #  \return regularization parameter of augmented Lagrangian term, scalar
     def get_rho(self):
         return self._rho
 
 
-    ## Set ADMM iterations used for TV regularization
+    ## Set ADMM iterations to solve TV-L2 reconstruction problem
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
+    #  \]$
     #  \param[in] iterations number of ADMM iterations, scalar
     def set_ADMM_iterations(self, iterations):
         self._ADMM_iterations = iterations
 
 
-    ## Get chosen value of ADMM iterations used for TV regularization
+    ## Get chosen value of ADMM iterations to solve TV-L2 reconstruction problem
     #  \return number of ADMM iterations, scalar
     def get_ADMM_iterations(self):
         return self._ADMM_iterations
@@ -169,15 +185,15 @@ class InverseProblemSolver:
 
     ## Set ouput directory to write TV results in case outputs of ADMM iterations are desired
     #  \param[in] dir_output directory to write TV results, string
-    def set_TV_dir_output(self, dir_output):
-        self._TV_dir_output = dir_output
+    def set_ADMM_iterations_output_dir(self, dir_output):
+        self._ADMM_iterations_output_dir = dir_output
 
 
     ## Set filename to write TV reconstructed volumes of ADMM iteration results 
-    #  \pre TV_dir_output was set
+    #  \pre ADMM_iterations_output_dir was set
     #  \param[in] filename filename of volume, string
-    def set_TV_filename(self, filename):
-        self._TV_filename = filename
+    def set_ADMM_iterations_output_filename_prefix(self, filename):
+        self._ADMM_iterations_output_filename_prefix = filename
 
 
     ## Set maximum number of iterations for minimizer
@@ -192,7 +208,7 @@ class InverseProblemSolver:
         return self._iter_max
 
 
-    ## Set type or regularization. It can be either 'TK0','TK1' or 'TV-L2'
+    ## Set type of regularization. It can be either 'TK0','TK1' or 'TV-L2'
     #  \param[in] reg_type Either 'TK0','TK1' or 'TV-L2', string
     def set_regularization_type(self, reg_type):
         if reg_type not in ["TK0", "TK1", "TV-L2"]:
@@ -239,6 +255,7 @@ class InverseProblemSolver:
             print("Chosen regularization type: zero-order Tikhonov")
             print("Regularization parameter = " + str(self._alpha))
             print("Maximum number of iterations = " + str(self._iter_max))
+            print("Tolerance = %.0e" %(self._tolerance))
 
             ## Provide constant variable for optimization
             op0_sum_ATMy_itk = self._op0(sum_ATMy_itk, self._alpha)
@@ -250,7 +267,7 @@ class InverseProblemSolver:
 
             ## Compute approximate solution
             [HR_volume_itk, res_minimizer] \
-                = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), iter_max= self._iter_max, tol=1e-8, info_title=False)
+                = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), iter_max= self._iter_max, tol=self._tolerance, info_title=False)
 
             ## After reconstruction: Update member attribute
             self._HR_volume.itk = HR_volume_itk
@@ -268,6 +285,7 @@ class InverseProblemSolver:
                 print("Chosen regularization type: first-order Tikhonov via Laplace stencil")
                 print("Regularization parameter = " + str(self._alpha))
                 print("Maximum number of iterations = " + str(self._iter_max))
+                print("Tolerance = %.0e" %(self._tolerance))
                 
                 # Laplace kernel (for isotropic spacing)
                 self._kernel_L = self._get_laplacian_kernel() / (spacing[0]*spacing[0])
@@ -285,6 +303,7 @@ class InverseProblemSolver:
                 print("Chosen regularization type: first-order Tikhonov via forward/backward finite differences")
                 print("Regularization parameter = " + str(self._alpha))
                 print("Maximum number of iterations = " + str(self._iter_max))
+                print("Tolerance = %.0e" %(self._tolerance))
 
                 # Forward difference kernels (for isotropic spacing)
                 kernel_Dxf = self._get_forward_diff_x_kernel() / spacing[0]
@@ -317,7 +336,7 @@ class InverseProblemSolver:
 
             ## Compute approximate solution
             [HR_volume_itk, res_minimizer] \
-                = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), iter_max= self._iter_max, tol=1e-8, info_title=False)
+                = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), iter_max= self._iter_max, tol=self._tolerance, info_title=False)
 
             ## After reconstruction: Update member attribute
             self._HR_volume.itk = HR_volume_itk
@@ -332,6 +351,7 @@ class InverseProblemSolver:
             print("Regularization parameter of augmented Lagrangian term rho = " + str(self._rho))
             print("Number of ADMM iterations = " + str(self._ADMM_iterations))
             print("Maximum number of TK1 solver iterations = " + str(self._iter_max))
+            print("Tolerance = %.0e" %(self._tolerance))
 
             ## Compute kernels for differentiation in image space, i.e. including scaling
             spacing = self._HR_volume.sitk.GetSpacing()
@@ -1003,18 +1023,18 @@ class InverseProblemSolver:
             print("\tADMM iteration %s/%s:" %(iter+1, ADMM_iterations))
 
             ## Perform ADMM step
-            HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = self._perform_ADMM_step(HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho)
+            HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = self._perform_ADMM_iteration(HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho)
 
-            name =  self._TV_filename
+            name =  self._ADMM_iterations_output_filename_prefix
             name += "_stacks" + str(self._N_stacks)
             name += "_alpha" + str(self._alpha)
             name += "_rho" + str(self._rho)
             name += "_ADMM_iteration" + str(iter+1)
             self._HR_volume.show(title=name)
 
-            if self._TV_dir_output is not None:
-                os.system("mkdir -p " + self._TV_dir_output)
-                self._HR_volume.write(directory=self._TV_dir_output, filename=name, write_mask=False)
+            if self._ADMM_iterations_output_dir is not None:
+                os.system("mkdir -p " + self._ADMM_iterations_output_dir)
+                self._HR_volume.write(directory=self._ADMM_iterations_output_dir, filename=name, write_mask=False)
 
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vx_nda.flatten()), title="vx_iteration_"+str(iter+1))
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vy_nda.flatten()), title="vy_iteration_"+str(iter+1))
@@ -1025,7 +1045,7 @@ class InverseProblemSolver:
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wz_nda.flatten()), title="wz_iteration_"+str(iter+1))
 
 
-    ## Perform single ADMM step
+    ## Perform single ADMM iteration
     #  \param[in] HR_nda initial value of HR volume data array, numpy array
     #  \param[in] sum_ATMy_itk output of _sum_ATMy, itk.Image object
     #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
@@ -1044,13 +1064,9 @@ class InverseProblemSolver:
     #  \return updated auxiliary variables \p v in x-, y- and z-direction
     #  \return updated scaled dual variable \p w in x-, y- and z-direction
     #  \post HR_volume is updated after each iteration
-    def _perform_ADMM_step(self, HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho):
+    def _perform_ADMM_iteration(self, HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho):
 
         ## 1) Solve for x^{k+1} by using first-order Tikhonov regularization
-        print("\tTK1-regularization step (" + self._DTD_comp_type + ")" )
-        print("\t\tMaximum number of TK1 solver iterations = " + str(self._iter_max))
-        print("\t\tRegularization parameter alpha = " + str(self._alpha))
-        print("\t\tRegularization parameter of augmented Lagrangian term rho = " + str(self._rho))
         HR_volume_itk, HR_nda = self._perform_ADMM_step_1_TK1_recon_solution(HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho)
 
         ## Compute derivatives for subsequent steps
@@ -1088,6 +1104,11 @@ class InverseProblemSolver:
     #  \return updated HR volume as itk.Image object
     #  \return updated HR volume data array
     def _perform_ADMM_step_1_TK1_recon_solution(self, HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho):
+        print("\tTK1-regularization step (" + self._DTD_comp_type + ")" )
+        print("\t\tMaximum number of TK1 solver iterations = " + str(self._iter_max))
+        print("\t\tRegularization parameter alpha = " + str(self._alpha))
+        print("\t\tRegularization parameter of augmented Lagrangian term rho = " + str(self._rho))
+        print("\t\tTolerance = %.0e" %(self._tolerance))
 
         ## Compute RHS = sum_k A_k' M_k y_k + rho*D'(v-w)
         RHS_itk = self._sum_ATMy_plus_rho_DT_v_minus_w(sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho)
@@ -1101,7 +1122,7 @@ class InverseProblemSolver:
         f_hess_p = None
 
         [HR_volume_itk, res_minimizer] \
-                = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), iter_max= self._iter_max, tol=1e-8, info_title=False)
+                = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), iter_max= self._iter_max, tol=self._tolerance, info_title=False)
         HR_nda = res_minimizer.x.reshape(self._HR_shape_nda)
         
         return HR_volume_itk, HR_nda
