@@ -437,48 +437,115 @@ class Stack:
 
     ## Get stack resampled on isotropic grid based on the actual position of
     #  its slices
+    #  \param[in] spacing_new_scalar length of voxel side, scalar
     #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack_from_slices(self):
+    def get_isotropically_resampled_stack_from_slices(self, spacing_new_scalar=None):
         resampled_stack = self.get_resampled_stack_from_slices()
+
+        ## Choose interpolator
+        interpolator = sitk.sitkNearestNeighbor
+        # interpolator = sitk.sitkLinear
 
         ## Read original spacing (voxel dimension) and size of target stack:
         spacing = np.array(resampled_stack.sitk.GetSpacing())
-        size = np.array(resampled_stack.sitk.GetSize())
+        size = np.array(resampled_stack.sitk.GetSize()).astype("int")
 
-        ## Update information according to isotropic resolution
-        size[2] = np.round(spacing[2]/spacing[0]*size[2])
-        spacing[2] = spacing[0]
+        if spacing_new_scalar is None:
+            size_new = size
+            spacing_new = spacing
+            ## Update information according to isotropic resolution
+            size_new[2] = np.round(spacing[2]/spacing[0]*size[2]).astype("int")
+            spacing_new[2] = spacing[0]
+        else:
+            spacing_new = np.ones(3)*spacing_new_scalar
+            size_new = np.round(spacing/spacing_new*size).astype("int")
 
         ## Resample image and its mask to isotropic grid
         default_pixel_value = 0.0
 
         isotropic_resampled_stack_sitk =  sitk.Resample(
             resampled_stack.sitk, 
-            size, 
+            size_new, 
             sitk.Euler3DTransform(), 
-            sitk.sitkNearestNeighbor, 
+            interpolator, 
             resampled_stack.sitk.GetOrigin(), 
-            spacing,
+            spacing_new,
             resampled_stack.sitk.GetDirection(),
             default_pixel_value,
             resampled_stack.sitk.GetPixelIDValue())
 
         isotropic_resampled_stack_sitk_mask =  sitk.Resample(
             resampled_stack.sitk_mask, 
-            size, 
+            size_new, 
             sitk.Euler3DTransform(), 
-            sitk.sitkNearestNeighbor, 
+            interpolator, 
             resampled_stack.sitk.GetOrigin(), 
-            spacing,
+            spacing_new,
             resampled_stack.sitk.GetDirection(),
             default_pixel_value,
             resampled_stack.sitk_mask.GetPixelIDValue())
 
-        ## Create Stack instance of HR_volume
+        ## Create Stack instance
         stack = self.from_sitk_image(isotropic_resampled_stack_sitk, "isotropic_resampled_"+self._filename, isotropic_resampled_stack_sitk_mask)
 
         return stack
 
+
+    ## Get isotropically resampled grid
+    #  \param[in] spacing_new_scalar length of voxel side, scalar
+    #  \param[in] interpolator choose type of interpolator for resampling
+    #  \return isotropically, resampled stack as Stack object
+    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear"):
+
+        ## Choose interpolator
+        if interpolator in ["Linear"]:
+            interpolator = sitk.sitkLinear
+        else:
+            interpolator = sitk.sitkNearestNeighbor
+
+        ## Read original spacing (voxel dimension) and size of target stack:
+        spacing = np.array(self.sitk.GetSpacing())
+        size = np.array(self.sitk.GetSize()).astype("int")
+
+        if spacing_new_scalar is None:
+            size_new = size
+            spacing_new = spacing
+            ## Update information according to isotropic resolution
+            size_new[2] = np.round(spacing[2]/spacing[0]*size[2]).astype("int")
+            spacing_new[2] = spacing[0]
+        else:
+            spacing_new = np.ones(3)*spacing_new_scalar
+            size_new = np.round(spacing/spacing_new*size).astype("int")
+
+        ## Resample image and its mask to isotropic grid
+        default_pixel_value = 0.0
+
+        isotropic_resampled_stack_sitk =  sitk.Resample(
+            self.sitk, 
+            size_new, 
+            sitk.Euler3DTransform(), 
+            interpolator, 
+            self.sitk.GetOrigin(), 
+            spacing_new,
+            self.sitk.GetDirection(),
+            default_pixel_value,
+            self.sitk.GetPixelIDValue())
+
+        isotropic_resampled_stack_sitk_mask =  sitk.Resample(
+            self.sitk_mask, 
+            size_new, 
+            sitk.Euler3DTransform(), 
+            interpolator, 
+            self.sitk.GetOrigin(), 
+            spacing_new,
+            self.sitk.GetDirection(),
+            default_pixel_value,
+            self.sitk_mask.GetPixelIDValue())
+
+        ## Create Stack instance
+        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, "isotropic_resampled_"+self._filename, isotropic_resampled_stack_sitk_mask)
+
+        return stack
 
 
     ## Burst the stack into its slices and return all slices of the stack

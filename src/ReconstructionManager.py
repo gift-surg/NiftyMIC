@@ -170,8 +170,8 @@ class ReconstructionManager:
         first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(self._stack_manager, self._HR_volume_filename, self._target_stack_number)
 
         ## Choose reconstruction approach
-        recon_approach = "SDA"
-        # recon_approach = "Average"
+        # recon_approach = "SDA"
+        recon_approach = "Average"
 
         ## Get sigma value based on through-plane direction
         PSF = psf.PSF()
@@ -288,7 +288,7 @@ class ReconstructionManager:
         volume_reconstruction = vr.VolumeReconstruction(self._stack_manager, self._HR_volume)
 
         ## Chose reconstruction approach 
-        recon_approach = "SDA" # "SDA" or "SRR" possible
+        recon_approach = "SRR" # "SDA" or "SRR" possible
 
         ## Define static volumetric reconstruction settings
         if recon_approach in ["SDA"]:
@@ -308,7 +308,7 @@ class ReconstructionManager:
         else:
             SRR_approach = "TK1"        # "TK0", "TK1" or "TV-L2"
             SRR_iter_max = 5
-            SRR_regularisation_alpha = 0.1
+            SRR_regularisation_alpha = 0.07
 
             volume_reconstruction.set_reconstruction_approach(recon_approach)
             volume_reconstruction.set_SRR_iter_max(SRR_iter_max)
@@ -329,13 +329,20 @@ class ReconstructionManager:
 
             ## Configure chosen reconstruction approach            
             if recon_approach in ["SDA"]:
-                sigma = np.max((sigma_array[1:].mean(),sigma-0.02))
+
+                ## Avoid problem of "inpainting" for SRR and blur image more in 
+                #  last iteration. It serves as initial value for SRR
+                if i is iterations-1:
+                    sigma = sigma_array[1] + 0.6*(sigma_array[2]-sigma_array[1])
+                else:
+                    sigma = np.max((sigma_array[1:].mean(),sigma-0.02))
+
                 volume_reconstruction.set_SDA_sigma(sigma)
                 
                 filename += "_SDA_sigma" + str(np.round(sigma, decimals=2))
 
             else:
-                filename +=  "_SRR" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_alpha)
+                filename +=  "_" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_alpha)
 
             ## Slice-to-Volume Registration: Register all slices to current HR estimate
             print("\n*** Iteration %s/%s: Slice-to-Volume Registration" %(i+1,iterations))
@@ -354,39 +361,39 @@ class ReconstructionManager:
         ## Final SRR step
         recon_approach = "SRR"
 
-        # SRR_approach = "TK0"        # "TK0", "TK1" or "TV-L2"
+        SRR_approach = "TK0"        # "TK0", "TK1" or "TV-L2"
         # SRR_approach = "TK1"        # "TK0", "TK1" or "TV-L2"
-        SRR_approach = "TV-L2"        # "TK0", "TK1" or "TV-L2"
+        # SRR_approach = "TV-L2"        # "TK0", "TK1" or "TV-L2"
 
         ## Choose parameters for respective SRR approach
         if SRR_approach in ["TK0"]:
-            SRR_tolerance = 1e-4
+            SRR_tolerance = 1e-3
             SRR_iter_max = 30
-            SRR_regularisation_alpha = 0.05      #0.1 yields visually good results
+            SRR_regularisation_alpha = 0.1      #0.1 yields visually good results
             SRR_DTD_computation_type = "FiniteDifference" #not used
             SRR_regularisation_rho = None
             SRR_ADMM_iterations = None
             SRR_ADMM_iterations_output_dir = None
-            SRR_ADMM_iterations_output_filename_prefix = "TV-L2" #not used
+            SRR_ADMM_iterations_output_filename_prefix = None
 
         elif SRR_approach in ["TK1"]:
-            SRR_tolerance = 1e-4
+            SRR_tolerance = 1e-3
             SRR_iter_max = 30
             SRR_regularisation_alpha = 0.05     #0.05 yields visually good results
             SRR_DTD_computation_type = "FiniteDifference"
             SRR_regularisation_rho = None
             SRR_ADMM_iterations = None
             SRR_ADMM_iterations_output_dir = None
-            SRR_ADMM_iterations_output_filename_prefix = "TV-L2" #not used
+            SRR_ADMM_iterations_output_filename_prefix = None
 
         elif SRR_approach in ["TV-L2"]:
-            SRR_tolerance = 1e-4
+            SRR_tolerance = 1e-3
             SRR_iter_max = 5
             SRR_regularisation_alpha = 0.1     #0.1 yields visually good results
             SRR_DTD_computation_type = "FiniteDifference"
             SRR_regularisation_rho = 0.5       #0.5 yields visually good results
             SRR_ADMM_iterations = 5
-            SRR_ADMM_iterations_output_dir = self._dir_results + "TV-L2/" #print output of ADMM iterations there
+            SRR_ADMM_iterations_output_dir = self._dir_results + "TV-L2_ADMM_iterations/" #print output of ADMM iterations there
             SRR_ADMM_iterations_output_filename_prefix = "TV-L2"
             
         ## Set parameters

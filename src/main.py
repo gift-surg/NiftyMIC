@@ -48,7 +48,7 @@ def read_input_data(image_type):
         filenames = [str(i) for i in range(0, 8)]
         filenames.remove("6")
 
-        filenames = [str(i) for i in range(0, 3)]
+        # filenames = [str(i) for i in range(0, 3)]
 
     elif image_type in ["fetal_neck_mass_subject"]:
         dir_input = "../data/fetal_neck_mass_subject/"
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     # reconstruction_manager.run_hierarchical_alignment_of_slices(interleave=2, display_info=1)
 
     ## Run two step reconstruction alignment approach
-    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=0, display_info=1)
+    reconstruction_manager.run_two_step_reconstruction_alignment_approach(iterations=3, display_info=0)
 
     ## Write results
     reconstruction_manager.write_results()

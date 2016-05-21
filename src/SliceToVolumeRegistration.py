@@ -31,6 +31,135 @@ image_type = itk.Image[pixel_type, 3]
 #  \warning HACK: Upsample slices in k-direction to in-plane resolution
 class SliceToVolumeRegistration:
 
+    ## Idea is to use neighbouring slices to 
+    #  #- initialize registration for current slice with "meaningful" parameters
+    #  #- check resulting trafo and damp its effect in case it is notice as "outlier"
+    class StackRegistrationStabilizer:
+
+        # \param[in] N_slices
+        # \param[in] interleave
+        def __init__(self, N_slices, interleave=1):
+            self._N_slices = N_slices
+            self._rigid_transforms = [sitk.Euler3DTransform]*N_slices
+            
+            self._rigid_transform_parameters = np.zeros((N_slices,6))
+            self._interleave = interleave
+
+            ## Number of neighbouring slices (i.e. neighbours based on next/previous
+            #  interleaved slice acquisition) left and right the current one
+            #  considered to estimate initial values for the 6 DOF of 
+            #  rigid parameter transform.
+            neighbourhood_slices = 1
+
+            self._neighbourhood = neighbourhood_slices*self._interleave
+
+
+        ## Compute initial transform based on the rigid transform parameters
+        #  of a local neighbourhood
+        #  \param[in] fixed slice as Slice object
+        #  \param[in] moving image as Stack object (HR volume estimate)
+        #  \return initial transform as sitk.Euler3DTransform object
+        def get_initial_transform_rigid_parameters(self, fixed, moving):
+
+            initial_transform = sitk.Euler3DTransform()
+
+            ## Use arithmetic mean of fixed voxels as initial transform center
+            #  Remark: Center is taken into consideration for composited transforms,
+            #  see SimpleITKHelper
+            center = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY).GetFixedParameters()
+            initial_transform.SetCenter(center)
+
+            ## Compute indices of neighbouring slices to be considered by taking
+            #  into account interleaved acquisition
+            j_slice = fixed.get_slice_number()
+
+            j_min = np.max((j_slice-self._neighbourhood, 0))
+            j_max = np.min((j_slice+self._neighbourhood, self._N_slices-1))
+            
+            neighbourhood_range = list(set(np.concatenate((np.arange(j_slice, j_max+1, self._interleave), np.arange(j_slice, j_min-1, -self._interleave)))) - set([j_slice]))
+
+            # print("j_slice = " + str(j_slice))
+            # print("j_min = " + str(j_min))
+            # print("j_max = " + str(j_max))
+            # print("neighbourhood_range = " + str(neighbourhood_range))
+
+            ## Get average parameters of local neighbourhood
+            parameters = np.mean( self._rigid_transform_parameters[neighbourhood_range,:], 0 )
+
+            ## Update initial transform
+            initial_transform.SetParameters( parameters )
+
+            return initial_transform
+
+
+        ## Check suggested transform obtained via \p _get_rigid_registration_transform
+        #  and alleviate its parameters in case it is detected as outlier
+        #  based on slice transforms obtained for chosen neighbourhood
+        #  \param[in] fixed slice as Slice object
+        #  \param[in] rigid_transform rigid transform as sitk.Euler3DTransform
+        #  \return sitk.EulerTransform
+        def check_and_return_rigid_transform(self, fixed, rigid_transform_sitk):
+            
+            ## Get parameters of suggested rigid transform
+            parameters = np.array(rigid_transform_sitk.GetParameters())
+            
+            ## Compute indices of neighbouring slices to be considered by taking
+            #  into account interleaved acquisition
+            j_slice = fixed.get_slice_number()
+
+            j_min = np.max((j_slice-self._neighbourhood, 0))
+            j_max = np.min((j_slice+self._neighbourhood, self._N_slices-1))
+            
+            neighbourhood_range = list(set(np.concatenate((np.arange(j_slice, j_max+1, self._interleave), np.arange(j_slice, j_min-1, -self._interleave)))) - set([j_slice]))
+
+            # range_right = np.minimum(j_slice + np.arange(interleave,neighbourhood,interleave), self._N_slices-1)
+            # range_left = np.maximum(j_slice - np.arange(interleave,neighbourhood,interleave),0)
+            # print("j_slice = " + str(j_slice))
+            # neighbourhood_range = list(set(np.concatenate((range_left, range_right))))
+            # print ("neighbourhood_range" + str(neighbourhood_range))
+
+            ## Compute mean and standard deviation of parameters in neighbourhood
+            rigid_params_mean = np.mean( self._rigid_transform_parameters[neighbourhood_range,:], 0 )
+            rigid_params_std = np.std( self._rigid_transform_parameters[neighbourhood_range,:], 0 )
+
+            ## In case stds are too small (at the beginning of the algorithm they are zero e.g.)
+            std_angles_min = 0.1*np.ones(3)
+            std_translation_min = 1*np.ones(3)
+            rigid_params_std = np.maximum( rigid_params_std, np.concatenate((std_angles_min, std_translation_min)) )
+
+            # print("rigid_params_mean = " + str(rigid_params_mean))
+            # print("rigid_params_std = " + str(rigid_params_std))
+            # print("parameters = " + str(parameters))
+
+            ## Alleviate effect of transform in case suggested transform is 
+            #  not within range (mean +- threshold*sigma)
+            threshold = 3
+
+            if ( parameters > rigid_params_mean + threshold*rigid_params_std ).sum() >0 \
+                or ( parameters < rigid_params_mean - threshold*rigid_params_std ).sum() >0 :
+                print ("Slice %s: Update trafo!" %(j_slice))
+                sitkh.print_rigid_transformation(rigid_transform_sitk)
+
+                ## Alleviate effect of detected "outlier" transform
+                parameters /= 6;
+
+                rigid_transform_sitk.SetParameters(parameters)
+                sitkh.print_rigid_transformation(rigid_transform_sitk)
+            
+            ## Update database of obtained transforms    
+            self._update_transform(j_slice, rigid_transform_sitk)
+
+            return rigid_transform_sitk
+
+        
+        ## Update database of obtained transforms    
+        #  \param[in] j_slice slice number within stack
+        #  \param[in] rigid_transform_sitk transform as sitk.Euler3DTransform object
+        def _update_transform(self, j_slice, rigid_transform_sitk):
+            self._rigid_transforms[j_slice] = rigid_transform_sitk
+            self._rigid_transform_parameters[j_slice,:] = rigid_transform_sitk.GetParameters()
+
+
     ## Constructor
     #  \param[in,out] stack_manager instance of StackManager containing all stacks and additional information
     def __init__(self, stack_manager, HR_volume):
@@ -58,10 +187,11 @@ class SliceToVolumeRegistration:
         # self._registration_approach = "NiftyReg"    # default registration approach
 
 
-
     ## Perform slice-to-volume registration of all slices to current estimate of HR volume reconstruction
     #  \param[in] display_info display information of registration results as we go along
-    def run_slice_to_volume_registration(self, display_info=0):
+    #  \param[in] interleave step of interleaved stack acquisition used for hierarchical alignment
+    #       Used for "strategy" in StackRegistrationStabilizer
+    def run_slice_to_volume_registration(self, interleave=2, display_info=0):
         print("\t--- Slice-to-Volume Registration ---")
 
         self._gaussian_yvv.SetInput(sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk))
@@ -72,20 +202,21 @@ class SliceToVolumeRegistration:
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
             
-            for j in range(0, N_slices):
-                slice = slices[j]
+            self._stack_registration_stabilizer = self.StackRegistrationStabilizer(N_slices, interleave)
 
-                if display_info:
-                    print("\t\tSVR of slice %s/%s:" %(j,N_slices-1))
-                rigid_transform = self._get_rigid_registration_transform[self._registration_approach](fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume, display_registration_info=display_info)
+            ## Consider groups of acquired slices and start from non-border slice
+            # for j in range(0, N_slices):
+            for j_slice_groups in range(interleave-1,-1,-1):
+                slice_group = np.arange(j_slice_groups, N_slices, interleave)
 
-                ## print if translation is strange
-                # translation = rigid_transform.GetTranslation()
-                # if np.linalg.norm(translation)>10:
-                #     print("\t\tRigid registration of slice %s/%s within stack %s seems odd:" %(j,N_slices-1,i))
-                #     sitkh.print_rigid_transformation(rigid_transform)
+                for j in slice_group:
+                    if display_info:
+                        print("\t\tSVR of slice %s/%s:" %(j,N_slices-1))
+                    
+                    slice = slices[j]
 
-                #     continue
+                    rigid_transform = self._get_rigid_registration_transform[self._registration_approach](fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume, display_registration_info=display_info)
+
 
                 ## Update rigid motion estimate for current slice and update its 
                 #  position in physical space accordingly
@@ -113,17 +244,10 @@ class SliceToVolumeRegistration:
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()
 
-        ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
-        initial_transform = sitk.CenteredTransformInitializer(fixed_slice_3D.sitk, moving_HR_volume_3D.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+        initial_transform = self._stack_registration_stabilizer.get_initial_transform_rigid_parameters(fixed_slice_3D, moving_HR_volume_3D)
+        # initial_transform = sitk.Euler3DTransform()
 
-        ## Use computed center for (identity) initialization transform
-        #  Remark: Center is taken into consideration for composited transforms,
-        #  see SimpleITKHelper
-        center = initial_transform.GetFixedParameters()
-        initial_transform = sitk.Euler3DTransform()
-        initial_transform.SetCenter(center)
-
-        ## Set the initial transform and parameters to optimize
+        # ## Set the initial transform and parameters to optimize
         registration_method.SetInitialTransform(initial_transform)
 
         ## Set an image masks in order to restrict the sampled points for the metric
@@ -175,7 +299,7 @@ class SliceToVolumeRegistration:
         # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1e-4, numberOfIterations=500, gradientMagnitudeTolerance=1e-4)
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1e-6, numberOfIterations=500, gradientMagnitudeTolerance=1e-4)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
@@ -207,6 +331,8 @@ class SliceToVolumeRegistration:
 
         ## Execute 3D registration
         final_transform_3D_sitk = sitk.Euler3DTransform(registration_method.Execute(fixed_slice_3D.sitk, moving_3D_sitk))
+
+        final_transform_3D_sitk = self._stack_registration_stabilizer.check_and_return_rigid_transform(fixed_slice_3D, final_transform_3D_sitk)
 
         if display_registration_info:
             print("\t\tSimpleITK Image Registration Method:")
