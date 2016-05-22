@@ -476,8 +476,9 @@ class InverseProblemSolver:
             print("\tElapsed time for optimization: %s seconds" %(time_elapsed))
                 
 
-    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image Filter parameters. Hence, update combined Downsample and Blur Operator
-    #  according to the relative position between slice and HR volume
+    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
+    #  Filter parameters. Hence, update combined Downsample and Blur Operator
+    #  according to the relative position between slice and HR volume.
     #  \param[in] slice Slice object
     def _update_oriented_adjoint_oriented_Gaussian_image_filters(self, slice):
         ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates

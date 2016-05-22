@@ -45,7 +45,7 @@ class VolumeReconstruction:
         }
         self._recon_approach = "SRR"        # default reconstruction approach
 
-        ## 1) Super-Resolution Reconstruction (Tikhonov) settings:
+        ## 1) Super-Resolution Reconstruction settings:
         self._SRR = ips.InverseProblemSolver(self._stacks, self._HR_volume)
 
         ## Cut-off distance for Gaussian blurring filter
@@ -56,7 +56,7 @@ class VolumeReconstruction:
         # Settings for optimizer
         self._SRR_alpha = 0.1               # Regularization parameter
         self._SRR_iter_max = 20             # Maximum iteration steps
-        self._SRR_approach = 'TK0'          # Either Tikhonov zero- or first-order
+        self._SRR_approach = 'TK1'          # Either Tikhonov zero- or first-order
         self._SRR_DTD_comp_type = "FiniteDifference" # Either 'Laplace' or 'FiniteDifference'
         self._SRR_tolerance = 1e-8
 
