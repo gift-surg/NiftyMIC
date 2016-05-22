@@ -32,8 +32,8 @@ image_type = itk.Image[pixel_type, 3]
 class SliceToVolumeRegistration:
 
     ## Idea is to use neighbouring slices to 
-    #  #- initialize registration for current slice with "meaningful" parameters
-    #  #- check resulting trafo and damp its effect in case it is notice as "outlier"
+    #  -# initialize registration for current slice with "meaningful" parameters
+    #  -# check resulting trafo and damp its effect in case it is notice as "outlier"
     class StackRegistrationStabilizer:
 
         # \param[in] N_slices

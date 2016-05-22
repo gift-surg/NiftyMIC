@@ -48,11 +48,13 @@ class RegularizationParameterEstimation:
         self._alphas = None
         self._residuals = None
         self._Psis = None
+        self._regularization_types = None
 
-        self._dir_results_figures = "results/RegularizationParameterEstimation/"
+        self._dir_results = "RegularizationParameterEstimation/"
+        os.system("mkdir -p " + self._dir_results)
 
         """
-        Member functions to estimate the regularization parameter
+        Member functions to compute residual and prior term Psi
         """
         ## Used for PSF modelling
         self._psf = psf.PSF()
@@ -84,12 +86,6 @@ class RegularizationParameterEstimation:
         }
 
 
-        """
-        Super-Resolution settings
-        """
-        
-
-
     ## Define array of regularization parameters which will be used for
     #  the computation
     #  \param[in] alpha_array numpy array of alpha values
@@ -103,103 +99,157 @@ class RegularizationParameterEstimation:
         return self._alphas
 
 
-    ## Run all reconstructions for given alphas
-    def run_reconstructions(self):
+    ## Set SRR approaches which will be run
+    #  \param[in] regularization_types list of strings containing only "TK0", "TK1"
+    def set_regularization_types(self, regularization_types):
+        self._regularization_types = regularization_types
+
+
+    ## Get chosen types of SRR
+    #  \return list of strings
+    def get_regularization_types(self):
+        return self._regularization_types
+
+
+    ## Run all reconstructions for all chosen regularization types and
+    #  associated regularization parameters alpha
+    def run_reconstructions(self, save_flag=0):
 
         N_alphas = len(self._alphas)
+        N_regularization_types = len(self._regularization_types)
 
-        self._Psis = np.zeros(N_alphas)
-        self._residuals = np.zeros(N_alphas)
+        self._Psis = np.zeros((N_regularization_types, N_alphas))
+        self._residuals = np.zeros((N_regularization_types, N_alphas))
+
+        ## Cut-off distance for Gaussian blurring filter
+        SRR_alpha_cut = 3 
+
+        # Settings for optimizer
+        SRR_iter_max = 10                # Maximum iteration steps
+        SRR_DTD_comp_type = "FiniteDifference" # TK1: Either 'Laplace' or 'FiniteDifference'
+        SRR_tolerance = 1e-5
+
+        SRR_rho = 1            # Regularization parameter of augmented Lagrangian term (only for TV-L2)
+        ADMM_iterations = 5    # Number of performed ADMM iterations
+        SRR_ADMM_iterations_output_dir = None
+
+        for i_reg_type in range(0, N_regularization_types):
+
+            ## Read type of regularization
+            SRR_approach = self._regularization_types[i_reg_type]
+
+            ## Run 
+            for i in range(0, N_alphas):
+                print("\n\t--- %s-Regularization (%s/%s): Reconstruction with alpha = %s (%s/%s) ---" %(SRR_approach, i_reg_type+1, N_regularization_types, self._alphas[i], i+1, N_alphas))
+                alpha = self._alphas[i]
+                HR_volume_init = st.Stack.from_stack(self._HR_volume)
+
+                ## Super-Resolution Reconstruction object
+                SRR = ips.InverseProblemSolver(self._stacks, HR_volume_init)
+
+                ## Set current alpha
+                SRR.set_alpha(alpha)
+
+                ## Set other values
+                SRR.set_alpha_cut(SRR_alpha_cut)
+                
+                SRR.set_iter_max(SRR_iter_max)
+                SRR.set_regularization_type(SRR_approach)
+                SRR.set_DTD_computation_type(SRR_DTD_comp_type)
+                SRR.set_tolerance(SRR_tolerance)
+
+                SRR.set_rho(SRR_rho)
+                SRR.set_ADMM_iterations(ADMM_iterations)
+                SRR.set_ADMM_iterations_output_dir(SRR_ADMM_iterations_output_dir)
+                
+                ## Reconstruct volume for given alpha
+                SRR.run_reconstruction()
+                HR_volume_alpha = SRR.get_HR_volume()
+
+                ## Write result
+                if save_flag:
+                    filename =  "RegularizationParameterEstimation"
+                    filename += "_" + SRR_approach
+                    filename += "_itermax" + str(SRR_iter_max)
+                    filename += "_alpha" + str(alpha)
+                    HR_volume_alpha.write(directory=self._dir_results, filename=filename, write_mask=False)
+
+                ## Compute prior term \f$ Psi(x) \f$
+                self._Psis[i_reg_type, i] = self._compute_prior_term[SRR_approach](HR_volume_alpha)
+
+                ## Compute residual \f$ \sum_k \Vert M_k y_k - M_k A_k x \Vert_{\ell^2}^2 \f$
+                self._residuals[i_reg_type, i] = self._compute_residual(HR_volume_alpha)
+
+        self.analyse(save_flag)
 
 
-        for i in range(0, N_alphas):
-            print("Reconstruction %s/%s: alpha = %s" %(i+1, N_alphas, self._alphas[i]))
-            alpha = self._alphas[i]
-            HR_volume_init = st.Stack.from_stack(self._HR_volume)
+    def analyse(self, save_flag=0):   
 
-            ## Super-Resolution Reconstruction object
-            SRR = ips.InverseProblemSolver(self._stacks, HR_volume_init)
+        plot_colours = ["rx" , "bo"]
 
-            ## Cut-off distance for Gaussian blurring filter
-            SRR_alpha_cut = 3 
-            
-            SRR.set_alpha_cut(SRR_alpha_cut)
+        plt.rc('text', usetex=True)
+        # plt.rc('font', family='serif')
 
-            # Settings for optimizer
-            SRR_iter_max = 3             # Maximum iteration steps
-            SRR_approach = 'TK1'          # Either Tikhonov zero- or first-order
-            SRR_DTD_comp_type = "FiniteDifference" # Either 'Laplace' or 'FiniteDifference'
-            SRR_tolerance = 1e-5
-
-            SRR_rho = 1            # Regularization parameter of augmented Lagrangian term (only for TV-L2)
-            ADMM_iterations = 5    # Number of performed ADMM iterations
-            SRR_ADMM_iterations_output_dir = None
-
-            SRR.set_iter_max(SRR_iter_max)
-            SRR.set_regularization_type(SRR_approach)
-            SRR.set_DTD_computation_type(SRR_DTD_comp_type)
-            SRR.set_tolerance(SRR_tolerance)
-
-            SRR.set_rho(SRR_rho)
-            SRR.set_ADMM_iterations(ADMM_iterations)
-            SRR.set_ADMM_iterations_output_dir(SRR_ADMM_iterations_output_dir)
-
-            ## Set current alpha
-            SRR.set_alpha(alpha)
-            
-            ## Reconstruct volume for given alpha
-            SRR.run_reconstruction()
-            HR_volume_alpha = SRR.get_HR_volume()
-
-            ## Compute prior term \f$ Psi(x) \f$
-            self._Psis[i] = self._compute_prior_term[SRR_approach](HR_volume_alpha)
-
-            ## Compute residual \f$ \sum_k \Vert M_k y_k - M_k A_k x \Vert_{\ell^2}^2 \f$
-            self._residuals[i] = self._compute_residual(HR_volume_alpha)
-
-        self.analyse()
-
-
-    def analyse(self, save_figure=0):   
-
-        ## Print on screen
-        print("\t\talpha\t\tPrior term Psi \t\tResidual")
-        for i in range(0, len(self._alphas)):
-            print("\t\t%s\t\t%s\t\t%s" %(self._alphas[i], self._Psis[i], self._residuals[i]))
-            
 
         ## Plot
         fig = plt.figure(1)
-        plt.title("L-curve")
+        fig.clf()
+        ax = fig.add_subplot(1,1,1)
+        for i_reg_type in range(0, len(self._regularization_types)):
 
-        plt.ylabel("Prior term Psi")
-        plt.xlabel("Residual")
+            ## Print on screen
+            print("\t --- %s Regularization ---" %(self._regularization_types[i_reg_type]))
+            print("\t\talpha\t\tPrior term Psi \t\tResidual")
+            for i in range(0, len(self._alphas)):
+                print("\t\t%s\t\t%.3e\t\t%.3e" %(self._alphas[i], self._Psis[i_reg_type, i], self._residuals[i_reg_type, i]))
 
-        plt.plot(self._residuals, self._Psis, 'rx')
+            ax.plot(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
+            # ax.loglog(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
 
         ## Show grid
-        plt.grid()
+        ax.grid()
+
+        ## Add legend
+        legend = ax.legend(loc="upper right")
+
+        plt.title("L-curve\n$\Phi(\\vec{x}) = \\frac{1}{2}\sum_{k=1}^K \Vert M_k (\\vec{y}_k - A_k \\vec{x}) \Vert_{\ell^2}^2 + \\alpha \Psi(\\vec{x})\\rightarrow \min$" )
+        # plt.title("L-curve for " + self._regularization_types[i_reg_type] + "Regularization")
+        plt.ylabel("Prior term $\displaystyle\Psi(\\vec{x}_\\alpha)$")
+        plt.xlabel("Residual $\sum_{k=1}^K \Vert M_k (\\vec{y}_k - A_k \\vec{x}_\\alpha) \Vert_{\ell^2}^2$")
 
         plt.draw()
         plt.pause(0.5) ## important! otherwise fig is not shown. Also needs plt.show() at the end of the file to keep figure open
-        if save_figure:
-            os.system("mkdir -p " + self._dir_results_figures)
-            fig.savefig(self._dir_results_figures + "L-curve.eps")
+        if save_flag:
+            fig.savefig(self._dir_results + "L-curve.eps")
 
-        ## Plot
-        fig = plt.figure(2)
-        plt.title("L-curve")
+        
+        # fig = plt.figure(2)
+        # fig.clf()
+        # ax = fig.add_subplot(1,1,1)
+        # for i_reg_type in range(0, len(self._regularization_types)):
 
-        plt.ylabel("Prior term Psi")
-        plt.xlabel("Residual")
+        #     ## Print on screen
+        #     print("\t --- %s Regularization ---" %(self._regularization_types[i_reg_type]))
+        #     print("\t\talpha\t\tPrior term Psi \t\tResidual")
+        #     for i in range(0, len(self._alphas)):
+        #         print("\t\t%s\t\t%.3e\t\t%.3e" %(self._alphas[i], self._Psis[i_reg_type, i], self._residuals[i_reg_type, i]))
 
-        plt.loglog(self._residuals, self._Psis, 'rx')
+        #     ax.loglog(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
 
-        ## Show grid
-        plt.grid()
+        # ## Show grid
+        # ax.grid()
 
-        plt.draw()
-        plt.pause(0.5) ## important! otherwise fig is not shown. Also needs plt.show() at the end of the file to keep figure
+        # ## Add legend
+        # legend = ax.legend(loc="upper right")
+
+        # plt.title("L-curve")
+        # # plt.title("L-curve for " + self._regularization_types[i_reg_type] + "Regularization")
+        # plt.ylabel("Prior term Psi")
+        # plt.xlabel("Residual")
+
+        # plt.draw()
+        # plt.pause(0.5) ## important! otherwise fig is not shown. Also needs plt.show() at the end of the file to keep figure open
+
 
     def _compute_prior_term_TK0(self, HR_volume):
         ## Get data array
