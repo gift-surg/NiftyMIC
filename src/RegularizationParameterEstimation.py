@@ -19,6 +19,8 @@ import time
 from scipy.optimize import minimize
 from scipy import ndimage
 import matplotlib.pyplot as plt
+import datetime
+# import re               #regular expression
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
@@ -50,6 +52,9 @@ class RegularizationParameterEstimation:
         self._Psis = None
         self._regularization_types = None
 
+        ## Parameters for output
+        # self._filename_prefix = ""
+        self._filename_prefix = "RegularizationParameterEstimation_"
         self._dir_results = "RegularizationParameterEstimation/"
         os.system("mkdir -p " + self._dir_results)
 
@@ -125,7 +130,7 @@ class RegularizationParameterEstimation:
         SRR_alpha_cut = 3 
 
         # Settings for optimizer
-        SRR_iter_max = 10                # Maximum iteration steps
+        SRR_iter_max = 30                # Maximum iteration steps
         SRR_DTD_comp_type = "FiniteDifference" # TK1: Either 'Laplace' or 'FiniteDifference'
         SRR_tolerance = 1e-5
 
@@ -137,6 +142,26 @@ class RegularizationParameterEstimation:
 
             ## Read type of regularization
             SRR_approach = self._regularization_types[i_reg_type]
+
+            ## Save text: Write header
+            now = datetime.datetime.now()
+            
+            filename = self._filename_prefix
+            filename += SRR_approach + "-Regularization"
+            filename += "_" + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
+            filename += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
+
+            text = "## " + SRR_approach + "-Regularization"
+            text += ", itermax = " + str(SRR_iter_max)
+            text += " (" + str(now.day).zfill(2) + "." + str(now.month).zfill(2) + "." + str(now.year) 
+            text += ", " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2) + ")"
+            text += "\n## " + "alpha" + "\t" + "Residual"+ "\t" + "Psi"
+            text += "\n"
+
+            file_handle = open(self._dir_results + filename + ".txt", "w")
+            file_handle.write(text)
+            file_handle.close()
+
 
             ## Run 
             for i in range(0, N_alphas):
@@ -166,13 +191,13 @@ class RegularizationParameterEstimation:
                 SRR.run_reconstruction()
                 HR_volume_alpha = SRR.get_HR_volume()
 
-                ## Write result
+                ## Write reconstructed nifti-volume
                 if save_flag:
-                    filename =  "RegularizationParameterEstimation"
-                    filename += "_" + SRR_approach
-                    filename += "_itermax" + str(SRR_iter_max)
-                    filename += "_alpha" + str(alpha)
-                    HR_volume_alpha.write(directory=self._dir_results, filename=filename, write_mask=False)
+                    filename_image =  self._filename_prefix
+                    filename_image += SRR_approach
+                    filename_image += "_itermax" + str(SRR_iter_max)
+                    filename_image += "_alpha" + str(alpha)
+                    HR_volume_alpha.write(directory=self._dir_results, filename=filename_image, write_mask=False)
 
                 ## Compute prior term \f$ Psi(x) \f$
                 self._Psis[i_reg_type, i] = self._compute_prior_term[SRR_approach](HR_volume_alpha)
@@ -180,31 +205,77 @@ class RegularizationParameterEstimation:
                 ## Compute residual \f$ \sum_k \Vert M_k y_k - M_k A_k x \Vert_{\ell^2}^2 \f$
                 self._residuals[i_reg_type, i] = self._compute_residual(HR_volume_alpha)
 
+                ## Write L-curve information into file
+                file_handle = open(self._dir_results + filename + ".txt", "a")
+                array_out = np.array([alpha, self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]]).reshape(1,3)
+                np.savetxt(file_handle, array_out, fmt="%.10e", delimiter="\t")
+                file_handle.close()
+                # np.savetxt(file_handle, array_out, fmt="%.10e", delimiter="\t", header="TK0-Regulrization\nalpha\tPsi\tResidual", comments="## ")
+
+
         self.analyse(save_flag)
 
 
-    def analyse(self, save_flag=0):   
+    def analyse(self, save_flag=0, from_files=None):   
 
         plot_colours = ["rx" , "bo"]
 
         plt.rc('text', usetex=True)
         # plt.rc('font', family='serif')
 
-
         ## Plot
         fig = plt.figure(1)
         fig.clf()
         ax = fig.add_subplot(1,1,1)
-        for i_reg_type in range(0, len(self._regularization_types)):
 
-            ## Print on screen
-            print("\t --- %s Regularization ---" %(self._regularization_types[i_reg_type]))
-            print("\t\talpha\t\tPrior term Psi \t\tResidual")
-            for i in range(0, len(self._alphas)):
-                print("\t\t%s\t\t%.3e\t\t%.3e" %(self._alphas[i], self._Psis[i_reg_type, i], self._residuals[i_reg_type, i]))
+        if from_files is None:
+            for i_reg_type in range(0, len(self._regularization_types)):
 
-            ax.plot(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
-            # ax.loglog(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
+                ## Print on screen
+                print("\t --- %s Regularization ---" %(self._regularization_types[i_reg_type]))
+                print("\t\talpha\t\tResidual\t\tPrior term Psi")
+                for i in range(0, len(self._alphas)):
+                    print("\t\t%s\t\t%.3e\t\t%.3e" %(self._alphas[i], self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]))
+
+
+
+                ## Plot curve
+                ax.plot(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
+                # ax.loglog(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
+
+        else:
+            for i_file in range(0, len(from_files)):
+                data = np.loadtxt(from_files[i_file] + ".txt" , delimiter="\t", skiprows=2)
+
+                if "TK0" in from_files[i_file]:
+                    SRR_approach = "TK0"
+                elif "TK1" in from_files[i_file]:
+                    SRR_approach = "TK1"
+                elif "TV-L2" in from_files[i_file]:
+                    SRR_approach = "TV-L2"
+                else:
+                    raise ValueError("Error: SRR method could not be determined from filename")
+                # SRR_approach = re.sub("-Regularization.*","",from_files[i_file])
+                # SRR_approach = re.sub(".*_","",SRR_approach)
+
+                alphas = data[:,0]
+                residuals = data[:,1]
+                Psis = data[:,2]
+
+                ## Print on screen
+                print("\t --- %s-Regularization ---" %(SRR_approach))
+                print("\t\talpha\t\tResidual\t\tPrior term Psi")
+                for i in range(0, len(alphas)):
+                    print("\t\t%s\t\t%.3e\t\t%.3e" %(alphas[i], residuals[i], Psis[i]))
+
+                ## Maximum curvature
+                i_max_curvature = self._get_maximum_curvature_point(residuals, Psis)
+                
+                ## Plot curve
+                ax.plot(residuals, Psis, plot_colours[i_file], label=SRR_approach)
+                # ax.plot(residuals[i_max_curvature], Psis[i_max_curvature], "cs")
+                # ax.loglog(residuals[i_file], Psis[i_file], plot_colours[i_file], label=SRR_approach)
+
 
         ## Show grid
         ax.grid()
@@ -213,42 +284,52 @@ class RegularizationParameterEstimation:
         legend = ax.legend(loc="upper right")
 
         plt.title("L-curve\n$\Phi(\\vec{x}) = \\frac{1}{2}\sum_{k=1}^K \Vert M_k (\\vec{y}_k - A_k \\vec{x}) \Vert_{\ell^2}^2 + \\alpha \Psi(\\vec{x})\\rightarrow \min$" )
-        # plt.title("L-curve for " + self._regularization_types[i_reg_type] + "Regularization")
+        # plt.title("L-curve for " + regularization_types[i_reg_type] + "Regularization")
         plt.ylabel("Prior term $\displaystyle\Psi(\\vec{x}_\\alpha)$")
         plt.xlabel("Residual $\sum_{k=1}^K \Vert M_k (\\vec{y}_k - A_k \\vec{x}_\\alpha) \Vert_{\ell^2}^2$")
 
         plt.draw()
         plt.pause(0.5) ## important! otherwise fig is not shown. Also needs plt.show() at the end of the file to keep figure open
+
+
+
         if save_flag:
             fig.savefig(self._dir_results + "L-curve.eps")
 
-        
-        # fig = plt.figure(2)
-        # fig.clf()
-        # ax = fig.add_subplot(1,1,1)
-        # for i_reg_type in range(0, len(self._regularization_types)):
 
-        #     ## Print on screen
-        #     print("\t --- %s Regularization ---" %(self._regularization_types[i_reg_type]))
-        #     print("\t\talpha\t\tPrior term Psi \t\tResidual")
-        #     for i in range(0, len(self._alphas)):
-        #         print("\t\t%s\t\t%.3e\t\t%.3e" %(self._alphas[i], self._Psis[i_reg_type, i], self._residuals[i_reg_type, i]))
+    def _get_maximum_curvature_point(self, x, y):
 
-        #     ax.loglog(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
+        scale = x.mean()
+        # scale = 1
 
-        # ## Show grid
-        # ax.grid()
+        x = x/scale
+        y = y/scale
 
-        # ## Add legend
-        # legend = ax.legend(loc="upper right")
+        N_points = len(x)
+        radius2 = np.zeros(N_points-2)
 
-        # plt.title("L-curve")
-        # # plt.title("L-curve for " + self._regularization_types[i_reg_type] + "Regularization")
-        # plt.ylabel("Prior term Psi")
-        # plt.xlabel("Residual")
+        M = np.zeros((3,3))
 
-        # plt.draw()
-        # plt.pause(0.5) ## important! otherwise fig is not shown. Also needs plt.show() at the end of the file to keep figure open
+        for i in range(1, N_points-1):
+            M[:,0] = 1
+            M[:,1] = x[i-1:i+2]
+            M[:,2] = y[i-1:i+2]
+            b = x[i-1:i+2]**2 + y[i-1:i+2]**2
+
+            [A, B, C] = np.linalg.solve(M,b)
+
+            radius2[i-1] = A + (B**2 + C**2)/4
+            # print("(xm, ym, r2) = (%s, %s, %s)" %(B/2.,C/2.,radius2[i-1]))
+
+        i_max_curvature = np.argmin(radius2)+1
+
+        return i_max_curvature
+
+
+
+
+
+
 
 
     def _compute_prior_term_TK0(self, HR_volume):
