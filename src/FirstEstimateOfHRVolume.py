@@ -44,13 +44,6 @@ class FirstEstimateOfHRVolume:
         self._filename_reconstructed_volume = filename_reconstructed_volume
         self._target_stack_number = target_stack_number
 
-        ## additional boundary surrounding the stack in mm (used to get additional black frame)
-        boundary = 5 
-
-        ## Resample chosen target volume and its mask to isotropic grid with optional additional boundary
-        ## \todo replace self._target_stack_number with "best choice" of stack
-        self._HR_volume = self._get_isotropically_resampled_stack(self._stacks[self._target_stack_number], boundary)
-
         ## Flags indicating whether or not these options are selected
         self._flag_register_stacks_before_initial_volume_estimate = False
 
@@ -110,7 +103,12 @@ class FirstEstimateOfHRVolume:
     #  -# Create first HR volume estimate: Average all registered (planarly-aligned) stacks
     #  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
     #  \param[in] display_info display information of registration results as we go along
-    def compute_first_estimate_of_HR_volume(self, display_info=0):
+    #  \param[in] boundary additional boundary surrounding chosen target stack in mm (used to get additional black frame)
+    def compute_first_estimate_of_HR_volume(self, boundary=5, display_info=0):
+
+        ## Resample chosen target volume and its mask to isotropic grid with optional additional boundary
+        ## \todo replace self._target_stack_number with "best choice" of stack
+        self._HR_volume = self._get_isotropically_resampled_stack(self._stacks[self._target_stack_number], boundary)
 
         ## If desired: Register all (planarly) aligned stacks to resampled target volume
         if self._flag_register_stacks_before_initial_volume_estimate:

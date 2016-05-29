@@ -35,7 +35,7 @@ class DataPreprocessing:
     ## Initialize data preprocessing class based on filenames, i.e. data used
     #  is going to be read from the hard disk. 
     #  \param[in] dir_input directory where data is stored for preprocessing
-    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
+    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed (without .nii.gz)
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     @classmethod
     def from_filenames(cls, dir_input, filenames, suffix_mask):
@@ -57,7 +57,7 @@ class DataPreprocessing:
         self._stacks_preprocessed = [None]*self._N_stacks
 
         ## Number of masked stacks provided
-        filenames_masks = self._get_mask_filenames_in_directory(dir_input, suffix_mask)
+        filenames_masks = self._get_mask_filenames_in_directory(dir_input, filenames, suffix_mask)
         number_of_masks = len(filenames_masks)
 
         ## Each stack is provided a mask
@@ -139,11 +139,12 @@ class DataPreprocessing:
 
     ## Get filenames of stacks with provided masks in input directory
     #  \param[in] dir_input directory where data is stored for preprocessing
+    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed (without .nii.gz)
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     #  \return filenames as list of strings
-    def _get_mask_filenames_in_directory(self, dir_input, suffix_mask):
+    def _get_mask_filenames_in_directory(self, dir_input, filenames, suffix_mask):
 
-        filenames = []
+        filenames_with_mask = []
 
         ## List of all files in directory
         all_files = os.listdir(dir_input)
@@ -151,12 +152,12 @@ class DataPreprocessing:
         ## Count number of files labelled as masks
         for file in all_files:
 
-            if file.endswith(suffix_mask + ".nii.gz"):
+            if file.endswith(suffix_mask + ".nii.gz") and file.replace(suffix_mask + ".nii.gz","") in filenames:
 
-                filename = file.replace(suffix_mask + ".nii.gz","")
-                filenames.append(filename)
+                filename_with_mask = file.replace(suffix_mask + ".nii.gz","")
+                filenames_with_mask.append(filename_with_mask)
 
-        return filenames
+        return filenames_with_mask
 
 
     """

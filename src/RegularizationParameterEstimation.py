@@ -48,10 +48,12 @@ class RegularizationParameterEstimation:
         self._N_stacks = len(stacks)
 
         self._alphas = None
-        self._rhos = None
+        self._rho = None
         self._residuals = None
         self._Psis = None
         self._regularization_types = None
+
+        self._ADMM_iterations = 5   # Number of performed ADMM iterations
 
         ## Parameters for output
         # self._filename_prefix = ""
@@ -116,6 +118,14 @@ class RegularizationParameterEstimation:
         return self._alphas
 
 
+    ## Set rho to be computed in case of TV-L2 regularization
+    #  \param[in] rho
+    def set_rho(self, rho):
+        self._rho = rho
+
+
+
+
     ## Set SRR approaches which will be run
     #  \param[in] regularization_types list of strings containing only "TK0", "TK1"
     def set_regularization_types(self, regularization_types):
@@ -126,6 +136,22 @@ class RegularizationParameterEstimation:
     #  \return list of strings
     def get_regularization_types(self):
         return self._regularization_types
+
+
+    ## Set ADMM iterations to solve TV-L2 reconstruction problem
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
+    #  \]$
+    #  \param[in] iterations number of ADMM iterations, scalar
+    def set_ADMM_iterations(self, iterations):
+        self._ADMM_iterations = iterations
+
+
+    ## Get chosen value of ADMM iterations to solve TV-L2 reconstruction problem
+    #  \return number of ADMM iterations, scalar
+    def get_ADMM_iterations(self):
+        return self._ADMM_iterations
 
 
     ## Run all reconstructions for all chosen regularization types and
@@ -155,7 +181,7 @@ class RegularizationParameterEstimation:
                 SRR_tolerance = 1e-5
                 SRR_iter_max = 30
                 SRR_DTD_computation_type = "FiniteDifference" #not used
-                self._SRR_rho = None
+                SRR_rho = None
                 SRR_ADMM_iterations = None
                 SRR_ADMM_iterations_output_dir = None
                 SRR_ADMM_iterations_output_filename_prefix = None
@@ -164,7 +190,7 @@ class RegularizationParameterEstimation:
                 SRR_tolerance = 1e-5
                 SRR_iter_max = 30
                 SRR_DTD_computation_type = "FiniteDifference"
-                self._SRR_rho = None
+                SRR_rho = None
                 SRR_ADMM_iterations = None
                 SRR_ADMM_iterations_output_dir = None
                 SRR_ADMM_iterations_output_filename_prefix = None
@@ -173,21 +199,23 @@ class RegularizationParameterEstimation:
                 SRR_tolerance = 1e-3
                 SRR_iter_max = 10
                 SRR_DTD_computation_type = "FiniteDifference"
-                self._SRR_rho = 0.5       #0.5 yields visually good results
-                SRR_ADMM_iterations = 5
+                SRR_rho = self._rho       #0.5 yields visually good results
+                SRR_ADMM_iterations = self._ADMM_iterations
                 SRR_ADMM_iterations_output_dir = self._dir_results + "TV-L2_ADMM_iterations/" #print output of ADMM iterations there
                 SRR_ADMM_iterations_output_filename_prefix = "TV-L2"
 
             ## Save text: Write header
             now = datetime.datetime.now()
             
-            # filename = self._filename_prefix
-            filename = ""
-            filename += SRR_approach + "-Regularization"
-            filename += "_" + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
-            filename += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
             
             if SRR_approach in ["TK0", "TK1"]:
+                # filename = self._filename_prefix
+                filename = ""
+                filename += SRR_approach + "-Regularization"
+                filename += "_itermax" + str(SRR_iter_max)
+                filename += "_" + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
+                filename += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
+
                 text = "## " + SRR_approach + "-Regularization"
                 text += ", itermax = " + str(SRR_iter_max)
                 text += ", tolerance = " + str(SRR_tolerance)
@@ -197,6 +225,15 @@ class RegularizationParameterEstimation:
                 text += "\n"
             
             elif SRR_approach in ["TV-L2"]:
+                # filename = self._filename_prefix
+                filename = ""
+                filename += SRR_approach + "-Regularization"
+                filename += "_rho" + str(SRR_rho)
+                filename += "_ADMM_iterations" + str(SRR_ADMM_iterations)
+                filename += "_TK1itermax" + str(SRR_iter_max)
+                filename += "_" + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
+                filename += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
+
                 text = "## " + SRR_approach + "-Regularization"
                 text += " with " + str(SRR_ADMM_iterations) + " ADMM iterations."
                 text += " TK1-solver settings:" 
@@ -232,7 +269,7 @@ class RegularizationParameterEstimation:
                 SRR.set_DTD_computation_type(SRR_DTD_computation_type)
                 SRR.set_tolerance(SRR_tolerance)
 
-                SRR.set_rho(self._SRR_rho)
+                SRR.set_rho(SRR_rho)
                 SRR.set_ADMM_iterations(SRR_ADMM_iterations)
                 SRR.set_ADMM_iterations_output_dir(SRR_ADMM_iterations_output_dir)
                 SRR.set_ADMM_iterations_output_filename_prefix(SRR_ADMM_iterations_output_filename_prefix)
@@ -252,7 +289,7 @@ class RegularizationParameterEstimation:
 
                     elif SRR_approach in ["TV-L2"]:
                         filename_image += "_alpha" + str(alpha)
-                        filename_image += "_rho" + str(self._SRR_rho)
+                        filename_image += "_rho" + str(SRR_rho)
                         filename_image += "_ADMM_iterations" + str(SRR_ADMM_iterations)
                         filename_image += "_TK1itermax" + str(SRR_iter_max)
 
@@ -269,14 +306,14 @@ class RegularizationParameterEstimation:
                 if SRR_approach in ["TK0", "TK1"]:
                     array_out = np.array([alpha, self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]]).reshape(1,3)
                 elif SRR_approach in ["TV-L2"]:
-                    array_out = np.array([self._SRR_rho, alpha, self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]]).reshape(1,4)
+                    array_out = np.array([SRR_rho, alpha, self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]]).reshape(1,4)
                 
                 np.savetxt(file_handle, array_out, fmt="%.10e", delimiter="\t")
                 file_handle.close()
                 # np.savetxt(file_handle, array_out, fmt="%.10e", delimiter="\t", header="TK0-Regulrization\nalpha\tPsi\tResidual", comments="## ")
 
 
-        self.analyse()
+        # self.analyse()
 
 
     def analyse(self, save_flag=0, from_files=None):   
@@ -306,7 +343,7 @@ class RegularizationParameterEstimation:
                     ## Print on screen
                     print("\t\trho\t\talpha\t\tResidual\t\tPrior term Psi")
                     for i in range(0, len(self._alphas)):
-                        print("\t\t%s\t\t%.3e\t\t%.3e" %(self._SRR_rho, self._alphas[i], self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]))
+                        print("\t\t%s\t\t%.3e\t\t%.3e" %(self._rho, self._alphas[i], self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]))
 
 
                 ## Plot curve
@@ -315,7 +352,8 @@ class RegularizationParameterEstimation:
 
         else:
             for i_file in range(0, len(from_files)):
-                data = np.loadtxt(from_files[i_file] + ".txt" , delimiter="\t", skiprows=2)
+                # data = np.loadtxt(from_files[i_file] + ".txt" , delimiter="\t", skiprows=2)
+                data = np.loadtxt(from_files[i_file] + ".txt" , skiprows=2)
 
                 if "TK0" in from_files[i_file]:
                     SRR_approach = "TK0"
@@ -356,7 +394,7 @@ class RegularizationParameterEstimation:
                 elif SRR_approach in ["TV-L2"]:
                     label=SRR_approach+" (rho=" + str(rhos[0]) + ")"
                     print("\t\trho\t\talpha\t\tResidual\t\tPrior term Psi")
-                    for i in range(0, len(self._alphas)):
+                    for i in range(0, len(alphas)):
                         print("\t\t%s\t\t%s\t\t%.3e\t\t%.3e" %(rhos[i], alphas[i], residuals[i], Psis[i]))
                 ## Plot curve
                 ax.plot(residuals, Psis, plot_colours[i_file], label=label)
@@ -464,11 +502,10 @@ class RegularizationParameterEstimation:
         ## Get data array
         nda = self._itk2np.GetArrayFromImage( HR_volume.itk )
 
-        ## Get kernels for differentiation
-        # TODO: No scaling required!?
-        kernel_Dx = self._get_forward_diff_x_kernel()
-        kernel_Dy = self._get_forward_diff_y_kernel()
-        kernel_Dz = self._get_forward_diff_z_kernel()
+        ## Get kernels for differentiation and isotropic spacing
+        kernel_Dx = self._get_forward_diff_x_kernel() / spacing[0]
+        kernel_Dy = self._get_forward_diff_y_kernel() / spacing[0]
+        kernel_Dz = self._get_forward_diff_z_kernel() / spacing[0]
 
         ## Compute finite differences
         Dx = self._convolve(nda, kernel_Dx)
