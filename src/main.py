@@ -48,7 +48,7 @@ def read_input_data(image_type):
         filenames = [str(i) for i in range(0, 8)]
         filenames.remove("6")
 
-        # filenames = [str(i) for i in range(0, 3)]
+        filenames = [str(i) for i in range(0, 3)]
 
     elif image_type in ["fetal_neck_mass_subject"]:
         dir_input = "../data/fetal_neck_mass_subject/"

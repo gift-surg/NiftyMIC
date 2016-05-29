@@ -170,7 +170,10 @@ class DataPreprocessing:
         for i in range(0, self._N_stacks):
 
             ## Crop stack and mask based on the mask provided
+            sys.stdout.write("\tStack %s: Crop stack and its mask ... " %(i))
+            sys.stdout.flush()
             [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, self._stacks[i].sitk_mask, boundary=self._boundary)
+            print "done"
 
             ## Create preprocessed stack
             self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
@@ -213,13 +216,22 @@ class DataPreprocessing:
         for i in range_prop_mask:
 
             ## Propagate mask
+            sys.stdout.write("\tStack %s: Propagate mask ... " %(i))
+            sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
             mask_sitk = self._get_propagated_mask(self._stacks[i].sitk, template_sitk, template_mask_sitk)
+            print "done"
 
             ## Dilate propagated mask (to smooth mask)
-            # mask_sitk = self._dilate_mask(mask_sitk)
+            sys.stdout.write("\tStack %s: Dilate mask ... " %(i))
+            sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+            mask_sitk = self._dilate_mask(mask_sitk)
+            print "done"
 
             ## Crop stack and mask based on the mask provided
+            sys.stdout.write("\tStack %s: Crop stack and its mask ... " %(i))
+            sys.stdout.flush()
             [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, mask_sitk, boundary=self._boundary)
+            print "done"
 
             ## Create preprocessed stack
             self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
@@ -228,7 +240,10 @@ class DataPreprocessing:
         for i in range_prop_mask_complement:
 
             ## Crop stack and mask based on the mask provided
+            sys.stdout.write("\tStack %s: Crop stack and its mask ... " %(i))
+            sys.stdout.flush()
             [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, self._stacks[i].sitk_mask, boundary=self._boundary)
+            print "done"
 
             ## Create preprocessed stack
             self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
@@ -254,15 +269,15 @@ class DataPreprocessing:
             filename = filenames[i]
 
             ## if mask does not exist, add corresponding index
-            if bool(len(list(set(filename)-set(filenames_masks)))):
+            if filename in filenames_masks:
                 indices.append(i)
 
         indices_complement = list(set(stacks_all)-set(indices))
 
-        print("Indices for mask propagation = " + str(indices))
-        print("No mask propagation required = " + str(indices_complement))
+        print("Mask is provided for indices = " + str(indices))
+        print("Propagate mask for indices = " + str(indices_complement))
 
-        return indices, indices_complement
+        return indices_complement, indices
 
 
     ## Obtain propagated mask based on a given template (moving). The mask 
@@ -396,11 +411,11 @@ class DataPreprocessing:
     #  \return dilated mask
     def _dilate_mask(self, mask_sitk):
         filter = sitk.BinaryDilateImageFilter()
-        filter.SetKernelType(sitk.sitkBall)
+        # filter.SetKernelType(sitk.sitkBall)
         # filter.SetKernelType(sitk.sitkBox)
         # filter.SetKernelType(sitk.sitkAnnulus)
-        # filter.SetKernelType(sitk.sitkCross)
-        filter.SetKernelRadius(1)
+        filter.SetKernelType(sitk.sitkCross)
+        filter.SetKernelRadius(3)
         filter.SetForegroundValue(1)
         dilated = filter.Execute(mask_sitk)
 

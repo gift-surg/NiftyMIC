@@ -30,7 +30,7 @@ image_type = itk.Image[pixel_type, 3]
 
 
 ## This class is used to compute an approximate solution of the HR volume 
-#  TODO: Update accordingly based on new TV-L2 recon possibility
+#  TODO: Update accordingly based on new TV-L2 recon availability
 #  \f$ x \f$  as defined by the inverse problem \f$ y_k = A_k x \f$ for every 
 #  slice \f$ y_k,\,k=1,\dots,K \f$ in the regularized form
 #  \f[ 
@@ -361,7 +361,7 @@ class InverseProblemSolver:
             self._DTD_comp_type = "FiniteDifference"
 
             ## Define kernels for differential operators
-            # Forward difference kernels (for isotropic spacing)
+            #  Forward difference kernels (for isotropic spacing)
             kernel_Dxf = self._get_forward_diff_x_kernel() / spacing[0]
             kernel_Dyf = self._get_forward_diff_y_kernel() / spacing[0]
             kernel_Dzf = self._get_forward_diff_z_kernel() / spacing[0]
@@ -1011,7 +1011,7 @@ class InverseProblemSolver:
     #       in x-direction, numpy array
     #  \param[in] vy_nda initial value for auxiliary variable in y-direction
     #  \param[in] vz_nda initial value for auxiliary variable in z-direction
-    #  \param[in] wx_nda initial value for scale dual variable (by \p rho)
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
     #       originating from augmented Lagrangian in x-direction, numpy array
     #  \param[in] wy_nda initial value for scaled dual variable in y-direction
     #  \param[in] wz_nda initial value for scaled dual variable in z-direction
@@ -1026,21 +1026,23 @@ class InverseProblemSolver:
             ## Perform ADMM step
             HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = self._perform_ADMM_iteration(HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho)
 
-            name =  self._ADMM_iterations_output_filename_prefix
-            name += "_stacks" + str(self._N_stacks)
-            name += "_alpha" + str(self._alpha)
-            name += "_rho" + str(self._rho)
-            name += "_ADMM_iteration" + str(iter+1)
-            self._HR_volume.show(title=name)
-
             if self._ADMM_iterations_output_dir is not None:
+                name =  self._ADMM_iterations_output_filename_prefix
+                name += "_stacks" + str(self._N_stacks)
+                name += "_alpha" + str(self._alpha)
+                name += "_rho" + str(self._rho)
+                name += "_ADMM_iteration" + str(iter+1)
+
                 os.system("mkdir -p " + self._ADMM_iterations_output_dir)
                 self._HR_volume.write(directory=self._ADMM_iterations_output_dir, filename=name, write_mask=False)
+                # self._HR_volume.show(title=name)
 
+            ## Show auxiliary v = Dx
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vx_nda.flatten()), title="vx_iteration_"+str(iter+1))
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vy_nda.flatten()), title="vy_iteration_"+str(iter+1))
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vz_nda.flatten()), title="vz_iteration_"+str(iter+1))
 
+            ## Show scaled dual variable w
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wx_nda.flatten()), title="wx_iteration_"+str(iter+1))
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wy_nda.flatten()), title="wy_iteration_"+str(iter+1))
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wz_nda.flatten()), title="wz_iteration_"+str(iter+1))
@@ -1055,7 +1057,7 @@ class InverseProblemSolver:
     #       in x-direction, numpy array
     #  \param[in] vy_nda initial value for auxiliary variable in y-direction
     #  \param[in] vz_nda initial value for auxiliary variable in z-direction
-    #  \param[in] wx_nda initial value for scale dual variable (by \p rho)
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
     #       originating from augmented Lagrangian in x-direction, numpy array
     #  \param[in] wy_nda initial value for scaled dual variable in y-direction
     #  \param[in] wz_nda initial value for scaled dual variable in z-direction
@@ -1097,7 +1099,7 @@ class InverseProblemSolver:
     #       in x-direction, numpy array
     #  \param[in] vy_nda initial value for auxiliary variable in y-direction
     #  \param[in] vz_nda initial value for auxiliary variable in z-direction
-    #  \param[in] wx_nda initial value for scale dual variable (by \p rho)
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
     #       originating from augmented Lagrangian in x-direction, numpy array
     #  \param[in] wy_nda initial value for scaled dual variable in y-direction
     #  \param[in] wz_nda initial value for scaled dual variable in z-direction
@@ -1134,7 +1136,7 @@ class InverseProblemSolver:
     #  \param[in] Dx_nda Derivative of HR volume data array in x-direction, numpy array
     #  \param[in] Dy_nda Derivative of HR volume data array in y-direction, numpy array
     #  \param[in] Dz_nda Derivative of HR volume data array in z-direction, numpy array
-    #  \param[in] wx_nda initial value for scale dual variable (by \p rho)
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
     #       originating from augmented Lagrangian in x-direction, numpy array
     #  \param[in] wy_nda initial value for scaled dual variable in y-direction
     #  \param[in] wz_nda initial value for scaled dual variable in z-direction
@@ -1154,22 +1156,22 @@ class InverseProblemSolver:
     ## Perform third step of ADMM algorithm:
     #  \param[in] Dx_nda Derivative of HR volume data array in x-direction, numpy array
     #  \param[in] Dy_nda Derivative of HR volume data array in y-direction, numpy array
+    #  \param[in] Dz_nda Derivative of HR volume data array in z-direction, numpy array
     #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
     #       but constrained primal problem, i.e.
     #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
     #       in x-direction, numpy array
     #  \param[in] vy_nda initial value for auxiliary variable in y-direction
     #  \param[in] vz_nda initial value for auxiliary variable in z-direction
-    #  \param[in] Dz_nda Derivative of HR volume data array in z-direction, numpy array
-    #  \param[in] wx_nda initial value for scale dual variable (by \p rho)
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
     #       originating from augmented Lagrangian in x-direction, numpy array
     #  \param[in] wy_nda initial value for scaled dual variable in y-direction
     #  \param[in] wz_nda initial value for scaled dual variable in z-direction
     #  \return Updates of scaled dual variable w in x-, y- and z-direction
     def _perform_ADMM_step_3_scaled_dual_variable(self, Dx_nda, Dy_nda, Dz_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda):
-        wx_nda += Dx_nda - vx_nda
-        wy_nda += Dy_nda - vy_nda
-        wz_nda += Dz_nda - vz_nda
+        wx_nda = wx_nda + Dx_nda - vx_nda
+        wy_nda = wy_nda + Dy_nda - vy_nda
+        wz_nda = wz_nda + Dz_nda - vz_nda
 
         return wx_nda, wy_nda, wz_nda
 
@@ -1182,7 +1184,7 @@ class InverseProblemSolver:
     #       in x-direction, numpy array
     #  \param[in] vy_nda initial value for auxiliary variable in y-direction
     #  \param[in] vz_nda initial value for auxiliary variable in z-direction
-    #  \param[in] wx_nda initial value for scale dual variable (by \p rho)
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
     #       originating from augmented Lagrangian in x-direction, numpy array
     #  \param[in] wy_nda initial value for scaled dual variable in y-direction
     #  \param[in] wz_nda initial value for scaled dual variable in z-direction

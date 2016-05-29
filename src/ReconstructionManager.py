@@ -157,7 +157,7 @@ class ReconstructionManager:
         self._stack_manager.read_input_stacks_from_slices(self._dir_results_input_data, file_prefixes_to_copy, suffix_mask)
 
 
-    ## Compute first estimate of HR volume to initialize reconstruction algortihm
+    ## Compute first estimate of HR volume to initialize reconstruction algorithm
     #  \param[in] display_info display information of registration results as we go along
     #  \post \p self._HR_volume is set to first estimate
     def compute_first_estimate_of_HR_volume_from_stacks(self, display_info=0):
@@ -206,7 +206,7 @@ class ReconstructionManager:
             filename +=  "_Average"
 
         self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
-        self._HR_volume.show(title=filename)
+        # self._HR_volume.show(title=filename)
 
         
 
@@ -355,7 +355,7 @@ class ReconstructionManager:
             ## Write result to output directory
             self._HR_volume.write(directory=self._dir_results, filename=filename, write_mask=False)
 
-            self._HR_volume.show(title=filename)
+            # self._HR_volume.show(title=filename)
 
 
         ## Final SRR step
@@ -415,7 +415,9 @@ class ReconstructionManager:
         if SRR_approach in ["TK0", "TK1"]:
             filename =  self._HR_volume_filename 
             filename += "_cycles" + str(iterations)
-            filename +=  "_" + SRR_approach + "_itermax" + str(SRR_iter_max) + "_alpha" + str(SRR_regularisation_alpha)
+            filename +=  "_" + SRR_approach 
+            filename += "_itermax" + str(SRR_iter_max) 
+            filename += "_alpha" + str(SRR_regularisation_alpha)
 
         elif SRR_approach in ["TV-L2"]:
             filename =  self._HR_volume_filename
@@ -424,6 +426,7 @@ class ReconstructionManager:
             filename += "_alpha" + str(SRR_regularisation_alpha)
             filename += "_rho" + str(SRR_regularisation_rho)
             filename += "_ADMM_iterations" + str(SRR_ADMM_iterations)
+            filename += "_TK1itermax" + str(SRR_iter_max)
 
         ## Update filename of HR reconstruction based on chosen options
         self._HR_volume_filename = filename

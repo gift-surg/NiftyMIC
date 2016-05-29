@@ -16,7 +16,7 @@ import itk
 import SimpleITK as sitk
 import numpy as np
 import time  
-from scipy.optimize import minimize
+from scipy.optimize import curve_fit
 from scipy import ndimage
 import matplotlib.pyplot as plt
 import datetime
@@ -48,6 +48,7 @@ class RegularizationParameterEstimation:
         self._N_stacks = len(stacks)
 
         self._alphas = None
+        self._rhos = None
         self._residuals = None
         self._Psis = None
         self._regularization_types = None
@@ -56,7 +57,6 @@ class RegularizationParameterEstimation:
         # self._filename_prefix = ""
         self._filename_prefix = "RegularizationParameterEstimation_"
         self._dir_results = "RegularizationParameterEstimation/"
-        os.system("mkdir -p " + self._dir_results)
 
         """
         Member functions to compute residual and prior term Psi
@@ -87,9 +87,21 @@ class RegularizationParameterEstimation:
         ## Define dictionary to choose between computations of prior term \f$ \Psi(x) \f$
         self._compute_prior_term = {
             "TK0"   : self._compute_prior_term_TK0,
-            "TK1"   : self._compute_prior_term_TK1
+            "TK1"   : self._compute_prior_term_TK1,
+            "TV-L2" : self._compute_prior_term_TVL2 
         }
 
+
+    ## Set directory for output results
+    #  \param[in] dir_results string
+    def set_directory_results(self, dir_results):
+        self._dir_results = dir_results
+
+
+    ## Set prefix for all output results written to directory_results
+    #  \param[in] filename_prefix string
+    def set_filename_prefix(self, filename_prefix):
+        self._filename_prefix = filename_prefix
 
     ## Define array of regularization parameters which will be used for
     #  the computation
@@ -120,6 +132,9 @@ class RegularizationParameterEstimation:
     #  associated regularization parameters alpha
     def run_reconstructions(self, save_flag=0):
 
+        ## Create output directory in case it is not existing
+        os.system("mkdir -p " + self._dir_results)
+
         N_alphas = len(self._alphas)
         N_regularization_types = len(self._regularization_types)
 
@@ -129,34 +144,68 @@ class RegularizationParameterEstimation:
         ## Cut-off distance for Gaussian blurring filter
         SRR_alpha_cut = 3 
 
-        # Settings for optimizer
-        SRR_iter_max = 30                # Maximum iteration steps
-        SRR_DTD_comp_type = "FiniteDifference" # TK1: Either 'Laplace' or 'FiniteDifference'
-        SRR_tolerance = 1e-5
-
-        SRR_rho = 1            # Regularization parameter of augmented Lagrangian term (only for TV-L2)
-        ADMM_iterations = 5    # Number of performed ADMM iterations
-        SRR_ADMM_iterations_output_dir = None
 
         for i_reg_type in range(0, N_regularization_types):
 
             ## Read type of regularization
             SRR_approach = self._regularization_types[i_reg_type]
 
+            ## Set parameters based on chosen regularization
+            if SRR_approach in ["TK0"]:
+                SRR_tolerance = 1e-5
+                SRR_iter_max = 30
+                SRR_DTD_computation_type = "FiniteDifference" #not used
+                self._SRR_rho = None
+                SRR_ADMM_iterations = None
+                SRR_ADMM_iterations_output_dir = None
+                SRR_ADMM_iterations_output_filename_prefix = None
+
+            elif SRR_approach in ["TK1"]:
+                SRR_tolerance = 1e-5
+                SRR_iter_max = 30
+                SRR_DTD_computation_type = "FiniteDifference"
+                self._SRR_rho = None
+                SRR_ADMM_iterations = None
+                SRR_ADMM_iterations_output_dir = None
+                SRR_ADMM_iterations_output_filename_prefix = None
+
+            elif SRR_approach in ["TV-L2"]:
+                SRR_tolerance = 1e-3
+                SRR_iter_max = 10
+                SRR_DTD_computation_type = "FiniteDifference"
+                self._SRR_rho = 0.5       #0.5 yields visually good results
+                SRR_ADMM_iterations = 5
+                SRR_ADMM_iterations_output_dir = self._dir_results + "TV-L2_ADMM_iterations/" #print output of ADMM iterations there
+                SRR_ADMM_iterations_output_filename_prefix = "TV-L2"
+
             ## Save text: Write header
             now = datetime.datetime.now()
             
-            filename = self._filename_prefix
+            # filename = self._filename_prefix
+            filename = ""
             filename += SRR_approach + "-Regularization"
             filename += "_" + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
             filename += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
-
-            text = "## " + SRR_approach + "-Regularization"
-            text += ", itermax = " + str(SRR_iter_max)
-            text += " (" + str(now.day).zfill(2) + "." + str(now.month).zfill(2) + "." + str(now.year) 
-            text += ", " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2) + ")"
-            text += "\n## " + "alpha" + "\t" + "Residual"+ "\t" + "Psi"
-            text += "\n"
+            
+            if SRR_approach in ["TK0", "TK1"]:
+                text = "## " + SRR_approach + "-Regularization"
+                text += ", itermax = " + str(SRR_iter_max)
+                text += ", tolerance = " + str(SRR_tolerance)
+                text += " (" + str(now.day).zfill(2) + "." + str(now.month).zfill(2) + "." + str(now.year) 
+                text += ", " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2) + ")"
+                text += "\n## " + "alpha" + "\t" + "Residual"+ "\t" + "Psi"
+                text += "\n"
+            
+            elif SRR_approach in ["TV-L2"]:
+                text = "## " + SRR_approach + "-Regularization"
+                text += " with " + str(SRR_ADMM_iterations) + " ADMM iterations."
+                text += " TK1-solver settings:" 
+                text += " itermax = " + str(SRR_iter_max)
+                text += ", tolerance = " + str(SRR_tolerance)
+                text += " (" + str(now.day).zfill(2) + "." + str(now.month).zfill(2) + "." + str(now.year) 
+                text += ", " + str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2) + ")"
+                text += "\n## " + "rho" + "\t" + "alpha" + "\t" + "Residual"+ "\t" + "Psi"
+                text += "\n"
 
             file_handle = open(self._dir_results + filename + ".txt", "w")
             file_handle.write(text)
@@ -180,12 +229,13 @@ class RegularizationParameterEstimation:
                 
                 SRR.set_iter_max(SRR_iter_max)
                 SRR.set_regularization_type(SRR_approach)
-                SRR.set_DTD_computation_type(SRR_DTD_comp_type)
+                SRR.set_DTD_computation_type(SRR_DTD_computation_type)
                 SRR.set_tolerance(SRR_tolerance)
 
-                SRR.set_rho(SRR_rho)
-                SRR.set_ADMM_iterations(ADMM_iterations)
+                SRR.set_rho(self._SRR_rho)
+                SRR.set_ADMM_iterations(SRR_ADMM_iterations)
                 SRR.set_ADMM_iterations_output_dir(SRR_ADMM_iterations_output_dir)
+                SRR.set_ADMM_iterations_output_filename_prefix(SRR_ADMM_iterations_output_filename_prefix)
                 
                 ## Reconstruct volume for given alpha
                 SRR.run_reconstruction()
@@ -195,8 +245,17 @@ class RegularizationParameterEstimation:
                 if save_flag:
                     filename_image =  self._filename_prefix
                     filename_image += SRR_approach
-                    filename_image += "_itermax" + str(SRR_iter_max)
-                    filename_image += "_alpha" + str(alpha)
+                
+                    if SRR_approach in ["TK0", "TK1"]:
+                        filename_image += "_itermax" + str(SRR_iter_max)
+                        filename_image += "_alpha" + str(alpha)
+
+                    elif SRR_approach in ["TV-L2"]:
+                        filename_image += "_alpha" + str(alpha)
+                        filename_image += "_rho" + str(self._SRR_rho)
+                        filename_image += "_ADMM_iterations" + str(SRR_ADMM_iterations)
+                        filename_image += "_TK1itermax" + str(SRR_iter_max)
+
                     HR_volume_alpha.write(directory=self._dir_results, filename=filename_image, write_mask=False)
 
                 ## Compute prior term \f$ Psi(x) \f$
@@ -207,18 +266,22 @@ class RegularizationParameterEstimation:
 
                 ## Write L-curve information into file
                 file_handle = open(self._dir_results + filename + ".txt", "a")
-                array_out = np.array([alpha, self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]]).reshape(1,3)
+                if SRR_approach in ["TK0", "TK1"]:
+                    array_out = np.array([alpha, self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]]).reshape(1,3)
+                elif SRR_approach in ["TV-L2"]:
+                    array_out = np.array([self._SRR_rho, alpha, self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]]).reshape(1,4)
+                
                 np.savetxt(file_handle, array_out, fmt="%.10e", delimiter="\t")
                 file_handle.close()
                 # np.savetxt(file_handle, array_out, fmt="%.10e", delimiter="\t", header="TK0-Regulrization\nalpha\tPsi\tResidual", comments="## ")
 
 
-        self.analyse(save_flag)
+        self.analyse()
 
 
     def analyse(self, save_flag=0, from_files=None):   
 
-        plot_colours = ["rx" , "bo"]
+        plot_colours = ["rx" , "bo" , "gs"]
 
         plt.rc('text', usetex=True)
         # plt.rc('font', family='serif')
@@ -231,16 +294,23 @@ class RegularizationParameterEstimation:
         if from_files is None:
             for i_reg_type in range(0, len(self._regularization_types)):
 
-                ## Print on screen
-                print("\t --- %s Regularization ---" %(self._regularization_types[i_reg_type]))
-                print("\t\talpha\t\tResidual\t\tPrior term Psi")
-                for i in range(0, len(self._alphas)):
-                    print("\t\t%s\t\t%.3e\t\t%.3e" %(self._alphas[i], self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]))
+                SRR_approach = self._regularization_types[i_reg_type]
 
+                print("\t --- %s Regularization ---" %(SRR_approach))
+                if SRR_approach in ["TK0", "TK1"]:
+                    ## Print on screen
+                    print("\t\talpha\t\tResidual\t\tPrior term Psi")
+                    for i in range(0, len(self._alphas)):
+                        print("\t\t%s\t\t%.3e\t\t%.3e" %(self._alphas[i], self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]))
+                elif SRR_approach in ["TV-L2"]:
+                    ## Print on screen
+                    print("\t\trho\t\talpha\t\tResidual\t\tPrior term Psi")
+                    for i in range(0, len(self._alphas)):
+                        print("\t\t%s\t\t%.3e\t\t%.3e" %(self._SRR_rho, self._alphas[i], self._residuals[i_reg_type, i], self._Psis[i_reg_type, i]))
 
 
                 ## Plot curve
-                ax.plot(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
+                ax.plot(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=SRR_approach)
                 # ax.loglog(self._residuals[i_reg_type,:], self._Psis[i_reg_type,:], plot_colours[i_reg_type], label=self._regularization_types[i_reg_type])
 
         else:
@@ -249,32 +319,63 @@ class RegularizationParameterEstimation:
 
                 if "TK0" in from_files[i_file]:
                     SRR_approach = "TK0"
+                    alphas = data[:,0]
+                    residuals = data[:,1]
+                    Psis = data[:,2]
+
                 elif "TK1" in from_files[i_file]:
                     SRR_approach = "TK1"
+                    alphas = data[:,0]
+                    residuals = data[:,1]
+                    Psis = data[:,2]
+
                 elif "TV-L2" in from_files[i_file]:
                     SRR_approach = "TV-L2"
+                    rhos = data[:,0]
+                    alphas = data[:,1]
+                    residuals = data[:,2]
+                    Psis = data[:,3]
+
                 else:
                     raise ValueError("Error: SRR method could not be determined from filename")
                 # SRR_approach = re.sub("-Regularization.*","",from_files[i_file])
                 # SRR_approach = re.sub(".*_","",SRR_approach)
 
-                alphas = data[:,0]
-                residuals = data[:,1]
-                Psis = data[:,2]
+
+                # scale = data[:,2].mean()
+                # residuals /= scale
+                # Psis /= scale
 
                 ## Print on screen
                 print("\t --- %s-Regularization ---" %(SRR_approach))
-                print("\t\talpha\t\tResidual\t\tPrior term Psi")
-                for i in range(0, len(alphas)):
-                    print("\t\t%s\t\t%.3e\t\t%.3e" %(alphas[i], residuals[i], Psis[i]))
+                if SRR_approach in ["TK0", "TK1"]:
+                    label=SRR_approach
+                    print("\t\talpha\t\tResidual\t\tPrior term Psi")
+                    for i in range(0, len(alphas)):
+                        print("\t\t%s\t\t%.3e\t\t%.3e" %(alphas[i], residuals[i], Psis[i]))
+                elif SRR_approach in ["TV-L2"]:
+                    label=SRR_approach+" (rho=" + str(rhos[0]) + ")"
+                    print("\t\trho\t\talpha\t\tResidual\t\tPrior term Psi")
+                    for i in range(0, len(self._alphas)):
+                        print("\t\t%s\t\t%s\t\t%.3e\t\t%.3e" %(rhos[i], alphas[i], residuals[i], Psis[i]))
+                ## Plot curve
+                ax.plot(residuals, Psis, plot_colours[i_file], label=label)
+                # ax.loglog(residuals[i_file], Psis[i_file], plot_colours[i_file], label=SRR_approach)
 
                 ## Maximum curvature
-                i_max_curvature = self._get_maximum_curvature_point(residuals, Psis)
-                
-                ## Plot curve
-                ax.plot(residuals, Psis, plot_colours[i_file], label=SRR_approach)
+                # i_max_curvature = self._get_maximum_curvature_point(residuals, Psis)
                 # ax.plot(residuals[i_max_curvature], Psis[i_max_curvature], "cs")
-                # ax.loglog(residuals[i_file], Psis[i_file], plot_colours[i_file], label=SRR_approach)
+
+                ## Fit curve
+                # bounds = (0, [None, None, None])
+                # popt, pcov = curve_fit(self._fitting_curve, residuals, Psis)
+                # xmin = np.min(residuals)
+                # xmax = np.max(residuals)
+                # step = (xmax-xmin)/50
+                # xdata = np.arange(xmin, xmax, step)
+
+                # # print popt
+                # ax.plot(xdata, self._fitting_curve(xdata, *popt))
 
 
         ## Show grid
@@ -291,16 +392,21 @@ class RegularizationParameterEstimation:
         plt.draw()
         plt.pause(0.5) ## important! otherwise fig is not shown. Also needs plt.show() at the end of the file to keep figure open
 
-
-
         if save_flag:
             fig.savefig(self._dir_results + "L-curve.eps")
 
 
+    def _fitting_curve(self, x, a,b,c):
+
+        # foo = np.polyval([a,b,c,d],x)
+        foo = a*np.exp(-b*x) + c
+
+        return foo
+
     def _get_maximum_curvature_point(self, x, y):
 
-        scale = x.mean()
-        # scale = 1
+        # scale = x.mean()
+        scale = 1
 
         x = x/scale
         y = y/scale
@@ -319,16 +425,11 @@ class RegularizationParameterEstimation:
             [A, B, C] = np.linalg.solve(M,b)
 
             radius2[i-1] = A + (B**2 + C**2)/4
-            # print("(xm, ym, r2) = (%s, %s, %s)" %(B/2.,C/2.,radius2[i-1]))
+            print("(xm, ym, r2) = (%s, %s, %s)" %(B/2.,C/2.,radius2[i-1]))
 
         i_max_curvature = np.argmin(radius2)+1
 
         return i_max_curvature
-
-
-
-
-
 
 
 
@@ -343,10 +444,12 @@ class RegularizationParameterEstimation:
         ## Get data array
         nda = self._itk2np.GetArrayFromImage( HR_volume.itk )
 
-        ## Get kernels for differentiation
-        kernel_Dx = self._get_forward_diff_x_kernel()
-        kernel_Dy = self._get_forward_diff_y_kernel()
-        kernel_Dz = self._get_forward_diff_z_kernel()
+        spacing = HR_volume.sitk.GetSpacing()
+
+        ## Get kernels for differentiation and isotropic spacing
+        kernel_Dx = self._get_forward_diff_x_kernel() / spacing[0]
+        kernel_Dy = self._get_forward_diff_y_kernel() / spacing[0]
+        kernel_Dz = self._get_forward_diff_z_kernel() / spacing[0]
 
         ## Differentiate
         Dx = self._convolve(nda, kernel_Dx)
@@ -356,6 +459,24 @@ class RegularizationParameterEstimation:
         ## Compute norm || Dx ||^2 with D = [D_x; D_y; D_z]
         return np.linalg.norm(Dx)**2 + np.linalg.norm(Dy)**2 + np.linalg.norm(Dz)**2
 
+    ## TODO
+    def _compute_prior_term_TVL2(self, HR_volume):
+        ## Get data array
+        nda = self._itk2np.GetArrayFromImage( HR_volume.itk )
+
+        ## Get kernels for differentiation
+        # TODO: No scaling required!?
+        kernel_Dx = self._get_forward_diff_x_kernel()
+        kernel_Dy = self._get_forward_diff_y_kernel()
+        kernel_Dz = self._get_forward_diff_z_kernel()
+
+        ## Compute finite differences
+        Dx = self._convolve(nda, kernel_Dx)
+        Dy = self._convolve(nda, kernel_Dy)
+        Dz = self._convolve(nda, kernel_Dz)
+
+        ## Compute TV(x) = ||Dx||_{2,1} with D = [D_x; D_y; D_z]
+        return np.sum(np.sqrt(Dx**2 + Dy**2 + Dz**2))
 
     ## Compute residual
     # \f[

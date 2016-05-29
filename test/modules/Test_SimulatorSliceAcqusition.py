@@ -126,9 +126,12 @@ class SliceAcqusition(unittest.TestCase):
 
 
         ## 3) Test for Oriented Gaussian Interpolator
+        alpha_cut = 3
+
         slice_acquistion = sa.SliceAcqusition(HR_volume)
         slice_acquistion.set_interpolator_type("OrientedGaussian")
         slice_acquistion.set_motion_type("NoMotion")
+        slice_acquistion.set_alpha_cut(alpha_cut)
 
         slice_acquistion.run_simulation_view_1()
         slice_acquistion.run_simulation_view_2()
@@ -141,7 +144,6 @@ class SliceAcqusition(unittest.TestCase):
         resampler.SetInput( HR_volume.itk )
 
         interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
-        alpha_cut = 3
         interpolator.SetAlpha(alpha_cut)
         resampler.SetInterpolator(interpolator)
 
@@ -259,6 +261,8 @@ class SliceAcqusition(unittest.TestCase):
         filename_HR_volume = "HR_volume_postmortem"
         HR_volume = st.Stack.from_filename(self.dir_input, filename_HR_volume, "_mask")
 
+        alpha_cut = 3
+
         ## Run simulation for Oriented Gaussian interpolation, hence more "realistic" case
         slice_acquistion = sa.SliceAcqusition(HR_volume)
         slice_acquistion.set_interpolator_type("OrientedGaussian")
@@ -266,6 +270,7 @@ class SliceAcqusition(unittest.TestCase):
         # slice_acquistion.set_interpolator_type("Linear")
         slice_acquistion.set_motion_type("Random")
         # slice_acquistion.set_motion_type("NoMotion")
+        slice_acquistion.set_alpha_cut(alpha_cut)
 
         slice_acquistion.run_simulation_view_1()
         slice_acquistion.run_simulation_view_2()
@@ -282,7 +287,6 @@ class SliceAcqusition(unittest.TestCase):
         resampler.SetInput( HR_volume.itk )
 
         interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
-        alpha_cut = 3
         interpolator.SetAlpha(alpha_cut)
         # interpolator = itk.LinearInterpolateImageFunction[image_type, pixel_type].New()
         # interpolator = itk.NearestNeighborInterpolateImageFunction[image_type, pixel_type].New()

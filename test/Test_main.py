@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 from Test_SimpleITKHelper import *
 # from Test_Stack import *
 from Test_SimulatorSliceAcqusition import *
+from Test_NiftyReg import *
 
 
 """ ###########################################################################

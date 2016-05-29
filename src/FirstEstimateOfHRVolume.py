@@ -63,7 +63,7 @@ class FirstEstimateOfHRVolume:
             "SDA"       :   self._run_SDA,
             "Average"   :   self._run_averaging
         }
-        self._recon_approach = "SDA"        # default reconstruction approach
+        self._recon_approach = "Average"        # default reconstruction approach
 
         ## SDA reconstruction settings:
         self._SDA_sigma = 0.6                 # sigma for recursive Gaussian smoothing
