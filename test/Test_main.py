@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 # import SimpleITKHelper as sitkh
 
 ## Import modules for unit testing
-# from Test_FirstEstimateOfHRVolume import *
+from Test_FirstEstimateOfHRVolume import *
 from Test_SimpleITKHelper import *
 # from Test_Stack import *
 from Test_SimulatorSliceAcqusition import *

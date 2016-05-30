@@ -24,6 +24,29 @@ endif()
 
 
 ##############################################################################
+# Find Boost.
+##############################################################################
+set(Boost_NO_SYSTEM_PATHS ON)
+if (Boost_NO_SYSTEM_PATHS)
+  if(APPLE)
+    set(BOOST_ROOT "/opt/local/include/")   #Mac
+    message("Mac OS X: Set BOOS_ROOT=${BOOST_ROOT}")
+  elseif(UNIX)
+    set(BOOST_ROOT "/usr/include/")       #Ubuntu
+    message("Linux: Set BOOS_ROOT=${BOOST_ROOT}")
+  endif()
+endif (Boost_NO_SYSTEM_PATHS)
+if(BUILD_SHARED_LIBS)
+  set(Boost_USE_STATIC_LIBS OFF)
+else()
+  set(Boost_USE_STATIC_LIBS ON)
+endif()
+find_package( Boost COMPONENTS filesystem system date_time regex thread 
+  iostreams program_options REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
+
+##############################################################################
 # Actual project.
 ##############################################################################
 # Some important CMAKE variables:

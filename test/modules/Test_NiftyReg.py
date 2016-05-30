@@ -11,7 +11,7 @@ import numpy as np
 import unittest
 import sys
 sys.path.append("../src/")
-sys.path.append("data/")
+# sys.path.append("data/")
 
 ## Import modules from src-folder
 import NiftyReg as nreg

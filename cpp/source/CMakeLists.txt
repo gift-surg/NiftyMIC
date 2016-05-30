@@ -11,11 +11,20 @@ set (CMAKE_PREFIX_PATH "~/development/ITK/ITK-build_dev/")
 # set (MY_SRC_DIR "~/development/ITK/ITK/Modules/Filtering/ImageGrid/include")
 
 ## Project specific settings
-set ( MY_PROJ_NAME "itkAffineReg" )
+set ( MY_PROJ_NAME "itkRegistrationMethods" )
 
 set ( MY_MAIN_FILE "itkAffineReg.cpp" )
 set ( MY_EXEC_FILE "itkAffineReg" )
 set ( MY_MAIN_FILE_SOURCES 
+    "MyITKImageHelper.cpp" 
+    "readCommandLine.cpp"
+    "MyException.cpp"
+    "ExceptionCommandLine.cpp"
+    )
+
+set ( MY_MAIN_FILE_2 "itkRigidReg.cpp" )
+set ( MY_EXEC_FILE_2 "itkRigidReg" )
+set ( MY_MAIN_FILE_SOURCES_2 
     "MyITKImageHelper.cpp" 
     )
 
@@ -34,5 +43,10 @@ project( ${MY_PROJ_NAME} )
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) 
 
 add_executable( ${MY_EXEC_FILE} ${MY_MAIN_FILE} ${MY_MAIN_FILE_SOURCES} )  
+add_executable( ${MY_EXEC_FILE_2} ${MY_MAIN_FILE_2} ${MY_MAIN_FILE_SOURCES_2} )  
+
 target_link_libraries( ${MY_EXEC_FILE} ${ITK_LIBRARIES} )
+target_link_libraries( ${MY_EXEC_FILE} ${Boost_LIBRARIES} )
+target_link_libraries( ${MY_EXEC_FILE_2} ${ITK_LIBRARIES} )
+
 

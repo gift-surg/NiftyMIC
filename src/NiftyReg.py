@@ -21,6 +21,9 @@ class NiftyReg:
         self._moving = None
         self._fixed = None
 
+        self._use_fixed_mask = False
+        self._use_moving_mask = False
+
         self._affine_transform_sitk = None
         self._control_point_grid_sitk = None
         self._registered_image = None

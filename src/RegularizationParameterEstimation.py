@@ -502,6 +502,8 @@ class RegularizationParameterEstimation:
         ## Get data array
         nda = self._itk2np.GetArrayFromImage( HR_volume.itk )
 
+        spacing = HR_volume.sitk.GetSpacing()
+
         ## Get kernels for differentiation and isotropic spacing
         kernel_Dx = self._get_forward_diff_x_kernel() / spacing[0]
         kernel_Dy = self._get_forward_diff_y_kernel() / spacing[0]
