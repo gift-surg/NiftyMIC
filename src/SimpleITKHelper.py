@@ -449,26 +449,35 @@ def convert_itk_to_sitk_image(image_itk):
     return image_sitk
 
 
-def print_rigid_transformation(rigid_registration_transform, text="rigid transformation"):
-    dim = rigid_registration_transform.GetDimension()
+def print_sitk_transform(rigid_or_affine_transform_sitk, text="Transformation info"):
 
-    matrix = np.array(rigid_registration_transform.GetMatrix()).reshape(dim,dim)
-    translation = np.array(rigid_registration_transform.GetTranslation())
-
-    parameters = np.array(rigid_registration_transform.GetParameters())
-    center = np.array(rigid_registration_transform.GetFixedParameters())
+    dim = rigid_or_affine_transform_sitk.GetDimension()
+    
+    matrix = np.array(rigid_or_affine_transform_sitk.GetMatrix()).reshape(dim,dim)
+    translation = np.array(rigid_or_affine_transform_sitk.GetTranslation())
+    
+    parameters = np.array(rigid_or_affine_transform_sitk.GetParameters())
+    center = np.array(rigid_or_affine_transform_sitk.GetFixedParameters())
 
     print("\t\t" + text + ":")
-    # print("\t\t\tmatrix = \n" + str(matrix))
     print("\t\t\tcenter = " + str(center))
-    if isinstance(rigid_registration_transform, sitk.Euler3DTransform):
+    
+    if isinstance(rigid_or_affine_transform_sitk, sitk.Euler3DTransform):
         print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[0:3]*180/np.pi) + " deg")
-
-    else:
+    
+    elif isinstance(rigid_or_affine_transform_sitk, sitk.Euler2DTransform):
         print("\t\t\tangle = " + str(parameters[0]*180/np.pi) + " deg")
+
+    elif isinstance(rigid_or_affine_transform_sitk, sitk.AffineTransform):
+        print("\t\t\tmatrix = ")
+        for i in range(0, dim):
+            print("\t\t\t\t" + str(matrix[i,:]))
+
     print("\t\t\ttranslation = " + str(translation))
 
     return None
+
+
 
 
 def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, flag_continue=0):

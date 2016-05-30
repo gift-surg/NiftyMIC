@@ -351,7 +351,7 @@ class FirstEstimateOfHRVolume:
             print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
             print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
-            sitkh.print_rigid_transformation(final_transform_3D_sitk)
+            sitkh.print_sitk_transform(final_transform_3D_sitk)
 
         return final_transform_3D_sitk
 

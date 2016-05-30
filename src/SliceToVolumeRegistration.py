@@ -138,13 +138,13 @@ class SliceToVolumeRegistration:
             if ( parameters > rigid_params_mean + threshold*rigid_params_std ).sum() >0 \
                 or ( parameters < rigid_params_mean - threshold*rigid_params_std ).sum() >0 :
                 print ("Slice %s: Update trafo!" %(j_slice))
-                sitkh.print_rigid_transformation(rigid_transform_sitk)
+                sitkh.print_sitk_transform(rigid_transform_sitk)
 
                 ## Alleviate effect of detected "outlier" transform
                 parameters /= 6;
 
                 rigid_transform_sitk.SetParameters(parameters)
-                sitkh.print_rigid_transformation(rigid_transform_sitk)
+                sitkh.print_sitk_transform(rigid_transform_sitk)
             
             ## Update database of obtained transforms    
             self._update_transform(j_slice, rigid_transform_sitk)
@@ -339,7 +339,7 @@ class SliceToVolumeRegistration:
             print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
             print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
-            sitkh.print_rigid_transformation(final_transform_3D_sitk)
+            sitkh.print_sitk_transform(final_transform_3D_sitk)
 
 
         return final_transform_3D_sitk

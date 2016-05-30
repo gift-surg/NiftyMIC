@@ -459,7 +459,7 @@ if __name__ == '__main__':
 
     # stack_rigidly_aligned = sitk.ReadImage(dir_output + "stack_aligned.nii.gz", sitk.sitkFloat64)
 
-    sitkh.print_rigid_transformation(transform_3D,"global alignment")
+    sitkh.print_sitk_transform(transform_3D,"global alignment")
 
     ## Check alignment
 
@@ -502,7 +502,7 @@ if __name__ == '__main__':
 
     # transform_3D_slice = get_slice_sitk_rigid_registration_transform_3D(fixed_slice_3D=slice_3D_HR_grid, moving_3D=reconstruction)
 
-    # sitkh.print_rigid_transformation(transform_3D_slice,"local alignment")
+    # sitkh.print_sitk_transform(transform_3D_slice,"local alignment")
     
 
 

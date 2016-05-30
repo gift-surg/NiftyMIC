@@ -222,11 +222,11 @@ class DataPreprocessing:
             mask_sitk = self._get_propagated_mask(self._stacks[i].sitk, template_sitk, template_mask_sitk)
             print "done"
 
-            ## Dilate propagated mask (to smooth mask)
-            sys.stdout.write("\tStack %s: Dilate mask ... " %(i))
-            sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
-            mask_sitk = self._dilate_mask(mask_sitk)
-            print "done"
+            # ## Dilate propagated mask (to smooth mask)
+            # sys.stdout.write("\tStack %s: Dilate mask ... " %(i))
+            # sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+            # mask_sitk = self._dilate_mask(mask_sitk)
+            # print "done"
 
             ## Crop stack and mask based on the mask provided
             sys.stdout.write("\tStack %s: Crop stack and its mask ... " %(i))
@@ -409,14 +409,15 @@ class DataPreprocessing:
 
     ## Dilate mask
     #  \param[in] mask_sitk mask to be dilated
+    #  \param[in] radius radius for kernel with units in voxel space
     #  \return dilated mask
-    def _dilate_mask(self, mask_sitk):
+    def _dilate_mask(self, mask_sitk, radius=1):
         filter = sitk.BinaryDilateImageFilter()
         # filter.SetKernelType(sitk.sitkBall)
         # filter.SetKernelType(sitk.sitkBox)
         # filter.SetKernelType(sitk.sitkAnnulus)
         filter.SetKernelType(sitk.sitkCross)
-        filter.SetKernelRadius(3)
+        filter.SetKernelRadius(radius)
         filter.SetForegroundValue(1)
         dilated = filter.Execute(mask_sitk)
 

@@ -33,6 +33,14 @@ class NiftyReg:
         os.system("mkdir -p " + self._dir_tmp)
         os.system("rm -rf " + self._dir_tmp + "*")
 
+        self._run_registration = {
+            "reg_aladin"    :   self._run_reg_aladin,
+            "reg_f3d"       :   self._run_reg_f3d
+        }
+        self._registration_type = "reg_aladin"
+
+        self._options = ""
+
 
     ## Set fixed/reference/target image
     #  \param[in] fixed fixed/reference/target image as Stack object
@@ -51,11 +59,40 @@ class NiftyReg:
     def use_fixed_mask(self, flag):
         self._use_fixed_mask = flag
 
+
     ## Specify whether mask shall be used for moving image
     #  \param[in] flag boolean
     def use_moving_mask(self, flag):
         self._use_moving_mask = flag
         
+
+    ## Set type of registration used
+    #  \param[in] registration_type
+    def set_registration_type(self, registration_type):
+        if registration_type not in ["reg_aladin", "reg_f3d"]:
+            raise ValueError("Error: Registration type can only be either 'reg_aladin' or 'reg_f3d'")
+        self._registration_type = registration_type
+
+
+    ## Get chosen type of registration used
+    #  \return registration type as string
+    def get_registration_type(self):
+        return self._registration_type
+
+
+    ## Set options used for either reg_aladin or reg_f3d
+    #  \param[in] options as string
+    #  \example options="-voff"
+    #  \example options="-voff -rigOnly -platf 1"
+    def set_options(self, options):
+        self._options = options
+
+
+    ## Get options used for either reg_aladin or reg_f3d
+    #  \return options chosen as string
+    def get_options(self):
+        return self._options
+
 
     ## Get affine transform in (Simple)ITK format after having run reg_aladin
     #  \return affine transform as SimpleITK object
@@ -69,11 +106,12 @@ class NiftyReg:
         return self._registered_image
 
 
+    def run_registration(self):
+        self._run_registration[self._registration_type]()
+
+
     ## Run reg_aladin, i.e. Block matching algorithm for global affine registration.
-    #  \param[in] options reg_aladin options as string
-    #  \example options="-voff"
-    #  \example options="-voff -rigOnly -platf 1"
-    def run_reg_aladin(self, options=""):
+    def _run_reg_aladin(self):
 
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
@@ -83,8 +121,8 @@ class NiftyReg:
         moving_mask_str = "NiftyReg_moving_mask_" + self._moving.get_filename() 
         fixed_mask_str = "NiftyReg_fixed_mask_" + self._fixed.get_filename()
         
-        res_affine_image_str = "NiftyReg_moving_" + self._moving.get_filename() + "_warped_affine"
-        res_affine_matrix_str = "NiftyReg_moving_" + self._moving.get_filename() + "_affine_matrix"
+        res_affine_image_str = "NiftyReg_regaladin_WarpImage_" + self._fixed.get_filename() + "_" + self._moving.get_filename()
+        res_affine_matrix_str = "NiftyReg_regaladin_WarpMatrix_" + self._fixed.get_filename() + "_" + self._moving.get_filename()
 
         ## Write images to HDD before they can be used for NiftyReg
         if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
@@ -97,13 +135,11 @@ class NiftyReg:
             sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
 
         ## Run reg_aladin
-        self._reg_aladin(fixed_str, moving_str, fixed_mask_str, moving_mask_str, options, res_affine_matrix_str, res_affine_image_str)
+        self._reg_aladin(fixed_str, moving_str, fixed_mask_str, moving_mask_str, self._options, res_affine_matrix_str, res_affine_image_str)
 
 
     ## Run reg_f3d, i.e. Fast Free-Form Deformation algorithm for non-rigid registration. 
-    #  \param[in] options reg_f3d options as string
-    #  \example options="-voff"
-    def run_reg_f3d(self, options=""):
+    def _run_reg_f3d(self):
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
 
@@ -112,8 +148,8 @@ class NiftyReg:
         moving_mask_str = "NiftyReg_moving_mask_" + self._moving.get_filename() 
         fixed_mask_str = "NiftyReg_fixed_mask_" + self._fixed.get_filename()
         
-        res_f3d_image_str = "NiftyReg_moving_" + self._moving.get_filename() + "_warped_f3d"
-        res_f3d_cpp_str = "NiftyReg_moving_" + self._moving.get_filename() + "_cpp_f3d"
+        res_f3d_image_str = "NiftyReg_regf3d_WarpImage_" + self._fixed.get_filename() + "_" + self._moving.get_filename()
+        res_f3d_cpp_str = "NiftyReg_regf3d_WarpCpp_" + self._fixed.get_filename() + "_" + self._moving.get_filename()
         
         ## Write images to HDD before they can be used for NiftyReg
         if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
@@ -130,7 +166,7 @@ class NiftyReg:
         # affine_matrix_str = fixed_str + "_affine_matrix_NiftyReg"
 
         ## Run reg_f3d
-        self._reg_f3d(fixed_str, moving_str, fixed_mask_str, moving_mask_str, options, affine_matrix_str, res_f3d_image_str, res_f3d_cpp_str)
+        self._reg_f3d(fixed_str, moving_str, fixed_mask_str, moving_mask_str, self._options, affine_matrix_str, res_f3d_image_str, res_f3d_cpp_str)
 
 
     ## Block matching algorithm for global affine registration.

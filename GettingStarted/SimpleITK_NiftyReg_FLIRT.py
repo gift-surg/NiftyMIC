@@ -584,7 +584,7 @@ def get_FLIRT_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
     # A = sitk.Euler3DTransform(center, angle_x, angle_y, angle_z, translation)
     A = sitk.AffineTransform(D.flatten(), translation)
 
-    # sitkh.print_rigid_transformation(A)
+    # sitkh.print_sitk_transform(A)
 
     final_transform_3D_FLIRT = A
 
@@ -809,7 +809,7 @@ if __name__ == '__main__':
     # rigid_transform_2D = sitk.Euler2DTransform(center, angle, translation)
     rigid_transform_3D = sitk.Euler3DTransform(center_3D, angle_x, angle_y, angle_z, translation_3D)
 
-    sitkh.print_rigid_transformation(rigid_transform_3D)
+    sitkh.print_sitk_transform(rigid_transform_3D)
 
     ## Get rigidly transformed image
     fixed_staple_motion = sitkh.get_transformed_image(fixed_staple, rigid_transform_3D)

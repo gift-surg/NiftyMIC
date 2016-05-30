@@ -495,7 +495,7 @@ class Stack:
     #  \param[in] spacing_new_scalar length of voxel side, scalar
     #  \param[in] interpolator choose type of interpolator for resampling
     #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear"):
+    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", boundary=0):
 
         ## Choose interpolator
         if interpolator in ["Linear"]:

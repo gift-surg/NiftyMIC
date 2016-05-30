@@ -201,7 +201,7 @@ class RegularizationParameterEstimation:
                 SRR_DTD_computation_type = "FiniteDifference"
                 SRR_rho = self._rho       #0.5 yields visually good results
                 SRR_ADMM_iterations = self._ADMM_iterations
-                SRR_ADMM_iterations_output_dir = self._dir_results + "TV-L2_ADMM_iterations/" #print output of ADMM iterations there
+                SRR_ADMM_iterations_output_dir = self._dir_results + "TV-L2_ADMM_iterations_bla/" #print output of ADMM iterations there
                 SRR_ADMM_iterations_output_filename_prefix = "TV-L2"
 
             ## Save text: Write header
@@ -355,19 +355,19 @@ class RegularizationParameterEstimation:
                 # data = np.loadtxt(from_files[i_file] + ".txt" , delimiter="\t", skiprows=2)
                 data = np.loadtxt(from_files[i_file] + ".txt" , skiprows=2)
 
-                if "TK0" in from_files[i_file]:
+                if "TK0-Regularization" in from_files[i_file]:
                     SRR_approach = "TK0"
                     alphas = data[:,0]
                     residuals = data[:,1]
                     Psis = data[:,2]
 
-                elif "TK1" in from_files[i_file]:
+                elif "TK1-Regularization" in from_files[i_file]:
                     SRR_approach = "TK1"
                     alphas = data[:,0]
                     residuals = data[:,1]
                     Psis = data[:,2]
 
-                elif "TV-L2" in from_files[i_file]:
+                elif "TV-L2-Regularization" in from_files[i_file]:
                     SRR_approach = "TV-L2"
                     rhos = data[:,0]
                     alphas = data[:,1]
