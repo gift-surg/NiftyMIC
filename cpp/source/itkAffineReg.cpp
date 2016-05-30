@@ -14,20 +14,30 @@
 #include <chrono>
 
 #include <itkImage.h>
-#include <itkImageRegistrationMethod.h>
-#include <itkLinearInterpolateImageFunction.h>
-#include <itkNearestNeighborInterpolateImageFunction.h>
 #include <itkImageFileReader.h>
 #include <itkImageFileWriter.h>
-#include <itkMeanSquaresImageToImageMetric.h>
-#include <itkMattesMutualInformationImageToImageMetric.h>
-#include <itkNormalizedCorrelationImageToImageMetric.h>
-#include <itkRegularStepGradientDescentOptimizer.h>
+
+#include <itkImageRegistrationMethodv4.h>
+#include <itkLinearInterpolateImageFunction.h>
+#include <itkNearestNeighborInterpolateImageFunction.h>
+
+#include <itkMeanSquaresImageToImageMetricv4.h>
+#include <itkMattesMutualInformationImageToImageMetricv4.h>
+#include <itkCorrelationImageToImageMetricv4.h>
+
+#include <itkRegularStepGradientDescentOptimizerv4.h>
+#include <itkLBFGSOptimizerv4.h>
+
 #include <itkResampleImageFilter.h>
-#include <itkRescaleIntensityImageFilter.h>
+// #include <itkRescaleIntensityImageFilter.h>
+
 #include <itkAffineTransform.h>
 #include <itkEuler3DTransform.h>
 #include <itkImageMaskSpatialObject.h>
+
+#include <itkRegistrationParameterScalesFromJacobian.h>
+#include <itkRegistrationParameterScalesFromIndexShift.h>
+#include <itkRegistrationParameterScalesFromPhysicalShift.h>
 
 // My includes
 #include "MyITKImageHelper.h"
@@ -40,17 +50,22 @@ const unsigned int Dimension = 3;
 
 // Typedefs 
 typedef itk::AffineTransform< PixelType, Dimension > TransformType;
-typedef itk::RegularStepGradientDescentOptimizer OptimizerType;
+// typedef itk::Euler3DTransform< PixelType > TransformType;
+typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > OptimizerType;
+// typedef itk::LBFGSOptimizerv4 OptimizerType;
 
-// typedef itk::MeanSquaresImageToImageMetric< ImageType3D, ImageType3D > MetricType;
-// typedef itk::MattesMutualInformationImageToImageMetric< ImageType3D, ImageType3D > MetricType;
-typedef itk::NormalizedCorrelationImageToImageMetric< ImageType3D, ImageType3D > MetricType;
+// typedef itk::MeanSquaresImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
+typedef itk::CorrelationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
+// typedef itk::MattesMutualInformationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
 
+typedef itk::RegistrationParameterScalesFromPhysicalShift<MetricType> ScalesEstimatorType;
+// typedef itk::RegistrationParameterScalesFromIndexShift<MetricType> ScalesEstimatorType;
+// typedef itk::RegistrationParameterScalesFromJacobian<MetricType> ScalesEstimatorType;
 
 typedef itk::LinearInterpolateImageFunction< ImageType3D, PixelType > InterpolatorType;
 typedef itk::OrientedGaussianInterpolateImageFunction< ImageType3D, PixelType >  OrientedGaussianInterpolatorType;
 
-typedef itk::ImageRegistrationMethod< ImageType3D, ImageType3D > RegistrationType;
+typedef itk::ImageRegistrationMethodv4< ImageType3D, ImageType3D, TransformType > RegistrationType;
 
 typedef itk::ResampleImageFilter< ImageType3D, ImageType3D > ResampleFilterType;
 typedef itk::ResampleImageFilter< MaskImageType3D, MaskImageType3D > MaskResampleFilterType;
@@ -108,12 +123,12 @@ int main(int argc, char** argv)
     const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed + ".nii.gz");
 
 
-    MyITKImageHelper::showImage(moving, "moving");
+    // MyITKImageHelper::showImage(moving, "moving");
     // MyITKImageHelper::showImage(fixed, fixedMask, "fixed");
 
     // Create components
     const MetricType::Pointer         metric                  = MetricType::New();
-    const TransformType::Pointer      transform               = TransformType::New();
+    // const TransformType::Pointer      transform               = TransformType::New();
     const OptimizerType::Pointer      optimizer               = OptimizerType::New();
     const InterpolatorType::Pointer   interpolator            = InterpolatorType::New();
     const OrientedGaussianInterpolatorType::Pointer   interpolatorOrientedGaussian  = OrientedGaussianInterpolatorType::New();
@@ -126,7 +141,7 @@ int main(int argc, char** argv)
     // Each component is now connected to the instance of the registration method.
     registration->SetMetric(        metric        );
     registration->SetOptimizer(     optimizer     );
-    registration->SetTransform(     transform     );
+    // registration->SetFixedInitialTransform(     transform     );
 
     // registration->SetInterpolator(  interpolator  );
     const double alpha = 2;
@@ -138,9 +153,10 @@ int main(int argc, char** argv)
 
     interpolatorOrientedGaussian->SetCovariance( covariance );
     interpolatorOrientedGaussian->SetAlpha( alpha );
-    registration->SetInterpolator(  interpolatorOrientedGaussian  );
-
-    
+    // metric->SetFixedInterpolator(  interpolatorOrientedGaussian  );
+    metric->SetMovingInterpolator(  interpolatorOrientedGaussian  );
+    // metric->SetFixedInterpolator(  interpolator  );
+    // metric->SetMovingInterpolator(  interpolator  );
 
     // Set Masks
     // spatialObjectMovingMask->SetImage(movingMask);
@@ -151,45 +167,80 @@ int main(int argc, char** argv)
     // Set the registration inputs
     registration->SetFixedImage(fixed);
     registration->SetMovingImage(moving);
-   
-    registration->SetFixedImageRegion( fixed->GetLargestPossibleRegion() );
+    // registration->SetFixedImageRegion( fixed->GetLargestPossibleRegion() );
    
     //  Initialize the transform
-    typedef RegistrationType::ParametersType ParametersType;
-    ParametersType initialParameters( transform->GetNumberOfParameters() );
+    // typedef RegistrationType::ParametersType ParametersType;
+    // ParametersType initialParameters( transform->GetNumberOfParameters() );
 
-    // rotation matrix
-    initialParameters[0] = 1.0;  // R(0,0)
-    initialParameters[1] = 0.0;  // R(0,1)
-    initialParameters[2] = 0.0;  // R(0,2)
-    initialParameters[3] = 0.0;  // R(1,0)
-    initialParameters[4] = 1.0;  // R(1,1)
-    initialParameters[5] = 0.0;  // R(1,2)
-    initialParameters[6] = 0.0;  // R(2,0)
-    initialParameters[7] = 0.0;  // R(2,1)
-    initialParameters[8] = 1.0;  // R(2,2)
+    // // rotation matrix
+    // initialParameters[0] = 1.0;  // R(0,0)
+    // initialParameters[1] = 0.0;  // R(0,1)
+    // initialParameters[2] = 0.0;  // R(0,2)
+    // initialParameters[3] = 0.0;  // R(1,0)
+    // initialParameters[4] = 1.0;  // R(1,1)
+    // initialParameters[5] = 0.0;  // R(1,2)
+    // initialParameters[6] = 0.0;  // R(2,0)
+    // initialParameters[7] = 0.0;  // R(2,1)
+    // initialParameters[8] = 1.0;  // R(2,2)
    
-    // translation vector
-    initialParameters[9]  = 0.0;
-    initialParameters[10] = 0.0;
-    initialParameters[11] = 0.0;
+    // // translation vector
+    // initialParameters[9]  = 0.0;
+    // initialParameters[10] = 0.0;
+    // initialParameters[11] = 0.0;
 
-    registration->SetInitialTransformParameters( initialParameters );
+    TransformType::Pointer   identityTransform = TransformType::New();
+    identityTransform->SetIdentity();
+    registration->SetFixedInitialTransform( identityTransform );
 
-    optimizer->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
-    //"itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
-   
+    // Scales estimator
+    ScalesEstimatorType::Pointer scalesEstimator = ScalesEstimatorType::New();
+    scalesEstimator->SetMetric( metric );
+    scalesEstimator->SetTransformForward( true );
+    // scalesEstimator->SetSmallParameterVariation( 1.0 );
+
+    // Multi-resolution framework
+    const unsigned int numberOfLevels = 3;
+    RegistrationType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
+    shrinkFactorsPerLevel.SetSize( numberOfLevels );
+    shrinkFactorsPerLevel[0] = 4;
+    shrinkFactorsPerLevel[1] = 2;
+    shrinkFactorsPerLevel[2] = 1;
+
+    RegistrationType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
+    smoothingSigmasPerLevel.SetSize( numberOfLevels );
+    smoothingSigmasPerLevel[0] = 2;
+    smoothingSigmasPerLevel[1] = 1;
+    smoothingSigmasPerLevel[2] = 0;
+
+    registration->SetNumberOfLevels ( numberOfLevels );
+    registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
+    registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
+
+    // Parametrize optimizer
+    optimizer->SetDoEstimateLearningRateOnce( true );
     optimizer->SetMinimumStepLength( 0.01 );
-   
-    // Set a stopping criterion
+    // optimizer->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
+    //"itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
     optimizer->SetNumberOfIterations( 200 );
 
-    // Connect an observer
-    //CommandIterationUpdate::Pointer observer = CommandIterationUpdate::New();
-    //optimizer->AddObserver( itk::IterationEvent(), observer );
+    // For LBFGS Optimizer
+    // optimizer->SetDefaultStepLength( 1.5 );
+    // optimizer->SetGradientConvergenceTolerance( 5e-2 );
+    // optimizer->SetLineSearchAccuracy( 1.2 );
+    // optimizer->TraceOn();
+    // optimizer->SetMaximumNumberOfFunctionEvaluations( 1000 );
+    optimizer->SetScalesEstimator( scalesEstimator );
+    optimizer->SetMinimumConvergenceValue( 1e-6 );
+
+
+  
 
     try {
       registration->Update();
+      std::cout << "Optimizer stop condition: "
+      << registration->GetOptimizer()->GetStopConditionDescription()
+      << std::endl;
     }
     catch( itk::ExceptionObject & err ) {
       std::cerr << "ExceptionObject caught !" << std::endl;
@@ -200,9 +251,16 @@ int main(int argc, char** argv)
     //  The result of the registration process is an array of parameters that
     //  defines the spatial transformation in an unique way. This final result is
     //  obtained using the \code{GetLastTransformParameters()} method.
+    TransformType::ConstPointer transform = registration->GetTransform();
    
-    ParametersType finalParameters = registration->GetLastTransformParameters();
-    std::cout << "Final parameters: " << finalParameters << std::endl;
+    TransformType::ParametersType finalParameters = transform->GetParameters();
+    std::cout << "Final parameters:" << std::endl;
+    std::cout << "\t matrix = " << std::endl;
+    for (int i = 0; i < 3; ++i) {
+      printf("\t\t%.4f\t%.4f\t%.4f\n", finalParameters[i*3], finalParameters[i*3+1], finalParameters[i*3+2]);
+    }
+    std::cout << "\t translation = " << std::endl;
+    printf("\t\t%.4f\t%.4f\t%.4f\n", finalParameters[9], finalParameters[9+1], finalParameters[9+2]);
    
     //  The value of the image metric corresponding to the last set of parameters
     //  can be obtained with the \code{GetValue()} method of the optimizer.
@@ -236,7 +294,7 @@ int main(int argc, char** argv)
     const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
     movingMaskWarped->DisconnectPipeline();
 
-    MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
+    // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
     // MyITKImageHelper::showImage(movingWarped, movingMaskWarped, "fixed_mask");
 
   }
