@@ -13,8 +13,8 @@ set (CMAKE_PREFIX_PATH "~/development/ITK/ITK-build_dev/")
 ## Project specific settings
 set ( MY_PROJ_NAME "itkRegistrationMethods" )
 
-set ( MY_MAIN_FILE "itkAffineReg.cpp" )
-set ( MY_EXEC_FILE "itkAffineReg" )
+set ( MY_MAIN_FILE "itkReg.cpp" )
+set ( MY_EXEC_FILE "itkReg" )
 set ( MY_MAIN_FILE_SOURCES 
     "MyITKImageHelper.cpp" 
     "readCommandLine.cpp"

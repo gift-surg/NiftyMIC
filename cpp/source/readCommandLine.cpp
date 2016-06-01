@@ -24,6 +24,12 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     ("m", po::value< std::vector<std::string> >(), 
         "specify filename of moving image, \n"
         "e.g. \"--m path-to-file/moving\" without '.nii.gz' extension")
+    ("fmask", po::value< std::vector<std::string> >(), 
+        "specify filename of fixed image mask (optional), \n"
+        "e.g. \"--m path-to-file/fixed_mask\" without '.nii.gz' extension")
+    ("mmask", po::value< std::vector<std::string> >(), 
+        "specify filename of moving image mask (optional), \n"
+        "e.g. \"--m path-to-file/moving_mask\" without '.nii.gz' extension")
     ;
 
     po::variables_map vm;        
@@ -33,8 +39,10 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     const std::string sBar = "------------------------------------------------------" 
         "----------------------------\n";
     
-    std::string sMoving;
     std::string sFixed;
+    std::string sMoving;
+    std::string sFixedMask;
+    std::string sMovingMask;
     std::cout << sBar;
 
     if (vm.count("help")) {
@@ -70,17 +78,39 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         throw ExceptionCommandLine("moving image not given.");
     }
 
+    if (vm.count("fmask")) {
+        std::cout << "fixed image mask given (" 
+            << vm["fmask"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+
+        sFixedMask = vm["fmask"].as< std::vector<std::string> >()[0];
+    }
+    else {
+        sFixedMask = "";
+    }
+
+    if (vm.count("mmask")) {
+        std::cout << "moving image mask given (" 
+            << vm["mmask"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+
+        sMovingMask = vm["mmask"].as< std::vector<std::string> >()[0];
+    }
+    else {
+        sMovingMask = "";
+    }
+
     std::cout << sBar;
 
-    // Exactly three sInput parameters (i.e. 2*2+1 arguments) must be given
-    if (argc != 5){
-        // std::string msg = "Number of sInput arguments = " 
-        // + std::to_string((unsigned int) (argc-1)/2) + ". "
-        throw ExceptionCommandLine("sInput arguments are not correct.");
-    }
+    // // Exactly three sInput parameters (i.e. 2*2+1 arguments) must be given
+    // if (argc != 5){
+    //     // std::string msg = "Number of sInput arguments = " 
+    //     // + std::to_string((unsigned int) (argc-1)/2) + ". "
+    //     throw ExceptionCommandLine("sInput arguments are not correct.");
+    // }
 
     sInput.push_back(sFixed);
     sInput.push_back(sMoving);
+    sInput.push_back(sFixedMask);
+    sInput.push_back(sMovingMask);
 
     return sInput;
 }

@@ -51,12 +51,13 @@ const unsigned int Dimension = 3;
 // Typedefs 
 typedef itk::AffineTransform< PixelType, Dimension > TransformType;
 // typedef itk::Euler3DTransform< PixelType > TransformType;
+
 typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > OptimizerType;
 // typedef itk::LBFGSOptimizerv4 OptimizerType;
 
 // typedef itk::MeanSquaresImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
-typedef itk::CorrelationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
-// typedef itk::MattesMutualInformationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
+// typedef itk::CorrelationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
+typedef itk::MattesMutualInformationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
 
 typedef itk::RegistrationParameterScalesFromPhysicalShift<MetricType> ScalesEstimatorType;
 // typedef itk::RegistrationParameterScalesFromIndexShift<MetricType> ScalesEstimatorType;
@@ -74,38 +75,44 @@ typedef itk::ImageMaskSpatialObject< Dimension > MaskType;
 
 int main(int argc, char** argv)
 {
-  /*
-  // Define input
-  const std::string dir_input = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/data/test/";
-
-  // const std::string dir_output = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/results/";
-
-  // const std::string filename_image_2D = "2D_SheppLoganPhantom_512";
-  // const std::string filename_image_3D = "3D_SingleDot_50";
-  // const std::string filename_image_3D = "3D_Cross_50";
-  // const std::string filename_image_3D = "3D_SheppLoganPhantom_64";
-  // const std::string filename_image_3D = "fetal_brain_c";
-  // const std::string filename_image_3D = "HR_volume_postmortem";
-  const std::string sMoving = "fetal_brain_0";
-  const std::string sFixed = "fetal_brain_1";
-
-  const std::string filename_moving_mask = sMoving + "_mask";
-  const std::string filename_fixed_mask = sFixed + "_mask";
-
-  // Define output  
-  // const std::string dir_output = "/tmp/";
-  const std::string dir_output = "../../results/";
-  const std::string filename_output = "test_output";
-
-  // Read images
-  const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(dir_input + sMoving + ".nii.gz");
-  const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(dir_input + sFixed + ".nii.gz");
-
-  const MaskImageType3D::Pointer movingMask = MyITKImageHelper::readImage<MaskImageType3D>(dir_input + filename_moving_mask + ".nii.gz");
-  const MaskImageType3D::Pointer fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(dir_input + filename_fixed_mask + ".nii.gz");
-  */
 
   try{
+
+      /*
+      // Define input
+      const std::string dir_input = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/data/test/";
+
+      // const std::string dir_output = "/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/ITK_Examples/MyFunctions/results/";
+
+      // const std::string filename_image_2D = "2D_SheppLoganPhantom_512";
+      // const std::string filename_image_3D = "3D_SingleDot_50";
+      // const std::string filename_image_3D = "3D_Cross_50";
+      // const std::string filename_image_3D = "3D_SheppLoganPhantom_64";
+      // const std::string filename_image_3D = "fetal_brain_c";
+      // const std::string filename_image_3D = "HR_volume_postmortem";
+      const std::string sMoving = "fetal_brain_0";
+      const std::string sFixed = "fetal_brain_1";
+
+      const std::string filename_moving_mask = sMoving + "_mask";
+      const std::string filename_fixed_mask = sFixed + "_mask";
+
+      // Define output  
+      // const std::string dir_output = "/tmp/";
+      const std::string dir_output = "../../results/";
+      const std::string filename_output = "test_output";
+
+      // Read images
+      const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(dir_input + sMoving + ".nii.gz");
+      const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(dir_input + sFixed + ".nii.gz");
+
+      const MaskImageType3D::Pointer movingMask = MyITKImageHelper::readImage<MaskImageType3D>(dir_input + filename_moving_mask + ".nii.gz");
+      const MaskImageType3D::Pointer fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(dir_input + filename_fixed_mask + ".nii.gz");
+
+      const bool bUseFixedMask = true;
+      const bool bUseMovingMask = true;
+
+      */
+
     //***Parse input of command line
     std::vector<std::string> input = readCommandLine(argc, argv);
 
@@ -115,12 +122,35 @@ int main(int argc, char** argv)
     }
 
     //***Read input data of command line
-    std::string sFixed = input[0];
-    std::string sMoving = input[1];
+    const std::string sFixed = input[0];
+    const std::string sMoving = input[1];
+    const std::string sFixedMask = input[2];
+    const std::string sMovingMask = input[3];
+
+    bool bUseMovingMask = false;
+    bool bUseFixedMask = false;
+
+    if(!sFixedMask.empty()){
+        bUseFixedMask = true;
+    }
+    if(!sMovingMask.empty()){
+        bUseMovingMask = true;
+    }
 
     // Read images
     const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving + ".nii.gz");
     const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed + ".nii.gz");
+
+    // Read masks (if given)
+    MaskImageType3D::Pointer fixedMask;
+    MaskImageType3D::Pointer movingMask;
+    
+    if(bUseFixedMask){
+        fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask + ".nii.gz");
+    }
+    if(bUseMovingMask){
+        movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask + ".nii.gz");
+    }
 
 
     // MyITKImageHelper::showImage(moving, "moving");
@@ -128,7 +158,6 @@ int main(int argc, char** argv)
 
     // Create components
     const MetricType::Pointer         metric                  = MetricType::New();
-    // const TransformType::Pointer      transform               = TransformType::New();
     const OptimizerType::Pointer      optimizer               = OptimizerType::New();
     const InterpolatorType::Pointer   interpolator            = InterpolatorType::New();
     const OrientedGaussianInterpolatorType::Pointer   interpolatorOrientedGaussian  = OrientedGaussianInterpolatorType::New();
@@ -141,7 +170,6 @@ int main(int argc, char** argv)
     // Each component is now connected to the instance of the registration method.
     registration->SetMetric(        metric        );
     registration->SetOptimizer(     optimizer     );
-    // registration->SetFixedInitialTransform(     transform     );
 
     // registration->SetInterpolator(  interpolator  );
     const double alpha = 2;
@@ -159,10 +187,14 @@ int main(int argc, char** argv)
     // metric->SetMovingInterpolator(  interpolator  );
 
     // Set Masks
-    // spatialObjectMovingMask->SetImage(movingMask);
-    // spatialObjectFixedMask->SetImage(fixedMask);
-    // metric->SetFixedImageMask( spatialObjectFixedMask );
-    // metric->SetMovingImageMask( spatialObjectMovingMask );
+    if(bUseFixedMask){
+        spatialObjectFixedMask->SetImage( fixedMask );
+        metric->SetFixedImageMask( spatialObjectFixedMask );
+    }
+    if(bUseMovingMask){
+        spatialObjectMovingMask->SetImage( movingMask );
+        metric->SetMovingImageMask( spatialObjectMovingMask );
+    }
 
     // Set the registration inputs
     registration->SetFixedImage(fixed);
@@ -170,25 +202,6 @@ int main(int argc, char** argv)
     // registration->SetFixedImageRegion( fixed->GetLargestPossibleRegion() );
    
     //  Initialize the transform
-    // typedef RegistrationType::ParametersType ParametersType;
-    // ParametersType initialParameters( transform->GetNumberOfParameters() );
-
-    // // rotation matrix
-    // initialParameters[0] = 1.0;  // R(0,0)
-    // initialParameters[1] = 0.0;  // R(0,1)
-    // initialParameters[2] = 0.0;  // R(0,2)
-    // initialParameters[3] = 0.0;  // R(1,0)
-    // initialParameters[4] = 1.0;  // R(1,1)
-    // initialParameters[5] = 0.0;  // R(1,2)
-    // initialParameters[6] = 0.0;  // R(2,0)
-    // initialParameters[7] = 0.0;  // R(2,1)
-    // initialParameters[8] = 1.0;  // R(2,2)
-   
-    // // translation vector
-    // initialParameters[9]  = 0.0;
-    // initialParameters[10] = 0.0;
-    // initialParameters[11] = 0.0;
-
     TransformType::Pointer   identityTransform = TransformType::New();
     identityTransform->SetIdentity();
     registration->SetFixedInitialTransform( identityTransform );
@@ -233,8 +246,6 @@ int main(int argc, char** argv)
     optimizer->SetScalesEstimator( scalesEstimator );
     optimizer->SetMinimumConvergenceValue( 1e-6 );
 
-
-  
 
     try {
       registration->Update();
