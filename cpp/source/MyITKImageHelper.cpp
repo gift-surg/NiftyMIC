@@ -225,3 +225,54 @@ void MyITKImageHelper::writeImage(const MaskImageType3D::Pointer image, const st
   writer->SetInput( image );
   writer->Update();
 }
+
+void MyITKImageHelper::printTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform){
+  
+  const unsigned int dim = 3;
+
+  itk::Matrix< PixelType, dim, dim >  matrix = transform->GetMatrix();
+  itk::Vector< PixelType, dim > translation = transform->GetTranslation();
+
+  itk::AffineTransform< PixelType, dim >::ParametersType parameters = transform->GetParameters();
+  itk::AffineTransform< PixelType, dim >::ParametersType center = transform->GetFixedParameters();
+
+  std::cout << "Transform:" << std::endl;
+
+  std::cout << "\t center = " << std::endl;
+  printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
+  
+  std::cout << "\t translation = " << std::endl;
+  printf("\t\t%.4f\t%.4f\t%.4f\n", translation[0], translation[1], translation[2]);
+  
+  std::cout << "\t matrix = " << std::endl;
+  for (int i = 0; i < dim; ++i) {
+    printf("\t\t%.4f\t%.4f\t%.4f\n", matrix[i][0], matrix[i][1], matrix[i][2]);
+  }
+}
+
+void MyITKImageHelper::printTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform){
+  
+  const unsigned int dim = 3;
+
+  itk::Matrix< PixelType, dim, dim >  matrix = transform->GetMatrix();
+  itk::Vector< PixelType, dim > translation = transform->GetTranslation();
+
+  itk::Euler3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
+  itk::Euler3DTransform< PixelType >::ParametersType center = transform->GetFixedParameters();
+
+  std::cout << "Transform:" << std::endl;
+
+  std::cout << "\t center = " << std::endl;
+  printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
+
+  std::cout << "\t angle_x_deg, angle_y_deg, angle_z_deg = " << std::endl;
+  printf("\t\t%.4f, %.4f, %.4f\n", parameters[0]*180/vnl_math::pi, parameters[1]*180/vnl_math::pi, parameters[2]*180/vnl_math::pi);
+  
+  std::cout << "\t translation = " << std::endl;
+  printf("\t\t%.4f\t%.4f\t%.4f\n", translation[0], translation[1], translation[2]);
+  
+  std::cout << "\t matrix = " << std::endl;
+  for (int i = 0; i < dim; ++i) {
+    printf("\t\t%.4f\t%.4f\t%.4f\n", matrix[i][0], matrix[i][1], matrix[i][2]);
+  }
+}

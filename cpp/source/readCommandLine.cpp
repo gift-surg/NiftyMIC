@@ -14,6 +14,20 @@ namespace po = boost::program_options;
 std::vector<std::string> readCommandLine(int argc, char** argv){
 
     std::vector<std::string> sInput;
+    
+    std::string sFixed;
+    std::string sMoving;
+    std::string sFixedMask;
+    std::string sMovingMask;
+    std::vector<std::string> sPsfCov;
+    std::string sUseMultiresolution;
+    std::string sUseAffine;
+    std::string sMetric;
+    std::string sInterpolator;
+    std::string sOptimizer;
+
+    const std::string sBar = "------------------------------------------------------" 
+        "----------------------------\n";
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -30,19 +44,30 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     ("mmask", po::value< std::vector<std::string> >(), 
         "specify filename of moving image mask (optional), \n"
         "e.g. \"--m path-to-file/moving_mask\" without '.nii.gz' extension")
+    ("useMultires", po::value< std::vector<std::string> >(),
+        "specify whether multiresolution framework is desired (default: 0), \n"
+        "e.g. \"--useMultires 1\"")
+    ("useAffine", po::value< std::vector<std::string> >(), 
+        "specify whether affine registration is desired (default: rigid registration), \n"
+        "e.g. \"--useAffine 1\"")
+    ("metric", po::value< std::vector<std::string> >(), 
+        "specify which metric shall be chosen (default: MattesMutualInformation), \n"
+        "e.g. \"--metric MeanSquares\", MattesMutualInformation or Correlation")
+    ("interpolator", po::value< std::vector<std::string> >(), 
+        "specify which interpolator shall be chosen (default: Linear), \n"
+        "e.g. \"--interpolator NearestNeighbor\", Linear, BSpline, Gaussian or OrientedGaussian (set via 'psf')")
+    ("psf", po::value< std::vector<std::string> >(&sPsfCov)->multitoken(), 
+        "specify the PSF in case oriented Gaussian interpolation is desired (optional), \n"
+        "e.g. \"--psf cov_11 cov_12 cov_13 cov_21 cov_22 cov_23 cov_31 cov_32 cov_33\"")
+    // ("optimizer", po::value< std::vector<std::string> >(), 
+    //     "specify optimizer (default: RegularStepGradientDescent), \n"
+    //     "e.g. \"--optimizer RegularStepGradientDescent\"")
     ;
 
     po::variables_map vm;        
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);    
 
-    const std::string sBar = "------------------------------------------------------" 
-        "----------------------------\n";
-    
-    std::string sFixed;
-    std::string sMoving;
-    std::string sFixedMask;
-    std::string sMovingMask;
     std::cout << sBar;
 
     if (vm.count("help")) {
@@ -98,6 +123,54 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         sMovingMask = "";
     }
 
+    if (vm.count("psf")) {
+        std::cout << "PSF for oriented Gaussian interpolator given" << std::endl;  
+        // std::cout << "\t cov (1,1) = " << sPsfCov[0] << "\n";
+        // std::cout << "\t cov (1,2) = " << sPsfCov[1] << "\n";
+        // std::cout << "\t cov (1,3) = " << sPsfCov[2] << "\n";
+        // std::cout << "\t cov (2,1) = " << sPsfCov[3] << "\n";
+        // std::cout << "\t cov (2,2) = " << sPsfCov[4] << "\n";
+        // std::cout << "\t cov (2,3) = " << sPsfCov[5] << "\n";
+        // std::cout << "\t cov (3,1) = " << sPsfCov[6] << "\n";
+        // std::cout << "\t cov (3,2) = " << sPsfCov[7] << "\n";
+        // std::cout << "\t cov (3,3) = " << sPsfCov[8] << "\n";
+
+        // sPsfCov = vm["psf"].as< std::vector<std::string> >()[0] + " " + vm["psf"].as< std::vector<std::string> >()[1] + " " + vm["psf"].as< std::vector<std::string> >()[2];
+    }
+
+    if (vm.count("useMultires")) {
+
+        std::cout << "Multiresolution flag is set to " 
+            << vm["useMultires"].as< std::vector<std::string> >()[0] << std::endl;  
+
+        sUseMultiresolution = vm["useMultires"].as< std::vector<std::string> >()[0];
+    }
+
+    if (vm.count("useAffine")) {
+
+        std::cout << "useAffine flag is set to " 
+            << vm["useAffine"].as< std::vector<std::string> >()[0] << std::endl;  
+
+        sUseAffine = vm["useAffine"].as< std::vector<std::string> >()[0];
+    }
+
+    if (vm.count("metric")) {
+
+        std::cout << "chosen metric is " 
+            << vm["metric"].as< std::vector<std::string> >()[0] << std::endl;  
+
+        sMetric = vm["metric"].as< std::vector<std::string> >()[0];
+    }
+
+    if (vm.count("interpolator")) {
+
+        std::cout << "chosen interpolator is " 
+            << vm["interpolator"].as< std::vector<std::string> >()[0] << std::endl;  
+
+        sInterpolator = vm["interpolator"].as< std::vector<std::string> >()[0];
+    }
+
+
     std::cout << sBar;
 
     // // Exactly three sInput parameters (i.e. 2*2+1 arguments) must be given
@@ -111,6 +184,21 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     sInput.push_back(sMoving);
     sInput.push_back(sFixedMask);
     sInput.push_back(sMovingMask);
+
+    for (int i = 0; i < 9; ++i) {
+        if (sPsfCov[i].empty()) {
+            sInput.push_back("");
+        }
+        else {
+            sInput.push_back(sPsfCov[i]);
+            // std::cout << sPsfCov[i] << std::endl;
+        }
+    }
+
+    sInput.push_back(sUseMultiresolution);
+    sInput.push_back(sUseAffine);
+    sInput.push_back(sMetric);
+    sInput.push_back(sInterpolator);
 
     return sInput;
 }

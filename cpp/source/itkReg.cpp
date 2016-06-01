@@ -5,6 +5,7 @@
  *  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
  *  \date May 2016
  */
+#include <boost/type_traits.hpp>
 
 #include <iostream>
 #include <string>
@@ -49,29 +50,11 @@
 const unsigned int Dimension = 3;
 
 // Typedefs 
-typedef itk::AffineTransform< PixelType, Dimension > TransformType;
-// typedef itk::Euler3DTransform< PixelType > TransformType;
-
-typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > OptimizerType;
-// typedef itk::LBFGSOptimizerv4 OptimizerType;
-
-// typedef itk::MeanSquaresImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
-// typedef itk::CorrelationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
-typedef itk::MattesMutualInformationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
-
-typedef itk::RegistrationParameterScalesFromPhysicalShift<MetricType> ScalesEstimatorType;
-// typedef itk::RegistrationParameterScalesFromIndexShift<MetricType> ScalesEstimatorType;
-// typedef itk::RegistrationParameterScalesFromJacobian<MetricType> ScalesEstimatorType;
-
-typedef itk::LinearInterpolateImageFunction< ImageType3D, PixelType > InterpolatorType;
-typedef itk::OrientedGaussianInterpolateImageFunction< ImageType3D, PixelType >  OrientedGaussianInterpolatorType;
-
-typedef itk::ImageRegistrationMethodv4< ImageType3D, ImageType3D, TransformType > RegistrationType;
-
 typedef itk::ResampleImageFilter< ImageType3D, ImageType3D > ResampleFilterType;
 typedef itk::ResampleImageFilter< MaskImageType3D, MaskImageType3D > MaskResampleFilterType;
 
 typedef itk::ImageMaskSpatialObject< Dimension > MaskType;
+
 
 int main(int argc, char** argv)
 {
@@ -113,6 +96,7 @@ int main(int argc, char** argv)
 
       */
 
+
     //***Parse input of command line
     std::vector<std::string> input = readCommandLine(argc, argv);
 
@@ -127,15 +111,68 @@ int main(int argc, char** argv)
     const std::string sFixedMask = input[2];
     const std::string sMovingMask = input[3];
 
+    itk::Vector<double, 9> covariance;
+    for (int i = 0; i < 9; ++i) {
+        covariance[i] = std::stod(input[4+i]);
+    } 
+    std::cout << "covariance = " << covariance << std::endl;
+
+    const std::string sUseMultiresolution = input[13];
+    const std::string sUseAffine = input[14];
+    const std::string sMetric = input[15];
+    const std::string sInterpolator = input[16];
+
     bool bUseMovingMask = false;
     bool bUseFixedMask = false;
+    bool bUseMultiresolution = false;
+    bool bUseAffine = false;
 
     if(!sFixedMask.empty()){
         bUseFixedMask = true;
+        std::cout << "Fixed mask used" << std::endl;
     }
     if(!sMovingMask.empty()){
         bUseMovingMask = true;
+        std::cout << "Moving mask used" << std::endl;
     }
+    if(!sUseMultiresolution.empty() && std::stoi(sUseMultiresolution)) {
+        bUseMultiresolution = true;
+        std::cout << "Multiresolution framework used" << std::endl;
+    }
+    if(!sUseAffine.empty() && std::stoi(sUseAffine)) {
+        bUseAffine = true;
+        std::cout << "Affine registration used" << std::endl;
+    }
+
+    // typedef boost::conditional< bUseAffine, itk::AffineTransform< PixelType, Dimension >, itk::Euler3DTransform< PixelType > > mytypedef;
+
+    
+    typedef itk::AffineTransform< PixelType, Dimension > AffineTransformType;
+    typedef itk::Euler3DTransform< PixelType > EulerTransformType;
+    
+    // typedef AffineTransformType TransformType;
+    // typedef EulerTransformType TransformType;
+    // typedef itk::MatrixOffsetTransformBase< PixelType, Dimension, Dimension > TransformType;
+
+    typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > OptimizerType;
+    // typedef itk::LBFGSOptimizerv4 OptimizerType;
+
+    // typedef itk::MeanSquaresImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
+    // typedef itk::CorrelationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
+    typedef itk::MattesMutualInformationImageToImageMetricv4< ImageType3D, ImageType3D > MetricType;
+
+    typedef itk::RegistrationParameterScalesFromPhysicalShift<MetricType> ScalesEstimatorType;
+    // typedef itk::RegistrationParameterScalesFromIndexShift<MetricType> ScalesEstimatorType;
+    // typedef itk::RegistrationParameterScalesFromJacobian<MetricType> ScalesEstimatorType;
+
+    typedef itk::LinearInterpolateImageFunction< ImageType3D, PixelType > InterpolatorType;
+    typedef itk::OrientedGaussianInterpolateImageFunction< ImageType3D, PixelType >  OrientedGaussianInterpolatorType;
+
+
+    typedef itk::ImageRegistrationMethodv4< ImageType3D, ImageType3D, TransformType > RegistrationType;
+
+    // / Conditional typedefs
+    // typedef itk:: TransformType;
 
     // Read images
     const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving + ".nii.gz");
@@ -167,13 +204,25 @@ int main(int argc, char** argv)
     const ResampleFilterType::Pointer resampler               = ResampleFilterType::New();
     const MaskResampleFilterType::Pointer resamplerMask       = MaskResampleFilterType::New();
     
+    //  Initialize the transform
+    if (bUseAffine) {
+        AffineTransformType::Pointer initialTransform = AffineTransformType::New();
+        initialTransform->SetIdentity();
+        initialTransform->Print(std::cout);
+        registration->SetFixedInitialTransform( initialTransform );
+    }
+    else {
+        EulerTransformType::Pointer initialTransform = EulerTransformType::New();
+        initialTransform->SetIdentity();
+        initialTransform->Print(std::cout);
+        registration->SetFixedInitialTransform( initialTransform );
+    }
     // Each component is now connected to the instance of the registration method.
     registration->SetMetric(        metric        );
     registration->SetOptimizer(     optimizer     );
 
     // registration->SetInterpolator(  interpolator  );
     const double alpha = 2;
-    itk::Vector<double, 9> covariance;
     covariance.Fill(0);
     covariance[0] = 0.26786367;
     covariance[4] = 0.26786367;
@@ -199,12 +248,6 @@ int main(int argc, char** argv)
     // Set the registration inputs
     registration->SetFixedImage(fixed);
     registration->SetMovingImage(moving);
-    // registration->SetFixedImageRegion( fixed->GetLargestPossibleRegion() );
-   
-    //  Initialize the transform
-    TransformType::Pointer   identityTransform = TransformType::New();
-    identityTransform->SetIdentity();
-    registration->SetFixedInitialTransform( identityTransform );
 
     // Scales estimator
     ScalesEstimatorType::Pointer scalesEstimator = ScalesEstimatorType::New();
@@ -215,20 +258,23 @@ int main(int argc, char** argv)
     // Multi-resolution framework
     const unsigned int numberOfLevels = 3;
     RegistrationType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
-    shrinkFactorsPerLevel.SetSize( numberOfLevels );
-    shrinkFactorsPerLevel[0] = 4;
-    shrinkFactorsPerLevel[1] = 2;
-    shrinkFactorsPerLevel[2] = 1;
-
     RegistrationType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
-    smoothingSigmasPerLevel.SetSize( numberOfLevels );
-    smoothingSigmasPerLevel[0] = 2;
-    smoothingSigmasPerLevel[1] = 1;
-    smoothingSigmasPerLevel[2] = 0;
+    
+    if (bUseMultiresolution) {
+        shrinkFactorsPerLevel.SetSize( numberOfLevels );
+        shrinkFactorsPerLevel[0] = 4;
+        shrinkFactorsPerLevel[1] = 2;
+        shrinkFactorsPerLevel[2] = 1;
 
-    registration->SetNumberOfLevels ( numberOfLevels );
-    registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
-    registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
+        smoothingSigmasPerLevel.SetSize( numberOfLevels );
+        smoothingSigmasPerLevel[0] = 2;
+        smoothingSigmasPerLevel[1] = 1;
+        smoothingSigmasPerLevel[2] = 0;
+
+        registration->SetNumberOfLevels ( numberOfLevels );
+        registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
+        registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
+    }
 
     // Parametrize optimizer
     optimizer->SetDoEstimateLearningRateOnce( true );
@@ -263,16 +309,21 @@ int main(int argc, char** argv)
     //  defines the spatial transformation in an unique way. This final result is
     //  obtained using the \code{GetLastTransformParameters()} method.
     TransformType::ConstPointer transform = registration->GetTransform();
-   
-    TransformType::ParametersType finalParameters = transform->GetParameters();
-    std::cout << "Final parameters:" << std::endl;
-    std::cout << "\t matrix = " << std::endl;
-    for (int i = 0; i < 3; ++i) {
-      printf("\t\t%.4f\t%.4f\t%.4f\n", finalParameters[i*3], finalParameters[i*3+1], finalParameters[i*3+2]);
+    
+    // transform->Print(std::cout);
+    AffineTransformType::ConstPointer affineTransform = dynamic_cast< const AffineTransformType* >(transform.GetPointer());
+    EulerTransformType::ConstPointer eulerTransform = dynamic_cast< const EulerTransformType* >(transform.GetPointer());
+
+    transform->Print(std::cout);
+
+    if ( affineTransform.IsNotNull() )  {   
+        MyITKImageHelper::printTransform(affineTransform);
     }
-    std::cout << "\t translation = " << std::endl;
-    printf("\t\t%.4f\t%.4f\t%.4f\n", finalParameters[9], finalParameters[9+1], finalParameters[9+2]);
-   
+    else if ( eulerTransform.IsNotNull() ) {
+        MyITKImageHelper::printTransform(eulerTransform);
+    }
+
+
     //  The value of the image metric corresponding to the last set of parameters
     //  can be obtained with the \code{GetValue()} method of the optimizer.
     const double bestValue = optimizer->GetValue();

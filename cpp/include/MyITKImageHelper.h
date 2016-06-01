@@ -20,6 +20,8 @@
 #include <itkNiftiImageIO.h>
 #include <itkResampleImageFilter.h>
 #include <itkImageRegionIteratorWithIndex.h>
+#include <itkAffineTransform.h>
+#include <itkEuler3DTransform.h>
 
 //#include "ImageFactory.h"
 
@@ -67,6 +69,11 @@ public:
     static void writeImage(const MaskImageType2D::Pointer image, const std::string &filename);
     static void writeImage(const ImageType3D::Pointer image, const std::string &filename);
     static void writeImage(const MaskImageType3D::Pointer image, const std::string &filename);
+
+    /** Print transform */
+    static void printTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform);
+    static void printTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform);
+
 
     /** Get data array */
     // static 
