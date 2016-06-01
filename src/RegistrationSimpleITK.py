@@ -207,7 +207,7 @@ class RegistrationSimpleITK:
             self._optimizer_params = "{'learningRate': 1, 'numberOfIterations': 100, 'convergenceMinimumValue': 1e-8, 'convergenceWindowSize': 10}"
 
         elif optimizer in ["LBFGSB"] and params is None:
-            self._optimizer_params = "{'gradientConvergenceTolerance': 1e-5, 'maximumNumberOfIterations': 500, 'maximumNumberOfCorrections': 5, 'maximumNumberOfFunctionEvaluations': 200, 'costFunctionConvergenceFactor': 1e+7}"
+            self._optimizer_params = "{'gradientConvergenceTolerance': 1e-5, 'maximumNumberOfIterations': 100, 'maximumNumberOfCorrections': 5, 'maximumNumberOfFunctionEvaluations': 200, 'costFunctionConvergenceFactor': 1e+7}"
 
 
     ## Set optimizer scales

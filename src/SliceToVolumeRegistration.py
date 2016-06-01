@@ -87,7 +87,7 @@ class SliceToVolumeRegistration:
             parameters = np.mean( self._rigid_transform_parameters[neighbourhood_range,:], 0 )
 
             ## Update initial transform
-            initial_transform.SetParameters( parameters )
+            # initial_transform.SetParameters( parameters )
 
             return initial_transform
 
@@ -217,10 +217,9 @@ class SliceToVolumeRegistration:
 
                     rigid_transform = self._get_rigid_registration_transform[self._registration_approach](fixed_slice_3D=slice, moving_HR_volume_3D=self._HR_volume, display_registration_info=display_info)
 
-
-                ## Update rigid motion estimate for current slice and update its 
-                #  position in physical space accordingly
-                slice.update_rigid_motion_estimate(rigid_transform)
+                    ## Update rigid motion estimate for current slice and update its 
+                    #  position in physical space accordingly
+                    slice.update_rigid_motion_estimate(rigid_transform)
 
 
     ## Rigid registration routine based on SimpleITK
@@ -238,8 +237,8 @@ class SliceToVolumeRegistration:
         moving_3D_itk = self._gaussian_yvv.GetOutput()
         moving_3D_itk.DisconnectPipeline()
 
-        moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
-        # moving_3D_sitk = moving_HR_volume_3D.sitk
+        # moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
+        moving_3D_sitk = moving_HR_volume_3D.sitk
 
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()
@@ -257,13 +256,13 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
 
         ## Set interpolator to use
-        registration_method.SetInterpolator(sitk.sitkLinear)
+        registration_method.SetInterpolator(sitk.sitkBSpline)
 
         """
         similarity metric settings
         """
         ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
-        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=10)
+        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
         
         ## Use negative normalized cross correlation image metric
         # registration_method.SetMetricAsCorrelation()
@@ -275,10 +274,10 @@ class SliceToVolumeRegistration:
         # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=1)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
-        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)
+        registration_method.SetMetricAsMattesMutualInformation()
 
         ## Use negative means squares image metric
-        registration_method.SetMetricAsMeanSquares()
+        # registration_method.SetMetricAsMeanSquares()
         
         """
         optimizer settings

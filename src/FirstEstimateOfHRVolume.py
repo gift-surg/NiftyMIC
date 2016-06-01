@@ -63,7 +63,7 @@ class FirstEstimateOfHRVolume:
         self._recon_approach = "Average"        # default reconstruction approach
 
         ## SDA reconstruction settings:
-        self._SDA_sigma = 0.6                 # sigma for recursive Gaussian smoothing
+        self._SDA_sigma = 1                 # sigma for recursive Gaussian smoothing
         self._SDA_type = 'Shepard-YVV'      # Either 'Shepard-YVV' or 'Shepard-Deriche'
 
 
@@ -110,6 +110,9 @@ class FirstEstimateOfHRVolume:
     #  \param[in] boundary additional boundary surrounding chosen target stack in mm (used to get additional black frame)
     def compute_first_estimate_of_HR_volume(self, boundary=5, display_info=0):
 
+        ## Add surrounding zero boundary if desired
+        self._HR_volume = self._get_zero_framed_stack(self._HR_volume, boundary)
+        
         ## If desired: Register all (planarly) aligned stacks to resampled target volume
         if self._flag_register_stacks_before_initial_volume_estimate:
             print("Rigid registration between each stack and target is performed")
@@ -121,9 +124,6 @@ class FirstEstimateOfHRVolume:
 
         ## Update HR volume: Compute average of all (registered) stacks
         self._update_HR_volume_estimate[self._recon_approach]()
-
-        ## Add surrounding zero boundary if desired
-        self._HR_volume = self._get_zero_framed_stack(self._HR_volume, boundary)
 
 
     ## Resample stack to isotropic grid

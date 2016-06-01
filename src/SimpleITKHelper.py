@@ -468,12 +468,12 @@ def print_sitk_transform(rigid_or_affine_transform_sitk, text="Transformation in
     elif isinstance(rigid_or_affine_transform_sitk, sitk.Euler2DTransform):
         print("\t\t\tangle = " + str(parameters[0]*180/np.pi) + " deg")
 
-    elif isinstance(rigid_or_affine_transform_sitk, sitk.AffineTransform):
-        print("\t\t\tmatrix = ")
-        for i in range(0, dim):
-            print("\t\t\t\t" + str(matrix[i,:]))
-
     print("\t\t\ttranslation = " + str(translation))
+    
+    # elif isinstance(rigid_or_affine_transform_sitk, sitk.AffineTransform):
+    print("\t\t\tmatrix = ")
+    for i in range(0, dim):
+        print("\t\t\t\t" + str(matrix[i,:]))
 
     return None
 

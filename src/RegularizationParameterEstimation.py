@@ -20,7 +20,7 @@ from scipy.optimize import curve_fit
 from scipy import ndimage
 import matplotlib.pyplot as plt
 import datetime
-# import re               #regular expression
+import re               #regular expression
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
@@ -318,7 +318,12 @@ class RegularizationParameterEstimation:
 
     def analyse(self, save_flag=0, from_files=None):   
 
-        plot_colours = ["rx" , "bo" , "gs"]
+
+        ## colors: r,b,g,c,m,y,k,w (http://matplotlib.org/api/colors_api.html)
+        ## markers: http://matplotlib.org/api/markers_api.html#module-matplotlib.markers
+        ## line styles: same as in Matlab (http://matplotlib.org/api/lines_api.html#matplotlib.lines.Line2D.set_linestyle)
+        # plot_colours = ["rx:" , "bo:" , "gs:", "m<:", "c>:", "y^:", "kv:"]
+        plot_colours = ["rx:" , "bo:" , "gs:", "r<-.", "b>-.", "g^-."]
 
         plt.rc('text', usetex=True)
         # plt.rc('font', family='serif')
@@ -333,7 +338,7 @@ class RegularizationParameterEstimation:
 
                 SRR_approach = self._regularization_types[i_reg_type]
 
-                print("\t --- %s Regularization ---" %(SRR_approach))
+                print("\n\t --- %s Regularization ---" %(SRR_approach))
                 if SRR_approach in ["TK0", "TK1"]:
                     ## Print on screen
                     print("\t\talpha\t\tResidual\t\tPrior term Psi")
@@ -368,6 +373,9 @@ class RegularizationParameterEstimation:
                     Psis = data[:,2]
 
                 elif "TV-L2-Regularization" in from_files[i_file]:
+                    ADMM_iterations = re.sub(".*TV-L2-Regularization.*ADMM_iterations","",from_files[i_file])
+                    ADMM_iterations = int(re.sub("_TK1itermax.*","",ADMM_iterations))
+
                     SRR_approach = "TV-L2"
                     rhos = data[:,0]
                     alphas = data[:,1]
@@ -385,14 +393,15 @@ class RegularizationParameterEstimation:
                 # Psis /= scale
 
                 ## Print on screen
-                print("\t --- %s-Regularization ---" %(SRR_approach))
                 if SRR_approach in ["TK0", "TK1"]:
+                    print("\n\t --- %s-Regularization ---" %(SRR_approach))
                     label=SRR_approach
                     print("\t\talpha\t\tResidual\t\tPrior term Psi")
                     for i in range(0, len(alphas)):
                         print("\t\t%s\t\t%.3e\t\t%.3e" %(alphas[i], residuals[i], Psis[i]))
                 elif SRR_approach in ["TV-L2"]:
-                    label=SRR_approach+" (rho=" + str(rhos[0]) + ")"
+                    print("\n\t --- %s-Regularization (%s iterations) ---" %(SRR_approach, ADMM_iterations))
+                    label=SRR_approach+" (rho=" + str(rhos[0]) + ", " + str(ADMM_iterations) + " ADMM iter)"
                     print("\t\trho\t\talpha\t\tResidual\t\tPrior term Psi")
                     for i in range(0, len(alphas)):
                         print("\t\t%s\t\t%s\t\t%.3e\t\t%.3e" %(rhos[i], alphas[i], residuals[i], Psis[i]))

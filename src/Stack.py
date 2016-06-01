@@ -498,10 +498,11 @@ class Stack:
     def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", boundary=0):
 
         ## Choose interpolator
-        if interpolator in ["Linear"]:
-            interpolator = sitk.sitkLinear
-        else:
-            interpolator = sitk.sitkNearestNeighbor
+        try:
+            interpolator = eval("sitk.sitk" + interpolator)
+        except:
+            raise ValueError("Error: interpolator is not known")
+        
 
         ## Read original spacing (voxel dimension) and size of target stack:
         spacing = np.array(self.sitk.GetSpacing())
