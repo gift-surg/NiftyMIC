@@ -112,8 +112,7 @@ class RegistrationSimpleITK:
     #  \return registered image as Stack object
     def get_registered_image(self):
         return self._registered_image
-
-          
+  
 
     ## Set interpolator
     #  \param[in] interpolator_type
@@ -124,6 +123,12 @@ class RegistrationSimpleITK:
 
         self._interpolator = interpolator_type
 
+
+    ## Get interpolator
+    #  \return interpolator as string
+    def get_interpolator(self):
+        return self._interpolator
+        
 
     ## Set metric for registration method
     #  \param[in] metric as string
@@ -336,7 +341,7 @@ class RegistrationSimpleITK:
             print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
             print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
-            sitkh.print_sitk_transform(registration_transform_sitk)
+            # sitkh.print_sitk_transform(registration_transform_sitk)
 
         self._transform_sitk = registration_transform_sitk
 

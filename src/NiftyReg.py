@@ -156,9 +156,9 @@ class NiftyReg:
             sitk.WriteImage(self._moving.sitk, self._dir_tmp + moving_str + ".nii.gz")
         if not os.path.isfile(self._dir_tmp + fixed_str + ".nii.gz"):
             sitk.WriteImage(self._fixed.sitk, self._dir_tmp + fixed_str + ".nii.gz")
-        if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz"):
+        if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz") and self._use_moving_mask:
             sitk.WriteImage(self._moving.sitk_mask, self._dir_tmp + moving_mask_str + ".nii.gz")
-        if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz"):
+        if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz") and self._use_fixed_mask:
             sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
 
         ## Optional: Use reg_aladin before if desired

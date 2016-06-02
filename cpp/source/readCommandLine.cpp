@@ -9,6 +9,9 @@
  
 #include "readCommandLine.h"
 
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+
 namespace po = boost::program_options;
 
 std::vector<std::string> readCommandLine(int argc, char** argv){
@@ -20,11 +23,16 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     std::string sFixedMask;
     std::string sMovingMask;
     std::vector<std::string> sPsfCov;
+    std::string sPsfCov_all;
     std::string sUseMultiresolution;
     std::string sUseAffine;
     std::string sMetric;
     std::string sInterpolator;
+    std::string sTransformOut;
     std::string sOptimizer;
+    std::string sVerbose;
+
+    bool bVerbose = true;
 
     const std::string sBar = "------------------------------------------------------" 
         "----------------------------\n";
@@ -56,9 +64,18 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     ("interpolator", po::value< std::vector<std::string> >(), 
         "specify which interpolator shall be chosen (default: Linear), \n"
         "e.g. \"--interpolator NearestNeighbor\", Linear, BSpline, Gaussian or OrientedGaussian (set via 'psf')")
-    ("psf", po::value< std::vector<std::string> >(&sPsfCov)->multitoken(), 
+    // ("psf", po::value< std::vector<std::string> >(&sPsfCov)->multitoken(), 
+    //     "specify the PSF in case oriented Gaussian interpolation is desired (optional), \n"
+    //     "e.g. \"--psf cov_11 cov_12 cov_13 cov_21 cov_22 cov_23 cov_31 cov_32 cov_33\"")
+    ("psf", po::value< std::vector<std::string> >(), 
         "specify the PSF in case oriented Gaussian interpolation is desired (optional), \n"
         "e.g. \"--psf cov_11 cov_12 cov_13 cov_21 cov_22 cov_23 cov_31 cov_32 cov_33\"")
+    ("tout", po::value< std::vector<std::string> >(), 
+        "specify the file to write obtained registration transform (optional), \n"
+        "e.g. \"--tout /tmp/transform.txt\"")
+    ("verbose", po::value< std::vector<std::string> >(), 
+        "specify whether full output is desired (default=1), \n"
+        "e.g. \"--verbose 0\"")
     // ("optimizer", po::value< std::vector<std::string> >(), 
     //     "specify optimizer (default: RegularStepGradientDescent), \n"
     //     "e.g. \"--optimizer RegularStepGradientDescent\"")
@@ -68,7 +85,16 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);    
 
-    std::cout << sBar;
+    if (vm.count("verbose")) {
+        sVerbose = vm["verbose"].as< std::vector<std::string> >()[0];
+        if ( sVerbose.compare("0") ){
+            bVerbose = false;
+        }
+    } 
+    
+    if ( bVerbose ) {
+        std::cout << sBar;
+    }
 
     if (vm.count("help")) {
         std::cout << desc << "\n";
@@ -77,9 +103,12 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         return sInput;
     }
 
+
     if (vm.count("f")) {
-        std::cout << "fixed image given (" 
-            << vm["f"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+        if ( bVerbose ) {
+            std::cout << "fixed image given (" 
+                << vm["f"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+        }
         sFixed = vm["f"].as< std::vector<std::string> >()[0];
     } 
     else {
@@ -87,9 +116,10 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     }
 
     if (vm.count("m")) {
-        std::cout << "moving image given (" 
-            << vm["m"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
-
+        if ( bVerbose ) {
+            std::cout << "moving image given (" 
+                << vm["m"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+        }
         sMoving = vm["m"].as< std::vector<std::string> >()[0];
 
         // //***Check whether output file already exists:
@@ -104,9 +134,10 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     }
 
     if (vm.count("fmask")) {
-        std::cout << "fixed image mask given (" 
-            << vm["fmask"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
-
+        if ( bVerbose ) {
+            std::cout << "fixed image mask given (" 
+                << vm["fmask"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+        }
         sFixedMask = vm["fmask"].as< std::vector<std::string> >()[0];
     }
     else {
@@ -114,9 +145,10 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     }
 
     if (vm.count("mmask")) {
-        std::cout << "moving image mask given (" 
-            << vm["mmask"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
-
+        if ( bVerbose ) {
+            std::cout << "moving image mask given (" 
+                << vm["mmask"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+        }
         sMovingMask = vm["mmask"].as< std::vector<std::string> >()[0];
     }
     else {
@@ -124,54 +156,75 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     }
 
     if (vm.count("psf")) {
-        std::cout << "PSF for oriented Gaussian interpolator given" << std::endl;  
-        // std::cout << "\t cov (1,1) = " << sPsfCov[0] << "\n";
-        // std::cout << "\t cov (1,2) = " << sPsfCov[1] << "\n";
-        // std::cout << "\t cov (1,3) = " << sPsfCov[2] << "\n";
-        // std::cout << "\t cov (2,1) = " << sPsfCov[3] << "\n";
-        // std::cout << "\t cov (2,2) = " << sPsfCov[4] << "\n";
-        // std::cout << "\t cov (2,3) = " << sPsfCov[5] << "\n";
-        // std::cout << "\t cov (3,1) = " << sPsfCov[6] << "\n";
-        // std::cout << "\t cov (3,2) = " << sPsfCov[7] << "\n";
-        // std::cout << "\t cov (3,3) = " << sPsfCov[8] << "\n";
-
-        // sPsfCov = vm["psf"].as< std::vector<std::string> >()[0] + " " + vm["psf"].as< std::vector<std::string> >()[1] + " " + vm["psf"].as< std::vector<std::string> >()[2];
+        sPsfCov_all = vm["psf"].as< std::vector<std::string> >()[0];
+        split(sPsfCov, sPsfCov_all, boost::is_any_of(" "));
+        if ( bVerbose ) {
+            std::cout << "covariance for oriented Gaussian = " << std::endl;
+            for (int i = 0; i < 3; ++i) {
+                printf("\t%s\t%s\t%s\n", sPsfCov[3*i].c_str(), sPsfCov[3*i+1].c_str(), sPsfCov[3*i+2].c_str());
+            }
+            std::cout <<  vm["psf"].as< std::vector<std::string> >()[0] << std::endl;
+            std::cout << "PSF for oriented Gaussian interpolator given" << std::endl;  
+            // std::cout << "\t cov (1,1) = " << sPsfCov[0] << "\n";
+            // std::cout << "\t cov (1,2) = " << sPsfCov[1] << "\n";
+            // std::cout << "\t cov (1,3) = " << sPsfCov[2] << "\n";
+            // std::cout << "\t cov (2,1) = " << sPsfCov[3] << "\n";
+            // std::cout << "\t cov (2,2) = " << sPsfCov[4] << "\n";
+            // std::cout << "\t cov (2,3) = " << sPsfCov[5] << "\n";
+            // std::cout << "\t cov (3,1) = " << sPsfCov[6] << "\n";
+            // std::cout << "\t cov (3,2) = " << sPsfCov[7] << "\n";
+            // std::cout << "\t cov (3,3) = " << sPsfCov[8] << "\n";
+        }
+    }
+    else{
+        for (int i = 0; i < 9; ++i) {
+            sPsfCov.push_back("0");
+        }
     }
 
     if (vm.count("useMultires")) {
-
-        std::cout << "Multiresolution flag is set to " 
-            << vm["useMultires"].as< std::vector<std::string> >()[0] << std::endl;  
-
+        if ( bVerbose ) {
+            std::cout << "Multiresolution flag is set to " 
+                << vm["useMultires"].as< std::vector<std::string> >()[0] << std::endl;  
+        }
         sUseMultiresolution = vm["useMultires"].as< std::vector<std::string> >()[0];
     }
 
     if (vm.count("useAffine")) {
-
-        std::cout << "useAffine flag is set to " 
-            << vm["useAffine"].as< std::vector<std::string> >()[0] << std::endl;  
-
+        if ( bVerbose ) {
+            std::cout << "useAffine flag is set to " 
+                << vm["useAffine"].as< std::vector<std::string> >()[0] << std::endl;  
+        }
         sUseAffine = vm["useAffine"].as< std::vector<std::string> >()[0];
     }
 
     if (vm.count("metric")) {
-
-        std::cout << "chosen metric is " 
-            << vm["metric"].as< std::vector<std::string> >()[0] << std::endl;  
-
+        if ( bVerbose ) {
+            std::cout << "chosen metric is " 
+                << vm["metric"].as< std::vector<std::string> >()[0] << std::endl;  
+        }
         sMetric = vm["metric"].as< std::vector<std::string> >()[0];
     }
 
     if (vm.count("interpolator")) {
-
-        std::cout << "chosen interpolator is " 
-            << vm["interpolator"].as< std::vector<std::string> >()[0] << std::endl;  
-
+        if ( bVerbose ) {
+            std::cout << "chosen interpolator is " 
+                << vm["interpolator"].as< std::vector<std::string> >()[0] << std::endl;  
+        }
         sInterpolator = vm["interpolator"].as< std::vector<std::string> >()[0];
     }
 
+    if (vm.count("tout")) {
+        if ( bVerbose ) {
+            std::cout << "chosen file to write obtained registration transform is " 
+                << vm["tout"].as< std::vector<std::string> >()[0] << std::endl;  
+        }
+        sTransformOut = vm["tout"].as< std::vector<std::string> >()[0];
+    }
 
-    std::cout << sBar;
+    if ( bVerbose ) {
+        std::cout << sBar;
+    }
 
     // // Exactly three sInput parameters (i.e. 2*2+1 arguments) must be given
     // if (argc != 5){
@@ -186,19 +239,16 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     sInput.push_back(sMovingMask);
 
     for (int i = 0; i < 9; ++i) {
-        if (sPsfCov[i].empty()) {
-            sInput.push_back("");
-        }
-        else {
-            sInput.push_back(sPsfCov[i]);
-            // std::cout << sPsfCov[i] << std::endl;
-        }
+        sInput.push_back(sPsfCov[i]);
+        // std::cout << sPsfCov[i] << std::endl;
     }
 
     sInput.push_back(sUseMultiresolution);
     sInput.push_back(sUseAffine);
     sInput.push_back(sMetric);
     sInput.push_back(sInterpolator);
+    sInput.push_back(sTransformOut);
+
 
     return sInput;
 }

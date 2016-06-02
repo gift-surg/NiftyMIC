@@ -23,7 +23,13 @@
 #include <itkAffineTransform.h>
 #include <itkEuler3DTransform.h>
 
+#include <iostream>
+#include <fstream>
+#include <vector>
+
 //#include "ImageFactory.h"
+
+#include "MyException.h"
 
 /** Typedefs. */
 typedef double PixelType;
@@ -74,6 +80,11 @@ public:
     static void printTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform);
     static void printTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform);
 
+    /** Write transform */
+    static void writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform,
+    std::string outfile);
+    static void writeTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform,
+    std::string outfile);
 
     /** Get data array */
     // static 

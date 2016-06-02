@@ -26,6 +26,7 @@ set ( MY_MAIN_FILE_2 "itkRigidReg.cpp" )
 set ( MY_EXEC_FILE_2 "itkRigidReg" )
 set ( MY_MAIN_FILE_SOURCES_2 
     "MyITKImageHelper.cpp" 
+    "MyException.cpp"
     )
 
 # message (STATUS "Use ITK-directory " ${ITK_DIR})

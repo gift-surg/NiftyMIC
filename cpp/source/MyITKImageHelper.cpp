@@ -276,3 +276,65 @@ void MyITKImageHelper::printTransform(itk::Euler3DTransform< PixelType >::ConstP
     printf("\t\t%.4f\t%.4f\t%.4f\n", matrix[i][0], matrix[i][1], matrix[i][2]);
   }
 }
+
+void MyITKImageHelper::writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform,
+    std::string outfile){
+
+    const unsigned int dim = 3;
+
+    itk::AffineTransform< PixelType, dim >::ParametersType parameters = transform->GetParameters();
+    itk::AffineTransform< PixelType, dim >::ParametersType fixedParameters = transform->GetFixedParameters();
+
+    const unsigned int iNumberOfParameters = parameters.size();
+    const unsigned int iNumberOfFixedParameters = fixedParameters.size();
+
+    std::ofstream output(outfile);
+
+    if(!output.is_open()){
+        throw MyException("Cannot open the file to write");
+    }
+
+    // Define output precision
+    output.precision(10); 
+
+    // output << "iteration \t" << "elapsedTime" << std::endl;
+    for (int i = 0; i < iNumberOfFixedParameters; ++i) {
+        output << fixedParameters[i] << " ";
+    }
+    for (int i = 0; i<  iNumberOfParameters; ++i) {
+        output << parameters[i] << " ";
+    }
+    std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
+
+}
+
+void MyITKImageHelper::writeTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform,
+    std::string outfile){
+
+    const unsigned int dim = 3;
+
+    itk::Euler3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
+    itk::Euler3DTransform< PixelType >::ParametersType fixedParameters = transform->GetFixedParameters();
+
+    const unsigned int iNumberOfParameters = parameters.size();
+    const unsigned int iNumberOfFixedParameters = fixedParameters.size();
+
+    std::ofstream output(outfile);
+
+    if(!output.is_open()){
+        throw MyException("Cannot open the file to write");
+    }
+
+    // Define output precision
+    output.precision(10); 
+
+    // output << "iteration \t" << "elapsedTime" << std::endl;
+    for (int i = 0; i < iNumberOfFixedParameters; ++i) {
+        output << fixedParameters[i] << " ";
+    }
+    for (int i = 0; i<  iNumberOfParameters; ++i) {
+        output << parameters[i] << " ";
+    }
+    std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
+}
+
