@@ -81,10 +81,6 @@ class RegistrationSimpleITK:
     #  the coordinate systems of fixed and moving
     #  \param[in] flag boolean
     def use_oriented_psf(self, flag):
-
-        if self._moving is None or self._fixed is None:
-            raise ValueError("Error: Set fixed and moving image first")
-
         self._use_oriented_psf = flag
 
 
@@ -203,7 +199,7 @@ class RegistrationSimpleITK:
             self._optimizer_params = "{'simplexDelta': 0.1, 'numberOfIterations': 100, 'parametersConvergenceTolerance': 1e-8, 'functionConvergenceTolerance': 1e-4, 'withRestarts':False}"
 
         elif optimizer in ["RegularStepGradientDescent"] and params is None:
-            self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 500, 'gradientMagnitudeTolerance': 1e-4}"
+            self._optimizer_params = "{'learningRate': 0.5, 'minStep': 1e-8, 'numberOfIterations': 500, 'gradientMagnitudeTolerance': 1e-6}"
 
         elif optimizer in ["GradientDescentLineSearch"] and params is None:
             self._optimizer_params = "{'learningRate': 1, 'numberOfIterations': 100, 'convergenceMinimumValue': 1e-6, 'convergenceWindowSize':10}"

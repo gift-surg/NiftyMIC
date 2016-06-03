@@ -95,6 +95,16 @@ class FirstEstimateOfHRVolume:
         return self._recon_approach
 
 
+    ## Set sigma chosen for SDA approach
+    def set_sigma(self, sigma):
+        self._SDA_sigma = sigma
+
+
+    ## Get sigma chosen for SDA approach
+    def get_sigma(self):
+        return self._SDA_sigma
+
+
     ## Execute computation for first estimate of HR volume.
     #  This function steers the estimation of first HR volume which then updates
     #  self._HR_volume

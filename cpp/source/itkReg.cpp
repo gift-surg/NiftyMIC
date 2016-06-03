@@ -84,6 +84,77 @@ typedef itk::LinearInterpolateImageFunction< ImageType3D, PixelType > LinearInte
 typedef itk::BSplineInterpolateImageFunction< ImageType3D, PixelType > BSplineInterpolatorType;
 typedef itk::OrientedGaussianInterpolateImageFunction< ImageType3D, PixelType >  OrientedGaussianInterpolatorType;
 
+
+
+// template <typename ChosenInterpolatorType>
+// const typename ChosenInterpolatorType::Pointer readInterpolator(const std::string &sInterpolator, const itk::Vector<double, 9> covariance, const double alpha){
+        
+itk::InterpolateImageFunction<ImageType3D, PixelType>* getInterpolator(std::string &sInterpolator, const itk::Vector<double, 9> covariance, const double alpha){
+    
+    if ( sInterpolator.compare("NearestNeighbor") ) {
+        std::cout << "Chosen interpolator is " << sInterpolator << std::endl;
+        return NearestNeighborInterpolatorType::New();
+    }
+
+    else if ( sInterpolator.compare("Linear") ) {
+        std::cout << "Chosen interpolator is " << sInterpolator << std::endl;
+        LinearInterpolatorType::Pointer interpolator = LinearInterpolatorType::New();
+
+        return interpolator.GetPointer();
+    }
+
+    else if ( sInterpolator.compare("BSpline") ) {
+        std::cout << "Chosen interpolator is " << sInterpolator << std::endl;
+        BSplineInterpolatorType::Pointer interpolator = BSplineInterpolatorType::New();
+
+        return interpolator.GetPointer();
+    }
+
+    else if ( sInterpolator.compare("OrientedGaussian") ) {
+        std::cout << "Chosen interpolator is " << sInterpolator << std::endl;
+        OrientedGaussianInterpolatorType::Pointer interpolator = OrientedGaussianInterpolatorType::New();
+        
+        interpolator->SetCovariance( covariance );
+        interpolator->SetAlpha( alpha );
+        
+        return interpolator.GetPointer();
+    }
+
+    else {
+        std::cout << sInterpolator << " cannot be deduced." << std::endl;
+        return NULL;
+    }
+}
+
+
+itk::ImageToImageMetricv4<ImageType3D, ImageType3D>::Pointer getMetric(const std::string &sMetric){
+    itk::ImageToImageMetricv4<ImageType3D, ImageType3D>::Pointer metric = 0;
+
+    if ( sMetric.compare("MeanSquares") ) {
+        std::cout << "Chosen metric is " << sMetric << std::endl;
+        metric = MeanSquaresMetricType::New();
+    }
+
+    else if ( sMetric.compare("Correlation") ) {
+        std::cout << "Chosen metric is " << sMetric << std::endl;
+        metric = CorrelationMetricType::New();
+    }
+
+    else if ( sMetric.compare("MattesMutualInformation") ) {
+        std::cout << "Chosen metric is " << sMetric << std::endl;
+        metric = MattesMutualInformationMetricType::New();
+    }
+
+    else {
+        std::cout << sMetric << " cannot be deduced." << std::endl;
+        metric = NULL;
+    }
+
+    return metric;
+}
+
+
+
 int main(int argc, char** argv)
 {
 
@@ -194,7 +265,6 @@ int main(int argc, char** argv)
     if(bUseMovingMask){
         movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask + ".nii.gz");
     }
-
     
     //***Typedefs
     // typedef AffineTransformType TransformType;
@@ -231,6 +301,8 @@ int main(int argc, char** argv)
     // Registration
     const RegistrationType::Pointer registration = RegistrationType::New();
     const MetricType::Pointer metric = MetricType::New();
+    // const itk::ImageToImageMetricv4<ImageType3D, ImageType3D>::Pointer metric = getMetric(sMetric);
+    // metric->Print(std::cout);
     InterpolatorType::Pointer interpolator = InterpolatorType::New();
     const OptimizerType::Pointer optimizer = OptimizerType::New();
     const ScalesEstimatorType::Pointer scalesEstimator = ScalesEstimatorType::New();
@@ -251,22 +323,23 @@ int main(int argc, char** argv)
 
     // Initialize the transform
     TransformType::Pointer initialTransform = TransformType::New();
-    registration->SetFixedInitialTransform( initialTransform );
 
     TransformInitializerType::Pointer initializer = TransformInitializerType::New();
     TransformType::Pointer foo = TransformType::New();
-    // initializer->SetTransform(initialTransform);
-    initializer->SetTransform(foo);
+    initializer->SetTransform(initialTransform);
+    // initializer->SetTransform(foo);
     initializer->SetFixedImage( fixed );
     initializer->SetMovingImage( moving );
     initializer->GeometryOn();
     // initializer->MomentsOn();
+    initialTransform->Print(std::cout);
     initializer->InitializeTransform();
-    // initialTransform->Print(std::cout);
+    initialTransform->Print(std::cout);
     // initialTransform->SetTranslation((0,0,0));
     // initialTransform->Print(std::cout);
-
-    initialTransform->SetFixedParameters(foo->GetFixedParameters());
+    // initialTransform->SetFixedParameters(foo->GetFixedParameters());    
+    registration->SetFixedInitialTransform( initialTransform );
+    
 
     // Set masks
     if ( bUseFixedMask ){
