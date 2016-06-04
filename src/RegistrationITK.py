@@ -208,6 +208,9 @@ class RegistrationITK:
         self._transform_sitk.SetParameters(parameters)
         self._transform_sitk.SetFixedParameters(parameters_fixed)
 
+        moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
+        sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
+
 
     def _run_registration_affine(self, id, verbose):
 

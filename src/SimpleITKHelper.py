@@ -514,12 +514,12 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
 #  \param[in] segmentation 
 #  \param[in] overlay image which shall be overlayed onto image_sitk (optional)
 #  \param[in] title filename for file written to /tmp/ (optional)
-def show_sitk_image(image_sitk, segmentation=None, overlay=None, title="test"):
+def show_sitk_image(image_sitk, segmentation=None, overlay=None, overlay2=None, title="test"):
     
     dir_output = "/tmp/"
     # cmd = "fslview " + dir_output + title + ".nii.gz & "
 
-    if overlay is not None and segmentation is None:
+    if overlay is not None and overlay2 is None and segmentation is None:
         sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
         sitk.WriteImage(overlay, dir_output + title + "_overlay.nii.gz")
 
@@ -528,7 +528,18 @@ def show_sitk_image(image_sitk, segmentation=None, overlay=None, title="test"):
             + "-o " + dir_output + title + "_overlay.nii.gz " \
             + "& "
 
-    elif overlay is None and segmentation is not None:
+    elif overlay is not None and overlay2 is not None and segmentation is None:
+        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
+        sitk.WriteImage(overlay, dir_output + title + "_overlay.nii.gz")
+        sitk.WriteImage(overlay2, dir_output + title + "_overlay2.nii.gz")
+
+        cmd = "itksnap " \
+            + "-g " + dir_output + title + ".nii.gz " \
+            + "-o " + dir_output + title + "_overlay.nii.gz " \
+            + dir_output + title + "_overlay2.nii.gz " \
+            + "& "
+
+    elif overlay is None and overlay2 is None and segmentation is not None:
         sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
         sitk.WriteImage(segmentation, dir_output + title + "_segmentation.nii.gz")
 
@@ -537,7 +548,7 @@ def show_sitk_image(image_sitk, segmentation=None, overlay=None, title="test"):
             + "-s " + dir_output + title + "_segmentation.nii.gz " \
             + "& "
 
-    elif overlay is not None and segmentation is not None:
+    elif overlay is not None and overlay2 is None and segmentation is not None:
         sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
         sitk.WriteImage(segmentation, dir_output + title + "_segmentation.nii.gz")
         sitk.WriteImage(overlay, dir_output + title + "_overlay.nii.gz")

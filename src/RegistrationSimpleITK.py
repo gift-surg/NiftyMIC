@@ -199,7 +199,7 @@ class RegistrationSimpleITK:
             self._optimizer_params = "{'simplexDelta': 0.1, 'numberOfIterations': 100, 'parametersConvergenceTolerance': 1e-8, 'functionConvergenceTolerance': 1e-4, 'withRestarts':False}"
 
         elif optimizer in ["RegularStepGradientDescent"] and params is None:
-            self._optimizer_params = "{'learningRate': 0.5, 'minStep': 1e-8, 'numberOfIterations': 500, 'gradientMagnitudeTolerance': 1e-6}"
+            self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-8, 'numberOfIterations': 100, 'gradientMagnitudeTolerance': 1e-6}"
 
         elif optimizer in ["GradientDescentLineSearch"] and params is None:
             self._optimizer_params = "{'learningRate': 1, 'numberOfIterations': 100, 'convergenceMinimumValue': 1e-6, 'convergenceWindowSize':10}"
@@ -244,6 +244,10 @@ class RegistrationSimpleITK:
             ## Feed Gaussian filter with axis aligned covariance matrix
             sigma_axis_aligned = np.sqrt(np.diagonal(cov_HR_coord))
             print("Oriented PSF blurring with (axis aligned) sigma = " + str(sigma_axis_aligned))
+            print("\t(Based on computed covariance matrix = ")
+            for i in range(0, 3):
+                print("\t\t" + str(cov_HR_coord[i,:]))
+            print("\twith square root of diagonal " + str(sigma_axis_aligned) + ")")
 
             gaussian_yvv.SetInput(moving.itk)
             gaussian_yvv.SetSigmaArray(sigma_axis_aligned)
