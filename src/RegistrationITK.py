@@ -30,20 +30,14 @@ class RegistrationITK:
 
         self._metric = "Correlation"
         self._interpolator = "BSpline"
+        self._scales_estimator = "Jacobian"
 
-        self._use_oriented_psf = False
-        self._use_multiresolution_framework = False
+        self._use_multiresolution_framework = 0
 
         ## Temporary output where files are written in order to use ITK from the commandline
         self._dir_tmp = "/tmp/RegistrationITK/"
         os.system("mkdir -p " + self._dir_tmp)
         os.system("rm -rf " + self._dir_tmp + "*")
-
-        self._run_registration = {
-            "Rigid"    :   self._run_registration_rigid,
-            "Affine"       :   self._run_registration_affine
-        }
-        self._registration_type = "Rigid"
 
 
     ## Set fixed/reference/target image
@@ -88,8 +82,8 @@ class RegistrationITK:
     ## Set interpolator
     #  \param[in] interpolator_type
     def set_interpolator(self, interpolator_type):
-        if interpolator_type not in ["Linear", "NearestNeighbor", "BSpline", "OrientedGaussian"]:
-            raise ValueError("Error: Interpolator can only be either 'Linear', 'NearestNeighbor', 'BSpline' or 'OrientedGaussian'")
+        if interpolator_type not in ["NearestNeighbor", "Linear", "BSpline", "OrientedGaussian"]:
+            raise ValueError("Error: Interpolator can only be either 'NearestNeighbor', 'Linear', 'BSpline' or 'OrientedGaussian'")
 
         self._interpolator = interpolator_type
 
@@ -103,16 +97,35 @@ class RegistrationITK:
     ## Set metric
     #  \param[in] metric
     def set_metric(self, metric):
-        if metric not in ["MeanSquares", "MattesMutualInformation", "Correlation"]:
+        if metric not in ["MeanSquares", "MattesMutualInformation", "Correlation", "ANTSNeighborhoodCorrelation"]:
             raise ValueError("Error: Metric cannot be deduced.")
 
         self._metric = metric
+
+
+    ## Decide whether multi-registration framework is used
+    #  \param[in] flag
+    def use_multiresolution_framework(self, flag):
+        self._use_multiresolution_framework = flag
 
 
     ## Get metric
     #  \return metric
     def get_metric(self):
         return self._metric
+
+
+    ## Set scales estimator for optimizer
+    #  \param[in] scales_estimator
+    def set_scales_estimator(self, scales_estimator):
+        if scales_estimator not in ["IndexShift", "PhysicalShift", "Jacobian"]:
+            raise ValueError("Error: Metric cannot be deduced.")
+        self._scales_estimator = scales_estimator
+
+
+    ## Get scales estimator
+    def get_scales_estimator(self):
+        return self._scales_estimator
 
 
     ## Get affine transform in (Simple)ITK format after having run reg_aladin
@@ -128,13 +141,16 @@ class RegistrationITK:
 
 
     def run_registration(self, id="", verbose=0):
-        self._run_registration[self._registration_type](id, verbose)
+        self._run_registration(id, verbose)
 
 
-    def _run_registration_rigid(self, id, verbose):
+    def _run_registration(self, id, verbose):
 
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
+
+        ## Clean output directory first
+        os.system("rm -rf " + self._dir_tmp + "*")
 
         moving_str = "RegistrationITK_moving_" + id + self._moving.get_filename()
         fixed_str = "RegistrationITK_fixed_" + id + self._fixed.get_filename()
@@ -144,14 +160,14 @@ class RegistrationITK:
         registration_transform_str = "RegistrationITK_transform_" + id + self._fixed.get_filename() + "_" + self._moving.get_filename()
 
         ## Write images to HDD
-        if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
-            sitk.WriteImage(self._moving.sitk, self._dir_tmp + moving_str + ".nii.gz")
-        if not os.path.isfile(self._dir_tmp + fixed_str + ".nii.gz"):
-            sitk.WriteImage(self._fixed.sitk, self._dir_tmp + fixed_str + ".nii.gz")
-        if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz") and self._use_moving_mask:
-            sitk.WriteImage(self._moving.sitk_mask, self._dir_tmp + moving_mask_str + ".nii.gz")
-        if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz") and self._use_fixed_mask:
-            sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
+        # if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
+        sitk.WriteImage(self._moving.sitk, self._dir_tmp + moving_str + ".nii.gz")
+        # if not os.path.isfile(self._dir_tmp + fixed_str + ".nii.gz"):
+        sitk.WriteImage(self._fixed.sitk, self._dir_tmp + fixed_str + ".nii.gz")
+        # if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz") and self._use_moving_mask:
+        sitk.WriteImage(self._moving.sitk_mask, self._dir_tmp + moving_mask_str + ".nii.gz")
+        # if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz") and self._use_fixed_mask:
+        sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
 
         ## Prepare command for execution
         cmd = "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/cpp/build/bin/itkReg "
@@ -162,13 +178,20 @@ class RegistrationITK:
         if self._use_moving_mask:
             cmd += "--mmask " + self._dir_tmp + moving_mask_str + " "
         cmd += "--tout " + self._dir_tmp + registration_transform_str + ".txt "
+        cmd += "--useAffine " + str(int(self._registration_type is "Affine")) + " "
+        cmd += "--useMultires " + str(int(self._use_multiresolution_framework)) + " "
+        cmd += "--metric " + self._metric + " "
+        cmd += "--scalesEst " + self._scales_estimator + " "
+        cmd += "--interpolator " + self._interpolator + " "
+        cmd += "--verbose 0 "
+
         ## Compute oriented Gaussian PSF if desired
         if self._interpolator in ["OrientedGaussian"]:
             ## Get oriented Gaussian covariance matrix
             cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( self._fixed, self._moving ).flatten()
-            cmd += "--psf " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
+            cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
-        # print cmd
+        print cmd
         os.system(cmd)
 
         ## Read transformation file

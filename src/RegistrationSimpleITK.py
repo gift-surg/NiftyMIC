@@ -222,7 +222,7 @@ class RegistrationSimpleITK:
 
 
     ## Run registration
-    def run_registration(self, display_registration_info=1):
+    def run_registration(self, display_registration_info=1, id=None):
         self._run_registration(self._fixed, self._moving, display_registration_info)
 
 

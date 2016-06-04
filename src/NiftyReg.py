@@ -96,7 +96,7 @@ class NiftyReg:
 
     ## Get affine transform in (Simple)ITK format after having run reg_aladin
     #  \return affine transform as SimpleITK object
-    def get_affine_transform_sitk(self):
+    def get_transform(self):
         return self._affine_transform_sitk
 
 

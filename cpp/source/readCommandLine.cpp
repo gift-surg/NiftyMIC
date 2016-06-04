@@ -28,11 +28,12 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     std::string sUseAffine;
     std::string sMetric;
     std::string sInterpolator;
+    std::string sScalesEstimator;
+    std::string sOptimizer; //TODO
     std::string sTransformOut;
-    std::string sOptimizer;
-    std::string sVerbose;
+    std::string sVerbose;   //TODO, verbose for itkReg
 
-    bool bVerbose = true;
+    const bool bVerbose = false; // verbose for this file
 
     const std::string sBar = "------------------------------------------------------" 
         "----------------------------\n";
@@ -63,13 +64,16 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         "e.g. \"--metric MeanSquares\", MattesMutualInformation or Correlation")
     ("interpolator", po::value< std::vector<std::string> >(), 
         "specify which interpolator shall be chosen (default: Linear), \n"
-        "e.g. \"--interpolator NearestNeighbor\", Linear, BSpline, Gaussian or OrientedGaussian (set via 'psf')")
-    // ("psf", po::value< std::vector<std::string> >(&sPsfCov)->multitoken(), 
+        "e.g. \"--interpolator NearestNeighbor\", Linear, BSpline, Gaussian or OrientedGaussian (set via 'cov')")
+    ("scalesEst", po::value< std::vector<std::string> >(), 
+        "specify which scales estimator shall be chosen (default: Jacobian), \n"
+        "e.g. \"--scalesEst PhysicalShift\", ScalesShift, PhysicalShift, Jacobian")
+    // ("cov", po::value< std::vector<std::string> >(&sPsfCov)->multitoken(), 
     //     "specify the PSF in case oriented Gaussian interpolation is desired (optional), \n"
-    //     "e.g. \"--psf cov_11 cov_12 cov_13 cov_21 cov_22 cov_23 cov_31 cov_32 cov_33\"")
-    ("psf", po::value< std::vector<std::string> >(), 
+    //     "e.g. \"--cov cov_11 cov_12 cov_13 cov_21 cov_22 cov_23 cov_31 cov_32 cov_33\"")
+    ("cov", po::value< std::vector<std::string> >(), 
         "specify the PSF in case oriented Gaussian interpolation is desired (optional), \n"
-        "e.g. \"--psf cov_11 cov_12 cov_13 cov_21 cov_22 cov_23 cov_31 cov_32 cov_33\"")
+        "e.g. \"--cov cov_11 cov_12 cov_13 cov_21 cov_22 cov_23 cov_31 cov_32 cov_33\"")
     ("tout", po::value< std::vector<std::string> >(), 
         "specify the file to write obtained registration transform (optional), \n"
         "e.g. \"--tout /tmp/transform.txt\"")
@@ -87,11 +91,11 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
 
     if (vm.count("verbose")) {
         sVerbose = vm["verbose"].as< std::vector<std::string> >()[0];
-        if ( sVerbose.compare("0") ){
-            bVerbose = false;
-        }
-    } 
-    
+    }
+    else {
+        sVerbose = "0";
+    }
+
     if ( bVerbose ) {
         std::cout << sBar;
     }
@@ -155,16 +159,16 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         sMovingMask = "";
     }
 
-    if (vm.count("psf")) {
-        sPsfCov_all = vm["psf"].as< std::vector<std::string> >()[0];
+    if (vm.count("cov")) {
+        sPsfCov_all = vm["cov"].as< std::vector<std::string> >()[0];
         split(sPsfCov, sPsfCov_all, boost::is_any_of(" "));
         if ( bVerbose ) {
             std::cout << "covariance for oriented Gaussian = " << std::endl;
             for (int i = 0; i < 3; ++i) {
                 printf("\t%s\t%s\t%s\n", sPsfCov[3*i].c_str(), sPsfCov[3*i+1].c_str(), sPsfCov[3*i+2].c_str());
             }
-            std::cout <<  vm["psf"].as< std::vector<std::string> >()[0] << std::endl;
-            std::cout << "PSF for oriented Gaussian interpolator given" << std::endl;  
+            std::cout <<  vm["cov"].as< std::vector<std::string> >()[0] << std::endl;
+            std::cout << "PSF covariance for oriented Gaussian interpolator given" << std::endl;  
             // std::cout << "\t cov (1,1) = " << sPsfCov[0] << "\n";
             // std::cout << "\t cov (1,2) = " << sPsfCov[1] << "\n";
             // std::cout << "\t cov (1,3) = " << sPsfCov[2] << "\n";
@@ -176,10 +180,17 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
             // std::cout << "\t cov (3,3) = " << sPsfCov[8] << "\n";
         }
     }
+    // Initialize by identity if not given
     else{
-        for (int i = 0; i < 9; ++i) {
-            sPsfCov.push_back("0");
-        }
+        sPsfCov.push_back("1");
+        sPsfCov.push_back("0");
+        sPsfCov.push_back("0");
+        sPsfCov.push_back("0");
+        sPsfCov.push_back("1");
+        sPsfCov.push_back("0");
+        sPsfCov.push_back("0");
+        sPsfCov.push_back("0");
+        sPsfCov.push_back("1");
     }
 
     if (vm.count("useMultires")) {
@@ -189,6 +200,10 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         }
         sUseMultiresolution = vm["useMultires"].as< std::vector<std::string> >()[0];
     }
+    // No multi-resolution framework by default
+    else {
+        sUseMultiresolution = "0";
+    }
 
     if (vm.count("useAffine")) {
         if ( bVerbose ) {
@@ -196,6 +211,10 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
                 << vm["useAffine"].as< std::vector<std::string> >()[0] << std::endl;  
         }
         sUseAffine = vm["useAffine"].as< std::vector<std::string> >()[0];
+    }
+    // Rigid registration by default
+    else {
+        sUseAffine = "0";
     }
 
     if (vm.count("metric")) {
@@ -205,6 +224,10 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         }
         sMetric = vm["metric"].as< std::vector<std::string> >()[0];
     }
+    // MattesMutualInformation by default
+    else {
+        sMetric = "MattesMutualInformation";
+    }
 
     if (vm.count("interpolator")) {
         if ( bVerbose ) {
@@ -213,6 +236,22 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         }
         sInterpolator = vm["interpolator"].as< std::vector<std::string> >()[0];
     }
+    // BSpline interpolator by default
+    else {
+        sInterpolator = "BSpline";
+    }
+
+    if (vm.count("scalesEst")) {
+        if ( bVerbose ) {
+            std::cout << "chosen scales estimator is " 
+                << vm["scalesEst"].as< std::vector<std::string> >()[0] << std::endl;  
+        }
+        sScalesEstimator = vm["scalesEst"].as< std::vector<std::string> >()[0];
+    }
+    // BSpline interpolator by default
+    else {
+        sScalesEstimator = "Jacobian";
+    }
 
     if (vm.count("tout")) {
         if ( bVerbose ) {
@@ -220,6 +259,10 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
                 << vm["tout"].as< std::vector<std::string> >()[0] << std::endl;  
         }
         sTransformOut = vm["tout"].as< std::vector<std::string> >()[0];
+    }
+    // No output by default
+    else {
+        sTransformOut = "";
     }
 
     if ( bVerbose ) {
@@ -248,6 +291,8 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     sInput.push_back(sMetric);
     sInput.push_back(sInterpolator);
     sInput.push_back(sTransformOut);
+    sInput.push_back(sScalesEstimator);
+    sInput.push_back(sVerbose);
 
 
     return sInput;
