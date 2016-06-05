@@ -29,9 +29,10 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     std::string sMetric;
     std::string sInterpolator;
     std::string sScalesEstimator;
-    std::string sOptimizer; //TODO
     std::string sTransformOut;
-    std::string sVerbose;   //TODO, verbose for itkReg
+    std::string sVerbose;
+    std::string sANTSrad;
+    // std::string sOptimizer; //TODO
 
     const bool bVerbose = false; // verbose for this file
 
@@ -80,6 +81,9 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     ("verbose", po::value< std::vector<std::string> >(), 
         "specify whether full output is desired (default=1), \n"
         "e.g. \"--verbose 0\"")
+    ("ANTSrad", po::value< std::vector<std::string> >(), 
+        "specify radius used for ANTSNeighborhoodCorrelation (default=20), \n"
+        "e.g. \"--ANTSrad 30\"")
     // ("optimizer", po::value< std::vector<std::string> >(), 
     //     "specify optimizer (default: RegularStepGradientDescent), \n"
     //     "e.g. \"--optimizer RegularStepGradientDescent\"")
@@ -265,6 +269,19 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         sTransformOut = "";
     }
 
+    if (vm.count("ANTSrad")) {
+        if ( bVerbose ) {
+            std::cout << "chosen radius for ANTSNeighborhoodCorrelation is " 
+                << vm["ANTSrad"].as< std::vector<std::string> >()[0] << std::endl;  
+        }
+        sANTSrad = vm["ANTSrad"].as< std::vector<std::string> >()[0];
+    }
+    // radius by default
+    else {
+        sANTSrad = "20";
+    }
+
+
     if ( bVerbose ) {
         std::cout << sBar;
     }
@@ -293,6 +310,7 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     sInput.push_back(sTransformOut);
     sInput.push_back(sScalesEstimator);
     sInput.push_back(sVerbose);
+    sInput.push_back(sANTSrad);
 
 
     return sInput;

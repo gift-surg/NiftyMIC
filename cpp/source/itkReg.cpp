@@ -246,6 +246,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const std::string sInterpolator = input[16];
     const std::string sTransformOut = input[17];
     const std::string sVerbose = input[19];
+    const double dANTSrad = std::stod(input[20]);
 
     // Read images
     const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving + ".nii.gz");
@@ -299,7 +300,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     if ( ANTSmetric.IsNotNull() ) {
         // set all parameters
         itk::Size<Dimension> neighborhoodRadius; 
-        neighborhoodRadius.Fill(10); 
+        neighborhoodRadius.Fill(dANTSrad); 
         ANTSmetric->SetRadius(neighborhoodRadius);
         ANTSmetric->SetFixedImage(fixed);
         ANTSmetric->SetMovingImage(moving);
@@ -307,6 +308,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         ANTSmetric->SetMovingTransform(TransformType::New());
         // initialization after parameters are set
         ANTSmetric->Initialize();
+        std::cout << "Radius for ANTSNeighborhoodCorrelation = " << dANTSrad << std::endl;
         // getting derivative and metric value
         // ANTSmetric->GetValueAndDerivative(valueReturn, derivativeReturn);
     }

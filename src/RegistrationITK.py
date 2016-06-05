@@ -31,6 +31,7 @@ class RegistrationITK:
         self._metric = "Correlation"
         self._interpolator = "BSpline"
         self._scales_estimator = "Jacobian"
+        self._ANTSradius = 20
 
         self._use_multiresolution_framework = 0
 
@@ -103,16 +104,21 @@ class RegistrationITK:
         self._metric = metric
 
 
-    ## Decide whether multi-registration framework is used
-    #  \param[in] flag
-    def use_multiresolution_framework(self, flag):
-        self._use_multiresolution_framework = flag
-
-
     ## Get metric
     #  \return metric
     def get_metric(self):
         return self._metric
+
+
+    ## Set radius used for ANTSNeighborhoodCorrelation
+    def set_ANTSradius(self, radius):
+        self._ANTSradius = radius
+
+
+    ## Decide whether multi-registration framework is used
+    #  \param[in] flag
+    def use_multiresolution_framework(self, flag):
+        self._use_multiresolution_framework = flag
 
 
     ## Set scales estimator for optimizer
@@ -183,6 +189,7 @@ class RegistrationITK:
         cmd += "--metric " + self._metric + " "
         cmd += "--scalesEst " + self._scales_estimator + " "
         cmd += "--interpolator " + self._interpolator + " "
+        cmd += "--ANTSrad " + str(self._ANTSradius) + " "
         cmd += "--verbose 0 "
 
         ## Compute oriented Gaussian PSF if desired
