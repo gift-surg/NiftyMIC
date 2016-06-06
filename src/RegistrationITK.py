@@ -176,7 +176,7 @@ class RegistrationITK:
         sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
 
         ## Prepare command for execution
-        cmd = "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/cpp/build/bin/itkReg "
+        cmd =  "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/cpp/build/bin/itkReg "
         cmd += "--f " + self._dir_tmp + fixed_str + " "
         cmd += "--m " + self._dir_tmp + moving_str + " "
         if self._use_fixed_mask:
@@ -198,7 +198,7 @@ class RegistrationITK:
             cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( self._fixed, self._moving ).flatten()
             cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
-        print cmd
+        # print cmd
         os.system(cmd)
 
         ## Read transformation file

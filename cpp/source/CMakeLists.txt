@@ -22,12 +22,21 @@ set ( MY_MAIN_FILE_SOURCES
     "ExceptionCommandLine.cpp"
     )
 
-set ( MY_MAIN_FILE_2 "itkRigidReg.cpp" )
-set ( MY_EXEC_FILE_2 "itkRigidReg" )
+set ( MY_MAIN_FILE_2 "runN4BiasFieldCorrectionImageFilter.cpp" )
+set ( MY_EXEC_FILE_2 "runN4BiasFieldCorrectionImageFilter" )
 set ( MY_MAIN_FILE_SOURCES_2 
     "MyITKImageHelper.cpp" 
+    "readCommandLine.cpp"
     "MyException.cpp"
+    "ExceptionCommandLine.cpp"
     )
+
+# set ( MY_MAIN_FILE_2 "itkRigidReg.cpp" )
+# set ( MY_EXEC_FILE_2 "itkRigidReg" )
+# set ( MY_MAIN_FILE_SOURCES_2 
+#     "MyITKImageHelper.cpp" 
+#     "MyException.cpp"
+#     )
 
 # message (STATUS "Use ITK-directory " ${ITK_DIR})
 
@@ -44,10 +53,11 @@ project( ${MY_PROJ_NAME} )
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) 
 
 add_executable( ${MY_EXEC_FILE} ${MY_MAIN_FILE} ${MY_MAIN_FILE_SOURCES} )  
-add_executable( ${MY_EXEC_FILE_2} ${MY_MAIN_FILE_2} ${MY_MAIN_FILE_SOURCES_2} )  
-
 target_link_libraries( ${MY_EXEC_FILE} ${ITK_LIBRARIES} )
 target_link_libraries( ${MY_EXEC_FILE} ${Boost_LIBRARIES} )
+
+add_executable( ${MY_EXEC_FILE_2} ${MY_MAIN_FILE_2} ${MY_MAIN_FILE_SOURCES_2} )  
 target_link_libraries( ${MY_EXEC_FILE_2} ${ITK_LIBRARIES} )
+target_link_libraries( ${MY_EXEC_FILE_2} ${Boost_LIBRARIES} )
 
 

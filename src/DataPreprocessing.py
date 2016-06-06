@@ -31,6 +31,8 @@ class DataPreprocessing:
         }        
         self._preprocessing_approach = "NoMaskProvided" # default
 
+        self._use_N4BiasFieldCorrector = False
+
 
     ## Initialize data preprocessing class based on filenames, i.e. data used
     #  is going to be read from the hard disk. 
@@ -63,12 +65,10 @@ class DataPreprocessing:
         ## Each stack is provided a mask
         if number_of_masks is self._N_stacks:
             self._preprocessing_approach = "AllMasksProvided"
-            self._boundary = 0
 
         ## No stack is provided a mask. Hence, mask entire region of stack
         elif number_of_masks is 0:
             self._preprocessing_approach = "NoMaskProvided"
-            self._boundary = 0
 
         ## Not all stacks are provided a mask. Propagate target stack mask to other stacks
         else:
@@ -76,6 +76,10 @@ class DataPreprocessing:
             self._filenames_masks = filenames_masks
             self._filenames = filenames
             self._target_stack_number = 0
+
+        self._boundary = 0
+        self._boundary_y = None
+        self._boundary_z = None
 
         return self
 
@@ -94,7 +98,9 @@ class DataPreprocessing:
         self._N_stacks = len(stacks)
 
         ## Use stacks provided
-        self._stacks = stacks
+        self._stacks = [None]*self._N_stacks
+        for i in range(0, self._N_stacks):
+            self._stacks[i] = st.Stack.from_stack(stacks[i])
 
         print("%s stacks were loaded for data preprocessing." %(self._N_stacks))
 
@@ -103,19 +109,30 @@ class DataPreprocessing:
 
         ## All masks are used as given in the stack objects
         self._preprocessing_approach = "AllMasksProvided"
+
         self._boundary = 0
+        self._boundary_y = None
+        self._boundary_z = None
 
         return self
+
+    ## Specify whether bias field correction based on N4 Bias Field Correction 
+    #  Filter shall be used
+    #  \param[in] flag
+    def use_N4BiasFieldCorrector(self, flag):
+        self._use_N4BiasFieldCorrector = flag;
 
 
     ## Perform data preprocessing step by reading images from files
     #  \param[in] target_stack_number relevant in case not all masks are given (optional). Indicates stack for mask propagation.
     #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
-    def run_preprocessing(self, target_stack_number=0, boundary=0):
-        
+    def run_preprocessing(self, target_stack_number=0, boundary=0, boundary_y=None, boundary_z=None):
+
         # self._dir_input = dir_input
         self._target_stack_number = target_stack_number
         self._boundary = boundary
+        self._boundary_y = boundary_y
+        self._boundary_z = boundary_z
 
         self._run_preprocessing[self._preprocessing_approach]()
 
@@ -173,11 +190,21 @@ class DataPreprocessing:
             ## Crop stack and mask based on the mask provided
             sys.stdout.write("\tStack %s: Crop stack and its mask ... " %(i))
             sys.stdout.flush()
-            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, self._stacks[i].sitk_mask, boundary=self._boundary)
+            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, self._stacks[i].sitk_mask, boundary=self._boundary, boundary_y=self._boundary_y, boundary_z=self._boundary_z)
             print "done"
 
-            ## Create preprocessed stack
-            self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+            ## Create stack instance
+            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+
+            ## Perform Bias Field correction if desired
+            if self._use_N4BiasFieldCorrector:
+                sys.stdout.write("\tStack %s: Apply itkN4BiasFieldCorrectionImageFilter ... " %(i))
+                sys.stdout.flush()
+                self._stacks_preprocessed[i] = self._get_bias_field_corrected_stack(stack)
+                print "done"
+
+            else:
+                self._stacks_preprocessed[i] = stack
             
 
     """
@@ -191,7 +218,17 @@ class DataPreprocessing:
         for i in range(0, self._N_stacks):
 
             ## Preprocessed stack consists of untouched image and full binary mask
-            self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=self._stacks[i].sitk, name=str(i), image_sitk_mask=self._stacks[i].sitk_mask)
+            stack = st.Stack.from_sitk_image(image_sitk=self._stacks[i].sitk, name=str(i), image_sitk_mask=self._stacks[i].sitk_mask)
+
+            ## Perform Bias Field correction if desired
+            if self._use_N4BiasFieldCorrector:
+                sys.stdout.write("\tStack %s: Apply itkN4BiasFieldCorrectionImageFilter ... " %(i))
+                sys.stdout.flush()
+                self._stacks_preprocessed[i] = self._get_bias_field_corrected_stack(stack)
+                print "done"
+
+            else:
+                self._stacks_preprocessed[i] = stack
 
 
     """
@@ -231,11 +268,21 @@ class DataPreprocessing:
             ## Crop stack and mask based on the mask provided
             sys.stdout.write("\tStack %s: Crop stack and its mask ... " %(i))
             sys.stdout.flush()
-            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, mask_sitk, boundary=self._boundary)
+            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, mask_sitk, boundary=self._boundary, boundary_y=self._boundary_y, boundary_z=self._boundary_z)
             print "done"
 
-            ## Create preprocessed stack
-            self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+            ## Create stack instance
+            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+
+            ## Perform Bias Field correction if desired
+            if self._use_N4BiasFieldCorrector:
+                sys.stdout.write("\tStack %s: Apply itkN4BiasFieldCorrectionImageFilter ... " %(i))
+                sys.stdout.flush()
+                self._stacks_preprocessed[i] = self._get_bias_field_corrected_stack(stack)
+                print "done"
+
+            else:
+                self._stacks_preprocessed[i] = stack
 
         ##*** Do not propagate masks (includes template stack)
         for i in range_prop_mask_complement:
@@ -243,11 +290,21 @@ class DataPreprocessing:
             ## Crop stack and mask based on the mask provided
             sys.stdout.write("\tStack %s: Crop stack and its mask ... " %(i))
             sys.stdout.flush()
-            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, self._stacks[i].sitk_mask, boundary=self._boundary)
+            [stack_sitk, mask_sitk] = self._crop_stack_and_mask(self._stacks[i].sitk, self._stacks[i].sitk_mask, boundary=self._boundary, boundary_y=self._boundary_y, boundary_z=self._boundary_z)
             print "done"
 
-            ## Create preprocessed stack
-            self._stacks_preprocessed[i] = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+            ## Create stack instance
+            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+
+            ## Perform Bias Field correction if desired
+            if self._use_N4BiasFieldCorrector:
+                sys.stdout.write("\tStack %s: Apply itkN4BiasFieldCorrectionImageFilter ... " %(i))
+                sys.stdout.flush()
+                self._stacks_preprocessed[i] = self._get_bias_field_corrected_stack(stack)
+                print "done"
+
+            else:
+                self._stacks_preprocessed[i] = stack
 
 
     ## Get filenames of stacks which require masks
@@ -433,10 +490,10 @@ class DataPreprocessing:
     #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
     #  \return cropped stack as sitk.Object
     #  \return cropped mask as sitk.Object
-    def _crop_stack_and_mask(self, stack_sitk, mask_sitk, boundary=0):
+    def _crop_stack_and_mask(self, stack_sitk, mask_sitk, boundary=0, boundary_y=None, boundary_z=None):
 
         ## Get rectangular region surrounding the masked voxels
-        [x_range, y_range, z_range] = self._get_rectangular_masked_region(mask_sitk, boundary)
+        [x_range, y_range, z_range] = self._get_rectangular_masked_region(mask_sitk, boundary, boundary_y, boundary_z)
 
         ## Crop stack and mask to defined image region
         stack_crop_sitk = self._crop_image_to_region(stack_sitk, x_range, y_range, z_range)
@@ -451,7 +508,7 @@ class DataPreprocessing:
     #  \return range_x pair defining x interval of mask in voxel space 
     #  \return range_y pair defining y interval of mask in voxel space
     #  \return range_z pair defining z interval of mask in voxel space
-    def _get_rectangular_masked_region(self, mask_sitk, boundary=0):
+    def _get_rectangular_masked_region(self, mask_sitk, boundary=0, boundary_y=None, boundary_z=None):
 
         spacing = np.array(mask_sitk.GetSpacing())
 
@@ -461,10 +518,14 @@ class DataPreprocessing:
         ## Get shape defining the dimension in each direction
         shape = nda.shape
 
+        if boundary_y is None and boundary_z is None:
+            boundary_y = boundary
+            boundary_z = boundary
+
         ## Set additional offset around identified masked region in voxels
-        offset_x = np.round(boundary/spacing[2])
-        offset_y = np.round(boundary/spacing[1])
-        offset_z = np.round(boundary/spacing[0])
+        offset_x = np.round(boundary_z/spacing[2])
+        offset_y = np.round(boundary_y/spacing[1])
+        offset_z = np.round(boundary  /spacing[0])
 
         ## Compute sum of pixels of each slice along specified directions
         sum_xy = np.sum(nda, axis=(0,1)) # sum within x-y-plane
@@ -510,3 +571,37 @@ class DataPreprocessing:
                             ]
 
         return image_cropped_sitk
+
+
+    ## Apply itkN4BiasFieldCorrectionImageFilter onto the stack
+    #  \param[in] stack as Stack object to
+    #  \return bias field corrected stack
+    def _get_bias_field_corrected_stack(self, stack):
+        dir_tmp = "/tmp/N4BiasFieldCorrection/"
+        filename_out = "N4BiasFieldCorrection_image"
+
+        os.system("mkdir -p " + dir_tmp)
+        os.system("rm -rf " + dir_tmp + "*")
+
+        sitk.WriteImage(stack.sitk, dir_tmp + filename_out + ".nii.gz")
+        sitk.WriteImage(stack.sitk_mask, dir_tmp + filename_out + "_mask.nii.gz")
+
+
+        cmd =  "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/cpp/build/bin/runN4BiasFieldCorrectionImageFilter "
+        cmd += "--f " + dir_tmp + filename_out + " "
+        cmd += "--fmask " + dir_tmp + filename_out + "_mask "
+        cmd += "--tout " + dir_tmp + " "
+        cmd += "--m " + filename_out
+        
+        # print cmd
+        os.system(cmd)
+
+        stack_corrected_sitk = sitk.ReadImage(dir_tmp + filename_out + "_corrected.nii.gz")
+
+        stack_corrected = st.Stack.from_sitk_image(stack_corrected_sitk, stack.get_filename(), stack.sitk_mask)
+
+        ## Debug
+        # sitkh.show_sitk_image(stack.sitk, overlay=stack_corrected.sitk, title="StackOrig_StackBiasFieldCorrected")
+
+        return stack_corrected
+

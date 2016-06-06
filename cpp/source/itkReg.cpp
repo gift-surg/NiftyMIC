@@ -38,7 +38,7 @@
 #include <itkANTSNeighborhoodCorrelationImageToImageMetricv4.h>
 
 #include <itkRegularStepGradientDescentOptimizerv4.h>
-#include <itkLBFGSOptimizerv4.h>
+#include <itkLBFGSBOptimizerv4.h>
 
 #include <itkResampleImageFilter.h>
 // #include <itkRescaleIntensityImageFilter.h>
@@ -74,9 +74,9 @@ typedef itk::Euler3DTransform< PixelType > EulerTransformType;
 
 // Optimizer Types
 typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > RegularStepGradientDescentOptimizerType;
-typedef itk::LBFGSOptimizerv4 LBFGSOptimizerOptimizerType;
-typedef RegularStepGradientDescentOptimizerType OptimizerType;
-// typedef LBFGSOptimizerOptimizerType OptimizerType;
+typedef itk::LBFGSBOptimizerv4 LBFGSBOptimizerOptimizerType;
+// typedef RegularStepGradientDescentOptimizerType OptimizerType;
+typedef LBFGSBOptimizerOptimizerType OptimizerType;
 
 // Interpolator Types
 typedef itk::NearestNeighborInterpolateImageFunction< ImageType3D, PixelType > NearestNeighborInterpolatorType;
@@ -245,7 +245,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const std::string sMetric = input[15];
     const std::string sInterpolator = input[16];
     const std::string sTransformOut = input[17];
-    const std::string sVerbose = input[19];
+    const std::string sVerbose = input[19]; //TODO: change to bVerbose directly
     const double dANTSrad = std::stod(input[20]);
 
     // Read images
@@ -340,15 +340,15 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // Initialize the transform
     typename TransformType::Pointer initialTransform = TransformType::New();
 
-    typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
-    typename TransformType::Pointer foo = TransformType::New();
+    // typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+    // typename TransformType::Pointer foo = TransformType::New();
     // initializer->SetTransform(initialTransform);
-    initializer->SetTransform(foo);
-    initializer->SetFixedImage( fixed );
-    initializer->SetMovingImage( moving );
-    initializer->GeometryOn();
+    // initializer->SetTransform(foo);
+    // initializer->SetFixedImage( fixed );
+    // initializer->SetMovingImage( moving );
+    // initializer->GeometryOn();
     // initializer->MomentsOn();
-    initializer->InitializeTransform();
+    // initializer->InitializeTransform();
     // initialTransform->Print(std::cout);
     // initialTransform->SetTranslation((0,0,0));
     // initialTransform->Print(std::cout);
@@ -371,13 +371,43 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // optimizer->SetGradientMagnitudeTolerance( 1e-4 );
     // optimizer->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
     //"itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
-    optimizer->SetNumberOfIterations( 100 );
+    // optimizer->SetNumberOfIterations( 100 );
     // optimizer->SetMinimumConvergenceValue( 1e-6 );
-    optimizer->SetScalesEstimator( scalesEstimator );
+    // optimizer->SetScalesEstimator( scalesEstimator );
     // optimizer->SetDoEstimateLearningRateOnce( false );
     // optimizer->SetLearningRate(1);
 
     // For LBFGS Optimizer
+    const unsigned int numParameters = initialTransform->GetNumberOfParameters();
+    OptimizerType::BoundSelectionType boundSelect( numParameters );
+    OptimizerType::BoundValueType upperBound( numParameters );
+    OptimizerType::BoundValueType lowerBound( numParameters );
+    boundSelect.Fill( OptimizerType::BOTHBOUNDED );
+    upperBound.Fill( 0.0 );
+    lowerBound.Fill( 0.0 );
+
+    const double angle_deg_max = 5.0;
+    const double translation_max = 20.0;
+    for (int i = 0; i < 3; ++i) {
+        lowerBound[i] = -angle_deg_max*vnl_math::pi/180;
+        upperBound[i] =  angle_deg_max*vnl_math::pi/180;
+        
+        lowerBound[i+3] = -translation_max;
+        upperBound[i+3] =  translation_max;
+    }
+
+
+
+    optimizer->SetBoundSelection( boundSelect );
+    optimizer->SetUpperBound( upperBound );
+    optimizer->SetLowerBound( lowerBound );
+
+    optimizer->SetCostFunctionConvergenceFactor( 1.e7 );
+    optimizer->SetGradientConvergenceTolerance( 1e-35 );
+    optimizer->SetNumberOfIterations( 200 );
+    optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
+    optimizer->SetMaximumNumberOfCorrections( 7 );
+
     // optimizer->SetDefaultStepLength( 1.5 );
     // optimizer->SetGradientConvergenceTolerance( 5e-2 );
     // optimizer->SetLineSearchAccuracy( 1.2 );
