@@ -54,10 +54,11 @@ class RegularizationParameterEstimation:
         self._regularization_types = None
 
         self._ADMM_iterations = 5   # Number of performed ADMM iterations
+        self._itermax = 20
 
         ## Parameters for output
         # self._filename_prefix = ""
-        self._filename_prefix = "RegularizationParameterEstimation_"
+        self._filename_prefix = ""
         self._dir_results = "RegularizationParameterEstimation/"
 
         """
@@ -124,6 +125,8 @@ class RegularizationParameterEstimation:
         self._rho = rho
 
 
+    def set_itermax_solver(self, itermax):
+        self._itermax = itermax
 
 
     ## Set SRR approaches which will be run
@@ -179,7 +182,7 @@ class RegularizationParameterEstimation:
             ## Set parameters based on chosen regularization
             if SRR_approach in ["TK0"]:
                 SRR_tolerance = 1e-5
-                SRR_iter_max = 30
+                SRR_iter_max = self._itermax
                 SRR_DTD_computation_type = "FiniteDifference" #not used
                 SRR_rho = None
                 SRR_ADMM_iterations = None
@@ -188,7 +191,7 @@ class RegularizationParameterEstimation:
 
             elif SRR_approach in ["TK1"]:
                 SRR_tolerance = 1e-5
-                SRR_iter_max = 30
+                SRR_iter_max = self._itermax
                 SRR_DTD_computation_type = "FiniteDifference"
                 SRR_rho = None
                 SRR_ADMM_iterations = None
@@ -209,8 +212,7 @@ class RegularizationParameterEstimation:
             
             
             if SRR_approach in ["TK0", "TK1"]:
-                # filename = self._filename_prefix
-                filename = ""
+                filename = self._filename_prefix
                 filename += SRR_approach + "-Regularization"
                 filename += "_itermax" + str(SRR_iter_max)
                 filename += "_" + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
@@ -225,8 +227,7 @@ class RegularizationParameterEstimation:
                 text += "\n"
             
             elif SRR_approach in ["TV-L2"]:
-                # filename = self._filename_prefix
-                filename = ""
+                filename = self._filename_prefix
                 filename += SRR_approach + "-Regularization"
                 filename += "_rho" + str(SRR_rho)
                 filename += "_ADMM_iterations" + str(SRR_ADMM_iterations)

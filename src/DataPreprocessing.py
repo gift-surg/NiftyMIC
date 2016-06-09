@@ -31,6 +31,8 @@ class DataPreprocessing:
         }        
         self._preprocessing_approach = "NoMaskProvided" # default
 
+        self._filename_prefix = ""
+
         self._use_N4BiasFieldCorrector = False
 
 
@@ -123,6 +125,12 @@ class DataPreprocessing:
         self._use_N4BiasFieldCorrector = flag;
 
 
+    ## Specify prefix which will be used for naming the stacks
+    #  param[in] prefix as string
+    def set_filename_prefix(self, prefix):
+        self._filename_prefix = prefix
+
+
     ## Perform data preprocessing step by reading images from files
     #  \param[in] target_stack_number relevant in case not all masks are given (optional). Indicates stack for mask propagation.
     #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
@@ -194,7 +202,7 @@ class DataPreprocessing:
             print "done"
 
             ## Create stack instance
-            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=self._filename_prefix+str(i), image_sitk_mask=mask_sitk)
 
             ## Perform Bias Field correction if desired
             if self._use_N4BiasFieldCorrector:
@@ -218,7 +226,7 @@ class DataPreprocessing:
         for i in range(0, self._N_stacks):
 
             ## Preprocessed stack consists of untouched image and full binary mask
-            stack = st.Stack.from_sitk_image(image_sitk=self._stacks[i].sitk, name=str(i), image_sitk_mask=self._stacks[i].sitk_mask)
+            stack = st.Stack.from_sitk_image(image_sitk=self._stacks[i].sitk, name=self._filename_prefix+str(i), image_sitk_mask=self._stacks[i].sitk_mask)
 
             ## Perform Bias Field correction if desired
             if self._use_N4BiasFieldCorrector:
@@ -272,7 +280,7 @@ class DataPreprocessing:
             print "done"
 
             ## Create stack instance
-            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=self._filename_prefix+str(i), image_sitk_mask=mask_sitk)
 
             ## Perform Bias Field correction if desired
             if self._use_N4BiasFieldCorrector:
@@ -294,7 +302,7 @@ class DataPreprocessing:
             print "done"
 
             ## Create stack instance
-            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=str(i), image_sitk_mask=mask_sitk)
+            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=self._filename_prefix+str(i), image_sitk_mask=mask_sitk)
 
             ## Perform Bias Field correction if desired
             if self._use_N4BiasFieldCorrector:
@@ -596,9 +604,14 @@ class DataPreprocessing:
         # print cmd
         os.system(cmd)
 
-        stack_corrected_sitk = sitk.ReadImage(dir_tmp + filename_out + "_corrected.nii.gz")
+        stack_corrected_sitk = sitk.ReadImage(dir_tmp + filename_out + "_corrected.nii.gz", sitk.sitkFloat64)
 
-        stack_corrected = st.Stack.from_sitk_image(stack_corrected_sitk, stack.get_filename(), stack.sitk_mask)
+        ## Read in again: Otherwise there can occur probems. Hence, read in 
+        #  and force to be the same sitk.sitkFloat64 type!
+        stack_corrected_sitk_mask = sitk.ReadImage(dir_tmp + filename_out + "_mask.nii.gz", sitk.sitkUInt8)
+
+        # stack_corrected = st.Stack.from_sitk_image(stack_corrected_sitk, stack.get_filename(), stack.sitk_mask)
+        stack_corrected = st.Stack.from_sitk_image(stack_corrected_sitk, stack.get_filename(), stack_corrected_sitk_mask)
 
         ## Debug
         # sitkh.show_sitk_image(stack.sitk, overlay=stack_corrected.sitk, title="StackOrig_StackBiasFieldCorrected")

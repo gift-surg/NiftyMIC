@@ -42,7 +42,7 @@ class RegistrationSimpleITK:
         self._metric_params = None
 
         self._optimizer = "RegularStepGradientDescent"
-        self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 500, 'gradientMagnitudeTolerance': 1e-4}"
+        self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-8, 'numberOfIterations': 100, 'gradientMagnitudeTolerance': 1e-6}"
 
         self._optimizer_scales = "Jacobian"
 
@@ -247,7 +247,7 @@ class RegistrationSimpleITK:
             print("\t(Based on computed covariance matrix = ")
             for i in range(0, 3):
                 print("\t\t" + str(cov_HR_coord[i,:]))
-            print("\twith square root of diagonal " + str(sigma_axis_aligned) + ")")
+            print("\twith square root of diagonal " + str(np.diagonal(cov_HR_coord)) + ")")
 
             gaussian_yvv.SetInput(moving.itk)
             gaussian_yvv.SetSigmaArray(sigma_axis_aligned)
@@ -262,7 +262,7 @@ class RegistrationSimpleITK:
         ## Instantiate interface method to the modular ITKv4 registration framework
         registration_method = sitk.ImageRegistrationMethod()
 
-        # ## Set the initial transform and parameters to optimize
+        ## Set the initial transform and parameters to optimize
         if self._registration_type in ["Rigid"]:
             initial_transform = eval("sitk.Euler" + str(dim) + "DTransform()")
 

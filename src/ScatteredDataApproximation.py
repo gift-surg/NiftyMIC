@@ -126,14 +126,14 @@ class ScatteredDataApproximation:
 
         for i in range(0, self._N_stacks):
         # for i in range(0, 1):
-            print("  Stack %s/%s" %(i,self._N_stacks-1))
+            print("\tStack %s/%s" %(i,self._N_stacks-1))
             stack = self._stacks[i]
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
             
             # for j in range(10, 11):
             for j in range(0, N_slices):
-                
+                # print("\t\tSlice %s/%s" %(j,N_slices-1))
                 slice = slices[j]
                 slice_masked_sitk = slice.sitk*sitk.Cast(slice.sitk_mask,slice.sitk.GetPixelIDValue())
 
