@@ -31,16 +31,6 @@ set ( MY_MAIN_FILE_SOURCES_2
     "ExceptionCommandLine.cpp"
     )
 
-set ( MY_MAIN_FILE_3 "itkRegTest.cpp" )
-set ( MY_EXEC_FILE_3 "itkRegTest" )
-set ( MY_MAIN_FILE_SOURCES_3 
-    "MyITKImageHelper.cpp" 
-    "readCommandLine.cpp"
-    "MyException.cpp"
-    "ExceptionCommandLine.cpp"
-    # "itkScaledTranslationEuler3DTransform.hxx"
-    )
-
 # set ( MY_MAIN_FILE_2 "itkRigidReg.cpp" )
 # set ( MY_EXEC_FILE_2 "itkRigidReg" )
 # set ( MY_MAIN_FILE_SOURCES_2 
@@ -69,8 +59,4 @@ target_link_libraries( ${MY_EXEC_FILE} ${Boost_LIBRARIES} )
 add_executable( ${MY_EXEC_FILE_2} ${MY_MAIN_FILE_2} ${MY_MAIN_FILE_SOURCES_2} )  
 target_link_libraries( ${MY_EXEC_FILE_2} ${ITK_LIBRARIES} )
 target_link_libraries( ${MY_EXEC_FILE_2} ${Boost_LIBRARIES} )
-
-add_executable( ${MY_EXEC_FILE_3} ${MY_MAIN_FILE_3} ${MY_MAIN_FILE_SOURCES_3} )  
-target_link_libraries( ${MY_EXEC_FILE_3} ${ITK_LIBRARIES} )
-target_link_libraries( ${MY_EXEC_FILE_3} ${Boost_LIBRARIES} )
 

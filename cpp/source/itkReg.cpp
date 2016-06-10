@@ -58,6 +58,7 @@
 #include "itkOrientedGaussianInterpolateImageFunction.h"
 #include "readCommandLine.h"
 #include "MyException.h"
+#include "itkScaledTranslationEuler3DTransform.h"
 
 // Global variables
 const unsigned int Dimension = 3;
@@ -70,7 +71,9 @@ typedef itk::ImageMaskSpatialObject< Dimension > MaskType;
 
 // Transform Types
 typedef itk::AffineTransform< PixelType, Dimension > AffineTransformType;
-typedef itk::Euler3DTransform< PixelType > EulerTransformType;
+typedef itk::ScaledTranslationEuler3DTransform< PixelType > ScaledTranslationEulerTransformType;
+typedef ScaledTranslationEulerTransformType EulerTransformType;
+// typedef itk::Euler3DTransform< PixelType > EulerTransformType;
 
 // Optimizer Types
 typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > RegularStepGradientDescentOptimizerType;
@@ -247,6 +250,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const std::string sTransformOut = input[17];
     const std::string sVerbose = input[19]; //TODO: change to bVerbose directly
     const double dANTSrad = std::stod(input[20]);
+    const double dTranslationScale = std::stod(input[21]);
 
     // Read images
     const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving + ".nii.gz");
@@ -271,6 +275,11 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask + ".nii.gz");
         spatialObjectMovingMask->SetImage( movingMask );
         metric->SetMovingImageMask( spatialObjectMovingMask );
+    }
+
+    // Info output transform
+    if(!sTransformOut.empty()){
+        std::cout << "Output transform = " << sTransformOut << std::endl;
     }
     
     // Multi-resolution framework
@@ -316,7 +325,6 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // Set oriented Gaussian interpolator (if given)
     OrientedGaussianInterpolatorType::Pointer orientedGaussianInterpolator = dynamic_cast< OrientedGaussianInterpolatorType* >(interpolator.GetPointer());
     if ( orientedGaussianInterpolator.IsNotNull() ) {
-    // if ( sInterpolator == ("OrientedGaussian") ) {
         orientedGaussianInterpolator->SetCovariance( covariance );
         orientedGaussianInterpolator->SetAlpha( 3 );
         // std::cout << "OrientedGaussianInterpolator updated " << std::endl;
@@ -357,6 +365,13 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     registration->InPlaceOff();
     // registration->GetFixedInitialTransform()->Print(std::cout);
 
+    // Set scale for translation if itkScaledTranslationEuler3DTransform
+    ScaledTranslationEulerTransformType::Pointer scaledTranslationTransform = dynamic_cast< ScaledTranslationEulerTransformType* >(initialTransform.GetPointer());
+    if ( scaledTranslationTransform.IsNotNull() ) {
+        registration->GetModifiableTransform()->SetTranslationScale( dTranslationScale );
+        std::cout << "TranslationScale = " << registration->GetModifiableTransform()->GetTranslationScale() << std::endl;
+    }
+
     // Set metric
     // metric->SetFixedInterpolator(  interpolator  );
     metric->SetMovingInterpolator(  interpolator  );
@@ -387,7 +402,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     lowerBound.Fill( 0.0 );
 
     const double angle_deg_max = 5.0;
-    const double translation_max = 20.0;
+    const double translation_max = 10.0;
     for (int i = 0; i < 3; ++i) {
         lowerBound[i] = -angle_deg_max*vnl_math::pi/180;
         upperBound[i] =  angle_deg_max*vnl_math::pi/180;
@@ -395,7 +410,6 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         lowerBound[i+3] = -translation_max;
         upperBound[i+3] =  translation_max;
     }
-
 
 
     optimizer->SetBoundSelection( boundSelect );
@@ -478,7 +492,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     resampler->SetInput( moving );
     resampler->SetTransform( registration->GetOutput()->Get() );
     resampler->SetDefaultPixelValue( 0.0 );
-    resampler->SetInterpolator( interpolator );
+    resampler->SetInterpolator( LinearInterpolatorType::New() );
     resampler->Update();
 
     // Resample registered moving mask

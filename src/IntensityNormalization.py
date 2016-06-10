@@ -94,7 +94,7 @@ class IntensityNormalization:
         x_corr = p(x)
         
         ## Plot
-        plot_figure = 1
+        plot_figure = 0
         if plot_figure:
             fig = plt.figure(1)
             fig.clf()

@@ -44,7 +44,7 @@ class RegistrationSimpleITK:
         self._optimizer = "RegularStepGradientDescent"
         self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-8, 'numberOfIterations': 100, 'gradientMagnitudeTolerance': 1e-6}"
 
-        self._optimizer_scales = "Jacobian"
+        self._optimizer_scales = "PhysicalShift"
 
     ## Set fixed/reference/target image
     #  \param[in] fixed fixed/reference/target image as Stack object

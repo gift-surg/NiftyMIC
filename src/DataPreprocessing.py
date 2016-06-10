@@ -77,7 +77,7 @@ class DataPreprocessing:
             self._preprocessing_approach = "NotAllMasksProvided"
             self._filenames_masks = filenames_masks
             self._filenames = filenames
-            self._target_stack_number = 0
+            self._mask_template_number = 0
 
         self._boundary = 0
         self._boundary_y = None
@@ -132,12 +132,12 @@ class DataPreprocessing:
 
 
     ## Perform data preprocessing step by reading images from files
-    #  \param[in] target_stack_number relevant in case not all masks are given (optional). Indicates stack for mask propagation.
+    #  \param[in] mask_template_number relevant in case not all masks are given (optional). Indicates stack for mask propagation.
     #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
-    def run_preprocessing(self, target_stack_number=0, boundary=0, boundary_y=None, boundary_z=None):
+    def run_preprocessing(self, mask_template_number=0, boundary=0, boundary_y=None, boundary_z=None):
 
         # self._dir_input = dir_input
-        self._target_stack_number = target_stack_number
+        self._mask_template_number = mask_template_number
         self._boundary = boundary
         self._boundary_y = boundary_y
         self._boundary_z = boundary_z
@@ -243,7 +243,7 @@ class DataPreprocessing:
     Not all masks provided
     """
     ## Perform data preprocessing step for case that some masks are missing.
-    #  Mask stored in self._target_stack_number is used as template mask for
+    #  Mask stored in self._mask_template_number is used as template mask for
     #  mask propagation
     def _run_preprocessing_not_all_masks_provided(self):
 
@@ -256,8 +256,8 @@ class DataPreprocessing:
         ##*** Propagate masks
 
         ## Specify target stack and mask to be used as template
-        template_sitk = self._stacks[self._target_stack_number].sitk
-        template_mask_sitk = self._stacks[self._target_stack_number].sitk_mask
+        template_sitk = self._stacks[self._mask_template_number].sitk
+        template_mask_sitk = self._stacks[self._mask_template_number].sitk_mask
 
         for i in range_prop_mask:
 

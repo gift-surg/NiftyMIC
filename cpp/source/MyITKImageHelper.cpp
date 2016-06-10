@@ -231,7 +231,6 @@ void MyITKImageHelper::printTransform(itk::AffineTransform< PixelType, 3 >::Cons
   const unsigned int dim = 3;
 
   itk::Matrix< PixelType, dim, dim >  matrix = transform->GetMatrix();
-  itk::Vector< PixelType, dim > translation = transform->GetTranslation();
 
   itk::AffineTransform< PixelType, dim >::ParametersType parameters = transform->GetParameters();
   itk::AffineTransform< PixelType, dim >::ParametersType center = transform->GetFixedParameters();
@@ -242,7 +241,7 @@ void MyITKImageHelper::printTransform(itk::AffineTransform< PixelType, 3 >::Cons
   printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
   
   std::cout << "\t translation = " << std::endl;
-  printf("\t\t%.4f\t%.4f\t%.4f\n", translation[0], translation[1], translation[2]);
+  printf("\t\t%.4f\t%.4f\t%.4f\n", parameters[3], parameters[4], parameters[5]);
   
   std::cout << "\t matrix = " << std::endl;
   for (int i = 0; i < dim; ++i) {
@@ -255,7 +254,6 @@ void MyITKImageHelper::printTransform(itk::Euler3DTransform< PixelType >::ConstP
   const unsigned int dim = 3;
 
   itk::Matrix< PixelType, dim, dim >  matrix = transform->GetMatrix();
-  itk::Vector< PixelType, dim > translation = transform->GetTranslation();
 
   itk::Euler3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
   itk::Euler3DTransform< PixelType >::ParametersType center = transform->GetFixedParameters();
@@ -269,7 +267,7 @@ void MyITKImageHelper::printTransform(itk::Euler3DTransform< PixelType >::ConstP
   printf("\t\t%.4f, %.4f, %.4f\n", parameters[0]*180/vnl_math::pi, parameters[1]*180/vnl_math::pi, parameters[2]*180/vnl_math::pi);
   
   std::cout << "\t translation = " << std::endl;
-  printf("\t\t%.4f\t%.4f\t%.4f\n", translation[0], translation[1], translation[2]);
+  printf("\t\t%.4f\t%.4f\t%.4f\n", parameters[3], parameters[4], parameters[5]);
   
   std::cout << "\t matrix = " << std::endl;
   for (int i = 0; i < dim; ++i) {
@@ -282,7 +280,6 @@ void MyITKImageHelper::printTransform(itk::ScaledTranslationEuler3DTransform< Pi
   const unsigned int dim = 3;
 
   itk::Matrix< PixelType, dim, dim >  matrix = transform->GetMatrix();
-  itk::Vector< PixelType, dim > translation = transform->GetTranslation();
 
   itk::ScaledTranslationEuler3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
   itk::ScaledTranslationEuler3DTransform< PixelType >::ParametersType center = transform->GetFixedParameters();
@@ -296,7 +293,7 @@ void MyITKImageHelper::printTransform(itk::ScaledTranslationEuler3DTransform< Pi
   printf("\t\t%.4f, %.4f, %.4f\n", parameters[0]*180/vnl_math::pi, parameters[1]*180/vnl_math::pi, parameters[2]*180/vnl_math::pi);
   
   std::cout << "\t translation = " << std::endl;
-  printf("\t\t%.4f\t%.4f\t%.4f\n", translation[0], translation[1], translation[2]);
+  printf("\t\t%.4f\t%.4f\t%.4f\n", parameters[3], parameters[4], parameters[5]);
   
   std::cout << "\t matrix = " << std::endl;
   for (int i = 0; i < dim; ++i) {

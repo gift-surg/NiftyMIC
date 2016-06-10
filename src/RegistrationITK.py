@@ -32,6 +32,7 @@ class RegistrationITK:
         self._interpolator = "BSpline"
         self._scales_estimator = "Jacobian"
         self._ANTSradius = 20
+        self._translation_scale = 1
 
         self._use_multiresolution_framework = 0
 
@@ -110,9 +111,21 @@ class RegistrationITK:
         return self._metric
 
 
-    ## Set radius used for ANTSNeighborhoodCorrelation
+    ## Set/Get radius used for ANTSNeighborhoodCorrelation
     def set_ANTSradius(self, radius):
         self._ANTSradius = radius
+
+
+    def get_ANTSradius(self):
+        return self._ANTSradius
+
+
+    ## Set/Get translation scale used for itkScaledTranslationEuler3DTransform
+    def set_translation_scale(self, translation_scale):
+        self._translation_scale = translation_scale
+
+    def get_translation_scale(self):
+        return self._translation_scale
 
 
     ## Decide whether multi-registration framework is used
@@ -190,6 +203,7 @@ class RegistrationITK:
         cmd += "--scalesEst " + self._scales_estimator + " "
         cmd += "--interpolator " + self._interpolator + " "
         cmd += "--ANTSrad " + str(self._ANTSradius) + " "
+        cmd += "--translationScale " + str(self._translation_scale) + " "
         cmd += "--verbose 0 "
 
         ## Compute oriented Gaussian PSF if desired
