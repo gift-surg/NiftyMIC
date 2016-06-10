@@ -319,7 +319,6 @@ class RegularizationParameterEstimation:
 
     def analyse(self, save_flag=0, from_files=None):   
 
-
         ## colors: r,b,g,c,m,y,k,w (http://matplotlib.org/api/colors_api.html)
         ## markers: http://matplotlib.org/api/markers_api.html#module-matplotlib.markers
         ## line styles: same as in Matlab (http://matplotlib.org/api/lines_api.html#matplotlib.lines.Line2D.set_linestyle)
@@ -443,6 +442,102 @@ class RegularizationParameterEstimation:
         if save_flag:
             fig.savefig(self._dir_results + "L-curve.eps")
 
+
+    @staticmethod
+    def show_Lcurve(from_files, directory=None):
+
+        ## colors: r,b,g,c,m,y,k,w (http://matplotlib.org/api/colors_api.html)
+        ## markers: http://matplotlib.org/api/markers_api.html#module-matplotlib.markers
+        ## line styles: same as in Matlab (http://matplotlib.org/api/lines_api.html#matplotlib.lines.Line2D.set_linestyle)
+        # plot_colours = ["rx:" , "bo:" , "gs:", "m<:", "c>:", "y^:", "kv:"]
+        plot_colours = ["rx:" , "bo:" , "gs:", "r<-.", "b>-.", "g^-."]
+
+        plt.rc('text', usetex=True)
+        # plt.rc('font', family='serif')
+
+        ## Plot
+        fig = plt.figure(1)
+        fig.clf()
+        ax = fig.add_subplot(1,1,1)
+        
+        for i_file in range(0, len(from_files)):
+            # data = np.loadtxt(from_files[i_file] + ".txt" , delimiter="\t", skiprows=2)
+            data = np.loadtxt(from_files[i_file] + ".txt" , skiprows=2)
+
+            if "TK0-Regularization" in from_files[i_file]:
+                SRR_approach = "TK0"
+                alphas = data[:,0]
+                residuals = data[:,1]
+                Psis = data[:,2]
+
+            elif "TK1-Regularization" in from_files[i_file]:
+                SRR_approach = "TK1"
+                alphas = data[:,0]
+                residuals = data[:,1]
+                Psis = data[:,2]
+
+            elif "TV-L2-Regularization" in from_files[i_file]:
+                ADMM_iterations = re.sub(".*TV-L2-Regularization.*ADMM_iterations","",from_files[i_file])
+                ADMM_iterations = int(re.sub("_TK1itermax.*","",ADMM_iterations))
+
+                SRR_approach = "TV-L2"
+                rhos = data[:,0]
+                alphas = data[:,1]
+                residuals = data[:,2]
+                Psis = data[:,3]
+
+            else:
+                raise ValueError("Error: SRR method could not be determined from filename")
+
+            ## Print on screen
+            if SRR_approach in ["TK0", "TK1"]:
+                print("\n\t --- %s-Regularization ---" %(SRR_approach))
+                label=SRR_approach
+                print("\t\talpha\t\tResidual\t\tPrior term Psi")
+                for i in range(0, len(alphas)):
+                    print("\t\t%s\t\t%.3e\t\t%.3e" %(alphas[i], residuals[i], Psis[i]))
+            elif SRR_approach in ["TV-L2"]:
+                print("\n\t --- %s-Regularization (%s iterations) ---" %(SRR_approach, ADMM_iterations))
+                label=SRR_approach+" (rho=" + str(rhos[0]) + ", " + str(ADMM_iterations) + " ADMM iter)"
+                print("\t\trho\t\talpha\t\tResidual\t\tPrior term Psi")
+                for i in range(0, len(alphas)):
+                    print("\t\t%s\t\t%s\t\t%.3e\t\t%.3e" %(rhos[i], alphas[i], residuals[i], Psis[i]))
+            ## Plot curve
+            ax.plot(residuals, Psis, plot_colours[i_file], label=label)
+            # ax.loglog(residuals[i_file], Psis[i_file], plot_colours[i_file], label=SRR_approach)
+
+            ## Maximum curvature
+            # i_max_curvature = self._get_maximum_curvature_point(residuals, Psis)
+            # ax.plot(residuals[i_max_curvature], Psis[i_max_curvature], "cs")
+
+            ## Fit curve
+            # bounds = (0, [None, None, None])
+            # popt, pcov = curve_fit(self._fitting_curve, residuals, Psis)
+            # xmin = np.min(residuals)
+            # xmax = np.max(residuals)
+            # step = (xmax-xmin)/50
+            # xdata = np.arange(xmin, xmax, step)
+
+            # # print popt
+            # ax.plot(xdata, self._fitting_curve(xdata, *popt))
+
+
+        ## Show grid
+        ax.grid()
+
+        ## Add legend
+        legend = ax.legend(loc="upper right")
+
+        plt.title("L-curve\n$\Phi(\\vec{x}) = \\frac{1}{2}\sum_{k=1}^K \Vert M_k (\\vec{y}_k - A_k \\vec{x}) \Vert_{\ell^2}^2 + \\alpha \Psi(\\vec{x})\\rightarrow \min$" )
+        # plt.title("L-curve for " + regularization_types[i_reg_type] + "Regularization")
+        plt.ylabel("Prior term $\displaystyle\Psi(\\vec{x}_\\alpha)$")
+        plt.xlabel("Residual $\sum_{k=1}^K \Vert M_k (\\vec{y}_k - A_k \\vec{x}_\\alpha) \Vert_{\ell^2}^2$")
+
+        plt.draw()
+        plt.pause(0.5) ## important! otherwise fig is not shown. Also needs plt.show() at the end of the file to keep figure open
+
+        if directory is not None:
+            fig.savefig(directory + "L-curve.eps")
 
     def _fitting_curve(self, x, a,b,c):
 

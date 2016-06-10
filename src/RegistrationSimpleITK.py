@@ -269,8 +269,8 @@ class RegistrationSimpleITK:
         elif self._registration_type in ["Affine"]:
             initial_transform = sitk.AffineTransform(dim)
 
-        center = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY).GetFixedParameters()
-        initial_transform.SetCenter(center)
+        # center = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY).GetFixedParameters()
+        # initial_transform.SetCenter(center)
 
         registration_method.SetInitialTransform(initial_transform)
 

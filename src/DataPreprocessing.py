@@ -267,11 +267,11 @@ class DataPreprocessing:
             mask_sitk = self._get_propagated_mask(self._stacks[i].sitk, template_sitk, template_mask_sitk)
             print "done"
 
-            # ## Dilate propagated mask (to smooth mask)
-            # sys.stdout.write("\tStack %s: Dilate mask ... " %(i))
-            # sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
-            # mask_sitk = self._dilate_mask(mask_sitk)
-            # print "done"
+            ## Dilate propagated mask (to smooth mask)
+            sys.stdout.write("\tStack %s: Dilate mask ... " %(i))
+            sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
+            mask_sitk = self._dilate_mask(mask_sitk)
+            print "done"
 
             ## Crop stack and mask based on the mask provided
             sys.stdout.write("\tStack %s: Crop stack and its mask ... " %(i))

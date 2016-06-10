@@ -30,6 +30,8 @@
 //#include "ImageFactory.h"
 
 #include "MyException.h"
+#include "itkScaledTranslationEuler3DTransform.h"
+
 
 /** Typedefs. */
 typedef double PixelType;
@@ -79,12 +81,12 @@ public:
     /** Print transform */
     static void printTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform);
     static void printTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform);
+    static void printTransform(itk::ScaledTranslationEuler3DTransform< PixelType >::ConstPointer transform);
 
     /** Write transform */
-    static void writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform,
-    std::string outfile);
-    static void writeTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform,
-    std::string outfile);
+    static void writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform, std::string outfile);
+    static void writeTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform, std::string outfile);
+    static void writeTransform(itk::ScaledTranslationEuler3DTransform< PixelType >::ConstPointer transform, std::string outfile);
 
     /** Get data array */
     // static 
