@@ -2443,10 +2443,10 @@ if __name__ == '__main__':
 
 
     # print_affine_transform(rotation_itk, "\n\nRotation 2D (ITK)")
-    # sitkh.print_rigid_transformation(rotation_sitk, "\nRotation 2D (SimpleITK)")
+    # sitkh.print_sitk_transform(rotation_sitk, "\nRotation 2D (SimpleITK)")
 
     # print_affine_transform(transform_image_itk, "Image Transform (ITK)")
-    # sitkh.print_rigid_transformation(transform_image_sitk, "\nImage Transform (SimpleITK)")
+    # sitkh.print_sitk_transform(transform_image_sitk, "\nImage Transform (SimpleITK)")
 
     # sitk.WriteImage(image_2D_rotated_sitk, dir_input + filename_2D + "_rotated.nii.gz")
 

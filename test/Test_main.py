@@ -19,12 +19,13 @@ import matplotlib.pyplot as plt
 ## Import modules from src-folder
 # import ReconstructionManager as rm
 # import SimpleITKHelper as sitkh
-# import InPlaneRigidRegistration as inplaneRR
 
 ## Import modules for unit testing
 from Test_FirstEstimateOfHRVolume import *
 from Test_SimpleITKHelper import *
 # from Test_Stack import *
+from Test_SimulatorSliceAcqusition import *
+from Test_NiftyReg import *
 
 
 """ ###########################################################################

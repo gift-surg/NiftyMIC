@@ -98,15 +98,79 @@ class InPlaneRigidRegistration:
 
 
                 ## Get transformation for 3D in-plane rigid transformation to update T_PI of slice
-                T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
+                T_PP = self._get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D.sitk)
 
                 ## Get registration trafo for slices in physical 3D space
-                T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
+                T_PI_in_plane_rotation_3D = self._get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
 
                 ## Update T_PI of slice s.t. it is aligned with slice_3D_ref
-                slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
+                slice_3D.update_affine_transform(T_PI_in_plane_rotation_3D)
 
         return None
+
+
+    def _get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(self, rigid_transform_2D_sitk, T, slice_3D_sitk):
+        ## Extract affine transformation to transform from Image to Physical Space
+        T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(slice_3D_sitk)
+
+        ## T = T_rotation_inv o T_origin_inv
+        # T = get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D)
+        # T = self._get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D.sitk)
+        T_inv = sitk.AffineTransform(T.GetInverse())
+
+        ## T_PI_align = T_rotation_inv o T_origin_inv o T_PI: Trafo to align stack with physical coordinate system
+        ## (Hence, T_PI_align(\i) = \spacing*\i)
+        T_PI_align = sitkh.get_composited_sitk_affine_transform(T, T_PI)
+
+        ## Extract direction matrix and origin so that slice is oriented according to T_PI_align (i.e. with physical axes)
+        # origin_PI_align = get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,slice_3D)
+        # direction_PI_align = get_sitk_image_direction_from_sitk_affine_transform(T_PI_align,slice_3D)
+
+        ## Extend to 3D rigid transform
+        rigid_transform_3D = self._get_3D_from_sitk_2D_rigid_transform(rigid_transform_2D_sitk) 
+
+        ## T_PI_in_plane_rotation_3D 
+        ##    = T_origin o T_rotation o T_in_plane_rotation_2D_space 
+        ##                      o T_rotation_inv o T_origin_inv o T_PI
+        T_PI_in_plane_rotation_3D = sitk.AffineTransform(3)
+        T_PI_in_plane_rotation_3D = sitkh.get_composited_sitk_affine_transform(rigid_transform_3D, T_PI_align)
+        T_PI_in_plane_rotation_3D = sitkh.get_composited_sitk_affine_transform(T_inv, T_PI_in_plane_rotation_3D)
+
+        return T_PI_in_plane_rotation_3D
+
+
+    def _get_3D_from_sitk_2D_rigid_transform(self, rigid_transform_2D_sitk):
+        # Get parameters of 2D registration
+        angle_z, translation_x, translation_y = rigid_transform_2D_sitk.GetParameters()
+        center_x, center_y = rigid_transform_2D_sitk.GetFixedParameters()
+
+        # Expand obtained translation to 3D vector
+        translation_3D = (translation_x, translation_y, 0)
+        center_3D = (center_x, center_y, 0)
+
+        # Create 3D rigid transform based on 2D
+        rigid_transform_3D = sitk.Euler3DTransform()
+        rigid_transform_3D.SetRotation(0,0,angle_z)
+        rigid_transform_3D.SetTranslation(translation_3D)
+        rigid_transform_3D.SetFixedParameters(center_3D)
+        
+        return rigid_transform_3D
+
+
+    def _check_sitk_mask_2D(self, mask_2D_sitk):
+
+        mask_nda = sitk.GetArrayFromImage(mask_2D_sitk)
+
+        if np.sum(mask_nda) > 1:
+            return mask_2D_sitk
+
+        else:
+            mask_nda[:] = 1
+
+            mask = sitk.GetImageFromArray(mask_nda)
+            mask.CopyInformation(mask_2D_sitk)
+
+            return mask
 
 
     def _apply_in_plane_rigid_registration_2D_approach_02(self, stack):
@@ -145,17 +209,17 @@ class InPlaneRigidRegistration:
                 rigid_transform_2D_inv = self._in_plane_rigid_registration_2D(
                     fixed_2D_sitk = slice_2D_ref_sitk, 
                     moving_2D_sitk = slice_3D_copy_sitk[:,:,0],
-                    fixed_2D_sitk_mask = sitkh.check_sitk_mask_2D(slice_2D_ref_sitk_mask), 
-                    moving_2D_sitk_mask = sitkh.check_sitk_mask_2D(slice_3D_copy_sitk_mask[:,:,0]))
+                    fixed_2D_sitk_mask = self._check_sitk_mask_2D(slice_2D_ref_sitk_mask), 
+                    moving_2D_sitk_mask = self._check_sitk_mask_2D(slice_3D_copy_sitk_mask[:,:,0]))
 
                 ## Get transformation for 3D in-plane rigid transformation to update T_PI of slice
-                T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
+                T_PP = self._get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D.sitk)
 
                 ## Get registration trafo for slices in physical 3D space
-                T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
+                T_PI_in_plane_rotation_3D = self._get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
 
                 ## Update T_PI of slice s.t. it is aligned with slice_3D_ref
-                slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
+                slice_3D.update_affine_transform(T_PI_in_plane_rotation_3D)
 
         return None
 
@@ -192,10 +256,10 @@ class InPlaneRigidRegistration:
                 os.system("mkdir -p " + dir_tmp)
 
                 moving_sitk_2D = slice_3D_copy_sitk[:,:,0]
-                moving_sitk_2D_mask = sitkh.check_sitk_mask_2D(slice_3D_copy_sitk_mask[:,:,0])
+                moving_sitk_2D_mask = self._check_sitk_mask_2D(slice_3D_copy_sitk_mask[:,:,0])
 
                 fixed_sitk_2D = slice_2D_ref_sitk
-                fixed_sitk_2D_mask = sitkh.check_sitk_mask_2D(slice_2D_ref_sitk_mask)
+                fixed_sitk_2D_mask = self._check_sitk_mask_2D(slice_2D_ref_sitk_mask)
 
                 moving_str = str(j) + "_moving" 
                 moving_mask_str = str(j) +"_moving_mask"
@@ -275,13 +339,13 @@ class InPlaneRigidRegistration:
                 rigid_transform_2D_inv = sitk.Euler2DTransform(center_2D, -angle_z, t_2D_inv)
 
                 ## Get transformation for 3D in-plane rigid transformation to update T_PI of slice
-                T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
+                T_PP = self._get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D.sitk)
 
                 ## Get registration trafo for slices in physical 3D space
-                T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
+                T_PI_in_plane_rotation_3D = self._get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
 
                 ## Update T_PI of slice s.t. it is aligned with slice_3D_ref
-                slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
+                slice_3D.update_affine_transform(T_PI_in_plane_rotation_3D)
 
                 """
                 """
@@ -416,8 +480,8 @@ class InPlaneRigidRegistration:
         registration_method.SetInitialTransform(initial_transform)
 
         ## Set an image masks in order to restrict the sampled points for the metric
-        registration_method.SetMetricFixedMask(fixed_2D_sitk_mask)
-        registration_method.SetMetricMovingMask(moving_2D_sitk_mask)
+        # registration_method.SetMetricFixedMask(fixed_2D_sitk_mask)
+        # registration_method.SetMetricMovingMask(moving_2D_sitk_mask)
 
         ## Set percentage of pixels sampled for metric evaluation
         # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
@@ -438,10 +502,10 @@ class InPlaneRigidRegistration:
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
 
         ## Use mutual information between two images
-        registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=50, varianceForJointPDFSmoothing=3)
+        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=50, varianceForJointPDFSmoothing=3)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
-        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+        registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
 
         ## Use negative means squares image metric
         # registration_method.SetMetricAsMeanSquares()
@@ -450,7 +514,7 @@ class InPlaneRigidRegistration:
         optimizer settings
         """
         ## Set optimizer to Nelder-Mead downhill simplex algorithm
-        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
+        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withRestarts=False)
 
         ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
         # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
@@ -462,7 +526,7 @@ class InPlaneRigidRegistration:
         # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
 
         ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
-        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
+        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
         registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=1, numberOfIterations=100)
@@ -509,19 +573,39 @@ class InPlaneRigidRegistration:
         T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(slice_3D.sitk)
 
         ## Get transform to get alignment with physical coordinate system of original/untouched slice
-        T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
+        T_PP = self._get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D.sitk)
 
         ## Get transform to align slice with physical coordinate system (perhaps already shifted there) 
         T_PI_align = sitkh.get_composited_sitk_affine_transform(T_PP, T_PI)
 
         ## Set direction and origin of image accordingly
-        direction = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align, slice_3D.sitk)
+        direction = sitkh.get_sitk_image_direction_from_sitk_affine_transform(T_PI_align, slice_3D.sitk)
         origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align, slice_3D.sitk)
 
         slice_3D_sitk_copy.SetDirection(direction)
         slice_3D_sitk_copy.SetOrigin(origin)
 
         return slice_3D_sitk_copy
+
+
+
+    def _get_3D_transform_to_align_stack_with_physical_coordinate_system(self, slice_3D_sitk):
+        ## Extract origin and direction matrix from slice:
+        origin_3D = np.array(slice_3D_sitk.GetOrigin())
+        direction_3D = np.array(slice_3D_sitk.GetDirection())
+
+        ## Generate inverse transformations for translation and orthogonal transformations
+        T_translation = sitk.AffineTransform(3)
+        T_translation.SetTranslation(-origin_3D)
+
+        T_rotation = sitk.AffineTransform(3)
+        direction_inv = np.linalg.inv(direction_3D.reshape(3,3)).flatten()
+        T_rotation.SetMatrix(direction_inv)
+
+        ## T = T_rotation_inv o T_origin_inv
+        T = sitkh.get_composited_sitk_affine_transform(T_rotation,T_translation)
+
+        return T
 
 
     ## Unit test: Simpy register one slice to the previous one
@@ -597,13 +681,13 @@ class InPlaneRigidRegistration:
 
 
                 ## Get transformation for 3D in-plane rigid transformation to update T_PI of slice
-                T_PP = slice_3D.get_transform_to_align_with_physical_coordinate_system()
+                T_PP = self._get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D.sitk)
 
                 ## Get transformation for 3D in-plane rigid transformation
-                T_PI_in_plane_rotation_3D = sitkh.get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
+                T_PI_in_plane_rotation_3D = self._get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform(rigid_transform_2D_inv, T_PP, slice_3D.sitk)
 
                 ## Update slice with the obtained transformation
-                slice_3D.set_affine_transform(T_PI_in_plane_rotation_3D)
+                slice_3D.update_affine_transform(T_PI_in_plane_rotation_3D)
 
                 ## * Unit Test add on
                 UT_warped_2D = sitk.Resample(moving_2D_sitk, fixed_2D_sitk, rigid_transform_2D, sitk.sitkLinear, 0.0, moving_2D_sitk.GetPixelIDValue())
@@ -625,63 +709,62 @@ class InPlaneRigidRegistration:
         return None
 
 
-    def _resample_stacks_of_planarly_aligned_slices(self):
+    # def _resample_stacks_of_planarly_aligned_slices(self):
 
-        for i in range(0, self._N_stacks):
-            stack = self._stacks[i]
-            slices = stack.get_slices()
-            N_slices = stack.get_number_of_slices()
+    #     for i in range(0, self._N_stacks):
+    #         stack = self._stacks[i]
+    #         slices = stack.get_slices()
+    #         N_slices = stack.get_number_of_slices()
 
-            warped_stack_nda = sitk.GetArrayFromImage(stack.sitk)
-            warped_stack_mask_nda = sitk.GetArrayFromImage(stack.sitk_mask)
-
-
-            # Identity transform since trafo is already updated in image header
-            transform = sitk.Euler3DTransform()
-
-            for j in range(0, N_slices):
-                ## Image    
-                fixed_sitk = stack.sitk[:,:,j:j+1]
-                moving_sitk = slices[j].sitk
-
-                warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
-                warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
-                warped_stack_nda[j,:,:] = warped_slice_nda[0,:,:]
-
-                ## Mask
-                fixed_sitk = stack.sitk_mask[:,:,j:j+1]
-                moving_sitk = slices[j].sitk_mask
-
-                warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
-                warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
-                warped_stack_mask_nda[j,:,:] = warped_slice_nda[0,:,:]
+    #         warped_stack_nda = sitk.GetArrayFromImage(stack.sitk)
+    #         warped_stack_mask_nda = sitk.GetArrayFromImage(stack.sitk_mask)
 
 
-            ## Image
-            warped_stack = sitk.GetImageFromArray(warped_stack_nda)
-            warped_stack.CopyInformation(stack.sitk)
+    #         # Identity transform since trafo is already updated in image header
+    #         transform = sitk.Euler3DTransform()
 
-            ## Mask
-            warped_stack_mask = sitk.GetImageFromArray(warped_stack_mask_nda)
-            warped_stack_mask.CopyInformation(stack.sitk_mask)
+    #         for j in range(0, N_slices):
+    #             ## Image    
+    #             fixed_sitk = stack.sitk[:,:,j:j+1]
+    #             moving_sitk = slices[j].sitk
 
-            ## Update member variables
-            # self._resampled_sitk_stacks_after_in_plane_alignment[i] = warped_stack
-            # self._resampled_sitk_stack_masks_after_in_plane_alignment[i] = warped_stack_mask
+    #             warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
+    #             warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
+    #             warped_stack_nda[j,:,:] = warped_slice_nda[0,:,:]
 
-            self._stacks_of_planarly_aligned_slices[i] = st.Stack.from_sitk_image(warped_stack, stack.get_filename() + "planarly_aligned_slices")
-            self._stacks_of_planarly_aligned_slices[i].add_mask(warped_stack_mask)
+    #             ## Mask
+    #             fixed_sitk = stack.sitk_mask[:,:,j:j+1]
+    #             moving_sitk = slices[j].sitk_mask
 
-        return None
+    #             warped_slice_sitk = sitk.Resample(moving_sitk, fixed_sitk, transform, sitk.sitkLinear, 0.0, moving_sitk.GetPixelIDValue())
+    #             warped_slice_nda = sitk.GetArrayFromImage(warped_slice_sitk)
+    #             warped_stack_mask_nda[j,:,:] = warped_slice_nda[0,:,:]
+
+
+    #         ## Image
+    #         warped_stack = sitk.GetImageFromArray(warped_stack_nda)
+    #         warped_stack.CopyInformation(stack.sitk)
+
+    #         ## Mask
+    #         warped_stack_mask = sitk.GetImageFromArray(warped_stack_mask_nda)
+    #         warped_stack_mask.CopyInformation(stack.sitk_mask)
+
+    #         ## Update member variables
+    #         # self._resampled_sitk_stacks_after_in_plane_alignment[i] = warped_stack
+    #         # self._resampled_sitk_stack_masks_after_in_plane_alignment[i] = warped_stack_mask
+
+    #         self._stacks_of_planarly_aligned_slices[i] = st.Stack.from_sitk_image(warped_stack, stack.get_filename() + "planarly_aligned_slices", warped_stack_mask)
+
+    #     return None
 
 
     # def _UT_get_resampled_stacks(self):
-    def get_resampled_planarly_aligned_stacks(self):
-        ## In case stacks have not been resample yet, do it
-        if all(i is None for i in self._stacks_of_planarly_aligned_slices):
-            self._resample_stacks_of_planarly_aligned_slices()
+    # def get_resampled_planarly_aligned_stacks(self):
+    #     ## In case stacks have not been resample yet, do it
+    #     if all(i is None for i in self._stacks_of_planarly_aligned_slices):
+    #         self._resample_stacks_of_planarly_aligned_slices()
 
-        return self._stacks_of_planarly_aligned_slices
+    #     return self._stacks_of_planarly_aligned_slices
 
 
     def write_resampled_stacks(self, directory):

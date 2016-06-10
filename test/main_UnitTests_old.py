@@ -118,7 +118,7 @@ class TestUM(unittest.TestCase):
 
         ## Extract origin and direction to write into axis aligned stack
         origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,slice_sitk)
-        direction_PI_align = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,slice_sitk)
+        direction_PI_align = sitkh.get_sitk_image_direction_from_sitk_affine_transform(T_PI_align,slice_sitk)
 
         ## Update image header
         slice_sitk.SetDirection(direction_PI_align)
@@ -177,7 +177,7 @@ class TestUM(unittest.TestCase):
 
         ## Extract direction matrix and origin so that slice is oriented according to T_PI_align (i.e. with physical axes)
         origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,slice_sitk)
-        direction_PI_align = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_align,slice_sitk)
+        direction_PI_align = sitkh.get_sitk_image_direction_from_sitk_affine_transform(T_PI_align,slice_sitk)
 
         ## Update image header
         """
@@ -273,7 +273,7 @@ class TestUM(unittest.TestCase):
 
         ## Fetch corresponding information for origin and direction
         origin_PI_in_plane_rotation_3D = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_in_plane_rotation_3D, slice_sitk)
-        direction_PI_in_plane_rotation_3D = sitkh.get_sitk_image_direction_matrix_from_sitk_affine_transform(T_PI_in_plane_rotation_3D, slice_sitk)
+        direction_PI_in_plane_rotation_3D = sitkh.get_sitk_image_direction_from_sitk_affine_transform(T_PI_in_plane_rotation_3D, slice_sitk)
 
         ## Update information at slice_sitk
         slice_sitk.SetOrigin(origin_PI_in_plane_rotation_3D)

@@ -9,17 +9,15 @@
 import SimpleITK as sitk
 import numpy as np
 import unittest
-
 import sys
 sys.path.append("../src/")
-sys.path.append("data/FirstEstimateOfHRVolume/")
 
 ## Import modules from src-folder
-import FirstEstimateOfHRVolume as tm
+import FirstEstimateOfHRVolume as efhrv
 import StackManager as sm
 import Slice as sl
+import Stack as st
 import SimpleITKHelper as sitkh
-
 
 
 ## Concept of unit testing for python used in here is based on
@@ -28,73 +26,38 @@ import SimpleITKHelper as sitkh
 class Test_FirstEstimateOfHRVolume(unittest.TestCase):
 
     ## Specify input data
-    dir_input = "data/FirstEstimateOfHRVolume/"
-    filenames = ["stack0"]
+    dir_input = "data/"
 
-    accuracy = 8
+    accuracy = 7
 
     def setUp(self):
         pass
 
-    def test_01_update_slice_transformations(self):
+    ## Test whether private function _get_zero_framed_stack within FirstEstimateOfHRVolume
+    #  works correctly
+    def test_01_get_zero_framed_stack(self):
 
-        ## Create stack manager and read stack(s)
-        stack_manager = sm.StackManager()
-        stack_manager.read_input_data(self.dir_input, self.filenames)
+        ## Read stack
+        stack = st.Stack.from_filename(self.dir_input, filename="fetal_brain_0", suffix_mask="_mask")
 
-        ##
-        i = 0
-        stack = stack_manager._stacks[i]
-        slices_sitk = [None]*stack.get_number_of_slices()
+        ## Isotropically resample stack (simulate HR volume for FirstEstimateOfHRVolume)
+        #  Idea: Don't "merge" more stacks but only use one isotropic stack where ground
+        #       truth is available then
+        stack_resampled = stack.get_isotropically_resampled_stack(interpolator="Linear")
+        # stack_resampled.show()
 
-        ## Update slices according to given test data
-        for j in range(0, stack.get_number_of_slices()):
-            slices_sitk[j] = sitk.ReadImage(self.dir_input + self.filenames[i] + "_" + str(j) + ".nii.gz")
-            stack._slices[j] = sl.Slice(sitk.Image(slices_sitk[j]), self.dir_input, self.filenames[i], j)
+        ## Create FirstEstimateOfHRVolume in order to access _get_zero_framed_stack function
+        stack_manager = sm.StackManager.from_stacks([stack])
+        first_estimate_of_HR_volume = efhrv.FirstEstimateOfHRVolume(stack_manager, "bla", 0)
+        stack_resampled_framed = first_estimate_of_HR_volume._get_zero_framed_stack(stack_resampled, 5)
+        # stack_resampled_framed.show()
 
-        ## Fetch rigid registration
-        rigid_registrations = [None]*stack_manager.get_number_of_stacks()
-        # rigid_registrations[i] = sitk.Euler3DTransform(sitk.ReadTransform(self.dir_input + "rigid_transform_minorDiff.tfm"))
-        rigid_registrations[i] = sitk.Euler3DTransform(sitk.ReadTransform(self.dir_input + "rigid_transform_majorDiff.tfm"))
+        ## Resample back to stack_resampled
+        stack_resampled_frame_resampled_sitk = sitk.Resample(stack_resampled_framed.sitk, stack_resampled.sitk, sitk.Euler3DTransform(), sitk.sitkLinear, 0.0, stack_resampled_framed.sitk.GetPixelIDValue())
 
-        ## Insantiate testmodule
-        testmod = tm.FirstEstimateOfHRVolume(stack_manager, "foo")
-
-        ## Run updates for slice trafos
-        testmod._update_slice_transformations(rigid_registrations)
-
-        ## Define vectors pointing along the main axis of the image space
-        N_x, N_y, N_z = stack.sitk.GetSize()
-        
-        e_0 = (0,0,0)
-        e_x = (N_x,0,0)
-
-        ## Compute stack origins
-        origin_0 = np.array(slices_sitk[0].GetOrigin())
-        origin_0_warped = np.array(stack_manager._stacks[i]._slices[0].sitk.GetOrigin())
-
-        ## Compute direction vector of stack (x-direction in voxel space)
-        a_0 = np.array(slices_sitk[0].TransformIndexToPhysicalPoint(e_x)) - origin_0
-        a_0_warped = np.array(stack_manager._stacks[i]._slices[0].sitk.TransformIndexToPhysicalPoint(e_x)) - origin_0_warped
-        
-        for j in xrange(0,stack.get_number_of_slices()):
-            ## Compute slice origins
-            origin_j = np.array(slices_sitk[j].GetOrigin())
-            a_j = np.array(slices_sitk[j].TransformIndexToPhysicalPoint(e_x)) - origin_j
-
-            ## Compute direction vector of slices (x-direction in voxel space)
-            origin_j_warped = np.array(stack_manager._stacks[i]._slices[j].sitk.GetOrigin())
-            a_j_warped = np.array(stack_manager._stacks[i]._slices[j].sitk.TransformIndexToPhysicalPoint(e_x)) - origin_j_warped
-
-            ## Check that translations relativ to stack origins are identical
-            self.assertEqual(np.around(
-                abs(np.linalg.norm(origin_j-origin_0) - np.linalg.norm(origin_j_warped-origin_0_warped))
-                , decimals = self.accuracy), 0 )
-
-            ## Check that relative rotation is identical
-            self.assertEqual(np.around(abs(
-                np.dot(a_j,a_0)/(np.linalg.norm(a_j)*np.linalg.norm(a_0)) 
-                - np.dot(a_j_warped,a_0_warped)/(np.linalg.norm(a_j_warped)*np.linalg.norm(a_0_warped)))
-                , decimals = self.accuracy), 0 )
-
+        ## Check alignment
+        nda_diff = sitk.GetArrayFromImage(stack_resampled_frame_resampled_sitk - stack_resampled.sitk)
+        self.assertEqual(np.round(
+                np.linalg.norm(nda_diff)
+                , decimals = self.accuracy), 0)
 

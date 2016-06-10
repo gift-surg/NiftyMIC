@@ -14,7 +14,6 @@ import SimpleITK as sitk
 import numpy as np
 import time                     
 
-
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
 
@@ -34,7 +33,7 @@ class ScatteredDataApproximation:
         self._HR_volume = HR_volume
 
         ## Define sigma for recursive smoothing filter
-        self._sigma = 1
+        self._sigma_array = np.ones(3)
 
         ## Define dictionary to choose computational approach for SDA
         self._run_reconstruction = {
@@ -44,16 +43,37 @@ class ScatteredDataApproximation:
         self._sda_approach = "Shepard-YVV"    # default approximation approach
 
 
-    ## Set sigma used for recursive Gaussian smoothing
+    ## Set sigma used for recursive Gaussian smoothing. Same sigma is used
+    #  in each axis, i.e. isotropic smoothing is applied. Sigma is measured 
+    #  in the units of image spacing.
     #  \param[in] sigma, scalar
     def set_sigma(self, sigma):
-        self._sigma = sigma
+        self._sigma_array = np.ones(3)*sigma
 
 
-    ## Get sigma used for recursive Gaussian smoothing
-    #  \return sigma, scalar
-    def get_sigma(self):
-        return self._sigma
+    # ## Get sigma used for recursive Gaussian smoothing. 
+    # #  \return sigma array, numpy array
+    # def get_sigma(self):
+    #     return self._sigma_array
+
+
+    ## Set array of standard deviations used for recursive Gaussian smoothing 
+    #  in each direction. Sigmas are measured in the units of image spacing.
+    #  You may use the method SetSigma to set the same value across each axis or
+    #  use the method SetSigmaArray if you need different values along each axis
+    #  \param[in] sigma_array 3D array containing the standard deviation in each direction
+    def set_sigma_array(self, sigma_array):
+        if len(sigma_array) is not 3:
+            raise ValueError("Error: Sigma array must contain 3 elements")
+
+        self._sigma_array = np.array(sigma_array)
+
+
+    ## Get array of standard deviations used for recursive Gaussian smoothing
+    #  in each direction. Sigmas are measured in the units of image spacing.
+    #  \return sigma array, numpy array
+    def get_sigma_array(self):
+        return self._sigma_array
 
 
     ## Set approach for approximating the HR volume. It can be either 
@@ -81,7 +101,7 @@ class ScatteredDataApproximation:
     ## Computed reconstructed volume based on current estimated positions of slices
     def run_reconstruction(self):
         print("Chosen SDA approach: " + self._sda_approach)
-        print("Smoothing parameter sigma = " + str(self._sigma))
+        print("Smoothing parameter sigma = " + str(self._sigma_array))
 
         t0 = time.clock()
 
@@ -106,17 +126,16 @@ class ScatteredDataApproximation:
 
         for i in range(0, self._N_stacks):
         # for i in range(0, 1):
-            print("  Stack %s/%s" %(i,self._N_stacks-1))
+            print("\tStack %s/%s" %(i,self._N_stacks-1))
             stack = self._stacks[i]
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
             
             # for j in range(10, 11):
             for j in range(0, N_slices):
+                # print("\t\tSlice %s/%s" %(j,N_slices-1))
                 slice = slices[j]
-
                 slice_masked_sitk = slice.sitk*sitk.Cast(slice.sitk_mask,slice.sitk.GetPixelIDValue())
-                # slice_masked_sitk = slice.sitk
 
                 ## Nearest neighbour resampling of slice to target space (HR volume)
                 slice_resampled_sitk = sitk.Resample(
@@ -171,7 +190,7 @@ class ScatteredDataApproximation:
         ## Apply Recursive Gaussian YVV filter
         gaussian = itk.SmoothingRecursiveYvvGaussianImageFilter[image_type, image_type].New()   # YVV-based Filter
         # gaussian = itk.SmoothingRecursiveGaussianImageFilter[image_type, image_type].New()    # Deriche-based Filter
-        gaussian.SetSigma(self._sigma)
+        gaussian.SetSigmaArray(self._sigma_array)
         gaussian.SetInput(helper_N)
         gaussian.Update()
         HR_volume_update_N = gaussian.GetOutput()
@@ -196,6 +215,7 @@ class ScatteredDataApproximation:
 
         ## Link HR_volume.sitk to the updated volume
         self._HR_volume.sitk = HR_volume_update
+        self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(HR_volume_update)
 
 
     ## Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19).
@@ -218,10 +238,9 @@ class ScatteredDataApproximation:
             N_slices = stack.get_number_of_slices()
             
             for j in range(0, N_slices):
-                slice = slices[j]
 
+                slice = slices[j]
                 slice_masked_sitk = slice.sitk*sitk.Cast(slice.sitk_mask,slice.sitk.GetPixelIDValue())
-                # slice_masked_sitk = slice.sitk
 
                 ## Nearest neighbour resampling of slice to target space (HR volume)
                 slice_resampled_sitk = sitk.Resample(
@@ -258,7 +277,7 @@ class ScatteredDataApproximation:
 
         ## Apply recursive Gaussian smoothing
         gaussian = sitk.SmoothingRecursiveGaussianImageFilter()
-        gaussian.SetSigma(self._sigma)
+        gaussian.SetSigma(self._sigma_array[1])
 
         HR_volume_update_N = gaussian.Execute(helper_N)
         HR_volume_update_D = gaussian.Execute(helper_D)

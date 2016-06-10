@@ -16,9 +16,10 @@ import matplotlib.pyplot as plt
 
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
-import InPlaneRigidRegistration as iprr
+import StackManager as sm
 import Stack as st
 import ScatteredDataApproximation as sda
+import StackAverage as sa
 
 
 ## Class to compute first estimate of HR volume. Steps included are:
@@ -43,12 +44,11 @@ class FirstEstimateOfHRVolume:
         self._filename_reconstructed_volume = filename_reconstructed_volume
         self._target_stack_number = target_stack_number
 
-        ## Resample chosen target volume and its mask to isotropic grid
+        ## Resample chosen target volume and its mask to isotropic grid with optional additional boundary
         ## \todo replace self._target_stack_number with "best choice" of stack
-        self._HR_volume = self._get_isotropically_resampled_stack(self._stacks[self._target_stack_number])
+        self._HR_volume = self._stacks[self._target_stack_number].get_isotropically_resampled_stack(interpolator="Linear")
 
         ## Flags indicating whether or not these options are selected
-        self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = False
         self._flag_register_stacks_before_initial_volume_estimate = False
 
         ## Rigid registrations obtained after registering each stack to (upsampled) target stack
@@ -60,21 +60,11 @@ class FirstEstimateOfHRVolume:
             "SDA"       :   self._run_SDA,
             "Average"   :   self._run_averaging
         }
-        self._recon_approach = "SDA"        # default reconstruction approach
+        self._recon_approach = "Average"        # default reconstruction approach
 
         ## SDA reconstruction settings:
-        self._SDA = sda.ScatteredDataApproximation(self._stack_manager, self._HR_volume)
-
-        self._SDA_sigma = 0.6                 # sigma for recursive Gaussian smoothing
+        self._SDA_sigma = 1                 # sigma for recursive Gaussian smoothing
         self._SDA_type = 'Shepard-YVV'      # Either 'Shepard-YVV' or 'Shepard-Deriche'
-
-        self._SDA.set_sigma(self._SDA_sigma)
-        self._SDA.set_approach(self._SDA_type)
-
-
-    ## Set flag to use in-plane of all slices to each other within their stacks
-    def use_in_plane_registration_for_initial_volume_estimate(self, flag):
-        self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate = flag
 
 
     ## Set flag to globally register each stack with chosen target stack.
@@ -105,6 +95,16 @@ class FirstEstimateOfHRVolume:
         return self._recon_approach
 
 
+    ## Set sigma chosen for SDA approach
+    def set_sigma(self, sigma):
+        self._SDA_sigma = sigma
+
+
+    ## Get sigma chosen for SDA approach
+    def get_sigma(self):
+        return self._SDA_sigma
+
+
     ## Execute computation for first estimate of HR volume.
     #  This function steers the estimation of first HR volume which then updates
     #  self._HR_volume
@@ -116,29 +116,17 @@ class FirstEstimateOfHRVolume:
     #  -# Register all (planarly-aligned) stacks to target-volume (optional)
     #  -# Create first HR volume estimate: Average all registered (planarly-aligned) stacks
     #  -# Update all slice transformations: Each slice position gets updated according to alignment with HR volume
-    # \param[in] use_in_plane_registration states whether in-plane registration is used prior registering (bool)
-    def compute_first_estimate_of_HR_volume(self):
+    #  \param[in] display_info display information of registration results as we go along
+    #  \param[in] boundary additional boundary surrounding chosen target stack in mm (used to get additional black frame)
+    def compute_first_estimate_of_HR_volume(self, boundary=5, display_info=0):
 
-        ## Use stacks with in-plane aligned slices
-        if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
-            print("In-plane alignment of slices within each stack is performed")
-            ## Run in-plane rigid registration of all stacks
-            self._in_plane_rigid_registration =  iprr.InPlaneRigidRegistration(self._stack_manager)
-            self._in_plane_rigid_registration.run_in_plane_rigid_registration()
-            stacks = self._in_plane_rigid_registration.get_resampled_planarly_aligned_stacks()
-
-            ## Update HR volume and its mask
-            self._HR_volume = self._get_isotropically_resampled_stack(stacks[self._target_stack_number])
-
-        ## Use "raw" stacks as given by their originally given physical positions
-        else:
-            print("In-plane alignment of slices within each stack is NOT performed")
-            stacks = self._stacks 
-
+        ## Add surrounding zero boundary if desired
+        self._HR_volume = self._get_zero_framed_stack(self._HR_volume, boundary)
+        
         ## If desired: Register all (planarly) aligned stacks to resampled target volume
         if self._flag_register_stacks_before_initial_volume_estimate:
             print("Rigid registration between each stack and target is performed")
-            self._rigidly_register_all_stacks_to_HR_volume(print_trafos=True)
+            self._rigidly_register_all_stacks_to_HR_volume(print_trafos=display_info)
 
         ## No rigid registration
         else:
@@ -152,16 +140,53 @@ class FirstEstimateOfHRVolume:
     #  The image and its mask get resampled to isotropic grid 
     #  (in-plane resolution also in through-plane direction)
     #  \param[in] target_stack Stack being resampled
+    #  \param[in] boundary additional boundary surrounding stack in mm 
     #  \return Isotropically resampled Stack
-    def _get_isotropically_resampled_stack(self, target_stack):
+    def _get_zero_framed_stack(self, target_stack, boundary):
         
         ## Read original spacing (voxel dimension) and size of target stack:
         spacing = np.array(target_stack.sitk.GetSpacing())
         size = np.array(target_stack.sitk.GetSize())
+        origin = np.array(target_stack.sitk.GetOrigin())
 
-        ## Update information according to isotropic resolution
-        size[2] = np.round(spacing[2]/spacing[0]*size[2])
-        spacing[2] = spacing[0]
+        # ## Isotropic resolution for HR volume
+        # spacing_HR_volume = spacing[0]*np.ones(3)
+
+        # ## Update information according to isotropic resolution if no boundary is given
+        # size_HR_volume_z_exact = spacing[2]/spacing[0]*size[2]
+        # size_HR_volume = np.array((size[0], size[1], np.ceil(size_HR_volume_z_exact))).astype('int')
+
+        # ## Compensate for residual in z-direction in physical space
+        # residual = size_HR_volume[2] - size_HR_volume_z_exact
+        # a_z = target_stack.sitk.TransformIndexToPhysicalPoint((0,0,1)) - origin
+        # e_z = a_z/np.linalg.norm(a_z) ## unit direction of z-axis in physical space
+
+        # ## Add spacing to residual (due to discretization) to get translation
+        # translation = e_z * (residual+spacing[0])
+
+        # ## Updated origin for HR "to not lose information due to discretization"
+        # origin_HR_volume = origin - translation
+
+
+        ## Add additional boundary if desired
+        if boundary is not 0:
+            ## Get boundary in voxel space
+            boundary_vox = np.round(boundary/spacing[0]).astype("int")
+            
+            ## Compute size of resampled stack by considering additional boundary
+            size = size + 2*boundary_vox
+
+            ## Compute origin of resampled stack by considering additional boundary
+            a_x = target_stack.sitk.TransformIndexToPhysicalPoint((1,0,0)) - origin
+            a_y = target_stack.sitk.TransformIndexToPhysicalPoint((0,1,0)) - origin
+            a_z = target_stack.sitk.TransformIndexToPhysicalPoint((0,0,1)) - origin
+            e_x = a_x/np.linalg.norm(a_x)
+            e_y = a_y/np.linalg.norm(a_y)
+            e_z = a_z/np.linalg.norm(a_z)
+
+            translation = (e_x + e_y + e_z)*boundary_vox*spacing[0]
+
+            origin = origin - translation
 
         ## Resample image and its mask to isotropic grid
         default_pixel_value = 0.0
@@ -171,7 +196,7 @@ class FirstEstimateOfHRVolume:
             size, 
             sitk.Euler3DTransform(), 
             sitk.sitkNearestNeighbor, 
-            target_stack.sitk.GetOrigin(), 
+            origin, 
             spacing,
             target_stack.sitk.GetDirection(),
             default_pixel_value,
@@ -182,37 +207,28 @@ class FirstEstimateOfHRVolume:
             size, 
             sitk.Euler3DTransform(), 
             sitk.sitkNearestNeighbor, 
-            target_stack.sitk.GetOrigin(), 
+            origin, 
             spacing,
             target_stack.sitk.GetDirection(),
             default_pixel_value,
-            target_stack.sitk.GetPixelIDValue())
+            target_stack.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance of HR_volume
-        HR_volume = st.Stack.from_sitk_image(HR_volume_sitk, self._filename_reconstructed_volume)
-        HR_volume.add_mask(HR_volume_sitk_mask)
+        HR_volume = st.Stack.from_sitk_image(HR_volume_sitk, self._filename_reconstructed_volume, HR_volume_sitk_mask)
 
         return HR_volume
 
 
     ## Register all stacks to chosen target stack (HR volume)
     #  \post each Slice is updated according to obtained registration
-    def _rigidly_register_all_stacks_to_HR_volume(self, print_trafos=False):
-
-        if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
-            ## Get resampled stacks of planarly aligned slices as Stack objects (3D volume)
-            stacks = self._in_plane_rigid_registration.get_resampled_planarly_aligned_stacks() # with in-plane alignment
-
-        else:
-            stacks = self._stacks
+    def _rigidly_register_all_stacks_to_HR_volume(self, print_trafos):
 
         ## Compute rigid registrations aligning each stack with the HR volume
         for i in range(0, self._N_stacks):
-            self._rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(stacks[i], self._HR_volume)
+            print("\tStack %s/%s" %(i, self._N_stacks-1))
+            stack = self._stacks[i]
 
-            ## Print rigid registration results (optional)
-            if print_trafos:
-                sitkh.print_rigid_transformation(self._rigid_registrations[i])
+            self._rigid_registrations[i] = self._get_rigid_registration_transform_3D_sitk(stack, self._HR_volume, print_trafos)
 
         ## Update all slice transformations based on obtaine registration
         #  Note: trafos of self._stack do not get updated!
@@ -232,14 +248,9 @@ class FirstEstimateOfHRVolume:
             for j in range(0, stack.get_number_of_slices()):
                 slice = stack._slices[j]
                 
-                ## Trafo from physical origin to origin of slice j
-                slice_trafo = slice.get_affine_transform()
-
-                ## New affine transform of slice j with respect to rigid registration
-                affine_transform = sitkh.get_composited_sitk_affine_transform(T, slice_trafo)
-
-                ## Update affine transform of slice j
-                slice.set_affine_transform(affine_transform)
+                ## Update rigid motion estimate for current slice and update its 
+                #  position in physical space accordingly
+                slice.update_rigid_motion_estimate(T)
 
 
     ## Rigid registration routine based on SimpleITK
@@ -253,6 +264,8 @@ class FirstEstimateOfHRVolume:
         registration_method = sitk.ImageRegistrationMethod()
 
         ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
+        # fixed_3D.show()
+        # moving_3D.show()
         initial_transform = sitk.CenteredTransformInitializer(fixed_3D.sitk, moving_3D.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
 
         # initial_transform = sitk.Euler3DTransform()
@@ -261,7 +274,7 @@ class FirstEstimateOfHRVolume:
         registration_method.SetInitialTransform(initial_transform)
 
         ## Set an image masks in order to restrict the sampled points for the metric
-        # registration_method.SetMetricFixedMask(fixed_3D.sitk_mask)
+        registration_method.SetMetricFixedMask(fixed_3D.sitk_mask)
         # registration_method.SetMetricMovingMask(moving_3D.sitk_mask)
 
         ## Set percentage of pixels sampled for metric evaluation
@@ -277,7 +290,7 @@ class FirstEstimateOfHRVolume:
         # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
         
         ## Use negative normalized cross correlation image metric
-        # registration_method.SetMetricAsCorrelation()
+        registration_method.SetMetricAsCorrelation()
 
         ## Use demons image metric
         # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
@@ -286,7 +299,7 @@ class FirstEstimateOfHRVolume:
         # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=3)
         
         ## Use the mutual information between two images to be registered using the method of Mattes2001
-        registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)
+        # registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
 
         ## Use negative means squares image metric
         # registration_method.SetMetricAsMeanSquares()
@@ -295,7 +308,7 @@ class FirstEstimateOfHRVolume:
         optimizer settings
         """
         ## Set optimizer to Nelder-Mead downhill simplex algorithm
-        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withStarts=false)
+        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withRestarts=False)
 
         ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
         # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
@@ -307,14 +320,16 @@ class FirstEstimateOfHRVolume:
         # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
 
         ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
-        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, numberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
+        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
 
         ## Regular Step Gradient descent optimizer
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=0.5, minStep=0.05, numberOfIterations=2000)
+        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=100)
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
         ## (Many more possibilities to estimate scales)
         registration_method.SetOptimizerScalesFromPhysicalShift()
+        # registration_method.SetOptimizerScalesFromJacobian()
+        
         
         """
         setup for the multi-resolution framework            
@@ -339,14 +354,16 @@ class FirstEstimateOfHRVolume:
         # print("\n")
 
         ## Execute 3D registration
-        final_transform_3D_sitk = registration_method.Execute(fixed_3D.sitk, moving_3D.sitk) 
+        final_transform_3D_sitk = sitk.Euler3DTransform(registration_method.Execute(fixed_3D.sitk, moving_3D.sitk))
 
         if display_registration_info:
-            print("SimpleITK Image Registration Method:")
-            print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
-            print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+            print("\t\tSimpleITK Image Registration Method:")
+            print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
+            print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
-        return sitk.Euler3DTransform(final_transform_3D_sitk)
+            sitkh.print_sitk_transform(final_transform_3D_sitk)
+
+        return final_transform_3D_sitk
 
 
     """
@@ -355,72 +372,17 @@ class FirstEstimateOfHRVolume:
     ## Compute average of all registered stacks and update self._HR_volume
     #  \post self._HR_volume is overwritten with new estimate
     def _run_averaging(self):
+        
+        stacks = self._stacks
+
+        self._sa = sa.StackAverage(sm.StackManager.from_stacks(stacks), self._HR_volume)
+        self._sa.set_averaged_volume_name(self._filename_reconstructed_volume)
+        self._sa.set_stack_transformations(self._rigid_registrations)
+
         print("\n\t--- Run averaging of stacks ---")
-        default_pixel_value = 0.0
-
-        ## Define helpers to obtain averaged stack
-        shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
-        array = np.zeros(shape)
-        array_mask = np.zeros(shape)
-        ind = np.zeros(shape)
-
-        if self._flag_use_in_plane_rigid_registration_for_initial_volume_estimate:
-            ## Get resampled stacks of planarly aligned slices as Stack objects (3D volume)
-            stacks = self._in_plane_rigid_registration.get_resampled_planarly_aligned_stacks() # with in-plane alignment
-
-        else:
-            stacks = self._stacks
-
-        ## Average over domain specified by the joint mask ("union mask")
-        for i in range(0,self._N_stacks):
-            ## Resample warped stacks
-            stack_sitk =  sitk.Resample(
-                stacks[i].sitk,
-                self._HR_volume.sitk, 
-                self._rigid_registrations[i], 
-                sitk.sitkLinear, 
-                default_pixel_value,
-                self._HR_volume.sitk.GetPixelIDValue())
-
-            ## Resample warped stack masks
-            stack_sitk_mask =  sitk.Resample(
-                stacks[i].sitk_mask,
-                self._HR_volume.sitk, 
-                self._rigid_registrations[i], 
-                sitk.sitkNearestNeighbor, 
-                default_pixel_value,
-                stacks[i].sitk_mask.GetPixelIDValue())
-
-            ## Get arrays of resampled warped stack and mask
-            array_tmp = sitk.GetArrayFromImage(stack_sitk)
-            array_mask_tmp = sitk.GetArrayFromImage(stack_sitk_mask)
-
-            ## Sum intensities of stack and mask
-            array += array_tmp
-            array_mask += array_mask_tmp
-
-            ## Store indices of voxels with non-zero contribution
-            ind[np.nonzero(array_tmp)] += 1
-
-        ## Average over the amount of non-zero contributions of the stacks at each index
-        ind[ind==0] = 1                 # exclude division by zero
-        array = np.divide(array,ind.astype(float))    # elemenwise division
-
-        ## Create (joint) binary mask. Mask represents union of all masks
-        array_mask[array_mask>0] = 1
-
-        ## Set pixels of the image not specified by the mask to zero
-        array[array_mask==0] = 0
-
-        ## Update HR volume (sitk image)
-        helper = sitk.GetImageFromArray(array)
-        helper.CopyInformation(self._HR_volume.sitk)
-        self._HR_volume.sitk = helper
-
-        ## Update HR volume (sitk image mask)
-        helper = sitk.GetImageFromArray(array_mask)
-        helper.CopyInformation(self._HR_volume.sitk_mask)
-        self._HR_volume.sitk_mask = helper
+        self._sa.run_averaging()
+        self._HR_volume = self._sa.get_averaged_volume()
+        
 
 
     """
@@ -430,9 +392,6 @@ class FirstEstimateOfHRVolume:
     #  \param[in] sigma, scalar
     def set_SDA_sigma(self, sigma):
         self._SDA_sigma = sigma
-
-        ## Update SDA approach
-        self._SDA.set_sigma(self._SDA_sigma)
 
 
     ## Get sigma used for recursive Gaussian smoothing
@@ -448,12 +407,15 @@ class FirstEstimateOfHRVolume:
             raise ValueError("Error: SDA approach can only be either 'Shepard-YVV' or 'Shepard-Deriche'")
 
         self._SDA_approach = SDA_approach
-        self._SDA.set_approach(self._SDA_approach)
-
 
 
     ## Estimate the HR volume via SDA approach
+    #  \post self._HR_volume is overwritten with new estimate
     def _run_SDA(self):
+
+        self._SDA = sda.ScatteredDataApproximation(self._stack_manager, self._HR_volume)
+        self._SDA.set_sigma(self._SDA_sigma)
+        self._SDA.set_approach(self._SDA_type)
         
         ## Perform reconstruction via SDA
         print("\n\t--- Run Scattered Data Approximation algorithm ---")

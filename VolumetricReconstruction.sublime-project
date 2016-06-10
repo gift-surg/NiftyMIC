@@ -1,0 +1,40 @@
+{
+	"build_systems":
+	[
+		{
+			"cmd":
+			[
+				"python",
+				"-u",
+				"main.py"
+			],
+			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
+			"name": "VolumetricReconstruction",
+			"selector": "source.python"
+		}
+	],
+	"folders":
+	[
+		{
+			"path": "cpp"
+		},
+		{
+			"path": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src"
+		},
+		{
+			"path": "test"
+		},
+		{
+			"path": "studies"
+		},
+		{
+			"path": "/Users/mebner/development/SimpleElastix/SimpleElastix"
+		},
+		{
+			"path": "backups"
+		},
+		{
+			"path": "GettingStarted"
+		}
+	]
+}

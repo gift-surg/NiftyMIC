@@ -17,10 +17,9 @@ from scipy.optimize import minimize
 from scipy import ndimage
 import matplotlib.pyplot as plt
 
-import itk
-
 ## Import modules from src-folder
 import SimpleITKHelper as sitkh
+import PSF as psf
 
 
 ## Pixel type of used 3D ITK image
@@ -31,6 +30,7 @@ image_type = itk.Image[pixel_type, 3]
 
 
 ## This class is used to compute an approximate solution of the HR volume 
+#  TODO: Update accordingly based on new TV-L2 recon availability
 #  \f$ x \f$  as defined by the inverse problem \f$ y_k = A_k x \f$ for every 
 #  slice \f$ y_k,\,k=1,\dots,K \f$ in the regularized form
 #  \f[ 
@@ -57,53 +57,58 @@ class InverseProblemSolver:
     #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (used as initial value + space definition)
     def __init__(self, stacks, HR_volume):
 
-            ## Initialize variables
-            self._stacks = stacks
-            self._HR_volume = HR_volume
-            self._N_stacks = len(stacks)
+        ## Initialize variables
+        self._stacks = stacks
+        self._HR_volume = HR_volume
+        self._N_stacks = len(stacks)
 
-            ## Cut-off distance for Gaussian blurring filter
-            self._alpha_cut = 3     
+        ## Used for PSF modelling
+        self._psf = psf.PSF()
 
-            ## Settings for optimizer
-            self._alpha = 0.1      # Regularization parameter
-            self._iter_max = 20     # Maximum iteration steps
-            self._reg_type = 'TK0'  # Either Tikhonov zero- or first-order
+        ## Cut-off distance for Gaussian blurring filter
+        self._alpha_cut = 3     
 
-            ## Append itk objects
-            self._append_itk_object_on_slices_of_stacks()
-            self._HR_volume.itk = sitkh.convert_sitk_to_itk_image(self._HR_volume.sitk)
+        ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
+        self._filter_oriented_Gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
+        self._filter_oriented_Gaussian_interpolator.SetAlpha(self._alpha_cut)
+        
+        self._filter_oriented_Gaussian = itk.ResampleImageFilter[image_type, image_type].New()
+        self._filter_oriented_Gaussian.SetInterpolator(self._filter_oriented_Gaussian_interpolator)
+        self._filter_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
 
-            ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
-            self._filter_oriented_Gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[image_type, pixel_type].New()
-            self._filter_oriented_Gaussian_interpolator.SetAlpha(self._alpha_cut)
-            
-            self._filter_oriented_Gaussian = itk.ResampleImageFilter[image_type, image_type].New()
-            self._filter_oriented_Gaussian.SetInterpolator(self._filter_oriented_Gaussian_interpolator)
-            self._filter_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
+        ## Allocate and initialize Adjoint Oriented Gaussian Interpolate Image Filter
+        self._filter_adjoint_oriented_Gaussian = itk.AdjointOrientedGaussianInterpolateImageFilter[image_type, image_type].New()
+        self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
+        self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
+        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage( self._HR_volume.itk )
 
-            ## Allocate and initialize Adjoint Oriented Gaussian Interpolate Image Filter
-            self._filter_adjoint_oriented_Gaussian = itk.AdjointOrientedGaussianInterpolateImageFilter[image_type, image_type].New()
-            self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
-            self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
-            self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage( self._HR_volume.itk )
+        ## Create PyBuffer object for conversion between NumPy arrays and ITK images
+        self._itk2np = itk.PyBuffer[image_type]
 
-            ## Create PyBuffer object for conversion between NumPy arrays and ITK images
-            self._itk2np = itk.PyBuffer[image_type]
+        ## Extract information ready to use for itk image conversion operations
+        self._HR_shape_nda = sitk.GetArrayFromImage( self._HR_volume.sitk ).shape
+        self._HR_origin_itk = self._HR_volume.sitk.GetOrigin()
+        self._HR_spacing_itk = self._HR_volume.sitk.GetSpacing()
+        self._HR_direction_itk = sitkh.get_itk_direction_from_sitk_image( self._HR_volume.sitk )
 
-            ## Extract information ready to use for itk image conversion operations
-            self._HR_shape_nda = sitk.GetArrayFromImage( self._HR_volume.sitk ).shape
-            self._HR_origin_itk = self._HR_volume.sitk.GetOrigin()
-            self._HR_spacing_itk = self._HR_volume.sitk.GetSpacing()
-            self._HR_direction_itk = sitkh.get_itk_direction_from_sitk_image( self._HR_volume.sitk )
+        ## Settings for optimizer
+        self._reg_type = 'TK1'  # Either Tikhonov ('TK0', 'TK1') or isotropic Total Variation ('TV-L2')
+        self._alpha = 0.1       # Regularization parameter for primal problem
+        self._iter_max = 20     # Maximum iteration steps
+        self._tolerance = 1e-8  # Tolerance for optimizer
+        
+        self._rho = 1               # Regularization parameter of augmented Lagrangian term (only for TV-L2)
+        self._ADMM_iterations = 5   # Number of performed ADMM iterations
+        self._ADMM_iterations_output_dir = None
+        self._ADMM_iterations_output_filename_prefix = "TV-L2"
 
-            ## Define dictionary to choose between two possible computations
-            #  of the differential operator D'D
-            self._DTD = {
-                "Laplace"           :   self._DTD_laplacian,
-                "FiniteDifference"  :   self._DTD_finite_diff
-            }
-            self._DTD_comp_type = "Laplace" #default value
+        ## Define dictionary to choose between two possible computations
+        #  of the differential operator D'D
+        self._DTD = {
+            "Laplace"           :   self._DTD_laplacian,
+            "FiniteDifference"  :   self._DTD_finite_diff
+        }
+        self._DTD_comp_type = "FiniteDifference" #default value
 
 
     ## Get current estimate of HR volume
@@ -140,6 +145,57 @@ class InverseProblemSolver:
         return self._alpha
 
 
+    ## Set tolerance for optimizer
+    #  \param[in] tol tolerance, scalar > 0
+    def set_tolerance(self, tol):
+        self._tolerance = tol
+
+
+    ## Set regularization parameter used for augmented Lagrangian in TV-L2 regularization
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
+    #  \]$
+    #  \param[in] rho regularization parameter of augmented Lagrangian term, scalar
+    def set_rho(self, rho):
+        self._rho = rho
+
+
+    ## Get regularization parameter used for augmented Lagrangian in TV-L2 regularization
+    #  \return regularization parameter of augmented Lagrangian term, scalar
+    def get_rho(self):
+        return self._rho
+
+
+    ## Set ADMM iterations to solve TV-L2 reconstruction problem
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
+    #  \]$
+    #  \param[in] iterations number of ADMM iterations, scalar
+    def set_ADMM_iterations(self, iterations):
+        self._ADMM_iterations = iterations
+
+
+    ## Get chosen value of ADMM iterations to solve TV-L2 reconstruction problem
+    #  \return number of ADMM iterations, scalar
+    def get_ADMM_iterations(self):
+        return self._ADMM_iterations
+
+
+    ## Set ouput directory to write TV results in case outputs of ADMM iterations are desired
+    #  \param[in] dir_output directory to write TV results, string
+    def set_ADMM_iterations_output_dir(self, dir_output):
+        self._ADMM_iterations_output_dir = dir_output
+
+
+    ## Set filename to write TV reconstructed volumes of ADMM iteration results 
+    #  \pre ADMM_iterations_output_dir was set
+    #  \param[in] filename filename of volume, string
+    def set_ADMM_iterations_output_filename_prefix(self, filename):
+        self._ADMM_iterations_output_filename_prefix = filename
+
+
     ## Set maximum number of iterations for minimizer
     #  \param[in] iter_max number of maximum iterations, scalar
     def set_iter_max(self, iter_max):
@@ -152,11 +208,11 @@ class InverseProblemSolver:
         return self._iter_max
 
 
-    ## Set type or regularization. It can be either 'TK0' or 'TK1'
-    #  \param[in] reg_type Either 'TK0' or 'TK1', string
+    ## Set type of regularization. It can be either 'TK0','TK1' or 'TV-L2'
+    #  \param[in] reg_type Either 'TK0','TK1' or 'TV-L2', string
     def set_regularization_type(self, reg_type):
-        if reg_type not in ["TK0", "TK1"]:
-            raise ValueError("Error: regularization type can only be either 'TK0' or 'TK1'")
+        if reg_type not in ["TK0", "TK1", "TV-L2"]:
+            raise ValueError("Error: regularization type can only be either 'TK0','TK1' or 'TV-L2'")
 
         self._reg_type = reg_type
 
@@ -187,6 +243,7 @@ class InverseProblemSolver:
 
 
     ## Run reconstruction algorithm 
+    # \bug TK0 with Laplace gives very strange results now. Laplace kernel alright?
     def run_reconstruction(self):
 
         ## Compute required variables prior the optimization step
@@ -196,8 +253,9 @@ class InverseProblemSolver:
         ## TK0-regularization
         if self._reg_type in ["TK0"]:
             print("Chosen regularization type: zero-order Tikhonov")
-            print("Regularization paramter = " + str(self._alpha))
-            print("Maximum number of iterations is set to " + str(self._iter_max))
+            print("Regularization parameter = " + str(self._alpha))
+            print("Maximum number of iterations = " + str(self._iter_max))
+            print("Tolerance = %.0e" %(self._tolerance))
 
             ## Provide constant variable for optimization
             op0_sum_ATMy_itk = self._op0(sum_ATMy_itk, self._alpha)
@@ -206,6 +264,14 @@ class InverseProblemSolver:
             f        = lambda x: self._TK0_SPD(x, sum_ATMy_itk, self._alpha)
             f_grad   = lambda x: self._TK0_SPD_grad(x, op0_sum_ATMy_itk, self._alpha)
             f_hess_p = None
+
+            ## Compute approximate solution
+            [HR_volume_itk, res_minimizer] \
+                = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), iter_max= self._iter_max, tol=self._tolerance, info_title=False)
+
+            ## After reconstruction: Update member attribute
+            self._HR_volume.itk = HR_volume_itk
+            self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( HR_volume_itk )
 
 
         ## TK1-regularization
@@ -217,10 +283,11 @@ class InverseProblemSolver:
             ## DTD is computed direclty via Laplace stencil
             if self._DTD_comp_type in ["Laplace"]:
                 print("Chosen regularization type: first-order Tikhonov via Laplace stencil")
-                print("Regularization paramter = " + str(self._alpha))
-                print("Maximum number of iterations is set to " + str(self._iter_max))
+                print("Regularization parameter = " + str(self._alpha))
+                print("Maximum number of iterations = " + str(self._iter_max))
+                print("Tolerance = %.0e" %(self._tolerance))
                 
-                # Laplace kernel
+                # Laplace kernel (for isotropic spacing)
                 self._kernel_L = self._get_laplacian_kernel() / (spacing[0]*spacing[0])
 
                 # Set finite difference kernels to None
@@ -234,15 +301,16 @@ class InverseProblemSolver:
             ## DTD is computed as sequence of forward and backward operators
             else:
                 print("Chosen regularization type: first-order Tikhonov via forward/backward finite differences")
-                print("Regularization paramter = " + str(self._alpha))
-                print("Maximum number of iterations is set to " + str(self._iter_max))
+                print("Regularization parameter = " + str(self._alpha))
+                print("Maximum number of iterations = " + str(self._iter_max))
+                print("Tolerance = %.0e" %(self._tolerance))
 
-                # Forward difference kernels
+                # Forward difference kernels (for isotropic spacing)
                 kernel_Dxf = self._get_forward_diff_x_kernel() / spacing[0]
                 kernel_Dyf = self._get_forward_diff_y_kernel() / spacing[0]
                 kernel_Dzf = self._get_forward_diff_z_kernel() / spacing[0]
 
-                # Backward difference kernels
+                # Backward difference kernels (for isotropic spacing)
                 kernel_Dxb = self._get_backward_diff_x_kernel() / spacing[0]
                 kernel_Dyb = self._get_backward_diff_y_kernel() / spacing[0]
                 kernel_Dzb = self._get_backward_diff_z_kernel() / spacing[0]
@@ -259,20 +327,72 @@ class InverseProblemSolver:
                 self._kernel_L   = None
 
             ## Provide constant variable for optimization
-            op1_sum_ATMy_itk = self._op1(sum_ATMy_itk, HR_nda.flatten(), self._alpha)
+            op1_sum_ATMy_itk = self._op1(sum_ATMy_itk, self._alpha)
             
             ## Define function handles for optimization
             f        = lambda x: self._TK1_SPD(x, sum_ATMy_itk, self._alpha)
             f_grad   = lambda x: self._TK1_SPD_grad(x, op1_sum_ATMy_itk, self._alpha)
             f_hess_p = None
 
-        ## Compute approximate solution
-        [HR_volume_itk, res_minimizer] \
-            = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), info_title=False)
+            ## Compute approximate solution
+            [HR_volume_itk, res_minimizer] \
+                = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), iter_max= self._iter_max, tol=self._tolerance, info_title=False)
 
-        ## Update member attribute
-        self._HR_volume.itk = HR_volume_itk
-        self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( HR_volume_itk )
+            ## After reconstruction: Update member attribute
+            self._HR_volume.itk = HR_volume_itk
+            self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( HR_volume_itk )
+
+
+        ## TV-L2-regularization
+        elif self._reg_type in ["TV-L2"]:
+
+            print("Chosen regularization type: TV-L2")
+            print("Regularization parameter alpha = " + str(self._alpha))
+            print("Regularization parameter of augmented Lagrangian term rho = " + str(self._rho))
+            print("Number of ADMM iterations = " + str(self._ADMM_iterations))
+            print("Maximum number of TK1 solver iterations = " + str(self._iter_max))
+            print("Tolerance = %.0e" %(self._tolerance))
+
+            ## Compute kernels for differentiation in image space, i.e. including scaling
+            spacing = self._HR_volume.sitk.GetSpacing()
+
+            ## Define differential operators to be computed via FD
+            #  (Reason: Otherwise not uniform with only D'(v-w) operation in first ADMM step)
+            self._DTD_comp_type = "FiniteDifference"
+
+            ## Define kernels for differential operators
+            #  Forward difference kernels (for isotropic spacing)
+            kernel_Dxf = self._get_forward_diff_x_kernel() / spacing[0]
+            kernel_Dyf = self._get_forward_diff_y_kernel() / spacing[0]
+            kernel_Dzf = self._get_forward_diff_z_kernel() / spacing[0]
+
+            # Backward difference kernels (for isotropic spacing)
+            kernel_Dxb = self._get_backward_diff_x_kernel() / spacing[0]
+            kernel_Dyb = self._get_backward_diff_y_kernel() / spacing[0]
+            kernel_Dzb = self._get_backward_diff_z_kernel() / spacing[0]
+
+            # Finite difference kernels
+            self._kernel_Dx = kernel_Dxf
+            self._kernel_Dy = kernel_Dyf
+            self._kernel_Dz = kernel_Dzf
+            self._kernel_DTx = -kernel_Dxb
+            self._kernel_DTy = -kernel_Dyb
+            self._kernel_DTz = -kernel_Dzb
+
+            # Set Laplace kernel to None
+            self._kernel_L   = None
+
+            ##  Set initial values
+            vx0_nda = self._convolve(HR_nda, self._kernel_Dx) # differential in x
+            vy0_nda = self._convolve(HR_nda, self._kernel_Dy) # differential in y
+            vz0_nda = self._convolve(HR_nda, self._kernel_Dz) # differential in z
+
+            wx0_nda = np.zeros_like(vx0_nda)
+            wy0_nda = np.zeros_like(vy0_nda)
+            wz0_nda = np.zeros_like(vz0_nda)
+
+            ## Compute approximate TV-L2 reconstruction via ADMM and update HR volume therein
+            self._run_TV_reconstruction(self._ADMM_iterations, HR_nda, sum_ATMy_itk, vx0_nda, vy0_nda, vz0_nda, wx0_nda, wy0_nda, wz0_nda, self._alpha, self._rho)
 
 
     ## Use scipy.optimize.minimize to get an approximate solution
@@ -280,12 +400,12 @@ class InverseProblemSolver:
     #  \param[in] jac   jacobian of objective function, returns vector array
     #  \param[in] hessp hessian matrix of objective function applied on point p, returns vector array
     #  \param[in] x0    initial value for optimization, vector array
+    #  \param[in] iter_max maximum number of iterations for minimizer
+    #  \param[in] tol   tolerance for minimizer
     #  \param[in] info_title determines which title is used to print information (optional)
-    #  \return data array of reconstruction
+    #  \return reconstructed HR volume as itk.Image
     #  \return output of scipy.optimize.minimize function
-    def _get_reconstruction(self, fun, jac, hessp, x0, info_title=False):
-        iter_max = self._iter_max      # maximum number of iterations for minimizer
-        tol = 1e-8                     # tolerance for minimizer
+    def _get_reconstruction(self, fun, jac, hessp, x0, iter_max, tol, info_title=False):
 
         show_disp = True
 
@@ -354,81 +474,15 @@ class InverseProblemSolver:
 
         if time_elapsed is not None:
             print("\tElapsed time for optimization: %s seconds" %(time_elapsed))
-
-
-
-    ## Append slices as itk image on each object Slice
-    # \warning HACK
-    def _append_itk_object_on_slices_of_stacks(self):
-
-        for i in range(0, self._N_stacks):
-            stack = self._stacks[i]
-            slices = stack.get_slices()
-
-            for j in range(0, stack.get_number_of_slices()):
-                slice = slices[j]
-
-                slice_sitk      = sitk.Image(slice.sitk)
-                slice_sitk_mask = sitk.Image(slice.sitk_mask)
-
-                # ## Only use segmented part of each slice (if available)
-                # if slice.sitk_mask is not None:
-                #     slice_masked_sitk = sitk.Cast(slice.sitk_mask, slice.sitk.GetPixelIDValue()) * slice.sitk
-                # else:
-                #     slice_masked_sitk = sitk.Image(slice.sitk)
-
-                slice.itk       = sitkh.convert_sitk_to_itk_image(slice_sitk)
-                slice.itk_mask  = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
                 
 
-    ## Compute the covariance matrix modelling the PSF in-plane and 
-    #  through-plane of a slice.
-    #  The PSF is modelled as Gaussian with
-    #       FWHM = 1.2*in-plane-resolution (in-plane)
-    #       FWHM = slice thickness (through-plane)
-    #  \param[in] slice Slice instance defining the PSF
-    #  \return Covariance matrix representing the PSF modelled as Gaussian
-    def _get_PSF_covariance_matrix(self, slice):
-        spacing = np.array(slice.sitk.GetSpacing())
-
-        ## Compute Gaussian to approximate in-plane PSF:
-        sigma_x2 = (1.2*spacing[0])**2/(8*np.log(2))
-        sigma_y2 = (1.2*spacing[1])**2/(8*np.log(2))
-
-        ## Compute Gaussian to approximate through-plane PSF:
-        sigma_z2 = spacing[2]**2/(8*np.log(2))
-
-        return np.diag([sigma_x2, sigma_y2, sigma_z2])
-
-
-    ## Compute rotated covariance matrix which expresses the PSF of the slice
-    #  in the coordinates of the HR_volume
-    #  \param[in] slice slice which is aimed to be simulated according to the slice acquisition model
-    #  \return Covariance matrix U*Sigma_diag*U' where U represents the
-    #          orthogonal trafo between slice and HR_volume
-    def _get_PSF_covariance_matrix_HR_volume_coordinates(self, slice):
-
-        ## Compute rotation matrix to express the PSF in the coordinate system of the HR volume
-        dim = slice.sitk.GetDimension()
-        direction_matrix_HR_volume = np.array(self._HR_volume.sitk.GetDirection()).reshape(dim,dim)
-        direction_matrix_slice = np.array(slice.sitk.GetDirection()).reshape(dim,dim)
-
-        U = direction_matrix_HR_volume.transpose().dot(direction_matrix_slice)
-        # print("U = \n%s\ndet(U) = %s" % (U,np.linalg.det(U)))
-
-        ## Get axis algined PSF
-        cov = self._get_PSF_covariance_matrix(slice)
-
-        ## Return Gaussian blurring variance covariance matrix of slice in HR volume coordinates 
-        return U.dot(cov).dot(U.transpose())
-
-
-    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image Filter parameters 
-    #  according to the relative position between slice and HR volume
+    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
+    #  Filter parameters. Hence, update combined Downsample and Blur Operator
+    #  according to the relative position between slice and HR volume.
     #  \param[in] slice Slice object
     def _update_oriented_adjoint_oriented_Gaussian_image_filters(self, slice):
         ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates
-        Cov_HR_coord = self._get_PSF_covariance_matrix_HR_volume_coordinates( slice )
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( slice, self._HR_volume )
 
         ## Update parameters of forward operator A
         self._filter_oriented_Gaussian_interpolator.SetCovariance( Cov_HR_coord.flatten() )
@@ -469,6 +523,12 @@ class InverseProblemSolver:
     #  \return image in HR space as itk.Image object after performed backward operation
     def _ATM(self, slice_itk, mask_itk):
 
+        ## TODO: Write itkBinaryFunctorImageFilter to multiply quicker
+        ## Also, by changing to 
+        ## itk.MultiplyImageFilter[itk.Image[itk.UC,3], image_type, image_type].New()
+        ## the mask could be considered a different type, see sitkh.convert_sitk_to_itk_image
+        ## (which in turn could help mask-based registration with ITK objects)
+        # multiplier = itk.MultiplyImageFilter[itk.Image[itk.UC,3], image_type, image_type].New()
         multiplier = itk.MultiplyImageFilter[image_type, image_type, image_type].New()
 
         ## compute M y_k
@@ -675,7 +735,7 @@ class InverseProblemSolver:
     #             = \frac{1}{2} \Vert \Big(\sum_k A_k^* M_k A_k + \alpha \Big)x - \sum_k A_k^* M_k y_k \Vert_{\ell^2}^2
     # \f]
     #  \param[in] HR_nda_vec data array of HR image, 1D array shape
-    #  \param[in] sum_ATMy_itk output of _sum_ATMy
+    #  \param[in] sum_ATMy_itk output of _sum_ATMy, itk.Image object
     #  \param[in] alpha regularization parameter
     #  \return J0(x) as scalar value
     def _TK0_SPD(self, HR_nda_vec, sum_ATMy_itk, alpha):
@@ -819,7 +879,7 @@ class InverseProblemSolver:
         return kernel
 
 
-    ## Compute \f$ D^*Dx \f$ directly via Laplacian stencil 
+    ## Compute DTDx directly via Laplacian stencil 
     #  Chosen kernels already incorporate correct scaling to transform 
     #  resulting data array back directly to image space.
     #  \param[in] nda data array of image
@@ -832,7 +892,7 @@ class InverseProblemSolver:
         return self._get_HR_image_from_array_vec( DTD )
 
 
-    ## Compute \f$ D^*Dx \f$ via a sequence of forward and backward finite differences.
+    ## Compute DTDx via a sequence of forward and backward finite differences.
     #  Chosen kernels already incorporate correct scaling to transform 
     #  resulting data array back directly to image space.
     #  \param[in] nda data array of image
@@ -872,13 +932,13 @@ class InverseProblemSolver:
     #  \param[in] image_itk image which acts as x, itk.Image object
     #  \param[in] alpha regularization parameter, scalar
     #  \return op1(x) as itk.Image object
-    def _op1(self, image_itk, image_nda_vec, alpha):
+    def _op1(self, image_itk, alpha):
 
         ## Compute sum_k [A_k' M_k A_k x]
         sum_ATMAx_itk = self._sum_ATMA(image_itk)   
 
-        ## Compute \f$ D^*Dx \f$
-        DTDx_itk = self._DTD[self._DTD_comp_type](image_nda_vec.reshape(self._HR_shape_nda))     
+        ## Compute DTDx
+        DTDx_itk = self._DTD[self._DTD_comp_type](self._itk2np.GetArrayFromImage(image_itk))     
 
         ## Compute sum_k [A_k' M_k A_k x] + alpha*D'Dx
         return self._add_amplified_image(sum_ATMAx_itk, alpha, DTDx_itk)
@@ -890,7 +950,7 @@ class InverseProblemSolver:
     #             = \frac{1}{2} \Vert \Big(\sum_k A_k^* M_k A_k + \alpha\, D^*D \Big)x - \sum_k A_k^* M_k y_k \Vert_{\ell^2}^2
     # \f]
     #  \param[in] HR_nda_vec data array of HR image, 1D array shape
-    #  \param[in] sum_ATMy_itk output of _sum_ATMy
+    #  \param[in] sum_ATMy_itk output of _sum_ATMy, itk.Image object
     #  \param[in] alpha regularization parameter
     #  \return J1(x) as scalar value
     def _TK1_SPD(self, HR_nda_vec, sum_ATMy_itk, alpha):
@@ -898,13 +958,13 @@ class InverseProblemSolver:
         ## Convert HR data array back to itk.Image object
         x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
 
-        ## Compute op1(x) = sum_k [A_k' M_k A_k x] + alpha*B'Bx
-        op1_x_itk = self._op1(x_itk, HR_nda_vec, alpha)
+        ## Compute op1(x) = sum_k [A_k' M_k A_k x] + alpha*D'Dx
+        op1_x_itk = self._op1(x_itk, alpha)
 
-        ## Compute sum_k [A_k' M_k A_k x] + alpha*B'Bx - sum_k A_k' M_k y_k 
+        ## Compute sum_k [A_k' M_k A_k x] + alpha*D'Dx - sum_k A_k' M_k y_k 
         J1_image_itk =  self._add_amplified_image(op1_x_itk, -1, sum_ATMy_itk)
 
-        ## J1 = 0.5*|| sum_k [A_k' M_k A_k x] + alpha*B'Bx - sum_k A_k' M_k y_k ||^2
+        ## J1 = 0.5*|| sum_k [A_k' M_k A_k x] + alpha*D'Dx - sum_k A_k' M_k y_k ||^2
         J1_nda = self._itk2np.GetArrayFromImage(J1_image_itk)
 
         return 0.5*np.sum( J1_nda**2 )
@@ -924,14 +984,288 @@ class InverseProblemSolver:
         ## Convert HR data array back to itk.Image object
         x_itk = self._get_HR_image_from_array_vec(HR_nda_vec)
 
-        ## Compute op1(x) = sum_k [A_k' M_k A_k x] + alpha*B'Bx
-        op1_x_itk = self._op1(x_itk, HR_nda_vec, alpha)
+        ## Compute op1(x) = sum_k [A_k' M_k A_k x] + alpha*D'Dx
+        op1_x_itk = self._op1(x_itk, alpha)
 
         ## Compute op1(op1(x)) = sum_k [A_k' M_k A_k op1(x)] + alpha*op1(x)
-        op1_op1_x_itk = self._op1(op1_x_itk, HR_nda_vec, alpha)
+        op1_op1_x_itk = self._op1(op1_x_itk, alpha)
 
         ## Compute grad J1 in image space
         grad_J1_image_itk = self._add_amplified_image(op1_op1_x_itk, -1, op1_sum_ATMy_itk)
 
         ## Return grad J1 in voxel space
         return self._itk2np.GetArrayFromImage(grad_J1_image_itk).flatten()
+
+
+    """
+    TV-L2 Regularization, i.e. Isotropic Total Variation Regularization
+    """
+    ## Reconstruct volume using TV-L2 regularization via Alternating Direction
+    #  Method of Multipliers (ADMM) method
+    #  \param[in] ADMM_iterations number of ADMM iterations, integer
+    #  \param[in] HR_nda initial value of HR volume data array, numpy array
+    #  \param[in] sum_ATMy_itk output of _sum_ATMy, itk.Image object
+    #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
+    #       but constrained primal problem, i.e.
+    #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
+    #       in x-direction, numpy array
+    #  \param[in] vy_nda initial value for auxiliary variable in y-direction
+    #  \param[in] vz_nda initial value for auxiliary variable in z-direction
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \param[in] alpha regularization parameter for primal problem, scaler>0
+    #  \param[in] rho regularization parameter for augmented Lagrangian term, scalar>0
+    #  \post HR_volume is updated after each iteration
+    def _run_TV_reconstruction(self, ADMM_iterations, HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho):
+        
+        for iter in range(0, ADMM_iterations):
+            print("\tADMM iteration %s/%s:" %(iter+1, ADMM_iterations))
+
+            ## Perform ADMM step
+            HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = self._perform_ADMM_iteration(HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho)
+
+            if self._ADMM_iterations_output_dir is not None:
+                name =  self._ADMM_iterations_output_filename_prefix
+                name += "_stacks" + str(self._N_stacks)
+                name += "_alpha" + str(self._alpha)
+                name += "_rho" + str(self._rho)
+                name += "_ADMM_iteration" + str(iter+1)
+
+                os.system("mkdir -p " + self._ADMM_iterations_output_dir)
+                self._HR_volume.write(directory=self._ADMM_iterations_output_dir, filename=name, write_mask=False)
+                # self._HR_volume.show(title=name)
+
+            ## Show auxiliary v = Dx
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vx_nda.flatten()), title="vx_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vy_nda.flatten()), title="vy_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vz_nda.flatten()), title="vz_iteration_"+str(iter+1))
+
+            ## Show scaled dual variable w
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wx_nda.flatten()), title="wx_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wy_nda.flatten()), title="wy_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wz_nda.flatten()), title="wz_iteration_"+str(iter+1))
+
+
+    ## Perform single ADMM iteration
+    #  \param[in] HR_nda initial value of HR volume data array, numpy array
+    #  \param[in] sum_ATMy_itk output of _sum_ATMy, itk.Image object
+    #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
+    #       but constrained primal problem, i.e.
+    #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
+    #       in x-direction, numpy array
+    #  \param[in] vy_nda initial value for auxiliary variable in y-direction
+    #  \param[in] vz_nda initial value for auxiliary variable in z-direction
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \param[in] alpha regularization parameter for primal problem, scaler>0
+    #  \param[in] rho regularization parameter for augmented Lagrangian term, scalar>0
+    #  \return updated HR volume data array
+    #  \return updated auxiliary variables \p v in x-, y- and z-direction
+    #  \return updated scaled dual variable \p w in x-, y- and z-direction
+    #  \post HR_volume is updated after each iteration
+    def _perform_ADMM_iteration(self, HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho):
+
+        ## 1) Solve for x^{k+1} by using first-order Tikhonov regularization
+        HR_volume_itk, HR_nda = self._perform_ADMM_step_1_TK1_recon_solution(HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho)
+
+        ## Compute derivatives for subsequent steps
+        Dx_nda = self._convolve(HR_nda, self._kernel_Dx)
+        Dy_nda = self._convolve(HR_nda, self._kernel_Dy)
+        Dz_nda = self._convolve(HR_nda, self._kernel_Dz)
+
+        ## 2) Solve for v^{k+1}
+        vx_nda, vy_nda, vz_nda = self._perform_ADMM_step_2_auxiliary_variable_v(Dx_nda, Dy_nda, Dz_nda, wx_nda, wy_nda, wz_nda, alpha/rho)
+
+        ## 3) Solve for w^{k+1}, i.e. scaled dual variable
+        wx_nda, wy_nda, wz_nda = self._perform_ADMM_step_3_scaled_dual_variable(Dx_nda, Dy_nda, Dz_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda)
+
+        ## Update volume
+        self._HR_volume.itk = HR_volume_itk
+        self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( HR_volume_itk )
+
+        return HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda
+        
+
+    ## Perform first step of ADMM algorithm:
+    # TODO
+    #  \param[in] sum_ATMy_itk output of _sum_ATMy, itk.Image object
+    #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
+    #       but constrained primal problem, i.e.
+    #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
+    #       in x-direction, numpy array
+    #  \param[in] vy_nda initial value for auxiliary variable in y-direction
+    #  \param[in] vz_nda initial value for auxiliary variable in z-direction
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \param[in] rho regularization parameter for augmented Lagrangian term, scalar>0
+    #  \return updated HR volume as itk.Image object
+    #  \return updated HR volume data array
+    def _perform_ADMM_step_1_TK1_recon_solution(self, HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho):
+        print("\tTK1-regularization step (" + self._DTD_comp_type + ")" )
+        print("\t\tMaximum number of TK1 solver iterations = " + str(self._iter_max))
+        print("\t\tRegularization parameter alpha = " + str(self._alpha))
+        print("\t\tRegularization parameter of augmented Lagrangian term rho = " + str(self._rho))
+        print("\t\tTolerance = %.0e" %(self._tolerance))
+
+        ## Compute RHS = sum_k A_k' M_k y_k + rho*D'(v-w)
+        RHS_itk = self._sum_ATMy_plus_rho_DT_v_minus_w(sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho)
+
+        ## Compute op1(RHS) = [ sum_k [A_k' M_k A_k] + rho*D'D] RHS
+        op1_RHS_itk = self._op1(RHS_itk, rho)
+
+        ## Compute approximate solution via TK1
+        f        = lambda x: self._TK1_SPD(x, RHS_itk, rho)
+        f_grad   = lambda x: self._TK1_SPD_grad(x, op1_RHS_itk, rho)
+        f_hess_p = None
+
+        [HR_volume_itk, res_minimizer] \
+                = self._get_reconstruction(fun=f, jac=f_grad, hessp=f_hess_p, x0=HR_nda.flatten(), iter_max= self._iter_max, tol=self._tolerance, info_title=False)
+        HR_nda = res_minimizer.x.reshape(self._HR_shape_nda)
+        
+        return HR_volume_itk, HR_nda
+
+
+    ## Perform second step of ADMM algorithm:
+    # TODO
+    #  \param[in] Dx_nda Derivative of HR volume data array in x-direction, numpy array
+    #  \param[in] Dy_nda Derivative of HR volume data array in y-direction, numpy array
+    #  \param[in] Dz_nda Derivative of HR volume data array in z-direction, numpy array
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \param[in] ell scaled regularization variable, i.e. alpha/rho, used for threshold
+    #  \return Updates of auxiliary variable v in x-, y- and z-direction
+    def _perform_ADMM_step_2_auxiliary_variable_v(self, Dx_nda, Dy_nda, Dz_nda, wx_nda, wy_nda, wz_nda, ell):
+
+        ## Compute t = Dx + w
+        tx_nda = Dx_nda + wx_nda
+        ty_nda = Dy_nda + wy_nda
+        tz_nda = Dz_nda + wz_nda
+
+        ## Compute auxiliary variable for decoupled but constrained problem
+        return self._vectorial_soft_threshold(ell, tx_nda, ty_nda, tz_nda)
+
+    
+    ## Perform third step of ADMM algorithm:
+    #  \param[in] Dx_nda Derivative of HR volume data array in x-direction, numpy array
+    #  \param[in] Dy_nda Derivative of HR volume data array in y-direction, numpy array
+    #  \param[in] Dz_nda Derivative of HR volume data array in z-direction, numpy array
+    #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
+    #       but constrained primal problem, i.e.
+    #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
+    #       in x-direction, numpy array
+    #  \param[in] vy_nda initial value for auxiliary variable in y-direction
+    #  \param[in] vz_nda initial value for auxiliary variable in z-direction
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \return Updates of scaled dual variable w in x-, y- and z-direction
+    def _perform_ADMM_step_3_scaled_dual_variable(self, Dx_nda, Dy_nda, Dz_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda):
+        wx_nda = wx_nda + Dx_nda - vx_nda
+        wy_nda = wy_nda + Dy_nda - vy_nda
+        wz_nda = wz_nda + Dz_nda - vz_nda
+
+        return wx_nda, wy_nda, wz_nda
+
+
+    ## Compute \f$ \sum_k A_k^* M_k y_k + \rho\,D^*(v-w) \f$
+    #  \param[in] sum_ATMy_itk output of _sum_ATMy, itk.Image object
+    #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
+    #       but constrained primal problem, i.e.
+    #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
+    #       in x-direction, numpy array
+    #  \param[in] vy_nda initial value for auxiliary variable in y-direction
+    #  \param[in] vz_nda initial value for auxiliary variable in z-direction
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \param[in] rho regularization parameter for augmented Lagrangian term, scalar>0
+    #  \return  \f$ \sum_k A_k^* M_k y_k + \rho\,D^*(v-w) \f$ as itk.Image
+    def _sum_ATMy_plus_rho_DT_v_minus_w(self, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho):
+
+        ## Compute D'v
+        DTvx_nda = self._convolve(vx_nda, self._kernel_DTx)
+        DTvy_nda = self._convolve(vy_nda, self._kernel_DTy)
+        DTvz_nda = self._convolve(vz_nda, self._kernel_DTz)
+
+        ## Compute D'w
+        DTwx_nda = self._convolve(wx_nda, self._kernel_DTx)
+        DTwy_nda = self._convolve(wy_nda, self._kernel_DTy)
+        DTwz_nda = self._convolve(wz_nda, self._kernel_DTz)
+
+        ## Compute D'(v-w)
+        DT_v_minus_w_nda = (DTvx_nda + DTvy_nda + DTvz_nda - DTwx_nda - DTwy_nda - DTwz_nda)
+
+        ## Get D'(v-w) as itk.Image
+        DT_v_minus_w_itk = self._get_HR_image_from_array_vec( DT_v_minus_w_nda )
+        
+        ## Compute RHS = sum_k A_k' M_k y_k + rho*D'(v-w)
+        RHS_itk = self._add_amplified_image(sum_ATMy_itk, rho, DT_v_minus_w_itk)
+
+        return RHS_itk
+
+
+    ## Get vectorial soft threshold based on \p get_soft_threshold \f$ S_\ell \f$
+    #  as solution of TODO
+    #  \param[in] ell scalar > 0 defining the threshold
+    #  \param[in] tx_nda x-coordinate of substituted variable Dx + w as numpy array 
+    #       \f$ \in \mathbb{R}^{\text{dim}_x\times \text{dim}_y} \f$
+    #  \param[in] ty_nda y-coordinate of substituted variable Dx + w as numpy array 
+    #  \param[in] tz_nda z-coordinate of substituted variable Dx + w as numpy array 
+    #  \return vectorial soft threshold
+    #       \f[ \vec{S_\ell}(\vec{t}) = \begin{cases}
+    #           \frac{S_\ell(\Vert \vec{t} \Vert_2)}{\Vert \vec{t} \Vert_2} \vec{t}
+    #               , & \text{if } \Vert \vec{t} \Vert_2 > \ell \\
+    #           0, & \text{otherwise}
+    #       \end{cases}
+    #       \f]
+    def _vectorial_soft_threshold(self, ell, tx_nda, ty_nda, tz_nda):
+
+        Sx = np.zeros_like(tx_nda)
+        Sy = np.zeros_like(ty_nda)
+        Sz = np.zeros_like(tz_nda)
+
+        t_norm = np.sqrt(tx_nda**2 + ty_nda**2 + tz_nda**2)
+
+        ind = t_norm > ell
+
+        Sx[ind] = self._soft_threshold(ell, t_norm[ind])*tx_nda[ind]/t_norm[ind]
+        Sy[ind] = self._soft_threshold(ell, t_norm[ind])*ty_nda[ind]/t_norm[ind]
+        Sz[ind] = self._soft_threshold(ell, t_norm[ind])*tz_nda[ind]/t_norm[ind]
+
+        return Sx, Sy, Sz
+
+
+    ## Get soft threshold as solution of TODO
+    #  \param[in] ell threshold as scalar > 0
+    #  \param[in] t array containing the values to be thresholded
+    #  \return soft threshold
+    #       \f[ S_\ell(t) 
+    #       =  \max(|t|-\ell,0)\,\text{sgn}(t)
+    #       = \begin{cases}
+    #           t-\ell,& \text{if } t>\ell \\
+    #           0,& \text{if } |t|\le\ell \\
+    #           t+\ell,& \text{if } t<\ell
+    #       \end{cases}
+    #       \f]
+    def _soft_threshold(self, ell, t):
+        return np.maximum(np.abs(t) - ell, 0)*np.sign(t)
+
+
+
+
+
+
+
+
+
+

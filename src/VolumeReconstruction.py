@@ -45,7 +45,7 @@ class VolumeReconstruction:
         }
         self._recon_approach = "SRR"        # default reconstruction approach
 
-        ## 1) Super-Resolution Reconstruction (Tikhonov) settings:
+        ## 1) Super-Resolution Reconstruction settings:
         self._SRR = ips.InverseProblemSolver(self._stacks, self._HR_volume)
 
         ## Cut-off distance for Gaussian blurring filter
@@ -56,13 +56,23 @@ class VolumeReconstruction:
         # Settings for optimizer
         self._SRR_alpha = 0.1               # Regularization parameter
         self._SRR_iter_max = 20             # Maximum iteration steps
-        self._SRR_approach = 'TK0'          # Either Tikhonov zero- or first-order
-        self._SRR_DTD_comp_type = "Laplace" # Either 'Laplace' or 'FiniteDifference'
+        self._SRR_approach = 'TK1'          # Either Tikhonov zero- or first-order
+        self._SRR_DTD_comp_type = "FiniteDifference" # Either 'Laplace' or 'FiniteDifference'
+        self._SRR_tolerance = 1e-8
+
+        self._SRR_rho = 1            # Regularization parameter of augmented Lagrangian term (only for TV-L2)
+        self._ADMM_iterations = 5    # Number of performed ADMM iterations
+        self._SRR_ADMM_iterations_output_dir = None
 
         self._SRR.set_alpha(self._SRR_alpha)
         self._SRR.set_iter_max(self._SRR_iter_max)
         self._SRR.set_regularization_type(self._SRR_approach)
         self._SRR.set_DTD_computation_type(self._SRR_DTD_comp_type)
+        self._SRR.set_tolerance(self._SRR_tolerance)
+
+        self._SRR.set_rho(self._SRR_rho)
+        self._SRR.set_ADMM_iterations(self._ADMM_iterations)
+        self._SRR.set_ADMM_iterations_output_dir(self._SRR_ADMM_iterations_output_dir)
 
         ## 2) SDA reconstruction settings:
         self._SDA = sda.ScatteredDataApproximation(self._stack_manager, self._HR_volume)
@@ -109,10 +119,10 @@ class VolumeReconstruction:
 
 
     """
-    Super-Resolution Reconstruction: Tikhonov regularization approach
+    Super-Resolution Reconstruction
     """
     ## Set cut-off distance
-    #  \param[in] alpha_cut scalar value used for Tikhonov regularization
+    #  \param[in] alpha_cut scalar value used for SRR
     def set_SRR_alpha_cut(self, alpha_cut):
         self._SRR_alpha_cut = alpha_cut
 
@@ -121,13 +131,16 @@ class VolumeReconstruction:
         self._SRR.set_alpha_cut(self._SRR_alpha_cut)
 
 
-    ## Get cut-off distance used for Tikhonov regularization
+    ## Get cut-off distance used for SRR
     #  \return scalar value
     def get_SRR_alpha_cut(self):
         return self._SRR_alpha_cut
 
 
-    ## Set regularization parameter used for Tikhonov regularization
+    ## Set regularization parameter for SRR primal problem
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #  \]$
     #  \param[in] alpha regularization parameter, scalar
     def set_SRR_alpha(self, alpha):
         self._SRR_alpha = alpha
@@ -136,10 +149,72 @@ class VolumeReconstruction:
         self._SRR.set_alpha(self._SRR_alpha)
 
 
-    ## Get value of chosen regularization parameter used for Tikhonov regularization
+    ## Get value of chosen regularization parameter for SRR primal problem
     #  \return regularization parameter, scalar
     def get_SRR_alpha(self):
         return self._SRR_alpha
+
+
+    ## Set regularization parameter used for augmented Lagrangian in TV-L2 regularization
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
+    #  \]$
+    #  \param[in] rho regularization parameter of augmented Lagrangian term, scalar
+    def set_SRR_rho(self, rho):
+        self._SRR_rho = rho
+
+        ## Update regularization parameter for solver 
+        self._SRR.set_rho(self._SRR_rho)
+
+
+    ## Get regularization parameter used for augmented Lagrangian in TV-L2 regularization
+    #  \return regularization parameter of augmented Lagrangian term, scalar
+    def get_SRR_rho(self):
+        return self._SRR_rho
+
+
+    ## Set tolerance for optimizer
+    #  \param[in] tol tolerance, scalar > 0
+    def set_SRR_tolerance(self, tol):
+        self._SRR_tolerance = tol
+
+        ## Update regularization parameter for solver 
+        self._SRR.set_tolerance(self._SRR_tolerance)
+
+    ## Set ADMM iterations to solve TV-L2 reconstruction problem
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
+    #  \]$
+    #  \param[in] iterations number of ADMM iterations, scalar
+    def set_SRR_ADMM_iterations(self, iterations):
+        self._SRR_ADMM_iterations = iterations
+
+        ## Update regularization parameter for solver 
+        self._SRR.set_ADMM_iterations(self._SRR_ADMM_iterations)
+
+
+    ## Get chosen value of ADMM iterations to solve TV-L2 reconstruction problem
+    #  \return number of ADMM iterations, scalar
+    def get_SRR_ADMM_iterations(self):
+        return self._SRR_ADMM_iterations
+
+
+    ## Set ouput directory to write TV results in case outputs of ADMM iterations are desired
+    #  \param[in] dir_output directory to write TV results, string
+    def set_SRR_ADMM_iterations_output_dir(self, dir_output):
+        self._SRR_ADMM_iterations_output_dir = dir_output
+
+        ## Update regularization parameter for solver 
+        self._SRR.set_ADMM_iterations_output_dir(self._SRR_ADMM_iterations_output_dir)
+
+
+    def set_SRR_ADMM_iterations_output_filename_prefix(self, prefix):
+        self._SRR_ADMM_iterations_output_filename_prefix = prefix
+
+        ## Update regularization parameter for solver 
+        self._SRR.set_ADMM_iterations_output_filename_prefix(self._SRR_ADMM_iterations_output_filename_prefix)
 
 
     ## Set maximum number of iterations for minimizer used for Tikhonov regularization
@@ -157,11 +232,11 @@ class VolumeReconstruction:
         return self._SRR_iter_max
 
 
-    ## Set type or regularization used for Tikhonov regularization. It can be either 'TK0' or 'TK1'
-    #  \param[in] SRR_approach Either 'TK0' or 'TK1', string
+    ## Set type of regularization. It can be either 'TK0','TK1' or 'TV-L2'
+    #  \param[in] reg_type Either 'TK0','TK1' or 'TV-L2', string
     def set_SRR_approach(self, SRR_approach):
-        if SRR_approach not in ["TK0", "TK1"]:
-            raise ValueError("Error: SRR approach can only be either 'TK0' or 'TK1'")
+        if SRR_approach not in ["TK0", "TK1", "TV-L2"]:
+            raise ValueError("Error: regularization type can only be either 'TK0','TK1' or 'TV-L2'")
 
         self._SRR_approach = SRR_approach
 
@@ -170,7 +245,7 @@ class VolumeReconstruction:
 
 
 
-    ## Get chosen type of regularization used for Tikhonov regularization.
+    ## Get chosen type of regularization.
     #  \return regularization type as string. Either 'TK0' or 'TK1'
     def get_SRR_approach(self):
         return self._SRR_approach
@@ -202,7 +277,7 @@ class VolumeReconstruction:
     def _run_SRR(self):
 
         ## Perform reconstruction
-        print("\n\t--- Run Super-Resolution Reconstruction algorithm (Tikhonov) ---")
+        print("\t--- Super-Resolution Reconstruction (Tikhonov) ---")
         self._SRR.run_reconstruction()
 
 
@@ -239,6 +314,6 @@ class VolumeReconstruction:
     def _run_SDA(self):
         
         ## Perform reconstruction via SDA
-        print("\n\t--- Run Scattered Data Approximation algorithm ---")
+        print("\t--- Scattered Data Approximation ---")
         self._SDA.run_reconstruction()
 
