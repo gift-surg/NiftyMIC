@@ -4,6 +4,306 @@
 		"selected_items":
 		[
 			[
+				"ra",
+				"radius"
+			],
+			[
+				"dil",
+				"dilation_radius"
+			],
+			[
+				"moving",
+				"movingWarped"
+			],
+			[
+				"MyI",
+				"MyITKImageHelper::showImage"
+			],
+			[
+				"LBF",
+				"LBFGSBOptimizerOptimizerType"
+			],
+			[
+				"LB",
+				"LBFGSBOptimizerOptimizerType"
+			],
+			[
+				"i_m",
+				"i_max"
+			],
+			[
+				"file",
+				"filename"
+			],
+			[
+				"Phy",
+				"PhysicalShift"
+			],
+			[
+				"Get",
+				"GetOutput"
+			],
+			[
+				"transf",
+				"transform"
+			],
+			[
+				"trans",
+				"trans	(reconstructGIVolume.py)"
+			],
+			[
+				"BS",
+				"BSplineInterpolatorType"
+			],
+			[
+				"param",
+				"parameters"
+			],
+			[
+				"regi",
+				"registration_vol"
+			],
+			[
+				"_translation_",
+				"_translation_scale"
+			],
+			[
+				"translation",
+				"translation_scale"
+			],
+			[
+				"std",
+				"std::endl"
+			],
+			[
+				"ini",
+				"initialTransform"
+			],
+			[
+				"sS",
+				"sScaleTranslation"
+			],
+			[
+				"Inde",
+				"IndexShift	(itkReg.cpp)"
+			],
+			[
+				"plot",
+				"plot_colours"
+			],
+			[
+				"dir_",
+				"dir_output"
+			],
+			[
+				"suff",
+				"suffix_mask"
+			],
+			[
+				"use_In",
+				"use_InPlaneDeformation"
+			],
+			[
+				"use_",
+				"use_OrientedGaussianPSF"
+			],
+			[
+				"dir",
+				"directory"
+			],
+			[
+				"regu",
+				"regularization_types"
+			],
+			[
+				"filenames_da",
+				"filenames_data_prefix"
+			],
+			[
+				"HR_",
+				"HR_volume_init"
+			],
+			[
+				"SRR",
+				"SRR_approach"
+			],
+			[
+				"stacks_",
+				"stacks_registered"
+			],
+			[
+				"perform",
+				"perform_RegularizationParameterEstimate"
+			],
+			[
+				"use",
+				"use_OrientedGaussianPSF"
+			],
+			[
+				"use_in",
+				"use_InPlaneDeformation"
+			],
+			[
+				"output",
+				"output_prefix"
+			],
+			[
+				"acqu",
+				"acquisition_type"
+			],
+			[
+				"outpu",
+				"output_prefix"
+			],
+			[
+				"sub",
+				"subject"
+			],
+			[
+				"Valu",
+				"ValueError	error"
+			],
+			[
+				"filenam",
+				"filenames_data"
+			],
+			[
+				"ac",
+				"acquisition_type"
+			],
+			[
+				"fil",
+				"filenames_TRUFI"
+			],
+			[
+				"regul",
+				"regularization_parameter_estimation"
+			],
+			[
+				"set_fi",
+				"set_filename_prefix	(RegularizationParameterEstimation.py)"
+			],
+			[
+				"HR_vo",
+				"HR_volume_init"
+			],
+			[
+				"_st",
+				"_stacks_simulated"
+			],
+			[
+				"Sta",
+				"Stack"
+			],
+			[
+				"pro",
+				"probability"
+			],
+			[
+				"mean_",
+				"mean_ref"
+			],
+			[
+				"nda_ref",
+				"nda_ref"
+			],
+			[
+				"image_",
+				"image_sim"
+			],
+			[
+				"image",
+				"image_ref"
+			],
+			[
+				"_get_",
+				"_get_ssd"
+			],
+			[
+				"ind",
+				"ind_slice"
+			],
+			[
+				"_",
+				"_ncc"
+			],
+			[
+				"slice_sim",
+				"slice_sim"
+			],
+			[
+				"_N",
+				"_N_begin_new_stack_array	(ValidationRegistration.py)"
+			],
+			[
+				"get_s",
+				"get_stacks	(ReconstructionManager.py)"
+			],
+			[
+				"HR_vol",
+				"HR_volume"
+			],
+			[
+				"evalu",
+				"evaluator"
+			],
+			[
+				"N_sl",
+				"N_slices_total"
+			],
+			[
+				"N_be",
+				"N_begin_new_stack_array"
+			],
+			[
+				"slice_",
+				"slice_sim"
+			],
+			[
+				"get_nu",
+				"get_number_of_slices	(ValidationReconstruction.py)"
+			],
+			[
+				"_sta",
+				"_stacks"
+			],
+			[
+				"from_",
+				"from_stacks	(ValidationRegistration.py)"
+			],
+			[
+				"nda_",
+				"nda_sim"
+			],
+			[
+				"get_sli",
+				"get_slice_number	(Slice.py)"
+			],
+			[
+				"get_d",
+				"get_directory	(Slice.py)"
+			],
+			[
+				"slice_s",
+				"slice_simulated_itk"
+			],
+			[
+				"SetIn",
+				"SetInterpolator	(itkReg.cpp)"
+			],
+			[
+				"cov_",
+				"cov_HR_coord"
+			],
+			[
+				"Ori",
+				"OrientedGaussian"
+			],
+			[
+				"Stack",
+				"Stack"
+			],
+			[
 				"target",
 				"target_stack_number"
 			],
@@ -14,18 +314,6 @@
 			[
 				"Reconstru",
 				"Reconstruction	(ReconstructionManager.py)"
-			],
-			[
-				"Stack",
-				"StackManager"
-			],
-			[
-				"stacks_",
-				"stacks_deformed"
-			],
-			[
-				"translation",
-				"translation_max"
 			],
 			[
 				"show_",
@@ -52,14 +340,6 @@
 				"boundary_z"
 			],
 			[
-				"HR_vol",
-				"HR_volume_ref"
-			],
-			[
-				"file",
-				"filenames_data"
-			],
-			[
 				"dir_inp",
 				"dir_input_data"
 			],
@@ -82,10 +362,6 @@
 			[
 				"_s",
 				"_stacks"
-			],
-			[
-				"plot",
-				"plot_figure"
 			],
 			[
 				"nda",
@@ -132,10 +408,6 @@
 				"get_filename	(NiftyReg.py)"
 			],
 			[
-				"from_",
-				"from_sitk_image	(DataPreprocessing.py)"
-			],
-			[
 				"_HR_volume_",
 				"_HR_volume_ref"
 			],
@@ -164,10 +436,6 @@
 				"ReadImage	(NiftyReg.py)"
 			],
 			[
-				"filenam",
-				"filename_out"
-			],
-			[
 				"sIm",
 				"sImageCorrected"
 			],
@@ -190,10 +458,6 @@
 			[
 				"ANT",
 				"ANTSNeighborhoodCorrelation"
-			],
-			[
-				"std",
-				"std::string"
 			],
 			[
 				"B",
@@ -220,10 +484,6 @@
 				"registration_vol"
 			],
 			[
-				"HR_",
-				"HR_volume_ref"
-			],
-			[
 				"reg",
 				"registration_vol"
 			],
@@ -236,16 +496,8 @@
 				"registration_framework"
 			],
 			[
-				"BS",
-				"BSplineInterpolatorType"
-			],
-			[
 				"Or",
 				"OrientedGaussianInterpolatorType"
-			],
-			[
-				"ini",
-				"initial_transform"
 			],
 			[
 				"s",
@@ -260,260 +512,8 @@
 				"set_metric"
 			],
 			[
-				"regi",
-				"registration_itk"
-			],
-			[
 				"_use",
 				"_use_multiresolution_framework"
-			],
-			[
-				"Phys",
-				"PhysicalShift	(RegistrationSimpleITK.py)"
-			],
-			[
-				"Inde",
-				"IndexShift	(RegistrationSimpleITK.py)"
-			],
-			[
-				"OR",
-				"OrientedGaussian"
-			],
-			[
-				"Sc",
-				"ScalesEstimatorType"
-			],
-			[
-				"Neare",
-				"NearestNeighbor"
-			],
-			[
-				"Orie",
-				"OrientedGaussianInterpolatorType"
-			],
-			[
-				"Lin",
-				"LinearInterpolatorType"
-			],
-			[
-				"sInterpolatorT",
-				"sInterpolatorTest"
-			],
-			[
-				"Jac",
-				"Jacobian	(RegistrationSimpleITK.py)"
-			],
-			[
-				"Scal",
-				"ScalesEstimatorType"
-			],
-			[
-				"Jaco",
-				"JacobianScalesEstimatorType"
-			],
-			[
-				"Metr",
-				"MeanSquaresMetricType"
-			],
-			[
-				"Metri",
-				"MetricType"
-			],
-			[
-				"Matte",
-				"MattesMutualInformation"
-			],
-			[
-				"sU",
-				"sUseAffine"
-			],
-			[
-				"Euler",
-				"EulerTransformType"
-			],
-			[
-				"Regis",
-				"RegistrationFunction"
-			],
-			[
-				"Pix",
-				"PixelType"
-			],
-			[
-				"print",
-				"print_sitk_transform"
-			],
-			[
-				"GetIm",
-				"GetImageFromArray	(Stack.py)"
-			],
-			[
-				"HR_v",
-				"HR_volume_ref_slice_itk"
-			],
-			[
-				"Write",
-				"WriteImage	(NiftyReg.py)"
-			],
-			[
-				"slice_d",
-				"slice_deformed"
-			],
-			[
-				"Copy",
-				"CopyInformation	(Stack.py)"
-			],
-			[
-				"res_f",
-				"res_f3d_image_str"
-			],
-			[
-				"HR_volu",
-				"HR_volume_ref_slice_itk"
-			],
-			[
-				"Dis",
-				"DisconnectPipeline	(RegistrationSimpleITK.py)"
-			],
-			[
-				"SetIn",
-				"SetInterpolator	(RegistrationSimpleITK.py)"
-			],
-			[
-				"pixel",
-				"pixel_type"
-			],
-			[
-				"Oriente",
-				"OrientedGaussianInterpolateImageFunction	(InverseProblemSolver.py)"
-			],
-			[
-				"SetFix",
-				"SetFixedParameters	(RegistrationITK.py)"
-			],
-			[
-				"Tra",
-				"TransformType::New"
-			],
-			[
-				"TransformT",
-				"TransformType::Pointer"
-			],
-			[
-				"sP",
-				"sPsfCov"
-			],
-			[
-				"sF",
-				"sFixed"
-			],
-			[
-				"Simpl",
-				"SimpleITK"
-			],
-			[
-				"Aff",
-				"AffineTransform"
-			],
-			[
-				"_reg",
-				"_registration_type"
-			],
-			[
-				"para",
-				"parameters	(ReconstructionManager.py)"
-			],
-			[
-				"registration_",
-				"registration_transform_str"
-			],
-			[
-				"Ori",
-				"OrientedGaussian	(RegistrationITK.py)"
-			],
-			[
-				"sys",
-				"system"
-			],
-			[
-				"regist",
-				"registration_itk"
-			],
-			[
-				"Registration",
-				"RegistrationITK"
-			],
-			[
-				"fla",
-				"flatten"
-			],
-			[
-				"_dir",
-				"_dir_tmp"
-			],
-			[
-				"_run_registration_",
-				"_run_registration_rigid"
-			],
-			[
-				"_run_",
-				"_run_registration"
-			],
-			[
-				"Mattes",
-				"MattesMutualInformation	(RegistrationSimpleITK.py)"
-			],
-			[
-				"st",
-				"std::endl"
-			],
-			[
-				"default",
-				"default=0	(Stack.py)"
-			],
-			[
-				"SetTr",
-				"SetTranslation	(SimpleITKHelper.py)"
-			],
-			[
-				"SetMo",
-				"SetMovingImage"
-			],
-			[
-				"init",
-				"initializer"
-			],
-			[
-				"Poin",
-				"Pointer"
-			],
-			[
-				"My",
-				"MyITKImageHelper::printTransform"
-			],
-			[
-				"iN",
-				"iNumberOfFixedParameters"
-			],
-			[
-				"fixed",
-				"fixedParameters"
-			],
-			[
-				"Corr",
-				"Correlation	(RegistrationSimpleITK.py)"
-			],
-			[
-				"oriented",
-				"orientedGaussianInterpolator"
-			],
-			[
-				"SetC",
-				"SetCovariance	(InverseProblemSolver.py)"
-			],
-			[
-				"Sca",
-				"ScalesEstimatorType::New"
 			]
 		]
 	},
@@ -536,10 +536,10 @@
 			}
 		},
 		{
-			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/NiftyReg.py",
+			"file": "cpp/source/itkReg.cpp",
 			"settings":
 			{
-				"buffer_size": 11755,
+				"buffer_size": 51826,
 				"line_ending": "Unix"
 			}
 		},
@@ -547,23 +547,7 @@
 			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationITK.py",
 			"settings":
 			{
-				"buffer_size": 8188,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cpp/source/itkReg.cpp",
-			"settings":
-			{
-				"buffer_size": 50139,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "studies/Hip/reconstructVolume.py",
-			"settings":
-			{
-				"buffer_size": 4539,
+				"buffer_size": 8628,
 				"line_ending": "Unix"
 			}
 		},
@@ -571,31 +555,39 @@
 			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationSimpleITK.py",
 			"settings":
 			{
-				"buffer_size": 14354,
+				"buffer_size": 14363,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "/Users/mebner/development/ITK/runCmake.sh",
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/IntensityNormalization.py",
 			"settings":
 			{
-				"buffer_size": 4089,
+				"buffer_size": 6782,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegularizationParameterEstimation.py",
 			"settings":
 			{
-				"buffer_size": 24313,
+				"buffer_size": 34271,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "studies/reconstructVolume.py",
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
 			"settings":
 			{
-				"buffer_size": 7439,
+				"buffer_size": 28170,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "cpp/source/readCommandLine.cpp",
+			"settings":
+			{
+				"buffer_size": 12189,
 				"line_ending": "Unix"
 			}
 		},
@@ -603,7 +595,15 @@
 			"file": "studies/UpperGastrointestinalStudy/reconstructGIVolume.py",
 			"settings":
 			{
-				"buffer_size": 26357,
+				"buffer_size": 32080,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "studies/UpperGastrointestinalStudy/EvaluationUpperGIReconstructionResults.py",
+			"settings":
+			{
+				"buffer_size": 9225,
 				"line_ending": "Unix"
 			}
 		}
@@ -676,36 +676,52 @@
 	},
 	"file_history":
 	[
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationITK.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/reconstructVolume.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/CMakeLists.txt",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/MyITKImageHelper.cpp",
+		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/studies_UpperGastrointestinalStudy_reconstructGIVolume_Before_77c7627531d86e15e648c2c6092498768accaeaa.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/include/MyITKImageHelper.h",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/subject07/HASTE/20160610_2251/orientPSF0_S2V1_inDef0_intensNorm1/NCC_subject07_HASTE_biasCorr1_recon_orientPSF0_S2V1_inDef0_intensNorm1_TK1_itermax20_alpha0.03_stack1.txt",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/subject07/HASTE/20160610_2008/orientPSF1_S2V1_inDef0_intensNorm1/NCC_subject07_HASTE_biasCorr1_recon_orientPSF1_S2V1_inDef0_intensNorm1_TK1_itermax20_alpha0.03_stack1.txt",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/itkRegTest.cpp",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/ScatteredDataApproximation.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationSimpleITK.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/IntensityNormalization.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegularizationParameterEstimation.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/source/MyITKImageHelper.cpp",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/ValidationRegistration.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/reconstructGIVolume.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Stack.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/NiftyReg.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/ValidationReconstruction.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/backups/v1_20150915/SimilarityMeasures.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/EvaulationUpperGIReconstructionResults.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/StackManager.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Slice.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/SimulatorSliceAcqusition.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/evaluateGIReconstructionResults.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/Hip/reconstructVolume.py",
+		"/Users/mebner/development/ITK/runCmake.sh",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/itkRigidReg.cpp",
 		"/Users/mebner/Downloads/splines.cxx",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/FirstEstimateOfHRVolume.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/StackAverage.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/IntensityNormalization.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Stack.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/RegistrationSimpleITK.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/readCommandLine.cpp",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/runN4BiasFieldCorrectionImageFilter.cpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/ValidationRegistration.py",
 		"/Users/mebner/.ipython/profile_default/ipython_config.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/ScatteredDataApproximation.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegularizationParameterEstimation.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/ValidationReconstruction.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SliceToVolumeRegistration.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/itkReg.cpp",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/source/CMakeLists.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/build/bin/runN4BiasFieldCorrectionImageFilter",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/source/runN4BiasFieldCorrectionImageFilter.cpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/CMakeLists.txt",
 		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/studies_UpperGastrointestinalStudy_reconstructGIVolume_Before_07ec4cdffd939f95b787a2417f496a4919236e49.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/include/MyITKImageHelper.h",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/include/MyITKImageHelper.tpp",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/MyITKImageHelper.cpp",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/InverseProblemSolver.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/reconstructVolume.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Slice.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/CommandIterationUpdate.cpp",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/ITK_Registration.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/RegistrationITK.py",
@@ -739,15 +755,12 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/RegularizationParameterEstimation/TV-L2-Regularization.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/RegularizationParameterEstimation/TV-L2-Regularization_20160529.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/RegularizationParameterEstimation/TV-L2-Regularization_20160528_133132.txt",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/SimulatorSliceAcqusition.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/VolumeReconstruction.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/RegularizationParameterEstimation.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/StackManager.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/simulateAcquisition.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/main.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/test/modules/Test_Stack.py",
 		"/Users/mebner/.dcm2nii/dcm2nii.ini",
-		"/Users/mebner/development/ITK/runCmake.sh",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/backups/v1_20150915/DataPreprocessing.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/RegularizationParameterEstimation/RegularizationParameterEstimation_TK1-Regularization_20160528_030559.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/RegularizationParameterEstimation/TK1_.txt",
@@ -790,20 +803,7 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/ScatteredDataApproximation.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/DataPreprocessing.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/PSF.py",
-		"/Users/mebner/UCL/UCL/Teaching/2016_IPMI/solutions/exercise_2.py",
-		"/Users/mebner/UCL/UCL/Teaching/2016_IPMI/solutions/exercise_1.py",
-		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/src_FirstEstimateOfHRVolume_Before_b94fcef48a950e53a257cfca9e1a9bf6b28e90fa.py",
-		"/Users/mebner/UCL/UCL/Publications/2016_IPEM/scripts/generateImages.py",
-		"/private/tmp/compresspdf2ebookpdf",
-		"/Users/mebner/UCL/UCL/Publications/2016_IPEM/scripts/generateVideo.sh",
-		"/Users/mebner/UCL/UCL/Publications/2016_IPEM/Presentation/slides.tex",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/backups/v1_20150915/FileAndImageHelpers.py",
-		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Dokumentation/04_NumericalResultsDiscussion_Locations_London.tex",
-		"/Users/mebner/UCL/UCL/Publications/2016_IPEM/Documentation/generateImages.py",
-		"/Users/mebner/UCL/UCL/Publications/2016_IPEM/Documentation/LaTex/Figures.tex",
-		"/Users/mebner/UCL/UCL/Publications/2016_IPEM/Documentation/LaTex/Formulas.tex",
-		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Dokumentation/Documentation.tex",
-		"/Users/mebner/UCL/UCL/Presentations/given presentations/Journal Clubs/Journal Club IGI_20150610/LaTeX/Paper.tex"
+		"/Users/mebner/UCL/UCL/Teaching/2016_IPMI/solutions/exercise_2.py"
 	],
 	"find":
 	{
@@ -811,7 +811,7 @@
 	},
 	"find_in_files":
 	{
-		"height": 0.0,
+		"height": 93.0,
 		"where_history":
 		[
 			"*.py",
@@ -835,137 +835,137 @@
 	},
 	"find_state":
 	{
-		"case_sensitive": true,
+		"case_sensitive": false,
 		"find_history":
 		[
-			"mkdir -p",
-			"xi",
-			".e",
-			"exit(",
-			"8.",
+			"print",
 			"bAddObserver",
-			"unsigned",
-			"180/vnl_math::pi",
-			"int",
-			"angle_max_deg",
-			"pi",
-			"setupp",
-			"OptimizerType",
+			"Dilate mask ...",
+			"Crop stack and its mask",
+			"_dilate_mask",
+			"dilation_radius",
+			"output_prefix",
+			"radius",
+			"            mask_sitk = self._dilate_mask(mask_sitk)\n",
+			"_dilate_mask",
+			"mask_sitk",
+			"_dilate_mask",
+			"_stacks_preprocessed",
+			"write_pre",
+			"get_motion_corrected_stacks_of_slices",
+			"use_OrientedGaussianPSF",
+			"tit",
+			"title",
+			"slice_to_volume_registration",
+			"get_motion_corrected_stacks_of_slices",
+			"run_regularization_parameter_estimate",
+			"Transform",
 			"optimizer",
+			"optimizerLBFGS",
 			"OptimizerType",
-			"LB",
-			"volume_to_volume_registration",
-			"\"[c1, c",
-			"[c1, c0]",
-			"stacks_registered",
-			"stack_registered",
-			"stacks",
-			"_stacks_normalized",
-			"stacks_test",
-			"_stacks_normalized",
-			"stacks_test",
-			"_get_resampled_average_stack_of_slices",
-			"self._stacks_normalized",
-			"_get_resampled_average_stack_of_slices",
-			"bou",
-			"_bou",
-			"_crop_stack_and_mask",
-			"_crop_image_to_region",
-			"_get_rectangular_masked_region",
-			"_crop_stack_and_mask",
-			"self._boundary",
-			"legend",
-			"a",
-			"nda1.flatten()",
-			"nda0.flatten()",
-			"self._stacks_normalized",
-			"test",
-			"gaussian_yvv",
-			"yvv",
-			"stacks_registered",
-			"xlim",
-			"stacks_normalized",
-			"self._stacks_preprocessed",
-			"post-mortem",
-			"self._stacks_preprocessed",
-			"helper",
-			"stack_sitk",
-			"self._averaged_volume",
-			"_mask_volume_voxels",
-			"sVerbose",
-			"self._dir_tmp",
-			"Stack.from_filename",
-			"st.Stack.from_stack",
-			"self._stacks_preprocessed",
-			"dir_output",
-			"filename_image_3D",
-			"moving",
-			"sFixed",
-			"fixedMask",
-			"fixed",
-			"MY",
-			"MY_MAIN_FILE",
-			"ANTSrad",
-			"tout",
-			"Slice1",
-			"slice2",
-			"stack1",
-			"slice",
-			"tmp0",
-			"tmp",
-			"stack",
-			"sitk.Resample",
-			"valueReturn",
-			"rigid_transform_sitk",
+			"_movingSlicecopy_copy_subject07_HASTE_biasCorr1_data_",
+			"stack${i}_slice${j}_movingSlice${i}",
+			"_movingSlice",
+			"_movingSlice_subject",
+			"txt",
+			"file_handle",
+			"open",
+			"fopen",
+			"nda_out",
+			"target_stack_number",
 			"ANTS",
-			"volume_registration",
-			"stacks_registered",
-			"HR_volume_ref",
-			"volume_registration",
-			"registration_itk",
-			"get_affine_transform_sitk",
-			"registration_sitk",
-			"nifty_reg",
-			"registration_itk",
-			"sVerbose",
-			"stoi",
-			"sVerbose",
-			"verbose",
-			"orientedGaussianInterpolator",
-			"OrientedGaussianInterpolatorType",
-			"NearestNeighborInterpolatorType",
-			"CorrelationMetricType",
-			"ImageType",
-			"TransformInitializerType",
-			"_use_oriented_psf",
-			"_use_multiresolution_framework",
-			"registration_transform_str",
-			"_registration_type",
-			"CommandIterationUpdate",
-			"OptimizerType",
-			"RegistrationType",
-			"bUseFixedMask",
-			"Fixed",
-			"fixed",
-			"%s",
-			".c_str()",
-			"sPsfCov",
-			"psf",
-			"foo",
-			"interpolator",
-			"orientedGaussianInterpolator",
-			"sUseMultiresolution",
-			"LinearInterpolatorType",
+			"transform",
+			"registration->GetOutput()->Get()",
 			"BSplineInterpolatorType",
-			"CorrelationMetricType",
-			"sInterpolator",
-			"compare",
-			"MeanSquaresMetricType",
-			"EulerTransformType,",
-			"input",
-			"sInterpolator",
-			"interpolator",
-			"->Print"
+			"translation[0], translation[1], translation[2]",
+			"  itk::Vector< PixelType, dim > translation = transform->GetTranslation();\n",
+			"();\n",
+			"_translation_scale",
+			"_translationScale",
+			"radius",
+			"ANTSradius",
+			"registration",
+			"t",
+			"initialTransform",
+			"t",
+			"scaleTranslation",
+			"sScaleTranslation",
+			"scaleTranslation",
+			"ScaleTranslation",
+			"ScalesTranslation",
+			"orientedGaussianInterpolator",
+			"initialTransform",
+			"OrientedGaussianInterpolatorType",
+			"ScaledTranslationEulerTransformType",
+			"sANTSrad",
+			"ANTSrad",
+			"HR_volume",
+			"HR_volume_ref",
+			"HR_volume",
+			"Euler3DTransform",
+			"colo",
+			"_dir_results_figures",
+			"target_stack_number",
+			"Results/",
+			"_2",
+			"MY_",
+			"itkReg",
+			"run_regularization_parameter_estimate",
+			"_dir_results",
+			"set_directory_results",
+			"dir_output",
+			"set_dire",
+			"dir_output",
+			"run_regularization_parameter_estimate",
+			"run_reconstruction_pipeline",
+			"get_motion_corrected_stacks_of_slices",
+			"dir_input_data",
+			"get_motion_corrected_stacks_of_slices",
+			"run_reconstruction_pipeline",
+			"get_motion_corrected_stacks_of_slices",
+			"run_reconstruction_pipeline",
+			"get_motion_corrected_stacks_of_slices",
+			"run_reconstruction_pipeline",
+			"run_regularization_parameter_estimate",
+			"_get_bias_field_corrected_stack",
+			"_use_N4BiasFieldCorrector",
+			"volumeOrig",
+			"volume_to_volume_registration",
+			"get_motion_corrected_stacks_of_slices",
+			"run_reconstruction_pipeline",
+			"settings",
+			"get_motion_corrected_stacks_of_slices",
+			"run_reconstruction_pipeline",
+			"output_prefix",
+			"get_motion_corrected_stacks_of_slices",
+			"HR_volume_ref",
+			"HR_volume",
+			"HR_volume_ref",
+			"str(N_stacks)",
+			"HR_volume",
+			"HR_volume_init",
+			"run_regularization_parameter_estimate",
+			"filename_out",
+			"filenames_data_prefix",
+			"filename_out",
+			"output_prefix",
+			"get_reconstructed_volume",
+			"filenames_TRUFI",
+			"get_reconstructed_volume",
+			"SRR_approach",
+			"use_HR_volume_ref_mask",
+			"LinearInterpolateImageFunction",
+			"output_prefix",
+			"output_prefiix",
+			"output_prefix",
+			"output_prefiix",
+			"filename",
+			"raise",
+			"name=str(i)",
+			"filenames_data",
+			"SRR_iter_max",
+			"itermax",
+			"save_flag"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -973,6 +973,7 @@
 		"regex": false,
 		"replace_history":
 		[
+			"SRR_iter_max",
 			"initialTransform",
 			"print_sitk_transform",
 			"boundary",
@@ -1029,7 +1030,7 @@
 	"groups":
 	[
 		{
-			"selected": 4,
+			"selected": 3,
 			"sheets":
 			[
 				{
@@ -1094,8 +1095,8 @@
 						"selection":
 						[
 							[
-								696,
-								696
+								76,
+								76
 							]
 						],
 						"settings":
@@ -1110,28 +1111,41 @@
 				},
 				{
 					"buffer": 2,
-					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/NiftyReg.py",
+					"file": "cpp/source/itkReg.cpp",
 					"settings":
 					{
-						"buffer_size": 11755,
+						"buffer_size": 51826,
 						"regions":
 						{
+							"bookmarks":
+							{
+								"flags": 144,
+								"icon": "bookmark",
+								"regions":
+								[
+									[
+										16387,
+										16387
+									]
+								],
+								"scope": "bookmarks"
+							}
 						},
 						"selection":
 						[
 							[
-								3049,
-								3049
+								10587,
+								10587
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Python/Python.tmLanguage",
+							"syntax": "Packages/C++/C++.tmLanguage",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 948.0,
+						"translation.y": 3835.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1141,15 +1155,15 @@
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationITK.py",
 					"settings":
 					{
-						"buffer_size": 8188,
+						"buffer_size": 8628,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								6013,
-								6013
+								169,
+								169
 							]
 						],
 						"settings":
@@ -1166,59 +1180,46 @@
 				},
 				{
 					"buffer": 4,
-					"file": "cpp/source/itkReg.cpp",
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationSimpleITK.py",
 					"settings":
 					{
-						"buffer_size": 50139,
+						"buffer_size": 14363,
 						"regions":
 						{
-							"bookmarks":
-							{
-								"flags": 144,
-								"icon": "bookmark",
-								"regions":
-								[
-									[
-										16101,
-										16101
-									]
-								],
-								"scope": "bookmarks"
-							}
 						},
 						"selection":
 						[
 							[
-								16135,
-								16135
+								2053,
+								2053
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/C++/C++.tmLanguage",
+							"syntax": "Packages/Python/Python.tmLanguage",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 4640.0,
+						"translation.y": 785.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 5,
-					"file": "studies/Hip/reconstructVolume.py",
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/IntensityNormalization.py",
 					"settings":
 					{
-						"buffer_size": 4539,
+						"buffer_size": 6782,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2827,
-								2827
+								2730,
+								2730
 							]
 						],
 						"settings":
@@ -1228,59 +1229,25 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 898.0,
+						"translation.y": 1056.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 6,
-					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationSimpleITK.py",
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegularizationParameterEstimation.py",
 					"settings":
 					{
-						"buffer_size": 14354,
+						"buffer_size": 34271,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								10085,
-								10085
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2908.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				}
-			]
-		},
-		{
-			"selected": 4,
-			"sheets":
-			[
-				{
-					"buffer": 3,
-					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationITK.py",
-					"settings":
-					{
-						"buffer_size": 8188,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								4479,
-								4479
+								12688,
+								12688
 							]
 						],
 						"settings":
@@ -1297,94 +1264,72 @@
 				},
 				{
 					"buffer": 7,
-					"file": "/Users/mebner/development/ITK/runCmake.sh",
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
 					"settings":
 					{
-						"buffer_size": 4089,
+						"buffer_size": 28170,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2749,
-								2749
+								9567,
+								9567
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/ShellScript/Shell-Unix-Generic.tmLanguage",
+							"syntax": "Packages/Python/Python.tmLanguage",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 3145.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 8,
-					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SimpleITKHelper.py",
+					"file": "cpp/source/readCommandLine.cpp",
 					"settings":
 					{
-						"buffer_size": 24313,
+						"buffer_size": 12189,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								18197,
-								18197
+								11087,
+								11087
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Python/Python.tmLanguage",
+							"syntax": "Packages/C++/C++.tmLanguage",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 5395.0,
+						"translation.y": 3191.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
-				},
+				}
+			]
+		},
+		{
+			"selected": 1,
+			"sheets":
+			[
 				{
 					"buffer": 9,
-					"file": "studies/reconstructVolume.py",
-					"settings":
-					{
-						"buffer_size": 7439,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								3449,
-								3449
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 10,
 					"file": "studies/UpperGastrointestinalStudy/reconstructGIVolume.py",
 					"settings":
 					{
-						"buffer_size": 26357,
+						"buffer_size": 32080,
 						"regions":
 						{
 							"bookmarks":
@@ -1394,39 +1339,26 @@
 								"regions":
 								[
 									[
-										6335,
-										6335
+										6478,
+										6478
 									],
 									[
-										10475,
-										10475
+										10751,
+										10751
 									],
 									[
-										21051,
-										21051
+										28253,
+										28253
 									]
 								],
 								"scope": "bookmarks"
-							},
-							"bp-64162d57":
-							{
-								"flags": 16,
-								"icon": "circle",
-								"regions":
-								[
-									[
-										8582,
-										8644
-									]
-								],
-								"scope": "invalid"
 							}
 						},
 						"selection":
 						[
 							[
-								10475,
-								10475
+								18766,
+								18766
 							]
 						],
 						"settings":
@@ -1436,7 +1368,35 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 3185.0,
+						"translation.y": 5879.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "studies/UpperGastrointestinalStudy/EvaluationUpperGIReconstructionResults.py",
+					"settings":
+					{
+						"buffer_size": 9225,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4233,
+								4233
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1434.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1472,7 +1432,7 @@
 		"cols":
 		[
 			0.0,
-			0.5,
+			0.447486064522,
 			1.0
 		],
 		"rows":
@@ -1500,6 +1460,118 @@
 		"height": 0.0,
 		"selected_items":
 		[
+			[
+				"simp",
+				"src/SimpleITKHelper.py"
+			],
+			[
+				"myitkim",
+				"cpp/include/MyITKImageHelper.h"
+			],
+			[
+				"myit",
+				"cpp/source/MyITKImageHelper.cpp"
+			],
+			[
+				"regul",
+				"src/RegularizationParameterEstimation.py"
+			],
+			[
+				"intens",
+				"src/IntensityNormalization.py"
+			],
+			[
+				"myitk",
+				"cpp/source/MyITKImageHelper.cpp"
+			],
+			[
+				"regi",
+				"src/RegistrationSimpleITK.py"
+			],
+			[
+				"read",
+				"cpp/source/readCommandLine.cpp"
+			],
+			[
+				"d",
+				"src/DataPreprocessing.py"
+			],
+			[
+				"myi",
+				"cpp/source/MyITKImageHelper.cpp"
+			],
+			[
+				"itkhelper",
+				"cpp/source/MyITKImageHelper.cpp"
+			],
+			[
+				"inte",
+				"src/IntensityNormalization.py"
+			],
+			[
+				"valida",
+				"studies/ValidationRegistration.py"
+			],
+			[
+				"estimation",
+				"src/RegularizationParameterEstimation.py"
+			],
+			[
+				"regu",
+				"src/RegularizationParameterEstimation.py"
+			],
+			[
+				"scatt",
+				"src/ScatteredDataApproximation.py"
+			],
+			[
+				"stac",
+				"src/Stack.py"
+			],
+			[
+				"sta",
+				"src/Stack.py"
+			],
+			[
+				"reconstructgi",
+				"studies/UpperGastrointestinalStudy/reconstructGIVolume.py"
+			],
+			[
+				"datapre",
+				"src/DataPreprocessing.py"
+			],
+			[
+				"recon",
+				"studies/reconstructVolume.py"
+			],
+			[
+				"stackm",
+				"src/StackManager.py"
+			],
+			[
+				"stackman",
+				"src/StackManager.py"
+			],
+			[
+				"slice",
+				"src/Slice.py"
+			],
+			[
+				"simul",
+				"studies/SimulatorSliceAcqusition.py"
+			],
+			[
+				"valid",
+				"studies/ValidationRegistration.py"
+			],
+			[
+				"vali",
+				"studies/ValidationReconstruction.py"
+			],
+			[
+				"normali",
+				"src/IntensityNormalization.py"
+			],
 			[
 				"registra",
 				"src/RegistrationSimpleITK.py"
@@ -1529,16 +1601,8 @@
 				"cpp/source/itkReg.cpp"
 			],
 			[
-				"regi",
-				"src/RegistrationITK.py"
-			],
-			[
 				"data",
 				"src/DataPreprocessing.py"
-			],
-			[
-				"vali",
-				"studies/ValidationRegistration.py"
 			],
 			[
 				"sda",
@@ -1549,16 +1613,8 @@
 				"studies/ValidationRegistration.py"
 			],
 			[
-				"regu",
-				"src/RegularizationParameterEstimation.py"
-			],
-			[
 				"va",
 				"studies/ValidationReconstruction.py"
-			],
-			[
-				"slice",
-				"src/SliceToVolumeRegistration.py"
 			],
 			[
 				"stacka",
@@ -1567,10 +1623,6 @@
 			[
 				"first",
 				"src/FirstEstimateOfHRVolume.py"
-			],
-			[
-				"stac",
-				"src/Stack.py"
 			],
 			[
 				"datep",
@@ -1583,10 +1635,6 @@
 			[
 				"run",
 				"cpp/build/bin/runN4BiasFieldCorrectionImageFilter"
-			],
-			[
-				"simp",
-				"src/SimpleITKHelper.py"
 			],
 			[
 				"itk",
@@ -1613,10 +1661,6 @@
 				"src/InverseProblemSolver.py"
 			],
 			[
-				"myit",
-				"cpp/include/MyITKImageHelper.tpp"
-			],
-			[
 				"nifty",
 				"src/NiftyReg.py"
 			],
@@ -1633,24 +1677,12 @@
 				"cpp/source/itkRigidReg.cpp"
 			],
 			[
-				"read",
-				"cpp/include/readCommandLine.h"
-			],
-			[
-				"myitk",
-				"cpp/include/MyITKImageHelper.h"
-			],
-			[
 				"readcomm",
 				"cpp/include/readCommandLine.h"
 			],
 			[
 				"itkreg",
 				"cpp/source/itkReg.cpp"
-			],
-			[
-				"scatt",
-				"src/ScatteredDataApproximation.py"
 			],
 			[
 				"ave",
@@ -1691,10 +1723,6 @@
 			[
 				"slicet",
 				"src/SliceToVolumeRegistration.py"
-			],
-			[
-				"recon",
-				"studies/reconstructVolume.py"
 			],
 			[
 				"testn",
@@ -1767,10 +1795,6 @@
 			[
 				"hier",
 				"src/HierarchicalSliceAlignment.py"
-			],
-			[
-				"sta",
-				"src/Stack.py"
 			],
 			[
 				"reconstuct",
@@ -1853,14 +1877,6 @@
 				"src/ReconstructionManager.py"
 			],
 			[
-				"stackm",
-				"src/StackManager.py"
-			],
-			[
-				"stackman",
-				"src/StackManager.py"
-			],
-			[
 				"slice.",
 				"src/Slice.py"
 			],
@@ -1899,10 +1915,6 @@
 			[
 				"inplan",
 				"src/InPlaneRigidRegistration.py"
-			],
-			[
-				"d",
-				"src/DataPreprocessing.py"
 			],
 			[
 				"simpleitkhe",
@@ -1959,38 +1971,6 @@
 			[
 				"irtkmat",
 				"fetalReconstruction/source/IRTKSimple2/geometry++/include/irtkMatrix.h"
-			],
-			[
-				"irtktemporalhomogeneoustransformation",
-				"fetalReconstruction/source/IRTKSimple2/packages/transformation/src/irtkTemporalHomogeneousTransformation.cc"
-			],
-			[
-				"irtkmatr",
-				"fetalReconstruction/source/IRTKSimple2/geometry++/include/irtkMatrix.h"
-			],
-			[
-				"lhomogeneoustransformation.cc",
-				"source/IRTKSimple2/packages/transformation/src/irtkTemporalHomogeneousTransformation.cc"
-			],
-			[
-				"irtkmatrix",
-				"source/IRTKSimple2/geometry++/src/irtkMatrix.cc"
-			],
-			[
-				"pointbasedtrafo",
-				"research-computing-with-cpp-demo/Code/PointBasedReg/PointBasedTrafo.cc"
-			],
-			[
-				"readfil",
-				"research-computing-with-cpp-demo/Code/PointBasedReg/readFileIntoMatrix.cc"
-			],
-			[
-				"pointbasedregcmake",
-				"research-computing-with-cpp-demo/Code/PointBasedReg/CMakeLists.txt"
-			],
-			[
-				"cmake",
-				"PointBasedReg/CMakeLists.txt"
 			]
 		],
 		"width": 0.0
