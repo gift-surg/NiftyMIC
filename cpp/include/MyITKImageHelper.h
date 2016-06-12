@@ -66,6 +66,7 @@ public:
     static void showImage(const ImageType3D::Pointer image, const std::string &filename = "image");
     static void showImage(const MaskImageType3D::Pointer image, const std::string &filename = "segmentation");
     static void showImage(const ImageType3D::Pointer image, const ImageType3D::Pointer overlay, const std::string &filename = "image+overlay");
+    static void showImage(const ImageType3D::Pointer image, const ImageType3D::Pointer overlay, const ImageType3D::Pointer overlay2, const std::string &filename = "image+overlay+overlay2");
     static void showImage(const ImageType3D::Pointer image, const MaskImageType3D::Pointer segmentation, const std::string &filename = "image+segmentation");
 
     /** Read image */

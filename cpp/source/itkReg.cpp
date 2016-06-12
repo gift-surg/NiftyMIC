@@ -39,6 +39,7 @@
 
 #include <itkRegularStepGradientDescentOptimizerv4.h>
 #include <itkLBFGSBOptimizerv4.h>
+#include <itkMultiStartOptimizerv4.h>
 
 #include <itkResampleImageFilter.h>
 // #include <itkRescaleIntensityImageFilter.h>
@@ -78,8 +79,10 @@ typedef ScaledTranslationEulerTransformType EulerTransformType;
 // Optimizer Types
 typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > RegularStepGradientDescentOptimizerType;
 typedef itk::LBFGSBOptimizerv4 LBFGSBOptimizerOptimizerType;
+typedef itk::MultiStartOptimizerv4 MultiStartOptimizerType;
 // typedef RegularStepGradientDescentOptimizerType OptimizerType;
 typedef LBFGSBOptimizerOptimizerType OptimizerType;
+// typedef MultiStartOptimizerType OptimizerType;
 
 // Interpolator Types
 typedef itk::NearestNeighborInterpolateImageFunction< ImageType3D, PixelType > NearestNeighborInterpolatorType;
@@ -393,34 +396,38 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // optimizer->SetLearningRate(1);
 
     // For LBFGS Optimizer
-    const unsigned int numParameters = initialTransform->GetNumberOfParameters();
-    OptimizerType::BoundSelectionType boundSelect( numParameters );
-    OptimizerType::BoundValueType upperBound( numParameters );
-    OptimizerType::BoundValueType lowerBound( numParameters );
-    boundSelect.Fill( OptimizerType::BOTHBOUNDED );
-    upperBound.Fill( 0.0 );
-    lowerBound.Fill( 0.0 );
+    LBFGSBOptimizerOptimizerType::Pointer optimizerLBFGS = dynamic_cast<LBFGSBOptimizerOptimizerType* > (optimizer.GetPointer());
+    if ( optimizerLBFGS.IsNotNull() ){
+        const unsigned int numParameters = initialTransform->GetNumberOfParameters();
 
-    const double angle_deg_max = 5.0;
-    const double translation_max = 10.0;
-    for (int i = 0; i < 3; ++i) {
-        lowerBound[i] = -angle_deg_max*vnl_math::pi/180;
-        upperBound[i] =  angle_deg_max*vnl_math::pi/180;
-        
-        lowerBound[i+3] = -translation_max;
-        upperBound[i+3] =  translation_max;
+        LBFGSBOptimizerOptimizerType::BoundSelectionType boundSelect( numParameters );
+        LBFGSBOptimizerOptimizerType::BoundValueType upperBound( numParameters );
+        LBFGSBOptimizerOptimizerType::BoundValueType lowerBound( numParameters );
+        boundSelect.Fill( LBFGSBOptimizerOptimizerType::BOTHBOUNDED );
+        upperBound.Fill( 0.0 );
+        lowerBound.Fill( 0.0 );
+
+        const double angle_deg_max = 5.0;
+        const double translation_max = 10.0;
+        for (int i = 0; i < 3; ++i) {
+            lowerBound[i] = -angle_deg_max*vnl_math::pi/180;
+            upperBound[i] =  angle_deg_max*vnl_math::pi/180;
+            
+            lowerBound[i+3] = -translation_max;
+            upperBound[i+3] =  translation_max;
+        }
+
+        optimizerLBFGS->SetBoundSelection( boundSelect );
+        optimizerLBFGS->SetUpperBound( upperBound );
+        optimizerLBFGS->SetLowerBound( lowerBound );
+
+        optimizerLBFGS->SetCostFunctionConvergenceFactor( 1.e7 );
+        optimizerLBFGS->SetGradientConvergenceTolerance( 1e-35 );
+        optimizerLBFGS->SetNumberOfIterations( 200 );
+        optimizerLBFGS->SetMaximumNumberOfFunctionEvaluations( 200 );
+        optimizerLBFGS->SetMaximumNumberOfCorrections( 7 );
     }
 
-
-    optimizer->SetBoundSelection( boundSelect );
-    optimizer->SetUpperBound( upperBound );
-    optimizer->SetLowerBound( lowerBound );
-
-    optimizer->SetCostFunctionConvergenceFactor( 1.e7 );
-    optimizer->SetGradientConvergenceTolerance( 1e-35 );
-    optimizer->SetNumberOfIterations( 200 );
-    optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
-    optimizer->SetMaximumNumberOfCorrections( 7 );
 
     // optimizer->SetDefaultStepLength( 1.5 );
     // optimizer->SetGradientConvergenceTolerance( 5e-2 );
@@ -475,7 +482,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
     //***Write result to file
     if ( !sTransformOut.empty() ) {
-        MyITKImageHelper::writeTransform(transform, sTransformOut);
+        MyITKImageHelper::writeTransform(transform, sTransformOut + ".txt");
     }
 
     //***Resample warped moving image
@@ -510,7 +517,11 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
     movingMaskWarped->DisconnectPipeline();
 
+    MyITKImageHelper::writeImage(movingWarped, sTransformOut + "warpedMoving.nii.gz");
+    // MyITKImageHelper::writeImage(movingMaskWarped, sTransformOut + "warpedMoving_mask.nii.gz");
+
     // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
+    // MyITKImageHelper::showImage(fixed, movingWarped, movingWarped, "fixed_moving");
     // MyITKImageHelper::showImage(movingWarped, movingMaskWarped, "fixed_mask");
 
 }

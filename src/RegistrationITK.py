@@ -196,7 +196,7 @@ class RegistrationITK:
             cmd += "--fmask " + self._dir_tmp + fixed_mask_str + " "
         if self._use_moving_mask:
             cmd += "--mmask " + self._dir_tmp + moving_mask_str + " "
-        cmd += "--tout " + self._dir_tmp + registration_transform_str + ".txt "
+        cmd += "--tout " + self._dir_tmp + registration_transform_str + " "
         cmd += "--useAffine " + str(int(self._registration_type is "Affine")) + " "
         cmd += "--useMultires " + str(int(self._use_multiresolution_framework)) + " "
         cmd += "--metric " + self._metric + " "
