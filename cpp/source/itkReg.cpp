@@ -80,8 +80,8 @@ typedef ScaledTranslationEulerTransformType EulerTransformType;
 typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > RegularStepGradientDescentOptimizerType;
 typedef itk::LBFGSBOptimizerv4 LBFGSBOptimizerOptimizerType;
 typedef itk::MultiStartOptimizerv4 MultiStartOptimizerType;
-// typedef RegularStepGradientDescentOptimizerType OptimizerType;
-typedef LBFGSBOptimizerOptimizerType OptimizerType;
+typedef RegularStepGradientDescentOptimizerType OptimizerType;
+// typedef LBFGSBOptimizerOptimizerType OptimizerType;
 // typedef MultiStartOptimizerType OptimizerType;
 
 // Interpolator Types
@@ -369,10 +369,10 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // registration->GetFixedInitialTransform()->Print(std::cout);
 
     // Set scale for translation if itkScaledTranslationEuler3DTransform
-    ScaledTranslationEulerTransformType::Pointer scaledTranslationTransform = dynamic_cast< ScaledTranslationEulerTransformType* >(initialTransform.GetPointer());
+    ScaledTranslationEulerTransformType::Pointer scaledTranslationTransform = dynamic_cast< ScaledTranslationEulerTransformType* >(registration->GetModifiableTransform());
     if ( scaledTranslationTransform.IsNotNull() ) {
-        registration->GetModifiableTransform()->SetTranslationScale( dTranslationScale );
-        std::cout << "TranslationScale = " << registration->GetModifiableTransform()->GetTranslationScale() << std::endl;
+        scaledTranslationTransform->SetTranslationScale( dTranslationScale );
+        std::cout << "TranslationScale = " << scaledTranslationTransform->GetTranslationScale() << std::endl;
     }
 
     // Set metric
@@ -384,16 +384,19 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // scalesEstimator->SetSmallParameterVariation( 1.0 );
     scalesEstimator->SetMetric( metric );
 
-    // Parametrize optimizer
-    // optimizer->SetMinimumStepLength( 1e-6 );
-    // optimizer->SetGradientMagnitudeTolerance( 1e-4 );
-    // optimizer->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
-    //"itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
-    // optimizer->SetNumberOfIterations( 100 );
-    // optimizer->SetMinimumConvergenceValue( 1e-6 );
-    // optimizer->SetScalesEstimator( scalesEstimator );
-    // optimizer->SetDoEstimateLearningRateOnce( false );
-    // optimizer->SetLearningRate(1);
+    // For Regular Step Gradient Descent Optimizer
+    RegularStepGradientDescentOptimizerType::Pointer optimizerRegularStep = dynamic_cast<RegularStepGradientDescentOptimizerType* > (optimizer.GetPointer());
+    if ( optimizerRegularStep.IsNotNull() ){
+        // optimizerRegularStep->SetMinimumStepLength( 1e-6 );
+        // optimizerRegularStep->SetGradientMagnitudeTolerance( 1e-4 );
+        // optimizerRegularStep->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
+        // "itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
+        optimizerRegularStep->SetNumberOfIterations( 500 );
+        // optimizerRegularStep->SetMinimumConvergenceValue( 1e-6 );
+        optimizerRegularStep->SetScalesEstimator( scalesEstimator );
+        optimizerRegularStep->SetDoEstimateLearningRateOnce( false );
+        // optimizerRegularStep->SetLearningRate(1);
+    }
 
     // For LBFGS Optimizer
     LBFGSBOptimizerOptimizerType::Pointer optimizerLBFGS = dynamic_cast<LBFGSBOptimizerOptimizerType* > (optimizer.GetPointer());

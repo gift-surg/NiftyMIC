@@ -212,7 +212,9 @@ class RegistrationITK:
             cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( self._fixed, self._moving ).flatten()
             cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
-        # print cmd
+        print("\t----- print command -----------------------------")
+        print cmd
+        print("\t-------------------------------------------------")
         os.system(cmd)
 
         ## Read transformation file

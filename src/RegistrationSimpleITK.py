@@ -42,7 +42,7 @@ class RegistrationSimpleITK:
         self._metric_params = None
 
         self._optimizer = "RegularStepGradientDescent"
-        self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-8, 'numberOfIterations': 200, 'gradientMagnitudeTolerance': 1e-6}"
+        self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 200, 'gradientMagnitudeTolerance': 1e-6}"
 
         self._optimizer_scales = "PhysicalShift"
 
@@ -199,7 +199,7 @@ class RegistrationSimpleITK:
             self._optimizer_params = "{'simplexDelta': 0.1, 'numberOfIterations': 100, 'parametersConvergenceTolerance': 1e-8, 'functionConvergenceTolerance': 1e-4, 'withRestarts':False}"
 
         elif optimizer in ["RegularStepGradientDescent"] and params is None:
-            self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-8, 'numberOfIterations': 200, 'gradientMagnitudeTolerance': 1e-6}"
+            self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 400, 'gradientMagnitudeTolerance': 1e-6}"
 
         elif optimizer in ["GradientDescentLineSearch"] and params is None:
             self._optimizer_params = "{'learningRate': 1, 'numberOfIterations': 100, 'convergenceMinimumValue': 1e-6, 'convergenceWindowSize':10}"
