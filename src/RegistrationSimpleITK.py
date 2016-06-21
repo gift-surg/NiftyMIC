@@ -46,6 +46,10 @@ class RegistrationSimpleITK:
 
         self._optimizer_scales = "PhysicalShift"
 
+        self._initializer_type = "MOMENTS"
+        self._use_centered_transform_initializer = False
+
+
     ## Set fixed/reference/target image
     #  \param[in] fixed fixed/reference/target image as Stack object
     def set_fixed(self, fixed):
@@ -96,6 +100,21 @@ class RegistrationSimpleITK:
     ## Get type of registration
     def get_registration_type(self):
         return registration_type
+
+
+    ## Set type of centered transform initializer
+    #  \param[in] initializer_type
+    def set_centered_transform_initializer(self, initializer_type):
+        if initializer_type not in ["MOMENTS", "GEOMETRY"]:
+            raise ValueError("Error: centered transform initializer type can only be 'MOMENTS' or 'GEOMETRY'")
+
+        self._initializer_type = initializer_type
+        self._use_centered_transform_initializer = True
+        
+
+    ## Get type of centered transform initializer
+    def get_centered_transform_initializer(self):
+        return self._initializer_type
 
 
     ## Get affine transform in (Simple)ITK format after having run reg_aladin
@@ -269,8 +288,8 @@ class RegistrationSimpleITK:
         elif self._registration_type in ["Affine"]:
             initial_transform = sitk.AffineTransform(dim)
 
-        # center = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY).GetFixedParameters()
-        # initial_transform.SetCenter(center)
+        if self._use_centered_transform_initializer:
+            initial_transform = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, initial_transform, eval("sitk.CenteredTransformInitializerFilter." + self._initializer_type))
 
         registration_method.SetInitialTransform(initial_transform)
 

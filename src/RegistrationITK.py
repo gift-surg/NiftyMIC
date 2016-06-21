@@ -28,6 +28,7 @@ class RegistrationITK:
         self._control_point_grid_sitk = None
         self._registered_image = None
 
+        self._registration_type = "Rigid"
         self._metric = "Correlation"
         self._interpolator = "BSpline"
         self._scales_estimator = "Jacobian"
