@@ -4,6 +4,170 @@
 		"selected_items":
 		[
 			[
+				"dir_ou",
+				"dir_output"
+			],
+			[
+				"dir_i",
+				"dir_input"
+			],
+			[
+				"generate_",
+				"generate_revealed_files"
+			],
+			[
+				"dir_pu",
+				"dir_output"
+			],
+			[
+				"di",
+				"directory"
+			],
+			[
+				"su",
+				"subject"
+			],
+			[
+				"dir_uo",
+				"dir_output_dictionaries"
+			],
+			[
+				"dir_inp",
+				"dir_input_dictionaries"
+			],
+			[
+				"write_shu",
+				"write_shuffled_files"
+			],
+			[
+				"dir_out",
+				"dir_output_dictionaries"
+			],
+			[
+				"gener",
+				"generate_shuffled_dictionaries"
+			],
+			[
+				"time",
+				"time_stamp"
+			],
+			[
+				"subje",
+				"subject"
+			],
+			[
+				"sub",
+				"subjects	(plotFigures.m)"
+			],
+			[
+				"file",
+				"filename_prefix"
+			],
+			[
+				"id",
+				"identifiers"
+			],
+			[
+				"dir_input_",
+				"dir_input_root	(plotFigures.m)"
+			],
+			[
+				"dire",
+				"directory"
+			],
+			[
+				"fil",
+				"filenames"
+			],
+			[
+				"loaded_o",
+				"loaded_obj"
+			],
+			[
+				"HR_",
+				"HR_volume_ref"
+			],
+			[
+				"GetP",
+				"GetPixelIDValue"
+			],
+			[
+				"Euler",
+				"Euler3DTransform"
+			],
+			[
+				"HR_vo",
+				"HR_volume_ref"
+			],
+			[
+				"stack_pre",
+				"stack_preregistered_sitk"
+			],
+			[
+				"dir_in",
+				"dir_input_data"
+			],
+			[
+				"filenames",
+				"filenames_data"
+			],
+			[
+				"filen",
+				"filename"
+			],
+			[
+				"image_sit",
+				"image_sitk_mask"
+			],
+			[
+				"mask",
+				"mask_suffix	(plotFigures.m)"
+			],
+			[
+				"filenam",
+				"filenames_data"
+			],
+			[
+				"Wri",
+				"WriteImage"
+			],
+			[
+				"in_",
+				"ind_mask"
+			],
+			[
+				"get_regist",
+				"get_registration_transform_sitk"
+			],
+			[
+				"HR_v",
+				"HR_volume_ref"
+			],
+			[
+				"Reg",
+				"Registration	(ReconstructionManager.py)"
+			],
+			[
+				"for",
+				"for (edited)	(Edited) For Loop"
+			],
+			[
+				"filea",
+				"filenames	(ReconstructionManager.py)"
+			],
+			[
+				"dir_inpu",
+				"dir_input_data"
+			],
+			[
+				"from_fi",
+				"from_filename"
+			],
+			[
+				"My",
+				"MyLineColors{i"
+			],
+			[
 				"dilatio",
 				"dilation_radius"
 			],
@@ -14,10 +178,6 @@
 			[
 				"RegularS",
 				"RegularStepGradientDescentOptimizerType"
-			],
-			[
-				"HR_",
-				"HR_volume"
 			],
 			[
 				"dilat",
@@ -38,14 +198,6 @@
 			[
 				"filename_",
 				"filename_ref_T1"
-			],
-			[
-				"file",
-				"filename"
-			],
-			[
-				"filenam",
-				"filename_ref"
 			],
 			[
 				"filename_ref_T",
@@ -80,10 +232,6 @@
 				"N_scenarios"
 			],
 			[
-				"subje",
-				"subjects"
-			],
-			[
 				"outpu",
 				"output_prefix"
 			],
@@ -98,10 +246,6 @@
 			[
 				"Volu",
 				"Volume"
-			],
-			[
-				"dir_ou",
-				"dir_output_prefix"
 			],
 			[
 				"ra",
@@ -236,10 +380,6 @@
 				"acquisition_type"
 			],
 			[
-				"sub",
-				"subject"
-			],
-			[
 				"Valu",
 				"ValueError	error"
 			],
@@ -248,20 +388,12 @@
 				"acquisition_type"
 			],
 			[
-				"fil",
-				"filenames_TRUFI"
-			],
-			[
 				"regul",
 				"regularization_parameter_estimation"
 			],
 			[
 				"set_fi",
 				"set_filename_prefix	(RegularizationParameterEstimation.py)"
-			],
-			[
-				"HR_vo",
-				"HR_volume_init"
 			],
 			[
 				"_st",
@@ -382,138 +514,6 @@
 			[
 				"target",
 				"target_stack_number"
-			],
-			[
-				"Reconstru",
-				"Reconstruction	(ReconstructionManager.py)"
-			],
-			[
-				"show_",
-				"show_sitk_image	(ReconstructionManager.py)"
-			],
-			[
-				"boun",
-				"boundary_y"
-			],
-			[
-				"_bound",
-				"_boundary_y"
-			],
-			[
-				"_boun",
-				"_boundary_z"
-			],
-			[
-				"_bou",
-				"_boundary_y"
-			],
-			[
-				"bound",
-				"boundary_z"
-			],
-			[
-				"dir_inp",
-				"dir_input_data"
-			],
-			[
-				"get_inte",
-				"get_intensity_corrected_stacks	(IntensityNormalization.py)"
-			],
-			[
-				"convert",
-				"convert_sitk_to_itk_image	(StackAverage.py)"
-			],
-			[
-				"_s",
-				"_stacks"
-			],
-			[
-				"nda",
-				"nda0"
-			],
-			[
-				"_stack",
-				"_stacks_normalized"
-			],
-			[
-				"stack_av",
-				"stack_average"
-			],
-			[
-				"stack_aver",
-				"stack_average_sitk"
-			],
-			[
-				"slice_sitk",
-				"slice_sitk_mask"
-			],
-			[
-				"show",
-				"show_sitk_image	(ReconstructionManager.py)"
-			],
-			[
-				"stac",
-				"stack_corrected"
-			],
-			[
-				"inten",
-				"intensity_normalizer"
-			],
-			[
-				"array",
-				"array_mask"
-			],
-			[
-				"GetI",
-				"GetImageFromArray"
-			],
-			[
-				"get_",
-				"get_filename	(NiftyReg.py)"
-			],
-			[
-				"_HR_volume_",
-				"_HR_volume_ref"
-			],
-			[
-				"_HR",
-				"_HR_volume	(ReconstructionManager.py)"
-			],
-			[
-				"Eul",
-				"Euler3DTransform	(ReconstructionManager.py)"
-			],
-			[
-				"stack",
-				"stacks"
-			],
-			[
-				"stack_c",
-				"stack_corrected_sitk"
-			],
-			[
-				"stack_",
-				"stack_corrected"
-			],
-			[
-				"Read",
-				"ReadImage	(NiftyReg.py)"
-			],
-			[
-				"sIm",
-				"sImageCorrected"
-			],
-			[
-				"image_3D",
-				"image_3D_mask"
-			],
-			[
-				"MY",
-				"MY_MAIN_FILE_2"
-			],
-			[
-				"AN",
-				"ANTSradius"
 			]
 		]
 	},
@@ -536,14 +536,6 @@
 			}
 		},
 		{
-			"file": "cpp/source/itkReg.cpp",
-			"settings":
-			{
-				"buffer_size": 52158,
-				"line_ending": "Unix"
-			}
-		},
-		{
 			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationITK.py",
 			"settings":
 			{
@@ -560,50 +552,10 @@
 			}
 		},
 		{
-			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/IntensityNormalization.py",
-			"settings":
-			{
-				"buffer_size": 6782,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "cpp/source/readCommandLine.cpp",
-			"settings":
-			{
-				"buffer_size": 12189,
-				"line_ending": "Unix"
-			}
-		},
-		{
 			"file": "studies/UpperGastrointestinalStudy/plotFigures.m",
 			"settings":
 			{
-				"buffer_size": 4779,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "studies/UpperGastrointestinalStudy/EvaluationUpperGIReconstructionResults.py",
-			"settings":
-			{
-				"buffer_size": 9346,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/documentation/evaluateSensitivityMinimizationInterval.m",
-			"settings":
-			{
-				"buffer_size": 24620,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
-			"settings":
-			{
-				"buffer_size": 29363,
+				"buffer_size": 5085,
 				"line_ending": "Unix"
 			}
 		},
@@ -611,7 +563,15 @@
 			"file": "studies/UpperGastrointestinalStudy/reconstructGIVolume.py",
 			"settings":
 			{
-				"buffer_size": 30966,
+				"buffer_size": 33058,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/mebner/UCL/UCL/Publications/2016_RAMBO/Paper/code/randomizeFilenames.py",
+			"settings":
+			{
+				"buffer_size": 8119,
 				"line_ending": "Unix"
 			}
 		},
@@ -624,6 +584,14 @@
 			}
 		},
 		{
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegularizationParameterEstimation.py",
+			"settings":
+			{
+				"buffer_size": 34271,
+				"line_ending": "Unix"
+			}
+		},
+		{
 			"file": "/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/documentation/plotDirectComparison_Locations.m",
 			"settings":
 			{
@@ -632,10 +600,18 @@
 			}
 		},
 		{
-			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/PSF.py",
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/InverseProblemSolver.py",
 			"settings":
 			{
-				"buffer_size": 3777,
+				"buffer_size": 56736,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
+			"settings":
+			{
+				"buffer_size": 29363,
 				"line_ending": "Unix"
 			}
 		}
@@ -708,6 +684,15 @@
 	},
 	"file_history":
 	[
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/randomizeFilenames.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
+		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/documentation/evaluateSensitivityMinimizationInterval.m",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/EvaluationUpperGIReconstructionResults.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/readCommandLine.cpp",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/IntensityNormalization.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Stack.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Slice.py",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/PSF.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/SliceToVolumeRegistration.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/BTK/subject07_mask_MC/run.sh",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/IRTK_Kainz/subject07/run.sh",
@@ -721,7 +706,6 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/BTK/test/run.sh",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/20160620_0030/subject02/HASTE/subject02_HASTE_refT2_biasCorr1_data_0_mask.nii.gz",
 		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/cpp_source_itkReg_Before_3a68ffa68a903c883153ebbc96d7fdea92e4902c.cpp",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Stack.py",
 		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/studies_UpperGastrointestinalStudy_reconstructGIVolume_Before_07ec4cdffd939f95b787a2417f496a4919236e49.py",
 		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/studies_UpperGastrointestinalStudy_reconstructGIVolume_Before_3a68ffa68a903c883153ebbc96d7fdea92e4902c.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/BTK/subject07/run.sh",
@@ -731,7 +715,6 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/20160613/subject02/HASTE/ResultEvaluation/Evaluation_subject02_HASTE_biasCorr1_orientPSF0_S2V0_inDef0_intensNorm1_stack0.txt",
 		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/London Data/saveAsOneMAT_patientData.m",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/Test01/subject02/HASTE/20160612_1750/orientPSF0_S2V1_inDef1_intensNorm1/NCC_subject02_HASTE_biasCorr1_recon_orientPSF0_S2V1_inDef1_intensNorm1_TK1_itermax20_alpha0.03_stack1.txt",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegularizationParameterEstimation.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationITK.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/reconstructVolume.py",
@@ -745,7 +728,6 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/itkRegTest.cpp",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/ScatteredDataApproximation.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationSimpleITK.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/IntensityNormalization.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyAdjointOrientedGaussian/source/MyITKImageHelper.cpp",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/ValidationRegistration.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/reconstructGIVolume.py",
@@ -754,7 +736,6 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/backups/v1_20150915/SimilarityMeasures.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/EvaulationUpperGIReconstructionResults.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/StackManager.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Slice.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/SimulatorSliceAcqusition.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/evaluateGIReconstructionResults.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/Hip/reconstructVolume.py",
@@ -765,7 +746,6 @@
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/StackAverage.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/IntensityNormalization.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/RegistrationSimpleITK.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/readCommandLine.cpp",
 		"/Users/mebner/.ipython/profile_default/ipython_config.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/itkReg.cpp",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/cpp/MyN4BiasFieldCorrectionImageFilter/source/CMakeLists.txt",
@@ -780,7 +760,6 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/include/writeITKTransform.h",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/writeITKTransform.cpp",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/itkAffineReg.cpp",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/PSF.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/RegularizationParameterEstimation/TK1-Regularization_itermax30.txt",
 		"/Volumes/itksnap-3.4.0-20151130-MacOS-x86_64/README.txt",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/HierarchicalSliceAlignment.py",
@@ -832,10 +811,7 @@
 		"/Users/mebner/development/SimpleElastix/runCmake.sh",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/data/fetal_neck_mass_brain/data.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/SimpleITK_Blurring.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/DataPreprocessing.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/SliceAcqusition.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/ReconstructionValidation.py",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/ReconstructionManager.py"
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/GettingStarted/DataPreprocessing.py"
 	],
 	"find":
 	{
@@ -872,6 +848,46 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"\"_",
+			"_",
+			"filenames",
+			"\"subject\" + subject + ",
+			"dir_input",
+			"directory",
+			"dir_output_dictionaries",
+			"dictionary_loaded",
+			"dir_output",
+			"datetime",
+			"dir_output",
+			"filename_shuffled_recons_prefix",
+			"N_filenames",
+			"filename_prefix",
+			"file_handle",
+			"filename_out_dictionary",
+			"file",
+			"fopen",
+			"fope",
+			"filename_out",
+			"UCL",
+			"mkdir -p",
+			"directory_root",
+			"directory",
+			"list",
+			"loaded_obj",
+			"filename",
+			"interpolator",
+			"RegistrationType",
+			"rm -rf",
+			"sitk.Resample",
+			"stacks[i]",
+			"WriteImage",
+			"ind_mask",
+			"number_of_masks",
+			"_get_rigid_registration_transform_3D",
+			"_get_propagated_mask",
+			"registration_vol",
+			"rsitk",
+			"get_rec",
 			"CenteredTransformInitializer",
 			"Affine",
 			"initializer_type",
@@ -959,47 +975,7 @@
 			"_dilate_mask",
 			"_stacks_preprocessed",
 			"write_pre",
-			"get_motion_corrected_stacks_of_slices",
-			"use_OrientedGaussianPSF",
-			"tit",
-			"title",
-			"slice_to_volume_registration",
-			"get_motion_corrected_stacks_of_slices",
-			"run_regularization_parameter_estimate",
-			"Transform",
-			"optimizer",
-			"optimizerLBFGS",
-			"OptimizerType",
-			"_movingSlicecopy_copy_subject07_HASTE_biasCorr1_data_",
-			"stack${i}_slice${j}_movingSlice${i}",
-			"_movingSlice",
-			"_movingSlice_subject",
-			"txt",
-			"file_handle",
-			"open",
-			"fopen",
-			"nda_out",
-			"target_stack_number",
-			"ANTS",
-			"transform",
-			"registration->GetOutput()->Get()",
-			"BSplineInterpolatorType",
-			"translation[0], translation[1], translation[2]",
-			"  itk::Vector< PixelType, dim > translation = transform->GetTranslation();\n",
-			"();\n",
-			"_translation_scale",
-			"_translationScale",
-			"radius",
-			"ANTSradius",
-			"registration",
-			"t",
-			"initialTransform",
-			"t",
-			"scaleTranslation",
-			"sScaleTranslation",
-			"scaleTranslation",
-			"ScaleTranslation",
-			"ScalesTranslation"
+			"get_motion_corrected_stacks_of_slices"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1064,7 +1040,7 @@
 	"groups":
 	[
 		{
-			"selected": 11,
+			"selected": 3,
 			"sheets":
 			[
 				{
@@ -1100,8 +1076,8 @@
 						"selection":
 						[
 							[
-								13111,
-								13153
+								440,
+								440
 							]
 						],
 						"settings":
@@ -1112,7 +1088,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 3410.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1145,47 +1121,6 @@
 				},
 				{
 					"buffer": 2,
-					"file": "cpp/source/itkReg.cpp",
-					"settings":
-					{
-						"buffer_size": 52158,
-						"regions":
-						{
-							"bookmarks":
-							{
-								"flags": 144,
-								"icon": "bookmark",
-								"regions":
-								[
-									[
-										16659,
-										16659
-									]
-								],
-								"scope": "bookmarks"
-							}
-						},
-						"selection":
-						[
-							[
-								16141,
-								16141
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C++.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 4651.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 3,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationITK.py",
 					"settings":
 					{
@@ -1213,7 +1148,7 @@
 					"type": "text"
 				},
 				{
-					"buffer": 4,
+					"buffer": 3,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegistrationSimpleITK.py",
 					"settings":
 					{
@@ -1224,8 +1159,8 @@
 						"selection":
 						[
 							[
-								10333,
-								10333
+								4784,
+								4784
 							]
 						],
 						"settings":
@@ -1235,81 +1170,25 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 3346.0,
+						"translation.y": 1981.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
-					"buffer": 5,
-					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/IntensityNormalization.py",
-					"settings":
-					{
-						"buffer_size": 6782,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								2730,
-								2730
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 1056.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"file": "cpp/source/readCommandLine.cpp",
-					"settings":
-					{
-						"buffer_size": 12189,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								11087,
-								11087
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C++.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 3191.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 7,
+					"buffer": 4,
 					"file": "studies/UpperGastrointestinalStudy/plotFigures.m",
 					"settings":
 					{
-						"buffer_size": 4779,
+						"buffer_size": 5085,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								742,
+								742
 							]
 						],
 						"settings":
@@ -1325,104 +1204,19 @@
 					"type": "text"
 				},
 				{
-					"buffer": 8,
-					"file": "studies/UpperGastrointestinalStudy/EvaluationUpperGIReconstructionResults.py",
-					"settings":
-					{
-						"buffer_size": 9346,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								3749,
-								3749
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 1007.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 9,
-					"file": "/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/documentation/evaluateSensitivityMinimizationInterval.m",
-					"settings":
-					{
-						"buffer_size": 24620,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								4620,
-								4620
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Matlab/Matlab.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 1194.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 10,
-					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
-					"settings":
-					{
-						"buffer_size": 29363,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								389,
-								389
-							]
-						],
-						"settings":
-						{
-							"spell_check": true,
-							"syntax": "Packages/Python/Python.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 440.0,
-						"zoom_level": 1.0
-					},
-					"type": "text"
-				},
-				{
-					"buffer": 11,
+					"buffer": 5,
 					"file": "studies/UpperGastrointestinalStudy/reconstructGIVolume.py",
 					"settings":
 					{
-						"buffer_size": 30966,
+						"buffer_size": 33058,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								25063,
-								25063
+								5640,
+								5640
 							]
 						],
 						"settings":
@@ -1432,13 +1226,41 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 7845.0,
+						"translation.y": 1860.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
-					"buffer": 12,
+					"buffer": 6,
+					"file": "/Users/mebner/UCL/UCL/Publications/2016_RAMBO/Paper/code/randomizeFilenames.py",
+					"settings":
+					{
+						"buffer_size": 8119,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6217,
+								6217
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2158.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 7,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/Stack.py",
 					"settings":
 					{
@@ -1449,8 +1271,8 @@
 						"selection":
 						[
 							[
-								17799,
-								17799
+								11072,
+								11072
 							]
 						],
 						"settings":
@@ -1460,7 +1282,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 5265.0,
+						"translation.y": 3786.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1468,11 +1290,67 @@
 			]
 		},
 		{
-			"selected": 1,
+			"selected": 0,
 			"sheets":
 			[
 				{
-					"buffer": 13,
+					"buffer": 8,
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/RegularizationParameterEstimation.py",
+					"settings":
+					{
+						"buffer_size": 34271,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								16465,
+								16465
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 4907.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "studies/UpperGastrointestinalStudy/reconstructGIVolume.py",
+					"settings":
+					{
+						"buffer_size": 33058,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								211,
+								211
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 9,
 					"file": "/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/documentation/plotDirectComparison_Locations.m",
 					"settings":
 					{
@@ -1494,25 +1372,25 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 3888.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
-					"buffer": 14,
-					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/PSF.py",
+					"buffer": 10,
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/InverseProblemSolver.py",
 					"settings":
 					{
-						"buffer_size": 3777,
+						"buffer_size": 56736,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								917,
-								917
+								19108,
+								19116
 							]
 						],
 						"settings":
@@ -1522,7 +1400,35 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 48.0,
+						"translation.y": 4974.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 11,
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/DataPreprocessing.py",
+					"settings":
+					{
+						"buffer_size": 29363,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								5206,
+								5206
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1739.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -1587,8 +1493,32 @@
 		"selected_items":
 		[
 			[
+				"data",
+				"src/DataPreprocessing.py"
+			],
+			[
+				"regu",
+				"src/RegularizationParameterEstimation.py"
+			],
+			[
+				"stac",
+				"src/Stack.py"
+			],
+			[
 				"slice",
-				"src/SliceToVolumeRegistration.py"
+				"src/Slice.py"
+			],
+			[
+				"reconstruc",
+				"studies/UpperGastrointestinalStudy/reconstructGIVolume.py"
+			],
+			[
+				"inve",
+				"src/InverseProblemSolver.py"
+			],
+			[
+				"reg",
+				"src/RegistrationSimpleITK.py"
 			],
 			[
 				"stack",
@@ -1605,14 +1535,6 @@
 			[
 				"reconsgi",
 				"studies/UpperGastrointestinalStudy/reconstructGIVolume.py"
-			],
-			[
-				"data",
-				"src/DataPreprocessing.py"
-			],
-			[
-				"stac",
-				"src/Stack.py"
 			],
 			[
 				"simp",
@@ -1668,10 +1590,6 @@
 			],
 			[
 				"estimation",
-				"src/RegularizationParameterEstimation.py"
-			],
-			[
-				"regu",
 				"src/RegularizationParameterEstimation.py"
 			],
 			[
@@ -2085,18 +2003,6 @@
 			[
 				"irtktemporalhomogeneoustransformation.cc",
 				"fetalReconstruction/source/IRTKSimple2/packages/transformation/src/irtkTemporalHomogeneousTransformation.cc"
-			],
-			[
-				"irtkmatrix.h",
-				"fetalReconstruction/source/IRTKSimple2/geometry++/include/irtkMatrix.h"
-			],
-			[
-				"o",
-				"fetalReconstruction-build/out.txt"
-			],
-			[
-				"irtkmatri",
-				"fetalReconstruction/source/IRTKSimple2/geometry++/include/irtkMatrix.h"
 			]
 		],
 		"width": 0.0

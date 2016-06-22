@@ -378,6 +378,13 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // Set metric
     // metric->SetFixedInterpolator(  interpolator  );
     metric->SetMovingInterpolator(  interpolator  );
+    
+    // std::cout<<"metric->GetUseMovingImageGradientFilter() = " << (metric->GetUseMovingImageGradientFilter()?"True":"False") <<std::endl;
+    // std::cout<<"metric->GetMovingImageGradientFilter() = ";
+    // metric->GetMovingImageGradientFilter()->Print(std::cout);
+    // std::cout<<"metric->GetMovingImageGradientCalculator() = ";
+    // metric->GetMovingImageGradientCalculator()->Print(std::cout);
+    //std::cout<<"metric->GetUseMovingImageGradientFilter() = " << (metric->GetUseMovingImageGradientFilter()?"True":"False") << std::endl;
 
     // Scales estimator
     // scalesEstimator->SetTransformForward( true );

@@ -105,11 +105,15 @@ class RegistrationSimpleITK:
     ## Set type of centered transform initializer
     #  \param[in] initializer_type
     def set_centered_transform_initializer(self, initializer_type):
-        if initializer_type not in ["MOMENTS", "GEOMETRY"]:
-            raise ValueError("Error: centered transform initializer type can only be 'MOMENTS' or 'GEOMETRY'")
+        if initializer_type not in [None, "MOMENTS", "GEOMETRY"]:
+            raise ValueError("Error: centered transform initializer type can only be 'None', MOMENTS' or 'GEOMETRY'")
 
-        self._initializer_type = initializer_type
-        self._use_centered_transform_initializer = True
+        if initializer_type is None:
+            self._use_centered_transform_initializer = False
+
+        else:
+            self._initializer_type = initializer_type
+            self._use_centered_transform_initializer = True
         
 
     ## Get type of centered transform initializer
