@@ -494,8 +494,9 @@ class Stack:
     ## Get isotropically resampled grid
     #  \param[in] spacing_new_scalar length of voxel side, scalar
     #  \param[in] interpolator choose type of interpolator for resampling
+    #  \param[in] extra_frame additional extra frame of zero intensities surrounding the stack in mm
     #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", boundary=0):
+    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", extra_frame=0):
 
         ## Choose interpolator
         try:
@@ -507,6 +508,8 @@ class Stack:
         ## Read original spacing (voxel dimension) and size of target stack:
         spacing = np.array(self.sitk.GetSpacing())
         size = np.array(self.sitk.GetSize()).astype("int")
+        origin = np.array(self.sitk.GetOrigin())
+        direction = self.sitk.GetDirection()
 
         if spacing_new_scalar is None:
             size_new = size
@@ -518,6 +521,27 @@ class Stack:
             spacing_new = np.ones(3)*spacing_new_scalar
             size_new = np.round(spacing/spacing_new*size).astype("int")
 
+        if extra_frame is not 0:
+
+            ## Get extra_frame in voxel space
+            extra_frame_vox = np.round(extra_frame/spacing_new[0]).astype("int")
+            
+            ## Compute size of resampled stack by considering additional extra_frame
+            size_new = size_new + 2*extra_frame_vox
+
+            ## Compute origin of resampled stack by considering additional extra_frame
+            a_x = self.sitk.TransformIndexToPhysicalPoint((1,0,0)) - origin
+            a_y = self.sitk.TransformIndexToPhysicalPoint((0,1,0)) - origin
+            a_z = self.sitk.TransformIndexToPhysicalPoint((0,0,1)) - origin
+            e_x = a_x/np.linalg.norm(a_x)
+            e_y = a_y/np.linalg.norm(a_y)
+            e_z = a_z/np.linalg.norm(a_z)
+
+            translation = (e_x + e_y + e_z)*extra_frame_vox*spacing[0]
+
+            origin = origin - translation
+
+
         ## Resample image and its mask to isotropic grid
         default_pixel_value = 0.0
 
@@ -526,9 +550,9 @@ class Stack:
             size_new, 
             sitk.Euler3DTransform(), 
             interpolator, 
-            self.sitk.GetOrigin(), 
+            origin, 
             spacing_new,
-            self.sitk.GetDirection(),
+            direction,
             default_pixel_value,
             self.sitk.GetPixelIDValue())
 
@@ -537,9 +561,9 @@ class Stack:
             size_new, 
             sitk.Euler3DTransform(), 
             interpolator, 
-            self.sitk.GetOrigin(), 
+            origin, 
             spacing_new,
-            self.sitk.GetDirection(),
+            direction,
             default_pixel_value,
             self.sitk_mask.GetPixelIDValue())
 

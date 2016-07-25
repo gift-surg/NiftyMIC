@@ -16,11 +16,19 @@ import pdb # set "pdb.set_trace()" to break into the debugger from a running pro
 import itk
 import SimpleITK as sitk
 import numpy as np
+import sys
+
+
+## Add directories to import modules
+sys.path.append("base/")
+sys.path.append("preprocessing/")
+sys.path.append("reconstruction/")
+sys.path.append("registration/")
+
 
 ## Import modules from src-folder
 import ReconstructionManager as rm
 import StackManager as sm
-import HierarchicalSliceAlignment as hsa
 import SimpleITKHelper as sitkh
 import Stack as st
 import Slice as sl

@@ -97,7 +97,7 @@ class ReconstructionManager:
         ## Data preprocessing:
         print("\n--- Run Data Preprocessing ---")
         self._data_preprocessing = dp.DataPreprocessing.from_filenames(dir_input=self._dir_results_input_data, filenames=filenames, suffix_mask=suffix_mask)
-        self._data_preprocessing.run_preprocessing(target_stack_number=self._target_stack_number, boundary=0)
+        self._data_preprocessing.run_preprocessing(mask_template_number=self._target_stack_number, boundary=0)
         self._data_preprocessing.write_preprocessed_data(dir_output=self._dir_results_input_data_processed)
 
         ## Read stacks:
@@ -123,7 +123,7 @@ class ReconstructionManager:
         ## Data preprocessing:
         print("\n--- Run Data Preprocessing ---")
         self._data_preprocessing = dp.DataPreprocessing.from_filenames(dir_input=self._dir_results_input_data, filenames=filenames, suffix_mask=suffix_mask)
-        self._data_preprocessing.run_preprocessing(target_stack_number=self._target_stack_number, boundary=0)
+        self._data_preprocessing.run_preprocessing(mask_template_number=self._target_stack_number, boundary=0)
         self._data_preprocessing.write_preprocessed_data(dir_output=self._dir_results_input_data_processed)
 
         ## Read stacks as bundle of slices:
