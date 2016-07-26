@@ -76,6 +76,24 @@ class Solver():
         self._HR_direction_itk = sitkh.get_itk_direction_from_sitk_image( self._HR_volume.sitk )
 
 
+    ## Get current estimate of HR volume
+    #  \return current estimate of HR volume, instance of Stack
+    def get_HR_volume(self):
+        return self._HR_volume
+
+
+    ## Set cut-off distance
+    #  \param[in] alpha_cut scalar value
+    def set_alpha_cut(self, alpha_cut):
+        self._alpha_cut = alpha_cut
+
+
+    ## Get cut-off distance
+    #  \return scalar value
+    def get_alpha_cut(self):
+        return self._alpha_cut
+        
+
     ## Perform forward operation on HR image, i.e. \f$y = DBx =: Ax \f$ with \f$D\f$  and \f$ B \f$ being 
     #  the downsampling and blurring operator, respectively.
     #  \param[in] HR_volume_itk HR image as itk.Image object

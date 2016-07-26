@@ -106,29 +106,34 @@ if __name__ == '__main__':
 
     ## Super-Resolution Reconstruction
     SRR_approach = "TK1"
-    SRR_alpha = 0.03
+    SRR_alpha = 0.02
     SRR_iter_max = 10
     
     SRR_alpha_cut = 3 
     SRR_tolerance = 1e-5
     SRR_DTD_computation_type = "FiniteDifference"
 
-    HR_volume = st.Stack.from_stack(HR_volume_init)
-    SRR = ips.InverseProblemSolver(stacks, HR_volume)
+    # HR_volume = st.Stack.from_stack(HR_volume_init)
+    # SRR = ips.InverseProblemSolver(stacks, HR_volume)
+    # SRR.set_regularization_type(SRR_approach)
+    # SRR.set_alpha_cut(SRR_alpha_cut)
+    # SRR.set_tolerance(SRR_tolerance)
+    # SRR.set_alpha(SRR_alpha)
+    # SRR.set_iter_max(SRR_iter_max)
+    # SRR.set_DTD_computation_type(SRR_DTD_computation_type)
+    # SRR.run_reconstruction()
+
+    # HR_volume = SRR.get_HR_volume()
+    # HR_volume.show()
+
+
+    SRR = tk.TikhonovSolver(stacks, HR_volume_init)
     SRR.set_regularization_type(SRR_approach)
-    SRR.set_alpha_cut(SRR_alpha_cut)
-    SRR.set_tolerance(SRR_tolerance)
     SRR.set_alpha(SRR_alpha)
     SRR.set_iter_max(SRR_iter_max)
-    SRR.set_DTD_computation_type(SRR_DTD_computation_type)
     SRR.run_reconstruction()
-
     HR_volume = SRR.get_HR_volume()
     HR_volume.show()
-
-
-    solver = tk.TikhonovSolver(stacks, HR_volume_init)
-    test = solver.run_reconstruction()
 
 
 

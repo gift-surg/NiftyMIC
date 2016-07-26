@@ -151,7 +151,7 @@ class DifferentialOperations:
 
     ## Laplacian operation based on composite finite differences, i.e.
     #  \f[
-    #   \step_size f = \nabla^T \nabla f = [D_x; D_y; D_z]^T [D_x; D_y; D_z] f
+    #   \Delta f = \nabla^T \nabla f = [D_x; D_y; D_z]^T [D_x; D_y; D_z] f
     #           = [D_x^T D_x + D_y^T D_y + D_z^T D_z] f
     #  \f]
     #  Periodic/Circular boundary conditions are used ('wrap')
