@@ -8,8 +8,9 @@
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date March 2016
 
+## Import libraries 
 import SimpleITK as sitk
-
+import itk
 import numpy as np
 from scipy.optimize import minimize
 from scipy.optimize import leastsq
@@ -20,14 +21,16 @@ import sys
 import time
 import datetime
 
-sys.path.append("../../src/")
-sys.path.append("../../src/base/")
-sys.path.append("../../src/preprocessing/")
-sys.path.append("../../src/reconstruction/")
-sys.path.append("../../src/registration/")
-sys.path.append("../../src/validation/")
+## Add directories to import modules
+dir_src_root = "../../src/"
+sys.path.append( dir_src_root )
+sys.path.append( dir_src_root + "base/" )
+sys.path.append( dir_src_root + "preprocessing/" )
+sys.path.append( dir_src_root + "reconstruction/" )
+sys.path.append( dir_src_root + "registration/" )
+sys.path.append( dir_src_root + "validation/" )
 
-import itk
+## Import modules
 import SimpleITKHelper as sitkh
 import InverseProblemSolver as ips
 import StackManager as sm

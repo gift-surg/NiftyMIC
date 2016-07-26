@@ -10,15 +10,13 @@ import SimpleITK as sitk
 import itk
 import numpy as np
 import unittest
-
 import sys
-sys.path.append("../src/")
-sys.path.append("data/SimpleITKHelper/")
 
-## Import modules from src-folder
-# import FirstEstimateOfHRVolume as tm
-# import StackManager as sm
-# import Slice as sl
+## Add directories to import modules
+dir_src_root = "../src/"
+sys.path.append( dir_src_root + "base/" )
+
+## Import modules
 import SimpleITKHelper as sitkh
 import Stack as st
 

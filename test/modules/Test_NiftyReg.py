@@ -10,10 +10,13 @@ import SimpleITK as sitk
 import numpy as np
 import unittest
 import sys
-sys.path.append("../src/")
-# sys.path.append("data/")
 
-## Import modules from src-folder
+## Add directories to import modules
+dir_src_root = "../src/"
+sys.path.append( dir_src_root + "base/" )
+sys.path.append( dir_src_root + "registration/" )
+
+## Import modules
 import NiftyReg as nreg
 import Stack as st
 import SimpleITKHelper as sitkh
