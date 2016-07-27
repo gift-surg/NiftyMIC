@@ -39,7 +39,7 @@ IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 
 ## This class implements the framework to iteratively solve 
 #  \f$ \vec{y}_k = A_k \vec{x} \f$ for every slice \f$ \vec{y}_k,\,k=1,\dots,K \f$
-#  via Tikhonov regularization via an augmented least-square approach
+#  via Tikhonov-regularization via an augmented least-square approach
 #  where \f$A_k=D_k B_k W_k\in\mathbb{R}^{N_k}\f$ denotes the combined warping, blurring and downsampling 
 #  operation, \f$ M_k \f$ the masking operator and \f$G\f$ represents either 
 #  the identity matrix \f$I\f$ (zeroth-order Tikhonov) or 
@@ -90,7 +90,6 @@ class TikhonovSolver(Solver):
 
         ## Compute total amount of voxels of x:
         self._N_voxels_HR_volume = np.array(self._HR_volume.sitk.GetSize()).prod()
-        # self._N_total_voxels = N_total_slice_voxels + 3*self._N_voxels_HR_volume
 
         ## Define differential operators
         spacing = self._HR_volume.sitk.GetSpacing()[0]
@@ -191,248 +190,8 @@ class TikhonovSolver(Solver):
         HR_nda_vec = res[0]
 
         ## After reconstruction: Update member attribute
-        self._HR_volume.itk = self._get_itk_image_from_array_vec( HR_nda_vec, self._HR_volume.itk )
+        self._HR_volume.itk = self.get_itk_image_from_array_vec( HR_nda_vec, self._HR_volume.itk )
         self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( self._HR_volume.itk )
-
-
-    """
-    TK0-Solver
-    """ 
-    ## Evaluate augmented linear operator for TK0-regularization, i.e.
-    #  \f$
-    #       \begin{pmatrix} MA \\ \sqrt{\alpha} G \end{pmatrix} \vec{x}
-    #     = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \\ \sqrt{\alpha} I \end{pmatrix} \vec{x}
-    #  \f$
-    #  for \f$ G = I\f$ identity matrix
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \param[in] N_voxels number of voxels (only two possibilities depending on G), integer
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented linear operator as 1D array
-    def _A_TK0(self, HR_nda_vec, N_voxels, alpha):
-
-        ## Allocate memory
-        A_x = np.zeros(N_voxels)
-
-        ## Compute MA x
-        A_x[0:-self._N_voxels_HR_volume] = self._MA(HR_nda_vec)
-
-        ## Compute sqrt(alpha)*x
-        A_x[-self._N_voxels_HR_volume:] = np.sqrt(alpha)*HR_nda_vec
-
-        return A_x
-
-    ## Evaluate the adjoint augmented linear operator for TK0-regularization, i.e.
-    #  \f$
-    #       \begin{bmatrix} A^* M && \sqrt{\alpha} G^* \end{bmatrix} \vec{y}
-    #     = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots && A_K^* M_K && \sqrt{\alpha} I \end{bmatrix} \vec{y}
-    #  \f$
-    #  for \f$ G = I\f$ identity matrix and \f$\vec{y}\in\mathbb{R}^{\sum_k N_k + N}\f$ 
-    #  representing a vector of stacked slices
-    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented adjoint linear operator as 1D array
-    def _A_adj_TK0(self, stacked_slices_nda_vec, alpha):
-
-        ## Compute A'M y[upper] 
-        A_adj_y = self._A_adj_M(stacked_slices_nda_vec)
-
-        ## Add sqrt(alpha)*y[lower]
-        A_adj_y = A_adj_y + stacked_slices_nda_vec[-self._N_voxels_HR_volume:]*np.sqrt(alpha)
-
-        return A_adj_y
-
-
-    """
-    TK1-Solver
-    """
-    ## Evaluate augmented linear operator for TK1-regularization, i.e.
-    #  \f$
-    #       \begin{pmatrix} MA \\ \sqrt{\alpha} G \end{pmatrix} \vec{x}
-    #     = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \\ \sqrt{\alpha} D \end{pmatrix} \vec{x}
-    #  \f$
-    #  for \f$ G = D\f$ representing the gradient.
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \param[in] N_voxels number of voxels (only two possibilities depending on G), integer
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented linear operator as 1D array
-    def _A_TK1(self, HR_nda_vec, N_voxels, alpha):
-
-        ## Allocate memory
-        A_x = np.zeros(N_voxels)
-
-        ## Compute MAx 
-        A_x[0:-3*self._N_voxels_HR_volume] = self._MA(HR_nda_vec)
-
-        ## Compute sqrt(alpha)*Dx
-        A_x[-3*self._N_voxels_HR_volume:] = np.sqrt(alpha)*self._D(HR_nda_vec)
-
-        return A_x
-
-
-    ## Evaluate the adjoint augmented linear operator for TK1-regularization, i.e.
-    #  \f$
-    #       \begin{bmatrix} A^* M && \sqrt{\alpha} G^* \end{bmatrix} \vec{y}
-    #     = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots && A_K^* M_K && \sqrt{\alpha} D^* \end{bmatrix} \vec{y}
-    #  \f$
-    #  for \f$ G = D\f$ representing the gradient and \f$\vec{y}\in\mathbb{R}^{\sum_k N_k + 3N}\f$ 
-    #  representing a vector of stacked slices
-    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented adjoint linear operator 
-    def _A_adj_TK1(self, stacked_slices_nda_vec, alpha):
-
-        ## Compute A'M y[upper]
-        A_adj_y = self._A_adj_M(stacked_slices_nda_vec)
-
-        ## Add D' y[lower]
-        A_adj_y = A_adj_y + self._D_adj(stacked_slices_nda_vec).flatten()*np.sqrt(alpha)
-
-        return A_adj_y
-
-
-    ## Evaluate \f$ D \vec{x} \f$ 
-    #  \f$ = \begin{pmatrix} D_x \\ D_y \\ D_z \end{pmatrix} \vec{x}\f$ 
-    #  within the adjoint augmented linear operator for TK1-regularization.
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \return evaluated differential operator as part of
-    #       augmented linear operator as 1D array
-    def _D(self, HR_nda_vec):
-        
-        ## Number of voxels always given by 3 times HR voxels
-        N_voxels = self._N_voxels_HR_volume
-
-        ## Allocate memory
-        D_x = np.zeros(3*N_voxels)
-
-        HR_nda = HR_nda_vec.reshape( self._HR_shape_nda )
-
-        ## Differentiate w.r.t. x, y and z and fill corresponding indices
-        D_x[0:N_voxels] = self._differential_operations.Dx(HR_nda).flatten()
-        D_x[N_voxels:2*N_voxels] = self._differential_operations.Dy(HR_nda).flatten()
-        D_x[2*N_voxels:3*N_voxels] = self._differential_operations.Dz(HR_nda).flatten()
-
-        return D_x
-
-
-    ## Evaluate \f$ D^* \vec{y} \f$ 
-    #  \f$ = \begin{pmatrix} D_x^* && D_y && D_z \end{pmatrix} \vec{y}\in\mathbb{R}^N\f$ 
-    #  within the adjoint augmented linear operator for TK1-regularization.
-    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \return evaluated adjoint differential operator as part of 
-    #       augmented adjoint linear operator as 1D array
-    def _D_adj(self, stacked_slices_nda_vec):
-
-        ## Number of voxels always given by 3 times HR voxels
-        N_voxels = self._N_voxels_HR_volume
-        
-        ## Allocate memory
-        D_adj_slice = np.zeros(3*N_voxels)
-
-        ## Extract respective x, y and z groups within compound stacked_slices_nda_vec
-        slice_x_nda_vec = stacked_slices_nda_vec[-3*N_voxels: -2*N_voxels]
-        slice_y_nda_vec = stacked_slices_nda_vec[-2*N_voxels: -N_voxels]
-        slice_z_nda_vec = stacked_slices_nda_vec[-N_voxels:]
-
-        ## Reshape in order to apply differentiation
-        slice_x_nda = slice_x_nda_vec.reshape( self._HR_shape_nda )
-        slice_y_nda = slice_y_nda_vec.reshape( self._HR_shape_nda )
-        slice_z_nda = slice_z_nda_vec.reshape( self._HR_shape_nda )
-
-        ## Apply adjoint differentiation w.r.t. x, y and z
-        Dx_adj_vec = self._differential_operations.Dx_adj(slice_x_nda).flatten()
-        Dy_adj_vec = self._differential_operations.Dy_adj(slice_y_nda).flatten()
-        Dz_adj_vec = self._differential_operations.Dz_adj(slice_z_nda).flatten()
-
-        ## Return added contributions 
-        return  Dx_adj_vec + Dy_adj_vec + Dz_adj_vec
-
-
-    """
-    Used for both TK0- and TK1-solver
-    """
-    ## Evaluate
-    #  \f$ MA \vec{x} \f$
-    #  \f$ = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \end{pmatrix} \vec{x} \f$
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \return evaluated MAx as part of augmented linear operator as 1D array
-    def _MA(self, HR_nda_vec):
-
-        ## Convert HR data array back to itk.Image object
-        x_itk = self._get_itk_image_from_array_vec(HR_nda_vec, self._HR_volume.itk)
-        
-        ## Allocate memory
-        MA_x = np.zeros(self._N_total_slice_voxels)
-
-        ## Define index for first voxel of first slice within array
-        i_min = 0
-
-        for i in range(0, self._N_stacks):
-            stack = self._stacks[i]
-            slices = stack.get_slices()
-
-            ## Get number of voxels of each slice in current stack
-            N_slice_voxels = np.array(slices[0].sitk.GetSize()).prod()
-
-            for j in range(0, stack.get_number_of_slices()):
-                
-                ## Define index for last voxel to specify current slice (exlusive)
-                i_max = i_min + N_slice_voxels
-
-                ## Compute M_k A_k y_k
-                slice_itk = self.Mk_Ak(x_itk, slices[j])
-                slice_nda = self._itk2np.GetArrayFromImage(slice_itk)
-
-                ## Fill corresponding elements
-                MA_x[i_min:i_max] = slice_nda.flatten()
-
-                ## Define index for first voxel to specify subsequent slice (inclusive)
-                i_min = i_max
-
-        return MA_x
-
-    ## Evaluate
-    #  \f$ A^* M \vec{y}
-    #     = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots && A_K^* M_K \end{bmatrix} \vec{y}
-    #  \f$
-    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \return evaluated A'My as part of augmented adjoint linear operator as 1D array
-    def _A_adj_M(self, stacked_slices_nda_vec):
-
-        ## Allocate memory
-        A_adj_M_y = np.zeros(self._N_voxels_HR_volume)
-
-        ## Define index for first voxel of first slice within array
-        i_min = 0
-
-        for i in range(0, self._N_stacks):
-            stack = self._stacks[i]
-            slices = stack.get_slices()
-
-            ## Get number of voxels of each slice in current stack
-            N_slice_voxels = np.array(slices[0].sitk.GetSize()).prod()
-
-            for j in range(0, stack.get_number_of_slices()):
-
-                ## Define index for last voxel to specify current slice (exlusive)
-                i_max = i_min + N_slice_voxels
-
-                ## Get current slice
-                slice_k = slices[j]
-
-                ## Extract 1D corresponding to current slice and convert it to itk.Object
-                slice_itk = self._get_itk_image_from_array_vec( stacked_slices_nda_vec[i_min:i_max], slice_k.itk )
-
-                ## Apply A_k' M_k on current slice
-                Ak_adj_Mk_slice_itk = self.Ak_adj_Mk(slice_itk, slice_k)
-                Ak_adj_Mk_slice_nda_vec = self._itk2np.GetArrayFromImage(Ak_adj_Mk_slice_itk).flatten()
-
-                ## Add contribution
-                A_adj_M_y = A_adj_M_y + Ak_adj_Mk_slice_nda_vec
-
-                ## Define index for first voxel to specify subsequent slice (inclusive)
-                i_min = i_max
-
-        return A_adj_M_y
 
 
     ## Compute
@@ -473,6 +232,101 @@ class TikhonovSolver(Solver):
                 i_min = i_max
 
         return b
+
+
+    """
+    TK0-Solver
+    """ 
+    ## Evaluate augmented linear operator for TK0-regularization, i.e.
+    #  \f$
+    #       \begin{pmatrix} MA \\ \sqrt{\alpha} G \end{pmatrix} \vec{x}
+    #     = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \\ \sqrt{\alpha} I \end{pmatrix} \vec{x}
+    #  \f$
+    #  for \f$ G = I\f$ identity matrix
+    #  \param[in] HR_nda_vec HR data as 1D array
+    #  \param[in] N_voxels number of voxels (only two possibilities depending on G), integer
+    #  \param[in] alpha regularization parameter, scalar
+    #  \return evaluated augmented linear operator as 1D array
+    def _A_TK0(self, HR_nda_vec, N_voxels, alpha):
+
+        ## Allocate memory
+        A_x = np.zeros(N_voxels)
+
+        ## Compute MA x
+        A_x[0:-self._N_voxels_HR_volume] = self.MA(HR_nda_vec)
+
+        ## Compute sqrt(alpha)*x
+        A_x[-self._N_voxels_HR_volume:] = np.sqrt(alpha)*HR_nda_vec
+
+        return A_x
+
+    ## Evaluate the adjoint augmented linear operator for TK0-regularization, i.e.
+    #  \f$
+    #       \begin{bmatrix} A^* M && \sqrt{\alpha} G^* \end{bmatrix} \vec{y}
+    #     = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots && A_K^* M_K && \sqrt{\alpha} I \end{bmatrix} \vec{y}
+    #  \f$
+    #  for \f$ G = I\f$ identity matrix and \f$\vec{y}\in\mathbb{R}^{\sum_k N_k + N}\f$ 
+    #  representing a vector of stacked slices
+    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
+    #  \param[in] alpha regularization parameter, scalar
+    #  \return evaluated augmented adjoint linear operator as 1D array
+    def _A_adj_TK0(self, stacked_slices_nda_vec, alpha):
+
+        ## Compute A'M y[upper] 
+        A_adj_y = self.A_adj_M(stacked_slices_nda_vec)
+
+        ## Add sqrt(alpha)*y[lower]
+        A_adj_y = A_adj_y + stacked_slices_nda_vec[-self._N_voxels_HR_volume:]*np.sqrt(alpha)
+
+        return A_adj_y
+
+
+    """
+    TK1-Solver
+    """
+    ## Evaluate augmented linear operator for TK1-regularization, i.e.
+    #  \f$
+    #       \begin{pmatrix} MA \\ \sqrt{\alpha} G \end{pmatrix} \vec{x}
+    #     = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \\ \sqrt{\alpha} D \end{pmatrix} \vec{x}
+    #  \f$
+    #  for \f$ G = D\f$ representing the gradient.
+    #  \param[in] HR_nda_vec HR data as 1D array
+    #  \param[in] N_voxels number of voxels (only two possibilities depending on G), integer
+    #  \param[in] alpha regularization parameter, scalar
+    #  \return evaluated augmented linear operator as 1D array
+    def _A_TK1(self, HR_nda_vec, N_voxels, alpha):
+
+        ## Allocate memory
+        A_x = np.zeros(N_voxels)
+
+        ## Compute MAx 
+        A_x[0:-3*self._N_voxels_HR_volume] = self.MA(HR_nda_vec)
+
+        ## Compute sqrt(alpha)*Dx
+        A_x[-3*self._N_voxels_HR_volume:] = np.sqrt(alpha)*self.D(HR_nda_vec)
+
+        return A_x
+
+
+    ## Evaluate the adjoint augmented linear operator for TK1-regularization, i.e.
+    #  \f$
+    #       \begin{bmatrix} A^* M && \sqrt{\alpha} G^* \end{bmatrix} \vec{y}
+    #     = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots && A_K^* M_K && \sqrt{\alpha} D^* \end{bmatrix} \vec{y}
+    #  \f$
+    #  for \f$ G = D\f$ representing the gradient and \f$\vec{y}\in\mathbb{R}^{\sum_k N_k + 3N}\f$ 
+    #  representing a vector of stacked slices
+    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
+    #  \param[in] alpha regularization parameter, scalar
+    #  \return evaluated augmented adjoint linear operator 
+    def _A_adj_TK1(self, stacked_slices_nda_vec, alpha):
+
+        ## Compute A'M y[upper]
+        A_adj_y = self.A_adj_M(stacked_slices_nda_vec)
+
+        ## Add D' y[lower]
+        A_adj_y = A_adj_y + self.D_adj(stacked_slices_nda_vec).flatten()*np.sqrt(alpha)
+
+        return A_adj_y
 
                 
             
