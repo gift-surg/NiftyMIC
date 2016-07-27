@@ -179,24 +179,9 @@ class Solver():
         return self.Ak_adj(Mk_slice_itk, slice_k)
 
 
-    ## Convert HR data array (vector format) back to itk.Image object
+    ## Convert numpy data array (vector format) back to itk.Image object
     #  \param[in] HR_nda_vec HR data as 1D array
     #  \return HR volume with intensities according to HR_nda_vec as itk.Image object
-    # TODO: replace by _get_itk_image_from_array_vec and delete member variables!?
-    def _get_HR_itk_image_from_array_vec(self, HR_nda_vec):
-        
-        ## Create ITK image
-        image_itk = self._itk2np.GetImageFromArray( HR_nda_vec.reshape( self._HR_shape_nda ) ) 
-
-        image_itk.SetOrigin(self._HR_origin_itk)
-        image_itk.SetSpacing(self._HR_spacing_itk)
-        image_itk.SetDirection(self._HR_direction_itk)
-
-        image_itk.DisconnectPipeline()
-
-        return image_itk
-
-
     def _get_itk_image_from_array_vec(self, nda_vec, image_itk_ref):
         
         shape_nda = np.array(image_itk_ref.GetLargestPossibleRegion().GetSize())[::-1]
