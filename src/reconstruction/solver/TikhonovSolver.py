@@ -27,7 +27,6 @@ sys.path.append( dir_src_root + "reconstruction/solver/" )
 
 ## Import modules
 import SimpleITKHelper as sitkh
-import DifferentialOperations as diffop
 from Solver import Solver
 
 ## Pixel type of used 3D ITK image
@@ -80,35 +79,22 @@ class TikhonovSolver(Solver):
     #  \param[in] alpha_cut Cut-off distance for Gaussian blurring filter
     def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, reg_type="TK1"):
 
-        Solver.__init__(self, stacks, HR_volume, alpha_cut)
-
-        ## Compute total amount of pixels for all slices
-        self._N_total_slice_voxels = 0
-        for i in range(0, self._N_stacks):
-            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
-            self._N_total_slice_voxels += N_stack_voxels
-
-        ## Compute total amount of voxels of x:
-        self._N_voxels_HR_volume = np.array(self._HR_volume.sitk.GetSize()).prod()
-
-        ## Define differential operators
-        spacing = self._HR_volume.sitk.GetSpacing()[0]
-        self._differential_operations = diffop.DifferentialOperations(step_size=spacing)                  
+        ## Run constructor of superclass
+        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max)
         
         ## Settings for optimizer
-        self._alpha = alpha
-        self._iter_max = iter_max
         self._reg_type = reg_type
 
         self._A = {
             "TK0"   : self._A_TK0,
-            "TK1"   : self._A_TK1
+            "TK1"   : self.A_TK1
         }
 
         self._A_adj = {
             "TK0"   : self._A_adj_TK0,
-            "TK1"   : self._A_adj_TK1
+            "TK1"   : self.A_adj_TK1
         }
+
 
     ## Set type of regularization. It can be either 'TK0' or 'TK1'
     #  \param[in] reg_type Either 'TK0' or 'TK1', string
@@ -124,29 +110,6 @@ class TikhonovSolver(Solver):
     def get_regularization_type(self):
         return self._reg_type
 
-
-    ## Set regularization parameter
-    #  \param[in] alpha regularization parameter, scalar
-    def set_alpha(self, alpha):
-        self._alpha = alpha
-
-
-    ## Get value of chosen regularization parameter
-    #  \return regularization parameter, scalar
-    def get_alpha(self):
-        return self._alpha
-
-
-    ## Set maximum number of iterations for minimizer
-    #  \param[in] iter_max number of maximum iterations, scalar
-    def set_iter_max(self, iter_max):
-        self._iter_max = iter_max
-
-
-    ## Get chosen value of maximum number of iterations for minimizer
-    #  \return maximum number of iterations set for minimizer, scalar
-    def get_iter_max(self):
-        return self._iter_max
 
     ## Run the reconstruction algorithm. Result can be fetched by \p get_HR_volume
     def run_reconstruction(self):
@@ -174,7 +137,7 @@ class TikhonovSolver(Solver):
         b = self._get_b(N_voxels)
 
         ## Construct (sparse) linear operator A
-        A_fw = lambda x: self._A[self._reg_type](x, N_voxels, self._alpha)
+        A_fw = lambda x: self._A[self._reg_type](x, self._alpha)
         A_bw = lambda x: self._A_adj[self._reg_type](x, self._alpha)
         A = LinearOperator((N_voxels, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
 
@@ -203,40 +166,12 @@ class TikhonovSolver(Solver):
         ## Allocate memory
         b = np.zeros(N_voxels)
 
-        ## Define index for first voxel of first slice within array
-        i_min = 0
-
-        for i in range(0, self._N_stacks):
-            stack = self._stacks[i]
-            slices = stack.get_slices()
-
-            ## Get number of voxels of each slice in current stack
-            N_slice_voxels = np.array(slices[0].sitk.GetSize()).prod()
-
-            for j in range(0, stack.get_number_of_slices()):
-
-                ## Define index for last voxel to specify current slice (exlusive)
-                i_max = i_min + N_slice_voxels
-
-                ## Get current slice
-                slice_k = slices[j]
-
-                ## Apply M_k y_k
-                slice_itk = self.Mk(slice_k.itk, slice_k)
-                slice_nda_vec = self._itk2np.GetArrayFromImage(slice_itk).flatten()
-
-                ## Fill respective elements
-                b[i_min:i_max] = slice_nda_vec
-
-                ## Define index for first voxel to specify subsequent slice (inclusive)
-                i_min = i_max
+        ## Compute M y, i.e. masked slices stacked to 1D vector
+        b[0:self._N_total_slice_voxels] = self.get_M_y()
 
         return b
 
 
-    """
-    TK0-Solver
-    """ 
     ## Evaluate augmented linear operator for TK0-regularization, i.e.
     #  \f$
     #       \begin{pmatrix} MA \\ \sqrt{\alpha} G \end{pmatrix} \vec{x}
@@ -244,13 +179,12 @@ class TikhonovSolver(Solver):
     #  \f$
     #  for \f$ G = I\f$ identity matrix
     #  \param[in] HR_nda_vec HR data as 1D array
-    #  \param[in] N_voxels number of voxels (only two possibilities depending on G), integer
     #  \param[in] alpha regularization parameter, scalar
     #  \return evaluated augmented linear operator as 1D array
-    def _A_TK0(self, HR_nda_vec, N_voxels, alpha):
+    def _A_TK0(self, HR_nda_vec, alpha):
 
         ## Allocate memory
-        A_x = np.zeros(N_voxels)
+        A_x = np.zeros(self._N_total_slice_voxels+self._N_voxels_HR_volume)
 
         ## Compute MA x
         A_x[0:-self._N_voxels_HR_volume] = self.MA(HR_nda_vec)
@@ -259,6 +193,7 @@ class TikhonovSolver(Solver):
         A_x[-self._N_voxels_HR_volume:] = np.sqrt(alpha)*HR_nda_vec
 
         return A_x
+
 
     ## Evaluate the adjoint augmented linear operator for TK0-regularization, i.e.
     #  \f$
@@ -277,54 +212,6 @@ class TikhonovSolver(Solver):
 
         ## Add sqrt(alpha)*y[lower]
         A_adj_y = A_adj_y + stacked_slices_nda_vec[-self._N_voxels_HR_volume:]*np.sqrt(alpha)
-
-        return A_adj_y
-
-
-    """
-    TK1-Solver
-    """
-    ## Evaluate augmented linear operator for TK1-regularization, i.e.
-    #  \f$
-    #       \begin{pmatrix} MA \\ \sqrt{\alpha} G \end{pmatrix} \vec{x}
-    #     = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \\ \sqrt{\alpha} D \end{pmatrix} \vec{x}
-    #  \f$
-    #  for \f$ G = D\f$ representing the gradient.
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \param[in] N_voxels number of voxels (only two possibilities depending on G), integer
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented linear operator as 1D array
-    def _A_TK1(self, HR_nda_vec, N_voxels, alpha):
-
-        ## Allocate memory
-        A_x = np.zeros(N_voxels)
-
-        ## Compute MAx 
-        A_x[0:-3*self._N_voxels_HR_volume] = self.MA(HR_nda_vec)
-
-        ## Compute sqrt(alpha)*Dx
-        A_x[-3*self._N_voxels_HR_volume:] = np.sqrt(alpha)*self.D(HR_nda_vec)
-
-        return A_x
-
-
-    ## Evaluate the adjoint augmented linear operator for TK1-regularization, i.e.
-    #  \f$
-    #       \begin{bmatrix} A^* M && \sqrt{\alpha} G^* \end{bmatrix} \vec{y}
-    #     = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots && A_K^* M_K && \sqrt{\alpha} D^* \end{bmatrix} \vec{y}
-    #  \f$
-    #  for \f$ G = D\f$ representing the gradient and \f$\vec{y}\in\mathbb{R}^{\sum_k N_k + 3N}\f$ 
-    #  representing a vector of stacked slices
-    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented adjoint linear operator 
-    def _A_adj_TK1(self, stacked_slices_nda_vec, alpha):
-
-        ## Compute A'M y[upper]
-        A_adj_y = self.A_adj_M(stacked_slices_nda_vec)
-
-        ## Add D' y[lower]
-        A_adj_y = A_adj_y + self.D_adj(stacked_slices_nda_vec).flatten()*np.sqrt(alpha)
 
         return A_adj_y
 

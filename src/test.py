@@ -29,6 +29,7 @@ import Stack as st
 import StackManager as sm
 import ScatteredDataApproximation as sda
 import TikhonovSolver as tk
+import TVL2Solver as tvl2
 import InverseProblemSolver as ips
 
 
@@ -105,14 +106,18 @@ if __name__ == '__main__':
 
 
     ## Super-Resolution Reconstruction
-    SRR_approach = "TK1"
+    SRR_alpha_cut = 3 
+    SRR_approach = "TK0"
     SRR_alpha = 0.02
     SRR_iter_max = 10
-    
-    SRR_alpha_cut = 3 
-    SRR_tolerance = 1e-5
-    SRR_DTD_computation_type = "FiniteDifference"
 
+    SRR_rho = 0.5
+    SRR_ADMM_iterations = 10
+    SRR_ADMM_iterations_output_dir = "/tmp/TV-L2_ADMM_iterations/"
+    
+
+    # SRR_tolerance = 1e-5
+    # SRR_DTD_computation_type = "FiniteDifference"
     # HR_volume = st.Stack.from_stack(HR_volume_init)
     # SRR = ips.InverseProblemSolver(stacks, HR_volume)
     # SRR.set_regularization_type(SRR_approach)
@@ -129,28 +134,18 @@ if __name__ == '__main__':
 
     SRR = tk.TikhonovSolver(stacks, HR_volume_init)
     SRR.set_regularization_type(SRR_approach)
+
+    # SRR = tvl2.TVL2Solver(stacks, HR_volume_init)
+    # SRR.set_rho(SRR_rho)
+    # SRR.set_ADMM_iterations(SRR_ADMM_iterations)
+    # SRR.set_ADMM_iterations_output_dir(SRR_ADMM_iterations_output_dir)
+
     SRR.set_alpha(SRR_alpha)
     SRR.set_iter_max(SRR_iter_max)
     SRR.run_reconstruction()
+
     HR_volume = SRR.get_HR_volume()
     HR_volume.show()
 
-
-
-
-
-
-
-    N = 1e6
-    v = np.ones(N)
-    u = np.ones(3*N)
-    A = LinearOperator((3*N,N), matvec=A_fw, rmatvec=A_adj)
-
-    # print A.matvec(v)
-
-    # print A * v
-
-    # print A.rmatvec(u)
-    # print A.adjoint()*u
 
 

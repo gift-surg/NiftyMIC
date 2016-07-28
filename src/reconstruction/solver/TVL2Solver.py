@@ -27,7 +27,6 @@ sys.path.append( dir_src_root + "reconstruction/solver/" )
 
 ## Import modules
 import SimpleITKHelper as sitkh
-import DifferentialOperations as diffop
 from Solver import Solver
 
 ## Pixel type of used 3D ITK image
@@ -40,40 +39,330 @@ IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 ## This class implements the framework to iteratively solve 
 #  \f$ \vec{y}_k = A_k \vec{x} \f$ for every slice \f$ \vec{y}_k,\,k=1,\dots,K \f$
 #  via TV-L2-regularization via an augmented least-square approach
+#  TODO
 class TVL2Solver(Solver):
-    
+
     ## Constructor
     #  \param[in] stacks list of Stack objects containing all stacks used for the reconstruction
     #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (used as initial value + space definition)
     #  \param[in] alpha_cut Cut-off distance for Gaussian blurring filter
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, reg_type="TK1"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TV-L2"):
 
-        Solver.__init__(self, stacks, HR_volume, alpha_cut)
-
-        ## Compute total amount of pixels for all slices
-        self._N_total_slice_voxels = 0
-        for i in range(0, self._N_stacks):
-            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
-            self._N_total_slice_voxels += N_stack_voxels
-
-        ## Compute total amount of voxels of x:
-        self._N_voxels_HR_volume = np.array(self._HR_volume.sitk.GetSize()).prod()
-
-        ## Define differential operators
-        spacing = self._HR_volume.sitk.GetSpacing()[0]
-        self._differential_operations = diffop.DifferentialOperations(step_size=spacing)                  
+        ## Run constructor of superclass
+        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max)               
         
         ## Settings for optimizer
-        self._alpha = alpha
-        self._iter_max = iter_max
-        self._reg_type = reg_type
+        self._rho = rho
+        self._ADMM_iterations = ADMM_iterations
 
-        self._A = {
-            "TK0"   : self._A_TK0,
-            "TK1"   : self._A_TK1
-        }
+        self._ADMM_iterations_output_dir = ADMM_iterations_output_dir
+        self._ADMM_iterations_output_filename_prefix = ADMM_iterations_output_filename_prefix
 
-        self._A_adj = {
-            "TK0"   : self._A_adj_TK0,
-            "TK1"   : self._A_adj_TK1
-        }
+
+    ## Set regularization parameter used for augmented Lagrangian in TV-L2 regularization
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
+    #  \]$
+    #  \param[in] rho regularization parameter of augmented Lagrangian term, scalar
+    def set_rho(self, rho):
+        self._rho = rho
+
+
+    ## Get regularization parameter used for augmented Lagrangian in TV-L2 regularization
+    #  \return regularization parameter of augmented Lagrangian term, scalar
+    def get_rho(self):
+        return self._rho
+
+
+    ## Set ADMM iterations to solve TV-L2 reconstruction problem
+    #  \[$
+    #   \sum_{k=1}^K \frac{1}{2} \Vert y_k - A_k x \Vert_{\ell^2}^2 + \alpha\,\Psi(x) 
+    #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
+    #  \]$
+    #  \param[in] iterations number of ADMM iterations, scalar
+    def set_ADMM_iterations(self, iterations):
+        self._ADMM_iterations = iterations
+
+
+    ## Get chosen value of ADMM iterations to solve TV-L2 reconstruction problem
+    #  \return number of ADMM iterations, scalar
+    def get_ADMM_iterations(self):
+        return self._ADMM_iterations
+
+
+    ## Set ouput directory to write TV results in case outputs of ADMM iterations are desired
+    #  \param[in] dir_output directory to write TV results, string
+    def set_ADMM_iterations_output_dir(self, dir_output):
+        self._ADMM_iterations_output_dir = dir_output
+
+
+    ## Get ouput directory to write TV results in case outputs of ADMM iterations are desired
+    def get_ADMM_iterations_output_dir(self):
+        return self._ADMM_iterations_output_dir
+
+
+    ## Set filename to write TV reconstructed volumes of ADMM iteration results 
+    #  \pre ADMM_iterations_output_dir was set
+    #  \param[in] filename filename of volume, string
+    def set_ADMM_iterations_output_filename_prefix(self, filename):
+        self._ADMM_iterations_output_filename_prefix = filename
+
+
+    ## Get filename to write TV reconstructed volumes of ADMM iteration results 
+    #  \pre ADMM_iterations_output_dir was set
+    def get_ADMM_iterations_output_filename_prefix(self, filename):
+        return self._ADMM_iterations_output_filename_prefix
+
+
+    ## Reconstruct volume using TV-L2 regularization via Alternating Direction
+    #  Method of Multipliers (ADMM) method. 
+    #  Result can be fetched by \p get_HR_volume
+    def run_reconstruction(self):
+
+        print("Chosen regularization type: TV-L2")
+        print("Regularization parameter alpha = " + str(self._alpha))
+        print("Regularization parameter of augmented Lagrangian term rho = " + str(self._rho))
+        print("Number of ADMM iterations = " + str(self._ADMM_iterations))
+        print("Maximum number of TK1 solver iterations = " + str(self._iter_max))
+        # print("Tolerance = %.0e" %(self._tolerance))
+
+        HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
+
+        ##  Set initial values
+        vx_nda = self.differential_operations.Dx(HR_nda) # differential in x
+        vy_nda = self.differential_operations.Dy(HR_nda) # differential in y
+        vz_nda = self.differential_operations.Dz(HR_nda) # differential in z
+
+        wx_nda = np.zeros_like(vx_nda)
+        wy_nda = np.zeros_like(vy_nda)
+        wz_nda = np.zeros_like(vz_nda)
+    
+        ## Fill My -part of b, i.e. masked slices stacked to 1D vector 
+        #  (remaining elements will be updated at every iteration)
+        b = np.zeros(self._N_total_slice_voxels + 3*self._N_voxels_HR_volume)
+        b[0:self._N_total_slice_voxels] = self.get_M_y()
+
+        ## Perform ADMM_iterations
+        for iter in range(0, self._ADMM_iterations):
+            print("\tADMM iteration %s/%s:" %(iter+1, self._ADMM_iterations))
+
+            ## Perform ADMM step
+            HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = self._perform_ADMM_iteration(HR_nda, b, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, self._alpha, self._rho)
+
+            if self._ADMM_iterations_output_dir is not None:
+                name =  self._ADMM_iterations_output_filename_prefix
+                name += "_stacks" + str(self._N_stacks)
+                name += "_alpha" + str(self._alpha)
+                name += "_itermax" + str(self._iter_max)
+                name += "_rho" + str(self._rho)
+                name += "_ADMM_iteration" + str(iter+1)
+
+                os.system("mkdir -p " + self._ADMM_iterations_output_dir)
+
+                HR_volume_itk = self.get_itk_image_from_array_vec(HR_nda.flatten(), self._HR_volume.itk)
+                sitkh.write_itk_image(HR_volume_itk, self._ADMM_iterations_output_dir+name+".nii.gz")              
+
+            ## DEBUG:
+            ## Show reconstruction
+            # sitkh.show_itk_image(self.get_itk_image_from_array_vec(HR_nda.flatten(), self._HR_volume.itk), title="HR_volume_iteration_"+str(iter+1))
+
+            ## Show auxiliary v = Dx
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vx_nda.flatten()), title="vx_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vy_nda.flatten()), title="vy_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vz_nda.flatten()), title="vz_iteration_"+str(iter+1))
+
+            ## Show scaled dual variable w
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wx_nda.flatten()), title="wx_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wy_nda.flatten()), title="wy_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wz_nda.flatten()), title="wz_iteration_"+str(iter+1))
+
+        ## Update volume
+        self._HR_volume.itk = self.get_itk_image_from_array_vec( HR_nda.flatten(), self._HR_volume.itk )
+        self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( HR_volume_itk )
+
+
+    ## Perform single ADMM iteration
+    #  \param[in] HR_nda initial value of HR volume data array, numpy array
+    #  \param[in] b right-hand side \f$ b = \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K \vec{y}_K \\ \sqrt{rho}(\vec{v}^i-\vec{w}^i)\end{pmatrix} \f$ 
+    #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
+    #       but constrained primal problem, i.e.
+    #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
+    #       in x-direction, numpy array
+    #  \param[in] vy_nda initial value for auxiliary variable in y-direction
+    #  \param[in] vz_nda initial value for auxiliary variable in z-direction
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \param[in] alpha regularization parameter for primal problem, scaler>0
+    #  \param[in] rho regularization parameter for augmented Lagrangian term, scalar>0
+    #  \return updated HR volume data array
+    #  \return updated auxiliary variables \p v in x-, y- and z-direction
+    #  \return updated scaled dual variable \p w in x-, y- and z-direction
+    def _perform_ADMM_iteration(self, HR_nda, b, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho):
+
+        ## 1) Solve for x^{k+1} by using first-order Tikhonov regularization
+        HR_nda = self._perform_ADMM_step_1_TK1_recon_solution(HR_nda, b, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho)
+
+        ## Compute derivatives for subsequent steps
+        Dx_nda = self.differential_operations.Dx(HR_nda) 
+        Dy_nda = self.differential_operations.Dy(HR_nda) 
+        Dz_nda = self.differential_operations.Dz(HR_nda) 
+
+        ## 2) Solve for v^{k+1}
+        vx_nda, vy_nda, vz_nda = self._perform_ADMM_step_2_auxiliary_variable_v(Dx_nda, Dy_nda, Dz_nda, wx_nda, wy_nda, wz_nda, alpha/rho)
+
+        ## 3) Solve for w^{k+1}, i.e. scaled dual variable
+        wx_nda, wy_nda, wz_nda = self._perform_ADMM_step_3_scaled_dual_variable(Dx_nda, Dy_nda, Dz_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda)
+
+        return HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda
+
+
+    ## Perform first step of ADMM algorithm:
+    # TODO
+    #  \param[in] HR_nda initial value of HR volume data array, numpy array
+    #  \param[in] b right-hand side \f$ b = \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K \vec{y}_K \\ \sqrt{rho}(\vec{v}^i-\vec{w}^i)\end{pmatrix} \f$ 
+    #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
+    #       but constrained primal problem, i.e.
+    #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
+    #       in x-direction, numpy array
+    #  \param[in] vy_nda initial value for auxiliary variable in y-direction
+    #  \param[in] vz_nda initial value for auxiliary variable in z-direction
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \param[in] rho regularization parameter for augmented Lagrangian term, scalar>0
+    #  \return updated HR volume data array
+    def _perform_ADMM_step_1_TK1_recon_solution(self, HR_nda, b, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho):
+        print("\tTK1-regularization step" )
+        print("\t\tMaximum number of TK1 solver iterations = " + str(self._iter_max))
+        print("\t\tRegularization parameter alpha = " + str(self._alpha))
+        print("\t\tRegularization parameter of augmented Lagrangian term rho = " + str(self._rho))
+        # print("\t\tTolerance = %.0e" %(self._tolerance))
+
+        ## Update changing elements of right-hand side b
+        b[-3*self._N_voxels_HR_volume:] = np.sqrt(rho)*self._get_unscaled_b_lower(vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda)
+
+        ## Construct (sparse) linear operator A
+        A_fw = lambda x: self.A_TK1(x, rho)
+        A_bw = lambda x: self.A_adj_TK1(x, rho)
+        A = LinearOperator((self._N_total_slice_voxels+3*self._N_voxels_HR_volume, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
+
+        ## Compute least-square solution based on TK1-regularization
+        res = lsqr(A, b, iter_lim=self._iter_max, show=True) #Works neatly (but does not allow bounds)
+
+        ## Extract estimated solution as numpy array
+        HR_nda = res[0].reshape(self._HR_shape_nda)
+        
+        return HR_nda
+
+
+    ## Compute unscaled lower part of b, i.e.
+    #  \f$ \vec{v}^i - \vec{w}^i\f$ 
+    #  \param[in] N_voxels number of voxels (only two possibilities depending on G), integer
+    #  \return vector lower part of b as 1D array
+    def _get_unscaled_b_lower(self, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda):
+
+        ## Allocate memory
+        b = np.zeros(3*self._N_voxels_HR_volume)
+
+        ## Compute changing, lower part of b without scaling
+        b[-3*self._N_voxels_HR_volume:-2*self._N_voxels_HR_volume] = (vx_nda - wx_nda).flatten()
+        b[-2*self._N_voxels_HR_volume:-self._N_voxels_HR_volume] = (vy_nda - wy_nda).flatten()
+        b[-self._N_voxels_HR_volume:] = (vz_nda - wz_nda).flatten()
+
+        return b
+
+
+    ## Perform second step of ADMM algorithm:
+    # TODO
+    #  \param[in] Dx_nda Derivative of HR volume data array in x-direction, numpy array
+    #  \param[in] Dy_nda Derivative of HR volume data array in y-direction, numpy array
+    #  \param[in] Dz_nda Derivative of HR volume data array in z-direction, numpy array
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \param[in] ell scaled regularization variable, i.e. alpha/rho, used for threshold
+    #  \return Updates of auxiliary variable v in x-, y- and z-direction
+    def _perform_ADMM_step_2_auxiliary_variable_v(self, Dx_nda, Dy_nda, Dz_nda, wx_nda, wy_nda, wz_nda, ell):
+
+        ## Compute t = Dx + w
+        tx_nda = Dx_nda + wx_nda
+        ty_nda = Dy_nda + wy_nda
+        tz_nda = Dz_nda + wz_nda
+
+        ## Compute auxiliary variable for decoupled but constrained problem
+        return self._vectorial_soft_threshold(ell, tx_nda, ty_nda, tz_nda)
+
+    
+    ## Perform third step of ADMM algorithm:
+    #  \param[in] Dx_nda Derivative of HR volume data array in x-direction, numpy array
+    #  \param[in] Dy_nda Derivative of HR volume data array in y-direction, numpy array
+    #  \param[in] Dz_nda Derivative of HR volume data array in z-direction, numpy array
+    #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
+    #       but constrained primal problem, i.e.
+    #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
+    #       in x-direction, numpy array
+    #  \param[in] vy_nda initial value for auxiliary variable in y-direction
+    #  \param[in] vz_nda initial value for auxiliary variable in z-direction
+    #  \param[in] wx_nda initial value for scaled dual variable (by \p rho)
+    #       originating from augmented Lagrangian in x-direction, numpy array
+    #  \param[in] wy_nda initial value for scaled dual variable in y-direction
+    #  \param[in] wz_nda initial value for scaled dual variable in z-direction
+    #  \return Updates of scaled dual variable w in x-, y- and z-direction
+    def _perform_ADMM_step_3_scaled_dual_variable(self, Dx_nda, Dy_nda, Dz_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda):
+        wx_nda = wx_nda + Dx_nda - vx_nda
+        wy_nda = wy_nda + Dy_nda - vy_nda
+        wz_nda = wz_nda + Dz_nda - vz_nda
+
+        return wx_nda, wy_nda, wz_nda
+
+
+    ## Get vectorial soft threshold based on \p get_soft_threshold \f$ S_\ell \f$
+    #  as solution of TODO
+    #  \param[in] ell scalar > 0 defining the threshold
+    #  \param[in] tx_nda x-coordinate of substituted variable Dx + w as numpy array 
+    #       \f$ \in \mathbb{R}^{\text{dim}_x\times \text{dim}_y} \f$
+    #  \param[in] ty_nda y-coordinate of substituted variable Dx + w as numpy array 
+    #  \param[in] tz_nda z-coordinate of substituted variable Dx + w as numpy array 
+    #  \return vectorial soft threshold
+    #       \f[ \vec{S_\ell}(\vec{t}) = \begin{cases}
+    #           \frac{S_\ell(\Vert \vec{t} \Vert_2)}{\Vert \vec{t} \Vert_2} \vec{t}
+    #               , & \text{if } \Vert \vec{t} \Vert_2 > \ell \\
+    #           0, & \text{otherwise}
+    #       \end{cases}
+    #       \f]
+    def _vectorial_soft_threshold(self, ell, tx_nda, ty_nda, tz_nda):
+
+        Sx = np.zeros_like(tx_nda)
+        Sy = np.zeros_like(ty_nda)
+        Sz = np.zeros_like(tz_nda)
+
+        t_norm = np.sqrt(tx_nda**2 + ty_nda**2 + tz_nda**2)
+
+        ind = t_norm > ell
+
+        Sx[ind] = self._soft_threshold(ell, t_norm[ind])*tx_nda[ind]/t_norm[ind]
+        Sy[ind] = self._soft_threshold(ell, t_norm[ind])*ty_nda[ind]/t_norm[ind]
+        Sz[ind] = self._soft_threshold(ell, t_norm[ind])*tz_nda[ind]/t_norm[ind]
+
+        return Sx, Sy, Sz
+
+
+    ## Get soft threshold as solution of TODO
+    #  \param[in] ell threshold as scalar > 0
+    #  \param[in] t array containing the values to be thresholded
+    #  \return soft threshold
+    #       \f[ S_\ell(t) 
+    #       =  \max(|t|-\ell,0)\,\text{sgn}(t)
+    #       = \begin{cases}
+    #           t-\ell,& \text{if } t>\ell \\
+    #           0,& \text{if } |t|\le\ell \\
+    #           t+\ell,& \text{if } t<\ell
+    #       \end{cases}
+    #       \f]
+    def _soft_threshold(self, ell, t):
+        return np.maximum(np.abs(t) - ell, 0)*np.sign(t)
