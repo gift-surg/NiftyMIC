@@ -16,8 +16,11 @@ import SimpleITK as sitk
 import numpy as np
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import lsqr
+from scipy.sparse.linalg import lsmr
 from scipy.optimize import lsq_linear
 from scipy.optimize import nnls
+import time
+from datetime import timedelta
 
 ## Add directories to import modules
 dir_src_root = "../src/"
@@ -28,12 +31,6 @@ sys.path.append( dir_src_root + "reconstruction/solver/" )
 ## Import modules
 import SimpleITKHelper as sitkh
 from Solver import Solver
-
-## Pixel type of used 3D ITK image
-PIXEL_TYPE = itk.D
-
-## ITK image type 
-IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 
 
 ## This class implements the framework to iteratively solve 
@@ -115,9 +112,29 @@ class TVL2Solver(Solver):
         return self._ADMM_iterations_output_filename_prefix
 
 
+    ## Compute statistics associated to performed reconstruction
+    def compute_statistics(self):
+        HR_nda_vec = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
+
+        self._residual_ell2 = self._get_residual_ell2(HR_nda_vec)
+        self._residual_prior = self._get_residual_prior(HR_nda_vec)
+
+
+    ## Print statistics associated to performed reconstruction
+    def print_statistics(self):
+        print("\nStatistics for performed reconstruction with TV-L2-regularization:")
+        # if self._elapsed_time_sec < 0:
+        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
+        # else:
+        print("\tElapsed time = %s" %(timedelta(seconds=self._elapsed_time_sec)))
+        print("\tell^2-residual sum_k ||M_k(A_k x - y_k||_2^2 = %.3e" %(self._residual_ell2))
+        print("\tprior residual = %.3e" %(self._residual_prior))
+
+
     ## Reconstruct volume using TV-L2 regularization via Alternating Direction
     #  Method of Multipliers (ADMM) method. 
-    #  Result can be fetched by \p get_HR_volume
+    #  \post self._HR_volume is updated with new volume and can be fetched by
+    #       \p get_HR_volume
     def run_reconstruction(self):
 
         print("Chosen regularization type: TV-L2")
@@ -127,12 +144,13 @@ class TVL2Solver(Solver):
         print("Maximum number of TK1 solver iterations = " + str(self._iter_max))
         # print("Tolerance = %.0e" %(self._tolerance))
 
+        time_start = time.time()
         HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
 
         ##  Set initial values
-        vx_nda = self.differential_operations.Dx(HR_nda) # differential in x
-        vy_nda = self.differential_operations.Dy(HR_nda) # differential in y
-        vz_nda = self.differential_operations.Dz(HR_nda) # differential in z
+        vx_nda = self._differential_operations.Dx(HR_nda) # differential in x
+        vy_nda = self._differential_operations.Dy(HR_nda) # differential in y
+        vz_nda = self._differential_operations.Dz(HR_nda) # differential in z
 
         wx_nda = np.zeros_like(vx_nda)
         wy_nda = np.zeros_like(vy_nda)
@@ -141,7 +159,7 @@ class TVL2Solver(Solver):
         ## Fill My -part of b, i.e. masked slices stacked to 1D vector 
         #  (remaining elements will be updated at every iteration)
         b = np.zeros(self._N_total_slice_voxels + 3*self._N_voxels_HR_volume)
-        b[0:self._N_total_slice_voxels] = self.get_M_y()
+        b[0:self._N_total_slice_voxels] = self._get_M_y()
 
         ## Perform ADMM_iterations
         for iter in range(0, self._ADMM_iterations):
@@ -160,12 +178,12 @@ class TVL2Solver(Solver):
 
                 os.system("mkdir -p " + self._ADMM_iterations_output_dir)
 
-                HR_volume_itk = self.get_itk_image_from_array_vec(HR_nda.flatten(), self._HR_volume.itk)
+                HR_volume_itk = self._get_itk_image_from_array_vec(HR_nda.flatten(), self._HR_volume.itk)
                 sitkh.write_itk_image(HR_volume_itk, self._ADMM_iterations_output_dir+name+".nii.gz")              
 
             ## DEBUG:
             ## Show reconstruction
-            # sitkh.show_itk_image(self.get_itk_image_from_array_vec(HR_nda.flatten(), self._HR_volume.itk), title="HR_volume_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_itk_image_from_array_vec(HR_nda.flatten(), self._HR_volume.itk), title="HR_volume_iteration_"+str(iter+1))
 
             ## Show auxiliary v = Dx
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vx_nda.flatten()), title="vx_iteration_"+str(iter+1))
@@ -177,14 +195,18 @@ class TVL2Solver(Solver):
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wy_nda.flatten()), title="wy_iteration_"+str(iter+1))
             # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wz_nda.flatten()), title="wz_iteration_"+str(iter+1))
 
+        ## Set elapsed time
+        time_end = time.time()
+        self._elapsed_time_sec = time_end-time_start
+
         ## Update volume
-        self._HR_volume.itk = self.get_itk_image_from_array_vec( HR_nda.flatten(), self._HR_volume.itk )
-        self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( HR_volume_itk )
+        self._HR_volume.itk = self._get_itk_image_from_array_vec( HR_nda.flatten(), self._HR_volume.itk )
+        self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( self._HR_volume.itk )
 
 
     ## Perform single ADMM iteration
     #  \param[in] HR_nda initial value of HR volume data array, numpy array
-    #  \param[in] b right-hand side \f$ b = \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K \vec{y}_K \\ \sqrt{rho}(\vec{v}^i-\vec{w}^i)\end{pmatrix} \f$ 
+    #  \param[in] b right-hand side \f$ b = \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K \vec{y}_K \\ \sqrt{\rho}(\vec{v}^i-\vec{w}^i)\end{pmatrix} \f$ 
     #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
     #       but constrained primal problem, i.e.
     #       i.e. \f$ v = Df \f$ with \f$f\f$ being the solution term,
@@ -206,9 +228,9 @@ class TVL2Solver(Solver):
         HR_nda = self._perform_ADMM_step_1_TK1_recon_solution(HR_nda, b, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho)
 
         ## Compute derivatives for subsequent steps
-        Dx_nda = self.differential_operations.Dx(HR_nda) 
-        Dy_nda = self.differential_operations.Dy(HR_nda) 
-        Dz_nda = self.differential_operations.Dz(HR_nda) 
+        Dx_nda = self._differential_operations.Dx(HR_nda) 
+        Dy_nda = self._differential_operations.Dy(HR_nda) 
+        Dz_nda = self._differential_operations.Dz(HR_nda) 
 
         ## 2) Solve for v^{k+1}
         vx_nda, vy_nda, vz_nda = self._perform_ADMM_step_2_auxiliary_variable_v(Dx_nda, Dy_nda, Dz_nda, wx_nda, wy_nda, wz_nda, alpha/rho)
@@ -246,12 +268,13 @@ class TVL2Solver(Solver):
         b[-3*self._N_voxels_HR_volume:] = np.sqrt(rho)*self._get_unscaled_b_lower(vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda)
 
         ## Construct (sparse) linear operator A
-        A_fw = lambda x: self.A_TK1(x, rho)
-        A_bw = lambda x: self.A_adj_TK1(x, rho)
+        A_fw = lambda x: self._A_TK1(x, rho)
+        A_bw = lambda x: self._A_adj_TK1(x, rho)
         A = LinearOperator((self._N_total_slice_voxels+3*self._N_voxels_HR_volume, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
 
         ## Compute least-square solution based on TK1-regularization
-        res = lsqr(A, b, iter_lim=self._iter_max, show=True) #Works neatly (but does not allow bounds)
+        res = lsmr(A, b, maxiter=self._iter_max, show=True)
+        # res = lsqr(A, b, iter_lim=self._iter_max, show=True)
 
         ## Extract estimated solution as numpy array
         HR_nda = res[0].reshape(self._HR_shape_nda)
@@ -366,3 +389,18 @@ class TVL2Solver(Solver):
     #       \f]
     def _soft_threshold(self, ell, t):
         return np.maximum(np.abs(t) - ell, 0)*np.sign(t)
+
+
+    ## Compute residual for TV-L2-regularization prior, i.e.
+    #  TV(x) = ||Dx||_{2,1} with D = [D_x; D_y; D_z]
+    #  \param[in] HR_nda_vec HR data as 1D array
+    #  \return TV(x)
+    def _get_residual_prior(self, HR_nda_vec):
+        HR_nda = HR_nda_vec.reshape(self._HR_shape_nda)
+
+        Dx = self._differential_operations.Dx(HR_nda)
+        Dy = self._differential_operations.Dy(HR_nda)
+        Dz = self._differential_operations.Dz(HR_nda)
+
+        ## Compute TV(x) = ||Dx||_{2,1} with D = [D_x; D_y; D_z]
+        return np.sum(np.sqrt(Dx**2 + Dy**2 + Dz**2))

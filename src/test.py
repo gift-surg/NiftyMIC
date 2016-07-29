@@ -104,15 +104,14 @@ if __name__ == '__main__':
 
 
 
-
     ## Super-Resolution Reconstruction
     SRR_alpha_cut = 3 
-    SRR_approach = "TK0"
-    SRR_alpha = 0.02
-    SRR_iter_max = 10
+    SRR_approach = "TK1"
+    SRR_alpha = 1
+    SRR_iter_max = 5
 
     SRR_rho = 0.5
-    SRR_ADMM_iterations = 10
+    SRR_ADMM_iterations = 2
     SRR_ADMM_iterations_output_dir = "/tmp/TV-L2_ADMM_iterations/"
     
 
@@ -135,14 +134,16 @@ if __name__ == '__main__':
     SRR = tk.TikhonovSolver(stacks, HR_volume_init)
     SRR.set_regularization_type(SRR_approach)
 
-    # SRR = tvl2.TVL2Solver(stacks, HR_volume_init)
-    # SRR.set_rho(SRR_rho)
-    # SRR.set_ADMM_iterations(SRR_ADMM_iterations)
+    SRR = tvl2.TVL2Solver(stacks, HR_volume_init)
+    SRR.set_rho(SRR_rho)
+    SRR.set_ADMM_iterations(SRR_ADMM_iterations)
     # SRR.set_ADMM_iterations_output_dir(SRR_ADMM_iterations_output_dir)
 
     SRR.set_alpha(SRR_alpha)
     SRR.set_iter_max(SRR_iter_max)
     SRR.run_reconstruction()
+    SRR.compute_statistics()
+    SRR.print_statistics()
 
     HR_volume = SRR.get_HR_volume()
     HR_volume.show()

@@ -79,7 +79,7 @@ class Solver():
 
         ## Define differential operators
         spacing = self._HR_volume.sitk.GetSpacing()[0]
-        self.differential_operations = diffop.DifferentialOperations(step_size=spacing)   
+        self._differential_operations = diffop.DifferentialOperations(step_size=spacing)   
 
         """
         Helpers
@@ -92,6 +92,11 @@ class Solver():
 
         ## Compute total amount of voxels of x:
         self._N_voxels_HR_volume = np.array(self._HR_volume.sitk.GetSize()).prod()
+
+        ## Allocate variables conataining information about reconstruction
+        self._elapsed_time_sec = None
+        self._residual_ell2 = None
+        self._residual_prior = None
 
 
     ## Set regularization parameter for Tikhonov regularization
@@ -134,7 +139,33 @@ class Solver():
     #  \return scalar value
     def get_alpha_cut(self):
         return self._alpha_cut
-        
+
+
+    ## Get elapsed time for reconstruction
+    #  \return elapsed time in seconds
+    def get_elapsed_time(self):
+        if self._elapsed_time_sec < 0:
+            raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
+        return self._elapsed_time_sec
+
+
+    ## Get \f$\ell^2\f$-residual for performed reconstruction
+    #  \return \f$\ell^2\f$-residual
+    def get_residual_ell2(self):
+        if self._residual_ell2 < 0:
+            raise ValueError("Error: Residual has not been computed yet. Run 'compute_statistics' first.")
+
+        return self._residual_ell2
+
+
+    ## Get prior-residual for performed reconstruction
+    #  \return \f$\ell^2\f$-residual
+    def get_residual_prior(self):
+        if self._residual_prior < 0:
+            raise ValueError("Error: Residual has not been computed yet. Run 'compute_statistics' first.")
+
+        return self._residual_prior
+
 
     ## Perform forward operation on HR image, i.e. 
     #  \f$y_k = D_k B_k x =: A_k x \f$ with \f$D_k\f$  and \f$ B_k \f$ being 
@@ -142,7 +173,7 @@ class Solver():
     #  \param[in] HR_volume_itk HR image as itk.Image object
     #  \param[in] slice_k Slice object which defines operator A_k
     #  \return image in LR space as itk.Image object after performed forward operation
-    def Ak(self, HR_volume_itk, slice_k):
+    def _Ak(self, HR_volume_itk, slice_k):
 
         ## Set up operator A_k based on relative position to HR volume and their dimensions
         self._update_oriented_adjoint_oriented_Gaussian_image_filters(slice_k)
@@ -165,7 +196,7 @@ class Solver():
     #  \param[in] slice_itk LR image as itk.Image object
     #  \param[in] slice_k Slice object which defines operator A_k^*
     #  \return image in HR space as itk.Image object after performed backward operation
-    def Ak_adj(self, slice_itk, slice_k):
+    def _Ak_adj(self, slice_itk, slice_k):
 
         ## Set up operator A_k^* based on relative position to HR volume and their dimensions
         self._update_oriented_adjoint_oriented_Gaussian_image_filters(slice_k)
@@ -187,7 +218,7 @@ class Solver():
     #  \param[in] HR_nda_vec HR data as 1D array
     #  \return evaluated differential operator as part of
     #       augmented linear operator as 1D array
-    def D(self, HR_nda_vec):
+    def _D(self, HR_nda_vec):
         
         ## Number of voxels always given by 3 times HR voxels
         N_voxels = self._N_voxels_HR_volume
@@ -198,9 +229,9 @@ class Solver():
         HR_nda = HR_nda_vec.reshape( self._HR_shape_nda )
 
         ## Differentiate w.r.t. x, y and z and fill corresponding indices
-        D_x[0:N_voxels] = self.differential_operations.Dx(HR_nda).flatten()
-        D_x[N_voxels:2*N_voxels] = self.differential_operations.Dy(HR_nda).flatten()
-        D_x[2*N_voxels:3*N_voxels] = self.differential_operations.Dz(HR_nda).flatten()
+        D_x[0:N_voxels] = self._differential_operations.Dx(HR_nda).flatten()
+        D_x[N_voxels:2*N_voxels] = self._differential_operations.Dy(HR_nda).flatten()
+        D_x[2*N_voxels:3*N_voxels] = self._differential_operations.Dz(HR_nda).flatten()
 
         return D_x
 
@@ -211,7 +242,7 @@ class Solver():
     #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
     #  \return evaluated adjoint differential operator as part of 
     #       augmented adjoint linear operator as 1D array
-    def D_adj(self, stacked_slices_nda_vec):
+    def _D_adj(self, stacked_slices_nda_vec):
 
         ## Number of voxels always given by 3 times HR voxels
         N_voxels = self._N_voxels_HR_volume
@@ -230,9 +261,9 @@ class Solver():
         slice_z_nda = slice_z_nda_vec.reshape( self._HR_shape_nda )
 
         ## Apply adjoint differentiation w.r.t. x, y and z
-        Dx_adj_vec = self.differential_operations.Dx_adj(slice_x_nda).flatten()
-        Dy_adj_vec = self.differential_operations.Dy_adj(slice_y_nda).flatten()
-        Dz_adj_vec = self.differential_operations.Dz_adj(slice_z_nda).flatten()
+        Dx_adj_vec = self._differential_operations.Dx_adj(slice_x_nda).flatten()
+        Dy_adj_vec = self._differential_operations.Dy_adj(slice_y_nda).flatten()
+        Dz_adj_vec = self._differential_operations.Dz_adj(slice_z_nda).flatten()
 
         ## Return added contributions 
         return  Dx_adj_vec + Dy_adj_vec + Dz_adj_vec
@@ -241,7 +272,7 @@ class Solver():
     ## Masking operation M_k
     #  \param[in] slice_itk image in LR space as itk.Image object
     #  \param[in] slice_k Slice object which defines operator M_k
-    def Mk(self, slice_itk, slice_k):
+    def _Mk(self, slice_itk, slice_k):
 
         ## Perform masking M_k based
         multiplier = itk.MultiplyImageFilter[IMAGE_TYPE, IMAGE_TYPE, IMAGE_TYPE].New()
@@ -258,7 +289,7 @@ class Solver():
     ## Evaluate \f$ M \vec{y} \f$ 
     #  \f$ = \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K \vec{y}_K \end{pmatrix} \vec{x}\f$ 
     #  \return My, i.e. all masked slices stacked to 1D array
-    def get_M_y(self):
+    def _get_M_y(self):
 
         ## Allocate memory
         My = np.zeros(self._N_total_slice_voxels)
@@ -282,7 +313,7 @@ class Solver():
                 slice_k = slices[j]
 
                 ## Apply M_k y_k
-                slice_itk = self.Mk(slice_k.itk, slice_k)
+                slice_itk = self._Mk(slice_k.itk, slice_k)
                 slice_nda_vec = self._itk2np.GetArrayFromImage(slice_itk).flatten()
 
                 ## Fill respective elements
@@ -297,26 +328,26 @@ class Solver():
     ## Operation M_k A_k x
     #  \param[in] HR_volume_itk HR image as itk.Image object
     #  \param[in] slice_k Slice object which defines operator M_k and A_k
-    def Mk_Ak(self, HR_volume_itk, slice_k):
+    def _Mk_Ak(self, HR_volume_itk, slice_k):
 
         ## Compute A_k x
-        Ak_HR_volume_itk = self.Ak(HR_volume_itk, slice_k)
+        Ak_HR_volume_itk = self._Ak(HR_volume_itk, slice_k)
 
         ## Compute M_k A_k x
-        return self.Mk(Ak_HR_volume_itk, slice_k)
+        return self._Mk(Ak_HR_volume_itk, slice_k)
 
 
     ## Operation A_k^* M_k y_k
     #  \param[in] slice_itk LR image as itk.Image object
     #  \param[in] slice_k Slice object which defines operator A_k^*
     #  \return image in HR space as itk.Image object after performed backward operation
-    def Ak_adj_Mk(self, slice_itk, slice_k):
+    def _Ak_adj_Mk(self, slice_itk, slice_k):
 
         ## Compute M_k y_k
-        Mk_slice_itk = self.Mk(slice_itk, slice_k)
+        Mk_slice_itk = self._Mk(slice_itk, slice_k)
 
         ## Compute A_k^* M_k y_k
-        return self.Ak_adj(Mk_slice_itk, slice_k)
+        return self._Ak_adj(Mk_slice_itk, slice_k)
 
 
     ## Evaluate
@@ -324,10 +355,10 @@ class Solver():
     #  \f$ = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \end{pmatrix} \vec{x} \f$
     #  \param[in] HR_nda_vec HR data as 1D array
     #  \return evaluated MAx as part of augmented linear operator as 1D array
-    def MA(self, HR_nda_vec):
+    def _MA(self, HR_nda_vec):
 
         ## Convert HR data array back to itk.Image object
-        x_itk = self.get_itk_image_from_array_vec(HR_nda_vec, self._HR_volume.itk)
+        x_itk = self._get_itk_image_from_array_vec(HR_nda_vec, self._HR_volume.itk)
         
         ## Allocate memory
         MA_x = np.zeros(self._N_total_slice_voxels)
@@ -348,7 +379,7 @@ class Solver():
                 i_max = i_min + N_slice_voxels
 
                 ## Compute M_k A_k y_k
-                slice_itk = self.Mk_Ak(x_itk, slices[j])
+                slice_itk = self._Mk_Ak(x_itk, slices[j])
                 slice_nda = self._itk2np.GetArrayFromImage(slice_itk)
 
                 ## Fill corresponding elements
@@ -366,7 +397,7 @@ class Solver():
     #  \f$
     #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
     #  \return evaluated A'My as part of augmented adjoint linear operator as 1D array
-    def A_adj_M(self, stacked_slices_nda_vec):
+    def _A_adj_M(self, stacked_slices_nda_vec):
 
         ## Allocate memory
         A_adj_M_y = np.zeros(self._N_voxels_HR_volume)
@@ -390,10 +421,10 @@ class Solver():
                 slice_k = slices[j]
 
                 ## Extract 1D corresponding to current slice and convert it to itk.Object
-                slice_itk = self.get_itk_image_from_array_vec( stacked_slices_nda_vec[i_min:i_max], slice_k.itk )
+                slice_itk = self._get_itk_image_from_array_vec( stacked_slices_nda_vec[i_min:i_max], slice_k.itk )
 
                 ## Apply A_k' M_k on current slice
-                Ak_adj_Mk_slice_itk = self.Ak_adj_Mk(slice_itk, slice_k)
+                Ak_adj_Mk_slice_itk = self._Ak_adj_Mk(slice_itk, slice_k)
                 Ak_adj_Mk_slice_nda_vec = self._itk2np.GetArrayFromImage(Ak_adj_Mk_slice_itk).flatten()
 
                 ## Add contribution
@@ -405,7 +436,6 @@ class Solver():
         return A_adj_M_y
 
 
-
     ## Evaluate augmented linear operator for TK1-regularization, i.e.
     #  \f$
     #       \begin{pmatrix} MA \\ \sqrt{\alpha} G \end{pmatrix} \vec{x}
@@ -415,16 +445,16 @@ class Solver():
     #  \param[in] HR_nda_vec HR data as 1D array
     #  \param[in] alpha regularization parameter, scalar
     #  \return evaluated augmented linear operator as 1D array
-    def A_TK1(self, HR_nda_vec, alpha):
+    def _A_TK1(self, HR_nda_vec, alpha):
 
         ## Allocate memory
         A_x = np.zeros(self._N_total_slice_voxels+3*self._N_voxels_HR_volume)
 
         ## Compute MAx 
-        A_x[0:-3*self._N_voxels_HR_volume] = self.MA(HR_nda_vec)
+        A_x[0:-3*self._N_voxels_HR_volume] = self._MA(HR_nda_vec)
 
         ## Compute sqrt(alpha)*Dx
-        A_x[-3*self._N_voxels_HR_volume:] = np.sqrt(alpha)*self.D(HR_nda_vec)
+        A_x[-3*self._N_voxels_HR_volume:] = np.sqrt(alpha)*self._D(HR_nda_vec)
 
         return A_x
 
@@ -439,13 +469,13 @@ class Solver():
     #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
     #  \param[in] alpha regularization parameter, scalar
     #  \return evaluated augmented adjoint linear operator 
-    def A_adj_TK1(self, stacked_slices_nda_vec, alpha):
+    def _A_adj_TK1(self, stacked_slices_nda_vec, alpha):
 
         ## Compute A'M y[upper]
-        A_adj_y = self.A_adj_M(stacked_slices_nda_vec)
+        A_adj_y = self._A_adj_M(stacked_slices_nda_vec)
 
         ## Add D' y[lower]
-        A_adj_y = A_adj_y + self.D_adj(stacked_slices_nda_vec).flatten()*np.sqrt(alpha)
+        A_adj_y = A_adj_y + self._D_adj(stacked_slices_nda_vec).flatten()*np.sqrt(alpha)
 
         return A_adj_y
 
@@ -453,7 +483,7 @@ class Solver():
     ## Convert numpy data array (vector format) back to itk.Image object
     #  \param[in] HR_nda_vec HR data as 1D array
     #  \return HR volume with intensities according to HR_nda_vec as itk.Image object
-    def get_itk_image_from_array_vec(self, nda_vec, image_itk_ref):
+    def _get_itk_image_from_array_vec(self, nda_vec, image_itk_ref):
         
         shape_nda = np.array(image_itk_ref.GetLargestPossibleRegion().GetSize())[::-1]
 
@@ -479,5 +509,20 @@ class Solver():
         
         ## Update parameters of backward/adjoint operator A'
         self._filter_adjoint_oriented_Gaussian.SetCovariance( Cov_HR_coord.flatten() )
+
+
+    ## Compute the residual \f$ \sum_{k=1}^K \Vert M_k (A_k \vec{x} - \vec{y}_k) \Vert \f$
+    #  for \f$ \Vert \cdot \Vert = \Vert \cdot \Vert_{\ell^2}^2 \f$
+    #  \param[in] HR_nda_vec HR data as 1D array
+    #  \return \f$\ell^2\f$-residual
+    def _get_residual_ell2(self, HR_nda_vec):
+
+        My_nda_vec = self._get_M_y()
+        MAx_nda_vec = self._MA(HR_nda_vec)
+
+        ## C
+        return np.sum( (MAx_nda_vec-My_nda_vec)**2 )
+
+
 
 

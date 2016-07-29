@@ -16,8 +16,13 @@ import SimpleITK as sitk
 import numpy as np
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import lsqr
+from scipy.sparse.linalg import lsmr
 from scipy.optimize import lsq_linear
+from scipy.optimize import minimize
 from scipy.optimize import nnls
+from scipy.optimize import least_squares
+import time
+from datetime import timedelta
 
 ## Add directories to import modules
 dir_src_root = "../src/"
@@ -28,12 +33,6 @@ sys.path.append( dir_src_root + "reconstruction/solver/" )
 ## Import modules
 import SimpleITKHelper as sitkh
 from Solver import Solver
-
-## Pixel type of used 3D ITK image
-PIXEL_TYPE = itk.D
-
-## ITK image type 
-IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 
 
 ## This class implements the framework to iteratively solve 
@@ -87,12 +86,17 @@ class TikhonovSolver(Solver):
 
         self._A = {
             "TK0"   : self._A_TK0,
-            "TK1"   : self.A_TK1
+            "TK1"   : self._A_TK1
         }
 
         self._A_adj = {
             "TK0"   : self._A_adj_TK0,
-            "TK1"   : self.A_adj_TK1
+            "TK1"   : self._A_adj_TK1
+        }
+
+        self._get_residual_prior = {
+            "TK0"   : self._get_residual_prior_TK0,
+            "TK1"   : self._get_residual_prior_TK1
         }
 
 
@@ -111,7 +115,28 @@ class TikhonovSolver(Solver):
         return self._reg_type
 
 
-    ## Run the reconstruction algorithm. Result can be fetched by \p get_HR_volume
+    ## Compute statistics associated to performed reconstruction
+    def compute_statistics(self):
+        HR_nda_vec = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
+
+        self._residual_ell2 = self._get_residual_ell2(HR_nda_vec)
+        self._residual_prior = self._get_residual_prior[self._reg_type](HR_nda_vec)
+
+
+    ## Print statistics associated to performed reconstruction
+    def print_statistics(self):
+        print("\nStatistics for performed reconstruction with %s-regularization:" %(self._reg_type))
+        # if self._elapsed_time_sec < 0:
+        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
+        # else:
+        print("\tElapsed time = %s" %(timedelta(seconds=self._elapsed_time_sec)))
+        print("\tell^2-residual sum_k ||M_k(A_k x - y_k||_2^2 = %.3e" %(self._residual_ell2))
+        print("\tprior residual = %.3e" %(self._residual_prior))
+
+
+    ## Run the reconstruction algorithm
+    #  \post self._HR_volume is updated with new volume and can be fetched by 
+    #       \p get_HR_volume
     def run_reconstruction(self):
 
         ## Compute number of voxels to be stored for augmented linear system
@@ -133,6 +158,8 @@ class TikhonovSolver(Solver):
             ## G = [Dx, Dy, Dz]^T, i.e. gradient computation:
             N_voxels = self._N_total_slice_voxels + 3*self._N_voxels_HR_volume
 
+        time_start = time.time()
+
         ## Construct right-hand side b
         b = self._get_b(N_voxels)
 
@@ -141,19 +168,45 @@ class TikhonovSolver(Solver):
         A_bw = lambda x: self._A_adj[self._reg_type](x, self._alpha)
         A = LinearOperator((N_voxels, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
 
-        # HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
+        ## For L-BFGS-B
+        fun = lambda x: 0.5*np.sum((A_fw(x) - b)**2)
+        jac = lambda x: A_bw(A_fw(x)-b)
 
-        # res = lsq_linear(A, b, bounds=(0, np.inf), max_iter=self._iter_max, lsq_solver=None, lsmr_tol='auto', verbose=2)
+        ## For non-linear solver
+        A_fw_minus_b = lambda x: self._A[self._reg_type](x, self._alpha) - b
+        A_jac =  lambda x: A
+
+        ## Linear least-squares methods: 
+        # lsqr has lower residual than lsmr in the end. However, Fong2011 states
+        # that "although LSQR and LSMR ultimately converge to similar points, it is safer to use LSMR in situations where the solver must be terminated early" => Go for that
+        res = lsmr(A, b, maxiter=self._iter_max, show=True); HR_nda_vec = res[0]
+        # res = lsqr(A, b, iter_lim=self._iter_max, show=True); HR_nda_vec = res[0]
+        
+        ## Non-linear least-squares method: but does not go ahead
+        # HR_nda_init_vec = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
+        # HR_nda_init_vec = res[0]
+        # res = least_squares(A_fw_minus_b, x0=HR_nda_init_vec, jac=A_jac, jac_sparsity=A_jac, method='trf', tr_solver='lsmr', bounds=(0,np.inf), max_nfev=self._iter_max, verbose=2) 
+
+        ## L-BFGS-B solver
+        # x0 = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
+        # bounds = [[0,None]]*x0.size
+        # res = minimize(method='L-BFGS-B', fun=fun, x0=x0, options={'maxiter': self._iter_max, 'disp': True}, jac=jac, bounds=bounds); HR_nda_vec = res.x
+
+        ## Other methods which do not work
+        # res = lsq_linear(A, b, bounds=(0, np.inf), max_iter=self._iter_max, lsq_solver='lsmr', lsmr_tol='auto', verbose=2)
         # res = lsq_linear(A, b, max_iter=self._iter_max, lsq_solver=None, lsmr_tol='auto', verbose=2)
         # res = nnls(A,b) #does not work with sparse linear operator
 
-        res = lsqr(A, b, iter_lim=self._iter_max, show=True) #Works neatly (but does not allow bounds)
-
         ## Extract estimated solution as numpy array
-        HR_nda_vec = res[0]
+        # HR_nda_vec = res[0]
+        # HR_nda_vec = res
+
+        ## Set elapsed time
+        time_end = time.time()
+        self._elapsed_time_sec = time_end-time_start
 
         ## After reconstruction: Update member attribute
-        self._HR_volume.itk = self.get_itk_image_from_array_vec( HR_nda_vec, self._HR_volume.itk )
+        self._HR_volume.itk = self._get_itk_image_from_array_vec( HR_nda_vec, self._HR_volume.itk )
         self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( self._HR_volume.itk )
 
 
@@ -167,9 +220,9 @@ class TikhonovSolver(Solver):
         b = np.zeros(N_voxels)
 
         ## Compute M y, i.e. masked slices stacked to 1D vector
-        b[0:self._N_total_slice_voxels] = self.get_M_y()
+        b[0:self._N_total_slice_voxels] = self._get_M_y()
 
-        return b
+        return 
 
 
     ## Evaluate augmented linear operator for TK0-regularization, i.e.
@@ -187,7 +240,7 @@ class TikhonovSolver(Solver):
         A_x = np.zeros(self._N_total_slice_voxels+self._N_voxels_HR_volume)
 
         ## Compute MA x
-        A_x[0:-self._N_voxels_HR_volume] = self.MA(HR_nda_vec)
+        A_x[0:-self._N_voxels_HR_volume] = self._MA(HR_nda_vec)
 
         ## Compute sqrt(alpha)*x
         A_x[-self._N_voxels_HR_volume:] = np.sqrt(alpha)*HR_nda_vec
@@ -208,12 +261,33 @@ class TikhonovSolver(Solver):
     def _A_adj_TK0(self, stacked_slices_nda_vec, alpha):
 
         ## Compute A'M y[upper] 
-        A_adj_y = self.A_adj_M(stacked_slices_nda_vec)
+        A_adj_y = self._A_adj_M(stacked_slices_nda_vec)
 
         ## Add sqrt(alpha)*y[lower]
         A_adj_y = A_adj_y + stacked_slices_nda_vec[-self._N_voxels_HR_volume:]*np.sqrt(alpha)
 
         return A_adj_y
 
-                
+    
+    ## Compute residual for TK1-regularization prior, i.e. 
+    #  || x ||^2 
+    #  \param[in] HR_nda_vec HR data as 1D array
+    #  \return || x ||^2 
+    def _get_residual_prior_TK0(self, HR_nda_vec):
+        return np.sum( HR_nda_vec**2 )
+
+
+    ## Compute residual for TK1-regularization prior, i.e. 
+    #  || Dx ||^2 with D = [D_x; D_y; D_z]
+    #  \param[in] HR_nda_vec HR data as 1D array
+    #  \return || Dx ||^2 
+    def _get_residual_prior_TK1(self, HR_nda_vec):
+        HR_nda = HR_nda_vec.reshape(self._HR_shape_nda)
+
+        Dx = self._differential_operations.Dx(HR_nda)
+        Dy = self._differential_operations.Dy(HR_nda)
+        Dz = self._differential_operations.Dz(HR_nda)
+
+        ## Compute norm || Dx ||^2 with D = [D_x; D_y; D_z]
+        return np.sum( Dx**2 ) + np.sum( Dy**2 ) + np.sum( Dz**2 )
             
