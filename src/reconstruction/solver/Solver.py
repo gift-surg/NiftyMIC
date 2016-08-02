@@ -36,7 +36,7 @@ IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 class Solver(object):
     """ This class contains the common functions/attributes of the solvers """
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Constructor
     # \date       2016-08-01 22:53:37+0100
     #
@@ -121,7 +121,7 @@ class Solver(object):
         return self._alpha
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Sets the maximum number of iterations for Tikhonov solver.
     # \date       2016-08-01 16:35:09+0100
     #

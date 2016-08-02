@@ -34,53 +34,48 @@ import TVL2RegularizationParameterEstimator as tvl2rpe
 
 class AnalysisRegularizationParameterEstimator(object):
 
-    #--------------------------------------------------------------------------
-    # \brief         Constructor
-    # \date          2016-08-01 23:40:34+0100
+    ##-------------------------------------------------------------------------
+    # \brief      Constructor
+    # \date       2016-08-01 23:40:34+0100
     #
-    # \param         self                                    The object
-    # \param[in]     stacks                                  list of Stack
-    #                                                        objects containing
-    #                                                        all stacks used
-    #                                                        for the
-    #                                                        reconstruction
-    # \param[in,out] HR_volume_init                          Stack object
-    #                                                        containing the
-    #                                                        current estimate
-    #                                                        of the HR volume
-    #                                                        (used as initial
-    #                                                        value + space
-    #                                                        definition)
-    # \param[in]     dir_results                             Directory to store
-    #                                                        computed results.
-    #                                                        If 'None' no
-    #                                                        results are
-    #                                                        written.
-    # \param[in]     alpha_cut                               Cut-off distance
-    #                                                        for Gaussian
-    #                                                        blurring filter
-    # \param[in]     iter_max                                number of maximum
-    #                                                        iterations, scalar
-    # \param[in]     alpha_array                             array containing
-    #                                                        regularization
-    #                                                        parameter to sweep
-    #                                                        through, list
-    # \param         rho_array                               Array containing
-    #                                                        regularization
-    #                                                        parameter of
-    #                                                        augmented
-    #                                                        Lagrangian term,
-    #                                                        list
-    # \param[in]     ADMM_iterations                         number of ADMM
-    #                                                        iterations, scalar
-    # \param[in]     ADMM_iterations_output_dir              The ADMM
-    #                                                        iterations output
-    #                                                        dir
-    # \param[in]     ADMM_iterations_output_filename_prefix  The ADMM
-    #                                                        iterations output
-    #                                                        filename prefix
+    # \param      self                                    The object
+    # \param[in]  stacks                                  list of Stack objects
+    #                                                     containing all stacks
+    #                                                     used for the
+    #                                                     reconstruction
+    # \param[in]  HR_volume_init                          Stack object
+    #                                                     containing the
+    #                                                     current estimate of
+    #                                                     the HR volume (used
+    #                                                     as initial value +
+    #                                                     space definition)
+    # \param[in]  dir_results                             Directory to store
+    #                                                     computed results. If
+    #                                                     'None' no results are
+    #                                                     written.
+    # \param[in]  alpha_cut                               Cut-off distance for
+    #                                                     Gaussian blurring
+    #                                                     filter
+    # \param[in]  iter_max                                number of maximum
+    #                                                     iterations, scalar
+    # \param[in]  alpha_array                             array containing
+    #                                                     regularization
+    #                                                     parameter to sweep
+    #                                                     through, list
+    # \param[in]  rho_array                               Array containing
+    #                                                     regularization
+    #                                                     parameter of
+    #                                                     augmented Lagrangian
+    #                                                     term, list
+    # \param[in]  ADMM_iterations                         number of ADMM
+    #                                                     iterations, scalar
+    # \param[in]  ADMM_iterations_output_dir              The ADMM iterations
+    #                                                     output dir
+    # \param[in]  ADMM_iterations_output_filename_prefix  The ADMM iterations
+    #                                                     output filename
+    #                                                     prefix
     #
-    def __init__(self, stacks, HR_volume_init, dir_results="/tmp/AnalysisRegularizationParameterEstimator/", alpha_cut=3, iter_max=10, alpha_array=[0.01, 0.05, 0.1, 0.5], rho_array=[0.5, 1, 2], ADMM_iterations=5, ADMM_iterations_output_dir="TV-L2_ADMM_iterations/", ADMM_iterations_output_filename_prefix="TV-L2"):
+    def __init__(self, stacks, HR_volume_init, dir_results="/tmp/AnalysisRegularizationParameterEstimation/", alpha_cut=3, iter_max=10, alpha_array=[0.01, 0.05, 0.1, 0.5], rho_array=[0.5, 1, 2], ADMM_iterations=5, ADMM_iterations_output_dir="TV-L2_ADMM_iterations/", ADMM_iterations_output_filename_prefix="TV-L2"):
 
         self._stacks = stacks
         self._HR_volume_init = HR_volume_init
@@ -123,7 +118,7 @@ class AnalysisRegularizationParameterEstimator(object):
 
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Set the types of regularization used to sweep through the
     #             regularization parameters (alpha and rho where applicable)
     # \date       2016-08-02 00:08:50+0100
@@ -136,7 +131,7 @@ class AnalysisRegularizationParameterEstimator(object):
         self._reg_types = reg_types
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Set the directory to store the computed results or, in case
     #             results have already been computed, where existing results
     #             are located.
@@ -150,7 +145,7 @@ class AnalysisRegularizationParameterEstimator(object):
 
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      In case existing files shall be used to perform the L-curve
     #             analysis, you can specify those here. Hence, specify
     #             filenames and dir_results before running 'show_L_curves'.
@@ -163,7 +158,7 @@ class AnalysisRegularizationParameterEstimator(object):
         self._filenames = filenames
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Reconstruct volumes for each type of regularization by
     #             sweeping through the parameter space specified by alpha (and
     #             rho)
@@ -181,7 +176,7 @@ class AnalysisRegularizationParameterEstimator(object):
             self._run_reconstructions[reg_type]()
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Shows the L-curves based on the infomration stored in
     #             filenames and dir_results
     # \date       2016-08-02 00:17:03+0100
@@ -215,7 +210,7 @@ class AnalysisRegularizationParameterEstimator(object):
 
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Return the regularization approach used to compute results
     #             stored in filename
     # \date       2016-08-02 00:53:54+0100
@@ -234,7 +229,7 @@ class AnalysisRegularizationParameterEstimator(object):
             return "TV-L2"
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Reconstruct the volumes based on zeroth-order Tikhonov
     #             regularization by sweeping through all alphas specified in
     #             alpha_array
@@ -254,7 +249,7 @@ class AnalysisRegularizationParameterEstimator(object):
         self._filenames.append(regularization_parameter_estimator.get_filename_of_txt_file())
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Reconstruct the volumes based on first-order Tikhonov
     #             regularization by sweeping through all alphas specified in
     #             alpha_array
@@ -274,7 +269,7 @@ class AnalysisRegularizationParameterEstimator(object):
         self._filenames.append(regularization_parameter_estimator.get_filename_of_txt_file())
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Reconstruct the volumes based on TV-L2 regularization by
     #             sweeping through all alphas specified in alpha_array
     # \date       2016-08-02 00:20:20+0100
@@ -299,7 +294,7 @@ class AnalysisRegularizationParameterEstimator(object):
 
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Print information on screen for zeroth-order Tikhonov
     # \date       2016-08-02 00:54:55+0100
     #
@@ -312,7 +307,7 @@ class AnalysisRegularizationParameterEstimator(object):
         self._print_data_on_screen_TK(data, TK_approach)
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Print information on screen for first-order Tikhonov
     # \date       2016-08-02 00:54:55+0100
     #
@@ -325,7 +320,7 @@ class AnalysisRegularizationParameterEstimator(object):
         self._print_data_on_screen_TK(data, TK_approach)
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Print information on screen for zeroth/first-order Tikhonov
     # \date       2016-08-02 00:54:55+0100
     #
@@ -347,7 +342,7 @@ class AnalysisRegularizationParameterEstimator(object):
             print("\t\t%d\t%s\t\t%.3e\t\t%.3e" %(alpha_ids[i], alphas[i], residuals_data_fit[i], residuals_prior[i]))
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Print information on screen for TV-L2
     # \date       2016-08-02 00:54:55+0100
     #
@@ -370,7 +365,7 @@ class AnalysisRegularizationParameterEstimator(object):
             print("\t(%d,%d)\t%s\t%s\t\t%.3e\t\t%.3e" %(rho_ids[i], alpha_ids[i], rhos[i], alphas[i], residuals_data_fit[i], residuals_prior[i]))
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Add curve on graph based on data from zeroth-order Tikhonov
     #             reconstruction
     # \date       2016-08-02 01:02:02+0100
@@ -385,7 +380,7 @@ class AnalysisRegularizationParameterEstimator(object):
         self._plot_add_curve_TK(data, i_file, ax, TK_approach)
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Add curve on graph based on data from first-order Tikhonov
     #             reconstruction
     # \date       2016-08-02 01:02:02+0100
@@ -400,7 +395,7 @@ class AnalysisRegularizationParameterEstimator(object):
         self._plot_add_curve_TK(data, i_file, ax, TK_approach)
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Add curve on graph based on data from zeroth/first-order
     #             Tikhonov reconstruction
     # \date       2016-08-02 01:02:02+0100
@@ -422,7 +417,7 @@ class AnalysisRegularizationParameterEstimator(object):
         ax.plot(residuals_data_fit, residuals_prior, self._PLOT_FORMAT[i_file], label=TK_approach)
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Add curve on graph based on data from TV-L2 reconstruction
     # \date       2016-08-02 01:02:02+0100
     #
@@ -455,7 +450,7 @@ class AnalysisRegularizationParameterEstimator(object):
             i_file += 1
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Add information on figure
     # \date       2016-08-02 01:06:15+0100
     #

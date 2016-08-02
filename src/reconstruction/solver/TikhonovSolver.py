@@ -71,7 +71,7 @@ from Solver import Solver
 #  \see \p itOrientedGaussianInterpolateImageFunction of \p ITK
 class TikhonovSolver(Solver):
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief         Constructor
     # \date          2016-08-01 23:00:04+0100
     #
@@ -134,7 +134,7 @@ class TikhonovSolver(Solver):
         self._residual_prior = self._get_residual_prior[self._reg_type](HR_nda_vec)
 
     
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \date       2016-07-29 12:30:30+0100
     # \brief      Print statistics associated to performed reconstruction
     #
@@ -150,7 +150,7 @@ class TikhonovSolver(Solver):
         print("\tprior residual = %.3e" %(self._residual_prior))
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Run the reconstruction algorithm based on Tikhonov
     #             regularization
     # \date       2016-07-29 12:35:01+0100

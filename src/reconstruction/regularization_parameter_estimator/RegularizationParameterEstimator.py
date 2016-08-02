@@ -31,7 +31,7 @@ import InverseProblemSolver as ips
 
 class RegularizationParameterEstimator(object):
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief         Constructor
     # \date          2016-08-01 23:40:34+0100
     #
@@ -71,7 +71,7 @@ class RegularizationParameterEstimator(object):
         self._filename_results_prefix = filename_results_prefix
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Sets the directory results.
     # \date       2016-08-01 16:30:57+0100
     #
@@ -82,7 +82,7 @@ class RegularizationParameterEstimator(object):
         self._dir_results = dir_results
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Gets the directory results.
     # \date       2016-08-01 16:32:14+0100
     #
@@ -94,7 +94,7 @@ class RegularizationParameterEstimator(object):
         return self._dir_results
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Set prefix for all output results written to
     #             directory_results.
     # \date       2016-08-01 16:29:48+0100
@@ -106,7 +106,7 @@ class RegularizationParameterEstimator(object):
         self._filename_results_prefix = filename_prefix
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Gets the filename results directory.
     # \date       2016-08-01 16:29:33+0100
     #
@@ -118,7 +118,7 @@ class RegularizationParameterEstimator(object):
         return self._filename_results_prefix
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Get the filename of text file.
     # \date       2016-08-01 18:31:26+0100
     #
@@ -130,7 +130,7 @@ class RegularizationParameterEstimator(object):
         return self._filename_of_txt_file
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Sets the alpha array.
     #
     # Define array of regularization parameters which will be used for the
@@ -144,7 +144,7 @@ class RegularizationParameterEstimator(object):
         self._alpha_array = alpha_array
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Gets the alpha array.
     # \date       2016-08-01 16:34:06+0100
     #
@@ -156,7 +156,7 @@ class RegularizationParameterEstimator(object):
         return self._alpha_array
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Sets the maximum number of iterations for Tikhonov solver.
     # \date       2016-08-01 16:35:09+0100
     #

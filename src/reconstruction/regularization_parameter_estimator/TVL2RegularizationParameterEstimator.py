@@ -30,55 +30,49 @@ import Stack as st
 
 class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
     
-    #--------------------------------------------------------------------------
-    # \brief         Constructor
-    # \date          2016-08-01 23:40:34+0100
+    ##-------------------------------------------------------------------------
+    # \brief      Constructor
+    # \date       2016-08-01 23:40:34+0100
     #
-    # \param         self                                    The object
-    # \param[in]     stacks                                  list of Stack
-    #                                                        objects containing
-    #                                                        all stacks used
-    #                                                        for the
-    #                                                        reconstruction
-    # \param[in,out] HR_volume                               Stack object
-    #                                                        containing the
-    #                                                        current estimate
-    #                                                        of the HR volume
-    #                                                        (used as initial
-    #                                                        value + space
-    #                                                        definition)
-    # \param[in]     alpha_cut                               Cut-off distance
-    #                                                        for Gaussian
-    #                                                        blurring filter
-    # \param[in]     iter_max                                number of maximum
-    #                                                        iterations, scalar
-    # \param[in]     alpha_array                             array containing
-    #                                                        regularization
-    #                                                        parameter to sweep
-    #                                                        through, list
-    # \param[in]     dir_results                             Directory to store
-    #                                                        computed results.
-    #                                                        If 'None' no
-    #                                                        results are
-    #                                                        written.
-    # \param[in]     filename_results_prefix                 Prefix applied for
-    #                                                        each filename
-    #                                                        written to
-    #                                                        dir_results
-    # \param[in]     ADMM_iterations                         number of ADMM
-    #                                                        iterations, scalar
-    # \param         rho_array                               Array containing
-    #                                                        regularization
-    #                                                        parameter of
-    #                                                        augmented
-    #                                                        Lagrangian term,
-    #                                                        list
-    # \param[in]     ADMM_iterations_output_dir              The ADMM
-    #                                                        iterations output
-    #                                                        dir
-    # \param[in]     ADMM_iterations_output_filename_prefix  The ADMM
-    #                                                        iterations output
-    #                                                        filename prefix
+    # \param      self                                    The object
+    # \param[in]  stacks                                  list of Stack objects
+    #                                                     containing all stacks
+    #                                                     used for the
+    #                                                     reconstruction
+    # \param[in]  HR_volume                               Stack object
+    #                                                     containing the
+    #                                                     current estimate of
+    #                                                     the HR volume (used
+    #                                                     as initial value +
+    #                                                     space definition)
+    # \param[in]  alpha_cut                               Cut-off distance for
+    #                                                     Gaussian blurring
+    #                                                     filter
+    # \param[in]  iter_max                                number of maximum
+    #                                                     iterations, scalar
+    # \param[in]  alpha_array                             array containing
+    #                                                     regularization
+    #                                                     parameter to sweep
+    #                                                     through, list
+    # \param[in]  dir_results                             Directory to store
+    #                                                     computed results. If
+    #                                                     'None' no results are
+    #                                                     written.
+    # \param[in]  filename_results_prefix                 Prefix applied for
+    #                                                     each filename written
+    #                                                     to dir_results
+    # \param[in]  ADMM_iterations                         number of ADMM
+    #                                                     iterations, scalar
+    # \param[in]  rho_array                               Array containing
+    #                                                     regularization
+    #                                                     parameter of
+    #                                                     augmented Lagrangian
+    #                                                     term, list
+    # \param[in]  ADMM_iterations_output_dir              The ADMM iterations
+    #                                                     output dir
+    # \param[in]  ADMM_iterations_output_filename_prefix  The ADMM iterations
+    #                                                     output filename
+    #                                                     prefix
     #
     def __init__(self, stacks, HR_volume, alpha_cut=3, iter_max=10, alpha_array=[None], dir_results="RegularizationParameterEstimation/", filename_results_prefix="", ADMM_iterations=5, rho_array=[None], ADMM_iterations_output_dir="TV-L2_ADMM_iterations/", ADMM_iterations_output_filename_prefix="TV-L2"):
 
@@ -91,7 +85,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
         self._ADMM_iterations_output_filename_prefix = ADMM_iterations_output_filename_prefix
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Run reconstruction for several alphas based on Tikhonov
     #             regularization
     # \date       2016-08-01 19:47:53+0100
@@ -155,7 +149,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
                 self._write_array_to_file(self._filename_of_txt_file, array_out, format=format, delimiter="\t")
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Gets the filename and header.
     # \date       2016-08-01 19:42:35+0100
     #
@@ -189,7 +183,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
         return filename, header
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Gets the filename of reconstructed image.
     # \date       2016-08-01 19:42:46+0100
     #
@@ -207,6 +201,9 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
         filename_image += "_alpha" + str(alpha)
         filename_image += "_ADMM_iterations" + str(self._ADMM_iterations)
         filename_image += "_TK1itermax" + str(self._iter_max)
+
+        ## Replace decimal point by 'p'
+        filename_image = filename_image.replace(".", "p")
 
         return filename_image
 

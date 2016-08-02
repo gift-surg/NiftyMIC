@@ -40,7 +40,7 @@ from Solver import Solver
 #  TODO
 class TVL2Solver(Solver):
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief         Constructor
     # \date          2016-08-01 22:57:21+0100
     #
@@ -162,7 +162,7 @@ class TVL2Solver(Solver):
         print("\tprior residual = %.3e" %(self._residual_prior))
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Reconstruct volume using TV-L2 regularization via Alternating
     #             Direction Method of Multipliers (ADMM) method.
     # \post       self._HR_volume is updated with new volume and can be fetched
@@ -250,7 +250,7 @@ class TVL2Solver(Solver):
         self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( self._HR_volume.itk )
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Calculates the initial value based on first-order Tikhonov.
     # \post       self._HR_volume is updated
     # \date       2016-08-01 22:51:41+0100

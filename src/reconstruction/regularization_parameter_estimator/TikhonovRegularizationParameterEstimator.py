@@ -30,32 +30,28 @@ import Stack as st
 
 class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator):
     
-    #--------------------------------------------------------------------------
-    # \brief         Constructor
-    # \date          2016-08-01 23:40:34+0100
+    ##-------------------------------------------------------------------------
+    # \brief      Constructor
+    # \date       2016-08-01 23:40:34+0100
     #
-    # \param         self                     The object
-    # \param[in]     stacks                   list of Stack objects containing
-    #                                         all stacks used for the
-    #                                         reconstruction
-    # \param[in,out] HR_volume                Stack object containing the
-    #                                         current estimate of the HR volume
-    #                                         (used as initial value + space
-    #                                         definition)
-    # \param[in]     alpha_cut                Cut-off distance for Gaussian
-    #                                         blurring filter
-    # \param[in]     iter_max                 number of maximum iterations,
-    #                                         scalar
-    # \param[in]     alpha_array              array containing regularization
-    #                                         parameter to sweep through, list
-    # \param[in]     dir_results              Directory to store computed
-    #                                         results. If 'None' no results are
-    #                                         written.
-    # \param[in]     filename_results_prefix  Prefix applied for each filename
-    #                                         written to dir_results
-    # \param[in]     reg_type                 Type of regularization applied.
-    #                                         Either zeroth-order ('TK0') or
-    #                                         first-order ('TK1') Tikhonov
+    # \param      self                     The object
+    # \param[in]  stacks                   list of Stack objects containing all
+    #                                      stacks used for the reconstruction
+    # \param[in]  HR_volume                Stack object containing the current
+    #                                      estimate of the HR volume (used as
+    #                                      initial value + space definition)
+    # \param[in]  alpha_cut                Cut-off distance for Gaussian
+    #                                      blurring filter
+    # \param[in]  iter_max                 number of maximum iterations, scalar
+    # \param[in]  alpha_array              array containing regularization
+    #                                      parameter to sweep through, list
+    # \param[in]  dir_results              Directory to store computed results.
+    #                                      If 'None' no results are written.
+    # \param[in]  filename_results_prefix  Prefix applied for each filename
+    #                                      written to dir_results
+    # \param[in]  reg_type                 Type of regularization applied.
+    #                                      Either zeroth-order ('TK0') or
+    #                                      first-order ('TK1') Tikhonov
     #
     def __init__(self, stacks, HR_volume, alpha_cut=3, iter_max=10, alpha_array=[None], dir_results="RegularizationParameterEstimation/", filename_results_prefix="", reg_type="TK1"):
 
@@ -66,7 +62,7 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
         self._reg_type = reg_type
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Sets the regularization type.
     # \date       2016-08-01 19:53:16+0100
     #
@@ -77,7 +73,7 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
         self._reg_type = reg_type
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Run reconstruction for several alphas based on Tikhonov
     #             regularization
     # \date       2016-08-01 19:47:53+0100
@@ -136,7 +132,7 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
             self._write_array_to_file(self._filename_of_txt_file, array_out, format=format, delimiter="\t")
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Gets the filename and header.
     # \date       2016-08-01 19:42:35+0100
     #
@@ -166,7 +162,7 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
         return filename, header
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Gets the filename of reconstructed image.
     # \date       2016-08-01 19:42:46+0100
     #
@@ -181,6 +177,9 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
         filename_image += self._reg_type
         filename_image += "_itermax" + str(self._iter_max)
         filename_image += "_alpha" + str(alpha)
+
+        ## Replace decimal point by 'p'
+        filename_image = filename_image.replace(".", "p")
 
         return filename_image
 
