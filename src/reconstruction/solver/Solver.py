@@ -12,15 +12,14 @@
 
 
 ## Import libraries
-import os                       # used to execute terminal commands in python
 import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
 
 ## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root + "base/" )
+DIR_SRC_ROOT = "../src/"
+sys.path.append(DIR_SRC_ROOT + "base/")
 
 ## Import modules
 import SimpleITKHelper as sitkh
@@ -30,16 +29,27 @@ import PSF as psf
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
 
-## ITK image type 
+## ITK image type
 IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 
 
-class Solver():
+class Solver(object):
+    """ This class contains the common functions/attributes of the solvers """
 
-    ## Constructor
-    #  \param[in] stacks list of Stack objects containing all stacks used for the reconstruction
-    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (used as initial value + space definition)
-    #  \param[in] alpha_cut Cut-off distance for Gaussian blurring filter
+    #--------------------------------------------------------------------------
+    # \brief      Constructor
+    # \date       2016-08-01 22:53:37+0100
+    #
+    # \param      self       The object
+    # \param[in]  stacks     list of Stack objects containing all stacks used
+    #                        for the reconstruction
+    # \param[in,out]  HR_volume  Stack object containing the current estimate of
+    #                        the HR volume (used as initial value + space
+    #                        definition)
+    # \param[in]  alpha_cut  Cut-off distance for Gaussian blurring filter
+    # \param[in]  alpha      regularization parameter, scalar
+    # \param[in]  iter_max   number of maximum iterations, scalar
+    #
     def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10):
 
         ## Initialize variables
@@ -60,22 +70,22 @@ class Solver():
         ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
         self._filter_oriented_Gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[IMAGE_TYPE, PIXEL_TYPE].New()
         self._filter_oriented_Gaussian_interpolator.SetAlpha(self._alpha_cut)
-        
+
         self._filter_oriented_Gaussian = itk.ResampleImageFilter[IMAGE_TYPE, IMAGE_TYPE].New()
-        self._filter_oriented_Gaussian.SetInterpolator( self._filter_oriented_Gaussian_interpolator )
-        self._filter_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
+        self._filter_oriented_Gaussian.SetInterpolator(self._filter_oriented_Gaussian_interpolator)
+        self._filter_oriented_Gaussian.SetDefaultPixelValue(0.0)
 
         ## Allocate and initialize Adjoint Oriented Gaussian Interpolate Image Filter
         self._filter_adjoint_oriented_Gaussian = itk.AdjointOrientedGaussianInterpolateImageFilter[IMAGE_TYPE, IMAGE_TYPE].New()
-        self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue( 0.0 )
+        self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue(0.0)
         self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
-        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage( self._HR_volume.itk )
+        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(self._HR_volume.itk)
 
         ## Create PyBuffer object for conversion between NumPy arrays and ITK images
         self._itk2np = itk.PyBuffer[IMAGE_TYPE]
 
         ## Extract information ready to use for itk image conversion operations
-        self._HR_shape_nda = sitk.GetArrayFromImage( self._HR_volume.sitk ).shape
+        self._HR_shape_nda = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
 
         ## Define differential operators
         spacing = self._HR_volume.sitk.GetSpacing()[0]
@@ -93,7 +103,7 @@ class Solver():
         ## Compute total amount of voxels of x:
         self._N_voxels_HR_volume = np.array(self._HR_volume.sitk.GetSize()).prod()
 
-        ## Allocate variables conataining information about reconstruction
+        ## Allocate variables conataining information about statistics of reconstruction
         self._elapsed_time_sec = None
         self._residual_ell2 = None
         self._residual_prior = None
@@ -111,8 +121,13 @@ class Solver():
         return self._alpha
 
 
-    ## Set maximum number of iterations for minimizer for Tikhonov regularization
-    #  \param[in] iter_max number of maximum iterations, scalar
+    #--------------------------------------------------------------------------
+    # \brief      Sets the maximum number of iterations for Tikhonov solver.
+    # \date       2016-08-01 16:35:09+0100
+    #
+    # \param      self      The object
+    # \param[in]  iter_max  number of maximum iterations, scalar
+    #
     def set_iter_max(self, iter_max):
         self._iter_max = iter_max
 
@@ -141,9 +156,9 @@ class Solver():
         return self._alpha_cut
 
 
-    ## Get elapsed time for reconstruction
-    #  \return elapsed time in seconds
-    def get_elapsed_time(self):
+    ## Get computational time for reconstruction
+    #  \return computational time in seconds
+    def get_computational_time(self):
         if self._elapsed_time_sec < 0:
             raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
         return self._elapsed_time_sec
@@ -180,7 +195,7 @@ class Solver():
 
         ## Perform forward operation A_k on HR volume object
         HR_volume_itk.Update()
-        self._filter_oriented_Gaussian.SetInput( HR_volume_itk )
+        self._filter_oriented_Gaussian.SetInput(HR_volume_itk)
         self._filter_oriented_Gaussian.UpdateLargestPossibleRegion()
         self._filter_oriented_Gaussian.Update()
 
@@ -202,7 +217,7 @@ class Solver():
         self._update_oriented_adjoint_oriented_Gaussian_image_filters(slice_k)
 
         ## Perform backward operation A_k^* on LR image object
-        self._filter_adjoint_oriented_Gaussian.SetInput( slice_itk )
+        self._filter_adjoint_oriented_Gaussian.SetInput(slice_itk)
         self._filter_adjoint_oriented_Gaussian.UpdateLargestPossibleRegion()
         self._filter_adjoint_oriented_Gaussian.Update()
 
@@ -212,21 +227,21 @@ class Solver():
         return HR_volume_itk
 
 
-    ## Evaluate \f$ D \vec{x} \f$ 
-    #  \f$ = \begin{pmatrix} D_x \\ D_y \\ D_z \end{pmatrix} \vec{x}\f$ 
+    ## Evaluate \f$ D \vec{x} \f$
+    #  \f$ = \begin{pmatrix} D_x \\ D_y \\ D_z \end{pmatrix} \vec{x}\f$
     #  within the adjoint augmented linear operator for TK1-regularization.
     #  \param[in] HR_nda_vec HR data as 1D array
     #  \return evaluated differential operator as part of
     #       augmented linear operator as 1D array
     def _D(self, HR_nda_vec):
-        
+
         ## Number of voxels always given by 3 times HR voxels
         N_voxels = self._N_voxels_HR_volume
 
         ## Allocate memory
         D_x = np.zeros(3*N_voxels)
 
-        HR_nda = HR_nda_vec.reshape( self._HR_shape_nda )
+        HR_nda = HR_nda_vec.reshape(self._HR_shape_nda)
 
         ## Differentiate w.r.t. x, y and z and fill corresponding indices
         D_x[0:N_voxels] = self._differential_operations.Dx(HR_nda).flatten()
@@ -236,17 +251,17 @@ class Solver():
         return D_x
 
 
-    ## Evaluate \f$ D^* \vec{y} \f$ 
-    #  \f$ = \begin{pmatrix} D_x^* && D_y && D_z \end{pmatrix} \vec{y}\in\mathbb{R}^N\f$ 
+    ## Evaluate \f$ D^* \vec{y} \f$
+    #  \f$ = \begin{pmatrix} D_x^* && D_y && D_z \end{pmatrix} \vec{y}\in\mathbb{R}^N\f$
     #  within the adjoint augmented linear operator for TK1-regularization.
     #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \return evaluated adjoint differential operator as part of 
+    #  \return evaluated adjoint differential operator as part of
     #       augmented adjoint linear operator as 1D array
     def _D_adj(self, stacked_slices_nda_vec):
 
         ## Number of voxels always given by 3 times HR voxels
         N_voxels = self._N_voxels_HR_volume
-        
+
         ## Allocate memory
         D_adj_slice = np.zeros(3*N_voxels)
 
@@ -256,9 +271,9 @@ class Solver():
         slice_z_nda_vec = stacked_slices_nda_vec[-N_voxels:]
 
         ## Reshape in order to apply differentiation
-        slice_x_nda = slice_x_nda_vec.reshape( self._HR_shape_nda )
-        slice_y_nda = slice_y_nda_vec.reshape( self._HR_shape_nda )
-        slice_z_nda = slice_z_nda_vec.reshape( self._HR_shape_nda )
+        slice_x_nda = slice_x_nda_vec.reshape(self._HR_shape_nda)
+        slice_y_nda = slice_y_nda_vec.reshape(self._HR_shape_nda)
+        slice_z_nda = slice_z_nda_vec.reshape(self._HR_shape_nda)
 
         ## Apply adjoint differentiation w.r.t. x, y and z
         Dx_adj_vec = self._differential_operations.Dx_adj(slice_x_nda).flatten()
@@ -276,8 +291,8 @@ class Solver():
 
         ## Perform masking M_k based
         multiplier = itk.MultiplyImageFilter[IMAGE_TYPE, IMAGE_TYPE, IMAGE_TYPE].New()
-        multiplier.SetInput1( slice_k.itk_mask )
-        multiplier.SetInput2( slice_itk )
+        multiplier.SetInput1(slice_k.itk_mask)
+        multiplier.SetInput2(slice_itk)
         multiplier.Update()
 
         Mk_slice_itk = multiplier.GetOutput()
@@ -286,8 +301,8 @@ class Solver():
         return Mk_slice_itk
 
 
-    ## Evaluate \f$ M \vec{y} \f$ 
-    #  \f$ = \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K \vec{y}_K \end{pmatrix} \vec{x}\f$ 
+    ## Evaluate \f$ M \vec{y} \f$
+    #  \f$ = \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K \vec{y}_K \end{pmatrix} \vec{x}\f$
     #  \return My, i.e. all masked slices stacked to 1D array
     def _get_M_y(self):
 
@@ -421,7 +436,7 @@ class Solver():
                 slice_k = slices[j]
 
                 ## Extract 1D corresponding to current slice and convert it to itk.Object
-                slice_itk = self._get_itk_image_from_array_vec( stacked_slices_nda_vec[i_min:i_max], slice_k.itk )
+                slice_itk = self._get_itk_image_from_array_vec(stacked_slices_nda_vec[i_min:i_max], slice_k.itk)
 
                 ## Apply A_k' M_k on current slice
                 Ak_adj_Mk_slice_itk = self._Ak_adj_Mk(slice_itk, slice_k)
@@ -487,10 +502,10 @@ class Solver():
         
         shape_nda = np.array(image_itk_ref.GetLargestPossibleRegion().GetSize())[::-1]
 
-        image_itk = self._itk2np.GetImageFromArray( nda_vec.reshape(shape_nda) )
-        image_itk.SetOrigin( image_itk_ref.GetOrigin() )
-        image_itk.SetSpacing( image_itk_ref.GetSpacing() )
-        image_itk.SetDirection( image_itk_ref.GetDirection() )
+        image_itk = self._itk2np.GetImageFromArray(nda_vec.reshape(shape_nda))
+        image_itk.SetOrigin(image_itk_ref.GetOrigin())
+        image_itk.SetSpacing(image_itk_ref.GetSpacing())
+        image_itk.SetDirection(image_itk_ref.GetDirection())
 
         return image_itk
 
@@ -501,14 +516,14 @@ class Solver():
     #  \param[in] slice Slice object
     def _update_oriented_adjoint_oriented_Gaussian_image_filters(self, slice):
         ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates
-        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( slice, self._HR_volume )
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(slice, self._HR_volume)
 
         ## Update parameters of forward operator A
-        self._filter_oriented_Gaussian_interpolator.SetCovariance( Cov_HR_coord.flatten() )
-        self._filter_oriented_Gaussian.SetOutputParametersFromImage( slice.itk )
+        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
         
         ## Update parameters of backward/adjoint operator A'
-        self._filter_adjoint_oriented_Gaussian.SetCovariance( Cov_HR_coord.flatten() )
+        self._filter_adjoint_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
 
 
     ## Compute the residual \f$ \sum_{k=1}^K \Vert M_k (A_k \vec{x} - \vec{y}_k) \Vert \f$
@@ -521,7 +536,7 @@ class Solver():
         MAx_nda_vec = self._MA(HR_nda_vec)
 
         ## C
-        return np.sum( (MAx_nda_vec-My_nda_vec)**2 )
+        return np.sum((MAx_nda_vec-My_nda_vec)**2)
 
 
 

@@ -19,7 +19,6 @@ from scipy.sparse.linalg import lsqr
 from scipy.sparse.linalg import lsmr
 from scipy.optimize import lsq_linear
 from scipy.optimize import minimize
-from scipy.optimize import nnls
 from scipy.optimize import least_squares
 import time
 from datetime import timedelta
@@ -72,10 +71,22 @@ from Solver import Solver
 #  \see \p itOrientedGaussianInterpolateImageFunction of \p ITK
 class TikhonovSolver(Solver):
 
-    ## Constructor
-    #  \param[in] stacks list of Stack objects containing all stacks used for the reconstruction
-    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (used as initial value + space definition)
-    #  \param[in] alpha_cut Cut-off distance for Gaussian blurring filter
+    #--------------------------------------------------------------------------
+    # \brief         Constructor
+    # \date          2016-08-01 23:00:04+0100
+    #
+    # \param         self       The object
+    # \param[in]     stacks     list of Stack objects containing all stacks
+    #                           used for the reconstruction
+    # \param[in,out] HR_volume  Stack object containing the current estimate of
+    #                           the HR volume (used as initial value + space
+    #                           definition)
+    # \param[in]     alpha_cut  Cut-off distance for Gaussian blurring filter
+    # \param[in]     alpha      regularization parameter, scalar
+    # \param[in]     iter_max   number of maximum iterations, scalar
+    # \param[in]     reg_type   Type of Tikhonov regualrization, i.e. TK0 or
+    #                           TK1 for either zeroth- or first order Tikhonov
+    #
     def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, reg_type="TK1"):
 
         ## Run constructor of superclass
@@ -122,8 +133,13 @@ class TikhonovSolver(Solver):
         self._residual_ell2 = self._get_residual_ell2(HR_nda_vec)
         self._residual_prior = self._get_residual_prior[self._reg_type](HR_nda_vec)
 
-
-    ## Print statistics associated to performed reconstruction
+    
+    #--------------------------------------------------------------------------
+    # \date       2016-07-29 12:30:30+0100
+    # \brief      Print statistics associated to performed reconstruction
+    #
+    # \param      self  The object
+    #
     def print_statistics(self):
         print("\nStatistics for performed reconstruction with %s-regularization:" %(self._reg_type))
         # if self._elapsed_time_sec < 0:
@@ -134,10 +150,19 @@ class TikhonovSolver(Solver):
         print("\tprior residual = %.3e" %(self._residual_prior))
 
 
-    ## Run the reconstruction algorithm
-    #  \post self._HR_volume is updated with new volume and can be fetched by 
-    #       \p get_HR_volume
-    def run_reconstruction(self):
+    #--------------------------------------------------------------------------
+    # \brief      Run the reconstruction algorithm based on Tikhonov
+    #             regularization
+    # \date       2016-07-29 12:35:01+0100
+    # \post       self._HR_volume is updated with new volume and can be fetched
+    #             by \p get_HR_volume
+    #
+    # \param      self                   The object
+    # \param[in]  provide_initial_value  Use HR volume during initialization as
+    #                                    initial value, boolean. Otherwise, 
+    #                                    assume zero initial vale.
+    #
+    def run_reconstruction(self, provide_initial_value=True):
 
         ## Compute number of voxels to be stored for augmented linear system
         if self._reg_type in ["TK0"]:
@@ -160,21 +185,26 @@ class TikhonovSolver(Solver):
 
         time_start = time.time()
 
-        ## Construct right-hand side b
-        b = self._get_b(N_voxels)
-
         ## Construct (sparse) linear operator A
         A_fw = lambda x: self._A[self._reg_type](x, self._alpha)
         A_bw = lambda x: self._A_adj[self._reg_type](x, self._alpha)
         A = LinearOperator((N_voxels, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
 
-        ## For L-BFGS-B
-        fun = lambda x: 0.5*np.sum((A_fw(x) - b)**2)
-        jac = lambda x: A_bw(A_fw(x)-b)
+        ## Construct right-hand side b
+        b = self._get_b(N_voxels)
+
+        ## Incorporate initial value for least-square-solvers:
+        if provide_initial_value:
+            x0 = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
+            b[0:self._N_total_slice_voxels] -= self._MA(x0)
+
+        ## For L-BFGS-B (take care to take the right b!)
+        # fun = lambda x: 0.5*np.sum((A_fw(x) - b)**2)
+        # jac = lambda x: A_bw(A_fw(x)-b)
 
         ## For non-linear solver
-        A_fw_minus_b = lambda x: self._A[self._reg_type](x, self._alpha) - b
-        A_jac =  lambda x: A
+        # A_fw_minus_b = lambda x: self._A[self._reg_type](x, self._alpha) - b
+        # A_jac =  lambda x: A
 
         ## Linear least-squares methods: 
         # lsqr has lower residual than lsmr in the end. However, Fong2011 states
@@ -197,9 +227,9 @@ class TikhonovSolver(Solver):
         # res = lsq_linear(A, b, max_iter=self._iter_max, lsq_solver=None, lsmr_tol='auto', verbose=2)
         # res = nnls(A,b) #does not work with sparse linear operator
 
-        ## Extract estimated solution as numpy array
-        # HR_nda_vec = res[0]
-        # HR_nda_vec = res
+        ## Correct for initially corrected initial value
+        if provide_initial_value:
+            HR_nda_vec += x0
 
         ## Set elapsed time
         time_end = time.time()
@@ -222,7 +252,7 @@ class TikhonovSolver(Solver):
         ## Compute M y, i.e. masked slices stacked to 1D vector
         b[0:self._N_total_slice_voxels] = self._get_M_y()
 
-        return 
+        return b
 
 
     ## Evaluate augmented linear operator for TK0-regularization, i.e.

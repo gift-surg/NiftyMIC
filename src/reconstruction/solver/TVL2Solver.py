@@ -30,6 +30,7 @@ sys.path.append( dir_src_root + "reconstruction/solver/" )
 
 ## Import modules
 import SimpleITKHelper as sitkh
+import TikhonovSolver as tk
 from Solver import Solver
 
 
@@ -39,10 +40,40 @@ from Solver import Solver
 #  TODO
 class TVL2Solver(Solver):
 
-    ## Constructor
-    #  \param[in] stacks list of Stack objects containing all stacks used for the reconstruction
-    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (used as initial value + space definition)
-    #  \param[in] alpha_cut Cut-off distance for Gaussian blurring filter
+    #--------------------------------------------------------------------------
+    # \brief         Constructor
+    # \date          2016-08-01 22:57:21+0100
+    #
+    # \param         self                                    The object
+    # \param[in]     stacks                                  list of Stack
+    #                                                        objects containing
+    #                                                        all stacks used
+    #                                                        for the
+    #                                                        reconstruction
+    # \param[in,out] HR_volume                               Stack object
+    #                                                        containing the
+    #                                                        current estimate
+    #                                                        of the HR volume
+    #                                                        (used as initial
+    #                                                        value + space
+    #                                                        definition)
+    # \param[in]     alpha_cut                               Cut-off distance
+    #                                                        for Gaussian
+    #                                                        blurring filter
+    # \param[in]     alpha                                   regularization
+    #                                                        parameter, scalar
+    # \param[in]     iter_max                                number of maximum
+    #                                                        iterations, scalar
+    # \param[in]     rho                                     regularization
+    #                                                        parameter of
+    #                                                        augmented
+    #                                                        Lagrangian term,
+    #                                                        scalar
+    # \param[in]     ADMM_iterations                         number of ADMM
+    #                                                        iterations, scalar
+    # \param[in]     ADMM_iterations_output_dir              The ADMM iterations output dir
+    # \param[in]     ADMM_iterations_output_filename_prefix  The ADMM iterations output filename prefix
+    #
     def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TV-L2"):
 
         ## Run constructor of superclass
@@ -99,9 +130,9 @@ class TVL2Solver(Solver):
         return self._ADMM_iterations_output_dir
 
 
-    ## Set filename to write TV reconstructed volumes of ADMM iteration results 
+    ## Set filename prefix to write TV reconstructed volumes of ADMM iteration results 
     #  \pre ADMM_iterations_output_dir was set
-    #  \param[in] filename filename of volume, string
+    #  \param[in] filename filename prefix of ADMM output iteration volumes, string
     def set_ADMM_iterations_output_filename_prefix(self, filename):
         self._ADMM_iterations_output_filename_prefix = filename
 
@@ -131,11 +162,19 @@ class TVL2Solver(Solver):
         print("\tprior residual = %.3e" %(self._residual_prior))
 
 
-    ## Reconstruct volume using TV-L2 regularization via Alternating Direction
-    #  Method of Multipliers (ADMM) method. 
-    #  \post self._HR_volume is updated with new volume and can be fetched by
-    #       \p get_HR_volume
-    def run_reconstruction(self):
+    #--------------------------------------------------------------------------
+    # \brief      Reconstruct volume using TV-L2 regularization via Alternating
+    #             Direction Method of Multipliers (ADMM) method.
+    # \post       self._HR_volume is updated with new volume and can be fetched
+    #             via \p get_HR_volume
+    # \date       2016-08-01 23:22:50+0100
+    #
+    # \param      self                    The object
+    # \param      estimate_initial_value  Estimate initial value by running one
+    #                                     first-order Tikhonov reconstruction
+    #                                     step prior the ADMM algorithm
+    #
+    def run_reconstruction(self, estimate_initial_value=True):
 
         print("Chosen regularization type: TV-L2")
         print("Regularization parameter alpha = " + str(self._alpha))
@@ -145,6 +184,13 @@ class TVL2Solver(Solver):
         # print("Tolerance = %.0e" %(self._tolerance))
 
         time_start = time.time()
+
+        ## Estimate inital value based on TK1 regularization
+        if estimate_initial_value:
+            print("Initial volume for ADMM is estimated by prior TK1 reconstruction step")
+            self._compute_initial_value_based_on_TK1()
+
+        ## Get data array of current volume estimate
         HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
 
         ##  Set initial values
@@ -202,6 +248,21 @@ class TVL2Solver(Solver):
         ## Update volume
         self._HR_volume.itk = self._get_itk_image_from_array_vec( HR_nda.flatten(), self._HR_volume.itk )
         self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( self._HR_volume.itk )
+
+
+    #--------------------------------------------------------------------------
+    # \brief      Calculates the initial value based on first-order Tikhonov.
+    # \post       self._HR_volume is updated
+    # \date       2016-08-01 22:51:41+0100
+    #
+    # \param      self       The object
+    # \param[in]  alpha_cut  Cut-off distance for Gaussian blurring filter
+    # \param[in]  alpha      The alpha
+    # \param[in]  iter_max   The iterator maximum
+    #
+    def _compute_initial_value_based_on_TK1(self, alpha_cut=3, alpha=0.02, iter_max=10):
+        SRR = tk.TikhonovSolver(self._stacks, self._HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max, reg_type="TK1")
+        SRR.run_reconstruction()
 
 
     ## Perform single ADMM iteration

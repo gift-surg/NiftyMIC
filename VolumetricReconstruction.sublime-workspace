@@ -4,6 +4,22 @@
 		"selected_items":
 		[
 			[
+				"prov",
+				"provide_initial_value"
+			],
+			[
+				"_N",
+				"_N_total_slice_voxels"
+			],
+			[
+				"_al",
+				"_alpha_cut	statement"
+			],
+			[
+				"_A_",
+				"_A_TK0	function"
+			],
+			[
 				"_re",
 				"_reg_type"
 			],
@@ -62,10 +78,6 @@
 			[
 				"get_it",
 				"get_itk_image_from_array_vec"
-			],
-			[
-				"_N",
-				"_N_voxels_HR_volume"
 			],
 			[
 				"ADMM",
@@ -502,18 +514,6 @@
 			[
 				"dir_inpu",
 				"dir_input_data"
-			],
-			[
-				"from_fi",
-				"from_filename"
-			],
-			[
-				"dil",
-				"dilation_radius	(DataPreprocessing.py)"
-			],
-			[
-				"RegularS",
-				"RegularStepGradientDescentOptimizerType"
 			]
 		]
 	},
@@ -523,7 +523,23 @@
 			"file": "src/reconstruction/solver/Solver.py",
 			"settings":
 			{
-				"buffer_size": 20347,
+				"buffer_size": 20287,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base/PSF.py",
+			"settings":
+			{
+				"buffer_size": 3777,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/mebner/Library/Application Support/Sublime Text 3/Packages/User/Doxy.sublime-settings",
+			"settings":
+			{
+				"buffer_size": 47060,
 				"line_ending": "Unix"
 			}
 		},
@@ -531,7 +547,15 @@
 			"file": "src/reconstruction/solver/TikhonovSolver.py",
 			"settings":
 			{
-				"buffer_size": 12344,
+				"buffer_size": 13395,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "VolumetricReconstruction.sublime-project",
+			"settings":
+			{
+				"buffer_size": 850,
 				"line_ending": "Unix"
 			}
 		},
@@ -547,7 +571,7 @@
 			"file": "GettingStarted/VolumetricReconstructions/reconstructVolume.py",
 			"settings":
 			{
-				"buffer_size": 4081,
+				"buffer_size": 3977,
 				"line_ending": "Unix"
 			}
 		},
@@ -555,7 +579,7 @@
 			"file": "src/reconstruction/solver/TVL2Solver.py",
 			"settings":
 			{
-				"buffer_size": 19814,
+				"buffer_size": 19815,
 				"line_ending": "Unix"
 			}
 		},
@@ -607,21 +631,85 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 207.0,
-		"last_filter": "replpy",
+		"height": 187.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
-				"replpy",
-				"SublimeREPL: Python"
+				"upda",
+				"DoxyDoxygen: Update Comment With Preferred Style"
+			],
+			[
+				"update",
+				"DoxyDoxygen: Update Comment With User-Selected Style (interactive)..."
+			],
+			[
+				"fold all",
+				"DoxyDoxygen: Unfold All Comments"
+			],
+			[
+				"unfold",
+				"Code Folding: Unfold All"
+			],
+			[
+				"dfold",
+				"Code Folding: Fold Tag Attributes"
+			],
+			[
+				"fold comment",
+				"DoxyDoxygen: Unfold All Comments"
+			],
+			[
+				"unfol",
+				"DoxyDoxygen: Unfold All Comments"
+			],
+			[
+				"",
+				"DoxyDoxygen: Update Comment With Preferred Style"
+			],
+			[
+				"doxy up",
+				"DoxyDoxygen: Update Comment With User-Selected Style (interactive)..."
+			],
+			[
+				"lin",
+				"SublimeLinter: Disable Linting"
+			],
+			[
+				"doxy",
+				"DoxyDoxygen: Update Comment With Preferred Style"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"lint",
+				"SublimeLinter: Toggle Linter"
+			],
+			[
+				"linter to",
+				"SublimeLinter: Toggle Linter"
+			],
+			[
+				"linter",
+				"SublimeLinter: Enable Linting"
+			],
+			[
+				"Package Control: ins",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: in",
+				"Package Control: Install Package"
 			],
 			[
 				"Package Control: install",
 				"Package Control: Install Package"
 			],
 			[
-				"Package Control: ins",
-				"Package Control: Install Package"
+				"replpy",
+				"SublimeREPL: Python"
 			],
 			[
 				"Snippet: for",
@@ -633,10 +721,6 @@
 			],
 			[
 				"install",
-				"Package Control: Install Package"
-			],
-			[
-				"instal",
 				"Package Control: Install Package"
 			],
 			[
@@ -654,17 +738,13 @@
 			[
 				"package con",
 				"Package Control: Remove Repository"
-			],
-			[
-				"",
-				"Package Control: Add Repository"
 			]
 		],
-		"width": 593.0
+		"width": 629.0
 	},
 	"console":
 	{
-		"height": 125.0,
+		"height": 231.0,
 		"history":
 		[
 		]
@@ -682,10 +762,16 @@
 	[
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/preprocessing",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction"
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction/solver"
 	],
 	"file_history":
 	[
+		"/Users/mebner/Library/Application Support/Sublime Text 3/Packages/DoxyDoxygen/Doxy.sublime-settings",
+		"/Users/mebner/Dropbox/Applications/Sublime/Packages/User/Python.sublime-settings",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction/solver/matrix_free_solvers.sublime-workspace",
+		"/Users/mebner/Library/Application Support/Sublime Text 3/Packages/User/sublime_jedi.sublime-settings",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/VolumetricReconstruction.sublime-project",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/preprocessing/IntensityNormalization.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction/InverseProblemSolver.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base/SimpleITKHelper.py",
@@ -808,12 +894,7 @@
 		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/plotData.m",
 		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/generateDesiredReservoirResults.m",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/20160613/subject02/HASTE/ResultEvaluation/Evaluation_subject02_HASTE_biasCorr1_orientPSF0_S2V0_inDef0_intensNorm1_stack0.txt",
-		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/London Data/saveAsOneMAT_patientData.m",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/UpperGastrointestinalStudy/results/Test01/subject02/HASTE/20160612_1750/orientPSF0_S2V1_inDef1_intensNorm1/NCC_subject02_HASTE_biasCorr1_recon_orientPSF0_S2V1_inDef1_intensNorm1_TK1_itermax20_alpha0.03_stack1.txt",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/CMakeLists.txt",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source/MyITKImageHelper.cpp",
-		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/studies_UpperGastrointestinalStudy_reconstructGIVolume_Before_77c7627531d86e15e648c2c6092498768accaeaa.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/include/MyITKImageHelper.h"
+		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/London Data/saveAsOneMAT_patientData.m"
 	],
 	"find":
 	{
@@ -850,6 +931,32 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"_update_oriented_adjoint_oriented_Gaussian_image_filters",
+			"provide_initial_value",
+			"param",
+			"style",
+			"python",
+			"LanguagePython",
+			"python",
+			"Slice object which defines",
+			"_filter_oriented_Gaussian_interpolator",
+			"_get_b",
+			"_reg_type",
+			"_filter_oriented_Gaussian_interpolator",
+			"_filter_oriented_Gaussian",
+			"_filter_adjoint_oriented_Gaussian",
+			"AbsC",
+			"_filter_oriented_Gaussian_interpolator",
+			"docstri",
+			"_filter_oriented_Gaussian_interpolator",
+			"_filter_oriented_Gaussian",
+			"_filter_oriented_Gaussian_interpolator",
+			" )",
+			"( ",
+			"HR_volume_itk",
+			"dir_src_root",
+			"InverseProblem",
+			"perform_ADMM_iteration",
 			"_residual_prior",
 			"lsmr",
 			"lsqr",
@@ -951,33 +1058,7 @@
 			"Ak_adj_Mk",
 			"tmp",
 			"k",
-			"#  \\param[in] N_voxels",
-			"_get_b",
-			"slice_nda_vec",
-			"_A_adj_M_y",
-			"_MAx",
-			"from_arra",
-			"get_itk_image",
-			"rom_array_ve",
-			"get_image",
-			"get_itk_image",
-			"y",
-			"x",
-			"stacked_slices_nda_vec",
-			"slice_nda_vec",
-			"pmatrix",
-			"1",
-			"param[in] HR_nda_vec",
-			"_get_itk_image_from_array_vec",
-			"_get_HR_itk_image_from_array_vec",
-			"_get_itk_image_from_array_vec",
-			"self._reg_type",
-			"solver",
-			"Solver",
-			"solver",
-			"Solver",
-			"solver",
-			"1"
+			"#  \\param[in] N_voxels"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1051,25 +1132,26 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 20347,
+						"buffer_size": 20287,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4091,
-								4091
+								6514,
+								6514
 							]
 						],
 						"settings":
 						{
+							"auto_complete": false,
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1197.0,
+						"translation.y": 2103.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 2,
@@ -1077,23 +1159,85 @@
 				},
 				{
 					"buffer": 1,
-					"file": "src/reconstruction/solver/TikhonovSolver.py",
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base/PSF.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 12344,
+						"buffer_size": 3777,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								7149,
-								7149
+								1459,
+								1459
 							]
 						],
 						"settings":
 						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 167.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/Users/mebner/Library/Application Support/Sublime Text 3/Packages/User/Doxy.sublime-settings",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 47060,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								7027,
+								7027
+							]
+						],
+						"settings":
+						{
+							"auto_complete": true,
+							"syntax": "Packages/JavaScript/JSON.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2385.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "src/reconstruction/solver/TikhonovSolver.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 13395,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								9133,
+								9133
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
 							"history_list_is_closing": true,
 							"spell_check": true,
 							"syntax": "Packages/Python/Python.sublime-syntax",
@@ -1101,20 +1245,50 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1995.0,
+						"translation.y": 3288.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "VolumetricReconstruction.sublime-project",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 850,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								736,
+								736
+							]
+						],
+						"settings":
+						{
+							"auto_complete": true,
+							"syntax": "Packages/JavaScript/JSON.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
 					"type": "text"
 				}
 			]
 		},
 		{
-			"selected": 1,
+			"selected": 3,
 			"sheets":
 			[
 				{
-					"buffer": 2,
+					"buffer": 5,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction/RegularizationParameterEstimation.py",
 					"semi_transient": false,
 					"settings":
@@ -1140,24 +1314,24 @@
 						"translation.y": 7485.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 8,
 					"type": "text"
 				},
 				{
-					"buffer": 3,
+					"buffer": 6,
 					"file": "GettingStarted/VolumetricReconstructions/reconstructVolume.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4081,
+						"buffer_size": 3977,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								221,
-								221
+								1546,
+								1546
 							]
 						],
 						"settings":
@@ -1168,27 +1342,27 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 780.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 7,
 					"type": "text"
 				},
 				{
-					"buffer": 4,
+					"buffer": 7,
 					"file": "src/reconstruction/solver/TVL2Solver.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 19814,
+						"buffer_size": 19815,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4183,
-								4183
+								5289,
+								5289
 							]
 						],
 						"settings":
@@ -1198,14 +1372,45 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1092.0,
+						"translation.y": 1790.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 6,
 					"type": "text"
 				},
 				{
-					"buffer": 5,
+					"buffer": 0,
+					"file": "src/reconstruction/solver/Solver.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 20287,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								19479,
+								19479
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 5938.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 8,
 					"file": "src/validation/ValidationReconstruction.py",
 					"semi_transient": false,
 					"settings":
@@ -1232,7 +1437,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 9,
 					"type": "text"
 				}
 			]
@@ -1298,6 +1503,14 @@
 		"selected_items":
 		[
 			[
+				"psf",
+				"src/base/PSF.py"
+			],
+			[
+				"sol",
+				"src/reconstruction/solver/Solver.py"
+			],
+			[
 				"regul",
 				"src/reconstruction/RegularizationParameterEstimation.py"
 			],
@@ -1320,10 +1533,6 @@
 			[
 				"simpleitkhe",
 				"src/base/SimpleITKHelper.py"
-			],
-			[
-				"sol",
-				"src/reconstruction/solver/Solver.py"
 			],
 			[
 				"tikho",
@@ -1408,10 +1617,6 @@
 			[
 				"bias",
 				"cpp/source/runN4BiasFieldCorrectionImageFilter.cpp"
-			],
-			[
-				"psf",
-				"src/PSF.py"
 			],
 			[
 				"reconsgi",
@@ -1830,7 +2035,7 @@
 		],
 		"width": 648.0
 	},
-	"selected_group": 1,
+	"selected_group": 0,
 	"settings":
 	{
 	},
@@ -1838,7 +2043,7 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 281.0,
+	"side_bar_width": 296.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
