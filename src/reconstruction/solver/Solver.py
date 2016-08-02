@@ -182,6 +182,22 @@ class Solver(object):
         return self._residual_prior
 
 
+    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
+    #  Filter parameters. Hence, update combined Downsample and Blur Operator
+    #  according to the relative position between slice and HR volume.
+    #  \param[in] slice Slice object
+    def _update_oriented_adjoint_oriented_Gaussian_image_filters(self, slice):
+        ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(slice, self._HR_volume)
+
+        ## Update parameters of forward operator A
+        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
+        
+        ## Update parameters of backward/adjoint operator A'
+        self._filter_adjoint_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
+
+
     ## Perform forward operation on HR image, i.e. 
     #  \f$y_k = D_k B_k x =: A_k x \f$ with \f$D_k\f$  and \f$ B_k \f$ being 
     #  the downsampling and blurring operator, respectively.
@@ -508,22 +524,6 @@ class Solver(object):
         image_itk.SetDirection(image_itk_ref.GetDirection())
 
         return image_itk
-
-
-    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
-    #  Filter parameters. Hence, update combined Downsample and Blur Operator
-    #  according to the relative position between slice and HR volume.
-    #  \param[in] slice Slice object
-    def _update_oriented_adjoint_oriented_Gaussian_image_filters(self, slice):
-        ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates
-        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(slice, self._HR_volume)
-
-        ## Update parameters of forward operator A
-        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
-        self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
-        
-        ## Update parameters of backward/adjoint operator A'
-        self._filter_adjoint_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
 
 
     ## Compute the residual \f$ \sum_{k=1}^K \Vert M_k (A_k \vec{x} - \vec{y}_k) \Vert \f$

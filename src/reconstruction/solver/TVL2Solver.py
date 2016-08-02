@@ -74,7 +74,7 @@ class TVL2Solver(Solver):
     # \param[in]     ADMM_iterations_output_dir              The ADMM iterations output dir
     # \param[in]     ADMM_iterations_output_filename_prefix  The ADMM iterations output filename prefix
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TV-L2"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TV-L2"):
 
         ## Run constructor of superclass
         Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max)               
@@ -221,6 +221,9 @@ class TVL2Solver(Solver):
                 name += "_itermax" + str(self._iter_max)
                 name += "_rho" + str(self._rho)
                 name += "_ADMM_iteration" + str(iter+1)
+
+                ## Replace decimal point by 'p'
+                name = name.replace(".", "p")
 
                 os.system("mkdir -p " + self._ADMM_iterations_output_dir)
 

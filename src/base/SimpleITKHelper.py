@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 # of AddTransform is stack based, i.e. first in -- last applied. Wtf!?
 # \param[in] sitk::simple::AffineTransform or EulerxDTransform for inner and outer transform
 # \see http://insightsoftwareconsortium.github.io/SimpleITK-Notebooks/22_Transforms.html
-def get_composited_sitk_affine_transform(transform_outer, transform_inner):
+def get_composite_sitk_affine_transform(transform_outer, transform_inner):
     
     ## Guarantee type sitk::simple::AffineTransform of transformations
     # transform_outer = sitk.AffineTransform(transform_outer)
@@ -36,11 +36,11 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
     c_outer = np.asarray(transform_outer.GetCenter())
     t_outer = np.asarray(transform_outer.GetTranslation())
 
-    A_composited = A_outer.dot(A_inner)
-    c_composited = c_inner
-    t_composited = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
+    A_composite = A_outer.dot(A_inner)
+    c_composite = c_inner
+    t_composite = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
 
-    return sitk.AffineTransform(A_composited.flatten(), t_composited, c_composited)
+    return sitk.AffineTransform(A_composite.flatten(), t_composite, c_composite)
 
 
 ## Composite two Euler Transforms
@@ -48,7 +48,7 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
 # \param[in] transform_inner as sitk::simple::EulerxDTransform
 # \return \p tranform_outer \f$ \circ \f$ \p transform_inner as sitk.EulerxDTransform
 # \see http://insightsoftwareconsortium.github.io/SimpleITK-Notebooks/22_Transforms.html
-def get_composited_sitk_euler_transform(transform_outer, transform_inner):
+def get_composite_sitk_euler_transform(transform_outer, transform_inner):
     
     ## Guarantee type sitk::simple::AffineTransform of transformations
     # transform_outer = sitk.AffineTransform(transform_outer)
@@ -64,14 +64,14 @@ def get_composited_sitk_euler_transform(transform_outer, transform_inner):
     c_outer = np.asarray(transform_outer.GetCenter())
     t_outer = np.asarray(transform_outer.GetTranslation())
 
-    A_composited = A_outer.dot(A_inner)
-    c_composited = c_inner
-    t_composited = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
+    A_composite = A_outer.dot(A_inner)
+    c_composite = c_inner
+    t_composite = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
 
     euler = sitk.Euler3DTransform()
-    euler.SetMatrix(A_composited.flatten())
-    euler.SetTranslation(t_composited)
-    euler.SetCenter(c_composited)
+    euler.SetMatrix(A_composite.flatten())
+    euler.SetTranslation(t_composite)
+    euler.SetCenter(c_composite)
 
     return euler
 
@@ -104,15 +104,17 @@ def get_sitk_image_direction_from_sitk_affine_transform(affine_transform_sitk, i
 #  \param[in] image_sitk image as sitk.Image object sought to be updated
 #  \return image origin which can be used to update the sitk.Image via
 #          image_sitk.SetOrigin(origin)
-def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
+#  TODO: eliminate image_sitk from the header
+def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, image_sitk=None):
     """
     Important: Only tested for center=\0! Not clear how it shall be implemented,
             cf. Johnson2015a on page 551 vs page 107!
 
-    Mostly outcome of application of get_composited_sitk_affine_transform and first transform_inner is image. 
-    Therefore, center_composited is always zero on tested functions so far
+    Mostly outcome of application of get_composite_sitk_affine_transform and first transform_inner is image. 
+    Therefore, center_composite is always zero on tested functions so far
     """
-    dim = len(image_sitk.GetSize())
+    # dim = len(image_sitk.GetSize())
+    dim = affine_transform_sitk.GetDimension()
 
     affine_center = np.array(affine_transform_sitk.GetCenter())
     affine_translation = np.array(affine_transform_sitk.GetTranslation())
@@ -170,7 +172,7 @@ def get_sitk_affine_transform_from_sitk_direction_and_origin(direction_sitk, ori
 ## rigid_transform_*D (object type  Transform) as output of object sitk.ImageRegistrationMethod does not contain the
 ## member functions GetCenter, GetTranslation, GetMatrix whereas the objects sitk.Euler*DTransform does.
 ## Hence, create an instance sitk.Euler*D so that it can be used for composition of transforms as coded 
-## in get_composited_sitk_affine_transform
+## in get_composite_sitk_affine_transform
 def get_inverse_of_sitk_rigid_registration_transform(rigid_registration_transform):
 
     dim = rigid_registration_transform.GetDimension()
@@ -217,8 +219,8 @@ def get_transformed_image(image_init_sitk, transform_sitk):
     
     affine_transform_sitk = get_sitk_affine_transform_from_sitk_image(image_sitk)
 
-    transform_sitk = get_composited_sitk_affine_transform(transform_sitk, affine_transform_sitk)
-    # transform_sitk = get_composited_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform_sitk), affine_transform_sitk)
+    transform_sitk = get_composite_sitk_affine_transform(transform_sitk, affine_transform_sitk)
+    # transform_sitk = get_composite_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform_sitk), affine_transform_sitk)
 
     direction = get_sitk_image_direction_from_sitk_affine_transform(transform_sitk, image_sitk)
     origin = get_sitk_image_origin_from_sitk_affine_transform(transform_sitk, image_sitk)

@@ -30,7 +30,7 @@ def get_transformed_image(image_init, rigid_transform_2D):
     
     affine_transform = sitkh.get_sitk_affine_transform_from_sitk_image(image)
 
-    transform = sitkh.get_composited_sitk_affine_transform(sitkh.get_inverse_of_sitk_rigid_registration_transform(rigid_transform_2D), affine_transform)
+    transform = sitkh.get_composite_sitk_affine_transform(sitkh.get_inverse_of_sitk_rigid_registration_transform(rigid_transform_2D), affine_transform)
 
     direction = sitkh.get_sitk_image_direction_from_sitk_affine_transform(transform, image)
     origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(transform, image)
@@ -603,8 +603,8 @@ def get_FLIRT_rigid_registration_transform_3D(fixed_sitk, moving_sitk):
     # T3 = sitk.AffineTransform(np.zeros((3,3)).flatten(), center_of_mass_fixed)
     # T3 = sitk.AffineTransform(np.zeros((3,3)).flatten(), center_of_mass_fixed)
 
-    # T = sitkh.get_composited_sitk_affine_transform(T2,T1)
-    # T = sitkh.get_composited_sitk_affine_transform(T3,T)
+    # T = sitkh.get_composite_sitk_affine_transform(T2,T1)
+    # T = sitkh.get_composite_sitk_affine_transform(T3,T)
 
 
     ## Create SimpleITK transformation

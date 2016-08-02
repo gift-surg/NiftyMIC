@@ -173,7 +173,7 @@ class Stack:
     #  \return copied Stack object
     # TODO: That's not really well done!
     @classmethod
-    def from_stack(cls, stack_to_copy):
+    def from_stack(cls, stack_to_copy, filename=None):
         stack = cls()
         
         ## Copy image stack and mask
@@ -183,7 +183,10 @@ class Stack:
         stack.sitk_mask = sitk.Image(stack_to_copy.sitk_mask)
         stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
 
-        stack._filename = "copy_" + stack_to_copy.get_filename()
+        if filename is None:
+            stack._filename = "copy_" + stack_to_copy.get_filename()
+        else:
+            stack._filename = filename
 
         stack._N_slices = stack_to_copy.sitk.GetSize()[-1]
         stack._slices = [None]*stack._N_slices

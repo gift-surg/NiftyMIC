@@ -87,7 +87,7 @@ class TikhonovSolver(Solver):
     # \param[in]     reg_type   Type of Tikhonov regualrization, i.e. TK0 or
     #                           TK1 for either zeroth- or first order Tikhonov
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, reg_type="TK1"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1"):
 
         ## Run constructor of superclass
         Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max)

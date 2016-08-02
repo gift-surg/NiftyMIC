@@ -171,7 +171,7 @@ class ValidationReconstruction:
                         rigid_motion_transform = rigid_motion_transforms[i][j]
 
                     ## Take into consideration initial alignment of volumes
-                    rigid_motion_transform_corrected = sitkh.get_composited_sitk_affine_transform(rigid_motion_transform, offset_transform)
+                    rigid_motion_transform_corrected = sitkh.get_composite_sitk_affine_transform(rigid_motion_transform, offset_transform)
                     slice.update_rigid_motion_estimate(rigid_motion_transform_corrected)
 
                     ## Set covariance based on oblique PSF
@@ -252,7 +252,7 @@ class ValidationReconstruction:
     #                 rigid_motion_transform = rigid_motion_transforms[i][j][k]
 
     #                 ## Take into consideration initial alignment of volumes
-    #                 rigid_motion_transform_corrected = sitkh.get_composited_sitk_euler_transform(rigid_motion_transform, offset_transform)
+    #                 rigid_motion_transform_corrected = sitkh.get_composite_sitk_euler_transform(rigid_motion_transform, offset_transform)
 
     #                 ## Get (angle_x, angle_y, angle_x, translation_x, translation_y, translation_z)
     #                 parameters_est[ind_slice, :, k] = rigid_motion_transform_corrected.GetParameters()

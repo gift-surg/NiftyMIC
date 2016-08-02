@@ -224,7 +224,7 @@ def get_numpy_array_from_itk_matrix(matrix_itk):
 #  \param[in] transform_outer
 #  \param[in] transfrom_inner
 #  \return transform_outer \circ transform_inner
-def get_composited_itk_affine_transform(transform_outer, transform_inner):
+def get_composite_itk_affine_transform(transform_outer, transform_inner):
     dim = transform_outer.GetCenter().GetPointDimension()
 
     transform_type = itk.AffineTransform[itk.D, dim]
@@ -290,8 +290,8 @@ def get_itk_image_origin_from_itk_affine_transform(affine_transform_itk, image_i
     Important: Only tested for center=\0! Not clear how it shall be implemented,
             cf. Johnson2015a on page 551 vs page 107!
 
-    Mostly outcome of application of get_composited_sitk_affine_transform and first transform_inner is image. 
-    Therefore, center_composited is always zero on tested functions so far
+    Mostly outcome of application of get_composite_sitk_affine_transform and first transform_inner is image. 
+    Therefore, center_composite is always zero on tested functions so far
     """
     dim = image_itk.GetBufferedRegion().GetImageDimension()    
 
@@ -320,7 +320,7 @@ def get_transformed_image(image_itk, transform):
     # image.CopyInformation(image_itk)
 
     affine_transform = get_itk_affine_transform_from_itk_image(image)
-    transform = get_composited_itk_affine_transform(transform, affine_transform)
+    transform = get_composite_itk_affine_transform(transform, affine_transform)
 
     direction = get_itk_image_direction_matrix_from_itk_affine_transform(transform, image)
     origin = get_itk_image_origin_from_itk_affine_transform(transform, image)
@@ -402,10 +402,10 @@ def get_centered_rotation_itk(image_itk, angles_in_deg):
         rotation.SetRotation(angles[0], angles[1], angles[2])    
 
     ## Construct composite rotation transform
-    transform = get_composited_itk_affine_transform(translation1, affine_inv)
-    transform = get_composited_itk_affine_transform(rotation, transform)
-    transform = get_composited_itk_affine_transform(translation2, transform)
-    transform = get_composited_itk_affine_transform(affine, transform)
+    transform = get_composite_itk_affine_transform(translation1, affine_inv)
+    transform = get_composite_itk_affine_transform(rotation, transform)
+    transform = get_composite_itk_affine_transform(translation2, transform)
+    transform = get_composite_itk_affine_transform(affine, transform)
 
     return transform
 
@@ -445,10 +445,10 @@ def get_centered_rotation_sitk(image_sitk, angles_in_deg):
         rotation = sitk.Euler3DTransform(center, angles[0], angles[1], angles[2], translation)
 
     ## Construct composite rotation transform
-    transform = sitkh.get_composited_sitk_affine_transform(translation1, affine_inv)
-    transform = sitkh.get_composited_sitk_affine_transform(rotation, transform)
-    transform = sitkh.get_composited_sitk_affine_transform(translation2, transform)
-    transform = sitkh.get_composited_sitk_affine_transform(affine, transform)
+    transform = sitkh.get_composite_sitk_affine_transform(translation1, affine_inv)
+    transform = sitkh.get_composite_sitk_affine_transform(rotation, transform)
+    transform = sitkh.get_composite_sitk_affine_transform(translation2, transform)
+    transform = sitkh.get_composite_sitk_affine_transform(affine, transform)
 
     return transform
 
@@ -1870,7 +1870,7 @@ class TestUM(unittest.TestCase):
             , decimals = self.accuracy), 0 )
 
 
-    def test_05_get_composited_itk_transform_2D(self):
+    def test_05_get_composite_itk_transform_2D(self):
         filename_2D = "BrainWeb_2D"
 
         angle_in_deg = 40
@@ -1915,9 +1915,9 @@ class TestUM(unittest.TestCase):
         transform_image_itk = get_itk_affine_transform_from_itk_image(stack_itk)
         transform_image_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(stack_sitk)
 
-        ## Get composited transform
-        transform_itk = get_composited_itk_affine_transform(rotation_itk, transform_image_itk)
-        transform_sitk = sitkh.get_composited_sitk_affine_transform(rotation_sitk, transform_image_sitk)
+        ## Get composite transform
+        transform_itk = get_composite_itk_affine_transform(rotation_itk, transform_image_itk)
+        transform_sitk = sitkh.get_composite_sitk_affine_transform(rotation_sitk, transform_image_sitk)
 
         ## Fetch parameters
         parameters_itk = np.array(transform_itk.GetParameters())
@@ -1936,7 +1936,7 @@ class TestUM(unittest.TestCase):
             , decimals = self.accuracy), 0 )
 
 
-    def test_05_get_composited_itk_transform_3D(self):
+    def test_05_get_composite_itk_transform_3D(self):
         filename_3D = "fetal_brain_a"
 
         ## Define types of input and output pixels and state dimension of images
@@ -2000,9 +2000,9 @@ class TestUM(unittest.TestCase):
         transform_image_itk = get_itk_affine_transform_from_itk_image(stack_itk)
         transform_image_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(stack_sitk)
 
-        ## Get composited transform
-        transform_itk = get_composited_itk_affine_transform(rotation_itk, transform_image_itk)
-        transform_sitk = sitkh.get_composited_sitk_affine_transform(rotation_sitk, transform_image_sitk)
+        ## Get composite transform
+        transform_itk = get_composite_itk_affine_transform(rotation_itk, transform_image_itk)
+        transform_sitk = sitkh.get_composite_sitk_affine_transform(rotation_sitk, transform_image_sitk)
 
         ## Fetch parameters
         parameters_itk = np.array(transform_itk.GetParameters())
@@ -2066,9 +2066,9 @@ class TestUM(unittest.TestCase):
         transform_image_itk = get_itk_affine_transform_from_itk_image(stack_itk)
         transform_image_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(stack_sitk)
 
-        ## Get composited transform
-        transform_itk = get_composited_itk_affine_transform(rotation_itk, transform_image_itk)
-        transform_sitk = sitkh.get_composited_sitk_affine_transform(rotation_sitk, transform_image_sitk)
+        ## Get composite transform
+        transform_itk = get_composite_itk_affine_transform(rotation_itk, transform_image_itk)
+        transform_sitk = sitkh.get_composite_sitk_affine_transform(rotation_sitk, transform_image_sitk)
 
         ## Warp image
         image_warped_itk = get_transformed_image(stack_itk, transform_itk)
@@ -2161,9 +2161,9 @@ class TestUM(unittest.TestCase):
         transform_image_itk = get_itk_affine_transform_from_itk_image(stack_itk)
         transform_image_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(stack_sitk)
 
-        ## Get composited transform
-        transform_itk = get_composited_itk_affine_transform(rotation_itk, transform_image_itk)
-        transform_sitk = sitkh.get_composited_sitk_affine_transform(rotation_sitk, transform_image_sitk)
+        ## Get composite transform
+        transform_itk = get_composite_itk_affine_transform(rotation_itk, transform_image_itk)
+        transform_sitk = sitkh.get_composite_sitk_affine_transform(rotation_sitk, transform_image_sitk)
 
         ## Warp image
         image_warped_itk = get_transformed_image(stack_itk, transform_itk)

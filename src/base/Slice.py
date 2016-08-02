@@ -164,11 +164,11 @@ class Slice:
     def update_rigid_motion_estimate(self, rigid_transform_sitk):
 
         ## Update rigid motion estimate
-        current_rigid_motion_estimate = sitkh.get_composited_sitk_euler_transform(rigid_transform_sitk, self._history_rigid_motion_estimates[-1])
+        current_rigid_motion_estimate = sitkh.get_composite_sitk_euler_transform(rigid_transform_sitk, self._history_rigid_motion_estimates[-1])
         self._history_rigid_motion_estimates.append(current_rigid_motion_estimate)
 
         ## New affine transform of slice after rigid motion correction
-        affine_transform = sitkh.get_composited_sitk_affine_transform(rigid_transform_sitk, self._affine_transform_sitk)
+        affine_transform = sitkh.get_composite_sitk_affine_transform(rigid_transform_sitk, self._affine_transform_sitk)
 
         ## Update affine transform of slice, i.e. change image origin and direction in physical space
         self._update_affine_transform(affine_transform)

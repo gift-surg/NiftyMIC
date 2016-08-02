@@ -38,7 +38,7 @@ class SliceAcqusition:
 
     ## Constructor
     #  \param[in] HR_volume Stack object containing the HR volume
-    def __init__(self, HR_volume):
+    def __init__(self, HR_volume, output_spacing=(1,1,3.85), interpolator_type="OrientedGaussian", alpha_cut=3, motion_type="Random"):
         self._HR_volume = HR_volume
         self._stacks_simulated = []
         self._affine_transforms = []
@@ -49,10 +49,7 @@ class SliceAcqusition:
         self._output_direction_ref = HR_volume.sitk.GetDirection()
         
         ### Define default output spacing of slices and subsequently defined size of simulated stack
-        spacing_in_plane = 1
-        spacing_trough_plance = 3.85
-
-        self._output_spacing = np.array((spacing_in_plane, spacing_in_plane, spacing_trough_plance))
+        self._output_spacing = np.array(output_spacing)
         self._output_size = self._get_output_size_based_on_spacing(self._output_spacing)
 
         ## Define dictionary for different types of available interpolators
@@ -61,17 +58,17 @@ class SliceAcqusition:
             "Linear"            :   self._get_interpolator_linear,
             "OrientedGaussian"  :   self._get_interpolator_oriented_gaussian
         }
-        self._interpolator_type = "NearestNeighbor"     ## default value
+        self._interpolator_type = interpolator_type     ## default value
 
         ## Define dictionary for different types of motion studies
         self._get_rigid_motion_transform = {
             "NoMotion"  :   self._get_motion_transform_no_motion,
             "Random"    :   self._get_motion_transform_random
         }
-        self._motion_type = "NoMotion"
+        self._motion_type = motion_type
 
         ## Chosen cut-off distance for itkOrientedGaussianInterpolateImageFunction
-        self._alpha_cut = 5
+        self._alpha_cut = alpha_cut
 
 
     ## Set cut-off distance for itkOrientedGaussianInterpolateImageFunction
@@ -404,7 +401,7 @@ class SliceAcqusition:
         affine_transform_slice_sitk = sitkh.get_sitk_affine_transform_from_sitk_direction_and_origin(output_direction_sitk, (0,0,0), self._output_spacing)
 
         ## Get affine transform of simulated slice which will be sampled by considering motion
-        output_transformed_affine_sitk = sitkh.get_composited_sitk_affine_transform(motion_transform_sitk, affine_transform_slice_sitk)
+        output_transformed_affine_sitk = sitkh.get_composite_sitk_affine_transform(motion_transform_sitk, affine_transform_slice_sitk)
 
         ## Get image direction matrix of affine transform
         output_transformed_direction_sitk = sitkh.get_sitk_image_direction_from_sitk_affine_transform(output_transformed_affine_sitk, self._output_spacing)
@@ -462,7 +459,7 @@ class SliceAcqusition:
         affine_transform_slice = sitkh.get_sitk_affine_transform_from_sitk_direction_and_origin(output_direction_sitk, output_origin_sitk, slice_sitk)
 
         ## Get ground truth affine transform of slice by taking into account applied motion
-        affine_transform = sitkh.get_composited_sitk_affine_transform(motion_transform_sitk, affine_transform_slice)
+        affine_transform = sitkh.get_composite_sitk_affine_transform(motion_transform_sitk, affine_transform_slice)
 
         return affine_transform
 

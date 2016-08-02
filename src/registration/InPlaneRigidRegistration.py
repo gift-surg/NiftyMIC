@@ -120,7 +120,7 @@ class InPlaneRigidRegistration:
 
         ## T_PI_align = T_rotation_inv o T_origin_inv o T_PI: Trafo to align stack with physical coordinate system
         ## (Hence, T_PI_align(\i) = \spacing*\i)
-        T_PI_align = sitkh.get_composited_sitk_affine_transform(T, T_PI)
+        T_PI_align = sitkh.get_composite_sitk_affine_transform(T, T_PI)
 
         ## Extract direction matrix and origin so that slice is oriented according to T_PI_align (i.e. with physical axes)
         # origin_PI_align = get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,slice_3D)
@@ -133,8 +133,8 @@ class InPlaneRigidRegistration:
         ##    = T_origin o T_rotation o T_in_plane_rotation_2D_space 
         ##                      o T_rotation_inv o T_origin_inv o T_PI
         T_PI_in_plane_rotation_3D = sitk.AffineTransform(3)
-        T_PI_in_plane_rotation_3D = sitkh.get_composited_sitk_affine_transform(rigid_transform_3D, T_PI_align)
-        T_PI_in_plane_rotation_3D = sitkh.get_composited_sitk_affine_transform(T_inv, T_PI_in_plane_rotation_3D)
+        T_PI_in_plane_rotation_3D = sitkh.get_composite_sitk_affine_transform(rigid_transform_3D, T_PI_align)
+        T_PI_in_plane_rotation_3D = sitkh.get_composite_sitk_affine_transform(T_inv, T_PI_in_plane_rotation_3D)
 
         return T_PI_in_plane_rotation_3D
 
@@ -576,7 +576,7 @@ class InPlaneRigidRegistration:
         T_PP = self._get_3D_transform_to_align_stack_with_physical_coordinate_system(slice_3D.sitk)
 
         ## Get transform to align slice with physical coordinate system (perhaps already shifted there) 
-        T_PI_align = sitkh.get_composited_sitk_affine_transform(T_PP, T_PI)
+        T_PI_align = sitkh.get_composite_sitk_affine_transform(T_PP, T_PI)
 
         ## Set direction and origin of image accordingly
         direction = sitkh.get_sitk_image_direction_from_sitk_affine_transform(T_PI_align, slice_3D.sitk)
@@ -603,7 +603,7 @@ class InPlaneRigidRegistration:
         T_rotation.SetMatrix(direction_inv)
 
         ## T = T_rotation_inv o T_origin_inv
-        T = sitkh.get_composited_sitk_affine_transform(T_rotation,T_translation)
+        T = sitkh.get_composite_sitk_affine_transform(T_rotation,T_translation)
 
         return T
 

@@ -92,8 +92,8 @@ class AnalysisRegularizationParameterEstimator(object):
         ## colors: r,b,g,c,m,y,k,w (http://matplotlib.org/api/colors_api.html)
         ## markers: http://matplotlib.org/api/markers_api.html#module-matplotlib.markers
         ## line styles: same as in Matlab (http://matplotlib.org/api/lines_api.html#matplotlib.lines.Line2D.set_linestyle)
-        # self._PLOT_FORMAT = ["rx:" , "bo:" , "gs:", "m<:", "c>:", "y^:", "kv:"]
-        self._PLOT_FORMAT = ["rx:" , "bo:" , "gs:", "r<-.", "b>-.", "g^-."]
+        self._PLOT_FORMAT = ["rx:" , "bo:" , "gs:", "m<:", "c>:", "y^:", "kv:"]
+        # self._PLOT_FORMAT = ["rx:" , "bo:" , "gs:", "r<-.", "b>-.", "g^-."]
 
         self._run_reconstructions = {
             "TK0"   : self._run_reconstructions_TK0,

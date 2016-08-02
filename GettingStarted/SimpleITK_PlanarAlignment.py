@@ -115,7 +115,7 @@ class TestUM(unittest.TestCase):
 
 
         ## Transformation representing the one needed to incorporated in the image header
-        T_PI_align = sitkh.get_composited_sitk_affine_transform(T, T_PI)
+        T_PI_align = sitkh.get_composite_sitk_affine_transform(T, T_PI)
 
         ## Extract origin and direction to write into axis aligned stack
         origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,stack)
@@ -170,7 +170,7 @@ class TestUM(unittest.TestCase):
 
         ## T_PI_align = T_rotation_inv o T_origin_inv o T_PI: Trafo to align stack with physical coordinate system
         ## (Hence, T_PI_align(i) = spacing*i)
-        T_PI_align = sitkh.get_composited_sitk_affine_transform(T, T_PI)
+        T_PI_align = sitkh.get_composite_sitk_affine_transform(T, T_PI)
 
         ## Extract direction matrix and origin so that slice is oriented according to T_PI_align (i.e. with physical axes)
         origin_PI_align = sitkh.get_sitk_image_origin_from_sitk_affine_transform(T_PI_align,stack)
