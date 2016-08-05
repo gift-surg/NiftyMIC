@@ -173,10 +173,15 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
     #
     def _get_filename_reconstructed_image(self, alpha):
 
+        ## Only use signifcant digits for string
+        alpha_str = "%g" % alpha
+
+        ## Build filename
         filename_image =  self._filename_results_prefix
         filename_image += self._reg_type
+        filename_image += "_stacks" + str(self._N_stacks)
+        filename_image += "_alpha" + alpha_str
         filename_image += "_itermax" + str(self._iter_max)
-        filename_image += "_alpha" + str(alpha)
 
         ## Replace decimal point by 'p'
         filename_image = filename_image.replace(".", "p")

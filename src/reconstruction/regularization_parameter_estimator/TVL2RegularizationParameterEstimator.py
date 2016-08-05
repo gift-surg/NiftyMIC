@@ -165,7 +165,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
         filename += "TV-L2-regularization"
         # filename += "_alpha" + str(alpha)
         # filename += "_rho" + str(rho)
-        filename += "_ADMM_iterations" + str(self._ADMM_iterations)
+        filename += "_ADMMiterations" + str(self._ADMM_iterations)
         filename += "_TK1itermax" + str(self._iter_max)
         filename += "_" + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
         filename += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
@@ -194,13 +194,18 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
     #
     def _get_filename_reconstructed_image(self, alpha, rho):
 
+        ## Only use signifcant digits for string
+        alpha_str = "%g" % alpha
+        rho_str = "%g" % rho
+
+        ## Build filename
         filename_image =  self._filename_results_prefix
         filename_image += "TVL2"
-        filename_image += "_itermax" + str(self._iter_max)
-        filename_image += "_rho" + str(rho)
-        filename_image += "_alpha" + str(alpha)
-        filename_image += "_ADMM_iterations" + str(self._ADMM_iterations)
+        filename_image += "_stacks" + str(self._N_stacks)
+        filename_image += "_rho" + rho_str
+        filename_image += "_alpha" + alpha_str
         filename_image += "_TK1itermax" + str(self._iter_max)
+        filename_image += "_ADMMiterations" + str(self._ADMM_iterations)
 
         ## Replace decimal point by 'p'
         filename_image = filename_image.replace(".", "p")

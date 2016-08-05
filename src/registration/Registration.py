@@ -23,6 +23,8 @@ sys.path.append(DIR_SRC_ROOT + "base/")
 import SimpleITKHelper as sitkh
 import PSF as psf
 import Slice as sl
+import time
+from datetime import timedelta
 
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
@@ -89,6 +91,22 @@ class Registration(object):
 
 
     ##-------------------------------------------------------------------------
+    # \date       2016-07-29 12:30:30+0100
+    # \brief      Print statistics associated to performed reconstruction
+    #
+    # \param      self  The object
+    #
+    def print_statistics(self):
+        # print("\nStatistics for performed registration:" %(self._reg_type))
+        # if self._elapsed_time_sec < 0:
+        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
+        # else:
+        print("\tElapsed time = %s" %(timedelta(seconds=self._elapsed_time_sec)))
+        # print("\tell^2-residual sum_k ||M_k(A_k x - y_k||_2^2 = %.3e" %(self._residual_ell2))
+        # print("\tprior residual = %.3e" %(self._residual_prior))
+
+
+    ##-------------------------------------------------------------------------
     # \brief      Run registration for given slice
     # \date       2016-08-03 00:11:51+0100
     # \post       self._paramters is updated
@@ -98,6 +116,8 @@ class Registration(object):
     # \return     { description_of_the_return_value }
     #
     def run_registration(self):
+        
+        time_start = time.time()
 
         fun = lambda x: self._get_residual_data_fit(x)
         x0 = np.zeros(6)
@@ -107,6 +127,10 @@ class Registration(object):
         # res = least_squares(fun=fun, x0=x0, method='lm', loss='linear', tr_solver='exact', verbose=1) 
         self._parameters = res.x
         
+        ## Set elapsed time
+        time_end = time.time()
+        self._elapsed_time_sec = time_end-time_start
+
 
     ##-------------------------------------------------------------------------
     # \brief      Compute residual y_k - A_k(theta)x based on parameters
@@ -124,32 +148,26 @@ class Registration(object):
         transform_sitk = sitk.Euler3DTransform()
         transform_sitk.SetParameters(parameters)
 
-        ## Variant A
-        # composite_transform_sitk = sitkh.get_composite_sitk_affine_transform(transform_sitk, self._slice_affine_transform_sitk)
-        # direction_sitk = sitkh.get_sitk_image_direction_from_sitk_affine_transform(composite_transform_sitk, self._slice_spacing)
-        # origin_sitk = sitkh.get_sitk_image_origin_from_sitk_affine_transform(composite_transform_sitk)
+        ## Get composite affine transform: reg_trafo \circ slice_space
+        composite_transform_sitk = sitkh.get_composite_sitk_affine_transform(transform_sitk, self._slice_affine_transform_sitk)
 
-        # Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction_sitk, self._slice_spacing, self._HR_volume)
+        ## Extract direction and origin of transformed slice space
+        direction_sitk = sitkh.get_sitk_image_direction_from_sitk_affine_transform(composite_transform_sitk, self._slice_spacing)
+        origin_sitk = sitkh.get_sitk_image_origin_from_sitk_affine_transform(composite_transform_sitk)
 
-        # self._filter_oriented_Gaussian.SetOutputOrigin(origin_sitk)
-        # self._filter_oriented_Gaussian.SetOutputSpacing(self._slice_spacing)
-        # self._filter_oriented_Gaussian.SetOutputDirection(sitkh.get_itk_direction_form_sitk_direction(direction_sitk))
-        # self._filter_oriented_Gaussian.SetSize(self._slice_size)
-
-        ## Variant B
-        slice_space_warp_sitk = sitkh.get_transformed_image(self._slice.sitk, transform_sitk)
-        slice_space_warp_itk = sitkh.convert_sitk_to_itk_image(slice_space_warp_sitk)
-        direction_sitk = slice_space_warp_sitk.GetDirection()
-
-        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction_sitk, self._slice_spacing, self._HR_volume)
-        self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice_space_warp_itk)
-
-        ##
-        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
+        ## Set output to transformed slice space
+        self._filter_oriented_Gaussian.SetOutputOrigin(origin_sitk)
+        self._filter_oriented_Gaussian.SetOutputSpacing(self._slice_spacing)
+        self._filter_oriented_Gaussian.SetOutputDirection(sitkh.get_itk_direction_form_sitk_direction(direction_sitk))
+        self._filter_oriented_Gaussian.SetSize(self._slice_size)
         self._filter_oriented_Gaussian.UpdateLargestPossibleRegion()
-        self._filter_oriented_Gaussian.Update()
+
+        ## Set oriented PSF based on transformed slice space
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction_sitk, self._slice_spacing, self._HR_volume)
+        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
 
         ## Create simulated slice from volume
+        self._filter_oriented_Gaussian.Update()
         Ak_vol_itk = self._filter_oriented_Gaussian.GetOutput();
         Ak_vol_itk.DisconnectPipeline()
 

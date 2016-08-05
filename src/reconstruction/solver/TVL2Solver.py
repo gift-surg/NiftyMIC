@@ -3,7 +3,8 @@
 ## \file TVL2Solver.py
 #  \brief Implementation to get an approximate solution of the inverse problem 
 #  \f$ y_k = A_k x \f$ for each slice \f$ y_k,\,k=1,\dots,K \f$
-#  by using TV-L2-regularization
+#  by using TV-L2-regularization. 
+#  Solution via Alternating Direction Method of Multipliers (ADMM) method.
 #
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date July 2016
@@ -215,12 +216,18 @@ class TVL2Solver(Solver):
             HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = self._perform_ADMM_iteration(HR_nda, b, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, self._alpha, self._rho)
 
             if self._ADMM_iterations_output_dir is not None:
+                
+                ## Only use signifcant digits for string
+                alpha_str = "%g" % self._alpha
+                rho_str = "%g" % self._rho
+
+                ## Build filename
                 name =  self._ADMM_iterations_output_filename_prefix
                 name += "_stacks" + str(self._N_stacks)
-                name += "_alpha" + str(self._alpha)
-                name += "_itermax" + str(self._iter_max)
-                name += "_rho" + str(self._rho)
-                name += "_ADMM_iteration" + str(iter+1)
+                name += "_rho" + rho_str
+                name += "_alpha" + alpha_str
+                name += "_TK1itermax" + str(self._iter_max)
+                name += "_ADMMiteration" + str(iter+1)
 
                 ## Replace decimal point by 'p'
                 name = name.replace(".", "p")

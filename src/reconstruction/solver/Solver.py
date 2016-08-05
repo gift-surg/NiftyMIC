@@ -275,16 +275,14 @@ class Solver(object):
     #       augmented adjoint linear operator as 1D array
     def _D_adj(self, stacked_slices_nda_vec):
 
-        ## Number of voxels always given by 3 times HR voxels
-        N_voxels = self._N_voxels_HR_volume
-
-        ## Allocate memory
-        D_adj_slice = np.zeros(3*N_voxels)
+        ## Get helpers to index correct elements
+        N_vol = self._N_voxels_HR_volume
+        N0 = self._N_total_slice_voxels
 
         ## Extract respective x, y and z groups within compound stacked_slices_nda_vec
-        slice_x_nda_vec = stacked_slices_nda_vec[-3*N_voxels: -2*N_voxels]
-        slice_y_nda_vec = stacked_slices_nda_vec[-2*N_voxels: -N_voxels]
-        slice_z_nda_vec = stacked_slices_nda_vec[-N_voxels:]
+        slice_x_nda_vec = stacked_slices_nda_vec[N0:N0+N_vol]
+        slice_y_nda_vec = stacked_slices_nda_vec[N0+N_vol:N0+2*N_vol]
+        slice_z_nda_vec = stacked_slices_nda_vec[N0+2*N_vol:N0+3*N_vol]
 
         ## Reshape in order to apply differentiation
         slice_x_nda = slice_x_nda_vec.reshape(self._HR_shape_nda)
@@ -478,14 +476,18 @@ class Solver(object):
     #  \return evaluated augmented linear operator as 1D array
     def _A_TK1(self, HR_nda_vec, alpha):
 
+        ## Get helpers to index correct elements
+        N_vol = self._N_voxels_HR_volume
+        N0 = self._N_total_slice_voxels
+
         ## Allocate memory
         A_x = np.zeros(self._N_total_slice_voxels+3*self._N_voxels_HR_volume)
 
         ## Compute MAx 
-        A_x[0:-3*self._N_voxels_HR_volume] = self._MA(HR_nda_vec)
+        A_x[0:N0] = self._MA(HR_nda_vec)
 
         ## Compute sqrt(alpha)*Dx
-        A_x[-3*self._N_voxels_HR_volume:] = np.sqrt(alpha)*self._D(HR_nda_vec)
+        A_x[N0:N0+3*N_vol] = np.sqrt(alpha)*self._D(HR_nda_vec)
 
         return A_x
 

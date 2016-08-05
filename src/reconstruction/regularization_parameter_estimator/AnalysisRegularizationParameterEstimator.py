@@ -181,9 +181,10 @@ class AnalysisRegularizationParameterEstimator(object):
     #             filenames and dir_results
     # \date       2016-08-02 00:17:03+0100
     #
-    # \param      self  The object
+    # \param      self         The object
+    # \param      save_figure  Save figure as eps-file to dir_results
     #
-    def show_L_curves(self):
+    def show_L_curves(self, save_figure=False):
 
         ## Plot
         fig = plt.figure(1)
@@ -191,6 +192,7 @@ class AnalysisRegularizationParameterEstimator(object):
         ax = fig.add_subplot(1,1,1)
 
         ## Iterate through all computed/specified files
+        filename_out = ""
         for i_file in range(0, len(self._filenames)):
 
             ## Detect which SRR approach was used for the results stored in this file
@@ -205,9 +207,18 @@ class AnalysisRegularizationParameterEstimator(object):
             ## Plot curve
             self._plot_add_curve[SRR_approach](data, i_file, ax)
 
+            ## Prepare filename in case used
+            filename_out += SRR_approach + "_"
+
         ## Add all figure information
         self._plot_add_figure_information(ax)
 
+        if save_figure:
+            now = datetime.datetime.now()
+            filename_out += str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
+            filename_out += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
+
+            fig.savefig(self._dir_results + filename_out + ".eps")
 
 
     ##-------------------------------------------------------------------------
