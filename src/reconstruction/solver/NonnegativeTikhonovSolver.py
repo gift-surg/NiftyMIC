@@ -75,8 +75,11 @@ class NonnegativeTikhonovSolver(TikhonovSolver):
     #
     def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TV-L2"):
 
+        self._MINIMIZER = "lsmr"
+        # self._MINIMIZER = "lsqr"
+
         ## Run constructor of superclass
-        TikhonovSolver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, reg_type)               
+        TikhonovSolver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, reg_type, self._MINIMIZER)               
         
         ## Settings for optimizer
         self._rho = rho
@@ -169,6 +172,7 @@ class NonnegativeTikhonovSolver(TikhonovSolver):
 
             print("Chosen regularization type: first-order Tikhonov with non-negativity constraints")
 
+        print("Minimizer = " + self._MINIMIZER)
         print("Regularization parameter = " + str(self._alpha))
         print("Maximum number of TK solver iterations = " + str(self._iter_max))
         print("Regularization parameter of augmented Lagrangian term rho = " + str(self._rho))

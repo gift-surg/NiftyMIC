@@ -87,6 +87,9 @@ class TikhonovSolver(Solver):
     # \param[in]     iter_max   number of maximum iterations, scalar
     # \param[in]     reg_type   Type of Tikhonov regualrization, i.e. TK0 or
     #                           TK1 for either zeroth- or first order Tikhonov
+    # \param[in]     minimizer  Type of minimizer used to solve minimization
+    #                           problem, possible types: 'lsmr', 'lsqr',
+    #                           'L-BFGS-B'
     #
     def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr"):
 

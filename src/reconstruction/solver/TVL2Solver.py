@@ -408,6 +408,8 @@ class TVL2Solver(Solver):
     #  \param[in] wz_nda initial value for scaled dual variable in z-direction
     #  \return Updates of scaled dual variable w in x-, y- and z-direction
     def _perform_ADMM_step_3_scaled_dual_variable(self, Dx_nda, Dy_nda, Dz_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda):
+
+        ## Compute w_new = w + Dx - v
         wx_nda = wx_nda + Dx_nda - vx_nda
         wy_nda = wy_nda + Dy_nda - vy_nda
         wz_nda = wz_nda + Dz_nda - vz_nda

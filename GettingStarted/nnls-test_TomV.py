@@ -2,6 +2,15 @@
 import numpy as np
 import scipy.optimize
 
+from nilearn.decoding.fista import mfista
+from nilearn.decoding.proximal_operators import _prox_l1
+from nilearn.decoding.objective_functions import (
+    _squared_loss,
+    _logistic,
+    _squared_loss_grad,
+    _logistic_loss_lipschitz_constant,
+    spectral_norm_squared)
+
 def lsmr_with_init(A,b,x0):
     r0 = b - scipy.sparse.linalg.aslinearoperator(A).matvec(x0)
     deltax_pack = scipy.sparse.linalg.lsmr(A,r0)
@@ -64,6 +73,25 @@ def admm_nnlsqr(A,b):
     
     return z
 
+def test_mfista(A, b):
+    alpha = .01
+    alpha_ = alpha * A.shape[0]
+    l1_ratio = .2
+    l1_weight = alpha_ * l1_ratio
+
+    f1 = lambda x: _squared_loss(A, b, x, compute_energy=True, compute_grad=False)
+    f1_grad = lambda x: _squared_loss(A, b, x, compute_energy=False, compute_grad=True)
+    f2_prox = lambda x, l, *args, **kwargs: (_prox_l1(x, l * l1_weight),
+                                             dict(converged=True))
+
+    total_energy = lambda x: f1(x) + l1_weight * np.sum(np.abs(x))
+    best_x, objective, init = mfista(
+        f1_grad, f2_prox, total_energy, 1, A.shape[1], tol=1e-12,
+        max_iter=100)
+
+    return best_x
+
+
 A = np.array([[60, 90, 120],[30, 120, 90],[0, 12, 8],[-45, 8, 7]])
 b = np.array([67.5, -60, 8, 0.4])
 
@@ -91,6 +119,10 @@ x_lsqr = x_lsqr_pack[0]
 print 'x   (lsqr) =', x_lsqr
 print 'norm       = ', np.linalg.norm(A.dot(x_lsqr)-b)
 
-x_nnlsqr = admm_nnlsqr(A,b)
-print 'x (nnlsqr) =', x_nnlsqr
-print 'norm       = ', np.linalg.norm(A.dot(x_nnlsqr)-b)
+# x_nnlsqr = admm_nnlsqr(A,b)
+# print 'x (nnlsqr) =', x_nnlsqr
+# print 'norm       = ', np.linalg.norm(A.dot(x_nnlsqr)-b)
+
+x_mfista = test_mfista(A,b)
+print 'x (mfista) =', x_mfista
+print 'norm       = ', np.linalg.norm(A.dot(x_mfista)-b)
