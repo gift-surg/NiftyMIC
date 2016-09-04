@@ -9,7 +9,7 @@ set( EXEC_NAME "adjointOrientedGaussianInterpolateImageFilter_UnitTests" )
 set( PROJ_SOURCES
     "adjointOrientedGaussianInterpolateImageFilter_UnitTests.cpp"
     "../source/MyITKImageHelper.cpp"
-    # ${MY_SRC_DIR}/itkAdjointOrientedGaussianInterpolateImageFilter.hxx
+    "../source/MyException.cpp"
     )
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test/bin) 

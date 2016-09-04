@@ -208,21 +208,27 @@ def test_mfista(A, b):
     l1_weight = 0.1
 
     print("l1_weight = " + str(l1_weight))
-    # lipschitz_constant = np.linalg.norm(A,2)
-    lipschitz_constant = 1e4
+    lipschitz_constant = np.linalg.norm(A.A,2)**2 # 2-norm: largest sing. value
+    # lipschitz_constant = np.linalg.norm(A.A,'fro')**2 # 2-norm: largest sing. value
+    # lipschitz_constant = np.linalg.norm(A.A,'')**2
+    # lipschitz_constant = 1e10
+    # lipschitz_constant = 1e4
 
     f1 = lambda x: _squared_loss(A, b, x, compute_energy=True, compute_grad=False)
     f1_grad = lambda x: _squared_loss(A, b, x, compute_energy=False, compute_grad=True)
-    f2_prox = lambda x, l, *args, **kwargs: (_prox_l1(x, l * l1_weight), dict(converged=True))
-    # f2_prox = lambda x, l, *args, **kwargs: _prox_tvl1(x, l * l1_weight)
 
+    ## Seems to work for "good choice" of lipschitz_constant
+    f2_prox = lambda x, l, *args, **kwargs: (_prox_l1(x, l * l1_weight), dict(converged=True))
     total_energy = lambda x: f1(x) + l1_weight * np.sum(np.abs(x))
+
+    ## Does not seem to work
+    # f2_prox = lambda x, l, *args, **kwargs: _prox_tvl1(x, l * l1_weight)
     # total_energy = lambda x: f1(x) + l1_weight * _tv_l1_from_gradient(_gradient_id(x))
+    
     best_x, objective, init = mfista(
         f1_grad, f2_prox, total_energy, lipschitz_constant, A.shape[1], tol=1e-12, max_iter=500)
 
     return best_x
-
 
 
 

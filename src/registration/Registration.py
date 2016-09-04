@@ -113,8 +113,6 @@ class Registration(object):
     #
     # \param      self  The object
     #
-    # \return     { description_of_the_return_value }
-    #
     def run_registration(self):
         
         time_start = time.time()

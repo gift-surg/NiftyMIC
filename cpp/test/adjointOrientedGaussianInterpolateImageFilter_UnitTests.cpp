@@ -25,6 +25,7 @@
 // My includes
 #include "MyITKImageHelper.h"
 #include "itkAdjointOrientedGaussianInterpolateImageFilter.h"
+#include "itkOrientedGaussianInterpolateImageFilter.h"
 #include "itkOrientedGaussianInterpolateImageFunction.h"
 // #include "MyException.h"
 
@@ -35,6 +36,9 @@ typedef itk::ResampleImageFilter< ImageType3D, ImageType3D >  FilterType_Resampl
 
 typedef itk::AdjointOrientedGaussianInterpolateImageFilter<ImageType2D,ImageType2D>  FilterType_AdjointOrientedGaussian_2D;
 typedef itk::AdjointOrientedGaussianInterpolateImageFilter<ImageType3D,ImageType3D>  FilterType_AdjointOrientedGaussian_3D;
+
+typedef itk::OrientedGaussianInterpolateImageFilter<ImageType2D,ImageType2D>  FilterType_OrientedGaussian_2D;
+typedef itk::OrientedGaussianInterpolateImageFilter<ImageType3D,ImageType3D>  FilterType_OrientedGaussian_3D;
 
 typedef itk::OrientedGaussianInterpolateImageFunction< ImageType2D, PixelType >  InterpolatorType_2D;
 typedef itk::OrientedGaussianInterpolateImageFunction< ImageType3D, PixelType >  InterpolatorType_3D;
@@ -54,7 +58,7 @@ TEST_CASE( "Check 2D itkAdjointOrientedGaussianInterpolateImageFilter: Cross",
   "[AdjointOrientedGaussian 2D: Cross]") {
 
     /* Define input and output */
-    std::string dir_input = "../exampleData/";
+    const std::string dir_input = "../exampleData/";
 
     // const std::string filename_image_2D = "2D_SingleDot_50.nii.gz";
     const std::string filename_image_2D = "2D_Cross_50.nii.gz";
@@ -135,7 +139,7 @@ TEST_CASE( "Check 2D itkAdjointOrientedGaussianInterpolateImageFilter: Text",
   "[AdjointOrientedGaussian 2D: Text]") {
 
     /* Define input and output */
-    std::string dir_input = "../exampleData/";
+    const std::string dir_input = "../exampleData/";
 
     const std::string filename_image_2D = "2D_Text.nii.gz";
 
@@ -211,7 +215,7 @@ TEST_CASE( "Check 2D itkAdjointOrientedGaussianInterpolateImageFilter: Shepp-Log
   "[AdjointOrientedGaussian 2D: Shepp-Logan]") {
 
     /* Define input and output */
-    std::string dir_input = "../exampleData/";
+    const std::string dir_input = "../exampleData/";
 
     const std::string filename_image_2D = "2D_SheppLoganPhantom_512.nii.gz";
 
@@ -287,7 +291,7 @@ TEST_CASE( "Check 2D itkAdjointOrientedGaussianInterpolateImageFilter: BrainWeb"
   "[AdjointOrientedGaussian 2D: BrainWeb]") {
 
     /* Define input and output */
-    std::string dir_input = "../exampleData/";
+    const std::string dir_input = "../exampleData/";
 
     const std::string filename_image_2D = "2D_BrainWeb.nii.gz";
 
@@ -366,7 +370,7 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Single Do
   "[AdjointOrientedGaussian 3D: Single Dot]") {
 
     /* Define input and output */
-    std::string dir_input = "../exampleData/";
+    const std::string dir_input = "../exampleData/";
 
     const std::string filename_HR_volume = "3D_SingleDot_50.nii.gz";
     const std::string filename_slice = "3D_SingleDot_50.nii.gz";
@@ -449,7 +453,7 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Cross",
   "[AdjointOrientedGaussian 3D: Cross]") {
 
     /* Define input and output */
-    std::string dir_input = "../exampleData/";
+    const std::string dir_input = "../exampleData/";
 
     const std::string filename_HR_volume = "3D_Cross_50.nii.gz";
     const std::string filename_slice = "3D_Cross_50.nii.gz";
@@ -484,8 +488,8 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Cross",
     // Measure time: Stop
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = end-start;
-    std::cout << "3D Cross" << std::endl;
-    std::cout << "\tElapsed time (Adjoint Operator): " << diff.count() << " s" << std::endl;
+    // std::cout << "3D Cross" << std::endl;
+    // std::cout << "\tElapsed time (Adjoint Operator): " << diff.count() << " s" << std::endl;
 
     /* Resample Image Filter */
     // Measure time: Start
@@ -505,7 +509,7 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Cross",
     // Measure time: Stop
     end = std::chrono::system_clock::now();
     diff = end-start;
-    std::cout << "\tElapsed time (Forward Operator): " << diff.count() << " s" << std::endl;
+    // std::cout << "\tElapsed time (Forward Operator): " << diff.count() << " s" << std::endl;
 
     /* Filters to evaluate absolute difference */
     const MultiplyImageFilter_3D::Pointer multiplyFilter_3D = MultiplyImageFilter_3D::New();
@@ -549,7 +553,7 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
   "[AdjointOrientedGaussian 3D: Real scenario but higher covariance]") {
 
     /* Define input and output */
-    std::string dir_input = "../exampleData/";
+    const std::string dir_input = "../exampleData/";
 
     const std::string filename_HR_volume = "FetalBrain_reconstruction_4stacks.nii.gz";
     const std::string filename_slice = "FetalBrain_stack2_registered_midslice.nii.gz";
@@ -584,8 +588,11 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
     // Measure time: Stop
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = end-start;
-    std::cout << "3D Realistic Images (But higher covariance)" << std::endl;
-    std::cout << "\tElapsed time (Adjoint Operator): " << diff.count() << " s" << std::endl;
+    const ImageType3D::RegionType::SizeType size = HR_volume->GetBufferedRegion().GetSize();
+    // std::cout << "3D Realistic Images (But higher covariance)" << std::endl;
+    // std::cout << "\tSize of HR volume: " << size << std::endl;
+    // std::cout << "\tNumber of pixels HR volume: " << size[0]*size[1]*size[2] << std::endl;
+    // std::cout << "\tElapsed time (Adjoint Operator): " << diff.count() << " s" << std::endl;
 
     /* Resample Image Filter */
     // Measure time: Start
@@ -605,7 +612,7 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
     // Measure time: Stop
     end = std::chrono::system_clock::now();
     diff = end-start;
-    std::cout << "\tElapsed time (Forward Operator): " << diff.count() << " s" << std::endl;
+    // std::cout << "\tElapsed time (Forward Operator): " << diff.count() << " s" << std::endl;
 
     /* Filters to evaluate absolute difference */
     const MultiplyImageFilter_3D::Pointer multiplyFilter_3D = MultiplyImageFilter_3D::New();
@@ -637,8 +644,8 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
 
     // MyITKImageHelper::showImage(filter_AdjointOrientedGaussian_2D->GetOutput());
 
-    std::cout << "\t|(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
-    std::cout << "\t|(Ax,y) - (x,A'y)|/(Ax,y) = " << std::abs(sum_LHS-sum_RHS)/sum_LHS << std::endl;
+    // std::cout << "\t|(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
+    // std::cout << "\t|(Ax,y) - (x,A'y)|/(Ax,y) = " << std::abs(sum_LHS-sum_RHS)/sum_LHS  << " (rel. error)" << std::endl;
     // std::cout << "        (Ax,y) = " << sum_LHS << std::endl;
     // std::cout << "        (x,A'y) = " << sum_RHS << std::endl;
 
@@ -649,7 +656,7 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
   "[AdjointOrientedGaussian 3D: Real scenario]") {
 
     /* Define input and output */
-    std::string dir_input = "../exampleData/";
+    const std::string dir_input = "../exampleData/";
 
     const std::string filename_HR_volume = "FetalBrain_reconstruction_4stacks.nii.gz";
     const std::string filename_slice = "FetalBrain_stack2_registered_midslice.nii.gz";
@@ -684,7 +691,10 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
     // Measure time: Stop
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = end-start;
+    const ImageType3D::RegionType::SizeType size = HR_volume->GetBufferedRegion().GetSize();
     std::cout << "3D Realistic Images" << std::endl;
+    std::cout << "\tSize of HR volume: " << size << std::endl;
+    std::cout << "\tNumber of pixels HR volume: " << size[0]*size[1]*size[2] << std::endl;
     std::cout << "\tElapsed time (Adjoint Operator): " << diff.count() << " s" << std::endl;
 
     /* Resample Image Filter */
@@ -705,7 +715,7 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
     // Measure time: Stop
     end = std::chrono::system_clock::now();
     diff = end-start;
-    std::cout << "\tElapsed time (Forward Operator): " << diff.count() << " s" << std::endl;
+    std::cout << "\tElapsed time (Forward Operator): " << diff.count() << " s (Resample Filter + Gaussian Interpolator)" << std::endl;
 
     /* Filters to evaluate absolute difference */
     const MultiplyImageFilter_3D::Pointer multiplyFilter_3D = MultiplyImageFilter_3D::New();
@@ -737,15 +747,315 @@ TEST_CASE( "Check 3D itkAdjointOrientedGaussianInterpolateImageFilter: Real scen
 
     // MyITKImageHelper::showImage(filter_AdjointOrientedGaussian_2D->GetOutput());
 
+    // std::cout << "\t|(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
+    // std::cout << "\t|(Ax,y) - (x,A'y)|/(Ax,y) = " << std::abs(sum_LHS-sum_RHS)/sum_LHS  << " (rel. error)"  << std::endl;
 
-    std::cout << "\t|(Ax,y) - (x,A'y)| = " << abs_diff << std::endl;
-    std::cout << "\t|(Ax,y) - (x,A'y)|/(Ax,y) = " << std::abs(sum_LHS-sum_RHS)/sum_LHS << std::endl;
+    CHECK( abs_diff == Approx(0).epsilon(tolerance));
+}
+
+// Check weather itkOrientedGaussianInterpolateImageFilter yields the same 
+// result as the one obtained via itkOrientedGaussianInterpolateImageFilter.
+TEST_CASE( "Check 2D itkOrientedGaussianInterpolateImageFilter: BrainWeb", 
+  "[OrientedGaussian 2D: BrainWeb]") {
+
+    /* Define input and output */
+    const std::string dir_input = "../exampleData/";
+
+    const std::string filename_image_2D = "2D_BrainWeb.nii.gz";
+
+    const double tolerance = 1e-6;
+
+    /* Set filter parameters */
+    const double alpha = 1;
+    
+    itk::Vector<double, 2> Sigma_2D;
+    Sigma_2D[0] = 3;
+    Sigma_2D[1] = 2;
+
+    /* Read images */
+    const ImageType2D::Pointer image_2D = MyITKImageHelper::readImage<ImageType2D>(dir_input + filename_image_2D);
+
+    /* Oriented Gaussian Interpolate Image Filter */
+    // Measure time: Start
+    auto start = std::chrono::system_clock::now();
+
+    const FilterType_OrientedGaussian_2D::Pointer filter_OrientedGaussian_2D = FilterType_OrientedGaussian_2D::New();
+
+    filter_OrientedGaussian_2D->SetInput(image_2D);
+    filter_OrientedGaussian_2D->SetOutputParametersFromImage(image_2D);
+    filter_OrientedGaussian_2D->SetAlpha(alpha);
+    filter_OrientedGaussian_2D->SetSigma(Sigma_2D);
+    filter_OrientedGaussian_2D->SetDefaultPixelValue( 0.0 );  
+    filter_OrientedGaussian_2D->Update();
+
+    // Measure time: Stop
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> diff = end-start;
+    const ImageType2D::RegionType::SizeType size = image_2D->GetBufferedRegion().GetSize();
+    // std::cout << "Oriented Gaussian Filter test: 2D" << std::endl;
+    // std::cout << "\tSize of HR volume: " << size << std::endl;
+    // std::cout << "\tNumber of pixels HR volume: " << size[0]*size[1]*size[2] << std::endl;
+    // std::cout << "\tElapsed time (Gaussian Filter): " << diff.count() << " s" << std::endl;
+
+    /* Resample Image Filter with Oriented Gaussian Interpolator */
+    // Measure time: Start
+    start = std::chrono::system_clock::now();
+
+    const InterpolatorType_2D::Pointer interpolator_2D = InterpolatorType_2D::New();
+    interpolator_2D->SetSigma(Sigma_2D);
+    interpolator_2D->SetAlpha(alpha);
+
+    const  FilterType_Resample_2D::Pointer filter_Resample_2D = FilterType_Resample_2D::New();
+    filter_Resample_2D->SetInput(image_2D);
+    filter_Resample_2D->SetOutputParametersFromImage(image_2D);
+    filter_Resample_2D->SetInterpolator(interpolator_2D);
+    filter_Resample_2D->SetDefaultPixelValue( 0.0 );  
+    filter_Resample_2D->Update();  
+
+    // Measure time: Stop
+    end = std::chrono::system_clock::now();
+    diff = end-start;
+    // std::cout << "\tElapsed time (Resample Filter + Gaussian Interpolator): " << diff.count() << " s" << std::endl;
+
+    /* Filters to evaluate absolute difference */
+    const AbsoluteValueDifferenceImageFilter_2D::Pointer absDiffFilter_2D = AbsoluteValueDifferenceImageFilter_2D::New();
+    const StatisticsImageFilterType_2D::Pointer statisticsImageFilter_2D = StatisticsImageFilterType_2D::New();
+
+    /* Compute LHS (Ax,y) */
+    absDiffFilter_2D->SetInput1( filter_OrientedGaussian_2D->GetOutput() );
+    absDiffFilter_2D->SetInput2( filter_Resample_2D->GetOutput() );
+    absDiffFilter_2D->Update();
+
+    statisticsImageFilter_2D->SetInput( absDiffFilter_2D->GetOutput() );
+    statisticsImageFilter_2D->Update();
+    const double abs_diff = statisticsImageFilter_2D->GetSum();
+
+    // MyITKImageHelper::showImage(filter_OrientedGaussian_2D->GetOutput(), filter_Resample_2D->GetOutput(), "GaussianFilter_InterpolateFilter");
+
+    CHECK( abs_diff == Approx(0).epsilon(tolerance));
+}
+
+TEST_CASE( "Check 3D itkOrientedGaussianInterpolateImageFilter: Real scenario", 
+  "[OrientedGaussian 3D: Real scenario]") {
+
+    /* Define input and output */
+    const std::string dir_input = "../exampleData/";
+
+    const std::string filename_HR_volume = "FetalBrain_reconstruction_4stacks.nii.gz";
+    const std::string filename_slice = "FetalBrain_stack2_registered_midslice.nii.gz";
+
+    const double tolerance = 1e-6;
+
+    /* Set filter parameters */
+    const double alpha = 2;
+    
+    itk::Vector<double, 9> Cov_3D;
+    Cov_3D.Fill(0);
+    Cov_3D[0] = 0.26786367;
+    Cov_3D[4] = 0.26786367;
+    Cov_3D[8] = 2.67304559;
+
+    /* Read images */
+    const ImageType3D::Pointer HR_volume = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename_HR_volume);
+    const ImageType3D::Pointer slice = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename_slice);
+
+    /* Oriented Gaussian Interpolate Image Filter */
+    // Measure time: Start
+    auto start = std::chrono::system_clock::now();
+
+    const FilterType_OrientedGaussian_3D::Pointer filter_OrientedGaussian_3D = FilterType_OrientedGaussian_3D::New();
+
+    filter_OrientedGaussian_3D->SetInput(HR_volume);
+    filter_OrientedGaussian_3D->SetOutputParametersFromImage(slice);
+    filter_OrientedGaussian_3D->SetAlpha(alpha);
+    filter_OrientedGaussian_3D->SetCovariance(Cov_3D);
+    filter_OrientedGaussian_3D->SetDefaultPixelValue( 0.0 );  
+    filter_OrientedGaussian_3D->Update();
+
+    // Measure time: Stop
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> diff = end-start;
+    const ImageType3D::RegionType::SizeType size = HR_volume->GetBufferedRegion().GetSize();
+    std::cout << "Oriented Gaussian Filter test: 3D Realistic Images" << std::endl;
+    std::cout << "\tSize of HR volume: " << size << std::endl;
+    std::cout << "\tNumber of pixels HR volume: " << size[0]*size[1]*size[2] << std::endl;
+    std::cout << "\tElapsed time (Gaussian Filter): " << diff.count() << " s" << std::endl;
+
+    /* Resample Image Filter with Oriented Gaussian Interpolator */
+    // Measure time: Start
+    start = std::chrono::system_clock::now();
+
+    const InterpolatorType_3D::Pointer interpolator_3D = InterpolatorType_3D::New();
+    interpolator_3D->SetCovariance(Cov_3D);
+    interpolator_3D->SetAlpha(alpha);
+
+    const  FilterType_Resample_3D::Pointer filter_Resample_3D = FilterType_Resample_3D::New();
+    filter_Resample_3D->SetInput(HR_volume);
+    filter_Resample_3D->SetOutputParametersFromImage(slice);
+    filter_Resample_3D->SetInterpolator(interpolator_3D);
+    filter_Resample_3D->SetDefaultPixelValue( 0.0 );  
+    filter_Resample_3D->Update();  
+
+    // Measure time: Stop
+    end = std::chrono::system_clock::now();
+    diff = end-start;
+    std::cout << "\tElapsed time (Resample Filter + Gaussian Interpolator): " << diff.count() << " s" << std::endl;
+
+    /* Filters to evaluate absolute difference */
+    const AbsoluteValueDifferenceImageFilter_3D::Pointer absDiffFilter_3D = AbsoluteValueDifferenceImageFilter_3D::New();
+    const StatisticsImageFilterType_3D::Pointer statisticsImageFilter_3D = StatisticsImageFilterType_3D::New();
+
+    /* Compute LHS (Ax,y) */
+    absDiffFilter_3D->SetInput1( filter_OrientedGaussian_3D->GetOutput() );
+    absDiffFilter_3D->SetInput2( filter_Resample_3D->GetOutput() );
+    absDiffFilter_3D->Update();
+
+    statisticsImageFilter_3D->SetInput( absDiffFilter_3D->GetOutput() );
+    statisticsImageFilter_3D->Update();
+    const double abs_diff = statisticsImageFilter_3D->GetSum();
+
+    // MyITKImageHelper::showImage(filter_OrientedGaussian_3D->GetOutput(), filter_Resample_3D->GetOutput(), "GaussianFilter_InterpolateFilter");
+
+    CHECK( abs_diff == Approx(0).epsilon(tolerance));
+}
+
+TEST_CASE( "Check 3D itkOrientedGaussianInterpolateImageFilter: Real scenario but higher covariance", 
+  "[OrientedGaussian 3D: Real scenario but higher covariance]") {
+
+    /* Define input and output */
+    const std::string dir_input = "../exampleData/";
+
+    const std::string filename_HR_volume = "FetalBrain_reconstruction_4stacks.nii.gz";
+    const std::string filename_slice = "FetalBrain_stack2_registered_midslice.nii.gz";
+
+    const double tolerance = 1e-6;
+
+    /* Set filter parameters */
+    const double alpha = 2;
+    
+    itk::Vector<double, 3> Sigma_3D;
+    Sigma_3D[0] = 2;
+    Sigma_3D[1] = 2;
+    Sigma_3D[2] = 3;
+
+    /* Read images */
+    const ImageType3D::Pointer HR_volume = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename_HR_volume);
+    const ImageType3D::Pointer slice = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename_slice);
+
+    /* Oriented Gaussian Interpolate Image Filter */
+    // Measure time: Start
+    auto start = std::chrono::system_clock::now();
+
+    const FilterType_OrientedGaussian_3D::Pointer filter_OrientedGaussian_3D = FilterType_OrientedGaussian_3D::New();
+
+    filter_OrientedGaussian_3D->SetInput(HR_volume);
+    filter_OrientedGaussian_3D->SetOutputParametersFromImage(slice);
+    filter_OrientedGaussian_3D->SetAlpha(alpha);
+    filter_OrientedGaussian_3D->SetSigma(Sigma_3D);
+    filter_OrientedGaussian_3D->SetDefaultPixelValue( 0.0 );  
+    filter_OrientedGaussian_3D->Update();
+
+    // Measure time: Stop
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> diff = end-start;
+    const ImageType3D::RegionType::SizeType size = HR_volume->GetBufferedRegion().GetSize();
+    // std::cout << "Oriented Gaussian Filter test: 3D Realistic Images" << std::endl;
+    // std::cout << "\tSize of HR volume: " << size << std::endl;
+    // std::cout << "\tNumber of pixels HR volume: " << size[0]*size[1]*size[2] << std::endl;
+    // std::cout << "\tElapsed time (Gaussian Filter): " << diff.count() << " s" << std::endl;
+
+    /* Resample Image Filter with Oriented Gaussian Interpolator */
+    // Measure time: Start
+    start = std::chrono::system_clock::now();
+
+    const InterpolatorType_3D::Pointer interpolator_3D = InterpolatorType_3D::New();
+    interpolator_3D->SetSigma(Sigma_3D);
+    interpolator_3D->SetAlpha(alpha);
+
+    const  FilterType_Resample_3D::Pointer filter_Resample_3D = FilterType_Resample_3D::New();
+    filter_Resample_3D->SetInput(HR_volume);
+    filter_Resample_3D->SetOutputParametersFromImage(slice);
+    filter_Resample_3D->SetInterpolator(interpolator_3D);
+    filter_Resample_3D->SetDefaultPixelValue( 0.0 );  
+    filter_Resample_3D->Update();  
+
+    // Measure time: Stop
+    end = std::chrono::system_clock::now();
+    diff = end-start;
+    // std::cout << "\tElapsed time (Resample Filter + Gaussian Interpolator): " << diff.count() << " s" << std::endl;
+
+    /* Filters to evaluate absolute difference */
+    const AbsoluteValueDifferenceImageFilter_3D::Pointer absDiffFilter_3D = AbsoluteValueDifferenceImageFilter_3D::New();
+    const StatisticsImageFilterType_3D::Pointer statisticsImageFilter_3D = StatisticsImageFilterType_3D::New();
+
+    /* Compute LHS (Ax,y) */
+    absDiffFilter_3D->SetInput1( filter_OrientedGaussian_3D->GetOutput() );
+    absDiffFilter_3D->SetInput2( filter_Resample_3D->GetOutput() );
+    absDiffFilter_3D->Update();
+
+    statisticsImageFilter_3D->SetInput( absDiffFilter_3D->GetOutput() );
+    statisticsImageFilter_3D->Update();
+    const double abs_diff = statisticsImageFilter_3D->GetSum();
+
+    // MyITKImageHelper::showImage(filter_OrientedGaussian_3D->GetOutput(), filter_Resample_3D->GetOutput(), "GaussianFilter_InterpolateFilter");
 
     CHECK( abs_diff == Approx(0).epsilon(tolerance));
 }
 
 
+TEST_CASE( "Check 3D itkOrientedGaussianInterpolateImageFilter Jacobian: Real scenario", 
+  "[OrientedGaussian 3D Jacobian: Real scenario]") {
 
+    /* Define input and output */
+    const std::string dir_input = "../exampleData/";
+
+    const std::string filename_HR_volume = "FetalBrain_reconstruction_4stacks.nii.gz";
+    const std::string filename_slice = "FetalBrain_stack2_registered_midslice.nii.gz";
+
+    const double tolerance = 1e-6;
+
+    /* Set filter parameters */
+    const double alpha = 2;
+    
+    itk::Vector<double, 9> Cov_3D;
+    Cov_3D.Fill(0);
+    Cov_3D[0] = 0.26786367;
+    Cov_3D[4] = 0.26786367;
+    Cov_3D[8] = 2.67304559;
+
+    /* Read images */
+    const ImageType3D::Pointer HR_volume = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename_HR_volume);
+    const ImageType3D::Pointer slice = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename_slice);
+
+    /* Oriented Gaussian Interpolate Image Filter */
+    // Measure time: Start
+    auto start = std::chrono::system_clock::now();
+
+    const FilterType_OrientedGaussian_3D::Pointer filter_OrientedGaussian_3D = FilterType_OrientedGaussian_3D::New();
+
+    filter_OrientedGaussian_3D->SetInput(HR_volume);
+    filter_OrientedGaussian_3D->SetOutputParametersFromImage(slice);
+    filter_OrientedGaussian_3D->SetAlpha(alpha);
+    filter_OrientedGaussian_3D->SetCovariance(Cov_3D);
+    filter_OrientedGaussian_3D->SetDefaultPixelValue( 0.0 );
+    filter_OrientedGaussian_3D->SetUseJacobian(true);
+    filter_OrientedGaussian_3D->Update();
+
+    std::vector<ImageType3D::Pointer> v = filter_OrientedGaussian_3D->GetJacobian();
+
+    // Measure time: Stop
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> diff = end-start;
+    const ImageType3D::RegionType::SizeType size = HR_volume->GetBufferedRegion().GetSize();
+    std::cout << "Oriented Gaussian Filter test: 3D Realistic Images" << std::endl;
+    std::cout << "\tSize of HR volume: " << size << std::endl;
+    std::cout << "\tNumber of pixels HR volume: " << size[0]*size[1]*size[2] << std::endl;
+    std::cout << "\tElapsed time (Gaussian Filter): " << diff.count() << " s" << std::endl;
+
+   
+
+    CHECK( 1 == Approx(0).epsilon(tolerance));
+}
 
 
 // TEST_CASE( "Malformed command line", "[Command line]" ) {
