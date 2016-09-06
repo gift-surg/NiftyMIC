@@ -113,7 +113,7 @@ class Registration(object):
     #
     # \param      self  The object
     #
-    def run_registration(self):
+    def run_registration(self, verbose=0):
         
         time_start = time.time()
 
@@ -121,7 +121,7 @@ class Registration(object):
         x0 = np.zeros(6)
 
         ## Non-linear least-squares method: but does not go ahead
-        res = least_squares(fun=fun, x0=x0, method='trf', verbose=1) 
+        res = least_squares(fun=fun, x0=x0, method='trf', verbose=verbose) 
         # res = least_squares(fun=fun, x0=x0, method='lm', loss='linear', tr_solver='exact', verbose=1) 
         self._parameters = res.x
         

@@ -426,7 +426,7 @@ class SliceAcqusition:
     ## Get transform representing random rigid motion
     #  \return random motion transform as itk.Euler3DTransform object
     def _get_motion_transform_random(self):
-        angle_deg_max = 10
+        angle_deg_max = 5
         translation_max = 5
 
         # transform = itk.AffineTransform[pixel_type, 3].New()

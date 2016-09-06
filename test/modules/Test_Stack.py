@@ -24,7 +24,7 @@ import Stack as st
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
-class Stack(unittest.TestCase):
+class Test_Stack(unittest.TestCase):
 
     ## Specify input data
     dir_input = "data/"

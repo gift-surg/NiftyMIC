@@ -523,7 +523,15 @@
 			"file": "src/registration/Registration.py",
 			"settings":
 			{
-				"buffer_size": 7653,
+				"buffer_size": 7593,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base/Slice.py",
+			"settings":
+			{
+				"buffer_size": 14480,
 				"line_ending": "Unix"
 			}
 		},
@@ -532,6 +540,14 @@
 			"settings":
 			{
 				"buffer_size": 24599,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "studies/Registration/registerSlices.py",
+			"settings":
+			{
+				"buffer_size": 6668,
 				"line_ending": "Unix"
 			}
 		}
@@ -712,15 +728,14 @@
 	},
 	"expanded_folders":
 	[
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction/solver",
-		"/Users/mebner/development/nilearn",
-		"/Users/mebner/development/nilearn/nilearn",
-		"/Users/mebner/development/nilearn/nilearn/decoding",
-		"/Users/mebner/development/nilearn/nilearn/decoding/tests"
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/Registration"
 	],
 	"file_history":
 	[
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/registration/SliceToVolumeRegistration.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/FetalBrain/reconstructVolume.py",
 		"/Users/mebner/development/nilearn/nilearn/decoding/fista.py",
 		"/Users/mebner/development/nilearn/nilearn/decoding/tests/test_fista.py",
@@ -768,7 +783,6 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/FetalBrain/RegularizationParameterEstimation/LSMR/TV-L2_new/TV-L2-regularization_ADMM_iterations10_TK1itermax10_20160802_143854.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/test/modules/Test_SimulatorSliceAcqusition.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/simulateAcquisition.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/registration/SliceToVolumeRegistration.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/preprocessing/DataPreprocessing.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/reconstruction/regularization_parameter_estimator/AnalysisRegularizationParameterEstimator.py",
 		"/Users/mebner/Library/Application Support/Sublime Text 3/Packages/User/Doxy.sublime-settings",
@@ -885,6 +899,10 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			" itk.Euler",
+			"itk.Euler",
+			"itk.Euler*",
+			"itk.Euler",
 			"_squared_loss",
 			"_squared_loss_grad",
 			"_logistic_loss_lipschitz_constant",
@@ -1008,11 +1026,7 @@
 			"now",
 			"date",
 			" #--",
-			"#--",
-			"SetOutputOrigin",
-			"SetOutputParametersFromImage",
-			"composited",
-			"only_show_precomputed_results"
+			"#--"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1082,7 +1096,7 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 2,
 			"sheets":
 			[
 				{
@@ -1091,15 +1105,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 7653,
+						"buffer_size": 7593,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4187,
-								4187
+								4821,
+								4821
 							]
 						],
 						"settings":
@@ -1110,7 +1124,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 1567.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
@@ -1118,6 +1132,36 @@
 				},
 				{
 					"buffer": 1,
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base/Slice.py",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 14480,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3354,
+								3354
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 559.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base/SimpleITKHelper.py",
 					"semi_transient": false,
 					"settings":
@@ -1129,8 +1173,8 @@
 						"selection":
 						[
 							[
-								256,
-								256
+								16746,
+								16746
 							]
 						],
 						"settings":
@@ -1140,10 +1184,46 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 5457.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 3,
+					"file": "studies/Registration/registerSlices.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6668,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								5053,
+								5053
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1157.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
 					"type": "text"
 				}
 			]
@@ -1166,11 +1246,18 @@
 				0,
 				1,
 				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
 			]
 		],
 		"cols":
 		[
 			0.0,
+			0.5,
 			1.0
 		],
 		"rows":
@@ -1201,6 +1288,10 @@
 		"last_filter": "",
 		"selected_items":
 		[
+			[
+				"helper.py",
+				"src/base/SimpleITKHelper.py"
+			],
 			[
 				"si",
 				"src/base/SimpleITKHelper.py"
@@ -1708,10 +1799,6 @@
 			[
 				"st",
 				"src/Stack.py"
-			],
-			[
-				"firs",
-				"src/FirstEstimateOfHRVolume.py"
 			]
 		],
 		"width": 0.0
@@ -1741,7 +1828,7 @@
 	"show_minimap": false,
 	"show_open_files": true,
 	"show_tabs": true,
-	"side_bar_visible": false,
+	"side_bar_visible": true,
 	"side_bar_width": 296.0,
 	"status_bar_visible": true,
 	"template_settings":

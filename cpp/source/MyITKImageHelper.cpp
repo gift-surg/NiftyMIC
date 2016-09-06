@@ -29,7 +29,7 @@ void MyITKImageHelper::showImage(const ImageType2D::Pointer image, const std::st
   cmd += "-g " + dir_output + filename + ".nii.gz ";
   cmd += "& ";
 
-  system(cmd.c_str());
+  MyITKImageHelper::executeShellCommand(cmd);
 }
 // show 2D image mask
 void MyITKImageHelper::showImage(const MaskImageType2D::Pointer image, const std::string &filename){
@@ -44,7 +44,7 @@ void MyITKImageHelper::showImage(const MaskImageType2D::Pointer image, const std
   cmd += "-g " + dir_output + filename + ".nii.gz ";
   cmd += "& ";
 
-  system(cmd.c_str());
+  MyITKImageHelper::executeShellCommand(cmd);
 }
 
 // show 2D image + overlay
@@ -68,7 +68,7 @@ void MyITKImageHelper::showImage(const ImageType2D::Pointer image, const ImageTy
   // cmd += "-s " + dir_output + filename + "_segmentation.nii.gz ";
   // cmd += "& ";
 
-  system(cmd.c_str());
+  MyITKImageHelper::executeShellCommand(cmd);
 }
 
 // show 2D image + mask
@@ -92,7 +92,7 @@ void MyITKImageHelper::showImage(const ImageType2D::Pointer image, const MaskIma
   // cmd += "-s " + dir_output + filename + "_segmentation.nii.gz ";
   // cmd += "& ";
 
-  system(cmd.c_str());
+  MyITKImageHelper::executeShellCommand(cmd);
 }
 
 // show 3D image
@@ -108,7 +108,7 @@ void MyITKImageHelper::showImage(const ImageType3D::Pointer image, const std::st
   cmd += "-g " + dir_output + filename + ".nii.gz ";
   cmd += "& ";
 
-  system(cmd.c_str());
+  MyITKImageHelper::executeShellCommand(cmd);
 }
 
 // show 3D image mask
@@ -124,7 +124,7 @@ void MyITKImageHelper::showImage(const MaskImageType3D::Pointer image, const std
   cmd += "-g " + dir_output + filename + ".nii.gz ";
   cmd += "& ";
 
-  system(cmd.c_str());
+  MyITKImageHelper::executeShellCommand(cmd);
 }
 
 // show 3D image + overlay
@@ -148,7 +148,7 @@ void MyITKImageHelper::showImage(const ImageType3D::Pointer image, const ImageTy
   // cmd += "-s " + dir_output + filename + "_segmentation.nii.gz ";
   // cmd += "& ";
 
-  system(cmd.c_str());
+  MyITKImageHelper::executeShellCommand(cmd);
 }
 
 // show 3D image + 2 overlays
@@ -174,7 +174,7 @@ void MyITKImageHelper::showImage(const ImageType3D::Pointer image, const ImageTy
   // cmd += "-s " + dir_output + filename + "_segmentation.nii.gz ";
   // cmd += "& ";
 
-  system(cmd.c_str());
+  MyITKImageHelper::executeShellCommand(cmd);
 }
 
 // show 3D image + mask
@@ -198,9 +198,57 @@ void MyITKImageHelper::showImage(const ImageType3D::Pointer image, const MaskIma
   // cmd += "-s " + dir_output + filename + "_segmentation.nii.gz ";
   // cmd += "& ";
 
-  system(cmd.c_str());
+  MyITKImageHelper::executeShellCommand(cmd);
 }
 
+void MyITKImageHelper::showImage(const std::vector<ImageType3D::Pointer> images, const std::string &filename){
+
+    const std::string dir_output = "/tmp/";
+
+    // View images via itksnap
+    std::string  cmd = "itksnap ";
+    cmd += "-g " + dir_output + filename + "_0.nii.gz ";
+    cmd += "-o ";
+
+    MyITKImageHelper::writeImage(images[0], dir_output + filename + "_0.nii.gz");
+
+    for(std::vector<ImageType3D::Pointer>::size_type i = 1; i < images.size(); ++i) {
+        MyITKImageHelper::writeImage(images[i], dir_output + filename + "_" + std::to_string(i) + ".nii.gz");
+        cmd += dir_output + filename + "_" + std::to_string(i) + ".nii.gz ";
+    }
+    cmd += "& ";
+
+    MyITKImageHelper::executeShellCommand(cmd);
+}
+
+void MyITKImageHelper::showImage(const JacobianBaseType3D::Pointer dimage, const std::string &filename){
+
+    const std::string dir_output = "/tmp/";
+
+    // Use Index Selection Filter to select specific image corresponding to particular index
+    MyITKImageHelper::IndexSelectionType3D::Pointer indexSelectionFilter3D = MyITKImageHelper::IndexSelectionType3D::New();
+    indexSelectionFilter3D->SetInput( dimage );
+
+    // Write each image w.r.t. index
+    for (int i = 0; i < 3; ++i)
+    {
+        indexSelectionFilter3D->SetIndex(i);
+        indexSelectionFilter3D->Update();
+        MyITKImageHelper::writeImage(indexSelectionFilter3D->GetOutput(), dir_output + filename + "_" + std::to_string(i) + ".nii.gz");
+    }
+
+    // View images via itksnap
+    std::string  cmd = "itksnap ";
+    cmd += "-g " + dir_output + filename + "_0.nii.gz ";
+    cmd += "-o ";
+    for (int i = 1; i < 3; ++i)
+    {
+        cmd += dir_output + filename + "_" + std::to_string(i) + ".nii.gz ";
+    }
+    cmd += "& ";
+
+    MyITKImageHelper::executeShellCommand(cmd);
+}
 
 /** Write image */
 void MyITKImageHelper::writeImage(const ImageType2D::Pointer image, const std::string &filename){
@@ -418,3 +466,7 @@ void MyITKImageHelper::writeTransform(itk::ScaledTranslationEuler3DTransform< Pi
     std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
 }
 
+void MyITKImageHelper::executeShellCommand(const std::string &cmd){
+    std::cout << cmd << std::endl;
+    system(cmd.c_str());
+}
