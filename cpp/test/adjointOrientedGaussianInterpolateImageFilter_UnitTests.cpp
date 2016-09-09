@@ -23,8 +23,11 @@
 #include <itkStatisticsImageFilter.h>
 #include <itkEuler3DTransform.h>
 #include <itkGradientImageFilter.h>
+#include <itkGradientRecursiveGaussianImageFilter.h>
 #include <itkDerivativeImageFilter.h>
 #include <itkVectorIndexSelectionCastImageFilter.h>
+#include <itkImageRegionIterator.h>
+#include <itkImageRegionIteratorWithIndex.h>
 
 // My includes
 #include "MyITKImageHelper.h"
@@ -57,15 +60,15 @@ typedef itk::AbsoluteValueDifferenceImageFilter< ImageType3D, ImageType3D, Image
 typedef itk::StatisticsImageFilter<ImageType2D> StatisticsImageFilterType_2D;
 typedef itk::StatisticsImageFilter<ImageType3D> StatisticsImageFilterType_3D;
 
-typedef itk::Euler3DTransform< float > EulerTransformType;
+typedef itk::Euler3DTransform< PixelType > EulerTransformType;
 
-typedef itk::GradientImageFilter<ImageType2D> FilterType_Gradient_2D;
-typedef itk::GradientImageFilter<ImageType3D> FilterType_Gradient_3D;
+typedef itk::GradientImageFilter<ImageType2D, PixelType, PixelType> FilterType_Gradient_2D;
+typedef itk::GradientImageFilter<ImageType3D, PixelType, PixelType> FilterType_Gradient_3D;
 
 typedef itk::DerivativeImageFilter<ImageType2D, ImageType2D> FilterType_Derivative_2D;
 // typedef itk::DerivativeImageFilter<ImageType3D> FilterType_Derivative_3D;
 
-typedef itk::GradientEuler3DTransformImageFilter<ImageType3D> FilterType_GradientEuler_3D;
+typedef itk::GradientEuler3DTransformImageFilter<ImageType3D, PixelType, PixelType> FilterType_GradientEuler_3D;
 
 // Unit tests
 TEST_CASE( "Check 2D itkAdjointOrientedGaussianInterpolateImageFilter: Cross", 
@@ -1017,6 +1020,194 @@ TEST_CASE( "Check 3D itkOrientedGaussianInterpolateImageFilter: Real scenario bu
 }
 
 
+TEST_CASE( "Check GradientEuler3DTransformImageFilter", "[GradientEuler3DTransformImageFilter]"){
+    
+    /* Define input and output */
+    const std::string dir_input = "../exampleData/";
+
+    const std::string filename_slice = "FetalBrain_stack2_registered_midslice.nii.gz";
+
+    const double tolerance = 1e-6;
+
+    /* Read images */
+    const ImageType3D::Pointer slice = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename_slice);
+
+    /* Define Euler transform */
+    EulerTransformType::Pointer transform = EulerTransformType::New();
+
+    /* Gradient Euler transform */
+    const FilterType_GradientEuler_3D::Pointer filter_GradientEuler_3D = FilterType_GradientEuler_3D::New();
+    filter_GradientEuler_3D->SetTransform(transform);
+    filter_GradientEuler_3D->SetInput(slice);
+    filter_GradientEuler_3D->Update();
+
+    /* Region and index to iterate over */
+    ImageType3D::IndexType index;
+    itk::Point<PixelType, 3> point;
+    ImageType3D::RegionType region = slice->GetBufferedRegion();
+    itk::ImageRegionConstIteratorWithIndex<ImageType3D> it( slice, region );
+
+    /* Variables for comparison */
+    typedef itk::CovariantVector< PixelType, 18> CovariantVectorType;
+    typedef itk::Image< CovariantVectorType, 3 > ImageCovariantVectorType;
+
+    CovariantVectorType               jacobian;
+    EulerTransformType::JacobianType  jacobian2;
+    ImageCovariantVectorType::Pointer jacobian_slice = filter_GradientEuler_3D->GetOutput();
+
+    // Walk the  region
+    it.GoToBegin();
+
+    while ( !it.IsAtEnd() ) {
+
+        index = it.GetIndex();
+        
+        jacobian = jacobian_slice->GetPixel(index);
+        // std::cout << jacobian << std::endl;
+        
+        slice->TransformIndexToPhysicalPoint(index, point);
+        transform->ComputeJacobianWithRespectToParameters(point, jacobian2);
+
+        // Check difference
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 6; ++j) {
+
+                double abs_diff = std::abs(jacobian[i*6 + j] - jacobian2.GetElement(i,j));
+
+                CHECK( abs_diff == Approx(0).epsilon(tolerance));
+            }
+        }
+
+        ++it;
+    }
+
+    // Use different parameter
+    EulerTransformType::ParametersType parameters(transform->GetNumberOfParameters());
+    parameters[0] = 0.2;
+    parameters[1] = 0.1;
+    parameters[2] = 0.15;
+    parameters[3] = -3.5;
+    parameters[4] = 4.1;
+    parameters[5] = 8.3;
+    transform->SetParameters(parameters);
+    filter_GradientEuler_3D->Update();
+    // jacobian_slice = filter_GradientEuler_3D->GetOutput();
+
+    it.GoToBegin();
+
+    while ( !it.IsAtEnd() ) {
+
+        index = it.GetIndex();
+        
+        jacobian = jacobian_slice->GetPixel(index);
+        // std::cout << jacobian << std::endl;
+        
+        slice->TransformIndexToPhysicalPoint(index, point);
+        transform->ComputeJacobianWithRespectToParameters(point, jacobian2);
+
+        // Check difference
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 6; ++j) {
+
+                double abs_diff = std::abs(jacobian[i*6 + j] - jacobian2.GetElement(i,j));
+
+                CHECK( abs_diff == Approx(0).epsilon(tolerance));
+            }
+        }
+
+        ++it;
+    }
+
+
+}
+
+TEST_CASE( "Check 3D itkOrientedGaussianInterpolateImageFilter Jacobian:", "[OrientedGaussian 3D Jacobian]") {
+
+    /* Define input and output */
+    const std::string dir_input = "../exampleData/";
+
+    const std::string filename_HR_volume = "FetalBrain_reconstruction_4stacks.nii.gz";
+    const std::string filename_slice = "FetalBrain_stack2_registered_midslice.nii.gz";
+
+    const double tolerance = 1e-6;
+
+    /* Set filter parameters */
+    const double alpha = 2;
+
+    itk::Vector<double, 9> Cov_3D;
+    Cov_3D.Fill(0);
+    Cov_3D[0] = 0.26786367;
+    Cov_3D[4] = 0.26786367;
+    Cov_3D[8] = 2.67304559;
+
+    /* Read images */
+    // const ImageType3D::Pointer image = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename_slice);
+    const ImageType3D::Pointer image = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename_HR_volume);
+
+    /* Variables for comparison */
+    typedef itk::CovariantVector< PixelType, 3> CovariantVectorType;
+    typedef itk::Image< CovariantVectorType, 3 > ImageCovariantVectorType;
+
+    /* Oriented Gaussian Interpolate Image Filter */
+    const FilterType_OrientedGaussian_3D::Pointer filter_OrientedGaussian_3D = FilterType_OrientedGaussian_3D::New();
+
+    filter_OrientedGaussian_3D->SetInput(image);
+    filter_OrientedGaussian_3D->SetOutputParametersFromImage(image);
+    filter_OrientedGaussian_3D->SetAlpha(alpha);
+    filter_OrientedGaussian_3D->SetCovariance(Cov_3D);
+    filter_OrientedGaussian_3D->SetDefaultPixelValue( 0.0 );
+    filter_OrientedGaussian_3D->SetUseJacobian(true);
+    filter_OrientedGaussian_3D->Update();
+
+    ImageType3D::Pointer image_filtered = filter_OrientedGaussian_3D->GetOutput();
+    ImageCovariantVectorType::Pointer jacobian = filter_OrientedGaussian_3D->GetJacobian();
+
+    /* Gradient Image Filter */
+    FilterType_Gradient_3D::Pointer filter_Gradient_3D = FilterType_Gradient_3D::New();
+    filter_Gradient_3D->SetInput(image_filtered);
+    filter_Gradient_3D->SetUseImageSpacing(true);
+    filter_Gradient_3D->SetUseImageDirection(false);
+    filter_Gradient_3D->Update();
+    ImageCovariantVectorType::Pointer jacobian2 = filter_Gradient_3D->GetOutput();
+
+    // itk::GradientRecursiveGaussianImageFilter<ImageType3D>::Pointer filter_Gradient_3D = itk::GradientRecursiveGaussianImageFilter<ImageType3D>::New();
+    // filter_Gradient_3D->SetInput(image_filtered);
+    // filter_Gradient_3D->Update();
+    // ImageCovariantVectorType::Pointer jacobian2 = filter_Gradient_3D->GetOutput();
+
+    /* Region and index to iterate over */
+    ImageType3D::IndexType index;
+    itk::Point<PixelType, 3> point;
+    ImageType3D::RegionType region = image->GetBufferedRegion();
+    itk::ImageRegionConstIteratorWithIndex<ImageType3D> it( image, region );
+
+    // Walk the  region
+    it.GoToBegin();
+
+    while ( !it.IsAtEnd() ) {
+
+        index = it.GetIndex();
+        CovariantVectorType jacobian_vector = jacobian->GetPixel(index);
+        CovariantVectorType jacobian2_vector = jacobian2->GetPixel(index);
+
+        // Check difference
+        double abs_diff = 0.0;
+        for (int i = 0; i < 3; ++i) {
+
+            abs_diff += std::abs(jacobian_vector[i]-jacobian2_vector[i]);
+            // std::cout << abs_diff << " ";
+            // CHECK( abs_diff == Approx(0).epsilon(tolerance));
+        }
+        // std::cout << std::endl;
+
+        ++it;
+    }
+
+    MyITKImageHelper::showImage(jacobian, "JacobianGaussianFilter");
+    MyITKImageHelper::showImage(jacobian2, "GradientFilter");
+
+}
+
 TEST_CASE( "Check 3D itkOrientedGaussianInterpolateImageFilter Jacobian: Real scenario", 
   "[OrientedGaussian 3D Jacobian: Real scenario]") {
 
@@ -1064,7 +1255,7 @@ TEST_CASE( "Check 3D itkOrientedGaussianInterpolateImageFilter Jacobian: Real sc
     std::cout << "\tNumber of pixels HR volume: " << size[0]*size[1]*size[2] << std::endl;
     std::cout << "\tElapsed time (Gaussian Filter): " << diff.count() << " s" << std::endl;
 
-    std::cout << "UseJacobian = " << filter_OrientedGaussian_3D->GetUseJacobian() << std::endl;
+    // std::cout << "UseJacobian = " << filter_OrientedGaussian_3D->GetUseJacobian() << std::endl;
 
     typedef FilterType_OrientedGaussian_3D::JacobianBaseType JacobianBaseType;
     FilterType_OrientedGaussian_3D::JacobianBaseType::Pointer jacobian = filter_OrientedGaussian_3D->GetJacobian();
@@ -1089,7 +1280,7 @@ TEST_CASE( "Check 3D itkOrientedGaussianInterpolateImageFilter Jacobian: Real sc
     filter_GradientEuler_3D->Update();
 
     FilterType_GradientEuler_3D::OutputImageType::Pointer foo = filter_GradientEuler_3D->GetOutput();
-    std::cout << foo;
+    // std::cout << foo;
 
     // FilterType_GradientEuler_3D::OutputImageRegionType region = foo->GetBufferedRegion();
     // std::cout << region;
