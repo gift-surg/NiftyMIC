@@ -112,8 +112,8 @@ if __name__ == '__main__':
             for k in range(0, shape[0]):
                 res_[i,j,k,:] = dF[i,j,k,:].dot(dT[i,j,k,:].reshape(3,6))
 
-    res_ = res_.reshape(-1,6)
-    print (res - res_).sum()
+    for i in range(0, 6):
+        print (res[:,i] - res_[:,:,:,i].flatten()).sum()
                 
 
 

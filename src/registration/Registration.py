@@ -124,7 +124,7 @@ class Registration(object):
     #
     # \param      self  The object
     #
-    def run_registration(self, verbose=2):
+    def run_registration(self, verbose=0):
         
         self._filter_gradient_transform.Update()
 
@@ -132,11 +132,12 @@ class Registration(object):
 
         fun = lambda x: self._get_residual_data_fit(x)[0]
         jac = lambda x: self._get_residual_data_fit(x)[1]
-        x0 = np.zeros(6)
+        x0 = np.zeros(self._dof_transform)
 
         ## Non-linear least-squares method: but does not go ahead
         # res = least_squares(fun=fun, x0=x0, method='trf', verbose=verbose) 
-        res = least_squares(fun=fun, x0=x0, jac=jac, method='trf', verbose=verbose) 
+        res = least_squares(fun=fun, x0=x0, jac=jac, method='trf', loss='linear',verbose=verbose) 
+        # res = least_squares(fun=fun, x0=x0, jac='2-point', method='trf', verbose=verbose) 
         # res = least_squares(fun=fun, x0=x0, method='lm', loss='linear', tr_solver='exact', verbose=1) 
         self._parameters = res.x
         
@@ -173,13 +174,14 @@ class Registration(object):
         self._filter_oriented_Gaussian.SetOutputSpacing(self._slice_spacing)
         self._filter_oriented_Gaussian.SetOutputDirection(sitkh.get_itk_direction_form_sitk_direction(direction_sitk))
         self._filter_oriented_Gaussian.SetSize(self._slice_size)
+        self._filter_oriented_Gaussian.UseImageDirection(False)
         self._filter_oriented_Gaussian.UpdateLargestPossibleRegion()
 
         ## Set oriented PSF based on transformed slice space
         Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction_sitk, self._slice_spacing, self._HR_volume)
         self._filter_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
 
-        ## Compute simulated slice from volume and its Jacobian w.r.t to spatial coordinates
+        ## Compute simulated slice from volume and its Jacobian w.r.t. to spatial coordinates
         self._filter_oriented_Gaussian.Update()
     
         ## 1) Compute residual y_k - A_k(theta)x as 1D array
@@ -192,14 +194,33 @@ class Registration(object):
 
         ## 2) Compute gradient of residual w.r.t. to parameters
         jacobian_spatial_Ak_vol_itk = self._filter_oriented_Gaussian.GetJacobian()
+        
         # grad_filter = itk.GradientImageFilter[IMAGE_TYPE, itk.D, itk.D].New()
         # grad_filter.SetInput(Ak_vol_itk)
-        # grad_filter.SetUseImageSpacing(False)
-        # grad_filter.SetUseImageDirection(False)
+        # grad_filter.SetUseImageSpacing(True)
+        # grad_filter.SetUseImageDirection(True)
         # grad_filter.Update()
         # jacobian_spatial_Ak_vol_itk = grad_filter.GetOutput()
 
+        # grad_filter = itk.DerivativeImageFilter.ID3ID3.New()
+        # grad_filter.SetInput(Ak_vol_itk)
+        # grad_filter.SetUseImageSpacing(True)
+        # grad_filter.SetOrder(1)
+        # nda = self._itk2np_CVD33.GetArrayFromImage(jacobian_spatial_Ak_vol_itk)
+        # for i in range(0, 3):
+        #     grad_filter.SetDirection(i)
+        #     grad_filter.Update()
+        #     foo_itk = grad_filter.GetOutput()
+        #     foo_itk.DisconnectPipeline()
+        #     nda[:,:,:,i] = self._itk2np.GetArrayFromImage(foo_itk)
+        # jacobian = -nda.reshape(-1,3)        
+
         jacobian_spatial_Ak_vol_itk.DisconnectPipeline()
+        # nda = self._itk2np_CVD33.GetArrayFromImage(jacobian_spatial_Ak_vol_itk)
+        # for i in range(0, 3):
+        #     foo = self._itk2np.GetImageFromArray(nda[:,:,:,i])
+        #     foo.CopyInformation(Ak_vol_itk)
+        #     sitkh.show_itk_image(foo, title=str(i))
 
         jacobian = self._get_gradient_residual(jacobian_spatial_Ak_vol_itk, parameters)
 
@@ -232,18 +253,20 @@ class Registration(object):
     # \param      jacobian_spatial_Ak_vol_itk  Jacobian of filter w.r.t. spatial coordinates, itk.Image.CVD33
     # \param      parameters                   The parameters
     #
-    # \return     The jacobian residual data fit as (Nk x 6)-array
+    # \return     The Jacobian residual data fit as (Nk x 6)-array
     #
     def _get_gradient_residual(self, jacobian_spatial_Ak_vol_itk, parameters):
 
         jacobian_nda = np.zeros((self._slice_voxels, self._dof_transform))
 
         ## Get array of Jacobian of forward operator w.r.t. spatial coordinates
-        nda_gradient_filter = self._itk2np_CVD33.GetArrayFromImage(jacobian_spatial_Ak_vol_itk).reshape(-1,3)
+        nda_gradient_filter = self._itk2np_CVD33.GetArrayFromImage(jacobian_spatial_Ak_vol_itk)
+        nda_gradient_filter_vec = nda_gradient_filter.reshape(-1,3)
 
         ## Get array of Jacobian of transform w.r.t. parameters
         for i in range(0, self._dof_transform):
             self._parameters_itk.SetElement(i,parameters[i])
+
         self._rigid_transform_itk.SetParameters(self._parameters_itk)
         self._filter_gradient_transform.Update()
         gradient_transform_itk = self._filter_gradient_transform.GetOutput()
@@ -253,7 +276,25 @@ class Registration(object):
 
         ## Compute Jacobian of residual w.r.t. to parameters
         for i in range(0, self._slice_voxels):
-            jacobian_nda[i,:] = nda_gradient_filter[i,:].dot(nda_gradient_transform[i,:,:])
+            a = nda_gradient_filter_vec[i,:]
+            b = nda_gradient_transform[i,:,:]
+            c = a.dot(b)
+
+            # if c.sum() > 1:
+            #     print("a = " + str(a))
+            #     print("b = " + str(b))
+            #     print("c = " + str(c))
+
+            jacobian_nda[i,:] = nda_gradient_filter_vec[i,:].dot(nda_gradient_transform[i,:,:])
+
+        # tmp = [self._slice.sitk]
+        # for i in range(0, 3):
+        #      foo = self._itk2np.GetImageFromArray(nda_gradient_filter[:,:,:,i])
+        #      foo.CopyInformation(self._slice.itk)
+        #      tmp.append(sitkh.convert_itk_to_sitk_image(foo))
+
+        # sitkh.show_sitk_image(tmp[0],overlay=tmp[1:])
+
 
         return -jacobian_nda
 
