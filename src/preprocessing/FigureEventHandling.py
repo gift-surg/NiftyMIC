@@ -39,16 +39,77 @@ class FigureEventHandling(object):
         self._coordinates = []
         self._rectangles = []
 
+        ## Tested for subject 2
         ## Parameters in case left white circle exists (Click center of left circle)
-        # self._offset = np.array([100,-900])
-        # self._length = np.array([1350,1600])
+        self._offset = np.array([100,-900])
+        self._length = np.array([1350,1600])
 
         ## Parameters in case left white circle do not exist (Click L-corner in "LEFT")
-        self._offset = np.array([-1450,-550])
-        self._length = np.array([1100,1250])
+        # self._offset = np.array([-1450,-550])
+        # self._length = np.array([1100,1250])
 
         ## Used for navigation through x-offset, y-offset, x-length and y-length
         self._index = 0
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the marked coordinates.
+    # \date       2016-09-16 16:16:47+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The coordinates.
+    #
+    def get_coordinates(self):
+        return self._coordinates
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the offset of the region with respect to set coordinates
+    #             on image.
+    # \date       2016-09-19 13:35:57+0100
+    #
+    # \param      self    The object
+    # \param      offset  The offset as 2D array
+    #
+    def set_offset(self, offset):
+        self._offset = offset
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the offset.
+    # \date       2016-09-17 22:29:33+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The offset.
+    #
+    def get_offset(self):
+        return self._offset
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the length of the region with respect to the set
+    #             coordinates on image
+    # \date       2016-09-19 13:36:50+0100
+    #
+    # \param      self    The object
+    # \param      length  The length as 2D array
+    #
+    def set_length(self, length):
+        self._length = length
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the length.
+    # \date       2016-09-17 22:30:10+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The length.
+    #
+    def get_length(self):
+        return self._length
 
 
     ##-------------------------------------------------------------------------
@@ -259,12 +320,10 @@ class FigureEventHandling(object):
             self._pt_plot.set_ydata([])
         self._canvas.draw()
 
-        ## Plot rectangles
+        ## Show current offset and length after every update
         print("offset=(%s, %s), length=(%s, %s)" %(self._offset[0], self._offset[1], self._length[0], self._length[1]))
-        # if N>1 and not N%2:
-            # for i in range(0, N/2):
-                # self._rectangles.append(Rectangle((x[2*i]+self._offset[0], y[2*i]+self._offset[1]), x[2*i+1]-x[2*i]+self._length[0], y[2*i+1]-y[2*i]+self._length[1], alpha=1, fill=None, edgecolor='r', linewidth=1))
-                # self._ax.add_patch(self._rectangles[-1])
+     
+        ## Plot rectangles
         for i in range(0, N):
             self._rectangles.append(Rectangle((x[i]+self._offset[0], y[i]+self._offset[1]), self._length[0], self._length[1], alpha=1, fill=None, edgecolor='r', linewidth=1))
             self._ax.add_patch(self._rectangles[-1])
@@ -283,38 +342,3 @@ class FigureEventHandling(object):
             self._rectangles[i].set_visible(False)
             # self._rectangles[i].remove()
 
-
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the marked coordinates.
-    # \date       2016-09-16 16:16:47+0100
-    #
-    # \param      self  The object
-    #
-    # \return     The coordinates.
-    #
-    def get_coordinates(self):
-        return self._coordinates
-
-
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the offset.
-    # \date       2016-09-17 22:29:33+0100
-    #
-    # \param      self  The object
-    #
-    # \return     The offset.
-    #
-    def get_offset(self):
-        return self._offset
-
-
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the length.
-    # \date       2016-09-17 22:30:10+0100
-    #
-    # \param      self  The object
-    #
-    # \return     The length.
-    #
-    def get_length(self):
-        return self._length

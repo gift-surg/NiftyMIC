@@ -511,80 +511,58 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
     return fig
 
 
-## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
-#  \param[in] image_sitk image to show
-#  \param[in] segmentation 
-#  \param[in] overlay image which shall be overlayed onto image_sitk (optional)
-#  \param[in] title filename for file written to /tmp/ (optional)
-def show_sitk_image(image_sitk, segmentation=None, overlay=None, title="test"):
+##-----------------------------------------------------------------------------
+# \brief      Show image with ITK-Snap. Image is saved to /tmp/ for that
+#             purpose.
+# \date       2016-09-19 16:47:18+0100
+#
+# \param[in]  image_sitk    either single sitk.Image or list of sitk.Images to
+#                           overlay
+# \param[in]  title         filename or list of filenames
+# \param[in]  segmentation  sitk.Image used as segmentation
+#
+def show_sitk_image(image_sitk, title="test", segmentation=None):
     
     dir_output = "/tmp/"
     # cmd = "fslview " + dir_output + title + ".nii.gz & "
 
-    if type(overlay) is list:
-        overlay_helper = len(overlay)
-    else:
-        if overlay is None:
-            overlay_helper = 0
-        else:
-            overlay_helper = 1
-            overlay = [overlay]
+    if type(image_sitk) is not list:
+        image_sitk = [image_sitk]
 
-    if type(title) is list:
-        title_is_list = 1
-    else:
-        title_is_list = 0
+    if type(title) is not list:
         title = [title]
 
+    ## Write image
+    sitk.WriteImage(image_sitk[0], dir_output + title[0] + ".nii.gz")
 
-    if overlay_helper > 0 and segmentation is None:
-        sitk.WriteImage(image_sitk, dir_output + title[0] + ".nii.gz")
+    cmd = "itksnap " \
+        + "-g " + dir_output + title[0] + ".nii.gz " \
+    
+    ## Add overlays
+    if len(image_sitk)>1:
         overlay_txt = ""
-        for i in range(0, overlay_helper):
-            if title_is_list and len(title) is len(overlay)+1:
-                sitk.WriteImage(overlay[i], dir_output + title[i+1] + ".nii.gz")
-                overlay_txt += dir_output + title[i+1] + ".nii.gz "
+
+        for i in range(1, len(image_sitk)):
+            if len(title) is len(image_sitk):
+                sitk.WriteImage(image_sitk[i], dir_output + title[i] + ".nii.gz")
+                overlay_txt += dir_output + title[i] + ".nii.gz "
             else:
-                sitk.WriteImage(overlay[i], dir_output + title[0] + "_overlay" + str(i+1) + ".nii.gz")
-                overlay_txt += dir_output + title[0] + "_overlay" + str(i+1) + ".nii.gz "
+                sitk.WriteImage(image_sitk[i], dir_output + title[0] + "_overlay" + str(i) + ".nii.gz")
+                overlay_txt += dir_output + title[0] + "_overlay" + str(i) + ".nii.gz "
                 
-        cmd = "itksnap " \
-            + "-g " + dir_output + title[0] + ".nii.gz " \
-            + "-o " + overlay_txt \
-            + "& "
+        cmd += "-o " + overlay_txt \
 
-        print cmd
-
-    elif overlay_helper is 0 and segmentation is not None:
-        sitk.WriteImage(image_sitk, dir_output + title[0] + ".nii.gz")
+    ## Add segmentation
+    if segmentation is not None:
         sitk.WriteImage(segmentation, dir_output + title[0] + "_segmentation.nii.gz")
+        cmd += "-s " + dir_output + title[0] + "_segmentation.nii.gz " \
 
-        cmd = "itksnap " \
-            + "-g " + dir_output + title[0] + ".nii.gz " \
-            + "-s " + dir_output + title[0] + "_segmentation.nii.gz " \
-            + "& "
+    ## Add termination and print command
+    cmd += "& "
+    print cmd
 
-    elif overlay_helper is 1 and segmentation is not None:
-        sitk.WriteImage(image_sitk, dir_output + title[0] + ".nii.gz")
-        sitk.WriteImage(segmentation, dir_output + title[0] + "_segmentation.nii.gz")
-        sitk.WriteImage(overlay[0], dir_output + title[0] + "_overlay.nii.gz")
-
-        cmd = "itksnap " \
-            + "-g " + dir_output + title[0] + ".nii.gz " \
-            + "-s " + dir_output + title[0] + "_segmentation.nii.gz " \
-            + "-o " + dir_output + title[0] + "_overlay.nii.gz " \
-            + "& "
-
-    else:
-        sitk.WriteImage(image_sitk, dir_output + title[0] + ".nii.gz")
-
-        cmd = "itksnap " \
-            + "-g " + dir_output + title[0] + ".nii.gz " \
-            + "& "
-
+    ## Execute command
     os.system(cmd)
-
-    return None
 
 
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
@@ -634,11 +612,6 @@ def show_itk_image(image_itk, segmentation=None, overlay=None, title="test"):
             "& "
 
     os.system(cmd)
-
-    return None
-
-
-
 
 
 

@@ -174,7 +174,7 @@ class Registration(object):
         self._filter_oriented_Gaussian.SetOutputSpacing(self._slice_spacing)
         self._filter_oriented_Gaussian.SetOutputDirection(sitkh.get_itk_direction_form_sitk_direction(direction_sitk))
         self._filter_oriented_Gaussian.SetSize(self._slice_size)
-        self._filter_oriented_Gaussian.UseImageDirection(False)
+        # self._filter_oriented_Gaussian.UseImageDirection(False)
         self._filter_oriented_Gaussian.UpdateLargestPossibleRegion()
 
         ## Set oriented PSF based on transformed slice space
