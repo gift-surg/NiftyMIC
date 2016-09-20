@@ -11,6 +11,8 @@ import itk
 import numpy as np
 import unittest
 import sys
+import time
+from datetime import timedelta
 
 ## Add directories to import modules
 dir_src_root = "../src/"
@@ -95,10 +97,9 @@ class Test_Registration(unittest.TestCase):
             
         
 
-    def test_registration_of_slices(self):
+    def test_rigid_registration_of_slices(self):
 
         filename_prefix = "RigidTransform_"
-        # filename_prefix = "TranslationOnly_"
 
         filename_HRVolume = "HRVolume"
         filename_StackSim = filename_prefix + "StackSimulated"
@@ -108,6 +109,8 @@ class Test_Registration(unittest.TestCase):
 
         slices_sim = stack_sim.get_slices()
         N_slices = len(slices_sim)
+
+        time_start = time.time()
 
         for j in range(0, N_slices):
             rigid_transform_groundtruth_sitk = sitk.ReadTransform(self.dir_input + filename_transforms_prefix + str(j) + ".tfm")
@@ -125,3 +128,42 @@ class Test_Registration(unittest.TestCase):
                 norm_diff
                 , decimals = self.accuracy), 0)
         
+        ## Set elapsed time
+        time_end = time.time()
+        print("Rigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
+
+
+    def test_translation_registration_of_slices(self):
+
+        filename_prefix = "TranslationOnly_"
+
+        filename_HRVolume = "HRVolume"
+        filename_StackSim = filename_prefix + "StackSimulated"
+        filename_transforms_prefix = filename_prefix + "TransformGroundTruth_slice"
+        stack_sim = st.Stack.from_filename(self.dir_input, filename_StackSim)
+        HR_volume = st.Stack.from_filename(self.dir_input, filename_HRVolume)
+
+        slices_sim = stack_sim.get_slices()
+        N_slices = len(slices_sim)
+
+        time_start = time.time()
+
+        for j in range(0, N_slices):
+            rigid_transform_groundtruth_sitk = sitk.ReadTransform(self.dir_input + filename_transforms_prefix + str(j) + ".tfm")
+            parameters_gd = np.array(rigid_transform_groundtruth_sitk.GetParameters())
+
+            registration = myreg.Registration(slices_sim[j], HR_volume)
+            registration.run_registration()
+            # registration.print_statistics()
+            parameters = registration.get_parameters()
+
+            norm_diff = np.linalg.norm(parameters-parameters_gd)
+            print("Slice %s/%s: |parameters-parameters_gd| = %s" %(j, N_slices-1, str(norm_diff)) )
+
+            self.assertEqual(np.round(
+                norm_diff
+                , decimals = self.accuracy), 0)
+        
+        ## Set elapsed time
+        time_end = time.time()
+        print("Translation only registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))

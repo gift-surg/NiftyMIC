@@ -279,6 +279,26 @@ def write_itk_image(image_itk, filename):
     writer.Update()
 
 
+##-----------------------------------------------------------------------------
+# \brief      Print the ITK direction matrix
+# \date       2016-09-20 15:52:28+0100
+#
+# \param      direction_itk  direction as obtained via image_itk.GetDirection()
+#
+def print_itk_direction(direction_itk):
+    m_vnl = direction_itk.GetVnlMatrix()
+    n_cols = m_vnl.cols()
+    n_rows = m_vnl.rows()
+
+    m_np = np.zeros((n_cols, n_rows))
+
+    for i in range(0, n_cols):
+        for j in range(0, n_rows):
+            m_np[i,j] = m_vnl(i,j)
+
+    print m_np
+
+
 ## Extract direction from SimpleITK-image so that it can be injected into
 #  ITK-image
 #  \param[in] image_sitk sitk.Image object
