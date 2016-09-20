@@ -71,7 +71,7 @@ class RegistrationITK:
     #  \param[in] registration_type
     def set_registration_type(self, registration_type):
         if registration_type not in ["Rigid", "Affine"]:
-            raise ValueError("Error: Registration type can only be either 'Rigid' or 'reg_f3d'")
+            raise ValueError("Error: Registration type can only be either 'Rigid' or 'Affine'")
         
         self._registration_type = registration_type
 
