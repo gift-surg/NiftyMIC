@@ -391,6 +391,32 @@ void MyITKImageHelper::printTransform(itk::ScaledTranslationEuler3DTransform< Pi
   }
 }
 
+void MyITKImageHelper::printTransform(itk::InplaneSimilarity3DTransform< PixelType >::ConstPointer transform){
+  
+  const unsigned int dim = 3;
+
+  itk::Matrix< PixelType, dim, dim >  matrix = transform->GetMatrix();
+
+  itk::InplaneSimilarity3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
+  itk::InplaneSimilarity3DTransform< PixelType >::ParametersType center = transform->GetFixedParameters();
+
+  std::cout << "Transform:" << std::endl;
+
+  std::cout << "\t center = " << std::endl;
+  printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
+
+  std::cout << "\t angle_x_deg, angle_y_deg, angle_z_deg = " << std::endl;
+  printf("\t\t%.4f, %.4f, %.4f\n", parameters[0]*180/vnl_math::pi, parameters[1]*180/vnl_math::pi, parameters[2]*180/vnl_math::pi);
+  
+  std::cout << "\t translation = " << std::endl;
+  printf("\t\t%.4f\t%.4f\t%.4f\n", parameters[3], parameters[4], parameters[5]);
+  
+  std::cout << "\t matrix = " << std::endl;
+  for (int i = 0; i < dim; ++i) {
+    printf("\t\t%.4f\t%.4f\t%.4f\n", matrix[i][0], matrix[i][1], matrix[i][2]);
+  }
+}
+
 void MyITKImageHelper::writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform,
     std::string outfile, const bool bVerbose){
 
@@ -463,6 +489,38 @@ void MyITKImageHelper::writeTransform(itk::ScaledTranslationEuler3DTransform< Pi
 
     itk::ScaledTranslationEuler3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
     itk::ScaledTranslationEuler3DTransform< PixelType >::ParametersType fixedParameters = transform->GetFixedParameters();
+
+    const unsigned int iNumberOfParameters = parameters.size();
+    const unsigned int iNumberOfFixedParameters = fixedParameters.size();
+
+    std::ofstream output(outfile);
+
+    if(!output.is_open()){
+        throw MyException("Cannot open the file to write");
+    }
+
+    // Define output precision
+    output.precision(10); 
+
+    // output << "iteration \t" << "elapsedTime" << std::endl;
+    for (int i = 0; i < iNumberOfFixedParameters; ++i) {
+        output << fixedParameters[i] << " ";
+    }
+    for (int i = 0; i<  iNumberOfParameters; ++i) {
+        output << parameters[i] << " ";
+    }
+    if (bVerbose){
+      std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
+    }
+}
+
+void MyITKImageHelper::writeTransform(itk::InplaneSimilarity3DTransform< PixelType >::ConstPointer transform,
+    std::string outfile, const bool bVerbose){
+
+    const unsigned int dim = 3;
+
+    itk::InplaneSimilarity3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
+    itk::InplaneSimilarity3DTransform< PixelType >::ParametersType fixedParameters = transform->GetFixedParameters();
 
     const unsigned int iNumberOfParameters = parameters.size();
     const unsigned int iNumberOfFixedParameters = fixedParameters.size();

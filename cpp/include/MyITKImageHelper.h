@@ -32,6 +32,7 @@
 
 #include "MyException.h"
 #include "itkScaledTranslationEuler3DTransform.h"
+#include "itkInplaneSimilarity3DTransform.h"
 
 
 /** Typedefs. */
@@ -95,11 +96,13 @@ public:
     static void printTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform);
     static void printTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform);
     static void printTransform(itk::ScaledTranslationEuler3DTransform< PixelType >::ConstPointer transform);
+    static void printTransform(itk::InplaneSimilarity3DTransform< PixelType >::ConstPointer transform);
 
     /** Write transform */
     static void writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform, std::string outfile, const bool bVerbose = true);
     static void writeTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform, std::string outfile, const bool bVerbose = true);
     static void writeTransform(itk::ScaledTranslationEuler3DTransform< PixelType >::ConstPointer transform, std::string outfile, const bool bVerbose = true);
+    static void writeTransform(itk::InplaneSimilarity3DTransform< PixelType >::ConstPointer transform, std::string outfile, const bool bVerbose = true);
 
 private:
 

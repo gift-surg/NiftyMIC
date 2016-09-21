@@ -99,80 +99,80 @@ class Test_Registration(unittest.TestCase):
             , decimals = self.accuracy), 0)
 
 
-    def test_translation_registration_of_slices(self):
+    # def test_translation_registration_of_slices(self):
 
-        filename_prefix = "TranslationOnly_"
+    #     filename_prefix = "TranslationOnly_"
 
-        filename_HRVolume = "HRVolume"
-        filename_StackSim = filename_prefix + "StackSimulated"
-        filename_transforms_prefix = filename_prefix + "TransformGroundTruth_slice"
-        stack_sim = st.Stack.from_filename(self.dir_input, filename_StackSim)
-        HR_volume = st.Stack.from_filename(self.dir_input, filename_HRVolume)
+    #     filename_HRVolume = "HRVolume"
+    #     filename_StackSim = filename_prefix + "StackSimulated"
+    #     filename_transforms_prefix = filename_prefix + "TransformGroundTruth_slice"
+    #     stack_sim = st.Stack.from_filename(self.dir_input, filename_StackSim)
+    #     HR_volume = st.Stack.from_filename(self.dir_input, filename_HRVolume)
 
-        slices_sim = stack_sim.get_slices()
-        N_slices = len(slices_sim)
+    #     slices_sim = stack_sim.get_slices()
+    #     N_slices = len(slices_sim)
 
-        time_start = time.time()
+    #     time_start = time.time()
 
-        for j in range(0, N_slices):
-            rigid_transform_groundtruth_sitk = sitk.ReadTransform(self.dir_input + filename_transforms_prefix + str(j) + ".tfm")
-            parameters_gd = np.array(rigid_transform_groundtruth_sitk.GetParameters())
+    #     for j in range(0, N_slices):
+    #         rigid_transform_groundtruth_sitk = sitk.ReadTransform(self.dir_input + filename_transforms_prefix + str(j) + ".tfm")
+    #         parameters_gd = np.array(rigid_transform_groundtruth_sitk.GetParameters())
 
-            registration = myreg.Registration(fixed=slices_sim[j], moving=HR_volume)
-            registration.run_registration()
-            # registration.print_statistics()
+    #         registration = myreg.Registration(fixed=slices_sim[j], moving=HR_volume)
+    #         registration.run_registration()
+    #         # registration.print_statistics()
 
-            ## Check parameters
-            parameters = registration.get_parameters()
+    #         ## Check parameters
+    #         parameters = registration.get_parameters()
 
-            norm_diff = np.linalg.norm(parameters-parameters_gd)
-            # print("Slice %s/%s: |parameters-parameters_gd| = %s" %(j, N_slices-1, str(norm_diff)) )
+    #         norm_diff = np.linalg.norm(parameters-parameters_gd)
+    #         # print("Slice %s/%s: |parameters-parameters_gd| = %s" %(j, N_slices-1, str(norm_diff)) )
 
-            self.assertEqual(np.round(
-                norm_diff
-                , decimals = self.accuracy), 0)
+    #         self.assertEqual(np.round(
+    #             norm_diff
+    #             , decimals = self.accuracy), 0)
         
-        ## Set elapsed time
-        time_end = time.time()
-        # print("Translation only registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
+    #     ## Set elapsed time
+    #     time_end = time.time()
+    #     # print("Translation only registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
 
-    def test_rigid_registration_of_slices(self):
+    # def test_rigid_registration_of_slices(self):
 
-        filename_prefix = "RigidTransform_"
+    #     filename_prefix = "RigidTransform_"
 
-        filename_HRVolume = "HRVolume"
-        filename_StackSim = filename_prefix + "StackSimulated"
-        filename_transforms_prefix = filename_prefix + "TransformGroundTruth_slice"
-        stack_sim = st.Stack.from_filename(self.dir_input, filename_StackSim)
-        HR_volume = st.Stack.from_filename(self.dir_input, filename_HRVolume)
+    #     filename_HRVolume = "HRVolume"
+    #     filename_StackSim = filename_prefix + "StackSimulated"
+    #     filename_transforms_prefix = filename_prefix + "TransformGroundTruth_slice"
+    #     stack_sim = st.Stack.from_filename(self.dir_input, filename_StackSim)
+    #     HR_volume = st.Stack.from_filename(self.dir_input, filename_HRVolume)
 
-        slices_sim = stack_sim.get_slices()
-        N_slices = len(slices_sim)
+    #     slices_sim = stack_sim.get_slices()
+    #     N_slices = len(slices_sim)
 
-        time_start = time.time()
+    #     time_start = time.time()
 
-        for j in range(0, N_slices):
-            rigid_transform_groundtruth_sitk = sitk.ReadTransform(self.dir_input + filename_transforms_prefix + str(j) + ".tfm")
-            parameters_gd = np.array(rigid_transform_groundtruth_sitk.GetParameters())
+    #     for j in range(0, N_slices):
+    #         rigid_transform_groundtruth_sitk = sitk.ReadTransform(self.dir_input + filename_transforms_prefix + str(j) + ".tfm")
+    #         parameters_gd = np.array(rigid_transform_groundtruth_sitk.GetParameters())
 
-            registration = myreg.Registration(fixed=slices_sim[j], moving=HR_volume)
-            registration.run_registration()
-            # registration.print_statistics()
+    #         registration = myreg.Registration(fixed=slices_sim[j], moving=HR_volume)
+    #         registration.run_registration()
+    #         # registration.print_statistics()
 
-            ## Check parameters
-            parameters = registration.get_parameters()
+    #         ## Check parameters
+    #         parameters = registration.get_parameters()
 
-            norm_diff = np.linalg.norm(parameters-parameters_gd)
-            # print("Slice %s/%s: |parameters-parameters_gd| = %s" %(j, N_slices-1, str(norm_diff)) )
+    #         norm_diff = np.linalg.norm(parameters-parameters_gd)
+    #         # print("Slice %s/%s: |parameters-parameters_gd| = %s" %(j, N_slices-1, str(norm_diff)) )
 
-            self.assertEqual(np.round(
-                norm_diff
-                , decimals = self.accuracy), 0)
+    #         self.assertEqual(np.round(
+    #             norm_diff
+    #             , decimals = self.accuracy), 0)
 
-        ## Set elapsed time
-        time_end = time.time()
-        # print("Rigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
+    #     ## Set elapsed time
+    #     time_end = time.time()
+    #     # print("Rigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
 
     def test_rigid_registration_of_stack(self):
@@ -193,6 +193,7 @@ class Test_Registration(unittest.TestCase):
 
         time_start = time.time()
         registration = myreg.Registration(fixed=stack_sim, moving=HR_volume)
+        # registration.use_fixed_mask(True)
         registration.use_verbose(False)
         registration.run_registration()
 
@@ -213,22 +214,22 @@ class Test_Registration(unittest.TestCase):
 
         ######### Comparison with ITK registrations
         scales_estimator = "PhysicalShift"
-        use_verbose = False
+        use_verbose = True
 
-        ## SimpleITK registration for comparison
-        print("SimpleITK registration for comparison:")
-        time_start = time.time()
-        registration = regsitk.RegistrationSimpleITK(fixed=stack_sim, moving=HR_volume)
-        registration.use_verbose(use_verbose)
-        registration.set_scales_estimator(scales_estimator)
-        registration.run_registration()
-        time_end = time.time()
+        # ## SimpleITK registration for comparison
+        # print("SimpleITK registration for comparison:")
+        # time_start = time.time()
+        # registration = regsitk.RegistrationSimpleITK(fixed=stack_sim, moving=HR_volume)
+        # registration.use_verbose(use_verbose)
+        # registration.set_scales_estimator(scales_estimator)
+        # registration.run_registration()
+        # time_end = time.time()
 
-        parameters = np.array(registration.get_registration_transform_sitk().GetParameters())
-        norm_diff = np.linalg.norm(parameters+parameters_gd)
-        print("\tparameters = " + str(parameters))
-        print("\t|parameters-parameters_gd| = %s" %(str(norm_diff)) )
-        print("\tRigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
+        # parameters = np.array(registration.get_registration_transform_sitk().GetParameters())
+        # norm_diff = np.linalg.norm(parameters+parameters_gd)
+        # print("\tparameters = " + str(parameters))
+        # print("\t|parameters-parameters_gd| = %s" %(str(norm_diff)) )
+        # print("\tRigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
         ## ITK registration for comparison
         print("ITK registration for comparison:")

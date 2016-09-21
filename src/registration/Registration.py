@@ -53,10 +53,13 @@ class Registration(object):
     # \param[in]  alpha_cut  The alpha cut
     # \param[in]  verbose    The verbose
     #
-    def __init__(self, fixed=None, moving=None, alpha_cut=3, use_verbose=False):
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, alpha_cut=3, use_verbose=False):
 
         self._fixed = fixed
         self._moving = moving
+
+        self._use_fixed_mask = use_fixed_mask
+
         self._alpha_cut = alpha_cut
 
         ## Used for PSF modelling
@@ -114,18 +117,44 @@ class Registration(object):
         self._filter_gradient_transform.SetInput(self._fixed.itk)
         self._filter_gradient_transform.SetTransform(self._rigid_transform_itk)
 
+        if self._use_fixed_mask:
+            # self._nda_mask = sitk.GetArrayFromImage(self._fixed.sitk_mask).reshape(-1,1)
+            self._nda_mask = sitk.GetArrayFromImage(self._fixed.sitk_mask).flatten()
 
+    ## Set fixed/reference/target image
+    #  \param[in] fixed fixed/reference/target image as Stack object
     def set_fixed(self, fixed):
         self._fixed = fixed
 
 
+    ## Set moving/floating/source image
+    #  \param[in] moving moving/floating/source image as Stack object
     def set_moving(self, moving):
         self._moving = moving
 
 
+    ## Specify whether mask shall be used for fixed image
+    #  \param[in] flag boolean
+    def use_fixed_mask(self, flag):
+        self._use_fixed_mask = flag
+
+
+    # ## Specify whether mask shall be used for moving image
+    # #  \param[in] flag boolean
+    # def use_moving_mask(self, flag):
+    #     self._use_moving_mask = flag
+
+
+    ## Set cut-off distance
+    #  \param[in] alpha_cut scalar value
     def set_alpha_cut(self, alpha_cut):
         self._alpha_cut = alpha_cut
 
+
+    ## Get cut-off distance
+    #  \return scalar value
+    def get_alpha_cut(self):
+        return self._alpha_cut
 
 
     ##-------------------------------------------------------------------------
@@ -249,6 +278,9 @@ class Registration(object):
         nda_Ak_vol = self._itk2np.GetArrayFromImage(Ak_vol_itk)
         residual = (nda_fixed - nda_Ak_vol).flatten()
 
+        if self._use_fixed_mask:
+            residual = residual*self._nda_mask
+
         return residual
 
 
@@ -287,6 +319,10 @@ class Registration(object):
         ## Compute Jacobian of residual w.r.t. to parameters
         for i in range(0, self._fixed_voxels):
             jacobian_nda[i,:] = nda_gradient_filter_vec[i,:].dot(nda_gradient_transform[i,:,:])
+
+        if self._use_fixed_mask:
+            print("mask")
+            jacobian_nda = jacobian_nda*self._nda_mask[:,np.newaxis]
 
         return -jacobian_nda
 
