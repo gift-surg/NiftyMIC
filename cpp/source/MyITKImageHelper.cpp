@@ -251,7 +251,7 @@ void MyITKImageHelper::showImage(const JacobianBaseType3D::Pointer dimage, const
 }
 
 /** Write image */
-void MyITKImageHelper::writeImage(const ImageType2D::Pointer image, const std::string &filename){
+void MyITKImageHelper::writeImage(const ImageType2D::Pointer image, const std::string &filename, const bool bVerbose){
 
   // Create reader for nifti images
   itk::ImageFileWriter< ImageType2D >::Pointer writer = itk::ImageFileWriter< ImageType2D >::New();
@@ -262,8 +262,12 @@ void MyITKImageHelper::writeImage(const ImageType2D::Pointer image, const std::s
   writer->SetFileName( filename );
   writer->SetInput( image );
   writer->Update();
+
+  if (bVerbose){
+    std::cout << "Image successfully written to file " << filename << std::endl;
+  }
 }
-void MyITKImageHelper::writeImage(const MaskImageType2D::Pointer image, const std::string &filename){
+void MyITKImageHelper::writeImage(const MaskImageType2D::Pointer image, const std::string &filename, const bool bVerbose){
 
   // Create reader for nifti images
   itk::ImageFileWriter< MaskImageType2D >::Pointer writer = itk::ImageFileWriter< MaskImageType2D >::New();
@@ -274,8 +278,12 @@ void MyITKImageHelper::writeImage(const MaskImageType2D::Pointer image, const st
   writer->SetFileName( filename );
   writer->SetInput( image );
   writer->Update();
+
+  if (bVerbose){
+    std::cout << "Image successfully written to file " << filename << std::endl;
+  }
 }
-void MyITKImageHelper::writeImage(const ImageType3D::Pointer image, const std::string &filename){
+void MyITKImageHelper::writeImage(const ImageType3D::Pointer image, const std::string &filename, const bool bVerbose){
 
   // Create reader for nifti images
   itk::ImageFileWriter< ImageType3D >::Pointer writer = itk::ImageFileWriter< ImageType3D >::New();
@@ -286,8 +294,12 @@ void MyITKImageHelper::writeImage(const ImageType3D::Pointer image, const std::s
   writer->SetFileName( filename );
   writer->SetInput( image );
   writer->Update();
+
+  if (bVerbose){
+    std::cout << "Image successfully written to file " << filename << std::endl;
+  }
 }
-void MyITKImageHelper::writeImage(const MaskImageType3D::Pointer image, const std::string &filename){
+void MyITKImageHelper::writeImage(const MaskImageType3D::Pointer image, const std::string &filename, const bool bVerbose){
 
   // Create reader for nifti images
   itk::ImageFileWriter< MaskImageType3D >::Pointer writer = itk::ImageFileWriter< MaskImageType3D >::New();
@@ -298,6 +310,10 @@ void MyITKImageHelper::writeImage(const MaskImageType3D::Pointer image, const st
   writer->SetFileName( filename );
   writer->SetInput( image );
   writer->Update();
+
+  if (bVerbose){
+    std::cout << "Image successfully written to file " << filename << std::endl;
+  }
 }
 
 void MyITKImageHelper::printTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform){
@@ -376,7 +392,7 @@ void MyITKImageHelper::printTransform(itk::ScaledTranslationEuler3DTransform< Pi
 }
 
 void MyITKImageHelper::writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform,
-    std::string outfile){
+    std::string outfile, const bool bVerbose){
 
     const unsigned int dim = 3;
 
@@ -402,12 +418,14 @@ void MyITKImageHelper::writeTransform(itk::AffineTransform< PixelType, 3 >::Cons
     for (int i = 0; i<  iNumberOfParameters; ++i) {
         output << parameters[i] << " ";
     }
-    std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
+    if (bVerbose){
+      std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
+    }
 
 }
 
 void MyITKImageHelper::writeTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform,
-    std::string outfile){
+    std::string outfile, const bool bVerbose){
 
     const unsigned int dim = 3;
 
@@ -433,11 +451,13 @@ void MyITKImageHelper::writeTransform(itk::Euler3DTransform< PixelType >::ConstP
     for (int i = 0; i<  iNumberOfParameters; ++i) {
         output << parameters[i] << " ";
     }
-    std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
+    if (bVerbose){
+      std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
+    }
 }
 
 void MyITKImageHelper::writeTransform(itk::ScaledTranslationEuler3DTransform< PixelType >::ConstPointer transform,
-    std::string outfile){
+    std::string outfile, const bool bVerbose){
 
     const unsigned int dim = 3;
 
@@ -463,7 +483,9 @@ void MyITKImageHelper::writeTransform(itk::ScaledTranslationEuler3DTransform< Pi
     for (int i = 0; i<  iNumberOfParameters; ++i) {
         output << parameters[i] << " ";
     }
-    std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
+    if (bVerbose){
+      std::cout << "Registration parameters successfully written to file " << outfile << std::endl;
+    }
 }
 
 void MyITKImageHelper::executeShellCommand(const std::string &cmd){

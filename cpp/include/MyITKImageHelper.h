@@ -86,10 +86,10 @@ public:
     static const typename ImageType::Pointer readImage(const std::string &filename);
 
     /** Write image */
-    static void writeImage(const ImageType2D::Pointer image, const std::string &filename);
-    static void writeImage(const MaskImageType2D::Pointer image, const std::string &filename);
-    static void writeImage(const ImageType3D::Pointer image, const std::string &filename);
-    static void writeImage(const MaskImageType3D::Pointer image, const std::string &filename);
+    static void writeImage(const ImageType2D::Pointer image, const std::string &filename, const bool bVerbose = true);
+    static void writeImage(const MaskImageType2D::Pointer image, const std::string &filename, const bool bVerbose = true);
+    static void writeImage(const ImageType3D::Pointer image, const std::string &filename, const bool bVerbose = true);
+    static void writeImage(const MaskImageType3D::Pointer image, const std::string &filename, const bool bVerbose = true);
 
     /** Print transform */
     static void printTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform);
@@ -97,9 +97,9 @@ public:
     static void printTransform(itk::ScaledTranslationEuler3DTransform< PixelType >::ConstPointer transform);
 
     /** Write transform */
-    static void writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform, std::string outfile);
-    static void writeTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform, std::string outfile);
-    static void writeTransform(itk::ScaledTranslationEuler3DTransform< PixelType >::ConstPointer transform, std::string outfile);
+    static void writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform, std::string outfile, const bool bVerbose = true);
+    static void writeTransform(itk::Euler3DTransform< PixelType >::ConstPointer transform, std::string outfile, const bool bVerbose = true);
+    static void writeTransform(itk::ScaledTranslationEuler3DTransform< PixelType >::ConstPointer transform, std::string outfile, const bool bVerbose = true);
 
 private:
 

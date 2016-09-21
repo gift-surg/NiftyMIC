@@ -34,37 +34,72 @@ IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 IMAGE_TYPE_CV33 = itk.Image.CVD33
 IMAGE_TYPE_CV183 = itk.Image.CVD183
 
+
+##-----------------------------------------------------------------------------
+# \brief      Class for registration in 3D based on least-squares optimization
+# \date       2016-09-21 12:27:13+0100
+#
 class Registration(object):
 
-    ##-------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # \brief      Constructor
     # \date       2016-08-02 15:49:34+0100
     #
     # \param[in]  self       The object
-    # \param[in]  slice      The slice
-    # \param[in]  HR_volume  The hr volume
+    # \param[in]  fixed      Fixed image as Stack or Slice object (S2VReg:
+    #                        Slice)
+    # \param[in]  moving     Moving image as Stack or Slice object (S2VReg: HR
+    #                        Volume)
     # \param[in]  alpha_cut  The alpha cut
+    # \param[in]  verbose    The verbose
     #
-    def __init__(self, slice, HR_volume, alpha_cut=3):
+    def __init__(self, fixed=None, moving=None, alpha_cut=3, use_verbose=False):
 
-        self._slice = slice
-        self._HR_volume = HR_volume
-
-        ## Properties of slice
-        self._slice_affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(slice.sitk)
-        self._slice_spacing = self._slice.sitk.GetSpacing()
-        self._slice_size = self._slice.sitk.GetSize()
-        self._slice_voxels = np.array(self._slice_size).prod()
+        self._fixed = fixed
+        self._moving = moving
+        self._alpha_cut = alpha_cut
 
         ## Used for PSF modelling
-        self._alpha_cut = alpha_cut
         self._psf = psf.PSF()
+
+        ## Create PyBuffer object for conversion between NumPy arrays and ITK images
+        self._itk2np = itk.PyBuffer[IMAGE_TYPE]
+        self._itk2np_CVD33 = itk.PyBuffer[IMAGE_TYPE_CV33]
+        self._itk2np_CVD183 = itk.PyBuffer[IMAGE_TYPE_CV183]
+
+        ## Create transform instances
+        self._rigid_transform_itk = itk.Euler3DTransform[PIXEL_TYPE].New()
+        self._parameters_itk = self._rigid_transform_itk.GetParameters()
+        self._dof_transform = self._rigid_transform_itk.GetNumberOfParameters()
+        self._parameters = [None]*self._dof_transform
+
+        ## Verbose computation
+        self._use_verbose = use_verbose
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Initialize registration class
+    # \date       2016-09-21 12:58:57+0100
+    #
+    # Idea: Have same structure as other registration classes and add moving
+    # and fixed images later on via set routines. Several filters need to be
+    # initialized according to the updates
+    #
+    # \param      self  The object
+    #
+    def _initialize_class(self):
+
+        ## Properties of fixed
+        self._fixed_affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(self._fixed.sitk)
+        self._fixed_spacing = self._fixed.sitk.GetSpacing()
+        self._fixed_size = self._fixed.sitk.GetSize()
+        self._fixed_voxels = np.array(self._fixed_size).prod()
 
         ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
         self._filter_oriented_Gaussian = itk.OrientedGaussianInterpolateImageFilter[IMAGE_TYPE, IMAGE_TYPE].New()
         self._filter_oriented_Gaussian.SetDefaultPixelValue(0.0)
         self._filter_oriented_Gaussian.SetAlpha(self._alpha_cut)
-        self._filter_oriented_Gaussian.SetInput(self._HR_volume.itk)
+        self._filter_oriented_Gaussian.SetInput(self._moving.itk)
         self._filter_oriented_Gaussian.SetUseJacobian(False)
         self._filter_oriented_Gaussian.SetUseImageDirection(True)
 
@@ -72,23 +107,25 @@ class Registration(object):
         self._filter_adjoint_oriented_Gaussian = itk.AdjointOrientedGaussianInterpolateImageFilter[IMAGE_TYPE, IMAGE_TYPE].New()
         self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue(0.0)
         self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
-        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(self._HR_volume.itk)
-
-        ## Create PyBuffer object for conversion between NumPy arrays and ITK images
-        self._itk2np = itk.PyBuffer[IMAGE_TYPE]
-        self._itk2np_CVD33 = itk.PyBuffer[IMAGE_TYPE_CV33]
-        self._itk2np_CVD183 = itk.PyBuffer[IMAGE_TYPE_CV183]
+        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(self._moving.itk)
 
         ## Allocate and initialize Gradient Euler3DTransform Image Filter
         self._filter_gradient_transform = itk.GradientEuler3DTransformImageFilter[IMAGE_TYPE, PIXEL_TYPE, PIXEL_TYPE].New()
-        self._filter_gradient_transform.SetInput(self._slice.itk)
-        self._rigid_transform_itk = itk.Euler3DTransform[PIXEL_TYPE].New()
+        self._filter_gradient_transform.SetInput(self._fixed.itk)
         self._filter_gradient_transform.SetTransform(self._rigid_transform_itk)
-        self._parameters_itk = self._rigid_transform_itk.GetParameters()
 
-        self._dof_transform = self._rigid_transform_itk.GetNumberOfParameters()
-        self._parameters = [None]*self._dof_transform
-        self._verbose = False
+
+    def set_fixed(self, fixed):
+        self._fixed = fixed
+
+
+    def set_moving(self, moving):
+        self._moving = moving
+
+
+    def set_alpha_cut(self, alpha_cut):
+        self._alpha_cut = alpha_cut
+
 
 
     ##-------------------------------------------------------------------------
@@ -104,14 +141,28 @@ class Registration(object):
 
 
     ##-------------------------------------------------------------------------
+    # \brief      Returns the rigid registration transform
+    # \date       2016-09-21 12:09:41+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The registration transform as sitk.Euler3DTransform object.
+    #
+    def get_registration_transform_sitk(self):
+        transform_sitk = sitk.Euler3DTransform()
+        transform_sitk.SetParameters(self._parameters)
+        return transform_sitk
+
+
+    ##-------------------------------------------------------------------------
     # \brief      Sets the verbose to define whether or not output is produced
     # \date       2016-09-20 18:49:19+0100
     #
     # \param      self     The object
     # \param      verbose  The verbose
     #
-    def use_verbose(self, verbose):
-        self._verbose = verbose
+    def use_verbose(self, flag):
+        self._use_verbose = flag
 
     
     ##-------------------------------------------------------------------------
@@ -123,7 +174,7 @@ class Registration(object):
     # \return     The verbose.
     #
     def get_verbose(self):
-        return self._verbose
+        return self._use_verbose
 
 
     ##-------------------------------------------------------------------------
@@ -143,7 +194,7 @@ class Registration(object):
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Run registration for given slice
+    # \brief      Run registration
     # \date       2016-08-03 00:11:51+0100
     # \post       self._paramters is updated
     #
@@ -151,8 +202,11 @@ class Registration(object):
     #
     def run_registration(self):
         
+        ## 
+        self._initialize_class()
+
         ## Define type of verbose (available at least_squares)
-        if self._verbose:
+        if self._use_verbose:
             verbose = 2
         else:
             verbose = 0
@@ -191,9 +245,9 @@ class Registration(object):
 
         Ak_vol_itk = self._execute_oriented_gaussian_interpolate_image_filter(parameters, use_jacobian=False)
 
-        nda_slice = sitk.GetArrayFromImage(self._slice.sitk)
+        nda_fixed = sitk.GetArrayFromImage(self._fixed.sitk)
         nda_Ak_vol = self._itk2np.GetArrayFromImage(Ak_vol_itk)
-        residual = (nda_slice - nda_Ak_vol).flatten()
+        residual = (nda_fixed - nda_Ak_vol).flatten()
 
         return residual
 
@@ -210,7 +264,7 @@ class Registration(object):
     def _get_jacobian_residual_data_fit(self, parameters):
 
         ## Allocate array for Jacobian of residual
-        jacobian_nda = np.zeros((self._slice_voxels, self._dof_transform))
+        jacobian_nda = np.zeros((self._fixed_voxels, self._dof_transform))
 
         ## Get Jacobian of filtered image w.r.t. spatial coordinates
         jacobian_spatial_Ak_vol_itk = self._execute_oriented_gaussian_interpolate_image_filter(parameters, use_jacobian=True)
@@ -231,7 +285,7 @@ class Registration(object):
         nda_gradient_transform = self._itk2np_CVD183.GetArrayFromImage(gradient_transform_itk).reshape(-1,3,self._dof_transform)
 
         ## Compute Jacobian of residual w.r.t. to parameters
-        for i in range(0, self._slice_voxels):
+        for i in range(0, self._fixed_voxels):
             jacobian_nda[i,:] = nda_gradient_filter_vec[i,:].dot(nda_gradient_transform[i,:,:])
 
         return -jacobian_nda
@@ -255,26 +309,26 @@ class Registration(object):
         transform_sitk = sitk.Euler3DTransform()
         transform_sitk.SetParameters(parameters)
 
-        ## Get composite affine transform: reg_trafo \circ slice_space
-        composite_transform_sitk = sitkh.get_composite_sitk_affine_transform(transform_sitk, self._slice_affine_transform_sitk)
+        ## Get composite affine transform: reg_trafo \circ fixed_space
+        composite_transform_sitk = sitkh.get_composite_sitk_affine_transform(transform_sitk, self._fixed_affine_transform_sitk)
 
-        ## Extract direction and origin of transformed slice space
-        direction_sitk = sitkh.get_sitk_image_direction_from_sitk_affine_transform(composite_transform_sitk, self._slice_spacing)
+        ## Extract direction and origin of transformed fixed space
+        direction_sitk = sitkh.get_sitk_image_direction_from_sitk_affine_transform(composite_transform_sitk, self._fixed_spacing)
         origin_sitk = sitkh.get_sitk_image_origin_from_sitk_affine_transform(composite_transform_sitk)
 
-        ## Set output to transformed slice space
+        ## Set output to transformed fixed space
         self._filter_oriented_Gaussian.SetOutputOrigin(origin_sitk)
-        self._filter_oriented_Gaussian.SetOutputSpacing(self._slice_spacing)
+        self._filter_oriented_Gaussian.SetOutputSpacing(self._fixed_spacing)
         self._filter_oriented_Gaussian.SetOutputDirection(sitkh.get_itk_direction_form_sitk_direction(direction_sitk))
-        self._filter_oriented_Gaussian.SetSize(self._slice_size)
+        self._filter_oriented_Gaussian.SetSize(self._fixed_size)
         self._filter_oriented_Gaussian.SetUseJacobian(use_jacobian)
         self._filter_oriented_Gaussian.UpdateLargestPossibleRegion()
 
-        ## Set oriented PSF based on transformed slice space
-        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction_sitk, self._slice_spacing, self._HR_volume)
+        ## Set oriented PSF based on transformed fixed space
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction_sitk, self._fixed_spacing, self._moving)
         self._filter_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
 
-        ## Compute simulated slice from volume and its Jacobian w.r.t. to spatial coordinates
+        ## Compute simulated fixed from volume and its Jacobian w.r.t. to spatial coordinates
         self._filter_oriented_Gaussian.Update()
     
         ## 1) Compute residual y_k - A_k(theta)x as 1D array

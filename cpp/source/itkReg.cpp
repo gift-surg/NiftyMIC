@@ -252,6 +252,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const std::string sInterpolator = input[16];
     const std::string sTransformOut = input[17];
     const std::string sVerbose = input[19]; //TODO: change to bVerbose directly
+    const bool bVerbose = std::stoi(sVerbose);
     const double dANTSrad = std::stod(input[20]);
     const double dTranslationScale = std::stod(input[21]);
 
@@ -461,9 +462,12 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     //***Execute registration
     try {
       registration->Update();
-      std::cout << "Optimizer stop condition: "
-      << registration->GetOptimizer()->GetStopConditionDescription()
-      << std::endl;
+
+      if (bVerbose) {
+          std::cout << "Optimizer stop condition: "
+          << registration->GetOptimizer()->GetStopConditionDescription()
+          << std::endl;
+      }
     }
     catch( itk::ExceptionObject & err ) {
       std::cerr << "ExceptionObject caught !" << std::endl;
@@ -476,7 +480,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     //***Process registration results
     typename TransformType::ConstPointer transform = registration->GetTransform();
     
-    if ( std::stoi(sVerbose) ) {
+    if ( bVerbose ) {
         // transform->Print(std::cout);
         MyITKImageHelper::printTransform(transform);
     }
@@ -492,48 +496,49 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
     //***Write result to file
     if ( !sTransformOut.empty() ) {
-        MyITKImageHelper::writeTransform(transform, sTransformOut + ".txt");
+        MyITKImageHelper::writeTransform(transform, sTransformOut + ".txt", bVerbose);
     }
 
     //***Resample warped moving image
-    // Resampling
-    const ResampleFilterType::Pointer resampler = ResampleFilterType::New();
-    const MaskResampleFilterType::Pointer resamplerMask = MaskResampleFilterType::New();
-    
-    // Resample registered moving image
-    resampler->SetOutputParametersFromImage( fixed );
-    // resampler->SetSize( fixed->GetLargestPossibleRegion().GetSize() );
-    // resampler->SetOutputOrigin(  fixed->GetOrigin() );
-    // resampler->SetOutputSpacing( fixed->GetSpacing() );
-    // resampler->SetOutputDirection( fixed->GetDirection() );
-    resampler->SetInput( moving );
-    resampler->SetTransform( registration->GetOutput()->Get() );
-    resampler->SetDefaultPixelValue( 0.0 );
-    resampler->SetInterpolator( LinearInterpolatorType::New() );
-    resampler->Update();
+    if (bVerbose){
+        // Resampling
+        const ResampleFilterType::Pointer resampler = ResampleFilterType::New();
+        const MaskResampleFilterType::Pointer resamplerMask = MaskResampleFilterType::New();
+        
+        // Resample registered moving image
+        resampler->SetOutputParametersFromImage( fixed );
+        // resampler->SetSize( fixed->GetLargestPossibleRegion().GetSize() );
+        // resampler->SetOutputOrigin(  fixed->GetOrigin() );
+        // resampler->SetOutputSpacing( fixed->GetSpacing() );
+        // resampler->SetOutputDirection( fixed->GetDirection() );
+        resampler->SetInput( moving );
+        resampler->SetTransform( registration->GetOutput()->Get() );
+        resampler->SetDefaultPixelValue( 0.0 );
+        resampler->SetInterpolator( LinearInterpolatorType::New() );
+        resampler->Update();
 
-    // Resample registered moving mask
-    if ( bUseMovingMask && bUseFixedMask){
-        resamplerMask->SetOutputParametersFromImage( fixedMask );
-        resamplerMask->SetInput( movingMask );
-        resamplerMask->SetTransform( registration->GetOutput()->Get() );
-        resamplerMask->SetDefaultPixelValue( 0.0 );
-        resamplerMask->Update();
+        // Resample registered moving mask
+        if ( bUseMovingMask && bUseFixedMask){
+            resamplerMask->SetOutputParametersFromImage( fixedMask );
+            resamplerMask->SetInput( movingMask );
+            resamplerMask->SetTransform( registration->GetOutput()->Get() );
+            resamplerMask->SetDefaultPixelValue( 0.0 );
+            resamplerMask->Update();
+        }
+
+        const ImageType3D::Pointer movingWarped = resampler->GetOutput();
+        movingWarped->DisconnectPipeline();
+
+        const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
+        movingMaskWarped->DisconnectPipeline();
+
+        MyITKImageHelper::writeImage(movingWarped, sTransformOut + "warpedMoving.nii.gz", bVerbose);
+        // MyITKImageHelper::writeImage(movingMaskWarped, sTransformOut + "warpedMoving_mask.nii.gz");
+
+        // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
+        // MyITKImageHelper::showImage(fixed, movingWarped, movingWarped, "fixed_moving");
+        // MyITKImageHelper::showImage(movingWarped, movingMaskWarped, "fixed_mask");
     }
-
-    const ImageType3D::Pointer movingWarped = resampler->GetOutput();
-    movingWarped->DisconnectPipeline();
-
-    const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
-    movingMaskWarped->DisconnectPipeline();
-
-    MyITKImageHelper::writeImage(movingWarped, sTransformOut + "warpedMoving.nii.gz");
-    // MyITKImageHelper::writeImage(movingMaskWarped, sTransformOut + "warpedMoving_mask.nii.gz");
-
-    // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
-    // MyITKImageHelper::showImage(fixed, movingWarped, movingWarped, "fixed_moving");
-    // MyITKImageHelper::showImage(movingWarped, movingMaskWarped, "fixed_mask");
-
 }
 
 

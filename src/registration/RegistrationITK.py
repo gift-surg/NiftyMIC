@@ -17,30 +17,33 @@ import Stack as st
 
 class RegistrationITK:
 
-    def __init__(self):
-        self._moving = None
-        self._fixed = None
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", scales_estimator="Jacobian", ANTSradius=20, translation_scale=1, use_multiresolution_framework=False, dir_tmp="/tmp/RegistrationITK/", verbose=False):
 
-        self._use_fixed_mask = False
-        self._use_moving_mask = False
+        self._fixed = fixed
+        self._moving = moving
 
-        self._transform_sitk = None
-        self._control_point_grid_sitk = None
-        self._registered_image = None
+        self._use_fixed_mask = use_fixed_mask
+        self._use_moving_mask = use_moving_mask
 
-        self._registration_type = "Rigid"
-        self._metric = "Correlation"
-        self._interpolator = "BSpline"
-        self._scales_estimator = "Jacobian"
-        self._ANTSradius = 20
-        self._translation_scale = 1
+        self._registration_type = registration_type
+        self._metric = metric
+        self._interpolator = interpolator
+        self._scales_estimator = scales_estimator
+        self._ANTSradius = ANTSradius
+        self._translation_scale = translation_scale
 
-        self._use_multiresolution_framework = 0
+        self._use_multiresolution_framework = use_multiresolution_framework
+
+        self._use_verbose = verbose
 
         ## Temporary output where files are written in order to use ITK from the commandline
-        self._dir_tmp = "/tmp/RegistrationITK/"
+        self._dir_tmp = dir_tmp
         os.system("mkdir -p " + self._dir_tmp)
         os.system("rm -rf " + self._dir_tmp + "*")
+
+        # self._transform_sitk = transform_sitk
+        # self._control_point_grid_sitk = control_point_grid_sitk
+        # self._registered_image = registered_image
 
 
     ## Set fixed/reference/target image
@@ -160,14 +163,42 @@ class RegistrationITK:
         return self._registered_image
 
 
-    def run_registration(self, id="", verbose=0):
-        self._run_registration(id, verbose)
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the verbose to define whether or not output is produced
+    # \date       2016-09-20 18:49:19+0100
+    #
+    # \param      self     The object
+    # \param      verbose  The verbose
+    #
+    def use_verbose(self, flag):
+        self._use_verbose = flag
 
 
-    def _run_registration(self, id, verbose):
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the verbose.
+    # \date       2016-09-20 18:49:54+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The verbose.
+    #
+    def get_verbose(self):
+        return self._use_verbose
+
+
+    def run_registration(self, id=""):
+        self._run_registration(id)
+
+
+    def _run_registration(self, id):
 
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
+
+        if self._use_verbose:
+            verbose = "1"
+        else:
+            verbose = "0"
 
         ## Clean output directory first
         os.system("rm -rf " + self._dir_tmp + "*")
@@ -205,7 +236,7 @@ class RegistrationITK:
         cmd += "--interpolator " + self._interpolator + " "
         cmd += "--ANTSrad " + str(self._ANTSradius) + " "
         cmd += "--translationScale " + str(self._translation_scale) + " "
-        cmd += "--verbose 0 "
+        cmd += "--verbose " + verbose + " "
 
         ## Compute oriented Gaussian PSF if desired
         if self._interpolator in ["OrientedGaussian"]:
@@ -213,6 +244,7 @@ class RegistrationITK:
             cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( self._fixed, self._moving ).flatten()
             cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
+        # if self._use_verbose:
         print("\t----- print command -----------------------------")
         print cmd
         print("\t-------------------------------------------------")
@@ -234,11 +266,5 @@ class RegistrationITK:
 
         moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
         sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
-
-
-    def _run_registration_affine(self, id, verbose):
-
-        return None
-
 
 
