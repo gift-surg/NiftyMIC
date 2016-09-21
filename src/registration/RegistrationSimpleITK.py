@@ -49,6 +49,8 @@ class RegistrationSimpleITK:
         self._initializer_type = "MOMENTS"
         self._use_centered_transform_initializer = False
 
+        self._verbose = False
+
 
     ## Set fixed/reference/target image
     #  \param[in] fixed fixed/reference/target image as Stack object
@@ -243,10 +245,32 @@ class RegistrationSimpleITK:
         self._optimizer_scales = scales
 
 
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the verbose to define whether or not output is produced
+    # \date       2016-09-20 18:49:19+0100
+    #
+    # \param      self     The object
+    # \param      verbose  The verbose
+    #
+    def use_verbose(self, verbose):
+        self._verbose = verbose
+
+    
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the verbose.
+    # \date       2016-09-20 18:49:54+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The verbose.
+    #
+    def get_verbose(self):
+        return self._verbose
+
 
     ## Run registration
-    def run_registration(self, display_registration_info=1, id=None):
-        self._run_registration(self._fixed, self._moving, display_registration_info)
+    def run_registration(self, id=None):
+        self._run_registration(self._fixed, self._moving, self._verbose)
 
 
 

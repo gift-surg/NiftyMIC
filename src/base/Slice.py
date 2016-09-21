@@ -69,8 +69,8 @@ class Slice:
         slice._history_affine_transforms = []
         slice._history_affine_transforms.append(slice._affine_transform_sitk)
 
-        slice._history_rigid_motion_estimates = []
-        slice._history_rigid_motion_estimates.append(sitk.Euler3DTransform())
+        slice._history_motion_corrections = []
+        slice._history_motion_corrections.append(sitk.Euler3DTransform())
 
         return slice
 
@@ -112,13 +112,13 @@ class Slice:
         slice._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(slice.sitk)
 
         ## Prepare history of affine transforms, i.e. encoded spatial 
-        #  position+orientation of slice, and rigid motion estimates of slice 
+        #  position+orientation of slice, and motion estimates of slice 
         #  obtained in the course of the registration/reconstruction process
         slice._history_affine_transforms = []
         slice._history_affine_transforms.append(slice._affine_transform_sitk)
 
-        slice._history_rigid_motion_estimates = []
-        slice._history_rigid_motion_estimates.append(sitk.Euler3DTransform())
+        slice._history_motion_corrections = []
+        slice._history_motion_corrections.append(sitk.Euler3DTransform())
 
         return slice
 
@@ -140,7 +140,7 @@ class Slice:
         slice._filename = "copy_" + slice_to_copy.get_filename()
         slice._slice_number = slice_to_copy.get_slice_number()
 
-        # slice._history_affine_transforms, slice._history_rigid_motion_estimates = slice_to_copy.get_registration_history()
+        # slice._history_affine_transforms, slice._history_motion_corrections = slice_to_copy.get_registration_history()
 
         ## Store current affine transform of image
         slice._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(slice.sitk)
@@ -151,28 +151,52 @@ class Slice:
         slice._history_affine_transforms = []
         slice._history_affine_transforms.append(slice._affine_transform_sitk)
 
-        slice._history_rigid_motion_estimates = []
-        slice._history_rigid_motion_estimates.append(sitk.Euler3DTransform())
+        slice._history_motion_corrections = []
+        slice._history_motion_corrections.append(sitk.Euler3DTransform())
 
         return slice
 
 
-    ## Update rigid motion estimate of slice and update its position in
-    #  physical space accordingly.
-    #  \param[in] rigid_transform_sitk rigid transform as sitk object
-    #  \post origin and direction of slice gets updated based on rigid transform
-    def update_rigid_motion_estimate(self, rigid_transform_sitk):
+    ##-------------------------------------------------------------------------
+    # \brief      Motion correction update.
+    # \date       2016-09-21 00:50:08+0100
+    #
+    # Update motion correction of slice and update its position in physical
+    # space accordingly.
+    #
+    # \param      self                   The object
+    # \param[in]  affine_transform_sitk  transform as sitk.AffineTransform
+    #                                    object
+    # \post       origin and direction of slice gets updated based on transform
+    #
+    def update_motion_correction(self, affine_transform_sitk):
 
         ## Update rigid motion estimate
-        current_rigid_motion_estimate = sitkh.get_composite_sitk_euler_transform(rigid_transform_sitk, self._history_rigid_motion_estimates[-1])
-        self._history_rigid_motion_estimates.append(current_rigid_motion_estimate)
+        current_rigid_motion_estimate = sitkh.get_composite_sitk_affine_transform(affine_transform_sitk, self._history_motion_corrections[-1])
+        self._history_motion_corrections.append(current_rigid_motion_estimate)
 
         ## New affine transform of slice after rigid motion correction
-        affine_transform = sitkh.get_composite_sitk_affine_transform(rigid_transform_sitk, self._affine_transform_sitk)
+        affine_transform = sitkh.get_composite_sitk_affine_transform(affine_transform_sitk, self._affine_transform_sitk)
 
         ## Update affine transform of slice, i.e. change image origin and direction in physical space
         self._update_affine_transform(affine_transform)
 
+
+    # ## Update rigid motion estimate of slice and update its position in
+    # #  physical space accordingly.
+    # #  \param[in] rigid_transform_sitk rigid transform as sitk object
+    # #  \post origin and direction of slice gets updated based on rigid transform
+    # def update_rigid_motion_estimate(self, rigid_transform_sitk):
+
+    #     ## Update rigid motion estimate
+    #     current_rigid_motion_estimate = sitkh.get_composite_sitk_euler_transform(rigid_transform_sitk, self._history_rigid_motion_estimates[-1])
+    #     self._history_rigid_motion_estimates.append(current_rigid_motion_estimate)
+
+    #     ## New affine transform of slice after rigid motion correction
+    #     affine_transform = sitkh.get_composite_sitk_affine_transform(rigid_transform_sitk, self._affine_transform_sitk)
+
+    #     ## Update affine transform of slice, i.e. change image origin and direction in physical space
+    #     self._update_affine_transform(affine_transform)
 
     ## Get filename of slice, e.g. name of parent stack
     #  \return filename, string
@@ -204,7 +228,7 @@ class Slice:
     #  obtained in the course of the registration/reconstruction process
     #  \return list of sitk.AffineTransform and sitk.Euler3DTransform objects
     def get_registration_history(self):
-        return self._history_affine_transforms, self._history_rigid_motion_estimates
+        return self._history_affine_transforms, self._history_motion_corrections
 
 
     ## Display slice with external viewer (ITK-Snap)

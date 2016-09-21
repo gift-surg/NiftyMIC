@@ -371,7 +371,13 @@ class Stack:
     #  slices to the physical space defined by the stack. Overlapping slices get 
     #  averaged
     #  \return resampled stack based on current position of slices as Stack object
-    def get_resampled_stack_from_slices(self):
+    def get_resampled_stack_from_slices(self, interpolator="NearestNeighbor"):
+
+         ## Choose interpolator
+        try:
+            interpolator = eval("sitk.sitk" + interpolator)
+        except:
+            raise ValueError("Error: interpolator is not known")
 
         ## Get shape of image data array
         nda_shape = self.sitk.GetSize()[::-1]
@@ -399,7 +405,7 @@ class Stack:
                 slice.sitk, 
                 self.sitk, 
                 sitk.Euler3DTransform(), 
-                sitk.sitkNearestNeighbor, 
+                interpolator, 
                 default_pixel_value, 
                 self.sitk.GetPixelIDValue())
 
@@ -407,7 +413,7 @@ class Stack:
                 slice.sitk_mask, 
                 self.sitk_mask, 
                 sitk.Euler3DTransform(), 
-                sitk.sitkNearestNeighbor, 
+                interpolator, 
                 default_pixel_value, 
                 self.sitk_mask.GetPixelIDValue())
 

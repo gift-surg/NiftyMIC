@@ -110,7 +110,7 @@ class Registration(object):
     # \param      self     The object
     # \param      verbose  The verbose
     #
-    def set_verbose(self, verbose):
+    def use_verbose(self, verbose):
         self._verbose = verbose
 
     

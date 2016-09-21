@@ -25,11 +25,14 @@ sys.path.append(dir_src_root + "simulation/")
 import SimpleITKHelper as sitkh
 import DataPreprocessing as dp
 import Stack as st
+import Slice as sl
 import StackManager as sm
 import ScatteredDataApproximation as sda
 import TikhonovSolver as tk
 import SimulatorSliceAcqusition as sa
 import Registration as myreg
+import InPlaneRigidRegistration as iprr
+import DataPreprocessing as dp
 
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
@@ -50,70 +53,36 @@ if __name__ == '__main__':
 
     dir_input = "data/test/"
     filename_2D = "2D_BrainWeb"
-    filename_HRVolume = "FetalBrain_reconstruction_4stacks"
-    filename_slice = "FetalBrain_stack1_registered_midslice"
+    # filename_HRVolume = "FetalBrain_reconstruction_4stacks"
+    # filename_slice = "FetalBrain_stack1_registered_midslice"
 
-    image_2D_itk = sitkh.read_itk_image(dir_input + filename_2D + ".nii.gz", dim=2, pixel_type=PIXEL_TYPE)
-    HRvolume_itk = sitkh.read_itk_image(dir_input + filename_HRVolume + ".nii.gz", dim=3, pixel_type=PIXEL_TYPE)
-    slice_itk = sitkh.read_itk_image(dir_input + filename_slice + ".nii.gz", dim=3, pixel_type=PIXEL_TYPE)
-    # slice_itk = HRvolume_itk
-    slice_sitk = sitkh.convert_itk_to_sitk_image(slice_itk)
+    # # image_2D_itk = sitkh.read_itk_image(dir_input + filename_2D + ".nii.gz", dim=2, pixel_type=PIXEL_TYPE)
+    # # HRvolume_itk = sitkh.read_itk_image(dir_input + filename_HRVolume + ".nii.gz", dim=3, pixel_type=PIXEL_TYPE)
+    # # slice_itk = sitkh.read_itk_image(dir_input + filename_slice + ".nii.gz", dim=3, pixel_type=PIXEL_TYPE)
+    # # slice_itk = HRvolume_itk
 
-    filter_derivative = itk.GradientImageFilter[IMAGE_TYPE_2D, PIXEL_TYPE, PIXEL_TYPE].New()
-    # filter_derivative = itk.DerivativeImageFilter[IMAGE_TYPE_2D, IMAGE_TYPE_2D].New()
+    image_2D_sitk = sitk.ReadImage(dir_input + filename_2D + ".nii.gz")
 
-    filter_derivative.SetInput(image_2D_itk)
-    filter_derivative.Update()
-    dimage_2D_itk = filter_derivative.GetOutput()
-     
-    itk2np = itk.PyBuffer[IMAGE_TYPE_3D]
-    itk2np_CVD183 = itk.PyBuffer[IMAGE_TYPE_3D_CV18]
-    itk2np_CVD33 = itk.PyBuffer[IMAGE_TYPE_3D_CV3]
+    DIR_INPUT = "data/placenta/";                   filename_stack = "a23_05"
+    # DIR_INPUT = "data/fetal_neck_mass_brain/";      filename_stack = "0"
+    stack = st.Stack.from_filename(DIR_INPUT, filename_stack, suffix_mask="_mask")
 
-    # sys.exit()
+    data_preprocessing = dp.DataPreprocessing.from_stacks([stack])
+    # data_preprocessing.set_dilation_radius(0)
+    data_preprocessing.run_preprocessing()
+    stack = data_preprocessing.get_preprocessed_stacks()[0]
 
-    filter_OrientedGaussian_3D = itk.OrientedGaussianInterpolateImageFilter[IMAGE_TYPE_3D, IMAGE_TYPE_3D].New()
-    filter_OrientedGaussian_3D.SetInput(HRvolume_itk)
-    filter_OrientedGaussian_3D.SetOutputParametersFromImage(slice_itk)
-    filter_OrientedGaussian_3D.SetUseJacobian(True)
-    filter_OrientedGaussian_3D.Update()
+    inplane_reg = iprr.InPlaneRigidRegistration()
+    inplane_reg.set_stack(stack)
 
-    tmp = filter_OrientedGaussian_3D.GetOutput()
-    gradient_OrientedGaussian_3D_itk = filter_OrientedGaussian_3D.GetJacobian()
+    inplane_reg.run_registration()
 
-    # sitkh.show_itk_image(tmp, overlay=slice_itk)
+    stack_inplane_reg = inplane_reg.get_stack()
 
-    filter_GradientEuler3D = itk.GradientEuler3DTransformImageFilter[IMAGE_TYPE_3D, PIXEL_TYPE, PIXEL_TYPE].New()
-    filter_GradientEuler3D.SetInput(slice_itk)
-    filter_GradientEuler3D.Update()
-    gradient_Euler3DTransform_itk = filter_GradientEuler3D.GetOutput()
+    # stack_inplane_reg.get_resampled_stack_from_slices().show(1)
+    stack_registered_sitk = stack_inplane_reg.get_resampled_stack_from_slices(interpolator="Linear").sitk
+    sitkh.show_sitk_image([stack.sitk, stack_registered_sitk], ["original", "inplane-registered"])
 
-    nda_GradientOrientedGaussian = itk2np_CVD33.GetArrayFromImage(gradient_OrientedGaussian_3D_itk)
-    nda_GradientEuler3D = itk2np_CVD183.GetArrayFromImage(gradient_Euler3DTransform_itk)
-
-    dF = nda_GradientOrientedGaussian
-    shape = np.array(slice_itk.GetBufferedRegion().GetSize())
-    dT = nda_GradientEuler3D
-    nda0 = nda_GradientOrientedGaussian.reshape(-1,3)
-    nda1 = nda_GradientEuler3D.reshape(-1,3,6)
-
-    Euler3DTransform_itk = itk.Euler3DTransform[PIXEL_TYPE].New()
-    filter_GradientEuler3D.SetTransform(Euler3DTransform_itk)
-
-    N = shape.prod()
-    res = np.zeros((N,6))
-    res_ = np.zeros((shape[2],shape[1],shape[0],6))
-
-    for i in range(0, N):
-        res[i,:] = nda0[i,:].dot(nda1[i,:,:])
-
-    for i in range(0, shape[2]):
-        for j in range(0, shape[1]):
-            for k in range(0, shape[0]):
-                res_[i,j,k,:] = dF[i,j,k,:].dot(dT[i,j,k,:].reshape(3,6))
-
-    for i in range(0, 6):
-        print (res[:,i] - res_[:,:,:,i].flatten()).sum()
                 
 
 
