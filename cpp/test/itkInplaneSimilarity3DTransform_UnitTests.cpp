@@ -30,6 +30,22 @@
 #include <itkImageRegionIterator.h>
 #include <itkImageRegionIteratorWithIndex.h>
 
+#include <itkImageRegistrationMethodv4.h>
+#include <itkCenteredTransformInitializer.h>
+
+#include <itkMeanSquaresImageToImageMetricv4.h>
+#include <itkMattesMutualInformationImageToImageMetricv4.h>
+#include <itkCorrelationImageToImageMetricv4.h>
+
+#include <itkInterpolateImageFunction.h>
+#include <itkLinearInterpolateImageFunction.h>
+#include <itkNearestNeighborInterpolateImageFunction.h>
+
+#include <itkRegularStepGradientDescentOptimizerv4.h>
+#include <itkRegistrationParameterScalesFromJacobian.h>
+#include <itkRegistrationParameterScalesFromIndexShift.h>
+#include <itkRegistrationParameterScalesFromPhysicalShift.h>
+
 // My includes
 #include "MyITKImageHelper.h"
 #include "itkAdjointOrientedGaussianInterpolateImageFilter.h"
@@ -58,56 +74,167 @@ typedef itk::MultiplyImageFilter< ImageType3D, ImageType3D, ImageType3D> Multipl
 
 typedef itk::AddImageFilter< ImageType3D, ImageType3D, ImageType3D> AddImageFilter_3D;
 
-typedef itk::AbsoluteValueDifferenceImageFilter< ImageType2D, ImageType2D, ImageType2D> AbsoluteValueDifferenceImageFilter_2D;
-typedef itk::AbsoluteValueDifferenceImageFilter< ImageType3D, ImageType3D, ImageType3D> AbsoluteValueDifferenceImageFilter_3D;
+typedef itk::AbsoluteValueDifferenceImageFilter< ImageType2D, ImageType2D, ImageType2D> AbsoluteValueDifferenceImageFilterType_2D;
+typedef itk::AbsoluteValueDifferenceImageFilter< ImageType3D, ImageType3D, ImageType3D> AbsoluteValueDifferenceImageFilterType_3D;
 
 typedef itk::StatisticsImageFilter<ImageType2D> StatisticsImageFilterType_2D;
 typedef itk::StatisticsImageFilter<ImageType3D> StatisticsImageFilterType_3D;
 
+// Transform Types
 typedef itk::Euler3DTransform< PixelType > EulerTransformType;
 typedef itk::InplaneSimilarity3DTransform< PixelType > InplaneSimilarityTransformType;
+
+// Optimizer Types
+typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > RegularStepGradientDescentOptimizerType;
+
+// Interpolator Types
+typedef itk::LinearInterpolateImageFunction< ImageType3D, PixelType > LinearInterpolatorType;
+
+// Metric Types
+typedef itk::MeanSquaresImageToImageMetricv4< ImageType3D, ImageType3D > MeanSquaresMetricType;
+typedef itk::CorrelationImageToImageMetricv4< ImageType3D, ImageType3D > CorrelationMetricType;
+typedef itk::MattesMutualInformationImageToImageMetricv4< ImageType3D, ImageType3D > MattesMutualInformationMetricType;
+
+// Definitions used
+typedef CorrelationMetricType MetricType;
+typedef InplaneSimilarityTransformType TransformType;
+typedef LinearInterpolatorType InterpolatorType;
+typedef RegularStepGradientDescentOptimizerType OptimizerType;
+
+typedef itk::ImageRegistrationMethodv4< ImageType3D, ImageType3D, TransformType > RegistrationType;
+typedef itk::CenteredTransformInitializer< TransformType, ImageType3D, ImageType3D > TransformInitializerType;
+typedef itk::RegistrationParameterScalesFromJacobian< MetricType > ScalesEstimatorType;
 
 // Unit tests
 TEST_CASE( "itkInplaneSimilarity3DTransform: Brain", 
   "[itkInplaneSimilarity3DTransform: Brain]") {
+
+    std::vector<ImageType3D::Pointer> image_vector;
+
+    const double scale = 0.9;
+
+    //***Instantiate
+    const RegistrationType::Pointer registration = RegistrationType::New();
+    const MetricType::Pointer metric = MetricType::New();
+    const InterpolatorType::Pointer interpolator = InterpolatorType::New();
+    const OptimizerType::Pointer optimizer = OptimizerType::New();
+    const ScalesEstimatorType::Pointer scalesEstimator = ScalesEstimatorType::New();
+
 
     // Define input and output
     const std::string dir_input = "../exampleData/";
 
     const std::string filename = "FetalBrain_reconstruction_3stacks_myAlg.nii.gz";
 
-    const double tolerance = 1e-6;
+    const double tolerance = 1e-4;
 
     // Read images
-    const ImageType3D::Pointer image = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename);
-    const ImageType3D::Pointer image_registered = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename);
+    const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename);
+    const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename);
 
-    MyITKImageHelper::showImage(image, "image");
+    // MyITKImageHelper::showImage(fixed, "fixed");
+
+    // Alter image for registration
+    ImageType3D::SpacingType spacing = fixed->GetSpacing();
+    spacing *= scale;
+
+    moving->SetSpacing(spacing);
+
+    // Initialize the transform
+    TransformType::Pointer initialTransform = TransformType::New();
+
+    // TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+    // initializer->SetTransform(initialTransform);
+    // initializer->SetFixedImage( fixed );
+    // initializer->SetMovingImage( moving );
+    // // initializer->GeometryOn();
+    // initializer->MomentsOn();
+    // initializer->InitializeTransform();
+
+    registration->SetFixedInitialTransform( initialTransform );
+    registration->InPlaceOff();
+    // registration->GetFixedInitialTransform()->Print(std::cout);
+
+    // Set metric
+    metric->SetMovingInterpolator(  interpolator  );
+
+    // Scales estimator
+    scalesEstimator->SetMetric( metric );
+
+    // Set optimizer
+    optimizer->SetNumberOfIterations( 500 );
+    // optimizer->SetMinimumConvergenceValue( 1e-6 );
+    optimizer->SetScalesEstimator( scalesEstimator );
+    optimizer->SetDoEstimateLearningRateOnce( false );
+
+    // Set registration
+    registration->SetFixedImage(fixed);
+    registration->SetMovingImage(moving);
+    
+    registration->SetMetric( metric );
+    registration->SetOptimizer( optimizer );
+
+    //***Execute registration
+    try {
+      registration->Update();
+
+      std::cout << "Optimizer stop condition: "
+      << registration->GetOptimizer()->GetStopConditionDescription()
+      << std::endl;
+    }
+    catch( itk::ExceptionObject & err ) {
+      std::cerr << "ExceptionObject caught !" << std::endl;
+      std::cerr << err << std::endl;
+      // return EXIT_FAILURE;
+      throw MyException("ExeceptionObject caught during registration");
+    }
+
+    //***Process registration results
+    TransformType::ConstPointer transform = registration->GetTransform();    
+    // transform->Print(std::cout);
+    MyITKImageHelper::printTransform(transform);
+    
 
     // Resample Image Filter
     const FilterType_Resample_3D::Pointer resampler = FilterType_Resample_3D::New();
+    resampler->SetOutputParametersFromImage(fixed);
+    resampler->SetDefaultPixelValue( 0.0 );
+    resampler->SetInterpolator( InterpolatorType::New() );
+    resampler->SetInput(moving);
+    resampler->Update();
+    const ImageType3D::Pointer movingResampled = resampler->GetOutput();
+    movingResampled->DisconnectPipeline();
 
-    resampler->SetInput(image_registered);
-    resampler->SetOutputParametersFromImage(image);
+
+
+    resampler->SetTransform( registration->GetOutput()->Get() );
     resampler->Update();
 
+    const ImageType3D::Pointer movingWarped = resampler->GetOutput();
+    movingWarped->DisconnectPipeline();
+
+    image_vector.push_back(fixed);
+    image_vector.push_back(movingResampled);
+    image_vector.push_back(movingWarped);
+    // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_movingWarped");
+    MyITKImageHelper::showImage(image_vector, "fixed_moving_movingWarped");
+
+
     // Filters to evaluate absolute difference
-    const MultiplyImageFilter_3D::Pointer multiplyFilter_3D = MultiplyImageFilter_3D::New();
-    const AddImageFilter_3D::Pointer addFilter_3D = AddImageFilter_3D::New();
-    const AbsoluteValueDifferenceImageFilter_3D::Pointer absDiffFilter_3D = AbsoluteValueDifferenceImageFilter_3D::New();
-    const StatisticsImageFilterType_3D::Pointer statisticsImageFilter_3D = StatisticsImageFilterType_3D::New();
+    // const StatisticsImageFilterType_3D::Pointer statisticsImageFilter_3D = StatisticsImageFilterType_3D::New();
+    // const AbsoluteValueDifferenceImageFilterType_3D::Pointer absoluteValueDifferenceImageFilter_3D = AbsoluteValueDifferenceImageFilterType_3D::New();
 
-    multiplyFilter_3D->SetInput( image_registered );
-    multiplyFilter_3D->SetConstant( -1 );
-
-    addFilter_3D->SetInput1( image );
-    addFilter_3D->SetInput2( multiplyFilter_3D->GetOutput() );
+    // absoluteValueDifferenceImageFilter_3D->SetInput1( fixed );
+    // absoluteValueDifferenceImageFilter_3D->SetInput2( movingWarped );
     
-    statisticsImageFilter_3D->SetInput( addFilter_3D->GetOutput() );
-    statisticsImageFilter_3D->Update();
-    const double diff = statisticsImageFilter_3D->GetSum();
+    // statisticsImageFilter_3D->SetInput( absoluteValueDifferenceImageFilter_3D->GetOutput() );
+    // statisticsImageFilter_3D->Update();
+    // const double abs_diff = statisticsImageFilter_3D->GetSum();
 
-    std::cout << "Difference = " << diff << std::endl;
 
-    CHECK( diff == Approx(0).epsilon(tolerance));
+    const double scale_estimated = transform->GetScale();
+    const double abs_diff = std::abs(scale-scale_estimated);
+    std::cout << "|scale - scale_est|  = " << abs_diff << std::endl;
+
+    CHECK( abs_diff == Approx(0).epsilon(tolerance));
 }

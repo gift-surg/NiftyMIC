@@ -415,6 +415,10 @@ void MyITKImageHelper::printTransform(itk::InplaneSimilarity3DTransform< PixelTy
   for (int i = 0; i < dim; ++i) {
     printf("\t\t%.4f\t%.4f\t%.4f\n", matrix[i][0], matrix[i][1], matrix[i][2]);
   }
+
+  std::cout << "\t scale = " << std::endl;
+  printf("\t\t%.4f\n", transform->GetScale());
+
 }
 
 void MyITKImageHelper::writeTransform(itk::AffineTransform< PixelType, 3 >::ConstPointer transform,
