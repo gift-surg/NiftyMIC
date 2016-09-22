@@ -17,7 +17,7 @@ import Stack as st
 
 class RegistrationITK:
 
-    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", scales_estimator="Jacobian", ANTSradius=20, translation_scale=1, use_multiresolution_framework=False, dir_tmp="/tmp/RegistrationITK/", verbose=False):
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="NearestNeighbor", metric="Correlation", scales_estimator="Jacobian", ANTSradius=20, translation_scale=1, use_multiresolution_framework=False, dir_tmp="/tmp/RegistrationITK/", verbose=False):
 
         self._fixed = fixed
         self._moving = moving
@@ -41,6 +41,12 @@ class RegistrationITK:
         os.system("mkdir -p " + self._dir_tmp)
         os.system("rm -rf " + self._dir_tmp + "*")
 
+
+        self._run_registration = {
+            "Rigid"             : self._run_registration_rigid_affine,
+            "Affine"            : self._run_registration_rigid_affine,
+            "InplaneSimilarity" : self._run_registration_inplane_similarity
+        }
         # self._transform_sitk = transform_sitk
         # self._control_point_grid_sitk = control_point_grid_sitk
         # self._registered_image = registered_image
@@ -73,8 +79,8 @@ class RegistrationITK:
     ## Set type of registration used
     #  \param[in] registration_type
     def set_registration_type(self, registration_type):
-        if registration_type not in ["Rigid", "Affine"]:
-            raise ValueError("Error: Registration type can only be either 'Rigid' or 'Affine'")
+        if registration_type not in ["Rigid", "Affine", "InplaneSimilarity"]:
+            raise ValueError("Error: Registration type can only be either 'Rigid', 'Affine' or 'InplaneSimilarity'")
         
         self._registration_type = registration_type
 
@@ -156,6 +162,28 @@ class RegistrationITK:
     def get_registration_transform_sitk(self):
         return self._transform_sitk
 
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the parameters obtained by the registration.
+    # \date       2016-09-22 21:17:09+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The parameters as numpy array.
+    #
+    def get_parameters(self):
+        return self._parameters
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the fixed parameters obtained by the registration.
+    # \date       2016-09-22 21:17:26+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The fixed parameters as numpy array.
+    #
+    def get_parameters_fixed(self):
+        return self._parameters_fixed
+
 
     ## Get registered image
     #  \return registered image as Stack object
@@ -187,10 +215,10 @@ class RegistrationITK:
 
 
     def run_registration(self, id=""):
-        self._run_registration(id)
+        self._run_registration[self._registration_type](id)
 
 
-    def _run_registration(self, id):
+    def _run_registration_rigid_affine(self, id):
 
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
@@ -222,13 +250,13 @@ class RegistrationITK:
 
         ## Prepare command for execution
         cmd =  "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/cpp/build/bin/itkReg "
-        cmd += "--f " + self._dir_tmp + fixed_str + " "
-        cmd += "--m " + self._dir_tmp + moving_str + " "
+        cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz "
+        cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz "
         if self._use_fixed_mask:
-            cmd += "--fmask " + self._dir_tmp + fixed_mask_str + " "
+            cmd += "--fmask " + self._dir_tmp + fixed_mask_str + ".nii.gz "
         if self._use_moving_mask:
-            cmd += "--mmask " + self._dir_tmp + moving_mask_str + " "
-        cmd += "--tout " + self._dir_tmp + registration_transform_str + " "
+            cmd += "--mmask " + self._dir_tmp + moving_mask_str + ".nii.gz "
+        cmd += "--tout " + self._dir_tmp + registration_transform_str + ".txt "
         cmd += "--useAffine " + str(int(self._registration_type is "Affine")) + " "
         cmd += "--useMultires " + str(int(self._use_multiresolution_framework)) + " "
         cmd += "--metric " + self._metric + " "
@@ -253,18 +281,99 @@ class RegistrationITK:
         ## Read transformation file
         params_all = np.loadtxt(self._dir_tmp + registration_transform_str + ".txt")
 
-        parameters_fixed = params_all[0:3]
-        parameters = params_all[3:]
+        self._parameters_fixed = params_all[0:3]
+        self._parameters = params_all[3:]
 
         if self._registration_type in ["Rigid"]:
             self._transform_sitk = sitk.Euler3DTransform()
         else:
             self._transform_sitk = sitk.AffineTransform(3)
 
-        self._transform_sitk.SetParameters(parameters)
-        self._transform_sitk.SetFixedParameters(parameters_fixed)
+        self._transform_sitk.SetParameters(self._parameters)
+        self._transform_sitk.SetFixedParameters(self._parameters_fixed)
 
-        moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
-        sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
+        ## Debug
+        # moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
+        # sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
 
 
+    def _run_registration_inplane_similarity(self, id):
+
+        if self._fixed is None or self._moving is None:
+            raise ValueError("Error: Fixed and moving image not specified")
+
+        if self._use_verbose:
+            verbose = "1"
+        else:
+            verbose = "0"
+
+        ## Clean output directory first
+        os.system("rm -rf " + self._dir_tmp + "*")
+
+        moving_str = "RegistrationITK_moving_" + id + self._moving.get_filename()
+        fixed_str = "RegistrationITK_fixed_" + id + self._fixed.get_filename()
+        moving_mask_str = "RegistrationITK_moving_mask_" + id + self._moving.get_filename() 
+        fixed_mask_str = "RegistrationITK_fixed_mask_" + id + self._fixed.get_filename()
+        
+        registration_transform_str = "RegistrationITK_transform_" + id + self._fixed.get_filename() + "_" + self._moving.get_filename()
+
+        ## Write images to HDD
+        # if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
+        sitk.WriteImage(self._moving.sitk, self._dir_tmp + moving_str + ".nii.gz")
+        # if not os.path.isfile(self._dir_tmp + fixed_str + ".nii.gz"):
+        sitk.WriteImage(self._fixed.sitk, self._dir_tmp + fixed_str + ".nii.gz")
+        # if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz") and self._use_moving_mask:
+        sitk.WriteImage(self._moving.sitk_mask, self._dir_tmp + moving_mask_str + ".nii.gz")
+        # if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz") and self._use_fixed_mask:
+        sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
+
+        ## Prepare command for execution
+        cmd =  "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/cpp/build/bin/itkInplaneSimilarity3DReg "
+        cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz "
+        cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz "
+        if self._use_fixed_mask:
+            cmd += "--fmask " + self._dir_tmp + fixed_mask_str + ".nii.gz "
+        if self._use_moving_mask:
+            cmd += "--mmask " + self._dir_tmp + moving_mask_str + ".nii.gz "
+        cmd += "--tout " + self._dir_tmp + registration_transform_str + ".txt "
+        cmd += "--useAffine " + str(int(self._registration_type is "Affine")) + " "
+        cmd += "--useMultires " + str(int(self._use_multiresolution_framework)) + " "
+        cmd += "--metric " + self._metric + " "
+        cmd += "--scalesEst " + self._scales_estimator + " "
+        cmd += "--interpolator " + self._interpolator + " "
+        cmd += "--ANTSrad " + str(self._ANTSradius) + " "
+        cmd += "--translationScale " + str(self._translation_scale) + " "
+        cmd += "--verbose " + verbose + " "
+
+        ## Compute oriented Gaussian PSF if desired
+        if self._interpolator in ["OrientedGaussian"]:
+            ## Get oriented Gaussian covariance matrix
+            cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_HR_volume_coordinates( self._fixed, self._moving ).flatten()
+            cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
+
+        # if self._use_verbose:
+        print("\t----- print command -----------------------------")
+        print cmd
+        print("\t-------------------------------------------------")
+        os.system(cmd)
+
+        ## Read transformation file
+        params_all = np.loadtxt(self._dir_tmp + registration_transform_str + ".txt")
+
+        self._parameters_fixed = params_all[0:3]
+        self._parameters = params_all[-7:]
+
+        # transform_sitk = sitk.Euler3DTransform()
+        # transform_sitk.SetParameters(parameters[0:-1])
+        # transform_sitk.SetFixedParameters(parameters_fixed[0:3])
+
+        # ## Debug
+        # scale = parameters[-1]
+        # spacing = np.array(self._moving.sitk.GetSpacing())
+        # spacing[0:-1] *= scale
+        # moving_sitk = sitk.Image(self._moving.sitk)
+        # moving_sitk.SetSpacing(spacing)
+        # moving_warped_sitk = sitk.Resample(moving_sitk, self._fixed.sitk, transform_sitk, sitk.sitkLinear)
+        # sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
+
+        # sitkh.show_sitk_image([self._fixed.sitk, moving_warped_sitk], ["fixed", "moving_registered"])

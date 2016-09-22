@@ -30,6 +30,8 @@
 #include <itkImageRegionIterator.h>
 #include <itkImageRegionIteratorWithIndex.h>
 
+#include <itkSimilarity3DTransform.h>
+
 #include <itkImageRegistrationMethodv4.h>
 #include <itkCenteredTransformInitializer.h>
 
@@ -83,12 +85,14 @@ typedef itk::StatisticsImageFilter<ImageType3D> StatisticsImageFilterType_3D;
 // Transform Types
 typedef itk::Euler3DTransform< PixelType > EulerTransformType;
 typedef itk::InplaneSimilarity3DTransform< PixelType > InplaneSimilarityTransformType;
+// typedef itk::Similarity3DTransform< PixelType > InplaneSimilarityTransformType;
 
 // Optimizer Types
 typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > RegularStepGradientDescentOptimizerType;
 
 // Interpolator Types
 typedef itk::LinearInterpolateImageFunction< ImageType3D, PixelType > LinearInterpolatorType;
+typedef itk::NearestNeighborInterpolateImageFunction< ImageType3D, PixelType > NearestNeighborInterpolatorType;
 
 // Metric Types
 typedef itk::MeanSquaresImageToImageMetricv4< ImageType3D, ImageType3D > MeanSquaresMetricType;
@@ -97,84 +101,125 @@ typedef itk::MattesMutualInformationImageToImageMetricv4< ImageType3D, ImageType
 
 // Definitions used
 typedef CorrelationMetricType MetricType;
+// typedef MeanSquaresMetricType MetricType;
 typedef InplaneSimilarityTransformType TransformType;
 typedef LinearInterpolatorType InterpolatorType;
+// typedef NearestNeighborInterpolatorType InterpolatorType;
 typedef RegularStepGradientDescentOptimizerType OptimizerType;
 
 typedef itk::ImageRegistrationMethodv4< ImageType3D, ImageType3D, TransformType > RegistrationType;
 typedef itk::CenteredTransformInitializer< TransformType, ImageType3D, ImageType3D > TransformInitializerType;
-typedef itk::RegistrationParameterScalesFromJacobian< MetricType > ScalesEstimatorType;
+// typedef itk::RegistrationParameterScalesFromJacobian< MetricType > ScalesEstimatorType;
+typedef itk::RegistrationParameterScalesFromPhysicalShift< MetricType > ScalesEstimatorType;
+// typedef itk::RegistrationParameterScalesFromIndexShift< MetricType > ScalesEstimatorType;
 
 // Unit tests
 TEST_CASE( "itkInplaneSimilarity3DTransform: Brain", 
   "[itkInplaneSimilarity3DTransform: Brain]") {
 
-    std::vector<ImageType3D::Pointer> image_vector;
 
+    const double tolerance = 1e-4;
     const double scale = 0.9;
 
-    //***Instantiate
+    const unsigned int dimension = 3;
+
+    // Define input and output
+    const std::string dir_input = "../exampleData/";
+    // const std::string filename = "3D_Cross_50.nii.gz";
+    // const std::string filename = "3D_SheppLoganPhantom_64_rotated.nii.gz";
+    const std::string filename = "FetalBrain_reconstruction_3stacks_myAlg.nii.gz";
+
+    // Instantiate
     const RegistrationType::Pointer registration = RegistrationType::New();
     const MetricType::Pointer metric = MetricType::New();
     const InterpolatorType::Pointer interpolator = InterpolatorType::New();
     const OptimizerType::Pointer optimizer = OptimizerType::New();
     const ScalesEstimatorType::Pointer scalesEstimator = ScalesEstimatorType::New();
-
-
-    // Define input and output
-    const std::string dir_input = "../exampleData/";
-
-    const std::string filename = "FetalBrain_reconstruction_3stacks_myAlg.nii.gz";
-
-    const double tolerance = 1e-4;
+    const FilterType_Resample_3D::Pointer resampler = FilterType_Resample_3D::New();
+    TransformType::Pointer initialTransform = TransformType::New();
 
     // Read images
     const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename);
     const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(dir_input + filename);
-
     // MyITKImageHelper::showImage(fixed, "fixed");
+    // MyITKImageHelper::showImage(moving, "moving");
 
-    // Alter image for registration
-    ImageType3D::SpacingType spacing = fixed->GetSpacing();
-    spacing *= scale;
+    ImageType3D::DirectionType direction = fixed->GetDirection();
+    // direction[0][0]=1;
+    // direction[1][1]=1;
+    // direction[2][2]=1;
+    // direction[0][1]=0;
+    // direction[0][2]=0;
+    // direction[1][0]=0;
+    // direction[1][2]=0;
+    // direction[2][0]=0;
+    // direction[2][1]=0;
+    // fixed->SetDirection(direction);
+    // moving->SetDirection(direction);
 
+    // Generate test case: Alter image for registration
+    ImageType3D::SpacingType spacing = moving->GetSpacing();
+    spacing[0] *= scale;
+    spacing[1] *= scale;
     moving->SetSpacing(spacing);
 
+    TransformType::FixedParametersType fixedParameters = initialTransform->GetFixedParameters();
+    TransformType::FixedParametersType fixedParameters_extended = initialTransform->GetFixedParameters();
+    const unsigned int N_fixedParameters = fixedParameters.GetSize();
+    fixedParameters_extended.SetSize(N_fixedParameters+9);
+
+    // Copy previous fixed parameters
+    for (int i = 0; i < N_fixedParameters; ++i)
+    {
+        fixedParameters_extended[i] = fixedParameters[i];
+    }
+    // Fill extended fixed parameters with direction information
+    for (int i = 0; i < dimension; ++i)
+    {
+        for (int j = 0; j < dimension; ++j)
+        {
+            fixedParameters_extended[N_fixedParameters+dimension*i+j] = direction[i][j];
+        }
+    }
+    initialTransform->SetFixedParameters(fixedParameters_extended);
+
     // Initialize the transform
-    TransformType::Pointer initialTransform = TransformType::New();
-
-    // TransformInitializerType::Pointer initializer = TransformInitializerType::New();
-    // initializer->SetTransform(initialTransform);
-    // initializer->SetFixedImage( fixed );
-    // initializer->SetMovingImage( moving );
-    // // initializer->GeometryOn();
+    TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+    initializer->SetTransform(initialTransform);
+    initializer->SetFixedImage( fixed );
+    initializer->SetMovingImage( moving );
+    initializer->GeometryOn();
     // initializer->MomentsOn();
-    // initializer->InitializeTransform();
+    initializer->InitializeTransform();
+    // initialTransform->Print(std::cout);
 
-    registration->SetFixedInitialTransform( initialTransform );
-    registration->InPlaceOff();
+    registration->SetInitialTransform( initialTransform );
+    registration->SetFixedInitialTransform( EulerTransformType::New() ); // Otherwise segmentation fault
+    // registration->InPlaceOff();
     // registration->GetFixedInitialTransform()->Print(std::cout);
+    // std::cout << "FixedParameters = " << registration->GetFixedInitialTransform()->GetFixedParameters() << std::endl;
 
     // Set metric
-    metric->SetMovingInterpolator(  interpolator  );
+    metric->SetMovingInterpolator( interpolator );
 
     // Scales estimator
     scalesEstimator->SetMetric( metric );
 
     // Set optimizer
-    optimizer->SetNumberOfIterations( 500 );
-    // optimizer->SetMinimumConvergenceValue( 1e-6 );
+    optimizer->SetNumberOfIterations( 100 );
+    // optimizer->SetGradientMagnitudeTolerance( 1e-6 ); //
+    // optimizer->SetMinimumStepLength( 1e-6 );
     optimizer->SetScalesEstimator( scalesEstimator );
-    optimizer->SetDoEstimateLearningRateOnce( false );
+    // optimizer->SetDoEstimateLearningRateOnce( false );
+    // optimizer->EstimateLearningRate();
 
     // Set registration
     registration->SetFixedImage(fixed);
     registration->SetMovingImage(moving);
-    
     registration->SetMetric( metric );
     registration->SetOptimizer( optimizer );
 
-    //***Execute registration
+    // Execute registration
     try {
       registration->Update();
 
@@ -189,14 +234,13 @@ TEST_CASE( "itkInplaneSimilarity3DTransform: Brain",
       throw MyException("ExeceptionObject caught during registration");
     }
 
-    //***Process registration results
+    // Process registration results
     TransformType::ConstPointer transform = registration->GetTransform();    
     // transform->Print(std::cout);
-    MyITKImageHelper::printTransform(transform);
-    
+    // std::cout << transform->GetParameters() << std::endl;
+    // MyITKImageHelper::printTransform(transform);
 
     // Resample Image Filter
-    const FilterType_Resample_3D::Pointer resampler = FilterType_Resample_3D::New();
     resampler->SetOutputParametersFromImage(fixed);
     resampler->SetDefaultPixelValue( 0.0 );
     resampler->SetInterpolator( InterpolatorType::New() );
@@ -205,19 +249,18 @@ TEST_CASE( "itkInplaneSimilarity3DTransform: Brain",
     const ImageType3D::Pointer movingResampled = resampler->GetOutput();
     movingResampled->DisconnectPipeline();
 
-
-
     resampler->SetTransform( registration->GetOutput()->Get() );
     resampler->Update();
 
     const ImageType3D::Pointer movingWarped = resampler->GetOutput();
     movingWarped->DisconnectPipeline();
 
+    std::vector<ImageType3D::Pointer> image_vector;
     image_vector.push_back(fixed);
     image_vector.push_back(movingResampled);
     image_vector.push_back(movingWarped);
-    // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_movingWarped");
-    MyITKImageHelper::showImage(image_vector, "fixed_moving_movingWarped");
+    std::string titles_array[3] = {"array_fixed", "array_moving", "array_movingWarped"};
+    MyITKImageHelper::showImage(image_vector, titles_array);
 
 
     // Filters to evaluate absolute difference
@@ -231,7 +274,7 @@ TEST_CASE( "itkInplaneSimilarity3DTransform: Brain",
     // statisticsImageFilter_3D->Update();
     // const double abs_diff = statisticsImageFilter_3D->GetSum();
 
-
+    // Check accuracy
     const double scale_estimated = transform->GetScale();
     const double abs_diff = std::abs(scale-scale_estimated);
     std::cout << "|scale - scale_est|  = " << abs_diff << std::endl;

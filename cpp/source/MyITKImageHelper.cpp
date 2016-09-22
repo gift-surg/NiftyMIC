@@ -201,20 +201,49 @@ void MyITKImageHelper::showImage(const ImageType3D::Pointer image, const MaskIma
   MyITKImageHelper::executeShellCommand(cmd);
 }
 
-void MyITKImageHelper::showImage(const std::vector<ImageType3D::Pointer> images, const std::string &filename){
+void MyITKImageHelper::showImage(const std::vector<ImageType3D::Pointer>& images, const std::string &filename){
+    
+    std::vector<std::string> filenames;
+    for(std::vector<ImageType3D::Pointer>::size_type i = 0; i < images.size(); ++i){
+        filenames.push_back(filename + "_" + std::to_string(i));
+    }
+    MyITKImageHelper::showImage(images, filenames);
+}
+
+void MyITKImageHelper::showImage(const std::vector<ImageType3D::Pointer> &images, const std::vector<std::string> &filenames){
 
     const std::string dir_output = "/tmp/";
 
     // View images via itksnap
     std::string  cmd = "itksnap ";
-    cmd += "-g " + dir_output + filename + "_0.nii.gz ";
+    cmd += "-g " + dir_output + filenames[0] + ".nii.gz ";
     cmd += "-o ";
 
-    MyITKImageHelper::writeImage(images[0], dir_output + filename + "_0.nii.gz");
+    MyITKImageHelper::writeImage(images[0], dir_output + filenames[0] + ".nii.gz");
 
     for(std::vector<ImageType3D::Pointer>::size_type i = 1; i < images.size(); ++i) {
-        MyITKImageHelper::writeImage(images[i], dir_output + filename + "_" + std::to_string(i) + ".nii.gz");
-        cmd += dir_output + filename + "_" + std::to_string(i) + ".nii.gz ";
+        MyITKImageHelper::writeImage(images[i], dir_output + filenames[i] + ".nii.gz");
+        cmd += dir_output + filenames[i] + ".nii.gz ";
+    }
+    cmd += "& ";
+
+    MyITKImageHelper::executeShellCommand(cmd);
+}
+
+void MyITKImageHelper::showImage(const std::vector<ImageType3D::Pointer> &images, const std::string *filenames){
+
+    const std::string dir_output = "/tmp/";
+
+    // View images via itksnap
+    std::string  cmd = "itksnap ";
+    cmd += "-g " + dir_output + filenames[0] + ".nii.gz ";
+    cmd += "-o ";
+
+    MyITKImageHelper::writeImage(images[0], dir_output + filenames[0] + ".nii.gz");
+
+    for(std::vector<ImageType3D::Pointer>::size_type i = 1; i < images.size(); ++i) {
+        MyITKImageHelper::writeImage(images[i], dir_output + filenames[i] + ".nii.gz");
+        cmd += dir_output + filenames[i] + ".nii.gz ";
     }
     cmd += "& ";
 
@@ -325,7 +354,7 @@ void MyITKImageHelper::printTransform(itk::AffineTransform< PixelType, 3 >::Cons
   itk::AffineTransform< PixelType, dim >::ParametersType parameters = transform->GetParameters();
   itk::AffineTransform< PixelType, dim >::ParametersType center = transform->GetFixedParameters();
 
-  std::cout << "Transform:" << std::endl;
+  std::cout << "AffineTransform:" << std::endl;
 
   std::cout << "\t center = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
@@ -348,7 +377,7 @@ void MyITKImageHelper::printTransform(itk::Euler3DTransform< PixelType >::ConstP
   itk::Euler3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
   itk::Euler3DTransform< PixelType >::ParametersType center = transform->GetFixedParameters();
 
-  std::cout << "Transform:" << std::endl;
+  std::cout << "Euler3DTransform:" << std::endl;
 
   std::cout << "\t center = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
@@ -374,7 +403,7 @@ void MyITKImageHelper::printTransform(itk::ScaledTranslationEuler3DTransform< Pi
   itk::ScaledTranslationEuler3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
   itk::ScaledTranslationEuler3DTransform< PixelType >::ParametersType center = transform->GetFixedParameters();
 
-  std::cout << "Transform:" << std::endl;
+  std::cout << "ScaledTranslationEuler3DTransform:" << std::endl;
 
   std::cout << "\t center = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
@@ -400,7 +429,7 @@ void MyITKImageHelper::printTransform(itk::InplaneSimilarity3DTransform< PixelTy
   itk::InplaneSimilarity3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
   itk::InplaneSimilarity3DTransform< PixelType >::ParametersType center = transform->GetFixedParameters();
 
-  std::cout << "Transform:" << std::endl;
+  std::cout << "InplaneSimilarity3DTransform:" << std::endl;
 
   std::cout << "\t center = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
@@ -416,7 +445,7 @@ void MyITKImageHelper::printTransform(itk::InplaneSimilarity3DTransform< PixelTy
     printf("\t\t%.4f\t%.4f\t%.4f\n", matrix[i][0], matrix[i][1], matrix[i][2]);
   }
 
-  std::cout << "\t scale = " << std::endl;
+  std::cout << "\t scale (in-plane) = " << std::endl;
   printf("\t\t%.4f\n", transform->GetScale());
 
 }

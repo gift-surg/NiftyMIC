@@ -321,7 +321,7 @@ class Registration(object):
             jacobian_nda[i,:] = nda_gradient_filter_vec[i,:].dot(nda_gradient_transform[i,:,:])
 
         if self._use_fixed_mask:
-            print("mask")
+        ## https://mail.scipy.org/pipermail/numpy-discussion/2007-March/026506.html
             jacobian_nda = jacobian_nda*self._nda_mask[:,np.newaxis]
 
         return -jacobian_nda

@@ -193,8 +193,8 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const double dTranslationScale = std::stod(input[21]);
 
     // Read images
-    const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving + ".nii.gz");
-    const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed + ".nii.gz");
+    const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving);
+    const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed);
     std::cout << "Fixed image  = " << sFixed << std::endl;
     std::cout << "Moving image = " << sMoving << std::endl;
 
@@ -205,14 +205,14 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     if(!sFixedMask.empty()){
         std::cout << "Fixed mask image = " << sFixedMask << std::endl;
         bUseFixedMask = true;
-        fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask + ".nii.gz");
+        fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask);
         spatialObjectFixedMask->SetImage( fixedMask );
         metric->SetFixedImageMask( spatialObjectFixedMask );
     }
     if(!sMovingMask.empty()){
         std::cout << "Moving mask image = " << sMovingMask << std::endl;
         bUseMovingMask = true;
-        movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask + ".nii.gz");
+        movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask);
         spatialObjectMovingMask->SetImage( movingMask );
         metric->SetMovingImageMask( spatialObjectMovingMask );
     }
@@ -285,32 +285,42 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // scalesEstimator->Print(std::cout);
     // std::cout << sBar;
 
-    // Initialize the transform
+    // Initialize the transform, including direction information of fixed image
     typename TransformType::Pointer initialTransform = TransformType::New();
+    typename TransformType::FixedParametersType fixedParameters = initialTransform->GetFixedParameters();
+    typename TransformType::FixedParametersType fixedParameters_extended = initialTransform->GetFixedParameters();
 
-    // typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
-    // typename TransformType::Pointer foo = TransformType::New();
-    // initializer->SetTransform(initialTransform);
+    // Copy previous fixed parameters
+    const unsigned int N_fixedParameters = fixedParameters.GetSize();
+    fixedParameters_extended.SetSize(N_fixedParameters + Dimension*Dimension);
+    for (int i = 0; i < N_fixedParameters; ++i)
+    {
+        fixedParameters_extended[i] = fixedParameters[i];
+    }
+    // Fill extended fixed parameters with direction information
+    ImageType3D::DirectionType direction = fixed->GetDirection();
+    for (int i = 0; i < Dimension; ++i)
+    {
+        for (int j = 0; j < Dimension; ++j)
+        {
+            fixedParameters_extended[N_fixedParameters+Dimension*i+j] = direction[i][j];
+        }
+    }
+    initialTransform->SetFixedParameters(fixedParameters_extended);
+
+    typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+    initializer->SetTransform(initialTransform);
     // initializer->SetTransform(foo);
-    // initializer->SetFixedImage( fixed );
-    // initializer->SetMovingImage( moving );
+    initializer->SetFixedImage( fixed );
+    initializer->SetMovingImage( moving );
     // initializer->GeometryOn();
     // initializer->MomentsOn();
-    // initializer->InitializeTransform();
+    initializer->InitializeTransform();
     // initialTransform->Print(std::cout);
-    // initialTransform->SetTranslation((0,0,0));
-    // initialTransform->Print(std::cout);
-    // initialTransform->SetFixedParameters(foo->GetFixedParameters());    
-    registration->SetFixedInitialTransform( initialTransform );
-    registration->InPlaceOff();
+    registration->SetInitialTransform( initialTransform );
+    registration->SetFixedInitialTransform( EulerTransformType::New() );
+    // registration->InPlaceOff();
     // registration->GetFixedInitialTransform()->Print(std::cout);
-
-    // Set scale for translation if itkScaledTranslationEuler3DTransform
-    ScaledTranslationEulerTransformType::Pointer scaledTranslationTransform = dynamic_cast< ScaledTranslationEulerTransformType* >(registration->GetModifiableTransform());
-    if ( scaledTranslationTransform.IsNotNull() ) {
-        scaledTranslationTransform->SetTranslationScale( dTranslationScale );
-        std::cout << "TranslationScale = " << scaledTranslationTransform->GetTranslationScale() << std::endl;
-    }
 
     // Set metric
     // metric->SetFixedInterpolator(  interpolator  );
@@ -414,7 +424,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
 
     //***Process registration results
-    typename TransformType::ConstPointer transform = registration->GetTransform();
+    typename TransformType::ConstPointer transform = registration->GetOutput()->Get();
     
     if ( bVerbose ) {
         // transform->Print(std::cout);
@@ -432,7 +442,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
     //***Write result to file
     if ( !sTransformOut.empty() ) {
-        MyITKImageHelper::writeTransform(transform, sTransformOut + ".txt", bVerbose);
+        MyITKImageHelper::writeTransform(transform, sTransformOut, bVerbose);
     }
 
     //***Resample warped moving image
@@ -468,12 +478,17 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
         movingMaskWarped->DisconnectPipeline();
 
-        MyITKImageHelper::writeImage(movingWarped, sTransformOut + "warpedMoving.nii.gz", bVerbose);
+        // Remove extension from filename
+        size_t lastindex = sTransformOut.find_last_of("."); 
+        const std::string sTransformOutWithoutExtension = sTransformOut.substr(0, lastindex);
+        MyITKImageHelper::writeImage(movingWarped, sTransformOutWithoutExtension + "warpedMoving.nii.gz", bVerbose);
         // MyITKImageHelper::writeImage(movingMaskWarped, sTransformOut + "warpedMoving_mask.nii.gz");
 
-        // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
-        // MyITKImageHelper::showImage(fixed, movingWarped, movingWarped, "fixed_moving");
-        // MyITKImageHelper::showImage(movingWarped, movingMaskWarped, "fixed_mask");
+        std::vector<ImageType3D::Pointer> image_vector;
+        image_vector.push_back(fixed);
+        image_vector.push_back(movingWarped);
+        std::string titles_array[2] = {"fixed", "moving_registered"};
+        MyITKImageHelper::showImage(image_vector, titles_array);
     }
 }
 

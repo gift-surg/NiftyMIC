@@ -79,7 +79,9 @@ public:
     static void showImage(const ImageType3D::Pointer image, const ImageType3D::Pointer overlay, const std::string &filename = "image+overlay");
     static void showImage(const ImageType3D::Pointer image, const ImageType3D::Pointer overlay, const ImageType3D::Pointer overlay2, const std::string &filename = "image+overlay+overlay2");
     static void showImage(const ImageType3D::Pointer image, const MaskImageType3D::Pointer segmentation, const std::string &filename = "image+segmentation");
-    static void showImage(const std::vector<ImageType3D::Pointer> images, const std::string &filename = "image");
+    static void showImage(const std::vector<ImageType3D::Pointer> &images, const std::string &filename = "image");
+    static void showImage(const std::vector<ImageType3D::Pointer> &images, const std::vector<std::string> &filenames);
+    static void showImage(const std::vector<ImageType3D::Pointer> &images, const std::string *filenames);
     static void showImage(const JacobianBaseType3D::Pointer dimage, const std::string &filename = "dimage");
 
     /** Read image */

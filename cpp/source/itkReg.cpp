@@ -257,8 +257,8 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const double dTranslationScale = std::stod(input[21]);
 
     // Read images
-    const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving + ".nii.gz");
-    const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed + ".nii.gz");
+    const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving);
+    const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed);
     std::cout << "Fixed image  = " << sFixed << std::endl;
     std::cout << "Moving image = " << sMoving << std::endl;
 
@@ -269,14 +269,14 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     if(!sFixedMask.empty()){
         std::cout << "Fixed mask image = " << sFixedMask << std::endl;
         bUseFixedMask = true;
-        fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask + ".nii.gz");
+        fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask);
         spatialObjectFixedMask->SetImage( fixedMask );
         metric->SetFixedImageMask( spatialObjectFixedMask );
     }
     if(!sMovingMask.empty()){
         std::cout << "Moving mask image = " << sMovingMask << std::endl;
         bUseMovingMask = true;
-        movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask + ".nii.gz");
+        movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask);
         spatialObjectMovingMask->SetImage( movingMask );
         metric->SetMovingImageMask( spatialObjectMovingMask );
     }
@@ -496,7 +496,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
     //***Write result to file
     if ( !sTransformOut.empty() ) {
-        MyITKImageHelper::writeTransform(transform, sTransformOut + ".txt", bVerbose);
+        MyITKImageHelper::writeTransform(transform, sTransformOut, bVerbose);
     }
 
     //***Resample warped moving image
@@ -532,7 +532,10 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
         movingMaskWarped->DisconnectPipeline();
 
-        MyITKImageHelper::writeImage(movingWarped, sTransformOut + "warpedMoving.nii.gz", bVerbose);
+        // Remove extension from filename
+        size_t lastindex = sTransformOut.find_last_of("."); 
+        const std::string sTransformOutWithoutExtension = sTransformOut.substr(0, lastindex);
+        MyITKImageHelper::writeImage(movingWarped, sTransformOutWithoutExtension + "warpedMoving.nii.gz", bVerbose);
         // MyITKImageHelper::writeImage(movingMaskWarped, sTransformOut + "warpedMoving_mask.nii.gz");
 
         // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
