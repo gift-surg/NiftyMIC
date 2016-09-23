@@ -382,8 +382,8 @@ void MyITKImageHelper::printTransform(itk::Euler3DTransform< PixelType >::ConstP
   std::cout << "\t center = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
 
-  std::cout << "\t angle_x_deg, angle_y_deg, angle_z_deg = " << std::endl;
-  printf("\t\t%.4f, %.4f, %.4f\n", parameters[0]*180/vnl_math::pi, parameters[1]*180/vnl_math::pi, parameters[2]*180/vnl_math::pi);
+  std::cout << "\t angle_x, angle_y, angle_z = " << std::endl;
+  printf("\t\t%.4f, %.4f, %.4f\n", parameters[0], parameters[1], parameters[2]);
   
   std::cout << "\t translation = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", parameters[3], parameters[4], parameters[5]);
@@ -408,8 +408,8 @@ void MyITKImageHelper::printTransform(itk::ScaledTranslationEuler3DTransform< Pi
   std::cout << "\t center = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
 
-  std::cout << "\t angle_x_deg, angle_y_deg, angle_z_deg = " << std::endl;
-  printf("\t\t%.4f, %.4f, %.4f\n", parameters[0]*180/vnl_math::pi, parameters[1]*180/vnl_math::pi, parameters[2]*180/vnl_math::pi);
+  std::cout << "\t angle_x, angle_y, angle_z = " << std::endl;
+  printf("\t\t%.4f, %.4f, %.4f\n", parameters[0], parameters[1], parameters[2]);
   
   std::cout << "\t translation = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", parameters[3], parameters[4], parameters[5]);
@@ -434,8 +434,8 @@ void MyITKImageHelper::printTransform(itk::InplaneSimilarity3DTransform< PixelTy
   std::cout << "\t center = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", center[0], center[1], center[2]);
 
-  std::cout << "\t angle_x_deg, angle_y_deg, angle_z_deg = " << std::endl;
-  printf("\t\t%.4f, %.4f, %.4f\n", parameters[0]*180/vnl_math::pi, parameters[1]*180/vnl_math::pi, parameters[2]*180/vnl_math::pi);
+  std::cout << "\t versor = " << std::endl;
+  printf("\t\t%.4f, %.4f, %.4f\n", parameters[0], parameters[1], parameters[2]);
   
   std::cout << "\t translation = " << std::endl;
   printf("\t\t%.4f\t%.4f\t%.4f\n", parameters[3], parameters[4], parameters[5]);

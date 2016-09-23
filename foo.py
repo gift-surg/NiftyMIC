@@ -74,22 +74,42 @@ if __name__ == '__main__':
     fixed = stack
     moving = HR_volume
 
+    shape = np.array(stack_sitk.GetSize())
 
-    registration = myreg.Registration(fixed, moving)
-    registration.use_verbose(True)
-    registration.run_registration()
+    index = (shape/2).astype('int')
 
-    print registration.get_parameters()
-    transform_sitk = registration.get_registration_transform_sitk()
+    D = np.array(stack_sitk.GetDirection()).reshape(3,3)
+    origin = np.array(stack_sitk.GetOrigin())
+    spacing = np.array(stack_sitk.GetSpacing())
+    x0 = stack_sitk.TransformIndexToPhysicalPoint(index)
+    print(D.dot(spacing*index)+origin - x0)
 
-    moving_resampled_sitk = sitk.Resample(moving.sitk, fixed.sitk, sitk.Euler3DTransform(), sitk.sitkBSpline)
-    moving_registered_sitk = sitk.Resample(moving.sitk, fixed.sitk, transform_sitk, sitk.sitkBSpline)
+    scale = 0.7
+    spacing_new = np.array(spacing)
+    spacing_new[0:-1] *= scale
+    stack_sitk_new = sitk.Image(stack_sitk)
+    stack_sitk_new.SetSpacing(spacing_new)
 
-    # sitkh.show_sitk_image([fixed.sitk, moving_resampled_sitk, moving_registered_sitk], ["fixed", "moving_orig", "moving_registered"])
+    origin_new = np.array(stack_sitk_new.GetOrigin())
+    x0_new = stack_sitk_new.TransformIndexToPhysicalPoint(index)
+    print(D.dot(spacing_new*index)+origin - x0_new)
 
-    sitkh.show_sitk_image(fixed.sitk,"fixed")
-    sitkh.show_sitk_image(moving_resampled_sitk,"moving_resampled")
-    sitkh.show_sitk_image(moving_registered_sitk,"moving_registered")
+
+    # registration = myreg.Registration(fixed, moving)
+    # registration.use_verbose(True)
+    # registration.run_registration()
+
+    # print registration.get_parameters()
+    # transform_sitk = registration.get_registration_transform_sitk()
+
+    # moving_resampled_sitk = sitk.Resample(moving.sitk, fixed.sitk, sitk.Euler3DTransform(), sitk.sitkBSpline)
+    # moving_registered_sitk = sitk.Resample(moving.sitk, fixed.sitk, transform_sitk, sitk.sitkBSpline)
+
+    # # sitkh.show_sitk_image([fixed.sitk, moving_resampled_sitk, moving_registered_sitk], ["fixed", "moving_orig", "moving_registered"])
+
+    # sitkh.show_sitk_image(fixed.sitk,"fixed")
+    # sitkh.show_sitk_image(moving_resampled_sitk,"moving_resampled")
+    # sitkh.show_sitk_image(moving_registered_sitk,"moving_registered")
 
     # # image_2D_itk = sitkh.read_itk_image(dir_input + filename_2D + ".nii.gz", dim=2, pixel_type=PIXEL_TYPE)
     # # HRvolume_itk = sitkh.read_itk_image(dir_input + filename_HRVolume + ".nii.gz", dim=3, pixel_type=PIXEL_TYPE)
@@ -119,6 +139,7 @@ if __name__ == '__main__':
     # sitkh.show_sitk_image([stack.sitk, stack_registered_sitk], ["original", "inplane-registered"])
 
                 
+
 
 
 

@@ -171,7 +171,8 @@ class RegistrationITK:
     # \return     The parameters as numpy array.
     #
     def get_parameters(self):
-        return self._parameters
+        return np.array(self._parameters)
+
 
     ##-------------------------------------------------------------------------
     # \brief      Gets the fixed parameters obtained by the registration.
@@ -182,7 +183,7 @@ class RegistrationITK:
     # \return     The fixed parameters as numpy array.
     #
     def get_parameters_fixed(self):
-        return self._parameters_fixed
+        return np.array(self._parameters_fixed)
 
 
     ## Get registered image
@@ -360,8 +361,9 @@ class RegistrationITK:
         ## Read transformation file
         params_all = np.loadtxt(self._dir_tmp + registration_transform_str + ".txt")
 
-        self._parameters_fixed = params_all[0:3]
+        self._parameters_fixed = params_all[0:-7]
         self._parameters = params_all[-7:]
+
 
         # transform_sitk = sitk.Euler3DTransform()
         # transform_sitk.SetParameters(parameters[0:-1])
