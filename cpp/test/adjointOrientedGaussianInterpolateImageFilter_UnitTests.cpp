@@ -1361,65 +1361,6 @@ TEST_CASE( "Check 3D itkOrientedGaussianInterpolateImageFilter Jacobian: Real sc
     CHECK( 1 == Approx(0).epsilon(tolerance));
 }
 
-
-// TEST_CASE( "Malformed command line", "[Command line]" ) {
-
-//     REQUIRE( system("../../bin/conwaysGameOfLife --help") == EXIT_SUCCESS );
-
-//     ///**Would like to ask for '== EXIT_FAILURE' but return value
-//     ///**system() in Mac gives 255 back whereas EXIT_FAILURE = 1 (wtf
-//     REQUIRE( system("../../bin/conwaysGameOfLife") != EXIT_SUCCESS );
-
-//     ///**Valid command line (therefore delete a possibly existing out.t
-//     system("rm ../exampleData/out*.txt");
-//     REQUIRE( system("../../bin/conwaysGameOfLife \
-//         --i '../exampleData/InitialBoardRandom_10Times10.txt' \
-//         --o '../exampleData/out.txt' \
-//         --s 1 \
-//         ") == EXIT_SUCCESS );
-
-//     ///**output file now already given and shall not be overwritt
-//     REQUIRE( system("../../bin/conwaysGameOfLife \
-//         --i '../exampleData/InitialBoardRandom_10Times10.txt' \
-//         --o '../exampleData/out.txt' \
-//         --s 1 \
-//         ") != EXIT_SUCCESS );
-
-//     system("rm ../exampleData/out*.txt");
-//     REQUIRE( system("../../bin/conwaysGameOfLife \
-//         --i '../exampleData/InitialBoardRandom_10Times10.txt' \
-//         --o '../exampleData/out.txt' \
-//         --s 10000 \
-//         ") != EXIT_SUCCESS );
-
-//     system("rm ../exampleData/out*.txt");
-//     REQUIRE( system("../../bin/conwaysGameOfLife \
-//         --i '../exampleData/InitialBoardRandom_10Times10.txt' \
-//         --s 10 \
-//         ") != EXIT_SUCCESS );
-
-//     system("rm ../exampleData/out*.txt");
-//     REQUIRE( system("../../bin/conwaysGameOfLife \
-//         --o '../exampleData/out.txt' \
-//         --s 10000 \
-//         ") != EXIT_SUCCESS );
-
-//     system("rm ../exampleData/out*.txt");
-//     REQUIRE( system("../../bin/conwaysGameOfLife \
-//         --i '../exampleData/InitialBoardRandom_10Times10.txt' \
-//         --o '../exampleData/out.txt' \
-//         ") != EXIT_SUCCESS );
-
-//     system("rm ../exampleData/out*.txt");
-// }
-
-// TEST_CASE( "Check whether file for input read is given", 
-//   "[Not existing txt-file]") {
-//     std::string sdir = "../exampleData/";
-
-//     REQUIRE_THROWS_AS(Game *game = new Game(sdir+"nofile.txt"), MyException);
-// }
-
 */
 
 

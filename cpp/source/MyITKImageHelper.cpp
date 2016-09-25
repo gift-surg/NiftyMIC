@@ -474,7 +474,7 @@ void MyITKImageHelper::writeTransform(itk::AffineTransform< PixelType, 3 >::Cons
     for (int i = 0; i < iNumberOfFixedParameters; ++i) {
         output << fixedParameters[i] << " ";
     }
-    for (int i = 0; i<  iNumberOfParameters; ++i) {
+    for (int i = 0; i < iNumberOfParameters; ++i) {
         output << parameters[i] << " ";
     }
     if (bVerbose){
@@ -507,7 +507,7 @@ void MyITKImageHelper::writeTransform(itk::Euler3DTransform< PixelType >::ConstP
     for (int i = 0; i < iNumberOfFixedParameters; ++i) {
         output << fixedParameters[i] << " ";
     }
-    for (int i = 0; i<  iNumberOfParameters; ++i) {
+    for (int i = 0; i < iNumberOfParameters; ++i) {
         output << parameters[i] << " ";
     }
     if (bVerbose){
@@ -539,7 +539,7 @@ void MyITKImageHelper::writeTransform(itk::ScaledTranslationEuler3DTransform< Pi
     for (int i = 0; i < iNumberOfFixedParameters; ++i) {
         output << fixedParameters[i] << " ";
     }
-    for (int i = 0; i<  iNumberOfParameters; ++i) {
+    for (int i = 0; i < iNumberOfParameters; ++i) {
         output << parameters[i] << " ";
     }
     if (bVerbose){
@@ -554,6 +554,14 @@ void MyITKImageHelper::writeTransform(itk::InplaneSimilarity3DTransform< PixelTy
 
     itk::InplaneSimilarity3DTransform< PixelType >::ParametersType parameters = transform->GetParameters();
     itk::InplaneSimilarity3DTransform< PixelType >::ParametersType fixedParameters = transform->GetFixedParameters();
+    itk::InplaneSimilarity3DTransform< PixelType >::OffsetType offset = transform->GetOffset();
+
+    // Replace translation by its offset and set center to zero
+    for (int i = 0; i < 3; ++i)
+    {
+      fixedParameters[i] = 0.0;
+      parameters[3+i] = offset[i];
+    }
 
     const unsigned int iNumberOfParameters = parameters.size();
     const unsigned int iNumberOfFixedParameters = fixedParameters.size();
@@ -571,7 +579,7 @@ void MyITKImageHelper::writeTransform(itk::InplaneSimilarity3DTransform< PixelTy
     for (int i = 0; i < iNumberOfFixedParameters; ++i) {
         output << fixedParameters[i] << " ";
     }
-    for (int i = 0; i<  iNumberOfParameters; ++i) {
+    for (int i = 0; i < iNumberOfParameters; ++i) {
         output << parameters[i] << " ";
     }
     if (bVerbose){
