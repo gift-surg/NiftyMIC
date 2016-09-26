@@ -24,6 +24,7 @@ class ScatteredDataApproximation:
     ## Constructor
     #  \param[in] stack_manager instance of StackManager containing all stacks and additional information
     #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (required for defining HR space)
+    #  \post HR_volume is updated with current volumetric estimate
     def __init__(self, stack_manager, HR_volume):
 
         ## Initialize variables
