@@ -366,12 +366,25 @@ class Stack:
                 print(err.message)
 
 
-    ## After slice-based registrations slice j does not correspond to the physical
-    #  space of stack[:,:,j:j+1] anymore. With this method resample all containing
-    #  slices to the physical space defined by the stack. Overlapping slices get 
-    #  averaged
-    #  \return resampled stack based on current position of slices as Stack object
-    def get_resampled_stack_from_slices(self, interpolator="NearestNeighbor"):
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the resampled stack from slices.
+    # \date       2016-09-26 17:28:43+0100
+    #
+    # After slice-based registrations slice j does not correspond to the
+    # physical space of stack[:,:,j:j+1] anymore. With this method resample all
+    # containing slices to the physical space defined by the stack itself (or
+    # by a given resampling_pace). Overlapping slices get averaged.
+    #
+    # \param      self              The object
+    # \param      resampling_space  Define the space to which the stack of
+    #                               slices shall be resampled; given as Stack
+    #                               object
+    # \param      interpolator      The interpolator
+    #
+    # \return     resampled stack based on current position of slices as Stack
+    #             object
+    #
+    def get_resampled_stack_from_slices(self, resampling_space=None, interpolator="NearestNeighbor"):
 
          ## Choose interpolator
         try:
@@ -379,17 +392,30 @@ class Stack:
         except:
             raise ValueError("Error: interpolator is not known")
 
+        ## Use resampling space defined by original volumetric image
+        if resampling_space is None:
+            resampling_space = Stack.from_sitk_image(self.sitk)
+
+        ## Use resampling space defined by first slice (which might be shifted already)
+        elif resampling_space in ["first_slice"]:
+            stack_sitk = sitk.Image(self.sitk)
+            foo_sitk = sitk.Image(self._slices[0].sitk)
+            stack_sitk.SetDirection(foo_sitk.GetDirection())
+            stack_sitk.SetOrigin(foo_sitk.GetOrigin())
+            stack_sitk.SetDirection(foo_sitk.GetDirection())
+            resampling_space = Stack.from_sitk_image(stack_sitk)
+
         ## Get shape of image data array
-        nda_shape = self.sitk.GetSize()[::-1]
+        nda_shape = resampling_space.sitk.GetSize()[::-1]
 
         ## Create zero image and its mask aligned with sitk.Image
         nda = np.zeros(nda_shape)
         
         stack_resampled_sitk = sitk.GetImageFromArray(nda)
-        stack_resampled_sitk.CopyInformation(self.sitk)
+        stack_resampled_sitk.CopyInformation(resampling_space.sitk)
 
         stack_resampled_sitk_mask = sitk.GetImageFromArray(nda.astype("uint8"))
-        stack_resampled_sitk_mask.CopyInformation(self.sitk_mask)
+        stack_resampled_sitk_mask.CopyInformation(resampling_space.sitk_mask)
 
         ## Create helper used for normalization at the end
         nda_stack_covered_indices = np.zeros(nda_shape)
@@ -403,19 +429,19 @@ class Stack:
             ## Resample slice and its mask to stack space
             stack_resampled_slice_sitk = sitk.Resample(
                 slice.sitk, 
-                self.sitk, 
+                resampling_space.sitk, 
                 sitk.Euler3DTransform(), 
                 interpolator, 
                 default_pixel_value, 
-                self.sitk.GetPixelIDValue())
+                resampling_space.sitk.GetPixelIDValue())
 
             stack_resampled_slice_sitk_mask = sitk.Resample(
                 slice.sitk_mask, 
-                self.sitk_mask, 
+                resampling_space.sitk_mask, 
                 sitk.Euler3DTransform(), 
                 interpolator, 
                 default_pixel_value, 
-                self.sitk_mask.GetPixelIDValue())
+                resampling_space.sitk_mask.GetPixelIDValue())
 
             ## Add resampled slice and mask to stack space
             stack_resampled_sitk += stack_resampled_slice_sitk
@@ -433,7 +459,7 @@ class Stack:
 
         ## Normalize resampled image
         stack_normalization = sitk.GetImageFromArray(nda_stack_covered_indices)
-        stack_normalization.CopyInformation(self.sitk)
+        stack_normalization.CopyInformation(resampling_space.sitk)
         stack_resampled_sitk /= stack_normalization
 
         ## Get valid binary mask

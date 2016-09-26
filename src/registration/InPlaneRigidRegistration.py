@@ -29,18 +29,34 @@ import RegistrationSimpleITK as regsitk
 #
 class InPlaneRigidRegistration:
 
-    def __init__(self):
-        self._registration_2D = regsitk.RegistrationSimpleITK()
-        self._registration_2D.set_registration_type("Rigid")
-        # self._registration_2D.use_multiresolution_framework(True)
-        self._registration_2D.set_centered_transform_initializer(None)
-        self._registration_2D.set_optimizer_scales_from("PhysicalShift")
-        # self._registration_2D.set_metric("MattesMutualInformation")
-        # self._registration_2D.set_metric("MeanSquares")
-        self._registration_2D.set_metric("Correlation")
-        self._registration_2D.use_fixed_mask(True)
-        self._registration_2D.use_moving_mask(True)
-        self._registration_2D.use_verbose(False)
+    ##-------------------------------------------------------------------------
+    # \brief      { constructor_description }
+    # \date       2016-09-26 10:20:03+0100
+    #
+    # \param      self   The object
+    # \param      stack  The stack
+    #
+    def __init__(self, stack=None, reference=None):
+        
+
+        self._alignment_approach = "align_within_stack"
+        self._run_in_plane_registration = {
+            "align_within_stack"    : self._run_in_plane_registration_within_stack,
+            "align_to_reference"    : self._run_in_plane_registration_to_reference
+        }
+
+        if stack is not None:
+            self._stack = st.Stack.from_stack(stack, filename=stack.get_filename())
+            self._slices = self._stack.get_slices()
+            self._N_slices = self._stack.get_number_of_slices()
+
+        if reference is not None:
+            try:
+                self._stack.sitk - reference.sitk
+            except:
+                raise ValueError("Reference and stack are not in the same space")
+            self._reference = reference
+            self._alignment_approach = "align_to_reference"
 
 
     ##-------------------------------------------------------------------------
@@ -51,20 +67,30 @@ class InPlaneRigidRegistration:
     # \param      stack  stack as Stack object
     #
     def set_stack(self, stack):
-        self._stack = st.Stack.from_stack(stack)
+        self._stack = st.Stack.from_stack(stack, filename=stack.get_filename())
         self._slices = self._stack.get_slices()
         self._N_slices = self._stack.get_number_of_slices()
 
 
+    def set_reference(self, reference):
+        try:
+            self._stack.sitk - reference.sitk
+        except:
+            raise ValueError("Reference and stack are not in the same space")
+
+        self._reference = reference
+        self._alignment_approach = "align_to_reference"
+
+
     ##-------------------------------------------------------------------------
-    # \brief      Gets the stack.
+    # \brief      Gets the in-plane rigidly registered stack.
     # \date       2016-09-20 22:38:53+0100
     #
     # \param      self  The object
     #
     # \return     The stack as Stack object.
     #
-    def get_stack(self):
+    def get_inplane_registered_stack(self):
         return self._stack
 
 
@@ -76,14 +102,91 @@ class InPlaneRigidRegistration:
     #
     def run_registration(self):
 
+        self._run_in_plane_registration[self._alignment_approach]()
+
+
+    def _run_in_plane_registration_to_reference(self):
+
+        print("*** Perform rigid in-plane registration based on reference ***")
+
+        ## Set up registration
+        registration_2D = regsitk.RegistrationSimpleITK()
+        registration_2D.set_registration_type("Rigid")
+        # registration_2D.use_multiresolution_framework(True)
+        registration_2D.set_centered_transform_initializer(None)
+        registration_2D.set_scales_estimator("PhysicalShift")
+        # registration_2D.set_metric("MattesMutualInformation")
+        # registration_2D.set_metric("MeanSquares")
+        registration_2D.set_metric("Correlation")
+        registration_2D.use_fixed_mask(False)
+        registration_2D.use_moving_mask(False)
+        registration_2D.use_verbose(False)
+
         ## Get list of 3D affine transforms to arrive at the positions of the
         ## original 3D slices
         transforms_PP_3D_sitk = self._get_list_of_3D_rigid_transforms_of_slices()
 
-        # for i in range(self._N_slices-2,-1,-1):
-            # slice_2D_moving = self._get_2D_slice(self._slices[i+1], transforms_PP_3D_sitk[i+1])
-        for i in range(1, self._N_slices):
-            slice_2D_moving = self._get_2D_slice(self._slices[i-1], transforms_PP_3D_sitk[i-1])
+        slices_reference = self._reference.get_slices()
+
+        for i in range(0, self._N_slices):
+            slice_2D_fixed = self._get_2D_slice(self._slices[i], transforms_PP_3D_sitk[i])
+            slice_2D_moving = self._get_2D_slice(slices_reference[i], transforms_PP_3D_sitk[i])
+
+            ## Perform in-plane rigid registration
+            registration_2D.set_fixed(slice_2D_fixed)
+            registration_2D.set_moving(slice_2D_moving)
+            registration_2D.run_registration()
+
+            rigid_registration_transform_2D_sitk = registration_2D.get_registration_transform_sitk()
+
+            # foo_2D_sitk = sitkh.get_transformed_image(slice_2D_fixed.sitk, rigid_registration_transform_2D_sitk)
+            # foo_2D_sitk = sitk.Resample(foo_2D_sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
+            # before_2D_sitk = sitk.Resample(slice_2D_fixed.sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
+            # sitkh.show_sitk_image([slice_2D_moving.sitk, before_2D_sitk, foo_2D_sitk],["moving","fixed_before", "fixed_after"])
+
+            ## Expand to 3D transform
+            rigid_registration_transform_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(rigid_registration_transform_2D_sitk)
+
+            ## Compose to 3D in-plane transform
+            affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(rigid_registration_transform_3D_sitk, transforms_PP_3D_sitk[i])
+            affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(sitk.AffineTransform(transforms_PP_3D_sitk[i].GetInverse()), affine_transform_sitk)
+
+            self._slices[i].update_motion_correction(affine_transform_sitk)   
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Run in-plane rigid registration to align within stack
+    # \date       2016-09-26 16:11:14+0100
+    #
+    # \param      self  The object
+    #
+    # \return     { description_of_the_return_value }
+    #
+    def _run_in_plane_registration_within_stack(self):
+
+        print("*** Perform rigid in-plane registration within stack ***")
+
+        ## Set up registration
+        registration_2D = regsitk.RegistrationSimpleITK()
+        registration_2D.set_registration_type("Rigid")
+        # registration_2D.use_multiresolution_framework(True)
+        registration_2D.set_centered_transform_initializer(None)
+        registration_2D.set_scales_estimator("PhysicalShift")
+        # registration_2D.set_metric("MattesMutualInformation")
+        # registration_2D.set_metric("MeanSquares")
+        registration_2D.set_metric("Correlation")
+        registration_2D.use_fixed_mask(False)
+        registration_2D.use_moving_mask(False)
+        registration_2D.use_verbose(False)
+
+        ## Get list of 3D affine transforms to arrive at the positions of the
+        ## original 3D slices
+        transforms_PP_3D_sitk = self._get_list_of_3D_rigid_transforms_of_slices()
+
+        for i in range(self._N_slices-2,-1,-1):
+            slice_2D_moving = self._get_2D_slice(self._slices[i+1], transforms_PP_3D_sitk[i+1])
+        # for i in range(1, self._N_slices):
+            # slice_2D_moving = self._get_2D_slice(self._slices[i-1], transforms_PP_3D_sitk[i-1])
 
             slice_2D_fixed  = self._get_2D_slice(self._slices[i], transforms_PP_3D_sitk[i])
 
@@ -91,16 +194,15 @@ class InPlaneRigidRegistration:
             # print("slice_2D_moving.sitk.GetDirection() = " + str(slice_2D_moving.sitk.GetDirection()))
 
             ## Perform in-plane rigid registration
-            self._registration_2D.set_fixed(slice_2D_fixed)
-            self._registration_2D.set_moving(slice_2D_moving)
-            self._registration_2D.run_registration()
+            registration_2D.set_fixed(slice_2D_fixed)
+            registration_2D.set_moving(slice_2D_moving)
+            registration_2D.run_registration()
 
-            rigid_registration_transform_2D_sitk = self._registration_2D.get_registration_transform_sitk()
+            rigid_registration_transform_2D_sitk = registration_2D.get_registration_transform_sitk()
 
             # foo_2D_sitk = sitkh.get_transformed_image(slice_2D_fixed.sitk, rigid_registration_transform_2D_sitk)
             # foo_2D_sitk = sitk.Resample(foo_2D_sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
             # before_2D_sitk = sitk.Resample(slice_2D_fixed.sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
-
             # sitkh.show_sitk_image([slice_2D_moving.sitk, before_2D_sitk, foo_2D_sitk],["moving","fixed_before", "fixed_after"])
 
             ## Expand to 3D transform
@@ -114,7 +216,8 @@ class InPlaneRigidRegistration:
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Get 2D slice for in-plane operations and
+    # \brief      Get 2D slice for in-plane operations as projection from 3D
+    #             space onto the x-y-plane.
     # \date       2016-09-20 22:42:45+0100
     #
     # Get 2D slice for in-plane operations, i.e. where in-plane motion can be
@@ -125,9 +228,11 @@ class InPlaneRigidRegistration:
     # Given that it operates from the physical 3D space to the physical 3D
     # space the name 'PP' is given.
     #
-    # \param      self  The object
+    # \param      self               The object
+    # \param      slice_3D           The slice 3d
+    # \param      transform_PP_sitk  sitk
     #
-    # \return     2D slice (Slice objects)
+    # \return     Projected 2D slice onto x-y-plane of 3D stack as Slice object
     #
     def _get_2D_slice(self, slice_3D, transform_PP_sitk):
 
@@ -164,7 +269,7 @@ class InPlaneRigidRegistration:
     ##-------------------------------------------------------------------------
     # \brief      Get the 3D rigid transforms to arrive at the positions of
     #             original 3D slices starting from the physically aligned
-    #             space.
+    #             space with the main image axes.
     # \date       2016-09-20 23:37:05+0100
     #
     # The rigid transform is given as composed translation and rotation
@@ -177,10 +282,13 @@ class InPlaneRigidRegistration:
     #
     def _get_list_of_3D_rigid_transforms_of_slices(self):
 
-        transforms_PP_3D_sitk = [None]*self._N_slices
+        N_slices = self._stack.get_number_of_slices()
+        slices = self._stack.get_slices()
 
-        for i in range(0, self._N_slices):
-            slice_3D_sitk = self._slices[i].sitk
+        transforms_PP_3D_sitk = [None]*N_slices
+
+        for i in range(0, N_slices):
+            slice_3D_sitk = slices[i].sitk
 
             ## Extract origin and direction matrix from slice:
             origin_3D_sitk = np.array(slice_3D_sitk.GetOrigin())

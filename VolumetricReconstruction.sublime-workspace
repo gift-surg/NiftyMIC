@@ -4,6 +4,126 @@
 		"selected_items":
 		[
 			[
+				"euler",
+				"euler_sitk"
+			],
+			[
+				"motion",
+				"motion_sitk"
+			],
+			[
+				"motino",
+				"motion_matrix"
+			],
+			[
+				"Verso",
+				"VersorRigid3DTransform\t(preprocessFiles.py)"
+			],
+			[
+				"SetC",
+				"SetComputeZYX\tfunction"
+			],
+			[
+				"SetR",
+				"SetRotation\tfunction"
+			],
+			[
+				"GetS",
+				"GetSpacing\tfunction"
+			],
+			[
+				"_scal",
+				"_scaled_registered_affine"
+			],
+			[
+				"image_re",
+				"image_resampled_sitk_rigid"
+			],
+			[
+				"Set",
+				"SetCenter\tfunction"
+			],
+			[
+				"affine",
+				"affine_matrix"
+			],
+			[
+				"orign_",
+				"origin_scaled"
+			],
+			[
+				"image_ref_",
+				"image_ref_scaled_sitk"
+			],
+			[
+				"spacing_s",
+				"spacing_scaled"
+			],
+			[
+				"SetS",
+				"SetSpacing\t(preprocessFiles.py)"
+			],
+			[
+				"GetO",
+				"GetOrigin\t(Stack.py)"
+			],
+			[
+				"as",
+				"astype\t(Stack.py)"
+			],
+			[
+				"sho_",
+				"show_sitk_image\t(preprocessFiles.py)"
+			],
+			[
+				"fixed",
+				"fixed_parameters"
+			],
+			[
+				"image_ref",
+				"image_ref_copy_sitk"
+			],
+			[
+				"image_",
+				"image_ref_sitk"
+			],
+			[
+				"show_",
+				"show_sitk_image\t(foo.py)"
+			],
+			[
+				"image_co",
+				"image_corrected_copy_sitk"
+			],
+			[
+				"Get",
+				"GetInverse\tfunction"
+			],
+			[
+				"trafo",
+				"trafo_sitk"
+			],
+			[
+				"fixe",
+				"fixed_parameters"
+			],
+			[
+				"get_p",
+				"get_parameters_fixed\t(RegistrationITK.py)"
+			],
+			[
+				"_p",
+				"_parameters_fixed\tstatement"
+			],
+			[
+				"Ne",
+				"NearestNeighbor\t(Stack.py)"
+			],
+			[
+				"Rei",
+				"RegistrationITK"
+			],
+			[
 				"_use",
 				"_use_fixed_mask\tstatement"
 			],
@@ -74,14 +194,6 @@
 			[
 				"trans",
 				"transform_sitk"
-			],
-			[
-				"fixed",
-				"fixed_sitk"
-			],
-			[
-				"show_",
-				"show_sitk_image\t(preprocessFiles.py)"
 			],
 			[
 				"moving",
@@ -156,10 +268,6 @@
 				"origin_3D_sitk"
 			],
 			[
-				"SetR",
-				"SetTranslation\tfunction"
-			],
-			[
 				"rigid_tran",
 				"rigid_transform_PP_sitk"
 			],
@@ -216,10 +324,6 @@
 				"image_sitk\tstatement"
 			],
 			[
-				"Set",
-				"SetSpacing\tfunction"
-			],
-			[
 				"GetImage",
 				"GetImageFromArray"
 			],
@@ -244,20 +348,12 @@
 				"DIR_INPUT"
 			],
 			[
-				"GetO",
-				"GetOrigin\t(SimpleITKHelper.py)"
-			],
-			[
 				"get_sit",
 				"get_sitk_direction_from_itk_direction\t(SimpleITKHelper.py)"
 			],
 			[
 				"GetDi",
 				"GetDirection\t(SimpleITKHelper.py)"
-			],
-			[
-				"image_ref",
-				"image_ref_itk"
 			],
 			[
 				"itk2n",
@@ -302,10 +398,6 @@
 			[
 				"Mattes",
 				"MattesMutualInformation\t(RegistrationSimpleITK.py)"
-			],
-			[
-				"image_",
-				"image_ref"
 			],
 			[
 				"correc",
@@ -422,98 +514,6 @@
 			[
 				"GetImag",
 				"GetImageFromArray\t(SimpleITKHelper.py)"
-			],
-			[
-				"_itk2",
-				"_itk2np_CVD33"
-			],
-			[
-				"_itk",
-				"_itk2np\tstatement"
-			],
-			[
-				"dslice_",
-				"dslice_simulated_nda_flat"
-			],
-			[
-				"dslice",
-				"dslice_simulated_nda"
-			],
-			[
-				"slice_si",
-				"slice_simulated_nda"
-			],
-			[
-				"itk2np_",
-				"itk2np_CVD33\t(foo.py)"
-			],
-			[
-				"filter_",
-				"filter_OrientedGaussian_3D"
-			],
-			[
-				"Oried",
-				"OrientedGaussianInterpolateImageFilter\t(Registration.py)"
-			],
-			[
-				"jac",
-				"jacobian"
-			],
-			[
-				"grad",
-				"grad_filter"
-			],
-			[
-				"IMAG",
-				"IMAGE_TYPE"
-			],
-			[
-				"Gradi",
-				"GradientImageFilter\t(foo.py)"
-			],
-			[
-				"_slice_s",
-				"_slice_size"
-			],
-			[
-				"transforme_",
-				"transformed_image_itk"
-			],
-			[
-				"convert_",
-				"convert_sitk_to_itk_image\t(SimpleITKHelper.py)"
-			],
-			[
-				"transformed",
-				"transformed_image_sitk"
-			],
-			[
-				"origin",
-				"origin_sitk"
-			],
-			[
-				"jacobian",
-				"jacobian_spatial_Ak_vol_itk"
-			],
-			[
-				"nda_gradient",
-				"nda_gradient_transform"
-			],
-			[
-				"nda_gra",
-				"nda_gradient_filter"
-			],
-			[
-				"Jac",
-				"Jacobian_nda\tstatement"
-			],
-			[
-				"_slice",
-				"_slice_voxels"
-			],
-			[
-				"Jaco",
-				"Jacobian_spatial_Ak_vol_itk"
 			]
 		]
 	},
@@ -539,7 +539,25 @@
 			"file": "studies/30YearMSData/preprocessFiles.py",
 			"settings":
 			{
-				"buffer_size": 17154,
+				"buffer_size": 17444,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base/SimpleITKHelper.py",
+			"settings":
+			{
+				"buffer_size": 24199,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "test/Test_main.py",
+			"settings":
+			{
+				"buffer_size": 1295,
 				"line_ending": "Unix"
 			}
 		},
@@ -552,10 +570,19 @@
 			}
 		},
 		{
+			"file": "GettingStarted/SimpleITK_PhysicalCoordinates.py",
+			"settings":
+			{
+				"buffer_size": 16404,
+				"line_ending": "Unix"
+			}
+		},
+		{
 			"file": "foo.py",
 			"settings":
 			{
-				"buffer_size": 4439,
+				"buffer_size": 5139,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
@@ -563,7 +590,8 @@
 			"file": "test/modules/Test_Registration.py",
 			"settings":
 			{
-				"buffer_size": 9764,
+				"buffer_size": 17596,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
@@ -588,6 +616,26 @@
 			"settings":
 			{
 				"buffer_size": 9722,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/registration/RegistrationITK.py",
+			"settings":
+			{
+				"buffer_size": 15362,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "-1.147404092 -10.30541538 62.48005168 0.9776210901 0.2103688162 0.00140276458 0.210342067 -0.9775685861 0.01076438282 -0.003635789078 0.01022842733 0.9999410784 -0.01099046919 -0.01172967976 -0.1055047036 82.79913552 113.4694073 -0.8732003524 0.8202406343 ",
+			"file": "/private/tmp/RegistrationITK/RegistrationITK_transform_002-30yr-AxT2_1year.txt.txt",
+			"file_size": 256,
+			"file_write_time": 131190465560000000,
+			"settings":
+			{
+				"buffer_size": 256,
 				"line_ending": "Unix"
 			}
 		},
@@ -785,9 +833,8 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/cpp/source",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/preprocessing",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction",
-		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction/regularization_parameter_estimator",
+		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction/solver",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/registration",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/simulation",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/validation",
@@ -799,6 +846,7 @@
 	],
 	"file_history":
 	[
+		"/private/tmp/RegistrationITK/RegistrationITK_transform_002-30yr-AxT2_1year.txt",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/simulation/SimulatorSliceAcqusition.py",
 		"/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/reconstruction/solver/Solver.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/test/modules/Test_SimpleITKHelper.py",
@@ -925,8 +973,7 @@
 		"/Users/mebner/UCL/UCL/Publications/2016_RAMBO/Paper/code/randomizeFilenames.py",
 		"/Users/mebner/development/LSQR/LSQR-cpp-build/Testing/lsqrCxxTests.cxx",
 		"/Users/mebner/UCL/UCL/Publications/2016_RAMBO/Paper/code/plotFigures.m",
-		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/documentation/evaluateSensitivityNotchTime.m",
-		"/Users/mebner/UCL/UCL/Publications/2016_RAMBO/Paper/code/Matlab2LaTeX_siunitx_pm.m"
+		"/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab/documentation/evaluateSensitivityNotchTime.m"
 	],
 	"find":
 	{
@@ -963,6 +1010,60 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"direction",
+			"image",
+			"image_ref",
+			"_estimated",
+			"parameters_estimated",
+			"k1",
+			"i,",
+			"j)",
+			"k,",
+			"k",
+			"index",
+			"sitkLinear",
+			"sitkNearestNeighbor",
+			"filename_ref",
+			"filename_HRVolume",
+			"image_resampled_sitk",
+			"image_resampled_sitk_rigid",
+			"image_corrected_sitk",
+			"D_inv",
+			"D",
+			"translation",
+			"center",
+			"Lambda",
+			"accuracy",
+			"\"|",
+			"[0:3]",
+			"parameters_estimated",
+			"fixed_parameters",
+			"parameters",
+			"=",
+			"rigid",
+			"image_resampled_sitk_rigid",
+			"matrix",
+			"alpha",
+			"rigid_sitk",
+			"euler_sitk",
+			"trafo_sitk",
+			"foo",
+			"self._parameters",
+			"new",
+			"image_ref_copy_sitk",
+			"it",
+			"origin",
+			"update",
+			"image_ref_sitk",
+			"get_sitk_image_origin_from_sitk_affine_transform",
+			"self._registered_image",
+			"parameters",
+			"parameters_fixed",
+			"parameters",
+			"self._transform_sitk",
+			"InplaneSimilarity",
+			"registration_transform_str",
+			"\" \"",
 			"_nda_mask",
 			"get_alpha_cut",
 			"set_alpha_cut",
@@ -1036,61 +1137,7 @@
 			"_slice_affine_transform_sitk",
 			"100",
 			"+",
-			"sitk.sitkNearestNeighbor",
-			"-1",
-			"+",
-			"-",
-			"sitk.Resample",
-			"fixed",
-			"_get_list_of_3D_rigid_transforms_of_slices",
-			"+",
-			"sitk",
-			"slice_3D_sitk_copy",
-			"_get_copy_of_sitk_slice_with_aligned_physical_coordinate_system",
-			"slice_moving",
-			"slice_3D",
-			"slice_copy",
-			"slice",
-			"stack",
-			"_get_list_of_2D_slices",
-			"_history_motion_corrections",
-			"current_rigid_motion_estimate",
-			"_history_rigid_motion_estimates",
-			"rigid_transform_sitk",
-			"_update_affine_transform",
-			"update_rigid_motion_estimate",
-			"_registration_2D",
-			"_get_3D_from_2D_rigid_transform_sitk",
-			"rigid_transform_2D_sitk",
-			"_get_3D_from_2D_rigid_transform_sitk",
-			"_get_copy_of_sitk_slice_with_aligned_physical_coordinate_system",
-			"_get_3D_transform_to_align_stack_with_physical_coordinate_system",
-			"T_PP",
-			"_stack",
-			"ransforms_PP",
-			"rigid_transforms_PP_3D_sitk",
-			"rigid_transform",
-			"_3D",
-			"3D ",
-			"_get_list_of_3D_rigid_transforms_of_slices",
-			"rigid_transform_",
-			"transforms_PP",
-			"_get_list_of_3D_rigid_transforms_of_slices",
-			"_get_list_of_affine_transforms_of_original_3D_slices_sitk",
-			"_get_3D_transform_to_align_stack_with_physical_coordinate_system",
-			"_get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform",
-			"transforms_PP_3D",
-			"_get_list_of_affine_transforms_of_original_3D_slices",
-			"_get_list_of_affine_transforms_for_original_3D_slices",
-			"_get_3D_in_plane_alignment_transform_from_sitk_2D_rigid_transform",
-			"_get_3D_transform_to_align_stack_with_physical_coordinate_system",
-			"rigid_transform_2D",
-			"get_sitk_affine_matrix_from_sitk_image",
-			"get_sitk_affine_transform_from_sitk_image",
-			"_get_stack_of_2D_slices",
-			"_get_copy_of_sitk_slice_with_aligned_physical_coordinate_system",
-			"list",
-			"_filter_gradient_transform"
+			"sitk.sitkNearestNeighbor"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1160,7 +1207,7 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 2,
 			"sheets":
 			[
 				{
@@ -1232,8 +1279,8 @@
 						"selection":
 						[
 							[
-								11778,
-								11778
+								11337,
+								11337
 							]
 						],
 						"settings":
@@ -1247,7 +1294,7 @@
 						"translation.y": 3849.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 12,
 					"type": "text"
 				},
 				{
@@ -1263,8 +1310,8 @@
 						"selection":
 						[
 							[
-								675,
-								675
+								668,
+								668
 							]
 						],
 						"settings":
@@ -1274,10 +1321,10 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 23.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 7,
 					"type": "text"
 				},
 				{
@@ -1286,7 +1333,7 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 17154,
+						"buffer_size": 17444,
 						"regions":
 						{
 							"bookmarks":
@@ -1296,12 +1343,12 @@
 								"regions":
 								[
 									[
-										10360,
-										10360
+										10393,
+										10393
 									],
 									[
-										16803,
-										16803
+										17444,
+										17444
 									]
 								],
 								"scope": "bookmarks"
@@ -1310,8 +1357,8 @@
 						"selection":
 						[
 							[
-								14735,
-								14735
+								15619,
+								15619
 							]
 						],
 						"settings":
@@ -1322,14 +1369,75 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 5226.0,
+						"translation.y": 5223.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base/SimpleITKHelper.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 24199,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2964,
+								2964
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 910.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 4,
 					"type": "text"
 				},
 				{
-					"buffer": 3,
+					"buffer": 4,
+					"file": "test/Test_main.py",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 1295,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								300,
+								300
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
 					"file": "src/registration/InPlaneRigidRegistration copy.py",
 					"semi_transient": false,
 					"settings":
@@ -1358,8 +1466,8 @@
 						"selection":
 						[
 							[
-								24754,
-								24754
+								240,
+								240
 							]
 						],
 						"settings":
@@ -1369,10 +1477,40 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 6890.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 7,
+					"stack_index": 9,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "GettingStarted/SimpleITK_PhysicalCoordinates.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 16404,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								536,
+								536
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 8,
 					"type": "text"
 				}
 			]
@@ -1382,20 +1520,20 @@
 			"sheets":
 			[
 				{
-					"buffer": 4,
+					"buffer": 7,
 					"file": "foo.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4439,
+						"buffer_size": 5139,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4159,
-								4162
+								2688,
+								2688
 							]
 						],
 						"settings":
@@ -1406,19 +1544,19 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 716.0,
+						"translation.y": 731.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 6,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
-					"buffer": 5,
+					"buffer": 8,
 					"file": "test/modules/Test_Registration.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 9764,
+						"buffer_size": 17596,
 						"regions":
 						{
 							"bp-5551a6ce":
@@ -1428,8 +1566,8 @@
 								"regions":
 								[
 									[
-										6291,
-										6291
+										6373,
+										6373
 									]
 								],
 								"scope": "invalid"
@@ -1438,8 +1576,8 @@
 						"selection":
 						[
 							[
-								8186,
-								8186
+								13771,
+								13771
 							]
 						],
 						"settings":
@@ -1450,14 +1588,14 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2276.0,
+						"translation.y": 4142.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
 					"type": "text"
 				},
 				{
-					"buffer": 6,
+					"buffer": 9,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/base/Slice.py",
 					"semi_transient": false,
 					"settings":
@@ -1483,11 +1621,11 @@
 						"translation.y": 1742.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 13,
 					"type": "text"
 				},
 				{
-					"buffer": 7,
+					"buffer": 10,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/registration/RegistrationSimpleITK.py",
 					"semi_transient": false,
 					"settings":
@@ -1510,14 +1648,14 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 206.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 6,
 					"type": "text"
 				},
 				{
-					"buffer": 8,
+					"buffer": 11,
 					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/registration/InPlaneRigidRegistration.py",
 					"semi_transient": false,
 					"settings":
@@ -1555,8 +1693,8 @@
 						"selection":
 						[
 							[
-								2134,
-								2134
+								828,
+								828
 							]
 						],
 						"settings":
@@ -1567,14 +1705,86 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 497.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 8,
+					"stack_index": 11,
 					"type": "text"
 				},
 				{
-					"buffer": 9,
+					"buffer": 12,
+					"file": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src/registration/RegistrationITK.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 15362,
+						"regions":
+						{
+							"bp-698b830c":
+							{
+								"flags": 16,
+								"icon": "circle",
+								"regions":
+								[
+									[
+										14635,
+										14635
+									]
+								],
+								"scope": "invalid"
+							}
+						},
+						"selection":
+						[
+							[
+								14588,
+								14588
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 4096.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 13,
+					"file": "/private/tmp/RegistrationITK/RegistrationITK_transform_002-30yr-AxT2_1year.txt.txt",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 256,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								256,
+								256
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CMake/CMake.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 10,
+					"type": "text"
+				},
+				{
+					"buffer": 14,
 					"file": "src/preprocessing/FigureEventHandling.py",
 					"semi_transient": false,
 					"settings":
@@ -1602,7 +1812,7 @@
 						"translation.y": 1909.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 9,
+					"stack_index": 14,
 					"type": "text"
 				}
 			]
@@ -1667,6 +1877,18 @@
 		"last_filter": "",
 		"selected_items":
 		[
+			[
+				"phy",
+				"GettingStarted/SimpleITK_PhysicalCoordinates.py"
+			],
+			[
+				"simp",
+				"src/base/SimpleITKHelper.py"
+			],
+			[
+				"regis",
+				"src/registration/RegistrationITK.py"
+			],
 			[
 				"registratio",
 				"src/registration/RegistrationSimpleITK.py"
@@ -1878,10 +2100,6 @@
 			[
 				"reconsgi",
 				"studies/UpperGastrointestinalStudy/reconstructGIVolume.py"
-			],
-			[
-				"simp",
-				"src/SimpleITKHelper.py"
 			],
 			[
 				"myitkim",
@@ -2169,14 +2387,6 @@
 			],
 			[
 				"test_simu",
-				"test/modules/Test_SimulatorSliceAcqusition.py"
-			],
-			[
-				"simlator",
-				"studies/SimulatorSliceAcqusition.py"
-			],
-			[
-				"simulator",
 				"test/modules/Test_SimulatorSliceAcqusition.py"
 			]
 		],

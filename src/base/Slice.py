@@ -139,6 +139,7 @@ class Slice:
         
         slice._filename = "copy_" + slice_to_copy.get_filename()
         slice._slice_number = slice_to_copy.get_slice_number()
+        slice._dir_input = slice_to_copy.get_directory()
 
         # slice._history_affine_transforms, slice._history_motion_corrections = slice_to_copy.get_registration_history()
 
@@ -148,11 +149,8 @@ class Slice:
         ## Prepare history of affine transforms, i.e. encoded spatial 
         #  position+orientation of slice, and rigid motion estimates of slice 
         #  obtained in the course of the registration/reconstruction process
-        slice._history_affine_transforms = []
-        slice._history_affine_transforms.append(slice._affine_transform_sitk)
 
-        slice._history_motion_corrections = []
-        slice._history_motion_corrections.append(sitk.Euler3DTransform())
+        slice._history_affine_transforms, slice._history_motion_corrections = slice_to_copy.get_registration_history()
 
         return slice
 

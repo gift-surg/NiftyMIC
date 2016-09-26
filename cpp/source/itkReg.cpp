@@ -352,13 +352,11 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // Initialize the transform
     typename TransformType::Pointer initialTransform = TransformType::New();
 
-    // typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
-    // typename TransformType::Pointer foo = TransformType::New();
-    // initializer->SetTransform(initialTransform);
-    // initializer->SetTransform(foo);
-    // initializer->SetFixedImage( fixed );
-    // initializer->SetMovingImage( moving );
-    // initializer->GeometryOn();
+    typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+    initializer->SetTransform(initialTransform);
+    initializer->SetFixedImage( fixed );
+    initializer->SetMovingImage( moving );
+    initializer->GeometryOn();
     // initializer->MomentsOn();
     // initializer->InitializeTransform();
     // initialTransform->Print(std::cout);
