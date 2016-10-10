@@ -12,4 +12,6 @@ These are
 * Python NumPy
 * Python Matplotlib
 
-Information on how to install those dependencies, have a look at the Wiki.
+Information on how to install those dependencies and to use this reconstruction
+toolkit, have a look at the 
+[Wiki](https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction/wikis/home).
