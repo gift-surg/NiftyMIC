@@ -1,8 +1,11 @@
-## \file Stack.py
-#  \brief  Class containing a stack as sitk.Image object with additional helpers
-# 
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date September 2015
+##-----------------------------------------------------------------------------
+# \file Stack.py
+# \brief      Class containing a stack as sitk.Image object with additional
+#             helper methods
+#
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       September 2015
+#
 
 
 ## Import libraries
@@ -17,19 +20,9 @@ import copy
 import Slice as sl
 import SimpleITKHelper as sitkh
 
-## In addition to the nifti-image as being stored as sitk.Image for the whole
-#  stack volume \f$ \in R^3 \times R^3 \times R^3\f$ 
-#  the class Stack also contains additional variables helpful to work with the data 
+## In addition to the nifti-image (stored as sitk.Image object) this class 
+## Stack also contains additional variables helpful to work with the data.
 class Stack:
-
-    # The constructor
-    # def __init__(self):
-    #     self.sitk = None
-    #     self.sitk_mask = None
-    #     self._dir = None
-    #     self._filename = None
-    #     self._N_slices = None
-
 
     ## Create Stack instance from file and add corresponding mask. Mask is
     #  either provided in the directory or created as binary mask consisting
