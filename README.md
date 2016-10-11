@@ -5,13 +5,5 @@ of SimpleITK, WrapITK and standard C++ITK. Several functions were added to the
 standard ITK package and wrapped so that they are made available within Python.
 
 Hence, in order to use this package, several libraries need to be installed.
-These are
-* SimpleITK
-* (Wrap)ITK
-* Python SciPy
-* Python NumPy
-* Python Matplotlib
-
-Information on how to install those dependencies and to use this reconstruction
-toolkit, have a look at the 
+For further information have a look at the 
 [Wiki](https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction/wikis/home).
