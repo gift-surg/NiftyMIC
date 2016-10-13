@@ -54,7 +54,7 @@ public:
   itkStaticConstMacro(SpaceDimension, unsigned int, 3);
   itkStaticConstMacro(InputSpaceDimension, unsigned int, 3);
   itkStaticConstMacro(OutputSpaceDimension, unsigned int, 3);
-  itkStaticConstMacro(ParametersDimension, unsigned int, 9);
+  itkStaticConstMacro(ParametersDimension, unsigned int, 6);
 
   typedef typename Superclass::ParametersType            ParametersType;
   typedef typename Superclass::ParametersValueType       ParametersValueType;
@@ -89,7 +89,7 @@ public:
    * axes (X,Y,Z), the next three parameters represent the coordinates of the
    * center of rotation and the last three parameters represent the
    * translation. */
-  // void SetParameters(const ParametersType & parameters) ITK_OVERRIDE;
+  void SetParameters(const ParametersType & parameters) ITK_OVERRIDE;
 
   /** Get the parameters that uniquely define the transform
    * This is typically used by optimizers. There are nine parameters. The first
@@ -99,14 +99,14 @@ public:
    * translation. */
   // const ParametersType & GetParameters(void) const ITK_OVERRIDE;
 
+  // const OutputVectorType & GetTranslation(void) const ITK_OVERRIDE;
 
-  // void SetTranslationScale(const )
 
   /** This method computes the Jacobian matrix of the transformation.
    * given point or vector, returning the transformed point or
    * vector. The rank of the Jacobian will also indicate if the
    * transform is invertible at this point. */
-  // virtual void ComputeJacobianWithRespectToParameters( const InputPointType  & p, JacobianType & jacobian) const ITK_OVERRIDE;
+  virtual void ComputeJacobianWithRespectToParameters( const InputPointType  & p, JacobianType & jacobian) const ITK_OVERRIDE;
 
   /** Get an inverse of this transform. */
   // bool GetInverse(Self *inverse) const;
@@ -123,6 +123,7 @@ public:
     if( Math::NotExactlyEquals(this->m_TranslationScale, TranslationScale) )
       {
       this->m_TranslationScale = TranslationScale;
+      // std::cout << "TranslationScale is set to " << this->m_TranslationScale << std::endl;
       this->Modified();
       }
     }

@@ -21,30 +21,34 @@ import PSF as psf
 
 class RegistrationSimpleITK:
 
-    def __init__(self):
-        self._moving = None
-        self._fixed = None
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", metric_params=None, optimizer="RegularStepGradientDescent", optimizer_params="{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 200, 'gradientMagnitudeTolerance': 1e-6}", scales_estimator="PhysicalShift", initializer_type="MOMENTS", use_oriented_psf=False, use_multiresolution_framework=False, use_centered_transform_initializer=False, verbose=False):
 
-        self._use_fixed_mask = False
-        self._use_moving_mask = False
+        self._fixed = fixed
+        self._moving = moving
 
-        self._transform_sitk = None
-        self._control_point_grid_sitk = None
-        self._registered_image = None
+        self._use_fixed_mask = use_fixed_mask
+        self._use_moving_mask = use_moving_mask
 
-        self._registration_type = "Rigid"
+        self._registration_type = registration_type
 
-        self._use_oriented_psf = False
-        self._use_multiresolution_framework = False
+        self._interpolator = interpolator
+        self._metric = metric
+        self._metric_params = metric_params
 
-        self._interpolator = "Linear"
-        self._metric = "Correlation"
-        self._metric_params = None
+        self._optimizer = optimizer
+        self._optimizer_params = optimizer_params
 
-        self._optimizer = "RegularStepGradientDescent"
-        self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-8, 'numberOfIterations': 100, 'gradientMagnitudeTolerance': 1e-6}"
+        self._scales_estimator = scales_estimator
 
-        self._optimizer_scales = "Jacobian"
+        self._initializer_type = initializer_type
+
+        self._use_centered_transform_initializer = use_centered_transform_initializer
+
+        self._use_oriented_psf = use_oriented_psf
+        self._use_multiresolution_framework = use_multiresolution_framework
+
+        self._use_verbose = verbose
+
 
     ## Set fixed/reference/target image
     #  \param[in] fixed fixed/reference/target image as Stack object
@@ -87,8 +91,8 @@ class RegistrationSimpleITK:
     ## Set type of registration used
     #  \param[in] registration_type
     def set_registration_type(self, registration_type):
-        if registration_type not in ["Rigid", "Affine"]:
-            raise ValueError("Error: Registration type can only be 'Rigid' or 'Affine'")
+        if registration_type not in ["Rigid", "Similarity", "Affine"]:
+            raise ValueError("Error: Registration type can only be 'Rigid', 'Similarity' or 'Affine'")
 
         self._registration_type = registration_type
         
@@ -96,6 +100,25 @@ class RegistrationSimpleITK:
     ## Get type of registration
     def get_registration_type(self):
         return registration_type
+
+
+    ## Set type of centered transform initializer
+    #  \param[in] initializer_type
+    def set_centered_transform_initializer(self, initializer_type):
+        if initializer_type not in [None, "MOMENTS", "GEOMETRY"]:
+            raise ValueError("Error: centered transform initializer type can only be 'None', MOMENTS' or 'GEOMETRY'")
+
+        if initializer_type is None:
+            self._use_centered_transform_initializer = False
+
+        else:
+            self._initializer_type = initializer_type
+            self._use_centered_transform_initializer = True
+        
+
+    ## Get type of centered transform initializer
+    def get_centered_transform_initializer(self):
+        return self._initializer_type
 
 
     ## Get affine transform in (Simple)ITK format after having run reg_aladin
@@ -199,7 +222,7 @@ class RegistrationSimpleITK:
             self._optimizer_params = "{'simplexDelta': 0.1, 'numberOfIterations': 100, 'parametersConvergenceTolerance': 1e-8, 'functionConvergenceTolerance': 1e-4, 'withRestarts':False}"
 
         elif optimizer in ["RegularStepGradientDescent"] and params is None:
-            self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-8, 'numberOfIterations': 100, 'gradientMagnitudeTolerance': 1e-6}"
+            self._optimizer_params = "{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 400, 'gradientMagnitudeTolerance': 1e-6}"
 
         elif optimizer in ["GradientDescentLineSearch"] and params is None:
             self._optimizer_params = "{'learningRate': 1, 'numberOfIterations': 100, 'convergenceMinimumValue': 1e-6, 'convergenceWindowSize':10}"
@@ -213,21 +236,43 @@ class RegistrationSimpleITK:
 
     ## Set optimizer scales
     #  \param[in] scales
-    def set_optimizer_scales_from(self, scales):
-        if scales not in ["IndexShift", "PhysicalShift", "Jacobian"]:
-            raise ValueError("Error: Optimizer scales not known")
+    def set_scales_estimator(self, scales_estimator):
+        if scales_estimator not in ["IndexShift", "PhysicalShift", "Jacobian"]:
+            raise ValueError("Error: Optimizer scales_estimator not known")
 
-        self._optimizer_scales = scales
+        self._scales_estimator = scales_estimator
 
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the verbose to define whether or not output is produced
+    # \date       2016-09-20 18:49:19+0100
+    #
+    # \param      self     The object
+    # \param      verbose  The verbose
+    #
+    def use_verbose(self, flag):
+        self._use_verbose = flag
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the verbose.
+    # \date       2016-09-20 18:49:54+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The verbose.
+    #
+    def get_verbose(self):
+        return self._use_verbose
 
 
     ## Run registration
-    def run_registration(self, display_registration_info=1, id=None):
-        self._run_registration(self._fixed, self._moving, display_registration_info)
+    def run_registration(self, id=None):
+        self._run_registration(self._fixed, self._moving)
 
 
 
-    def _run_registration(self, fixed, moving, display_registration_info):
+    def _run_registration(self, fixed, moving):
 
         dim = fixed.sitk.GetDimension()
 
@@ -266,11 +311,15 @@ class RegistrationSimpleITK:
         if self._registration_type in ["Rigid"]:
             initial_transform = eval("sitk.Euler" + str(dim) + "DTransform()")
 
+        elif self._registration_type in ["Similarity"]:
+            initial_transform = eval("sitk.Similarity" + str(dim) + "DTransform()")
+            print initial_transform
+
         elif self._registration_type in ["Affine"]:
             initial_transform = sitk.AffineTransform(dim)
 
-        # center = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY).GetFixedParameters()
-        # initial_transform.SetCenter(center)
+        if self._use_centered_transform_initializer:
+            initial_transform = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, initial_transform, eval("sitk.CenteredTransformInitializerFilter." + self._initializer_type))
 
         registration_method.SetInitialTransform(initial_transform)
 
@@ -305,7 +354,7 @@ class RegistrationSimpleITK:
 
 
         ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
-        eval("registration_method.SetOptimizerScalesFrom" + self._optimizer_scales)()
+        eval("registration_method.SetOptimizerScalesFrom" + self._scales_estimator)()
         
         ## Optional multi-resolution framework
         if self._use_multiresolution_framework:
@@ -333,10 +382,12 @@ class RegistrationSimpleITK:
 
         if self._registration_type in ["Rigid"]:
             registration_transform_sitk = eval("sitk.Euler" + str(dim) + "DTransform(registration_transform_sitk)")
+        elif self._registration_type in ["Similarity"]:
+            registration_transform_sitk = eval("sitk.Similarity" + str(dim) + "DTransform(registration_transform_sitk)")
         elif self._registration_type in ["Affine"]:
             registration_transform_sitk = sitk.AffineTransform(registration_transform_sitk)
 
-        if display_registration_info:
+        if self._use_verbose:
             print("\t\tSimpleITK Image Registration Method:")
             print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
             print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))

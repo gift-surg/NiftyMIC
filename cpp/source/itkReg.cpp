@@ -39,6 +39,7 @@
 
 #include <itkRegularStepGradientDescentOptimizerv4.h>
 #include <itkLBFGSBOptimizerv4.h>
+#include <itkMultiStartOptimizerv4.h>
 
 #include <itkResampleImageFilter.h>
 // #include <itkRescaleIntensityImageFilter.h>
@@ -58,6 +59,7 @@
 #include "itkOrientedGaussianInterpolateImageFunction.h"
 #include "readCommandLine.h"
 #include "MyException.h"
+#include "itkScaledTranslationEuler3DTransform.h"
 
 // Global variables
 const unsigned int Dimension = 3;
@@ -70,13 +72,17 @@ typedef itk::ImageMaskSpatialObject< Dimension > MaskType;
 
 // Transform Types
 typedef itk::AffineTransform< PixelType, Dimension > AffineTransformType;
-typedef itk::Euler3DTransform< PixelType > EulerTransformType;
+typedef itk::ScaledTranslationEuler3DTransform< PixelType > ScaledTranslationEulerTransformType;
+typedef ScaledTranslationEulerTransformType EulerTransformType;
+// typedef itk::Euler3DTransform< PixelType > EulerTransformType;
 
 // Optimizer Types
 typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > RegularStepGradientDescentOptimizerType;
 typedef itk::LBFGSBOptimizerv4 LBFGSBOptimizerOptimizerType;
-// typedef RegularStepGradientDescentOptimizerType OptimizerType;
-typedef LBFGSBOptimizerOptimizerType OptimizerType;
+typedef itk::MultiStartOptimizerv4 MultiStartOptimizerType;
+typedef RegularStepGradientDescentOptimizerType OptimizerType;
+// typedef LBFGSBOptimizerOptimizerType OptimizerType;
+// typedef MultiStartOptimizerType OptimizerType;
 
 // Interpolator Types
 typedef itk::NearestNeighborInterpolateImageFunction< ImageType3D, PixelType > NearestNeighborInterpolatorType;
@@ -246,11 +252,13 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const std::string sInterpolator = input[16];
     const std::string sTransformOut = input[17];
     const std::string sVerbose = input[19]; //TODO: change to bVerbose directly
+    const bool bVerbose = std::stoi(sVerbose);
     const double dANTSrad = std::stod(input[20]);
+    const double dTranslationScale = std::stod(input[21]);
 
     // Read images
-    const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving + ".nii.gz");
-    const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed + ".nii.gz");
+    const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving);
+    const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed);
     std::cout << "Fixed image  = " << sFixed << std::endl;
     std::cout << "Moving image = " << sMoving << std::endl;
 
@@ -261,16 +269,21 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     if(!sFixedMask.empty()){
         std::cout << "Fixed mask image = " << sFixedMask << std::endl;
         bUseFixedMask = true;
-        fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask + ".nii.gz");
+        fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask);
         spatialObjectFixedMask->SetImage( fixedMask );
         metric->SetFixedImageMask( spatialObjectFixedMask );
     }
     if(!sMovingMask.empty()){
         std::cout << "Moving mask image = " << sMovingMask << std::endl;
         bUseMovingMask = true;
-        movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask + ".nii.gz");
+        movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask);
         spatialObjectMovingMask->SetImage( movingMask );
         metric->SetMovingImageMask( spatialObjectMovingMask );
+    }
+
+    // Info output transform
+    if(!sTransformOut.empty()){
+        std::cout << "Output transform = " << sTransformOut << std::endl;
     }
     
     // Multi-resolution framework
@@ -316,7 +329,6 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // Set oriented Gaussian interpolator (if given)
     OrientedGaussianInterpolatorType::Pointer orientedGaussianInterpolator = dynamic_cast< OrientedGaussianInterpolatorType* >(interpolator.GetPointer());
     if ( orientedGaussianInterpolator.IsNotNull() ) {
-    // if ( sInterpolator == ("OrientedGaussian") ) {
         orientedGaussianInterpolator->SetCovariance( covariance );
         orientedGaussianInterpolator->SetAlpha( 3 );
         // std::cout << "OrientedGaussianInterpolator updated " << std::endl;
@@ -340,13 +352,11 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // Initialize the transform
     typename TransformType::Pointer initialTransform = TransformType::New();
 
-    // typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
-    // typename TransformType::Pointer foo = TransformType::New();
-    // initializer->SetTransform(initialTransform);
-    // initializer->SetTransform(foo);
-    // initializer->SetFixedImage( fixed );
-    // initializer->SetMovingImage( moving );
-    // initializer->GeometryOn();
+    typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+    initializer->SetTransform(initialTransform);
+    initializer->SetFixedImage( fixed );
+    initializer->SetMovingImage( moving );
+    initializer->GeometryOn();
     // initializer->MomentsOn();
     // initializer->InitializeTransform();
     // initialTransform->Print(std::cout);
@@ -357,56 +367,76 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     registration->InPlaceOff();
     // registration->GetFixedInitialTransform()->Print(std::cout);
 
+    // Set scale for translation if itkScaledTranslationEuler3DTransform
+    ScaledTranslationEulerTransformType::Pointer scaledTranslationTransform = dynamic_cast< ScaledTranslationEulerTransformType* >(registration->GetModifiableTransform());
+    if ( scaledTranslationTransform.IsNotNull() ) {
+        scaledTranslationTransform->SetTranslationScale( dTranslationScale );
+        std::cout << "TranslationScale = " << scaledTranslationTransform->GetTranslationScale() << std::endl;
+    }
+
     // Set metric
     // metric->SetFixedInterpolator(  interpolator  );
     metric->SetMovingInterpolator(  interpolator  );
+    
+    // std::cout<<"metric->GetUseMovingImageGradientFilter() = " << (metric->GetUseMovingImageGradientFilter()?"True":"False") <<std::endl;
+    // std::cout<<"metric->GetMovingImageGradientFilter() = ";
+    // metric->GetMovingImageGradientFilter()->Print(std::cout);
+    // std::cout<<"metric->GetMovingImageGradientCalculator() = ";
+    // metric->GetMovingImageGradientCalculator()->Print(std::cout);
+    //std::cout<<"metric->GetUseMovingImageGradientFilter() = " << (metric->GetUseMovingImageGradientFilter()?"True":"False") << std::endl;
 
     // Scales estimator
     // scalesEstimator->SetTransformForward( true );
     // scalesEstimator->SetSmallParameterVariation( 1.0 );
     scalesEstimator->SetMetric( metric );
 
-    // Parametrize optimizer
-    // optimizer->SetMinimumStepLength( 1e-6 );
-    // optimizer->SetGradientMagnitudeTolerance( 1e-4 );
-    // optimizer->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
-    //"itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
-    // optimizer->SetNumberOfIterations( 100 );
-    // optimizer->SetMinimumConvergenceValue( 1e-6 );
-    // optimizer->SetScalesEstimator( scalesEstimator );
-    // optimizer->SetDoEstimateLearningRateOnce( false );
-    // optimizer->SetLearningRate(1);
-
-    // For LBFGS Optimizer
-    const unsigned int numParameters = initialTransform->GetNumberOfParameters();
-    OptimizerType::BoundSelectionType boundSelect( numParameters );
-    OptimizerType::BoundValueType upperBound( numParameters );
-    OptimizerType::BoundValueType lowerBound( numParameters );
-    boundSelect.Fill( OptimizerType::BOTHBOUNDED );
-    upperBound.Fill( 0.0 );
-    lowerBound.Fill( 0.0 );
-
-    const double angle_deg_max = 5.0;
-    const double translation_max = 20.0;
-    for (int i = 0; i < 3; ++i) {
-        lowerBound[i] = -angle_deg_max*vnl_math::pi/180;
-        upperBound[i] =  angle_deg_max*vnl_math::pi/180;
-        
-        lowerBound[i+3] = -translation_max;
-        upperBound[i+3] =  translation_max;
+    // For Regular Step Gradient Descent Optimizer
+    RegularStepGradientDescentOptimizerType::Pointer optimizerRegularStep = dynamic_cast<RegularStepGradientDescentOptimizerType* > (optimizer.GetPointer());
+    if ( optimizerRegularStep.IsNotNull() ){
+        // optimizerRegularStep->SetMinimumStepLength( 1e-6 );
+        // optimizerRegularStep->SetGradientMagnitudeTolerance( 1e-4 );
+        // optimizerRegularStep->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
+        // "itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
+        optimizerRegularStep->SetNumberOfIterations( 500 );
+        // optimizerRegularStep->SetMinimumConvergenceValue( 1e-6 );
+        optimizerRegularStep->SetScalesEstimator( scalesEstimator );
+        optimizerRegularStep->SetDoEstimateLearningRateOnce( false );
+        // optimizerRegularStep->SetLearningRate(1);
     }
 
+    // For LBFGS Optimizer
+    LBFGSBOptimizerOptimizerType::Pointer optimizerLBFGS = dynamic_cast<LBFGSBOptimizerOptimizerType* > (optimizer.GetPointer());
+    if ( optimizerLBFGS.IsNotNull() ){
+        const unsigned int numParameters = initialTransform->GetNumberOfParameters();
 
+        LBFGSBOptimizerOptimizerType::BoundSelectionType boundSelect( numParameters );
+        LBFGSBOptimizerOptimizerType::BoundValueType upperBound( numParameters );
+        LBFGSBOptimizerOptimizerType::BoundValueType lowerBound( numParameters );
+        boundSelect.Fill( LBFGSBOptimizerOptimizerType::BOTHBOUNDED );
+        upperBound.Fill( 0.0 );
+        lowerBound.Fill( 0.0 );
 
-    optimizer->SetBoundSelection( boundSelect );
-    optimizer->SetUpperBound( upperBound );
-    optimizer->SetLowerBound( lowerBound );
+        const double angle_deg_max = 5.0;
+        const double translation_max = 10.0;
+        for (int i = 0; i < 3; ++i) {
+            lowerBound[i] = -angle_deg_max*vnl_math::pi/180;
+            upperBound[i] =  angle_deg_max*vnl_math::pi/180;
+            
+            lowerBound[i+3] = -translation_max;
+            upperBound[i+3] =  translation_max;
+        }
 
-    optimizer->SetCostFunctionConvergenceFactor( 1.e7 );
-    optimizer->SetGradientConvergenceTolerance( 1e-35 );
-    optimizer->SetNumberOfIterations( 200 );
-    optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
-    optimizer->SetMaximumNumberOfCorrections( 7 );
+        optimizerLBFGS->SetBoundSelection( boundSelect );
+        optimizerLBFGS->SetUpperBound( upperBound );
+        optimizerLBFGS->SetLowerBound( lowerBound );
+
+        optimizerLBFGS->SetCostFunctionConvergenceFactor( 1.e7 );
+        optimizerLBFGS->SetGradientConvergenceTolerance( 1e-35 );
+        optimizerLBFGS->SetNumberOfIterations( 200 );
+        optimizerLBFGS->SetMaximumNumberOfFunctionEvaluations( 200 );
+        optimizerLBFGS->SetMaximumNumberOfCorrections( 7 );
+    }
+
 
     // optimizer->SetDefaultStepLength( 1.5 );
     // optimizer->SetGradientConvergenceTolerance( 5e-2 );
@@ -430,9 +460,12 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     //***Execute registration
     try {
       registration->Update();
-      std::cout << "Optimizer stop condition: "
-      << registration->GetOptimizer()->GetStopConditionDescription()
-      << std::endl;
+
+      if (bVerbose) {
+          std::cout << "Optimizer stop condition: "
+          << registration->GetOptimizer()->GetStopConditionDescription()
+          << std::endl;
+      }
     }
     catch( itk::ExceptionObject & err ) {
       std::cerr << "ExceptionObject caught !" << std::endl;
@@ -445,7 +478,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     //***Process registration results
     typename TransformType::ConstPointer transform = registration->GetTransform();
     
-    if ( std::stoi(sVerbose) ) {
+    if ( bVerbose ) {
         // transform->Print(std::cout);
         MyITKImageHelper::printTransform(transform);
     }
@@ -461,44 +494,52 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
     //***Write result to file
     if ( !sTransformOut.empty() ) {
-        MyITKImageHelper::writeTransform(transform, sTransformOut);
+        MyITKImageHelper::writeTransform(transform, sTransformOut, bVerbose);
     }
 
     //***Resample warped moving image
-    // Resampling
-    const ResampleFilterType::Pointer resampler = ResampleFilterType::New();
-    const MaskResampleFilterType::Pointer resamplerMask = MaskResampleFilterType::New();
-    
-    // Resample registered moving image
-    resampler->SetOutputParametersFromImage( fixed );
-    // resampler->SetSize( fixed->GetLargestPossibleRegion().GetSize() );
-    // resampler->SetOutputOrigin(  fixed->GetOrigin() );
-    // resampler->SetOutputSpacing( fixed->GetSpacing() );
-    // resampler->SetOutputDirection( fixed->GetDirection() );
-    resampler->SetInput( moving );
-    resampler->SetTransform( registration->GetOutput()->Get() );
-    resampler->SetDefaultPixelValue( 0.0 );
-    resampler->SetInterpolator( interpolator );
-    resampler->Update();
+    if (bVerbose){
+        // Resampling
+        const ResampleFilterType::Pointer resampler = ResampleFilterType::New();
+        const MaskResampleFilterType::Pointer resamplerMask = MaskResampleFilterType::New();
+        
+        // Resample registered moving image
+        resampler->SetOutputParametersFromImage( fixed );
+        // resampler->SetSize( fixed->GetLargestPossibleRegion().GetSize() );
+        // resampler->SetOutputOrigin(  fixed->GetOrigin() );
+        // resampler->SetOutputSpacing( fixed->GetSpacing() );
+        // resampler->SetOutputDirection( fixed->GetDirection() );
+        resampler->SetInput( moving );
+        resampler->SetTransform( registration->GetOutput()->Get() );
+        resampler->SetDefaultPixelValue( 0.0 );
+        resampler->SetInterpolator( LinearInterpolatorType::New() );
+        resampler->Update();
 
-    // Resample registered moving mask
-    if ( bUseMovingMask && bUseFixedMask){
-        resamplerMask->SetOutputParametersFromImage( fixedMask );
-        resamplerMask->SetInput( movingMask );
-        resamplerMask->SetTransform( registration->GetOutput()->Get() );
-        resamplerMask->SetDefaultPixelValue( 0.0 );
-        resamplerMask->Update();
+        // Resample registered moving mask
+        if ( bUseMovingMask && bUseFixedMask){
+            resamplerMask->SetOutputParametersFromImage( fixedMask );
+            resamplerMask->SetInput( movingMask );
+            resamplerMask->SetTransform( registration->GetOutput()->Get() );
+            resamplerMask->SetDefaultPixelValue( 0.0 );
+            resamplerMask->Update();
+        }
+
+        const ImageType3D::Pointer movingWarped = resampler->GetOutput();
+        movingWarped->DisconnectPipeline();
+
+        const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
+        movingMaskWarped->DisconnectPipeline();
+
+        // Remove extension from filename
+        size_t lastindex = sTransformOut.find_last_of("."); 
+        const std::string sTransformOutWithoutExtension = sTransformOut.substr(0, lastindex);
+        MyITKImageHelper::writeImage(movingWarped, sTransformOutWithoutExtension + "warpedMoving.nii.gz", bVerbose);
+        // MyITKImageHelper::writeImage(movingMaskWarped, sTransformOut + "warpedMoving_mask.nii.gz");
+
+        // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
+        // MyITKImageHelper::showImage(fixed, movingWarped, movingWarped, "fixed_moving");
+        // MyITKImageHelper::showImage(movingWarped, movingMaskWarped, "fixed_mask");
     }
-
-    const ImageType3D::Pointer movingWarped = resampler->GetOutput();
-    movingWarped->DisconnectPipeline();
-
-    const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
-    movingMaskWarped->DisconnectPipeline();
-
-    // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
-    // MyITKImageHelper::showImage(movingWarped, movingMaskWarped, "fixed_mask");
-
 }
 
 

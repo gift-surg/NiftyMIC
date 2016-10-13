@@ -287,6 +287,15 @@ def getA(nda, kernel):
     return ndimage.convolve(nda, kernel, mode='wrap')
 
 
+## Get forward operator as matrix, i.e. blurring operator of image
+def get_matrix_A(dim_x, dim_y, sigma):
+    x = np.linspace(0,1,dim_x)
+    y = np.linspace(0,1,dim_y)
+
+    X,Y = np.meshgrid(x,y)
+
+    return 1/(np.sqrt(2*np.pi)*sigma)* np.exp(-(Y-X)**2/(2*sigma**2))
+
 ## Compute adjoint operation A^*(y).
 #  The boundary condition is chosen based on check_adjoint_Gaussian_blurring_boundary_conditions.
 #  \param[in] kernel Gaussian kernel for blurring

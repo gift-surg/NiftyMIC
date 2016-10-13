@@ -3,8 +3,9 @@
  *  
  *
  *  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
- *  \date May 2016
+ *  \date Sept 2016
  */
+
 #include <boost/type_traits.hpp>
 
 #include <iostream>
@@ -39,6 +40,7 @@
 
 #include <itkRegularStepGradientDescentOptimizerv4.h>
 #include <itkLBFGSBOptimizerv4.h>
+#include <itkMultiStartOptimizerv4.h>
 
 #include <itkResampleImageFilter.h>
 // #include <itkRescaleIntensityImageFilter.h>
@@ -59,6 +61,7 @@
 #include "readCommandLine.h"
 #include "MyException.h"
 #include "itkScaledTranslationEuler3DTransform.h"
+#include "itkInplaneSimilarity3DTransform.h"
 
 // Global variables
 const unsigned int Dimension = 3;
@@ -71,14 +74,17 @@ typedef itk::ImageMaskSpatialObject< Dimension > MaskType;
 
 // Transform Types
 typedef itk::AffineTransform< PixelType, Dimension > AffineTransformType;
-typedef itk::ScaledTranslationEuler3DTransform< PixelType > EulerTransformType;
-// typedef itk::Euler3DTransform< PixelType > EulerTransformType;
+typedef itk::ScaledTranslationEuler3DTransform< PixelType > ScaledTranslationEulerTransformType;
+typedef itk::Euler3DTransform< PixelType > EulerTransformType;
+typedef itk::InplaneSimilarity3DTransform< PixelType > InplaneSimilarityTransformType;
 
 // Optimizer Types
 typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > RegularStepGradientDescentOptimizerType;
 typedef itk::LBFGSBOptimizerv4 LBFGSBOptimizerOptimizerType;
-// typedef RegularStepGradientDescentOptimizerType OptimizerType;
-typedef LBFGSBOptimizerOptimizerType OptimizerType;
+typedef itk::MultiStartOptimizerv4 MultiStartOptimizerType;
+typedef RegularStepGradientDescentOptimizerType OptimizerType;
+// typedef LBFGSBOptimizerOptimizerType OptimizerType;
+// typedef MultiStartOptimizerType OptimizerType;
 
 // Interpolator Types
 typedef itk::NearestNeighborInterpolateImageFunction< ImageType3D, PixelType > NearestNeighborInterpolatorType;
@@ -91,73 +97,7 @@ typedef itk::MeanSquaresImageToImageMetricv4< ImageType3D, ImageType3D > MeanSqu
 typedef itk::CorrelationImageToImageMetricv4< ImageType3D, ImageType3D > CorrelationMetricType;
 typedef itk::MattesMutualInformationImageToImageMetricv4< ImageType3D, ImageType3D > MattesMutualInformationMetricType;
 typedef itk::ANTSNeighborhoodCorrelationImageToImageMetricv4 <ImageType3D, ImageType3D> ANTSNeighborhoodCorrelationMetricType;
-// Scales Estimator Types (based on Metric and need to be set depending on them)
 
-
-
-// itk::InterpolateImageFunction<ImageType3D, PixelType>* getInterpolator(std::string &sInterpolator, const itk::Vector<double, 9> covariance, const double alpha){
-    
-//     if ( sInterpolator == ("NearestNeighbor") ) {
-//         std::cout << "Chosen interpolator is " << sInterpolator << std::endl;
-//         return NearestNeighborInterpolatorType::New();
-//     }
-
-//     else if ( sInterpolator == ("Linear") ) {
-//         std::cout << "Chosen interpolator is " << sInterpolator << std::endl;
-//         LinearInterpolatorType::Pointer interpolator = LinearInterpolatorType::New();
-
-//         return interpolator.GetPointer();
-//     }
-
-//     else if ( sInterpolator == ("BSpline") ) {
-//         std::cout << "Chosen interpolator is " << sInterpolator << std::endl;
-//         BSplineInterpolatorType::Pointer interpolator = BSplineInterpolatorType::New();
-
-//         return interpolator.GetPointer();
-//     }
-
-//     else if ( sInterpolator == ("OrientedGaussian") ) {
-//         std::cout << "Chosen interpolator is " << sInterpolator << std::endl;
-//         OrientedGaussianInterpolatorType::Pointer interpolator = OrientedGaussianInterpolatorType::New();
-        
-//         interpolator->SetCovariance( covariance );
-//         interpolator->SetAlpha( alpha );
-        
-//         return interpolator.GetPointer();
-//     }
-
-//     else {
-//         std::cout << sInterpolator << " cannot be deduced." << std::endl;
-//         return NULL;
-//     }
-// }
-
-
-// itk::ImageToImageMetricv4<ImageType3D, ImageType3D>::Pointer getMetric(const std::string &sMetric){
-//     itk::ImageToImageMetricv4<ImageType3D, ImageType3D>::Pointer metric = 0;
-
-//     if ( sMetric == ("MeanSquares") ) {
-//         std::cout << "Chosen metric is " << sMetric << std::endl;
-//         metric = MeanSquaresMetricType::New();
-//     }
-
-//     else if ( sMetric == ("Correlation") ) {
-//         std::cout << "Chosen metric is " << sMetric << std::endl;
-//         metric = CorrelationMetricType::New();
-//     }
-
-//     else if ( sMetric == ("MattesMutualInformation") ) {
-//         std::cout << "Chosen metric is " << sMetric << std::endl;
-//         metric = MattesMutualInformationMetricType::New();
-//     }
-
-//     else {
-//         std::cout << sMetric << " cannot be deduced." << std::endl;
-//         metric = NULL;
-//     }
-
-//     return metric;
-// }
 
 class CommandIterationUpdate : public itk::Command
 {
@@ -247,12 +187,14 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const std::string sMetric = input[15];
     const std::string sInterpolator = input[16];
     const std::string sTransformOut = input[17];
-    const std::string sVerbose = input[19]; //TODO: change to bVerbose directly
+    const std::string sVerbose = input[19];
+    const bool bVerbose = std::stoi(sVerbose);
     const double dANTSrad = std::stod(input[20]);
+    const double dTranslationScale = std::stod(input[21]);
 
     // Read images
-    const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving + ".nii.gz");
-    const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed + ".nii.gz");
+    const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving);
+    const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed);
     std::cout << "Fixed image  = " << sFixed << std::endl;
     std::cout << "Moving image = " << sMoving << std::endl;
 
@@ -263,16 +205,21 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     if(!sFixedMask.empty()){
         std::cout << "Fixed mask image = " << sFixedMask << std::endl;
         bUseFixedMask = true;
-        fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask + ".nii.gz");
+        fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask);
         spatialObjectFixedMask->SetImage( fixedMask );
         metric->SetFixedImageMask( spatialObjectFixedMask );
     }
     if(!sMovingMask.empty()){
         std::cout << "Moving mask image = " << sMovingMask << std::endl;
         bUseMovingMask = true;
-        movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask + ".nii.gz");
+        movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask);
         spatialObjectMovingMask->SetImage( movingMask );
         metric->SetMovingImageMask( spatialObjectMovingMask );
+    }
+
+    // Info output transform
+    if(!sTransformOut.empty()){
+        std::cout << "Output transform = " << sTransformOut << std::endl;
     }
     
     // Multi-resolution framework
@@ -318,7 +265,6 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // Set oriented Gaussian interpolator (if given)
     OrientedGaussianInterpolatorType::Pointer orientedGaussianInterpolator = dynamic_cast< OrientedGaussianInterpolatorType* >(interpolator.GetPointer());
     if ( orientedGaussianInterpolator.IsNotNull() ) {
-    // if ( sInterpolator == ("OrientedGaussian") ) {
         orientedGaussianInterpolator->SetCovariance( covariance );
         orientedGaussianInterpolator->SetAlpha( 3 );
         // std::cout << "OrientedGaussianInterpolator updated " << std::endl;
@@ -339,76 +285,106 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // scalesEstimator->Print(std::cout);
     // std::cout << sBar;
 
-    // Initialize the transform
+    // Initialize the transform, including direction information of fixed image
     typename TransformType::Pointer initialTransform = TransformType::New();
+    typename TransformType::FixedParametersType fixedParameters = initialTransform->GetFixedParameters();
+    typename TransformType::FixedParametersType fixedParameters_extended = initialTransform->GetFixedParameters();
 
-    // typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
-    // typename TransformType::Pointer foo = TransformType::New();
-    // initializer->SetTransform(initialTransform);
+    // Copy previous fixed parameters
+    const unsigned int N_fixedParameters = fixedParameters.GetSize();
+    fixedParameters_extended.SetSize(N_fixedParameters + Dimension*Dimension);
+    for (int i = 0; i < N_fixedParameters; ++i)
+    {
+        fixedParameters_extended[i] = fixedParameters[i];
+    }
+    // Fill extended fixed parameters with direction information
+    ImageType3D::DirectionType direction = fixed->GetDirection();
+    for (int i = 0; i < Dimension; ++i)
+    {
+        for (int j = 0; j < Dimension; ++j)
+        {
+            fixedParameters_extended[N_fixedParameters+Dimension*i+j] = direction[i][j];
+        }
+    }
+    initialTransform->SetFixedParameters(fixedParameters_extended);
+
+    typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+    initializer->SetTransform(initialTransform);
     // initializer->SetTransform(foo);
-    // initializer->SetFixedImage( fixed );
-    // initializer->SetMovingImage( moving );
+    initializer->SetFixedImage( fixed );
+    initializer->SetMovingImage( moving );
     // initializer->GeometryOn();
     // initializer->MomentsOn();
-    // initializer->InitializeTransform();
+    initializer->InitializeTransform();
     // initialTransform->Print(std::cout);
-    // initialTransform->SetTranslation((0,0,0));
-    // initialTransform->Print(std::cout);
-    // initialTransform->SetFixedParameters(foo->GetFixedParameters());    
-    registration->SetFixedInitialTransform( initialTransform );
-    registration->InPlaceOff();
+    registration->SetInitialTransform( initialTransform );
+    registration->SetFixedInitialTransform( EulerTransformType::New() );
+    // registration->InPlaceOff();
     // registration->GetFixedInitialTransform()->Print(std::cout);
 
     // Set metric
     // metric->SetFixedInterpolator(  interpolator  );
     metric->SetMovingInterpolator(  interpolator  );
+    
+    // std::cout<<"metric->GetUseMovingImageGradientFilter() = " << (metric->GetUseMovingImageGradientFilter()?"True":"False") <<std::endl;
+    // std::cout<<"metric->GetMovingImageGradientFilter() = ";
+    // metric->GetMovingImageGradientFilter()->Print(std::cout);
+    // std::cout<<"metric->GetMovingImageGradientCalculator() = ";
+    // metric->GetMovingImageGradientCalculator()->Print(std::cout);
+    //std::cout<<"metric->GetUseMovingImageGradientFilter() = " << (metric->GetUseMovingImageGradientFilter()?"True":"False") << std::endl;
 
     // Scales estimator
     // scalesEstimator->SetTransformForward( true );
     // scalesEstimator->SetSmallParameterVariation( 1.0 );
     scalesEstimator->SetMetric( metric );
 
-    // Parametrize optimizer
-    // optimizer->SetMinimumStepLength( 1e-6 );
-    // optimizer->SetGradientMagnitudeTolerance( 1e-4 );
-    // optimizer->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
-    //"itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
-    // optimizer->SetNumberOfIterations( 100 );
-    // optimizer->SetMinimumConvergenceValue( 1e-6 );
-    // optimizer->SetScalesEstimator( scalesEstimator );
-    // optimizer->SetDoEstimateLearningRateOnce( false );
-    // optimizer->SetLearningRate(1);
-
-    // For LBFGS Optimizer
-    const unsigned int numParameters = initialTransform->GetNumberOfParameters();
-    OptimizerType::BoundSelectionType boundSelect( numParameters );
-    OptimizerType::BoundValueType upperBound( numParameters );
-    OptimizerType::BoundValueType lowerBound( numParameters );
-    boundSelect.Fill( OptimizerType::BOTHBOUNDED );
-    upperBound.Fill( 0.0 );
-    lowerBound.Fill( 0.0 );
-
-    const double angle_deg_max = 5.0;
-    const double translation_max = 20.0;
-    for (int i = 0; i < 3; ++i) {
-        lowerBound[i] = -angle_deg_max*vnl_math::pi/180;
-        upperBound[i] =  angle_deg_max*vnl_math::pi/180;
-        
-        lowerBound[i+3] = -translation_max;
-        upperBound[i+3] =  translation_max;
+    // For Regular Step Gradient Descent Optimizer
+    RegularStepGradientDescentOptimizerType::Pointer optimizerRegularStep = dynamic_cast<RegularStepGradientDescentOptimizerType* > (optimizer.GetPointer());
+    if ( optimizerRegularStep.IsNotNull() ){
+        // optimizerRegularStep->SetMinimumStepLength( 1e-6 );
+        // optimizerRegularStep->SetGradientMagnitudeTolerance( 1e-4 );
+        // optimizerRegularStep->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
+        // "itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
+        optimizerRegularStep->SetNumberOfIterations( 500 );
+        // optimizerRegularStep->SetMinimumConvergenceValue( 1e-6 );
+        optimizerRegularStep->SetScalesEstimator( scalesEstimator );
+        optimizerRegularStep->SetDoEstimateLearningRateOnce( false );
+        // optimizerRegularStep->SetLearningRate(1);
     }
 
+    // For LBFGS Optimizer
+    LBFGSBOptimizerOptimizerType::Pointer optimizerLBFGS = dynamic_cast<LBFGSBOptimizerOptimizerType* > (optimizer.GetPointer());
+    if ( optimizerLBFGS.IsNotNull() ){
+        const unsigned int numParameters = initialTransform->GetNumberOfParameters();
 
+        LBFGSBOptimizerOptimizerType::BoundSelectionType boundSelect( numParameters );
+        LBFGSBOptimizerOptimizerType::BoundValueType upperBound( numParameters );
+        LBFGSBOptimizerOptimizerType::BoundValueType lowerBound( numParameters );
+        boundSelect.Fill( LBFGSBOptimizerOptimizerType::BOTHBOUNDED );
+        upperBound.Fill( 0.0 );
+        lowerBound.Fill( 0.0 );
 
-    optimizer->SetBoundSelection( boundSelect );
-    optimizer->SetUpperBound( upperBound );
-    optimizer->SetLowerBound( lowerBound );
+        const double angle_deg_max = 5.0;
+        const double translation_max = 10.0;
+        for (int i = 0; i < 3; ++i) {
+            lowerBound[i] = -angle_deg_max*vnl_math::pi/180;
+            upperBound[i] =  angle_deg_max*vnl_math::pi/180;
+            
+            lowerBound[i+3] = -translation_max;
+            upperBound[i+3] =  translation_max;
+        }
 
-    optimizer->SetCostFunctionConvergenceFactor( 1.e7 );
-    optimizer->SetGradientConvergenceTolerance( 1e-35 );
-    optimizer->SetNumberOfIterations( 200 );
-    optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
-    optimizer->SetMaximumNumberOfCorrections( 7 );
+        optimizerLBFGS->SetBoundSelection( boundSelect );
+        optimizerLBFGS->SetUpperBound( upperBound );
+        optimizerLBFGS->SetLowerBound( lowerBound );
+
+        optimizerLBFGS->SetCostFunctionConvergenceFactor( 1.e7 );
+        optimizerLBFGS->SetGradientConvergenceTolerance( 1e-35 );
+        optimizerLBFGS->SetNumberOfIterations( 200 );
+        optimizerLBFGS->SetMaximumNumberOfFunctionEvaluations( 200 );
+        optimizerLBFGS->SetMaximumNumberOfCorrections( 7 );
+    }
+
 
     // optimizer->SetDefaultStepLength( 1.5 );
     // optimizer->SetGradientConvergenceTolerance( 5e-2 );
@@ -432,9 +408,12 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     //***Execute registration
     try {
       registration->Update();
-      std::cout << "Optimizer stop condition: "
-      << registration->GetOptimizer()->GetStopConditionDescription()
-      << std::endl;
+
+      if (bVerbose) {
+          std::cout << "Optimizer stop condition: "
+          << registration->GetOptimizer()->GetStopConditionDescription()
+          << std::endl;
+      }
     }
     catch( itk::ExceptionObject & err ) {
       std::cerr << "ExceptionObject caught !" << std::endl;
@@ -445,9 +424,9 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
 
     //***Process registration results
-    typename TransformType::ConstPointer transform = registration->GetTransform();
+    typename TransformType::ConstPointer transform = registration->GetOutput()->Get();
     
-    if ( std::stoi(sVerbose) ) {
+    if ( bVerbose ) {
         // transform->Print(std::cout);
         MyITKImageHelper::printTransform(transform);
     }
@@ -463,44 +442,54 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
     //***Write result to file
     if ( !sTransformOut.empty() ) {
-        MyITKImageHelper::writeTransform(transform, sTransformOut);
+        MyITKImageHelper::writeTransform(transform, sTransformOut, bVerbose);
     }
 
     //***Resample warped moving image
-    // Resampling
-    const ResampleFilterType::Pointer resampler = ResampleFilterType::New();
-    const MaskResampleFilterType::Pointer resamplerMask = MaskResampleFilterType::New();
-    
-    // Resample registered moving image
-    resampler->SetOutputParametersFromImage( fixed );
-    // resampler->SetSize( fixed->GetLargestPossibleRegion().GetSize() );
-    // resampler->SetOutputOrigin(  fixed->GetOrigin() );
-    // resampler->SetOutputSpacing( fixed->GetSpacing() );
-    // resampler->SetOutputDirection( fixed->GetDirection() );
-    resampler->SetInput( moving );
-    resampler->SetTransform( registration->GetOutput()->Get() );
-    resampler->SetDefaultPixelValue( 0.0 );
-    resampler->SetInterpolator( interpolator );
-    resampler->Update();
+    if (bVerbose){
+        // Resampling
+        const ResampleFilterType::Pointer resampler = ResampleFilterType::New();
+        const MaskResampleFilterType::Pointer resamplerMask = MaskResampleFilterType::New();
+        
+        // Resample registered moving image
+        resampler->SetOutputParametersFromImage( fixed );
+        // resampler->SetSize( fixed->GetLargestPossibleRegion().GetSize() );
+        // resampler->SetOutputOrigin(  fixed->GetOrigin() );
+        // resampler->SetOutputSpacing( fixed->GetSpacing() );
+        // resampler->SetOutputDirection( fixed->GetDirection() );
+        resampler->SetInput( moving );
+        resampler->SetTransform( registration->GetOutput()->Get() );
+        resampler->SetDefaultPixelValue( 0.0 );
+        resampler->SetInterpolator( LinearInterpolatorType::New() );
+        resampler->Update();
 
-    // Resample registered moving mask
-    if ( bUseMovingMask && bUseFixedMask){
-        resamplerMask->SetOutputParametersFromImage( fixedMask );
-        resamplerMask->SetInput( movingMask );
-        resamplerMask->SetTransform( registration->GetOutput()->Get() );
-        resamplerMask->SetDefaultPixelValue( 0.0 );
-        resamplerMask->Update();
+        // Resample registered moving mask
+        if ( bUseMovingMask && bUseFixedMask){
+            resamplerMask->SetOutputParametersFromImage( fixedMask );
+            resamplerMask->SetInput( movingMask );
+            resamplerMask->SetTransform( registration->GetOutput()->Get() );
+            resamplerMask->SetDefaultPixelValue( 0.0 );
+            resamplerMask->Update();
+        }
+
+        const ImageType3D::Pointer movingWarped = resampler->GetOutput();
+        movingWarped->DisconnectPipeline();
+
+        const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
+        movingMaskWarped->DisconnectPipeline();
+
+        // Remove extension from filename
+        size_t lastindex = sTransformOut.find_last_of("."); 
+        const std::string sTransformOutWithoutExtension = sTransformOut.substr(0, lastindex);
+        MyITKImageHelper::writeImage(movingWarped, sTransformOutWithoutExtension + "warpedMoving.nii.gz", bVerbose);
+        // MyITKImageHelper::writeImage(movingMaskWarped, sTransformOut + "warpedMoving_mask.nii.gz");
+
+        std::vector<ImageType3D::Pointer> image_vector;
+        image_vector.push_back(fixed);
+        image_vector.push_back(movingWarped);
+        std::string titles_array[2] = {"fixed", "moving_registered"};
+        MyITKImageHelper::showImage(image_vector, titles_array);
     }
-
-    const ImageType3D::Pointer movingWarped = resampler->GetOutput();
-    movingWarped->DisconnectPipeline();
-
-    const MaskImageType3D::Pointer movingMaskWarped = resamplerMask->GetOutput();
-    movingMaskWarped->DisconnectPipeline();
-
-    // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
-    // MyITKImageHelper::showImage(movingWarped, movingMaskWarped, "fixed_mask");
-
 }
 
 
@@ -530,11 +519,11 @@ int main(int argc, char** argv)
         // std::cout << (sInterpolatorTest == ("BSpline")) << std::endl;   // works
 
         // TODO: At the moment only rigid model is available
-        switch ( std::stoi(sUseAffine) ){
+        switch ( 1 ){
             
             // Rigid registration
-            case 0:
-                std::cout << "Chosen type of registration: Rigid" << std::endl;
+            case 1:
+                std::cout << "Chosen type of registration: InplaneSimilarity3DTransform" << std::endl;
 
                 // Nearest Neighbor interpolator
                 if ( sInterpolator == ("NearestNeighbor") ) {
@@ -548,21 +537,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
                         }
 
                     }
@@ -575,21 +564,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
                         }
 
                     }
@@ -602,21 +591,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                     }
@@ -629,21 +618,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, NearestNeighborInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
                         }
                     }
                 }
@@ -660,21 +649,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
                         }
 
                     }
@@ -687,21 +676,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
                         }
 
                     }
@@ -714,21 +703,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                     }
@@ -741,21 +730,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, LinearInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, LinearInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
                         }
                     }
                 }
@@ -772,21 +761,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
                         }
 
                     }
@@ -799,21 +788,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
                         }
 
                     }
@@ -826,21 +815,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                     }
@@ -853,21 +842,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, OrientedGaussianInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
                         }
                     }
                 }
@@ -884,21 +873,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
                         }
 
                     }
@@ -911,21 +900,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
                         }
 
                     }
@@ -938,21 +927,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                     }
@@ -965,21 +954,21 @@ int main(int argc, char** argv)
                         if ( sScalesEstimator == ("PhysicalShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
                             
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
                             std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
 
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
                             std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
 
-                            RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
+                            RegistrationFunction<InplaneSimilarityTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
                         }
                     }
                 }

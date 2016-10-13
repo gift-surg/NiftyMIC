@@ -94,11 +94,21 @@ class IntensityNormalization:
         x_corr = p(x)
         
         ## Plot
-        plot_figure = 1
+        plot_figure = 0
         if plot_figure:
             fig = plt.figure(1)
             fig.clf()
             ax = fig.add_subplot(1,1,1)
+
+            ## Looks quite pretty but not tested here. For other applications 
+            ## it took quite long to compute. For less amount of points a 
+            ## decent option
+            ## Source: http://stackoverflow.com/questions/27156381/python-creating-a-2d-histogram-from-a-numpy-matrix
+            # hist, xedges, yedges = np.histogram2d(x, y)
+            # xidx = np.clip(np.digitize(x, xedges), 0, hist.shape[0]-1)
+            # yidx = np.clip(np.digitize(y, yedges), 0, hist.shape[1]-1)
+            # c = hist[xidx, yidx]
+            # plt.scatter(x, y, c=c)
 
             x_int = np.array([x.min(), x.max()])
             ax.plot(x, y, 'ro', label="original")

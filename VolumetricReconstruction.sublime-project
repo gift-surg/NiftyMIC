@@ -28,13 +28,25 @@
 			"path": "studies"
 		},
 		{
-			"path": "/Users/mebner/development/SimpleElastix/SimpleElastix"
-		},
-		{
 			"path": "backups"
 		},
 		{
 			"path": "GettingStarted"
+		},
+		{
+			"path": "/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab"
+		},
+		{
+			"path": "/Users/mebner/development/nilearn"
 		}
-	]
+	],
+	"settings":
+	{
+		"python_interpreter": "/Users/mebner/development/Python_virtualenv/bin/python2.7",
+		"python_package_paths":
+		[
+			"$home/.buildout/eggs",
+			"$project_path/addons"
+		]
+	}
 }

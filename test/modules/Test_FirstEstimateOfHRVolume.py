@@ -10,7 +10,12 @@ import SimpleITK as sitk
 import numpy as np
 import unittest
 import sys
-sys.path.append("../src/")
+
+## Add directories to import modules
+dir_src_root = "../src/"
+sys.path.append( dir_src_root )
+sys.path.append( dir_src_root + "base/" )
+sys.path.append( dir_src_root + "reconstruction" )
 
 ## Import modules from src-folder
 import FirstEstimateOfHRVolume as efhrv

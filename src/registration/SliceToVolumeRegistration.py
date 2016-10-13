@@ -64,7 +64,7 @@ class SliceToVolumeRegistration:
             initial_transform = sitk.Euler3DTransform()
 
             ## Use arithmetic mean of fixed voxels as initial transform center
-            #  Remark: Center is taken into consideration for composited transforms,
+            #  Remark: Center is taken into consideration for composite transforms,
             #  see SimpleITKHelper
             center = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY).GetFixedParameters()
             initial_transform.SetCenter(center)

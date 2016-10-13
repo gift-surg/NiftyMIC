@@ -1,8 +1,11 @@
-## \file Stack.py
-#  \brief  Class containing a stack as sitk.Image object with additional helpers
-# 
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date September 2015
+##-----------------------------------------------------------------------------
+# \file Stack.py
+# \brief      Class containing a stack as sitk.Image object with additional
+#             helper methods
+#
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       September 2015
+#
 
 
 ## Import libraries
@@ -17,19 +20,9 @@ import copy
 import Slice as sl
 import SimpleITKHelper as sitkh
 
-## In addition to the nifti-image as being stored as sitk.Image for the whole
-#  stack volume \f$ \in R^3 \times R^3 \times R^3\f$ 
-#  the class Stack also contains additional variables helpful to work with the data 
+## In addition to the nifti-image (stored as sitk.Image object) this class 
+## Stack also contains additional variables helpful to work with the data.
 class Stack:
-
-    # The constructor
-    # def __init__(self):
-    #     self.sitk = None
-    #     self.sitk_mask = None
-    #     self._dir = None
-    #     self._filename = None
-    #     self._N_slices = None
-
 
     ## Create Stack instance from file and add corresponding mask. Mask is
     #  either provided in the directory or created as binary mask consisting
@@ -173,7 +166,7 @@ class Stack:
     #  \return copied Stack object
     # TODO: That's not really well done!
     @classmethod
-    def from_stack(cls, stack_to_copy):
+    def from_stack(cls, stack_to_copy, filename=None):
         stack = cls()
         
         ## Copy image stack and mask
@@ -183,7 +176,10 @@ class Stack:
         stack.sitk_mask = sitk.Image(stack_to_copy.sitk_mask)
         stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
 
-        stack._filename = "copy_" + stack_to_copy.get_filename()
+        if filename is None:
+            stack._filename = "copy_" + stack_to_copy.get_filename()
+        else:
+            stack._filename = filename
 
         stack._N_slices = stack_to_copy.sitk.GetSize()[-1]
         stack._slices = [None]*stack._N_slices
@@ -363,24 +359,56 @@ class Stack:
                 print(err.message)
 
 
-    ## After slice-based registrations slice j does not correspond to the physical
-    #  space of stack[:,:,j:j+1] anymore. With this method resample all containing
-    #  slices to the physical space defined by the stack. Overlapping slices get 
-    #  averaged
-    #  \return resampled stack based on current position of slices as Stack object
-    def get_resampled_stack_from_slices(self):
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the resampled stack from slices.
+    # \date       2016-09-26 17:28:43+0100
+    #
+    # After slice-based registrations slice j does not correspond to the
+    # physical space of stack[:,:,j:j+1] anymore. With this method resample all
+    # containing slices to the physical space defined by the stack itself (or
+    # by a given resampling_pace). Overlapping slices get averaged.
+    #
+    # \param      self              The object
+    # \param      resampling_space  Define the space to which the stack of
+    #                               slices shall be resampled; given as Stack
+    #                               object
+    # \param      interpolator      The interpolator
+    #
+    # \return     resampled stack based on current position of slices as Stack
+    #             object
+    #
+    def get_resampled_stack_from_slices(self, resampling_space=None, interpolator="NearestNeighbor"):
+
+         ## Choose interpolator
+        try:
+            interpolator = eval("sitk.sitk" + interpolator)
+        except:
+            raise ValueError("Error: interpolator is not known")
+
+        ## Use resampling space defined by original volumetric image
+        if resampling_space is None:
+            resampling_space = Stack.from_sitk_image(self.sitk)
+
+        ## Use resampling space defined by first slice (which might be shifted already)
+        elif resampling_space in ["first_slice"]:
+            stack_sitk = sitk.Image(self.sitk)
+            foo_sitk = sitk.Image(self._slices[0].sitk)
+            stack_sitk.SetDirection(foo_sitk.GetDirection())
+            stack_sitk.SetOrigin(foo_sitk.GetOrigin())
+            stack_sitk.SetDirection(foo_sitk.GetDirection())
+            resampling_space = Stack.from_sitk_image(stack_sitk)
 
         ## Get shape of image data array
-        nda_shape = self.sitk.GetSize()[::-1]
+        nda_shape = resampling_space.sitk.GetSize()[::-1]
 
         ## Create zero image and its mask aligned with sitk.Image
         nda = np.zeros(nda_shape)
         
         stack_resampled_sitk = sitk.GetImageFromArray(nda)
-        stack_resampled_sitk.CopyInformation(self.sitk)
+        stack_resampled_sitk.CopyInformation(resampling_space.sitk)
 
         stack_resampled_sitk_mask = sitk.GetImageFromArray(nda.astype("uint8"))
-        stack_resampled_sitk_mask.CopyInformation(self.sitk_mask)
+        stack_resampled_sitk_mask.CopyInformation(resampling_space.sitk_mask)
 
         ## Create helper used for normalization at the end
         nda_stack_covered_indices = np.zeros(nda_shape)
@@ -394,19 +422,19 @@ class Stack:
             ## Resample slice and its mask to stack space
             stack_resampled_slice_sitk = sitk.Resample(
                 slice.sitk, 
-                self.sitk, 
+                resampling_space.sitk, 
                 sitk.Euler3DTransform(), 
-                sitk.sitkNearestNeighbor, 
+                interpolator, 
                 default_pixel_value, 
-                self.sitk.GetPixelIDValue())
+                resampling_space.sitk.GetPixelIDValue())
 
             stack_resampled_slice_sitk_mask = sitk.Resample(
                 slice.sitk_mask, 
-                self.sitk_mask, 
+                resampling_space.sitk_mask, 
                 sitk.Euler3DTransform(), 
-                sitk.sitkNearestNeighbor, 
+                interpolator, 
                 default_pixel_value, 
-                self.sitk_mask.GetPixelIDValue())
+                resampling_space.sitk_mask.GetPixelIDValue())
 
             ## Add resampled slice and mask to stack space
             stack_resampled_sitk += stack_resampled_slice_sitk
@@ -424,7 +452,7 @@ class Stack:
 
         ## Normalize resampled image
         stack_normalization = sitk.GetImageFromArray(nda_stack_covered_indices)
-        stack_normalization.CopyInformation(self.sitk)
+        stack_normalization.CopyInformation(resampling_space.sitk)
         stack_resampled_sitk /= stack_normalization
 
         ## Get valid binary mask
@@ -494,8 +522,9 @@ class Stack:
     ## Get isotropically resampled grid
     #  \param[in] spacing_new_scalar length of voxel side, scalar
     #  \param[in] interpolator choose type of interpolator for resampling
+    #  \param[in] extra_frame additional extra frame of zero intensities surrounding the stack in mm
     #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", boundary=0):
+    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", extra_frame=0):
 
         ## Choose interpolator
         try:
@@ -507,6 +536,8 @@ class Stack:
         ## Read original spacing (voxel dimension) and size of target stack:
         spacing = np.array(self.sitk.GetSpacing())
         size = np.array(self.sitk.GetSize()).astype("int")
+        origin = np.array(self.sitk.GetOrigin())
+        direction = self.sitk.GetDirection()
 
         if spacing_new_scalar is None:
             size_new = size
@@ -518,6 +549,27 @@ class Stack:
             spacing_new = np.ones(3)*spacing_new_scalar
             size_new = np.round(spacing/spacing_new*size).astype("int")
 
+        if extra_frame is not 0:
+
+            ## Get extra_frame in voxel space
+            extra_frame_vox = np.round(extra_frame/spacing_new[0]).astype("int")
+            
+            ## Compute size of resampled stack by considering additional extra_frame
+            size_new = size_new + 2*extra_frame_vox
+
+            ## Compute origin of resampled stack by considering additional extra_frame
+            a_x = self.sitk.TransformIndexToPhysicalPoint((1,0,0)) - origin
+            a_y = self.sitk.TransformIndexToPhysicalPoint((0,1,0)) - origin
+            a_z = self.sitk.TransformIndexToPhysicalPoint((0,0,1)) - origin
+            e_x = a_x/np.linalg.norm(a_x)
+            e_y = a_y/np.linalg.norm(a_y)
+            e_z = a_z/np.linalg.norm(a_z)
+
+            translation = (e_x + e_y + e_z)*extra_frame_vox*spacing[0]
+
+            origin = origin - translation
+
+
         ## Resample image and its mask to isotropic grid
         default_pixel_value = 0.0
 
@@ -526,9 +578,9 @@ class Stack:
             size_new, 
             sitk.Euler3DTransform(), 
             interpolator, 
-            self.sitk.GetOrigin(), 
+            origin, 
             spacing_new,
-            self.sitk.GetDirection(),
+            direction,
             default_pixel_value,
             self.sitk.GetPixelIDValue())
 
@@ -537,9 +589,9 @@ class Stack:
             size_new, 
             sitk.Euler3DTransform(), 
             interpolator, 
-            self.sitk.GetOrigin(), 
+            origin, 
             spacing_new,
-            self.sitk.GetDirection(),
+            direction,
             default_pixel_value,
             self.sitk_mask.GetPixelIDValue())
 

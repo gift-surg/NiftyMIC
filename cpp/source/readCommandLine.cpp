@@ -32,6 +32,7 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     std::string sTransformOut;
     std::string sVerbose;
     std::string sANTSrad;
+    std::string sTranslationScale;
     // std::string sOptimizer; //TODO
 
     const bool bVerbose = false; // verbose for this file
@@ -84,6 +85,9 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     ("ANTSrad", po::value< std::vector<std::string> >(), 
         "specify radius used for ANTSNeighborhoodCorrelation (default=20), \n"
         "e.g. \"--ANTSrad 30\"")
+    ("translationScale", po::value< std::vector<std::string> >(), 
+        "specify scale used for translation (default=1), \n"
+        "e.g. \"--translationScale 10\"")
     // ("optimizer", po::value< std::vector<std::string> >(), 
     //     "specify optimizer (default: RegularStepGradientDescent), \n"
     //     "e.g. \"--optimizer RegularStepGradientDescent\"")
@@ -115,7 +119,7 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     if (vm.count("f")) {
         if ( bVerbose ) {
             std::cout << "fixed image given (" 
-                << vm["f"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+                << vm["f"].as< std::vector<std::string> >()[0] << ").\n";
         }
         sFixed = vm["f"].as< std::vector<std::string> >()[0];
     } 
@@ -126,7 +130,7 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     if (vm.count("m")) {
         if ( bVerbose ) {
             std::cout << "moving image given (" 
-                << vm["m"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+                << vm["m"].as< std::vector<std::string> >()[0] << ").\n";
         }
         sMoving = vm["m"].as< std::vector<std::string> >()[0];
 
@@ -144,7 +148,7 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     if (vm.count("fmask")) {
         if ( bVerbose ) {
             std::cout << "fixed image mask given (" 
-                << vm["fmask"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+                << vm["fmask"].as< std::vector<std::string> >()[0] << ").\n";
         }
         sFixedMask = vm["fmask"].as< std::vector<std::string> >()[0];
     }
@@ -155,7 +159,7 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     if (vm.count("mmask")) {
         if ( bVerbose ) {
             std::cout << "moving image mask given (" 
-                << vm["mmask"].as< std::vector<std::string> >()[0] << ".nii.gz).\n";
+                << vm["mmask"].as< std::vector<std::string> >()[0] << ").\n";
         }
         sMovingMask = vm["mmask"].as< std::vector<std::string> >()[0];
     }
@@ -228,9 +232,9 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         }
         sMetric = vm["metric"].as< std::vector<std::string> >()[0];
     }
-    // MattesMutualInformation by default
+    // Cross Correlation by default
     else {
-        sMetric = "MattesMutualInformation";
+        sMetric = "Correlation";
     }
 
     if (vm.count("interpolator")) {
@@ -240,9 +244,9 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         }
         sInterpolator = vm["interpolator"].as< std::vector<std::string> >()[0];
     }
-    // BSpline interpolator by default
+    // NearestNeighbor interpolator by default
     else {
-        sInterpolator = "BSpline";
+        sInterpolator = "NearestNeighbor";
     }
 
     if (vm.count("scalesEst")) {
@@ -252,7 +256,7 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         }
         sScalesEstimator = vm["scalesEst"].as< std::vector<std::string> >()[0];
     }
-    // BSpline interpolator by default
+    // Jacobian based scale estimator by default
     else {
         sScalesEstimator = "Jacobian";
     }
@@ -279,6 +283,18 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     // radius by default
     else {
         sANTSrad = "20";
+    }
+
+    if (vm.count("translationScale")) {
+        if ( bVerbose ) {
+            std::cout << "chosen scale for translation is " 
+                << vm["translationScale"].as< std::vector<std::string> >()[0] << std::endl;  
+        }
+        sTranslationScale = vm["translationScale"].as< std::vector<std::string> >()[0];
+    }
+    // radius by default
+    else {
+        sTranslationScale = "1";
     }
 
 
@@ -311,6 +327,7 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     sInput.push_back(sScalesEstimator);
     sInput.push_back(sVerbose);
     sInput.push_back(sANTSrad);
+    sInput.push_back(sTranslationScale);
 
 
     return sInput;

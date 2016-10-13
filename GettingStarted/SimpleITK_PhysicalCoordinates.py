@@ -116,7 +116,7 @@ def TransformIndexToPhysicalPoint_from_nib_header(image_nib, point):
 # of AddTransform is stack based, i.e. first in -- last applied. Wtf!?
 #
 # \param[in] sitk::simple::AffineTransform for inner and outer transform
-def get_composited_sitk_affine_transform(transform_outer, transform_inner):
+def get_composite_sitk_affine_transform(transform_outer, transform_inner):
     A_inner = np.asarray(transform_inner.GetMatrix()).reshape(3,3)
     c_inner = np.asarray(transform_inner.GetCenter())
     t_inner = np.asarray(transform_inner.GetTranslation())
@@ -125,11 +125,11 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
     c_outer = np.asarray(transform_outer.GetCenter())
     t_outer = np.asarray(transform_outer.GetTranslation())
 
-    A_composited = A_outer.dot(A_inner)
-    c_composited = c_inner
-    t_composited = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
+    A_composite = A_outer.dot(A_inner)
+    c_composite = c_inner
+    t_composite = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
 
-    return sitk.AffineTransform(A_composited.flatten(), t_composited, c_composited)
+    return sitk.AffineTransform(A_composite.flatten(), t_composite, c_composite)
 
 
 def run_examples():
@@ -317,7 +317,7 @@ class TestUM(unittest.TestCase):
     """
     Test how to composite functions correctly in SimpleITK
     """
-    def test_14_get_composited_sitk_affine_transform(self):
+    def test_14_get_composite_sitk_affine_transform(self):
         shape = np.array(stack_sitk.GetSize())
         point = shape-1
 
@@ -335,16 +335,16 @@ class TestUM(unittest.TestCase):
 
         T_1 = sitk.Euler3DTransform(center, angle[0], angle[1], angle[2], translation)  
 
-        # T_composited = T_1 o T_0:
-        T_composited = get_composited_sitk_affine_transform(T_1,T_0)
+        # T_composite = T_1 o T_0:
+        T_composite = get_composite_sitk_affine_transform(T_1,T_0)
 
-        # Compute results both separated and composited
+        # Compute results both separated and composite
         res_separate = T_1.TransformPoint(T_0.TransformPoint(point))
-        res_composited = T_composited.TransformPoint(point)
+        res_composite = T_composite.TransformPoint(point)
 
         self.assertEqual(np.around(
             # np.sum(abs(point - composite_transform.TransformPoint(point)))
-            np.sum(abs(np.array(res_separate) - res_composited))
+            np.sum(abs(np.array(res_separate) - res_composite))
             , decimals = accuracy), 0 )
 
 

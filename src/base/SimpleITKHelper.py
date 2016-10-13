@@ -15,12 +15,17 @@ import matplotlib.pyplot as plt
 ## Import modules from src-folder
 # import SimpleITKHelper as sitkh
 
+## Use ITK-SNAP instead of imageJ to view images
+# os.environ['SITK_SHOW_COMMAND'] = "/Applications/ITK-SNAP.app/Contents/MacOS/ITK-SNAP"
+os.environ['SITK_SHOW_COMMAND'] = "/usr/local/bin/itksnap"
+# os.environ['SITK_SHOW_COMMAND'] = "itksnap"
+
 
 ## AddTransform does not work! Python always crashes! Moreover, the composition
 # of AddTransform is stack based, i.e. first in -- last applied. Wtf!?
 # \param[in] sitk::simple::AffineTransform or EulerxDTransform for inner and outer transform
 # \see http://insightsoftwareconsortium.github.io/SimpleITK-Notebooks/22_Transforms.html
-def get_composited_sitk_affine_transform(transform_outer, transform_inner):
+def get_composite_sitk_affine_transform(transform_outer, transform_inner):
     
     ## Guarantee type sitk::simple::AffineTransform of transformations
     # transform_outer = sitk.AffineTransform(transform_outer)
@@ -36,11 +41,11 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
     c_outer = np.asarray(transform_outer.GetCenter())
     t_outer = np.asarray(transform_outer.GetTranslation())
 
-    A_composited = A_outer.dot(A_inner)
-    c_composited = c_inner
-    t_composited = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
+    A_composite = A_outer.dot(A_inner)
+    c_composite = c_inner
+    t_composite = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
 
-    return sitk.AffineTransform(A_composited.flatten(), t_composited, c_composited)
+    return sitk.AffineTransform(A_composite.flatten(), t_composite, c_composite)
 
 
 ## Composite two Euler Transforms
@@ -48,7 +53,7 @@ def get_composited_sitk_affine_transform(transform_outer, transform_inner):
 # \param[in] transform_inner as sitk::simple::EulerxDTransform
 # \return \p tranform_outer \f$ \circ \f$ \p transform_inner as sitk.EulerxDTransform
 # \see http://insightsoftwareconsortium.github.io/SimpleITK-Notebooks/22_Transforms.html
-def get_composited_sitk_euler_transform(transform_outer, transform_inner):
+def get_composite_sitk_euler_transform(transform_outer, transform_inner):
     
     ## Guarantee type sitk::simple::AffineTransform of transformations
     # transform_outer = sitk.AffineTransform(transform_outer)
@@ -64,14 +69,14 @@ def get_composited_sitk_euler_transform(transform_outer, transform_inner):
     c_outer = np.asarray(transform_outer.GetCenter())
     t_outer = np.asarray(transform_outer.GetTranslation())
 
-    A_composited = A_outer.dot(A_inner)
-    c_composited = c_inner
-    t_composited = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
+    A_composite = A_outer.dot(A_inner)
+    c_composite = c_inner
+    t_composite = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
 
     euler = sitk.Euler3DTransform()
-    euler.SetMatrix(A_composited.flatten())
-    euler.SetTranslation(t_composited)
-    euler.SetCenter(c_composited)
+    euler.SetMatrix(A_composite.flatten())
+    euler.SetTranslation(t_composite)
+    euler.SetCenter(c_composite)
 
     return euler
 
@@ -104,15 +109,17 @@ def get_sitk_image_direction_from_sitk_affine_transform(affine_transform_sitk, i
 #  \param[in] image_sitk image as sitk.Image object sought to be updated
 #  \return image origin which can be used to update the sitk.Image via
 #          image_sitk.SetOrigin(origin)
-def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, image_sitk):
+#  TODO: eliminate image_sitk from the header
+def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, image_sitk=None):
     """
     Important: Only tested for center=\0! Not clear how it shall be implemented,
             cf. Johnson2015a on page 551 vs page 107!
 
-    Mostly outcome of application of get_composited_sitk_affine_transform and first transform_inner is image. 
-    Therefore, center_composited is always zero on tested functions so far
+    Mostly outcome of application of get_composite_sitk_affine_transform and first transform_inner is image. 
+    Therefore, center_composite is always zero on tested functions so far
     """
-    dim = len(image_sitk.GetSize())
+    # dim = len(image_sitk.GetSize())
+    dim = affine_transform_sitk.GetDimension()
 
     affine_center = np.array(affine_transform_sitk.GetCenter())
     affine_translation = np.array(affine_transform_sitk.GetTranslation())
@@ -170,7 +177,7 @@ def get_sitk_affine_transform_from_sitk_direction_and_origin(direction_sitk, ori
 ## rigid_transform_*D (object type  Transform) as output of object sitk.ImageRegistrationMethod does not contain the
 ## member functions GetCenter, GetTranslation, GetMatrix whereas the objects sitk.Euler*DTransform does.
 ## Hence, create an instance sitk.Euler*D so that it can be used for composition of transforms as coded 
-## in get_composited_sitk_affine_transform
+## in get_composite_sitk_affine_transform
 def get_inverse_of_sitk_rigid_registration_transform(rigid_registration_transform):
 
     dim = rigid_registration_transform.GetDimension()
@@ -217,8 +224,8 @@ def get_transformed_image(image_init_sitk, transform_sitk):
     
     affine_transform_sitk = get_sitk_affine_transform_from_sitk_image(image_sitk)
 
-    transform_sitk = get_composited_sitk_affine_transform(transform_sitk, affine_transform_sitk)
-    # transform_sitk = get_composited_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform_sitk), affine_transform_sitk)
+    transform_sitk = get_composite_sitk_affine_transform(transform_sitk, affine_transform_sitk)
+    # transform_sitk = get_composite_sitk_affine_transform(get_inverse_of_sitk_rigid_registration_transform(affine_transform_sitk), affine_transform_sitk)
 
     direction = get_sitk_image_direction_from_sitk_affine_transform(transform_sitk, image_sitk)
     origin = get_sitk_image_origin_from_sitk_affine_transform(transform_sitk, image_sitk)
@@ -275,6 +282,26 @@ def write_itk_image(image_itk, filename):
     writer.SetInput(image_itk)
     writer.SetFileName(filename)
     writer.Update()
+
+
+##-----------------------------------------------------------------------------
+# \brief      Print the ITK direction matrix
+# \date       2016-09-20 15:52:28+0100
+#
+# \param      direction_itk  direction as obtained via image_itk.GetDirection()
+#
+def print_itk_direction(direction_itk):
+    m_vnl = direction_itk.GetVnlMatrix()
+    n_cols = m_vnl.cols()
+    n_rows = m_vnl.rows()
+
+    m_np = np.zeros((n_cols, n_rows))
+
+    for i in range(0, n_cols):
+        for j in range(0, n_rows):
+            m_np[i,j] = m_vnl(i,j)
+
+    print m_np
 
 
 ## Extract direction from SimpleITK-image so that it can be injected into
@@ -509,66 +536,58 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
     return fig
 
 
-## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
-#  \param[in] image_sitk image to show
-#  \param[in] segmentation 
-#  \param[in] overlay image which shall be overlayed onto image_sitk (optional)
-#  \param[in] title filename for file written to /tmp/ (optional)
-def show_sitk_image(image_sitk, segmentation=None, overlay=None, overlay2=None, title="test"):
+##-----------------------------------------------------------------------------
+# \brief      Show image with ITK-Snap. Image is saved to /tmp/ for that
+#             purpose.
+# \date       2016-09-19 16:47:18+0100
+#
+# \param[in]  image_sitk    either single sitk.Image or list of sitk.Images to
+#                           overlay
+# \param[in]  title         filename or list of filenames
+# \param[in]  segmentation  sitk.Image used as segmentation
+#
+def show_sitk_image(image_sitk, title="test", segmentation=None):
     
     dir_output = "/tmp/"
     # cmd = "fslview " + dir_output + title + ".nii.gz & "
 
-    if overlay is not None and overlay2 is None and segmentation is None:
-        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
-        sitk.WriteImage(overlay, dir_output + title + "_overlay.nii.gz")
+    if type(image_sitk) is not list:
+        image_sitk = [image_sitk]
 
-        cmd = "itksnap " \
-            + "-g " + dir_output + title + ".nii.gz " \
-            + "-o " + dir_output + title + "_overlay.nii.gz " \
-            + "& "
+    if type(title) is not list:
+        title = [title]
 
-    elif overlay is not None and overlay2 is not None and segmentation is None:
-        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
-        sitk.WriteImage(overlay, dir_output + title + "_overlay.nii.gz")
-        sitk.WriteImage(overlay2, dir_output + title + "_overlay2.nii.gz")
+    ## Write image
+    sitk.WriteImage(image_sitk[0], dir_output + title[0] + ".nii.gz")
 
-        cmd = "itksnap " \
-            + "-g " + dir_output + title + ".nii.gz " \
-            + "-o " + dir_output + title + "_overlay.nii.gz " \
-            + dir_output + title + "_overlay2.nii.gz " \
-            + "& "
+    cmd = "itksnap " \
+        + "-g " + dir_output + title[0] + ".nii.gz " \
+    
+    ## Add overlays
+    if len(image_sitk)>1:
+        overlay_txt = ""
 
-    elif overlay is None and overlay2 is None and segmentation is not None:
-        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
-        sitk.WriteImage(segmentation, dir_output + title + "_segmentation.nii.gz")
+        for i in range(1, len(image_sitk)):
+            if len(title) is len(image_sitk):
+                sitk.WriteImage(image_sitk[i], dir_output + title[i] + ".nii.gz")
+                overlay_txt += dir_output + title[i] + ".nii.gz "
+            else:
+                sitk.WriteImage(image_sitk[i], dir_output + title[0] + "_overlay" + str(i) + ".nii.gz")
+                overlay_txt += dir_output + title[0] + "_overlay" + str(i) + ".nii.gz "
+                
+        cmd += "-o " + overlay_txt \
 
-        cmd = "itksnap " \
-            + "-g " + dir_output + title + ".nii.gz " \
-            + "-s " + dir_output + title + "_segmentation.nii.gz " \
-            + "& "
+    ## Add segmentation
+    if segmentation is not None:
+        sitk.WriteImage(segmentation, dir_output + title[0] + "_segmentation.nii.gz")
+        cmd += "-s " + dir_output + title[0] + "_segmentation.nii.gz " \
 
-    elif overlay is not None and overlay2 is None and segmentation is not None:
-        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
-        sitk.WriteImage(segmentation, dir_output + title + "_segmentation.nii.gz")
-        sitk.WriteImage(overlay, dir_output + title + "_overlay.nii.gz")
+    ## Add termination and print command
+    cmd += "& "
+    print cmd
 
-        cmd = "itksnap " \
-            + "-g " + dir_output + title + ".nii.gz " \
-            + "-s " + dir_output + title + "_segmentation.nii.gz " \
-            + "-o " + dir_output + title + "_overlay.nii.gz " \
-            + "& "
-
-    else:
-        sitk.WriteImage(image_sitk, dir_output + title + ".nii.gz")
-
-        cmd = "itksnap " \
-            + "-g " + dir_output + title + ".nii.gz " \
-            + "& "
-
+    ## Execute command
     os.system(cmd)
-
-    return None
 
 
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
@@ -618,11 +637,6 @@ def show_itk_image(image_itk, segmentation=None, overlay=None, title="test"):
             "& "
 
     os.system(cmd)
-
-    return None
-
-
-
 
 
 
