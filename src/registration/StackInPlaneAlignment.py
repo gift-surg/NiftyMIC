@@ -188,9 +188,9 @@ class StackInPlaneAlignment:
         # registration_2D.use_multiresolution_framework(True)
         registration_2D.set_centered_transform_initializer(None)
         registration_2D.set_scales_estimator("PhysicalShift")
+        # registration_2D.set_metric("Correlation")
         registration_2D.set_metric("MattesMutualInformation")
         # registration_2D.set_metric("MeanSquares")
-        # registration_2D.set_metric("Correlation")
         registration_2D.use_fixed_mask(self._use_stack_mask)
         registration_2D.use_moving_mask(self._use_reference_mask)
         registration_2D.use_verbose(False)
@@ -228,11 +228,14 @@ class StackInPlaneAlignment:
             self._slices[i].update_motion_correction(affine_transform_sitk)   
 
 
-    #--------------------------------------------------------------------------
+    ##-------------------------------------------------------------------------
     # \brief      Run in-plane similarity alignment to match the reference
     # \date       2016-10-13 21:44:49+0100
     #
     # \param      self  The object
+    # \bug        This is not done yet. The scaling needs to be correctly
+    #             converted to image spacing. This also affects the origin of
+    #             the image
     #
     def _run_similarity_in_plane_registration_to_reference(self):
 
@@ -306,6 +309,7 @@ class StackInPlaneAlignment:
 
             self._slices[i].update_motion_correction(affine_transform_sitk)   
 
+            ## BUG: Also set origin accordingly!
             slice_sitk = self._slices[i].sitk
             slice_sitk_mask = self._slices[i].sitk_mask
             spacing = np.array(slice_sitk.GetSpacing())
