@@ -37,20 +37,24 @@ class Solver(object):
     """ This class contains the common functions/attributes of the solvers """
 
     ##-------------------------------------------------------------------------
-    # \brief      Constructor
-    # \date       2016-08-01 22:53:37+0100
+    # \brief         Constructor
+    # \date          2016-08-01 22:53:37+0100
     #
-    # \param      self       The object
-    # \param[in]  stacks     list of Stack objects containing all stacks used
-    #                        for the reconstruction
-    # \param[in,out]  HR_volume  Stack object containing the current estimate of
-    #                        the HR volume (used as initial value + space
-    #                        definition)
-    # \param[in]  alpha_cut  Cut-off distance for Gaussian blurring filter
-    # \param[in]  alpha      regularization parameter, scalar
-    # \param[in]  iter_max   number of maximum iterations, scalar
+    # \param         self                The object
+    # \param[in]     stacks              list of Stack objects containing all
+    #                                    stacks used for the reconstruction
+    # \param[in,out] HR_volume           Stack object containing the current
+    #                                    estimate of the HR volume (used as
+    #                                    initial value + space definition)
+    # \param[in]     alpha_cut           Cut-off distance for Gaussian blurring
+    #                                    filter
+    # \param[in]     alpha               regularization parameter, scalar
+    # \param[in]     iter_max            number of maximum iterations, scalar
+    # \param[in]     deconvolution_mode  Either "full_3D" or "only_in_plane".
+    #                                    Indicates whether full 3D or only
+    #                                    in-plane deconvolution is considered
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, deconvolution_mode="full_3D"):
 
         ## Initialize variables
         self._stacks = stacks
@@ -59,6 +63,17 @@ class Solver(object):
 
         ## Used for PSF modelling
         self._psf = psf.PSF()
+
+        self._deconvolution_mode = deconvolution_mode
+        self._update_oriented_adjoint_oriented_Gaussian_image_filters = {
+            "full_3D":          self._update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D,
+            "only_in_plane":    self._update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane
+        }
+
+        ## Idea: Set through-plane spacing artificially very small so that the 
+        ## corresponding becomes negligibly small in through-plane direction. 
+        ## Hence, only in-plane deconvolution is approximated.
+        self._deconvolution_only_in_plane_through_plane_spacing = 1e-6
 
         ## Cut-off distance for Gaussian blurring filter
         self._alpha_cut = alpha_cut  
@@ -186,9 +201,34 @@ class Solver(object):
     #  Filter parameters. Hence, update combined Downsample and Blur Operator
     #  according to the relative position between slice and HR volume.
     #  \param[in] slice Slice object
-    def _update_oriented_adjoint_oriented_Gaussian_image_filters(self, slice):
+    def _update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D(self, slice):
         ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates
         Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(slice, self._HR_volume)
+
+        ## Update parameters of forward operator A
+        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
+        
+        ## Update parameters of backward/adjoint operator A'
+        self._filter_adjoint_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
+
+
+    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
+    #  Filter parameters. Hence, update combined Downsample and Blur Operator
+    #  according to the relative position between slice and HR volume.
+    #  BUT, only consider in-plane deconvolution (Was added for the MS project)
+    #  \param[in] slice Slice object
+    def _update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane(self, slice):
+
+        ## Get spacing of slice and set it very small so that the corresponding
+        ## covariance is negligibly small in through-plane direction. Hence,
+        ## only in-plane deconvolution is approximated
+        spacing = np.array(slice.sitk.GetSpacing())
+        spacing[2] = self._deconvolution_only_in_plane_through_plane_spacing
+        direction = np.array(slice.sitk.GetDirection())
+
+        ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction, spacing, self._HR_volume)
 
         ## Update parameters of forward operator A
         self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
@@ -207,7 +247,7 @@ class Solver(object):
     def _Ak(self, HR_volume_itk, slice_k):
 
         ## Set up operator A_k based on relative position to HR volume and their dimensions
-        self._update_oriented_adjoint_oriented_Gaussian_image_filters(slice_k)
+        self._update_oriented_adjoint_oriented_Gaussian_image_filters[self._deconvolution_mode](slice_k)
 
         ## Perform forward operation A_k on HR volume object
         HR_volume_itk.Update()
@@ -230,7 +270,7 @@ class Solver(object):
     def _Ak_adj(self, slice_itk, slice_k):
 
         ## Set up operator A_k^* based on relative position to HR volume and their dimensions
-        self._update_oriented_adjoint_oriented_Gaussian_image_filters(slice_k)
+        self._update_oriented_adjoint_oriented_Gaussian_image_filters[self._deconvolution_mode](slice_k)
 
         ## Perform backward operation A_k^* on LR image object
         self._filter_adjoint_oriented_Gaussian.SetInput(slice_itk)

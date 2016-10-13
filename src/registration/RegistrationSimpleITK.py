@@ -91,8 +91,8 @@ class RegistrationSimpleITK:
     ## Set type of registration used
     #  \param[in] registration_type
     def set_registration_type(self, registration_type):
-        if registration_type not in ["Rigid", "Affine"]:
-            raise ValueError("Error: Registration type can only be 'Rigid' or 'Affine'")
+        if registration_type not in ["Rigid", "Similarity", "Affine"]:
+            raise ValueError("Error: Registration type can only be 'Rigid', 'Similarity' or 'Affine'")
 
         self._registration_type = registration_type
         
@@ -311,6 +311,10 @@ class RegistrationSimpleITK:
         if self._registration_type in ["Rigid"]:
             initial_transform = eval("sitk.Euler" + str(dim) + "DTransform()")
 
+        elif self._registration_type in ["Similarity"]:
+            initial_transform = eval("sitk.Similarity" + str(dim) + "DTransform()")
+            print initial_transform
+
         elif self._registration_type in ["Affine"]:
             initial_transform = sitk.AffineTransform(dim)
 
@@ -378,6 +382,8 @@ class RegistrationSimpleITK:
 
         if self._registration_type in ["Rigid"]:
             registration_transform_sitk = eval("sitk.Euler" + str(dim) + "DTransform(registration_transform_sitk)")
+        elif self._registration_type in ["Similarity"]:
+            registration_transform_sitk = eval("sitk.Similarity" + str(dim) + "DTransform(registration_transform_sitk)")
         elif self._registration_type in ["Affine"]:
             registration_transform_sitk = sitk.AffineTransform(registration_transform_sitk)
 

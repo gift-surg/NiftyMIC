@@ -76,25 +76,30 @@ class TikhonovSolver(Solver):
     # \brief         Constructor
     # \date          2016-08-01 23:00:04+0100
     #
-    # \param         self       The object
-    # \param[in]     stacks     list of Stack objects containing all stacks
-    #                           used for the reconstruction
-    # \param[in,out] HR_volume  Stack object containing the current estimate of
-    #                           the HR volume (used as initial value + space
-    #                           definition)
-    # \param[in]     alpha_cut  Cut-off distance for Gaussian blurring filter
-    # \param[in]     alpha      regularization parameter, scalar
-    # \param[in]     iter_max   number of maximum iterations, scalar
-    # \param[in]     reg_type   Type of Tikhonov regualrization, i.e. TK0 or
-    #                           TK1 for either zeroth- or first order Tikhonov
-    # \param[in]     minimizer  Type of minimizer used to solve minimization
-    #                           problem, possible types: 'lsmr', 'lsqr',
-    #                           'L-BFGS-B'
+    # \param         self                The object
+    # \param[in]     stacks              list of Stack objects containing all
+    #                                    stacks used for the reconstruction
+    # \param[in,out] HR_volume           Stack object containing the current
+    #                                    estimate of the HR volume (used as
+    #                                    initial value + space definition)
+    # \param[in]     alpha_cut           Cut-off distance for Gaussian blurring
+    #                                    filter
+    # \param[in]     alpha               regularization parameter, scalar
+    # \param[in]     iter_max            number of maximum iterations, scalar
+    # \param[in]     reg_type            Type of Tikhonov regualrization, i.e.
+    #                                    TK0 or TK1 for either zeroth- or first
+    #                                    order Tikhonov
+    # \param[in]     minimizer           Type of minimizer used to solve
+    #                                    minimization problem, possible types:
+    #                                    'lsmr', 'lsqr', 'L-BFGS-B' #
+    # \param[in]     deconvolution_mode  Either "full_3D" or "only_in_plane".
+    #                                    Indicates whether full 3D or only
+    #                                    in-plane deconvolution is considered
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D"):
 
         ## Run constructor of superclass
-        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max)
+        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, deconvolution_mode)
         
         ## Settings for optimizer
         self._reg_type = reg_type
@@ -197,6 +202,9 @@ class TikhonovSolver(Solver):
             N_voxels = self._N_total_slice_voxels + 3*self._N_voxels_HR_volume
 
             print("Chosen regularization type: first-order Tikhonov")
+
+        if self._deconvolution_mode in ["only_in_plane"]:
+            print("(Only in-plane deconvolution is performed)")
 
         print("Minimizer = " + self._minimizer)
         print("Regularization parameter = " + str(self._alpha))

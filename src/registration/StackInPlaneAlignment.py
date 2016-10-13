@@ -1,4 +1,4 @@
-## \file InPlaneRigidRegistration.py
+## \file StackInPlaneAlignment.py
 #  \brief  
 # 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
@@ -27,19 +27,25 @@ import RegistrationSimpleITK as regsitk
 # \brief      Class to perform in-plane rigid registration
 # \date       2016-09-20 15:59:21+0100
 #
-class InPlaneRigidRegistration:
+class StackInPlaneAlignment:
 
     ##-------------------------------------------------------------------------
-    # \brief      { constructor_description }
+    # \brief      TODO
     # \date       2016-09-26 10:20:03+0100
     #
-    # \param      self   The object
-    # \param      stack  The stack
+    # \param      self                The object
+    # \param      stack               The stack
+    # \param      reference           The reference
+    # \param      use_stack_mask      The use stack mask
+    # \param      use_reference_mask  The use reference mask
+    # \param      alignment_approach  The alignment approach
     #
-    def __init__(self, stack=None, reference=None):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, alignment_approach="align_within_stack"):
         
 
-        self._alignment_approach = "align_within_stack"
+        self._alignment_approach = alignment_approach
+        self._use_stack_mask = use_stack_mask
+        self._use_reference_mask = use_reference_mask
         self._run_in_plane_registration = {
             "align_within_stack"    : self._run_in_plane_registration_within_stack,
             "align_to_reference"    : self._run_in_plane_registration_to_reference
@@ -72,6 +78,15 @@ class InPlaneRigidRegistration:
         self._N_slices = self._stack.get_number_of_slices()
 
 
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the reference for in-plane alignment. Reference stack
+    #             must be in the same physical space as the stack to be
+    #             aligned.
+    # \date       2016-10-12 15:32:24+0100
+    #
+    # \param      self       The object
+    # \param      reference  The reference
+    #
     def set_reference(self, reference):
         try:
             self._stack.sitk - reference.sitk
@@ -80,6 +95,27 @@ class InPlaneRigidRegistration:
 
         self._reference = reference
         self._alignment_approach = "align_to_reference"
+
+    ##-------------------------------------------------------------------------
+    # \brief      Set whether mask is used for stack of slices for registration
+    # \date       2016-10-12 15:33:45+0100
+    #
+    # \param      self  The object
+    # \param      flag  Flag indicating whether mask is used, bool
+    #
+    def use_stack_mask(self, flag):
+        self._use_stack_mask = flag
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Set whether mask is used for reference image for registration
+    # \date       2016-10-12 15:34:34+0100
+    #
+    # \param      self  The object
+    # \param      flag  Flag indicating whether mask is used, bool
+    #
+    def use_reference_mask(self, flag):
+        self._use_reference_mask = flag
 
 
     ##-------------------------------------------------------------------------
@@ -105,6 +141,12 @@ class InPlaneRigidRegistration:
         self._run_in_plane_registration[self._alignment_approach]()
 
 
+    ##-------------------------------------------------------------------------
+    # \brief      Run in-plane rigid alignment to match the reference
+    # \date       2016-10-12 15:38:14+0100
+    #
+    # \param      self  The object
+    #
     def _run_in_plane_registration_to_reference(self):
 
         print("*** Perform rigid in-plane registration based on reference ***")
@@ -115,11 +157,11 @@ class InPlaneRigidRegistration:
         # registration_2D.use_multiresolution_framework(True)
         registration_2D.set_centered_transform_initializer(None)
         registration_2D.set_scales_estimator("PhysicalShift")
-        # registration_2D.set_metric("MattesMutualInformation")
+        registration_2D.set_metric("MattesMutualInformation")
         # registration_2D.set_metric("MeanSquares")
-        registration_2D.set_metric("Correlation")
-        registration_2D.use_fixed_mask(False)
-        registration_2D.use_moving_mask(False)
+        # registration_2D.set_metric("Correlation")
+        registration_2D.use_fixed_mask(self._use_stack_mask)
+        registration_2D.use_moving_mask(self._use_reference_mask)
         registration_2D.use_verbose(False)
 
         ## Get list of 3D affine transforms to arrive at the positions of the
@@ -139,10 +181,11 @@ class InPlaneRigidRegistration:
 
             rigid_registration_transform_2D_sitk = registration_2D.get_registration_transform_sitk()
 
+            ## Debug
             # foo_2D_sitk = sitkh.get_transformed_image(slice_2D_fixed.sitk, rigid_registration_transform_2D_sitk)
             # foo_2D_sitk = sitk.Resample(foo_2D_sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
             # before_2D_sitk = sitk.Resample(slice_2D_fixed.sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
-            # sitkh.show_sitk_image([slice_2D_moving.sitk, before_2D_sitk, foo_2D_sitk],["moving","fixed_before", "fixed_after"])
+            # sitkh.show_sitk_image([slice_2D_moving.sitk, before_2D_sitk, foo_2D_sitk], segmentation=slice_2D_moving.sitk_mask, title=["moving","fixed_before", "fixed_after"])
 
             ## Expand to 3D transform
             rigid_registration_transform_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(rigid_registration_transform_2D_sitk)

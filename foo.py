@@ -31,8 +31,9 @@ import ScatteredDataApproximation as sda
 import TikhonovSolver as tk
 import SimulatorSliceAcqusition as sa
 import Registration as myreg
-import InPlaneRigidRegistration as iprr
+import StackInPlaneAlignment as sipa
 import DataPreprocessing as dp
+import BrainStripping as bs
 
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
@@ -87,32 +88,64 @@ if __name__ == '__main__':
 
     # image_2D_sitk = sitk.ReadImage(dir_input + filename_2D + ".nii.gz")
 
-    DIR_INPUT = "data/placenta/";                   filename_stack = "a23_05"
-    # DIR_INPUT = "data/fetal_neck_mass_brain/";      filename_stack = "0"
-    stack = st.Stack.from_filename(DIR_INPUT, filename_stack, suffix_mask="_mask")
+    # DIR_INPUT = "data/placenta/";                   filename_stack = "a23_05"
+    # # DIR_INPUT = "data/fetal_neck_mass_brain/";      filename_stack = "0"
+    # stack = st.Stack.from_filename(DIR_INPUT, filename_stack, suffix_mask="_mask")
 
-    data_preprocessing = dp.DataPreprocessing.from_stacks([stack])
-    # data_preprocessing.set_dilation_radius(0)
-    data_preprocessing.run_preprocessing()
-    stack = data_preprocessing.get_preprocessed_stacks()[0]
+    # data_preprocessing = dp.DataPreprocessing.from_stacks([stack])
+    # # data_preprocessing.set_dilation_radius(0)
+    # data_preprocessing.run_preprocessing()
+    # stack = data_preprocessing.get_preprocessed_stacks()[0]
 
-    inplane_reg = iprr.InPlaneRigidRegistration()
-    inplane_reg.set_stack(stack)
+    # inplane_reg = sipa.StackInPlaneAlignment()
+    # inplane_reg.set_stack(stack)
 
-    inplane_reg.run_registration()
+    # inplane_reg.run_registration()
 
-    stack_inplane_reg = inplane_reg.get_stack()
+    # stack_inplane_reg = inplane_reg.get_stack()
 
-    # stack_inplane_reg.get_resampled_stack_from_slices().show(1)
-    stack_registered_sitk = stack_inplane_reg.get_resampled_stack_from_slices(interpolator="Linear").sitk
-    sitkh.show_sitk_image([stack.sitk, stack_registered_sitk], ["original", "inplane-registered"])
+    # # stack_inplane_reg.get_resampled_stack_from_slices().show(1)
+    # stack_registered_sitk = stack_inplane_reg.get_resampled_stack_from_slices(interpolator="Linear").sitk
+    # sitkh.show_sitk_image([stack.sitk, stack_registered_sitk], ["original", "inplane-registered"])
 
-                
+    subject = "2"
+    filename = "002-30yr-AxT2"
+    DIR_ROOT_DIRECTORY = "/Users/mebner/UCL/Data/30_year_old_data/"
+    dir_input = DIR_ROOT_DIRECTORY + "Subject_" + subject + "/"
+
+    dir_input = "studies/30YearMSData/Subject" + subject + "/data_preprocessing/"
+    filename = "5year_2_downsampled_factor10"
+    
+    # reference_image = st.Stack.from_filename(dir_input, filename, "_mask")
+    brain_stripping = bs.BrainStripping.from_filename(dir_input, filename)
+    # brain_stripping = bs.BrainStripping.from_sitk_image(reference_image.sitk)
+    # brain_stripping = bs.BrainStripping()
+    # brain_stripping.set_input_image_sitk(reference_image.sitk)
+    brain_stripping.compute_brain_mask(1)
+    # brain_stripping.compute_brain_image(0)
+    # brain_stripping.compute_skull_image(0)
+    # brain_stripping.set_bet_options("-f 0.3")
+
+    brain_stripping.run_stripping()
+    original_sitk = brain_stripping.get_input_image_sitk()
+    brain_mask_sitk = brain_stripping.get_brain_mask_sitk()
+    # brain_sitk = brain_stripping.get_brain_image_sitk()
+    # skull_mask_sitk = brain_stripping.get_skull_image_sitk()
 
 
+    sitkh.show_sitk_image([original_sitk], segmentation=brain_mask_sitk)
+    # sitkh.show_sitk_image([original_sitk, brain_sitk], segmentation=skull_mask_sitk)
 
 
-
-
+    reg = regsitk.RegistrationSimpleITK()
+    reg.set_registration_type("Similarity")
+    reg.set_scales_estimator("Jacobian")
+    reg.set_fixed(HR_volume_init)
+    reg.set_moving(reference_image)
+    reg.use_verbose(True)
+    reg.set_metric("MattesMutualInformation")
+    reg.run_registration()
+    trafo = reg.get_registration_transform_sitk()
+    print trafo
 
 

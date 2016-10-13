@@ -23,7 +23,8 @@ import matplotlib.pyplot as plt
 # from Test_SimulatorSliceAcqusition import *
 # from Test_NiftyReg import *
 # from Test_DifferentialOperations import *
-from Test_Registration import *
+# from Test_Registration import *
+from Test_BrainStripping import *
 
 
 """ ###########################################################################

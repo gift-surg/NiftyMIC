@@ -15,6 +15,11 @@ import matplotlib.pyplot as plt
 ## Import modules from src-folder
 # import SimpleITKHelper as sitkh
 
+## Use ITK-SNAP instead of imageJ to view images
+# os.environ['SITK_SHOW_COMMAND'] = "/Applications/ITK-SNAP.app/Contents/MacOS/ITK-SNAP"
+os.environ['SITK_SHOW_COMMAND'] = "/usr/local/bin/itksnap"
+# os.environ['SITK_SHOW_COMMAND'] = "itksnap"
+
 
 ## AddTransform does not work! Python always crashes! Moreover, the composition
 # of AddTransform is stack based, i.e. first in -- last applied. Wtf!?
