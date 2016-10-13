@@ -313,7 +313,6 @@ class RegistrationSimpleITK:
 
         elif self._registration_type in ["Similarity"]:
             initial_transform = eval("sitk.Similarity" + str(dim) + "DTransform()")
-            print initial_transform
 
         elif self._registration_type in ["Affine"]:
             initial_transform = sitk.AffineTransform(dim)

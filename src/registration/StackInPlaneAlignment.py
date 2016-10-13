@@ -40,15 +40,16 @@ class StackInPlaneAlignment:
     # \param      use_reference_mask  The use reference mask
     # \param      alignment_approach  The alignment approach
     #
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, alignment_approach="align_within_stack"):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, alignment_approach="rigid_inplane_within_stack"):
         
 
         self._alignment_approach = alignment_approach
         self._use_stack_mask = use_stack_mask
         self._use_reference_mask = use_reference_mask
         self._run_in_plane_registration = {
-            "align_within_stack"    : self._run_in_plane_registration_within_stack,
-            "align_to_reference"    : self._run_in_plane_registration_to_reference
+            "rigid_inplane_within_stack"        : self._run_rigid_in_plane_registration_within_stack,
+            "rigid_inplane_to_reference"        : self._run_rigid_in_plane_registration_to_reference,
+            "similarity_inplane_to_reference"   : self._run_similarity_in_plane_registration_to_reference
         }
 
         if stack is not None:
@@ -62,7 +63,7 @@ class StackInPlaneAlignment:
             except:
                 raise ValueError("Reference and stack are not in the same space")
             self._reference = reference
-            self._alignment_approach = "align_to_reference"
+            self._alignment_approach = "rigid_inplane_to_reference"
 
 
     ##-------------------------------------------------------------------------
@@ -94,7 +95,37 @@ class StackInPlaneAlignment:
             raise ValueError("Reference and stack are not in the same space")
 
         self._reference = reference
-        self._alignment_approach = "align_to_reference"
+        self._alignment_approach = "rigid_inplane_to_reference"
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the alignment approach which is used for the slice
+    #             in-plane alignment
+    # \date       2016-10-13 21:40:09+0100
+    #
+    # \param      self                The object
+    # \param      alignment_approach  The alignment approach as string in
+    #                                 either 'rigid_inplane_within_stack',
+    #                                 'rigid_inplane_to_reference' or
+    #                                 'similarity_inplane_to_reference'
+    #
+    def set_alignment_approach(self, alignment_approach):
+        if alignment_approach not in ["rigid_inplane_within_stack", "rigid_inplane_to_reference", "similarity_inplane_to_reference"]:
+            raise ValueError("Alignment approach must be either 'rigid_inplane_within_stack', 'rigid_inplane_to_reference' or 'similarity_inplane_to_reference'")
+        self._alignment_approach = alignment_approach
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the alignment approach.
+    # \date       2016-10-13 21:41:55+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The alignment approach.
+    #
+    def get_alignment_approach(self):
+        return self._alignment_approach
+
 
     ##-------------------------------------------------------------------------
     # \brief      Set whether mask is used for stack of slices for registration
@@ -147,7 +178,7 @@ class StackInPlaneAlignment:
     #
     # \param      self  The object
     #
-    def _run_in_plane_registration_to_reference(self):
+    def _run_rigid_in_plane_registration_to_reference(self):
 
         print("*** Perform rigid in-plane registration based on reference ***")
 
@@ -197,6 +228,95 @@ class StackInPlaneAlignment:
             self._slices[i].update_motion_correction(affine_transform_sitk)   
 
 
+    #--------------------------------------------------------------------------
+    # \brief      Run in-plane similarity alignment to match the reference
+    # \date       2016-10-13 21:44:49+0100
+    #
+    # \param      self  The object
+    #
+    def _run_similarity_in_plane_registration_to_reference(self):
+
+        print("*** Perform similarity in-plane registration based on reference ***")
+
+        ## Set up registration
+        registration_2D = regsitk.RegistrationSimpleITK()
+        registration_2D.set_registration_type("Similarity")
+        # registration_2D.use_multiresolution_framework(True)
+        registration_2D.set_centered_transform_initializer(None)
+        registration_2D.set_scales_estimator("Jacobian")
+        # registration_2D.set_metric("MattesMutualInformation")
+        # registration_2D.set_metric("MeanSquares")
+        registration_2D.set_metric("Correlation")
+        registration_2D.use_fixed_mask(self._use_stack_mask)
+        registration_2D.use_moving_mask(self._use_reference_mask)
+        registration_2D.use_verbose(False)
+
+        ## Get list of 3D affine transforms to arrive at the positions of the
+        ## original 3D slices
+        transforms_PP_3D_sitk = self._get_list_of_3D_rigid_transforms_of_slices()
+
+        slices_reference = self._reference.get_slices()
+
+        for i in range(0, self._N_slices):
+            slice_2D_fixed = self._get_2D_slice(self._slices[i], transforms_PP_3D_sitk[i])
+            slice_2D_moving = self._get_2D_slice(slices_reference[i], transforms_PP_3D_sitk[i])
+
+            ## Perform in-plane rigid registration
+            registration_2D.set_fixed(slice_2D_fixed)
+            registration_2D.set_moving(slice_2D_moving)
+            registration_2D.run_registration()
+
+            similarity_registration_transform_2D_sitk = registration_2D.get_registration_transform_sitk()
+
+            # print similarity_registration_transform_2D_sitk
+
+            ## Update slice scale
+            scale = similarity_registration_transform_2D_sitk.GetScale()
+            print("Slice %s/%s: scale = %s" % (i,self._N_slices-1, scale))
+            # slice_2D_fixed_scaled = sitk.Image(slice_2D_fixed.sitk)
+            # spacing = np.array(slice_2D_fixed_scaled.GetSpacing())
+            # spacing *= scale
+            # slice_2D_fixed_scaled.SetSpacing(spacing)
+
+            ## Convert to rigid registration transform
+            center = similarity_registration_transform_2D_sitk.GetCenter()
+            angle = similarity_registration_transform_2D_sitk.GetAngle()
+            translation = similarity_registration_transform_2D_sitk.GetTranslation()
+            rigid_registration_transform_2D_sitk = sitk.Euler2DTransform(center, angle, translation)
+
+            ## Debug
+            # foo_2D_sitk = sitkh.get_transformed_image(slice_2D_moving.sitk, sitk.Euler2DTransform(rigid_registration_transform_2D_sitk.GetInverse()))
+
+            # foo_2D_sitk_resample0 = sitk.Resample(foo_2D_sitk, slice_2D_fixed_scaled, sitk.Euler2DTransform())
+            # foo_2D_sitk_resample1 = sitk.Resample(slice_2D_moving.sitk, slice_2D_fixed.sitk, similarity_registration_transform_2D_sitk)
+
+            # sitkh.show_sitk_image([foo_2D_sitk_resample0, foo_2D_sitk_resample1])
+
+            # # foo_2D_sitk = sitkh.get_transformed_image(foo_2D_sitk, rigid_registration_transform_2D_sitk)
+            # foo_2D_sitk = sitk.Resample(foo_2D_sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
+            # before_2D_sitk = sitk.Resample(slice_2D_fixed.sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
+            # sitkh.show_sitk_image([slice_2D_moving.sitk, before_2D_sitk, foo_2D_sitk], segmentation=slice_2D_moving.sitk_mask, title=["moving","fixed_before", "fixed_after"])
+
+            ## Expand to 3D transform
+            rigid_registration_transform_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(rigid_registration_transform_2D_sitk)
+
+            ## Compose to 3D in-plane transform
+            affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(rigid_registration_transform_3D_sitk, transforms_PP_3D_sitk[i])
+            affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(sitk.AffineTransform(transforms_PP_3D_sitk[i].GetInverse()), affine_transform_sitk)
+
+            self._slices[i].update_motion_correction(affine_transform_sitk)   
+
+            slice_sitk = self._slices[i].sitk
+            slice_sitk_mask = self._slices[i].sitk_mask
+            spacing = np.array(slice_sitk.GetSpacing())
+            spacing[0:-1] *= scale
+            slice_sitk.SetSpacing(spacing)
+            slice_sitk_mask.SetSpacing(spacing)
+
+            self._slices[i] = sl.Slice.from_sitk_image(slice_sitk, self._slices[i].get_directory(), self._slices[i].get_filename(), self._slices[i].get_slice_number(), slice_sitk_mask)
+
+
+
     ##-------------------------------------------------------------------------
     # \brief      Run in-plane rigid registration to align within stack
     # \date       2016-09-26 16:11:14+0100
@@ -205,7 +325,7 @@ class StackInPlaneAlignment:
     #
     # \return     { description_of_the_return_value }
     #
-    def _run_in_plane_registration_within_stack(self):
+    def _run_rigid_in_plane_registration_within_stack(self):
 
         print("*** Perform rigid in-plane registration within stack ***")
 
@@ -243,6 +363,7 @@ class StackInPlaneAlignment:
 
             rigid_registration_transform_2D_sitk = registration_2D.get_registration_transform_sitk()
 
+            ## Debug
             # foo_2D_sitk = sitkh.get_transformed_image(slice_2D_fixed.sitk, rigid_registration_transform_2D_sitk)
             # foo_2D_sitk = sitk.Resample(foo_2D_sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
             # before_2D_sitk = sitk.Resample(slice_2D_fixed.sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
