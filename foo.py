@@ -45,6 +45,28 @@ IMAGE_TYPE_3D_CV18 = itk.Image.CVD183
 IMAGE_TYPE_3D_CV3 = itk.Image.CVD33
 
 
+def append_reference_voxels_on_top(stack_to_copy, reference_image):
+    stack = st.Stack.from_stack(stack_to_copy)
+
+    stack_extended = stack.get_increased_stack(5)
+
+    reference_image_resampled_sitk = sitk.Resample(reference_image.sitk, stack_extended.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor)
+
+    # sitk.Show(reference_image_resampled_sitk)
+    nda_stack = sitk.GetArrayFromImage(stack_extended.sitk)
+    nda_ref = sitk.GetArrayFromImage(reference_image_resampled_sitk)
+
+    size = np.array(stack.sitk.GetSize())
+    size_extended = np.array(stack_extended.sitk.GetSize())
+
+    for k in range(size[2], size_extended[2]):
+        nda_stack[k,:,:] = nda_ref[k,:,:]
+
+    stack_extended_filled_sitk = sitk.GetImageFromArray(nda_stack)
+    stack_extended_filled_sitk.CopyInformation(stack_extended.sitk)
+
+    return st.Stack.from_sitk_image(stack_extended_filled_sitk, name=stack_to_copy.get_filename()+"_appended")
+
 """
 Main Function
 """
@@ -111,41 +133,35 @@ if __name__ == '__main__':
     subject = "2"
     filename = "002-30yr-AxT2"
     DIR_ROOT_DIRECTORY = "/Users/mebner/UCL/Data/30_year_old_data/"
-    dir_input = DIR_ROOT_DIRECTORY + "Subject_" + subject + "/"
+    dir_input_data = DIR_ROOT_DIRECTORY + "Subject_" + subject + "/"
 
     dir_input = "studies/30YearMSData/Subject" + subject + "/data_preprocessing/"
-    filename = "5year_2_downsampled_factor10"
+    filename = "Baseline_L-BFGS-B_alpha0_itermax5"
+    filename_ref = "002-30yr-AxT2"
     
     # reference_image = st.Stack.from_filename(dir_input, filename, "_mask")
-    brain_stripping = bs.BrainStripping.from_filename(dir_input, filename)
+    # brain_stripping = bs.BrainStripping.from_filename(dir_input, filename)
     # brain_stripping = bs.BrainStripping.from_sitk_image(reference_image.sitk)
     # brain_stripping = bs.BrainStripping()
     # brain_stripping.set_input_image_sitk(reference_image.sitk)
-    brain_stripping.compute_brain_mask(1)
+    # brain_stripping.compute_brain_mask(1)
     # brain_stripping.compute_brain_image(0)
     # brain_stripping.compute_skull_image(0)
     # brain_stripping.set_bet_options("-f 0.3")
 
-    brain_stripping.run_stripping()
-    original_sitk = brain_stripping.get_input_image_sitk()
-    brain_mask_sitk = brain_stripping.get_brain_mask_sitk()
+    # brain_stripping.run_stripping()
+    # original_sitk = brain_stripping.get_input_image_sitk()
+    # brain_mask_sitk = brain_stripping.get_brain_mask_sitk()
     # brain_sitk = brain_stripping.get_brain_image_sitk()
     # skull_mask_sitk = brain_stripping.get_skull_image_sitk()
 
-
-    sitkh.show_sitk_image([original_sitk], segmentation=brain_mask_sitk)
+    # sitkh.show_sitk_image([original_sitk], segmentation=brain_mask_sitk)
     # sitkh.show_sitk_image([original_sitk, brain_sitk], segmentation=skull_mask_sitk)
 
 
-    reg = regsitk.RegistrationSimpleITK()
-    reg.set_registration_type("Similarity")
-    reg.set_scales_estimator("Jacobian")
-    reg.set_fixed(HR_volume_init)
-    reg.set_moving(reference_image)
-    reg.use_verbose(True)
-    reg.set_metric("MattesMutualInformation")
-    reg.run_registration()
-    trafo = reg.get_registration_transform_sitk()
-    print trafo
+    stack = st.Stack.from_filename(dir_input, filename)
+    reference_image = st.Stack.from_filename(dir_input_data, filename_ref)
 
+    stack_apppended = append_reference_voxels_on_top(stack, reference_image)
+    stack_apppended.show()
 

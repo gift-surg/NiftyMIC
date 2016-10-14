@@ -601,6 +601,56 @@ class Stack:
         return stack
 
 
+    ## Increase stack by adding zero voxels in respective directions
+    #  \remark Used for MS project to add empty slices on top of (chopped) brain
+    #  \param[in] spacing_new_scalar length of voxel side, scalar
+    #  \param[in] interpolator choose type of interpolator for resampling
+    #  \param[in] extra_frame additional extra frame of zero intensities surrounding the stack in mm
+    #  \return isotropically, resampled stack as Stack object
+    def get_increased_stack(self, extra_slices_z=0):
+
+        interpolator = sitk.sitkNearestNeighbor
+
+        ## Read original spacing (voxel dimension) and size of target stack:
+        spacing = np.array(self.sitk.GetSpacing())
+        size = np.array(self.sitk.GetSize()).astype("int")
+        origin = np.array(self.sitk.GetOrigin())
+        direction = self.sitk.GetDirection()
+
+        ## Update information according to isotropic resolution
+        size[2] += extra_slices_z
+    
+        ## Resample image and its mask to isotropic grid
+        default_pixel_value = 0.0
+
+        isotropic_resampled_stack_sitk =  sitk.Resample(
+            self.sitk, 
+            size, 
+            sitk.Euler3DTransform(), 
+            interpolator, 
+            origin, 
+            spacing,
+            direction,
+            default_pixel_value,
+            self.sitk.GetPixelIDValue())
+
+        isotropic_resampled_stack_sitk_mask =  sitk.Resample(
+            self.sitk_mask, 
+            size, 
+            sitk.Euler3DTransform(), 
+            interpolator, 
+            origin, 
+            spacing,
+            direction,
+            default_pixel_value,
+            self.sitk_mask.GetPixelIDValue())
+
+        ## Create Stack instance
+        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, "zincreased_"+self._filename, isotropic_resampled_stack_sitk_mask)
+
+        return stack
+
+
     ## Burst the stack into its slices and return all slices of the stack
     #  return list of Slice objects
     def _extract_slices(self):
