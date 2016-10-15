@@ -96,10 +96,10 @@ class TikhonovSolver(Solver):
     #                                    Indicates whether full 3D or only
     #                                    in-plane deconvolution is considered
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
 
         ## Run constructor of superclass
-        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, deconvolution_mode)
+        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, deconvolution_mode, predefined_covariance)
         
         ## Settings for optimizer
         self._reg_type = reg_type
@@ -205,6 +205,9 @@ class TikhonovSolver(Solver):
 
         if self._deconvolution_mode in ["only_in_plane"]:
             print("(Only in-plane deconvolution is performed)")
+
+        elif self._deconvolution_mode in ["predefined_covariance"]:
+            print("(Predefined covariance used: cov = diag(%s))" % (np.diag(self._predefined_covariance)))
 
         print("Minimizer = " + self._minimizer)
         print("Regularization parameter = " + str(self._alpha))

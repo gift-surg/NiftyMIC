@@ -40,21 +40,27 @@ class Solver(object):
     # \brief         Constructor
     # \date          2016-08-01 22:53:37+0100
     #
-    # \param         self                The object
-    # \param[in]     stacks              list of Stack objects containing all
-    #                                    stacks used for the reconstruction
-    # \param[in,out] HR_volume           Stack object containing the current
-    #                                    estimate of the HR volume (used as
-    #                                    initial value + space definition)
-    # \param[in]     alpha_cut           Cut-off distance for Gaussian blurring
-    #                                    filter
-    # \param[in]     alpha               regularization parameter, scalar
-    # \param[in]     iter_max            number of maximum iterations, scalar
-    # \param[in]     deconvolution_mode  Either "full_3D" or "only_in_plane".
-    #                                    Indicates whether full 3D or only
-    #                                    in-plane deconvolution is considered
+    # \param         self                   The object
+    # \param[in]     stacks                 list of Stack objects containing
+    #                                       all stacks used for the
+    #                                       reconstruction
+    # \param[in,out] HR_volume              Stack object containing the current
+    #                                       estimate of the HR volume (used as
+    #                                       initial value + space definition)
+    # \param[in]     alpha_cut              Cut-off distance for Gaussian
+    #                                       blurring filter
+    # \param[in]     alpha                  regularization parameter, scalar
+    # \param[in]     iter_max               number of maximum iterations,
+    #                                       scalar
+    # \param[in]     deconvolution_mode     Either "full_3D" or
+    #                                       "only_in_plane". Indicates whether
+    #                                       full 3D or only in-plane
+    #                                       deconvolution is considered
+    # \param[in]     predefined_covariance  Either only diagonal entries
+    #                                       (sigma_x2, sigma_y2, sigma_z2) or
+    #                                       as full 3x3 numpy array
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, deconvolution_mode="full_3D"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, deconvolution_mode="full_3D", predefined_covariance=None):
 
         ## Initialize variables
         self._stacks = stacks
@@ -66,9 +72,19 @@ class Solver(object):
 
         self._deconvolution_mode = deconvolution_mode
         self._update_oriented_adjoint_oriented_Gaussian_image_filters = {
-            "full_3D":          self._update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D,
-            "only_in_plane":    self._update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane
+            "full_3D":                  self._update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D,
+            "only_in_plane":            self._update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane,
+            "predefined_covariance":    self._update_oriented_adjoint_oriented_Gaussian_image_filters_predefined_covariance
         }
+
+        ## In case only diagonal entries are given, create diagonal matrix
+        if predefined_covariance is not None:
+            ## Convert to numpy array if required
+            predefined_covariance = np.array(predefined_covariance)
+            
+            if predefined_covariance.size is 3:
+                predefined_covariance = np.diag(predefined_covariance)
+        self._predefined_covariance = predefined_covariance
 
         ## Idea: Set through-plane spacing artificially very small so that the 
         ## corresponding becomes negligibly small in through-plane direction. 
@@ -197,6 +213,37 @@ class Solver(object):
         return self._residual_prior
 
 
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the predefined covariance matrix, representing
+    #             slice-axis aligned Gaussian blurring covariance.
+    # \date       2016-10-14 16:49:41+0100
+    #
+    # \param      self  The object
+    # \param      cov   Either only diagonal entries (sigma_x2, sigma_y2,
+    #                   sigma_z2) or as full 3x3 numpy array
+    #
+    def set_predefined_covariance(self, cov):
+
+        ## Convert to numpy array if required
+        cov = np.array(cov)
+
+        ## In case only diagonal entries are given, create diagonal matrix
+        if cov.size is 3:
+            cov = np.diag(cov)
+        self._predefined_covariance = cov
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the predefined covariance.
+    # \date       2016-10-14 16:52:10+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The predefined covariance as 3x3 numpy array
+    #
+    def get_predefined_covariance(self):
+        return self._predefined_covariance
+
+
     ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
     #  Filter parameters. Hence, update combined Downsample and Blur Operator
     #  according to the relative position between slice and HR volume.
@@ -229,6 +276,24 @@ class Solver(object):
 
         ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates
         Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction, spacing, self._HR_volume)
+
+        ## Update parameters of forward operator A
+        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
+        
+        ## Update parameters of backward/adjoint operator A'
+        self._filter_adjoint_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
+
+
+    ## Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
+    #  Filter parameters. Hence, update combined Downsample and Blur Operator
+    #  according to the relative position between slice and HR volume.
+    #  BUT, predefined covariance used (Was added for the MS project)
+    #  \param[in] slice Slice object
+    def _update_oriented_adjoint_oriented_Gaussian_image_filters_predefined_covariance(self, slice):
+
+        ## Get variance covariance matrix representing Gaussian blurring in HR volume coordinates
+        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_covariances(slice, self._HR_volume, self._predefined_covariance)
 
         ## Update parameters of forward operator A
         self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
