@@ -40,7 +40,7 @@ class StackInPlaneAlignment:
     # \param      use_reference_mask  The use reference mask
     # \param      alignment_approach  The alignment approach
     #
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, alignment_approach="rigid_inplane_within_stack"):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, interpolator="NearestNeighbor", metric="Correlation", scales_estimator="PhysicalShift", initializer_type="GEOMETRY", use_verbose=False, alignment_approach="rigid_inplane_within_stack"):
         
 
         self._alignment_approach = alignment_approach
@@ -52,10 +52,17 @@ class StackInPlaneAlignment:
             "similarity_inplane_to_reference"   : self._run_similarity_in_plane_registration_to_reference
         }
 
+        self._metric = metric
+        self._interpolator = interpolator
+        self._scales_estimator = scales_estimator
+        self._initializer_type = initializer_type
+        self._use_verbose = use_verbose
+
         if stack is not None:
             self._stack = st.Stack.from_stack(stack, filename=stack.get_filename())
             self._slices = self._stack.get_slices()
             self._N_slices = self._stack.get_number_of_slices()
+            self._affine_transformations = [sitk.AffineTransform(3)] * self._N_slices
 
         if reference is not None:
             try:
@@ -64,6 +71,7 @@ class StackInPlaneAlignment:
                 raise ValueError("Reference and stack are not in the same space")
             self._reference = reference
             self._alignment_approach = "rigid_inplane_to_reference"
+
 
 
     ##-------------------------------------------------------------------------
@@ -77,6 +85,7 @@ class StackInPlaneAlignment:
         self._stack = st.Stack.from_stack(stack, filename=stack.get_filename())
         self._slices = self._stack.get_slices()
         self._N_slices = self._stack.get_number_of_slices()
+        self._affine_transformations = [sitk.AffineTransform(3)] * self._N_slices
 
 
     ##-------------------------------------------------------------------------
@@ -149,6 +158,98 @@ class StackInPlaneAlignment:
         self._use_reference_mask = flag
 
 
+    ## Set type of centered transform initializer
+    #  \param[in] initializer_type
+    def set_centered_transform_initializer(self, initializer_type):
+        if initializer_type not in [None, "MOMENTS", "GEOMETRY"]:
+            raise ValueError("Error: centered transform initializer type can only be 'None', MOMENTS' or 'GEOMETRY'")
+
+        self._initializer_type = initializer_type
+        
+
+    ## Get type of centered transform initializer
+    def get_centered_transform_initializer(self):
+        return self._initializer_type
+
+
+    ## Set interpolator
+    #  \param[in] interpolator_type
+    def set_interpolator(self, interpolator_type):
+
+        if interpolator_type not in ["Linear", "NearestNeighbor", "BSpline"]:
+            raise ValueError("Error: Interpolator can only be either 'Linear', 'NearestNeighbor' or 'BSpline'")
+
+        self._interpolator = interpolator_type
+
+
+    ## Get interpolator
+    #  \return interpolator as string
+    def get_interpolator(self):
+        return self._interpolator
+
+
+     ## Set metric for registration method
+    #  \param[in] metric as string
+    #  \param[in] params as string in form of dictionary
+    #  \example metric="Correlation"
+    #  \example metric="MattesMutualInformation", params="{'numberOfHistogramBins': 100}"
+    #  \example metric="ANTSNeighborhoodCorrelation", params="{'radius': 10}"
+    #  \example metric="JointHistogramMutualInformation", params="{'numberOfHistogramBins': 10, 'varianceForJointPDFSmoothing': 1}"
+    #  \example metric="Demons", params="{'intensityDifferenceThreshold': 1e-3}"
+    def set_metric(self, metric, params=None):
+
+        if metric not in [
+                ## Use negative means squares image metric
+                "MeanSquares", 
+
+                ## Use negative normalized cross correlation image metric
+                "Correlation", 
+
+                ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
+                "ANTSNeighborhoodCorrelation",
+                
+                ## Use mutual information between two images
+                "JointHistogramMutualInformation",
+
+                ## Use the mutual information between two images to be registered using the method of Mattes2001
+                "MattesMutualInformation", 
+
+                ## Use demons image metric
+                "Demons"
+            ]:
+            raise ValueError("Error: Metric is not known")
+
+        self._metric = metric
+        self._metric_params = params  
+
+        ## Set default value in case params is not given
+        if metric in ["ANTSNeighborhoodCorrelation"] and params is None:
+            self._metric_params = "{'radius': 10}"
+
+        # elif metric in ["MattesMutualInformation"] and params is None:
+        #     self._metric_params = "{'numberOfHistogramBins': 100}"
+
+
+    ## Set optimizer scales
+    #  \param[in] scales
+    def set_scales_estimator(self, scales_estimator):
+        if scales_estimator not in ["IndexShift", "PhysicalShift", "Jacobian"]:
+            raise ValueError("Error: Optimizer scales_estimator not known")
+
+        self._scales_estimator = scales_estimator
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the verbose to define whether or not output is produced
+    # \date       2016-09-20 18:49:19+0100
+    #
+    # \param      self     The object
+    # \param      verbose  The verbose
+    #
+    def use_verbose(self, flag):
+        self._use_verbose = flag
+
+
     ##-------------------------------------------------------------------------
     # \brief      Gets the in-plane rigidly registered stack.
     # \date       2016-09-20 22:38:53+0100
@@ -158,7 +259,19 @@ class StackInPlaneAlignment:
     # \return     The stack as Stack object.
     #
     def get_inplane_registered_stack(self):
-        return self._stack
+        return st.Stack.from_stack(self._stack)
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the affine transformations obtained to align the slices
+    # \date       2016-10-29 15:41:53+0300
+    #
+    # \param      self  The object
+    #
+    # \return     The affine transformations.
+    #
+    def get_affine_transformations(self):
+        return np.array(self._affine_transformations)
 
 
     ##-------------------------------------------------------------------------
@@ -186,14 +299,13 @@ class StackInPlaneAlignment:
         registration_2D = regsitk.RegistrationSimpleITK()
         registration_2D.set_registration_type("Rigid")
         # registration_2D.use_multiresolution_framework(True)
-        registration_2D.set_centered_transform_initializer(None)
-        registration_2D.set_scales_estimator("PhysicalShift")
-        # registration_2D.set_metric("Correlation")
-        registration_2D.set_metric("MattesMutualInformation")
-        # registration_2D.set_metric("MeanSquares")
         registration_2D.use_fixed_mask(self._use_stack_mask)
         registration_2D.use_moving_mask(self._use_reference_mask)
-        registration_2D.use_verbose(False)
+        registration_2D.set_metric(self._metric)
+        registration_2D.set_interpolator(self._interpolator)
+        registration_2D.set_scales_estimator(self._scales_estimator)
+        registration_2D.set_centered_transform_initializer(self._initializer_type)
+        registration_2D.use_verbose(self._use_verbose)
 
         ## Get list of 3D affine transforms to arrive at the positions of the
         ## original 3D slices
@@ -220,12 +332,16 @@ class StackInPlaneAlignment:
 
             ## Expand to 3D transform
             rigid_registration_transform_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(rigid_registration_transform_2D_sitk)
+            # sitkh.print_sitk_transform(rigid_registration_transform_3D_sitk)
 
             ## Compose to 3D in-plane transform
             affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(rigid_registration_transform_3D_sitk, transforms_PP_3D_sitk[i])
             affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(sitk.AffineTransform(transforms_PP_3D_sitk[i].GetInverse()), affine_transform_sitk)
 
-            self._slices[i].update_motion_correction(affine_transform_sitk)   
+            self._slices[i].update_motion_correction(affine_transform_sitk)
+
+            self._affine_transformations[i] = affine_transform_sitk
+
 
 
     ##-------------------------------------------------------------------------
@@ -245,14 +361,13 @@ class StackInPlaneAlignment:
         registration_2D = regsitk.RegistrationSimpleITK()
         registration_2D.set_registration_type("Similarity")
         # registration_2D.use_multiresolution_framework(True)
-        registration_2D.set_centered_transform_initializer(None)
-        registration_2D.set_scales_estimator("Jacobian")
-        # registration_2D.set_metric("MattesMutualInformation")
-        # registration_2D.set_metric("MeanSquares")
-        registration_2D.set_metric("Correlation")
         registration_2D.use_fixed_mask(self._use_stack_mask)
         registration_2D.use_moving_mask(self._use_reference_mask)
-        registration_2D.use_verbose(False)
+        registration_2D.set_metric(self._metric)
+        registration_2D.set_interpolator(self._interpolator)
+        registration_2D.set_scales_estimator(self._scales_estimator)
+        registration_2D.set_centered_transform_initializer(self._initializer_type)
+        registration_2D.use_verbose(self._use_verbose)
 
         ## Get list of 3D affine transforms to arrive at the positions of the
         ## original 3D slices
@@ -261,64 +376,76 @@ class StackInPlaneAlignment:
         slices_reference = self._reference.get_slices()
 
         for i in range(0, self._N_slices):
+        # for i in range(14, 15):
+        # for i in range(21, 22):
             slice_2D_fixed = self._get_2D_slice(self._slices[i], transforms_PP_3D_sitk[i])
             slice_2D_moving = self._get_2D_slice(slices_reference[i], transforms_PP_3D_sitk[i])
 
-            ## Perform in-plane rigid registration
+            ## Perform in-plane similarity registration
             registration_2D.set_fixed(slice_2D_fixed)
             registration_2D.set_moving(slice_2D_moving)
             registration_2D.run_registration()
-
             similarity_registration_transform_2D_sitk = registration_2D.get_registration_transform_sitk()
+            # sitkh.print_sitk_transform(similarity_registration_transform_2D_sitk)
 
-            # print similarity_registration_transform_2D_sitk
-
-            ## Update slice scale
+            ## Convert to rigid registration transform
             scale = similarity_registration_transform_2D_sitk.GetScale()
-            print("Slice %s/%s: scale = %s" % (i,self._N_slices-1, scale))
+            origin = np.array(slice_2D_fixed.sitk.GetOrigin())
+            center = np.array(similarity_registration_transform_2D_sitk.GetCenter())
+            angle = similarity_registration_transform_2D_sitk.GetAngle()
+            translation = np.array(similarity_registration_transform_2D_sitk.GetTranslation())
+            R = np.array(similarity_registration_transform_2D_sitk.GetMatrix()).reshape(2,2)/scale
+
+            rigid_registration_transform_2D_sitk = sitk.Euler2DTransform()
+            rigid_registration_transform_2D_sitk.SetAngle(angle)
+            rigid_registration_transform_2D_sitk.SetTranslation(scale*R.dot(origin-center) - R.dot(origin) + translation + center)
+
+            ## Debug for 2D step
             # slice_2D_fixed_scaled = sitk.Image(slice_2D_fixed.sitk)
             # spacing = np.array(slice_2D_fixed_scaled.GetSpacing())
             # spacing *= scale
             # slice_2D_fixed_scaled.SetSpacing(spacing)
-
-            ## Convert to rigid registration transform
-            center = similarity_registration_transform_2D_sitk.GetCenter()
-            angle = similarity_registration_transform_2D_sitk.GetAngle()
-            translation = similarity_registration_transform_2D_sitk.GetTranslation()
-            rigid_registration_transform_2D_sitk = sitk.Euler2DTransform(center, angle, translation)
-
-            ## Debug
+            
             # foo_2D_sitk = sitkh.get_transformed_image(slice_2D_moving.sitk, sitk.Euler2DTransform(rigid_registration_transform_2D_sitk.GetInverse()))
 
             # foo_2D_sitk_resample0 = sitk.Resample(foo_2D_sitk, slice_2D_fixed_scaled, sitk.Euler2DTransform())
             # foo_2D_sitk_resample1 = sitk.Resample(slice_2D_moving.sitk, slice_2D_fixed.sitk, similarity_registration_transform_2D_sitk)
-
+            # print("Slice %s/%s: scale = %s, angle = %s, translation = %s, center = %s" % (i,self._N_slices-1, scale, angle, translation, center))
+            # print("\tError = %s" %(np.linalg.norm(sitk.GetArrayFromImage(foo_2D_sitk_resample0) - sitk.GetArrayFromImage(foo_2D_sitk_resample1)))) #error < 1e-8 ==> ok (Proper test case desired though)
             # sitkh.show_sitk_image([foo_2D_sitk_resample0, foo_2D_sitk_resample1])
 
-            # # foo_2D_sitk = sitkh.get_transformed_image(foo_2D_sitk, rigid_registration_transform_2D_sitk)
-            # foo_2D_sitk = sitk.Resample(foo_2D_sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
-            # before_2D_sitk = sitk.Resample(slice_2D_fixed.sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
-            # sitkh.show_sitk_image([slice_2D_moving.sitk, before_2D_sitk, foo_2D_sitk], segmentation=slice_2D_moving.sitk_mask, title=["moving","fixed_before", "fixed_after"])
-
-            ## Expand to 3D transform
+            ## Expand to rigid 3D transform
             rigid_registration_transform_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(rigid_registration_transform_2D_sitk)
 
-            ## Compose to 3D in-plane transform
+            # sitkh.print_sitk_transform(rigid_registration_transform_3D_sitk)
+
+            ## Compose to 3D in-plane rigid transform
             affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(rigid_registration_transform_3D_sitk, transforms_PP_3D_sitk[i])
             affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(sitk.AffineTransform(transforms_PP_3D_sitk[i].GetInverse()), affine_transform_sitk)
 
             self._slices[i].update_motion_correction(affine_transform_sitk)   
 
-            ## BUG: Also set origin accordingly!
-            slice_sitk = self._slices[i].sitk
-            slice_sitk_mask = self._slices[i].sitk_mask
-            spacing = np.array(slice_sitk.GetSpacing())
+            ## Update spacing of slice accordingly
+            spacing = np.array(self._slices[i].sitk.GetSpacing())
             spacing[0:-1] *= scale
-            slice_sitk.SetSpacing(spacing)
-            slice_sitk_mask.SetSpacing(spacing)
 
-            self._slices[i] = sl.Slice.from_sitk_image(slice_sitk, self._slices[i].get_directory(), self._slices[i].get_filename(), self._slices[i].get_slice_number(), slice_sitk_mask)
+            self._slices[i].sitk.SetSpacing(spacing)
+            self._slices[i].sitk_mask.SetSpacing(spacing)
+            self._slices[i].itk = sitkh.convert_sitk_to_itk_image(self._slices[i].sitk)
+            self._slices[i].itk_mask = sitkh.convert_sitk_to_itk_image(self._slices[i].sitk_mask)
 
+            ## Update affine transform (including scaling information)
+            affine_transform_with_scale_sitk = sitk.AffineTransform(3)
+            affine_matrix_sitk = np.array(rigid_registration_transform_3D_sitk.GetMatrix()).reshape(3,3)
+            affine_matrix_sitk[0:-1,0:-1] *= scale
+            affine_transform_with_scale_sitk.SetMatrix(affine_matrix_sitk.flatten())
+            affine_transform_with_scale_sitk.SetCenter(rigid_registration_transform_3D_sitk.GetCenter())
+            affine_transform_with_scale_sitk.SetTranslation(rigid_registration_transform_3D_sitk.GetTranslation())
+
+            affine_transform_with_scale_sitk = sitkh.get_composite_sitk_affine_transform(affine_transform_with_scale_sitk, transforms_PP_3D_sitk[i])
+            affine_transform_with_scale_sitk = sitkh.get_composite_sitk_affine_transform(sitk.AffineTransform(transforms_PP_3D_sitk[i].GetInverse()), affine_transform_with_scale_sitk)
+
+            self._affine_transformations[i] = affine_transform_with_scale_sitk
 
 
     ##-------------------------------------------------------------------------
@@ -344,7 +471,7 @@ class StackInPlaneAlignment:
         registration_2D.set_metric("Correlation")
         registration_2D.use_fixed_mask(False)
         registration_2D.use_moving_mask(False)
-        registration_2D.use_verbose(False)
+        # registration_2D.use_verbose(self._use_verbose)
 
         ## Get list of 3D affine transforms to arrive at the positions of the
         ## original 3D slices
@@ -381,6 +508,8 @@ class StackInPlaneAlignment:
             affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(sitk.AffineTransform(transforms_PP_3D_sitk[i].GetInverse()), affine_transform_sitk)
 
             self._slices[i].update_motion_correction(affine_transform_sitk)            
+
+            self._affine_transformations[i] = affine_transform_sitk
 
 
     ##-------------------------------------------------------------------------
@@ -488,7 +617,7 @@ class StackInPlaneAlignment:
     
         # Get parameters of 2D registration
         angle_z, translation_x, translation_y = rigid_transform_2D_sitk.GetParameters()
-        center_x, center_y = rigid_transform_2D_sitk.GetFixedParameters()
+        center_x, center_y = rigid_transform_2D_sitk.GetCenter()
 
         # Expand obtained translation to 3D vector
         translation_3D = (translation_x, translation_y, 0)

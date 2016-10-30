@@ -45,7 +45,7 @@ class RegistrationITK:
         self._run_registration = {
             "Rigid"             : self._run_registration_rigid_affine,
             "Affine"            : self._run_registration_rigid_affine,
-            "InplaneSimilarity" : self._run_registration_inplane_similarity
+            "InplaneSimilarity" : self._run_registration_inplane_similarity_3D
         }
         # self._transform_sitk = transform_sitk
         # self._control_point_grid_sitk = control_point_grid_sitk
@@ -298,7 +298,7 @@ class RegistrationITK:
         # sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
 
 
-    def _run_registration_inplane_similarity(self, id):
+    def _run_registration_inplane_similarity_3D(self, id):
 
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
@@ -361,7 +361,10 @@ class RegistrationITK:
         ## Read transformation file
         params_all = np.loadtxt(self._dir_tmp + registration_transform_str + ".txt")
 
+        ## (center_x, center_y, center_z, direction_fixed_image_flattened_0, ..., direction_fixed_image_flattened_8)
         self._parameters_fixed = params_all[0:-7]
+
+        ## (versor_0, versor_1, versor_2, translation_x, translation_y, translation_z, scale)
         self._parameters = params_all[-7:]
 
 

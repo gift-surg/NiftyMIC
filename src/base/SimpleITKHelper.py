@@ -490,10 +490,20 @@ def print_sitk_transform(rigid_or_affine_transform_sitk, text="Transformation in
     print("\t\t\tcenter = " + str(center))
     
     if isinstance(rigid_or_affine_transform_sitk, sitk.Euler3DTransform):
-        print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[0:3]*180/np.pi) + " deg")
+        print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[0:3]) + " rad")
+        # print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[0:3]*180/np.pi) + " deg")
     
     elif isinstance(rigid_or_affine_transform_sitk, sitk.Euler2DTransform):
-        print("\t\t\tangle = " + str(parameters[0]*180/np.pi) + " deg")
+        print("\t\t\tangle = " + str(parameters[0]) + " rad")
+        # print("\t\t\tangle = " + str(parameters[0]*180/np.pi) + " deg")
+
+    elif isinstance(rigid_or_affine_transform_sitk, sitk.Similarity2DTransform):
+        print("\t\t\tangle = " + str(parameters[1]) + " rad")
+        print("\t\t\tscale = " + str(rigid_or_affine_transform_sitk.GetScale()))
+
+    elif isinstance(rigid_or_affine_transform_sitk, sitk.Similarity3DTransform):
+        print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[1:4]) + " rad")
+        print("\t\t\tscale = " + str(rigid_or_affine_transform_sitk.GetScale()))
 
     print("\t\t\ttranslation = " + str(translation))
     

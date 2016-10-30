@@ -391,7 +391,7 @@ class RegistrationSimpleITK:
             print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
             print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
-            # sitkh.print_sitk_transform(registration_transform_sitk)
+            sitkh.print_sitk_transform(registration_transform_sitk)
 
         self._transform_sitk = registration_transform_sitk
 
