@@ -99,12 +99,9 @@ class Solver(object):
         self._iter_max = iter_max
 
         ## Allocate and initialize Oriented Gaussian Interpolate Image Filter
-        self._filter_oriented_Gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[IMAGE_TYPE, PIXEL_TYPE].New()
-        self._filter_oriented_Gaussian_interpolator.SetAlpha(self._alpha_cut)
-
-        self._filter_oriented_Gaussian = itk.ResampleImageFilter[IMAGE_TYPE, IMAGE_TYPE].New()
-        self._filter_oriented_Gaussian.SetInterpolator(self._filter_oriented_Gaussian_interpolator)
+        self._filter_oriented_Gaussian = itk.OrientedGaussianInterpolateImageFilter[IMAGE_TYPE, IMAGE_TYPE].New()
         self._filter_oriented_Gaussian.SetDefaultPixelValue(0.0)
+        self._filter_oriented_Gaussian.SetAlpha(self._alpha_cut)
 
         ## Allocate and initialize Adjoint Oriented Gaussian Interpolate Image Filter
         self._filter_adjoint_oriented_Gaussian = itk.AdjointOrientedGaussianInterpolateImageFilter[IMAGE_TYPE, IMAGE_TYPE].New()
@@ -180,6 +177,10 @@ class Solver(object):
     def set_alpha_cut(self, alpha_cut):
         self._alpha_cut = alpha_cut
 
+        ## Update filters        
+        self._filter_oriented_Gaussian.SetAlpha(self._alpha_cut)
+        self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
+
 
     ## Get cut-off distance
     #  \return scalar value
@@ -253,7 +254,7 @@ class Solver(object):
         Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(slice, self._HR_volume)
 
         ## Update parameters of forward operator A
-        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
         self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
         
         ## Update parameters of backward/adjoint operator A'
@@ -278,7 +279,7 @@ class Solver(object):
         Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction, spacing, self._HR_volume)
 
         ## Update parameters of forward operator A
-        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
         self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
         
         ## Update parameters of backward/adjoint operator A'
@@ -296,7 +297,7 @@ class Solver(object):
         Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_covariances(slice, self._HR_volume, self._predefined_covariance)
 
         ## Update parameters of forward operator A
-        self._filter_oriented_Gaussian_interpolator.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
         self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
         
         ## Update parameters of backward/adjoint operator A'
