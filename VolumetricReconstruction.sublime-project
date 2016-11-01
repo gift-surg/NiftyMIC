@@ -16,28 +16,13 @@
 	"folders":
 	[
 		{
-			"path": "cpp"
-		},
-		{
-			"path": "/Users/mebner/ucl/ucl/Volumetric Reconstruction/src"
-		},
-		{
-			"path": "test"
-		},
-		{
-			"path": "studies"
-		},
-		{
-			"path": "backups"
-		},
-		{
-			"path": "GettingStarted"
-		},
-		{
-			"path": "/Users/mebner/Documents/TU Wien/Diplomarbeit_AIT/Matlab"
-		},
-		{
 			"path": "/Users/mebner/development/nilearn"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "/Users/mebner/UCL/Data/Leuven_FetalData/fetal_brain"
 		}
 	],
 	"settings":

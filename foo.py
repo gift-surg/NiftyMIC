@@ -13,27 +13,22 @@ import sys
 
 ## Add directories to import modules
 dir_src_root = "src/"
-sys.path.append(dir_src_root + "base/")
-sys.path.append(dir_src_root + "preprocessing/")
-sys.path.append(dir_src_root + "registration/")
-sys.path.append(dir_src_root + "reconstruction/")
-sys.path.append(dir_src_root + "reconstruction/solver/")
-sys.path.append(dir_src_root + "simulation/")
+sys.path.append(dir_src_root)
 # sys.path.append(dir_src_root + "reconstruction/regularization_parameter_estimator/")
 
 ## Import modules
-import SimpleITKHelper as sitkh
+import utilities.SimpleITKHelper as sitkh
 import DataPreprocessing as dp
-import Stack as st
-import Slice as sl
-import StackManager as sm
-import ScatteredDataApproximation as sda
-import TikhonovSolver as tk
+import base.Stack as st
+import base.Slice as sl
+import base.StackManager as sm
+import reconstruction.ScatteredDataApproximation as sda
+
+import reconstruction.solver.TikhonovSolver as tk
 import SimulatorSliceAcqusition as sa
-import Registration as myreg
-import StackInPlaneAlignment as sipa
-import DataPreprocessing as dp
-import BrainStripping as bs
+import registration.Registration as myreg
+import registration.StackInPlaneAlignment as sipaimport DataPreprocessing as dp
+import preprocessing.BrainStripping as bs
 
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
