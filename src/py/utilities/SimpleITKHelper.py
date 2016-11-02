@@ -10,6 +10,7 @@ import os                       # used to execute terminal commands in python
 import SimpleITK as sitk
 import itk
 import numpy as np
+import nibabel as nib
 import matplotlib.pyplot as plt
 
 ## Import modules from src-folder
@@ -254,6 +255,72 @@ def read_itk_image(filename, pixel_type=itk.D, dim=3):
     image_itk.DisconnectPipeline()
 
     return image_itk
+
+
+##-----------------------------------------------------------------------------
+# \brief      Reads 3D vector image and return as SimpleITK image
+# \date       2016-09-20 15:31:05+0100
+#
+# \param      filename             The filename
+# \param      return_vector_index  Index/Component of vector image to be
+#                                  returned. If 'None' the entire vector image
+#                                  is returned
+#
+# \return     (Multi-component) sitk.Image object
+#
+def read_sitk_vector_image(filename, return_vector_index=None):
+
+    ## Workaround: Read vector image via nibabel
+    image_nib = nib.load(filename)
+    nda_nib = image_nib.get_data()
+    nda_nib_shape = nda_nib.shape
+    nda = np.zeros((nda_nib_shape[2], nda_nib_shape[1], nda_nib_shape[0], nda_nib_shape[3]))
+
+    ## Convert to (Simple)ITK data array format, i.e. reorder to z-y-x shape
+    for i in range(0, nda_nib_shape[2]):
+        for k in range(0, nda_nib_shape[0]):
+            nda[i,:,k,:] = nda_nib[k,:,i,:]          
+
+    ## Get SimpleITK image
+    image_sitk = sitk.GetImageFromArray(nda)
+
+    ## Workaround: Update header from nibabel information
+    R = np.array([
+        [-1, 0, 0],
+        [0, -1, 0],
+        [0, 0, 1]])
+    affine_nib = image_nib.affine
+    R_nib = affine_nib[0:-1,0:-1]
+
+    ## Get spacing (only for image dimensions, i.e. not for the vector component)
+    spacing_sitk = np.array(image_nib.header.get_zooms())[0:R_nib.shape[0]]
+    S_nib_inv = np.diag(1/spacing_sitk)
+    
+    direction_sitk = R.dot(R_nib).dot(S_nib_inv).flatten()
+
+    t_nib = affine_nib[0:-1,3]
+    origin_sitk = R.dot(t_nib)
+
+    image_sitk.SetSpacing(np.array(spacing_sitk).astype('double'))
+    image_sitk.SetDirection(direction_sitk)
+    image_sitk.SetOrigin(origin_sitk)
+
+    if return_vector_index is None:
+        return image_sitk
+    else:
+        return sitk.VectorIndexSelectionCast(image_sitk, return_vector_index)
+
+    ## All the other stuff did not work (neither in ITK nor in SimpleITK)! See
+    ## below. Readings worked but the two components always contained the same
+    ## value!
+    # IMAGE_TYPE = itk.Image.D3
+    # # IMAGE_TYPE = itk.Image.VD23
+    # # IMAGE_TYPE = itk.VectorImage.D3
+    # # IMAGE_TYPE = itk.Image.VF23
+    # reader = itk.ImageFileReader[IMAGE_TYPE].New()
+    # reader.SetFileName(DIR_INPUT + filename_ref + ".nii")
+    # reader.Update()
+    # foo_itk = reader.GetOutput()
 
 
 ## Write itk image to hard disk as nii.gz image type

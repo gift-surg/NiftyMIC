@@ -12,23 +12,29 @@ import numpy as np
 import sys
 
 ## Add directories to import modules
-dir_src_root = "src/"
+dir_src_root = "src/py/"
 sys.path.append(dir_src_root)
 # sys.path.append(dir_src_root + "reconstruction/regularization_parameter_estimator/")
 
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
-import DataPreprocessing as dp
 import base.Stack as st
 import base.Slice as sl
-import base.StackManager as sm
+import utilities.StackManager as sm
 import reconstruction.ScatteredDataApproximation as sda
 
 import reconstruction.solver.TikhonovSolver as tk
-import SimulatorSliceAcqusition as sa
+import simulation.SimulatorSliceAcqusition as sa
 import registration.Registration as myreg
-import registration.StackInPlaneAlignment as sipaimport DataPreprocessing as dp
+import registration.StackInPlaneAlignment as sipa
+import preprocessing.DataPreprocessing as dp
 import preprocessing.BrainStripping as bs
+import utilities.IntensityCorrection as ic
+import registration.RegistrationSimpleITK as regsitk
+
+import utilities.ScanExtractor as se
+import utilities.FilenameParser as fp
+
 
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
@@ -131,8 +137,11 @@ if __name__ == '__main__':
     dir_input_data = DIR_ROOT_DIRECTORY + "Subject_" + subject + "/"
 
     dir_input = "studies/30YearMSData/Subject" + subject + "/data_preprocessing/"
-    filename = "Baseline_L-BFGS-B_alpha0_itermax5"
+    filename = "Baseline_1_downsampled_roughly_scaled"
+    # filename = "Baseline_5_inplane_aligned_with_reference"
+    # filename = "Baseline_L-BFGS-B_alpha0_itermax5"
     filename_ref = "002-30yr-AxT2"
+    filename_ref = "002-10yr-PD:T2"
     
     # reference_image = st.Stack.from_filename(dir_input, filename, "_mask")
     # brain_stripping = bs.BrainStripping.from_filename(dir_input, filename)
@@ -153,10 +162,57 @@ if __name__ == '__main__':
     # sitkh.show_sitk_image([original_sitk], segmentation=brain_mask_sitk)
     # sitkh.show_sitk_image([original_sitk, brain_sitk], segmentation=skull_mask_sitk)
 
+    # if 0:
+    #     if filename_ref in ["002-10yr-PD:T2"]:
+    #         reference_image_sitk = sitkh.read_sitk_vector_image(dir_input_data + filename_ref + ".nii", return_vector_index=0)
+    #         reference_image = st.Stack.from_sitk_image(reference_image_sitk, name=filename_ref[0:-3])
+    #     else:
+    #         reference_image = st.Stack.from_filename(dir_input_data, filename_ref)
+    #     stack = st.Stack.from_filename(dir_input, filename)
 
-    stack = st.Stack.from_filename(dir_input, filename)
-    reference_image = st.Stack.from_filename(dir_input_data, filename_ref)
+    #     registration = regsitk.RegistrationSimpleITK(fixed=stack, moving=reference_image)
+    #     registration.set_interpolator("Linear")
+    #     registration.set_metric("Correlation")
+    #     registration.set_centered_transform_initializer("GEOMETRY")
+    #     registration.use_verbose(True)
+    #     registration.run_registration()
+    #     transformation_sitk = registration.get_registration_transform_sitk()
 
-    stack_apppended = append_reference_voxels_on_top(stack, reference_image)
-    stack_apppended.show()
+    #     reference_image_resampled_sitk = sitk.Resample(reference_image.sitk, stack.sitk, transformation_sitk)
+    #     # sitkh.show_sitk_image([stack.sitk, reference_image_resampled_sitk])
+    
+    # # intensity_correction = ic.IntensityCorrection.from_sitk_image(image_sitk=stack.sitk)
+    # intensity_correction = ic.IntensityCorrection.from_sitk_image(image_sitk=stack.sitk, reference_sitk=reference_image_resampled_sitk, percentile=10)
+    # intensity_correction.run_intensity_correction()
+    # foo_sitk = intensity_correction.get_intensity_corrected_sitk_image()
+
+    # sitkh.show_sitk_image([stack.sitk, foo_sitk, reference_image_resampled_sitk], title=["original", "corrected", "reference"])
+    # reference_image.show()
+
+
+    ## Set offset for semi-automatic brain extraction to extract brain by click
+    ## at left filled circle (Baseline and 1year) and corner L-shape (5year)
+    selection_window_offset = {
+        "Baseline"  : np.array([100,-900]),
+        "1year"     : np.array([100,-900]),
+        "5year"     : np.array([-1450,-550])   
+    }
+
+    ## Different type of MR film scan for 5 years requires a different frame
+    ## size selection in order to fit the brain inside
+    selection_window_dimension = {
+        "Baseline"  : np.array([1350,1600]),
+        "1year"     : np.array([1350,1600]),
+        "5year"     : np.array([1100,1250])   
+    }
+    timepoint = "Baseline"
+
+    filename_parser = fp.FilenameParser()
+    filenames = filename_parser.get_filenames_which_match_pattern_in_directory(directory=dir_input_data, pattern=timepoint, filename_extension=".dcm")
+
+    scan_extractor = se.ScanExtractor(dir_input=dir_input_data, filenames=filenames, number_of_mr_films=1, selection_window_offset=selection_window_offset[timepoint], selection_window_dimension=selection_window_dimension[timepoint], use_verbose=True, dir_output_verbose="/tmp/foo")
+
+    scan_extractor.run_semiautomatic_image_extraction()
+
+    image_sitk = scan_extractor.get_sitk_stack_of_extracted_scans()
 

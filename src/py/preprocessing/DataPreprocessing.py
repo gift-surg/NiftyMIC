@@ -634,7 +634,7 @@ class DataPreprocessing:
         sitk.WriteImage(stack.sitk_mask, dir_tmp + filename_out + "_mask.nii.gz")
 
 
-        cmd =  "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/cpp/build/bin/runN4BiasFieldCorrectionImageFilter "
+        cmd =  "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/build/cpp/bin/runN4BiasFieldCorrectionImageFilter "
         cmd += "--f " + dir_tmp + filename_out + " "
         cmd += "--fmask " + dir_tmp + filename_out + "_mask "
         cmd += "--tout " + dir_tmp + " "

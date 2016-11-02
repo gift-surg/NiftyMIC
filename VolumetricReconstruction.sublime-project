@@ -16,13 +16,10 @@
 	"folders":
 	[
 		{
-			"path": "/Users/mebner/development/nilearn"
-		},
-		{
 			"path": "."
 		},
 		{
-			"path": "/Users/mebner/UCL/Data/Leuven_FetalData/fetal_brain"
+			"path": "/Users/mebner/development/nilearn"
 		}
 	],
 	"settings":

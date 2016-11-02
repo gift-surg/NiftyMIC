@@ -16,8 +16,8 @@ from scipy.optimize import least_squares
 import time
 
 ## Add directories to import modules
-DIR_SRC_ROOT = "../../src/"
-sys.path.append(DIR_SRC_ROOT)
+# DIR_SRC_ROOT = "../"
+# sys.path.append(DIR_SRC_ROOT)
 
 ## Import modules
 import utilities.SimpleITKHelper as sitkh

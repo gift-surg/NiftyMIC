@@ -144,7 +144,6 @@ class IntensityNormalization:
 
 
     def get_intensity_corrected_stacks(self):
-
         return self._stacks_normalized
 
 

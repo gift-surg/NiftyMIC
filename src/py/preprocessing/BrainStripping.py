@@ -15,10 +15,6 @@ import itk
 import SimpleITK as sitk
 import numpy as np
 
-## Add directories to import modules
-dir_src_root = "../"
-sys.path.append( dir_src_root )
-
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
 
