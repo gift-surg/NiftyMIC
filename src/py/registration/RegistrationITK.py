@@ -14,6 +14,7 @@ import numpy as np
 import utilities.SimpleITKHelper as sitkh
 import base.PSF as psf
 import base.Stack as st
+import base.Slice as sl
 
 class RegistrationITK:
 
@@ -162,6 +163,7 @@ class RegistrationITK:
     def get_registration_transform_sitk(self):
         return self._transform_sitk
 
+
     ##-------------------------------------------------------------------------
     # \brief      Gets the parameters obtained by the registration.
     # \date       2016-09-22 21:17:09+0100
@@ -193,7 +195,8 @@ class RegistrationITK:
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Sets the verbose to define whether or not output is produced
+    # \brief      Sets the verbose to define whether or not output information
+    #             is produced
     # \date       2016-09-20 18:49:19+0100
     #
     # \param      self     The object
@@ -367,10 +370,8 @@ class RegistrationITK:
         ## (versor_0, versor_1, versor_2, translation_x, translation_y, translation_z, scale)
         self._parameters = params_all[-7:]
 
-
-        # transform_sitk = sitk.Euler3DTransform()
-        # transform_sitk.SetParameters(parameters[0:-1])
-        # transform_sitk.SetFixedParameters(parameters_fixed[0:3])
+        ## Get affine registration transform T(x) = R D Lambda D^{-1} (x-c) + t + c
+        self._transform_sitk = self._get_affine_transform_from_similarity_registration()
 
         # ## Debug
         # scale = parameters[-1]
@@ -382,3 +383,144 @@ class RegistrationITK:
         # sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
 
         # sitkh.show_sitk_image([self._fixed.sitk, moving_warped_sitk], ["fixed", "moving_registered"])
+        # 
+    
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the affine transform from similarity registration.
+    # \date       2016-11-02 15:55:00+0000
+    #
+    #  Returns registration transform 
+    #  \f[ T(\vec{x}) 
+    #    = R\,D\,\Lambda\,D^{-1} (\vec{x} - \vec{c}) + \vec{t} + \vec{c} \f]
+    #  which corresponds to the implemented similarity 3D transform. Matrix D
+    #  corresponds to direction matrix of the fixed image, matrix R the 
+    #  rotation matrix, Lambda = diag(s,s,1) the scaling matrix, c the center
+    #  and t the translation.
+    #
+    # \param      self  The object
+    #
+    # \return     The affine transform from similarity registration.
+    #
+    def _get_affine_transform_from_similarity_registration(self):
+        
+        ## Extract information from (fixed) parameters
+        center = self._parameters_fixed[0:3]
+        versor = self._parameters[0:3]
+        translation = self._parameters[3:6]
+        scale = self._parameters[6]
+
+        ## Extract information from image
+        spacing = np.array(self._fixed.sitk.GetSpacing())
+        origin = np.array(self._fixed.sitk.GetOrigin())
+        D = np.array(self._fixed.sitk.GetDirection()).reshape(3,3)
+        D_inv = np.linalg.inv(D)
+
+        ## Create scaling matrix Lambda
+        Lambda = np.eye(3)
+        Lambda[0:-1,:] *= scale
+
+        ## Get rotation matrix from parameters
+        rigid_sitk = sitk.VersorRigid3DTransform()
+        rigid_sitk.SetParameters(self._parameters[0:6])
+        R = np.array(rigid_sitk.GetMatrix()).reshape(3,3)
+
+        ## Create Affine Transform based on given registration transform
+        affine_transform_sitk = sitk.AffineTransform(3)
+        affine_transform_sitk.SetMatrix((R.dot(D).dot(Lambda).dot(D_inv)).flatten())
+        affine_transform_sitk.SetCenter(center)
+        affine_transform_sitk.SetTranslation(translation)
+
+        return affine_transform_sitk
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the rigid transform and scale from similarity registration.
+    # \date       2016-11-02 15:55:57+0000
+    #
+    # Returns rigid transform (center set to zero)
+    # \f$ T(\vec{x})] =  R\,\vec{x} + \vec{t\prime} \f$
+    # with \f$ \vec{t} = R\,D\,\Lambda\,D^{-1}(\vec{o}-\vec{c}) - R\vec{o} + \vec{t} + \vec{c} \f$
+    # with o being the reference image origin, and t and c the respective 
+    # parameters from the affine transform (i.e. similarity registration 
+    # transform)
+    #
+    # \param      self  The object
+    #
+    # \return     The rigid transform and scale from similarity registration.
+    #
+    def _get_rigid_transform_and_scaling_from_similarity_registration(self):
+        
+        ## Extract information from (fixed) parameters
+        center = self._parameters_fixed[0:3]
+        versor = self._parameters[0:3]
+        translation = self._parameters[3:6]
+        scale = self._parameters[6]
+
+        ## Extract information from image
+        spacing = np.array(self._fixed.sitk.GetSpacing())
+        origin = np.array(self._fixed.sitk.GetOrigin())
+        D = np.array(self._fixed.sitk.GetDirection()).reshape(3,3)
+        D_inv = np.linalg.inv(D)
+
+        ## Create scaling matrix Lambda
+        Lambda = np.eye(3)
+        Lambda[0:-1,:] *= scale
+
+        ## Create Rigid Transform based on given registration information
+        rigid_sitk = sitk.VersorRigid3DTransform()
+        rigid_sitk.SetParameters(self._parameters[0:6])
+        R = np.array(rigid_sitk.GetMatrix()).reshape(3,3)
+        rigid_sitk.SetTranslation(R.dot(D).dot(Lambda).dot(D_inv).dot(origin-center) - R.dot(origin) + translation + center)
+
+        return rigid_sitk, scale
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the stack with similarity inplane transformed slices.
+    # \date       2016-11-02 18:21:17+0000
+    #
+    # \param      self           The object
+    # \param      stack_to_copy  Stack as Stack object
+    #
+    # \return     The stack with similarity inplane transformed slices
+    # according to preceding similarity registration
+    #
+    def get_stack_with_similarity_inplane_transformed_slices(self, stack_to_copy):
+
+        stack = st.Stack.from_stack(stack_to_copy, filename=stack_to_copy.get_filename())
+
+        ## Get
+        rigid_sitk, scale = self._get_rigid_transform_and_scaling_from_similarity_registration()
+
+        ## Extract information from image
+        spacing_scaled = np.array(self._fixed.sitk.GetSpacing())
+        spacing_scaled[0:-1] *= scale
+
+
+        ## Create 3D image based on the obtained (in-plane) similarity transform
+        stack_inplaneSimilar_sitk       = sitkh.get_transformed_image(self._fixed.sitk, rigid_sitk)
+        stack_inplaneSimilar_sitk_mask  = sitkh.get_transformed_image(self._fixed.sitk_mask, rigid_sitk)
+        stack_inplaneSimilar_sitk.SetSpacing(spacing_scaled)
+        stack_inplaneSimilar_sitk_mask.SetSpacing(spacing_scaled)
+        stack_inplaneSimilar = st.Stack.from_sitk_image(stack_inplaneSimilar_sitk, name=stack.get_filename(), image_sitk_mask=stack_inplaneSimilar_sitk_mask)
+
+        ## Update all its slices based on the obtained (in-plane) similarity transform
+        slices_stack_inplaneSimilar = stack_inplaneSimilar.get_slices()
+        slices_stack = stack.get_slices()    
+
+        N_slices = stack_inplaneSimilar.get_number_of_slices()
+
+        for i in range(0, N_slices):
+            slice_sitk = slices_stack[i].sitk
+            slice_sitk_mask = slices_stack[i].sitk_mask
+
+            slice_sitk.SetSpacing(spacing_scaled)
+            slice_sitk_mask.SetSpacing(spacing_scaled)
+
+            slice = sl.Slice.from_sitk_image(slice_sitk, dir_input=slices_stack[i].get_directory(), filename=slices_stack[i].get_filename(), slice_number=slices_stack[i].get_slice_number(), slice_sitk_mask=slice_sitk_mask)
+            slice.update_motion_correction(rigid_sitk)
+            
+            slices_stack_inplaneSimilar[i] = slice
+
+        return stack_inplaneSimilar

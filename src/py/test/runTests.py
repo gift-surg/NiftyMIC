@@ -1,17 +1,22 @@
 #!/usr/bin/python
 
-## \file Testmain.py
+## \file runTests.py
 #  \brief main-file incorporating all the other files 
 # 
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)#  \date September 2015
+#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
+#  \date September 2015
+
 
 
 ## Import libraries 
-import SimpleITK as sitk
-# import numpy as np
 import unittest
+import sys
 
-import matplotlib.pyplot as plt
+# sys.modules.clear()
+
+## Add directories to import modules
+dir_src_root = "../"
+sys.path.append( dir_src_root )
 
 ## Import modules for unit testing
 # from modules.TestFirstEstimateOfHRVolume import *
@@ -20,9 +25,10 @@ import matplotlib.pyplot as plt
 # from modules.TestSimulatorSliceAcqusition import *
 # from modules.TestNiftyReg import *
 # from modules.TestDifferentialOperations import *
-from modules.TestRegistration import *
+# from modules.TestRegistration import *
 # from modules.TestBrainStripping import *
-# from modules.TestStackInPlaneAlignment import *
+from modules.TestStackInPlaneAlignment import *
+# from modules.TestRegistrationITK import *
 
 
 """ ###########################################################################

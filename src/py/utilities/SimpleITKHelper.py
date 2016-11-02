@@ -543,44 +543,44 @@ def convert_itk_to_sitk_image(image_itk):
     return image_sitk
 
 
-def print_sitk_transform(rigid_or_affine_transform_sitk, text="Transformation info"):
+def print_sitk_transform(rigid_affine_similarity_transform_sitk, text=None):
 
-    dim = rigid_or_affine_transform_sitk.GetDimension()
+    dim = rigid_affine_similarity_transform_sitk.GetDimension()
+
+    if text is None:
+        text = rigid_affine_similarity_transform_sitk.GetName()
     
-    matrix = np.array(rigid_or_affine_transform_sitk.GetMatrix()).reshape(dim,dim)
-    translation = np.array(rigid_or_affine_transform_sitk.GetTranslation())
+    matrix = np.array(rigid_affine_similarity_transform_sitk.GetMatrix()).reshape(dim,dim)
+    translation = np.array(rigid_affine_similarity_transform_sitk.GetTranslation())
     
-    parameters = np.array(rigid_or_affine_transform_sitk.GetParameters())
-    center = np.array(rigid_or_affine_transform_sitk.GetFixedParameters())
+    parameters = np.array(rigid_affine_similarity_transform_sitk.GetParameters())
+    center = np.array(rigid_affine_similarity_transform_sitk.GetFixedParameters())
 
     print("\t\t" + text + ":")
     print("\t\t\tcenter = " + str(center))
     
-    if isinstance(rigid_or_affine_transform_sitk, sitk.Euler3DTransform):
+    if isinstance(rigid_affine_similarity_transform_sitk, sitk.Euler3DTransform):
         print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[0:3]) + " rad")
         # print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[0:3]*180/np.pi) + " deg")
     
-    elif isinstance(rigid_or_affine_transform_sitk, sitk.Euler2DTransform):
+    elif isinstance(rigid_affine_similarity_transform_sitk, sitk.Euler2DTransform):
         print("\t\t\tangle = " + str(parameters[0]) + " rad")
         # print("\t\t\tangle = " + str(parameters[0]*180/np.pi) + " deg")
 
-    elif isinstance(rigid_or_affine_transform_sitk, sitk.Similarity2DTransform):
+    elif isinstance(rigid_affine_similarity_transform_sitk, sitk.Similarity2DTransform):
         print("\t\t\tangle = " + str(parameters[1]) + " rad")
-        print("\t\t\tscale = " + str(rigid_or_affine_transform_sitk.GetScale()))
+        print("\t\t\tscale = " + str(rigid_affine_similarity_transform_sitk.GetScale()))
 
-    elif isinstance(rigid_or_affine_transform_sitk, sitk.Similarity3DTransform):
+    elif isinstance(rigid_affine_similarity_transform_sitk, sitk.Similarity3DTransform):
         print("\t\t\tangle_x, angle_y, angle_z = " + str(parameters[1:4]) + " rad")
-        print("\t\t\tscale = " + str(rigid_or_affine_transform_sitk.GetScale()))
+        print("\t\t\tscale = " + str(rigid_affine_similarity_transform_sitk.GetScale()))
 
     print("\t\t\ttranslation = " + str(translation))
     
-    # elif isinstance(rigid_or_affine_transform_sitk, sitk.AffineTransform):
+    # elif isinstance(rigid_affine_similarity_transform_sitk, sitk.AffineTransform):
     print("\t\t\tmatrix = ")
     for i in range(0, dim):
         print("\t\t\t\t" + str(matrix[i,:]))
-
-    return None
-
 
 
 

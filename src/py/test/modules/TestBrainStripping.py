@@ -22,7 +22,7 @@ import preprocessing.BrainStripping as bs
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
-class Test_BrainStripping(unittest.TestCase):
+class TestBrainStripping(unittest.TestCase):
 
     ## Specify input data
     dir_test_data = "../../../test-data/"

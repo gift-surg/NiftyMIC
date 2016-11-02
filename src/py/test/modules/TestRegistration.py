@@ -34,7 +34,7 @@ IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
-class Test_Registration(unittest.TestCase):
+class TestRegistration(unittest.TestCase):
 
     ## Specify input data
     dir_test_data = "../../../test-data/registration/"

@@ -39,7 +39,7 @@ class StackInPlaneAlignment:
     # \param      use_reference_mask  The use reference mask
     # \param      alignment_approach  The alignment approach
     #
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, interpolator="NearestNeighbor", metric="Correlation", scales_estimator="PhysicalShift", initializer_type="GEOMETRY", use_verbose=False, alignment_approach="rigid_inplane_within_stack"):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, interpolator="NearestNeighbor", metric="Correlation", scales_estimator="PhysicalShift", initializer_type="GEOMETRY", use_verbose=False, alignment_approach="rigid_inplane_within_stack", use_multiresolution_framework=False):
         
 
         self._alignment_approach = alignment_approach
@@ -56,6 +56,7 @@ class StackInPlaneAlignment:
         self._scales_estimator = scales_estimator
         self._initializer_type = initializer_type
         self._use_verbose = use_verbose
+        self._use_multiresolution_framework = use_multiresolution_framework
 
         if stack is not None:
             self._stack = st.Stack.from_stack(stack, filename=stack.get_filename())
@@ -249,6 +250,12 @@ class StackInPlaneAlignment:
         self._use_verbose = flag
 
 
+    ## Use multiresolution framework
+    #  \param[in] flag boolean
+    def use_multiresolution_framework(self, flag):
+        self._use_multiresolution_framework = flag
+
+
     ##-------------------------------------------------------------------------
     # \brief      Gets the in-plane rigidly registered stack.
     # \date       2016-09-20 22:38:53+0100
@@ -297,7 +304,6 @@ class StackInPlaneAlignment:
         ## Set up registration
         registration_2D = regsitk.RegistrationSimpleITK()
         registration_2D.set_registration_type("Rigid")
-        # registration_2D.use_multiresolution_framework(True)
         registration_2D.use_fixed_mask(self._use_stack_mask)
         registration_2D.use_moving_mask(self._use_reference_mask)
         registration_2D.set_metric(self._metric)
@@ -305,6 +311,7 @@ class StackInPlaneAlignment:
         registration_2D.set_scales_estimator(self._scales_estimator)
         registration_2D.set_centered_transform_initializer(self._initializer_type)
         registration_2D.use_verbose(self._use_verbose)
+        registration_2D.use_multiresolution_framework(self._use_multiresolution_framework)
 
         ## Get list of 3D affine transforms to arrive at the positions of the
         ## original 3D slices
@@ -359,7 +366,6 @@ class StackInPlaneAlignment:
         ## Set up registration
         registration_2D = regsitk.RegistrationSimpleITK()
         registration_2D.set_registration_type("Similarity")
-        # registration_2D.use_multiresolution_framework(True)
         registration_2D.use_fixed_mask(self._use_stack_mask)
         registration_2D.use_moving_mask(self._use_reference_mask)
         registration_2D.set_metric(self._metric)
@@ -367,6 +373,7 @@ class StackInPlaneAlignment:
         registration_2D.set_scales_estimator(self._scales_estimator)
         registration_2D.set_centered_transform_initializer(self._initializer_type)
         registration_2D.use_verbose(self._use_verbose)
+        registration_2D.use_multiresolution_framework(self._use_multiresolution_framework)
 
         ## Get list of 3D affine transforms to arrive at the positions of the
         ## original 3D slices
@@ -462,15 +469,14 @@ class StackInPlaneAlignment:
         ## Set up registration
         registration_2D = regsitk.RegistrationSimpleITK()
         registration_2D.set_registration_type("Rigid")
-        # registration_2D.use_multiresolution_framework(True)
-        registration_2D.set_centered_transform_initializer(None)
-        registration_2D.set_scales_estimator("PhysicalShift")
-        # registration_2D.set_metric("MattesMutualInformation")
-        # registration_2D.set_metric("MeanSquares")
-        registration_2D.set_metric("Correlation")
-        registration_2D.use_fixed_mask(False)
-        registration_2D.use_moving_mask(False)
-        # registration_2D.use_verbose(self._use_verbose)
+        registration_2D.use_fixed_mask(self._use_stack_mask)
+        registration_2D.use_moving_mask(self._use_reference_mask)
+        registration_2D.set_metric(self._metric)
+        registration_2D.set_interpolator(self._interpolator)
+        registration_2D.set_scales_estimator(self._scales_estimator)
+        registration_2D.set_centered_transform_initializer(self._initializer_type)
+        registration_2D.use_verbose(self._use_verbose)
+        registration_2D.use_multiresolution_framework(self._use_multiresolution_framework)
 
         ## Get list of 3D affine transforms to arrive at the positions of the
         ## original 3D slices

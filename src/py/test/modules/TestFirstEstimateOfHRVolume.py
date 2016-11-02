@@ -26,7 +26,7 @@ import base.Stack as st
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
-class Test_FirstEstimateOfHRVolume(unittest.TestCase):
+class TestFirstEstimateOfHRVolume(unittest.TestCase):
 
     ## Specify input data
     dir_test_data = "../../../test-data/"

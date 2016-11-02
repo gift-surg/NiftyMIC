@@ -223,7 +223,7 @@ def get_rigid_registration_transform(fixed_sitk, moving_sitk, fixed_mask_sitk=No
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
-class Test_SimpleITKHelper(unittest.TestCase):
+class TestSimpleITKHelper(unittest.TestCase):
 
     ## Specify input data
     dir_test_data =  "../../../test-data/"
