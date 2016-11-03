@@ -6,4 +6,5 @@ results/
 .*
 *.nii.gz
 *.nii
+*.tfm
 *iterate.dat

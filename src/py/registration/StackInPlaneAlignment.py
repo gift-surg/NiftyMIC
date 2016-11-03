@@ -265,7 +265,7 @@ class StackInPlaneAlignment:
     # \return     The stack as Stack object.
     #
     def get_inplane_registered_stack(self):
-        return st.Stack.from_stack(self._stack)
+        return st.Stack.from_stack(self._stack, filename=self._stack.get_filename())
 
 
     ##-------------------------------------------------------------------------

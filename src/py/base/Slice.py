@@ -260,18 +260,23 @@ class Slice:
     #  - affine transformation describing physical space position of slice
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifyig the filename. If not given, filename of parent stack is used
-    def write(self, directory="/tmp/", filename=None):
+    def write(self, directory="/tmp/", filename=None, write_transform=False):
+        
+        ## Create directory if not existing
+        os.system("mkdir -p " + directory)
+
+        ## Construct filename
         if filename is None:
             filename_out = self._filename + "_" + str(self._slice_number)
         else:
             filename_out = filename + "_" + str(self._slice_number)
 
-        ## Define filename
         full_file_name = os.path.join(directory, filename_out)
 
         ## Write slice and affine transform
         sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
-        sitk.WriteTransform(self._affine_transform_sitk, full_file_name + ".tfm")
+        if write_transform:
+            sitk.WriteTransform(self._affine_transform_sitk, full_file_name + ".tfm")
 
         ## Write mask to specified location if given
         if self.sitk_mask is not None:

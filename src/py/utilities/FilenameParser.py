@@ -14,6 +14,7 @@ import SimpleITK as sitk
 import numpy as np
 import os
 import re
+import fnmatch
 
 ## Add directories to import modules
 # DIR_SRC_ROOT = "../"
@@ -31,26 +32,64 @@ import base.Slice as sl
 #
 class FilenameParser(object):
 
-    ##-----------------------------------------------------------------------------
-    # \brief      Gets the filenames of particular type in directory.
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the filenames in directory (of certain type) which match
+    #             pattern(s).
     # \date       2016-08-05 17:06:30+0100
     #
+    # \param      self                The object
     # \param[in]  directory           directory as string
+    # \param      patterns            patterns as string or list of strings
     # \param[in]  filename_extension  extension of filename as string
     #
     # \return     filenames in directory without filename extension as list of
     #             strings
     #
-    def get_filenames_which_match_pattern_in_directory(self, directory, pattern, filename_extension=".dcm"):
+    def get_filenames_which_match_pattern_in_directory(self, directory, patterns, filename_extension=None):
         
-        ## List of all files in directory
-        all_files = os.listdir(directory)
+        if type(patterns) is not list:
+            patterns = [patterns]
 
-        ## Find names which match pattern
-        filenames = [f for f in all_files if re.match(pattern,f)]
+        ## List of all files in directory
+        filenames = os.listdir(directory)
+
+        ## Only consider files with given filename_extension
+        if filename_extension is not None:
+            filenames = [f for f in filenames if fnmatch.fnmatch(f, "*"+filename_extension)]
+
+        ## Get filenames which match all patterns
+        for i in range(0, len(patterns)):
+            filenames = [f for f in filenames if fnmatch.fnmatch(f, "*"+patterns[i]+"*")]
+
+        ## Crop filename extension
+        filenames = self.crop_filename_extension(filenames)
 
         return filenames
 
+
+    ##-------------------------------------------------------------------------
+    # \brief      Exclude filenames which match pattern(s)
+    # \date       2016-11-03 16:26:20+0000
+    #
+    # \param      self       The object
+    # \param      filenames  The filenames
+    # \param      patterns   The patterns
+    #
+    # \return     Get filenames reduced by the ones matching the patterns
+    #
+    def exclude_filenames_which_match_pattern(self, filenames, patterns):
+
+        if type(patterns) is not list:
+            patterns = [patterns]
+
+        ## Exclude files which match pattern
+        for i in range(0, len(patterns)):
+            filenames_tmp = np.array(filenames)
+            for f in filenames_tmp:
+                if fnmatch.fnmatch(f, "*"+patterns[i]+"*"):
+                    filenames.remove(f)
+
+        return filenames
 
     ##-------------------------------------------------------------------------
     # \brief      Crop extensions from filenames

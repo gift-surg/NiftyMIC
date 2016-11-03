@@ -19,6 +19,7 @@ import copy
 ## Import modules from src-folder
 import base.Slice as sl
 import utilities.SimpleITKHelper as sitkh
+import utilities.FilenameParser as fp
 
 ## In addition to the nifti-image (stored as sitk.Image object) this class 
 ## Stack also contains additional variables helpful to work with the data.
@@ -73,19 +74,31 @@ class Stack:
         stack._dir = dir_input
         stack._filename = prefix_stack
 
-        ## Get filenames of slices
-        filenames_slices = stack._get_slice_filenames(dir_input, prefix_stack, suffix_mask)
+        ## Get 3D images
+        stack.sitk = sitk.ReadImage(dir_input + prefix_stack + ".nii.gz", sitk.sitkFloat64)
+        stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
 
-        ## There exists no entire image volume.
-        stack.sitk = None
-        stack.itk = None
+        ## Append masks (either provided or binary mask)
+        if suffix_mask is not None and os.path.isfile(dir_input + prefix_stack + suffix_mask + ".nii.gz"):
+            stack.sitk_mask = sitk.ReadImage(dir_input + prefix_stack + suffix_mask + ".nii.gz", sitk.sitkUInt8)
+            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+        else:
+            stack.sitk_mask = stack._generate_binary_mask()
+            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
 
-        stack._N_slices = len(filenames_slices)
+        ## Get slices
+        stack._N_slices = stack.sitk.GetDepth()
         stack._slices = [None] * stack._N_slices
+
+        # ## Get filenames of slices
+        # filename_parser = fp.FilenameParser()
+        # filenames_slices = filename_parser.get_filenames_which_match_pattern_in_directory(dir_input, patterns=[prefix_stack+"_", ".nii"])
+        # if suffix_mask is not None:
+        #     filenames_slices = filename_parser.exclude_filenames_which_match_pattern(filenames_slices, suffix_mask)
 
         ## Append slices as Slice objects
         for i in range(0, stack._N_slices):
-            filename_slice = prefix_stack + "_" + filenames_slices[i]
+            filename_slice = prefix_stack + "_" + str(i)
             stack._slices[i] = sl.Slice.from_filename(dir_input, filename_slice, stack._filename, i, suffix_mask)
 
         return stack
@@ -206,48 +219,6 @@ class Stack:
     # def copy(self):
         # return copy.deepcopy(self)
 
-
-    ## Get filenames of slices in specified directory.
-    #  Assumption: Filenames constitute of subsequent numbering
-    #  \param[in] dir_input string to input directory of nifti-file to read
-    #  \param[in] prefix_stack prefix indicating the corresponding stack
-    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
-    #  \return filenames as list of strings
-    def _get_slice_filenames(self, dir_input, prefix_stack, suffix_mask):
-
-        filenames = []
-
-        ## List of all files in directory
-        all_files = os.listdir(dir_input)
-
-        ## Number of symbols of stack prefix which defines sought slices
-        prefix_stack_len = len(prefix_stack)
-
-        for file in all_files:
-
-            ## Only consider nifti images without their mask
-            if file.endswith(".nii.gz") and file.startswith(prefix_stack) and not file.endswith(suffix_mask + ".nii.gz"):
-                
-                filename = file
-
-                ## Chop off prefix + underscore
-                filename = filename[prefix_stack_len+1:]
-
-                ## Chop off ending
-                filename = filename.replace(".nii.gz","")
-
-                ## Filename consits only of slice filename
-                filenames.append(filename)
-
-        ## Assumption of subsequent numbering
-        N = len(filenames)
-
-        ## Create filenames as list of strings
-        filenames = [str(i) for i in range(0, N)]
-
-        return filenames
-
-
     ## Get all slices of current stack
     #  \return Array of sitk.Images containing slices in 3D space
     def get_slices(self):
@@ -323,7 +294,12 @@ class Stack:
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifying the filename. If not given the assigned one within Stack will be chosen.
     #  \param[in] write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
-    def write(self, directory="/tmp/", filename=None, write_mask=True, write_slices=False):
+    def write(self, directory="/tmp/", filename=None, write_mask=True, write_slices=False, write_transforms=False):
+
+        ## Create directory if not existing
+        os.system("mkdir -p " + directory)
+
+        ## Construct filename
         if filename is None:
             filename = self._filename
 
@@ -353,7 +329,7 @@ class Stack:
                 ## Write slices
                 else:
                     for i in xrange(0,self._N_slices):
-                        self._slices[i].write(directory=directory, filename=filename)
+                        self._slices[i].write(directory=directory, filename=filename, write_transform=write_transforms)
 
             except ValueError as err:
                 print(err.message)
@@ -432,7 +408,7 @@ class Stack:
                 slice.sitk_mask, 
                 resampling_space.sitk_mask, 
                 sitk.Euler3DTransform(), 
-                interpolator, 
+                sitk.sitkNearestNeighbor, 
                 default_pixel_value, 
                 resampling_space.sitk_mask.GetPixelIDValue())
 
@@ -506,7 +482,7 @@ class Stack:
             resampled_stack.sitk_mask, 
             size_new, 
             sitk.Euler3DTransform(), 
-            interpolator, 
+            sitk.sitkNearestNeighbor, 
             resampled_stack.sitk.GetOrigin(), 
             spacing_new,
             resampled_stack.sitk.GetDirection(),
@@ -588,7 +564,7 @@ class Stack:
             self.sitk_mask, 
             size_new, 
             sitk.Euler3DTransform(), 
-            interpolator, 
+            sitk.sitkNearestNeighbor, 
             origin, 
             spacing_new,
             direction,
@@ -638,7 +614,7 @@ class Stack:
             self.sitk_mask, 
             size, 
             sitk.Euler3DTransform(), 
-            interpolator, 
+            sitk.sitkNearestNeighbor, 
             origin, 
             spacing,
             direction,

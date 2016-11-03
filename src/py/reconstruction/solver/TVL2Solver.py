@@ -181,6 +181,8 @@ class TVL2Solver(Solver):
         print("Regularization parameter of augmented Lagrangian term rho = " + str(self._rho))
         print("Number of ADMM iterations = " + str(self._ADMM_iterations))
         print("Maximum number of TK1 solver iterations = " + str(self._iter_max))
+        if self._ADMM_iterations_output_dir is not None:
+            print("ADMM iterations are written to " + self._ADMM_iterations_output_dir)
         # print("Tolerance = %.0e" %(self._tolerance))
 
         time_start = time.time()

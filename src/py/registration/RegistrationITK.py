@@ -497,7 +497,6 @@ class RegistrationITK:
         spacing_scaled = np.array(self._fixed.sitk.GetSpacing())
         spacing_scaled[0:-1] *= scale
 
-
         ## Create 3D image based on the obtained (in-plane) similarity transform
         stack_inplaneSimilar_sitk       = sitkh.get_transformed_image_sitk(self._fixed.sitk, rigid_sitk)
         stack_inplaneSimilar_sitk_mask  = sitkh.get_transformed_image_sitk(self._fixed.sitk_mask, rigid_sitk)
