@@ -220,7 +220,7 @@ def get_inverse_of_sitk_rigid_registration_transform(rigid_registration_transfor
 #  \param[in] image_init_sitk image as sitk.Image object to be transformed
 #  \param[in] transform_sitk transform to be applied as sitk.AffineTransform object
 #  \return transformed image as sitk.Image object
-def get_transformed_image(image_init_sitk, transform_sitk):
+def get_transformed_image_sitk(image_init_sitk, transform_sitk):
     image_sitk = sitk.Image(image_init_sitk)
     
     affine_transform_sitk = get_sitk_affine_transform_from_sitk_image(image_sitk)

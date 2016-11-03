@@ -367,9 +367,9 @@ class TestSimpleITKHelper(unittest.TestCase):
                 , decimals = self.accuracy), 0 )
 
 
-    ## Test whether \p get_transformed_image works correct in the rigid and
+    ## Test whether \p get_transformed_image_sitk works correct in the rigid and
     #  more general affine case
-    def test_get_transformed_image(self):
+    def test_get_transformed_image_sitk(self):
         moving_str = "placenta_0"
         fixed_str = "placenta_1"
 
@@ -390,7 +390,7 @@ class TestSimpleITKHelper(unittest.TestCase):
         moving_rigidly_warped_sitk = sitk.Resample(moving.sitk, fixed.sitk, rigid_transform_sitk, interpolator, default_pixel_value, moving.sitk.GetPixelIDValue())
 
         ## Resample after having transformed the moving image manually (inverse transform)
-        moving_rigidly_warped_sitkh_sitk = sitkh.get_transformed_image(moving.sitk, sitk.Euler3DTransform(rigid_transform_sitk.GetInverse()))
+        moving_rigidly_warped_sitkh_sitk = sitkh.get_transformed_image_sitk(moving.sitk, sitk.Euler3DTransform(rigid_transform_sitk.GetInverse()))
         moving_rigidly_warped_manual_sitk = sitk.Resample(moving_rigidly_warped_sitkh_sitk, fixed.sitk, sitk.Euler3DTransform(), interpolator, default_pixel_value, moving.sitk.GetPixelIDValue())
         
         ## Compute difference image
@@ -405,7 +405,7 @@ class TestSimpleITKHelper(unittest.TestCase):
         moving_affinely_warped_sitk = sitk.Resample(moving.sitk, fixed.sitk, affine_transform_sitk, interpolator, default_pixel_value, moving.sitk.GetPixelIDValue())
 
         ## Resample after having transformed the moving image manually (inverse transform)
-        moving_affinely_warped_sitkh_sitk = sitkh.get_transformed_image(moving.sitk, sitk.AffineTransform(affine_transform_sitk.GetInverse()))
+        moving_affinely_warped_sitkh_sitk = sitkh.get_transformed_image_sitk(moving.sitk, sitk.AffineTransform(affine_transform_sitk.GetInverse()))
         moving_affinely_warped_manual_sitk = sitk.Resample(moving_affinely_warped_sitkh_sitk, fixed.sitk, sitk.Euler3DTransform(), interpolator, default_pixel_value, moving.sitk.GetPixelIDValue())
 
         ## Compute difference image

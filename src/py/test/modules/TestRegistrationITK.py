@@ -53,8 +53,8 @@ class TestRegistrationITK(unittest.TestCase):
         motion_sitk = sitk.Euler3DTransform()
         motion_sitk.SetRotation(angleX, angleY, angleZ)
         motion_sitk.SetTranslation(translation)
-        stack_corrupted_sitk = sitkh.get_transformed_image(stack.sitk, motion_sitk)
-        stack_corrupted_sitk_mask = sitkh.get_transformed_image(stack.sitk_mask, motion_sitk)
+        stack_corrupted_sitk = sitkh.get_transformed_image_sitk(stack.sitk, motion_sitk)
+        stack_corrupted_sitk_mask = sitkh.get_transformed_image_sitk(stack.sitk_mask, motion_sitk)
 
         ## Corrupt spacing
         spacing = np.array(stack.sitk.GetSpacing())
