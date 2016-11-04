@@ -90,7 +90,7 @@ class Slice:
         slice = cls()
         # slice = []
 
-        slice._dir = dir_input
+        slice._dir_input = dir_input
         slice._filename = stack_filename
         slice._slice_number = slice_number
 

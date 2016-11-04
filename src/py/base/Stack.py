@@ -193,6 +193,7 @@ class Stack:
             stack._filename = "copy_" + stack_to_copy.get_filename()
         else:
             stack._filename = filename
+        stack._dir = stack_to_copy.get_directory()
 
         stack._N_slices = stack_to_copy.sitk.GetSize()[-1]
         stack._slices = [None]*stack._N_slices
@@ -230,8 +231,8 @@ class Stack:
     def get_slice(self, index):
         
         index = int(index)
-        if index > self._N_slices - 1 or index < 0:
-            raise ValueError("Enter a valid index between 0 and %s. Tried: %s" %(self._N_slices-1, index))
+        if abs(index) > self._N_slices - 1:
+            raise ValueError("Enter a valid index between -%s and %s. Tried: %s" %(self._N_slices-1, self._N_slices-1))
 
         return self._slices[index]
 
