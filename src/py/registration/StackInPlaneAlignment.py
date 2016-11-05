@@ -402,6 +402,8 @@ class StackInPlaneAlignment:
             translation = np.array(similarity_registration_transform_2D_sitk.GetTranslation())
             R = np.array(similarity_registration_transform_2D_sitk.GetMatrix()).reshape(2,2)/scale
 
+            print("Slice %2d/%d: in-plane scaling factor = %.3f" %(i, self._N_slices-1, scale))
+
             rigid_registration_transform_2D_sitk = sitk.Euler2DTransform()
             rigid_registration_transform_2D_sitk.SetAngle(angle)
             rigid_registration_transform_2D_sitk.SetTranslation(scale*R.dot(origin-center) - R.dot(origin) + translation + center)

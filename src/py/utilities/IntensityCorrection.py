@@ -35,6 +35,8 @@ class IntensityCorrection(object):
             "sitk_reference"    : self._run_intensity_correction_with_reference
         }
 
+        self._use_verbose = False
+
 
     ##-------------------------------------------------------------------------
     # \brief      Constructor in case data array is given as input
@@ -87,6 +89,9 @@ class IntensityCorrection(object):
 
         return intensity_correction
 
+
+    def use_verbose(self, verbose):
+        self._use_verbose = verbose
 
 
     def get_intensity_corrected_array(self):
@@ -166,23 +171,41 @@ class IntensityCorrection(object):
 
         shape = self._image_sitk.GetSize()
 
-        nda_im  = sitk.GetArrayFromImage(self._image_sitk)
+        self._nda  = sitk.GetArrayFromImage(self._image_sitk)
         nda_ref = sitk.GetArrayFromImage(self._refernce_sitk)
         
         A = np.ones((shape[0]*shape[1],2))
 
+
+        ## 1st round: Get bias and slopes:
         for i in range(0, shape[2]):
             y = nda_ref[i,:,:].flatten()
-            A[:,0] = nda_im[i,:,:].flatten()
+            A[:,0] = self._nda[i,:,:].flatten()
 
             B = np.linalg.inv(A.transpose().dot(A)).dot(A.transpose())
             c1, c0 = B.dot(y)
 
-            nda_im[i,:,:] = nda_im[i,:,:]*c1 + c0
+            if self._use_verbose:
+                print("Slice %2d/%d: (c1, c0) = (%.3f, %.3f)" %(i, shape[2]-2, c1, c0))
+
+            self._nda[i,:,:] = self._nda[i,:,:]*c1 + c0
 
         ## Cap lower intensity to given percentile value
-        self._nda = nda_im
         self._run_self_intensity_correction_array()
+
+        ## 2nd round: Get slope after intensities have been offsetted
+        for i in range(0, shape[2]):
+            y = nda_ref[i,:,:].flatten()
+            A = self._nda[i,:,:].flatten()
+
+            B = A/A.dot(A)
+            c1 = B.dot(y)
+
+            if self._use_verbose:
+                print("Slice %2d/%d: c1 = %.3f" %(i, shape[2]-2, c1))
+
+            self._nda[i,:,:] = self._nda[i,:,:]*c1
+
 
         ## Convert back to image with correct header
         image_sitk = sitk.GetImageFromArray(self._nda)
