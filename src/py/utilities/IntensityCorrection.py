@@ -12,9 +12,14 @@ import numpy as np
 from scipy.optimize import least_squares
 import time
 
+## Import modules
+import base.Stack as st
+import utilities.SimpleITKHelper as sitkh
+import matplotlib.pyplot as plt
+
+
 ##-----------------------------------------------------------------------------
-# \brief      Class to correct intensities either within-stack or given a
-#             reference
+# \brief      Class to correct intensities
 # \date       2016-11-01 20:12:46+0000
 #
 class IntensityCorrection(object):
@@ -23,255 +28,269 @@ class IntensityCorrection(object):
     # \brief      Constructor
     # \date       2016-11-01 21:57:13+0000
     #
-    # \param      self  The object
+    # \param      self                             The object
+    # \param      stack                            Stack object to be intensity
+    #                                              corrected
+    # \param      reference                        Stack object used as
+    #                                              reference for intensities
+    #                                              (needs to be in the physical
+    #                                              space as stack)
+    # \param      use_reference_mask               Use reference mask (as given
+    #                                              in \p reference) to reduce
+    #                                              focus for intensity
+    #                                              correction; bool
+    # \param      use_individual_slice_correction  State whether intensity
+    #                                              correction is performed for
+    #                                              each slice independently;
+    #                                              bool
+    # \param      use_verbose                      Verbose; bool
     #
-    def __init__(self):
+    def __init__(self, stack=None, reference=None, use_reference_mask=True, use_individual_slice_correction=False, use_verbose=False):
 
-        self._object_type = "array_self"
+        if stack is not None:
+            self._stack = st.Stack.from_stack(stack)
+        else:
+            self._stack is None
 
-        self._run_intensity_correction = {
-            "array_self"        : self._run_self_intensity_correction_array,
-            "sitk_self"         : self._run_self_intensity_correction_sitk_image,
-            "sitk_reference"    : self._run_intensity_correction_with_reference
+        ## Check that stack and reference are in the same space
+        if reference is not None:
+            try:
+                self._stack.sitk - reference.sitk
+            except:
+                raise ValueError("Reference and stack are not in the same space")
+            self._reference = st.Stack.from_stack(reference)
+        else:
+            self._reference = None
+
+        self._apply_intensity_correction = {
+            "linear"    : self._apply_linear_intensity_correction,
+            "affine"    : self._apply_affine_intensity_correction,
         }
 
-        self._use_verbose = False
+        self._use_verbose = use_verbose
+        self._use_reference_mask = use_reference_mask
+        self._use_individual_slice_correction = use_individual_slice_correction
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Constructor in case data array is given as input
-    # \date       2016-11-01 21:57:20+0000
+    # \brief      Sets the stack.
+    # \date       2016-11-05 22:58:01+0000
     #
-    # \param      cls         The cls
-    # \param      nda         3D numpy array
-    # \param      percentile  The percentile
+    # \param      self   The object
+    # \param      stack  The stack as Stack object
     #
-    # \return     Instantiated IntensityCorrection object
-    #
-    @classmethod
-    def from_array(cls, nda, percentile=15):
-
-        intensity_correction = cls()
-
-        intensity_correction._object_type = "array_self"
-        intensity_correction._nda = nda
-        intensity_correction._percentile = percentile
-
-        return intensity_correction
+    def set_stack(self, stack):
+        self._stack = st.Stack.from_stack(stack)
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Constructor in case sitk.Image(s) is/are given as input
-    # \date       2016-11-01 21:58:28+0000
+    # \brief      Sets the reference.
+    # \date       2016-11-05 22:58:10+0000
     #
-    # \param      cls             The cls
-    # \param      image_sitk      The image sitk
-    # \param      reference_sitk  The reference sitk
-    # \param      percentile      The percentile
+    # \param      self       The object
+    # \param      reference  The reference as Stack object
     #
-    # \return     Instantiated IntensityCorrection object
+    def set_reference(self, reference):
+        self._reference = st.Stack.from_stack(reference)
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Use verbose
+    # \date       2016-11-05 22:58:28+0000
     #
-    @classmethod
-    def from_sitk_image(cls, image_sitk, reference_sitk=None, percentile=10):
-
-        intensity_correction = cls()
-
-        intensity_correction._image_sitk = sitk.Image(image_sitk)
-        intensity_correction._percentile = percentile
-
-        if reference_sitk is None:
-            intensity_correction._refernce_sitk = None
-            intensity_correction._object_type = "sitk_self"
-        else:
-            intensity_correction._refernce_sitk = sitk.Image(reference_sitk)
-            intensity_correction._object_type = "sitk_reference"
-            
-
-        return intensity_correction
-
-
+    # \param      self     The object
+    # \param      verbose  The verbose as boolean
+    #
     def use_verbose(self, verbose):
         self._use_verbose = verbose
 
 
-    def get_intensity_corrected_array(self):
-        return np.array(self._nda)
-
-
-    def get_intensity_corrected_sitk_image(self):
-        return sitk.Image(self._image_sitk)
-
-
     ##-------------------------------------------------------------------------
-    # \brief      Run intensity correction
-    # \date       2016-11-01 21:59:02+0000
+    # \brief      Gets the intensity corrected stack
+    # \date       2016-11-05 22:58:50+0000
     #
     # \param      self  The object
     #
-    # \post       self._nda or self._image_sitk are updated
+    # \return     The intensity corrected stack as Stack object
     #
-    def run_intensity_correction(self):
-
-        self._run_intensity_correction[self._object_type]()
-
-
-    ##-------------------------------------------------------------------------
-    # \brief      Run intensity correction in case array is given
-    # \date       2016-11-01 21:59:02+0000
-    #
-    # \param      self  The object
-    #
-    # \post       self._nda is updated
-    #
-    def _run_self_intensity_correction_array(self):
-
-        i0 = np.percentile(self._nda, self._percentile)
-        self._nda[np.where(self._nda<i0)] = 0
-        self._nda[np.where(self._nda>=i0)] -= i0
+    def get_intensity_corrected_stack(self):
+        return st.Stack.from_stack(self._stack)
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Run intensity correction in case image_sitk is given
-    # \date       2016-11-01 21:59:02+0000
+    # \brief      Clip lower intensities based on percentile threshold
+    # \date       2016-11-05 22:59:08+0000
+    #
+    # \param      self        The object
+    # \param      percentile  The percentile defining the threshold
+    #
+    def run_lower_percentile_capping_of_stack(self, percentile=10):
+
+        nda = sitk.GetArrayFromImage(self._stack.sitk)
+
+        ## Clip lower intensity values
+        i0 = np.percentile(nda, percentile)
+        nda[np.where(nda<i0)] = 0
+        nda[np.where(nda>=i0)] -= i0
+
+        ## Create Stack instance with correct image header information        
+        self._stack = self._create_stack_from_corrected_intensity_array(nda)
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Run linear intensity correction model.
+    # \date       2016-11-05 23:02:46+0000
+    #
+    # Perform linear intensity correction, i.e. 
+    #    minimize || reference - c1*stack || in ell^2-sense.
     #
     # \param      self  The object
     #
-    # \post       self._image_sitk is updated
-    #
-    def _run_self_intensity_correction_sitk_image(self):
+    def run_linear_intensity_correction(self):
+        self._stack = self._run_intensity_correction("linear")
 
-        ## Extract numpy data array
-        self._nda = sitk.GetArrayFromImage(self._image_sitk)
+
+    ##-------------------------------------------------------------------------
+    # \brief      Run affine intensity correction model.
+    # \date       2016-11-05 23:05:48+0000
+    #
+    # Perform affine intensity correction, i.e. 
+    #    minimize || reference - (c1*stack + c0)|| in ell^2-sense.
+    #    
+    # \param      self  The object
+    #
+    def run_affine_intensity_correction(self):
+        self._stack = self._run_intensity_correction("affine")
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Execute respective intensity correction model.
+    # \date       2016-11-05 23:06:37+0000
+    #
+    # \param      self              The object
+    # \param      correction_model  The correction model. Either 'linear' or
+    #                               'affine'
+    #
+    def _run_intensity_correction(self, correction_model):
+
+        ## Gets the required data arrays to perform intensity correction
+        nda, nda_masked, nda_reference_masked = self._get_data_arrays_prior_to_intensity_correction()
+
+        if self._use_individual_slice_correction:
+            for i in range(0, self._stack.get_number_of_slices()):
+                if self._use_verbose:
+                    print("Slice %2d/%d:" %(i, self._stack.get_number_of_slices()-1))
+                nda[i,:,:] = self._apply_intensity_correction[correction_model](nda[i,:,:], nda_masked[i,:,:], nda_reference_masked[i,:,:])
         
-        ## Perform intensity correction on data array
-        self._run_self_intensity_correction_array()
+        else:
+            nda = self._apply_intensity_correction[correction_model](nda, nda_masked, nda_reference_masked)
+        
+        ## Create Stack instance with correct image header information
+        return self._create_stack_from_corrected_intensity_array(nda)
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Perform affine intensity correction via normal equations
+    # \date       2016-11-05 23:10:49+0000
+    #
+    # \param      self                  The object
+    # \param      nda                   Data array to be corrected
+    # \param      nda_masked            Masked data array used to compute
+    #                                   coefficients
+    # \param      nda_reference_masked  Masked reference data array used to
+    #                                   compute coefficients
+    #
+    # \return     intensity corrected data array as np.array
+    #
+    def _apply_affine_intensity_correction(self, nda, nda_masked, nda_reference_masked):
+
+        ## Model: y = x*c1 + c0 = [x, 1]*[c1, c0]' = A*[c1,c0]
+        x = nda_masked.flatten()
+        y = nda_reference_masked.flatten()
+
+        ## Solve via normal equations: [c1, c0] = (A'A)^{-1}A'y
+        A = np.ones((x.size,2))
+        A[:,0] = x
+
+        B = np.linalg.inv(A.transpose().dot(A)).dot(A.transpose())
+        c1, c0 = B.dot(y)
+
+        if self._use_verbose:
+            print("\t(c1, c0) = (%.3f, %.3f)" %(c1, c0))
+
+        return nda*c1 + c0
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Perform linear intensity correction via normal equations
+    # \date       2016-11-05 23:12:13+0000
+    #
+    # \param      self                  The object
+    # \param      nda                   Data array to be corrected
+    # \param      nda_masked            Masked data array used to compute
+    #                                   coefficients
+    # \param      nda_reference_masked  Masked reference data array used to
+    #                                   compute coefficients
+    #
+    # \return     intensity corrected data array as np.array
+    #
+    def _apply_linear_intensity_correction(self, nda, nda_masked, nda_reference_masked):
+
+        ## Model: y = x*c1
+        x = nda_masked.flatten()
+        y = nda_reference_masked.flatten()
+
+        ## Solve via normal equations: c1 = x'y/(x'x)
+        c1 = x.dot(y)/x.dot(x)
+
+        if self._use_verbose:
+            print("\tc1 = %.3f" %(c1))
+        
+        return nda*c1
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the data arrays prior to intensity correction.
+    # \date       2016-11-05 23:07:37+0000
+    #
+    # \param      self  The object
+    #
+    # \return     The data arrays prior to intensity correction.
+    #
+    def _get_data_arrays_prior_to_intensity_correction(self):
+        
+        ## Get required data arrays for intensity correction
+        nda = sitk.GetArrayFromImage(self._stack.sitk)
+        nda_masked = np.array(nda)
+        nda_reference_masked = sitk.GetArrayFromImage(self._reference.sitk)
+
+        ## Mask them if mask is given
+        if self._use_reference_mask:
+            nda_masked = nda_masked * sitk.GetArrayFromImage(self._reference.sitk_mask)
+
+        if self._use_reference_mask:
+            nda_reference_masked = nda_reference_masked * sitk.GetArrayFromImage(self._reference.sitk_mask)
+
+        return nda, nda_masked, nda_reference_masked
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Creates a Stack object from corrected intensity array with
+    #             same image header information as input \p stack.
+    # \date       2016-11-05 23:15:33+0000
+    #
+    # \param      self  The object
+    # \param      nda   The nda
+    #
+    # \return     Stack object with image containing the given array
+    #             information.
+    #
+    def _create_stack_from_corrected_intensity_array(self, nda):
 
         ## Convert back to image with correct header
-        image_sitk = sitk.GetImageFromArray(self._nda)
-        image_sitk.CopyInformation(self._image_sitk)
+        image_sitk = sitk.GetImageFromArray(nda)
+        image_sitk.CopyInformation(self._stack.sitk)
 
-        self._image_sitk = image_sitk
-
-
-    ##-------------------------------------------------------------------------
-    # \brief      Run intensity correction in case image_sitk and
-    #             reference_sitk are given
-    # \date       2016-11-01 22:02:28+0000
-    #
-    # Intensity correction applies a linear model to align the image with the
-    # reference, i.e. image*c1 + c0 = reference. Afterwards the lower
-    # intensities of the corrected image are thresholded to the given
-    # percentile.
-    #
-    # \param      self  The object
-    #
-    # \post       self._image_sitk is updated
-    #
-    def _run_intensity_correction_with_reference(self):
-
-        shape = self._image_sitk.GetSize()
-
-        self._nda  = sitk.GetArrayFromImage(self._image_sitk)
-        nda_ref = sitk.GetArrayFromImage(self._refernce_sitk)
-        
-        A = np.ones((shape[0]*shape[1],2))
+        return st.Stack.from_sitk_image(image_sitk, self._stack.get_filename(), self._stack.sitk_mask)
 
 
-        ## 1st round: Get bias and slopes:
-        for i in range(0, shape[2]):
-            y = nda_ref[i,:,:].flatten()
-            A[:,0] = self._nda[i,:,:].flatten()
-
-            B = np.linalg.inv(A.transpose().dot(A)).dot(A.transpose())
-            c1, c0 = B.dot(y)
-
-            if self._use_verbose:
-                print("Slice %2d/%d: (c1, c0) = (%.3f, %.3f)" %(i, shape[2]-2, c1, c0))
-
-            self._nda[i,:,:] = self._nda[i,:,:]*c1 + c0
-
-        ## Cap lower intensity to given percentile value
-        self._run_self_intensity_correction_array()
-
-        ## 2nd round: Get slope after intensities have been offsetted
-        for i in range(0, shape[2]):
-            y = nda_ref[i,:,:].flatten()
-            A = self._nda[i,:,:].flatten()
-
-            B = A/A.dot(A)
-            c1 = B.dot(y)
-
-            if self._use_verbose:
-                print("Slice %2d/%d: c1 = %.3f" %(i, shape[2]-2, c1))
-
-            self._nda[i,:,:] = self._nda[i,:,:]*c1
-
-
-        ## Convert back to image with correct header
-        image_sitk = sitk.GetImageFromArray(self._nda)
-        image_sitk.CopyInformation(self._image_sitk)
-
-        self._image_sitk = image_sitk
-
-
-
-    # ##-----------------------------------------------------------------------------
-    # # \brief      Correct intensity values based on linear model. Does not really
-    # #             work well
-    # # \date       2016-09-19 18:54:51+0100
-    # #
-    # # \param      nda   The nda
-    # #
-    # # \return     Corrected 3D numpy array
-    # #
-    # def _run_self_intensity_correction_array_linear_model(nda):
-    #     N_slices = nda.shape[0]
-    #     plot_figure = 0
-
-    #     # nda_corrected = np.array(nda)
-    #     inplane_shape = nda[0,:,:].shape
-
-    #     for j in range(N_slices-2,-1,-1):
-    #         i_ref = j+1
-    #     # for j in range(1, N_slices):
-    #         # i_ref = j-1
-    #         x = nda[i_ref,:,:].flatten()
-    #         y = nda[j,:,:].flatten()
-
-    #         c0 = 0
-    #         c1 = x.dot(y)/(y.dot(y))
-    #         print("i = " + str(j) + ": Estimated correction coefficients are [c1, c0] = " + str([c1, c0]))
-
-    #         p = np.poly1d((c1,c0))
-            
-    #         y_corr = p(y)
-
-    #         nda[j,:,:] = y_corr.reshape(inplane_shape)
-
-    #         if plot_figure:
-    #             fig = plt.figure(1)
-    #             fig.clf()
-
-    #             x_int = np.array([x.min(), x.max()])
-
-    #             ax = fig.add_subplot(1,2,1)
-    #             ax.plot(x, y, 'ro', label="original")
-    #             ax.plot(x, y_corr, 'gs', label="corrected")
-    #             ax.plot(x_int, p(x_int), 'b-', label="fit")
-    #             ax.set_aspect('equal', adjustable='box')
-    #             ax.grid()
-    #             legend = ax.legend(loc='center', shadow=False, bbox_to_anchor=(0.5, 1.2), ncol=3)
-                
-    #             ax = fig.add_subplot(1,2,2)
-    #             H, xedges, yedges = np.histogram2d(x, y)
-    #             ax.imshow(H, interpolation='nearest', origin='low', extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
-    #             ax.set_aspect('equal', adjustable='box')
-
-    #             plt.xlabel("slice j-1")
-    #             plt.ylabel("slice j")
-
-    #             plt.draw()
-    #             plt.pause(0.5) ## important! otherwise fig is not shown. Also needs plt.show() at the end of the file to keep figure open
-    #             programPause = raw_input("Press the <ENTER> key to continue...")
-
-    #     return nda

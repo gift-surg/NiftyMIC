@@ -667,6 +667,32 @@ def show_sitk_image(image_sitk, title="test", segmentation=None):
     os.system(cmd)
 
 
+##-----------------------------------------------------------------------------
+# \brief      Visualize a list of Stack objects.
+# \date       2016-11-05 23:18:23+0000
+#
+# \param      stacks        List of stack objects
+# \param      segmentation  Stack containing the desired segmentation.
+#
+def show_stacks(stacks, segmentation=None):
+
+    N_stacks = len(stacks)
+    images_sitk = [None]*N_stacks
+    titles = [None]*N_stacks
+
+    for i in range(0, N_stacks):
+        images_sitk[i] = stacks[i].sitk
+        titles[i] = stacks[i].get_filename()
+
+    if segmentation is not None:
+        segmentation_sitk = segmentation.sitk_mask
+
+    else:
+        segmentation_sitk = None
+
+    show_sitk_image(images_sitk, titles, segmentation_sitk)
+
+
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
 #  \param[in] image_itk image to show as itk.object
 #  \param[in] segmentation as itk.image object

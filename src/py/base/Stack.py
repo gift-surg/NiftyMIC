@@ -190,7 +190,7 @@ class Stack:
         stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
 
         if filename is None:
-            stack._filename = "copy_" + stack_to_copy.get_filename()
+            stack._filename = stack_to_copy.get_filename()
         else:
             stack._filename = filename
         stack._dir = stack_to_copy.get_directory()
@@ -337,6 +337,53 @@ class Stack:
 
 
     ##-------------------------------------------------------------------------
+    # \brief      Apply transform on stack and all its slices
+    # \date       2016-11-05 19:15:57+0000
+    #
+    # \param      self                   The object
+    # \param      affine_transform_sitk  The affine transform sitk
+    #
+    def update_motion_correction(self, affine_transform_sitk):
+
+        ## Apply transform to 3D image / stack of slices
+        self.sitk = sitkh.get_transformed_image_sitk(self.sitk, affine_transform_sitk)
+        
+        ## Update header information of other associated images
+        origin = self.sitk.GetOrigin()
+        direction = self.sitk.GetDirection()
+
+        self.sitk_mask.SetOrigin(orign)
+        self.sitk_mask.SetDirection(direction)
+
+        self.itk.SetOrigin(orign)
+        self.itk.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+
+        self.itk_mask.SetOrigin(orign)
+        self.itk_mask.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+
+        ## Update slices
+        for i in range(0, self._N_slices):
+            self._slices[i].update_motion_correction(affine_transform_sitk)
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Apply transforms on all the slices of the stack. Stack itself
+    #             is not getting transformed
+    # \date       2016-11-05 19:16:33+0000
+    #
+    # \param      self                    The object
+    # \param      affine_transforms_sitk  The affine transforms sitk
+    #
+    def update_motion_correction_of_slices(self, affine_transforms_sitk):
+        if type(affine_transforms_sitk) is list and len(affine_transforms_sitk) is self._N_slices:
+            for i in range(0, self._N_slices):
+                self._slices[i].update_motion_correction(affine_transforms_sitk[i])
+                    
+        else:
+            raise ValueErr("Number of affine transforms does not match the number of slices")
+
+
+    ##-------------------------------------------------------------------------
     # \brief      Gets the resampled stack from slices.
     # \date       2016-09-26 17:28:43+0100
     #
@@ -346,7 +393,7 @@ class Stack:
     # by a given resampling_pace). Overlapping slices get averaged.
     #
     # \param      self              The object
-    # \param      resampling_space  Define the space to which the stack of
+    # \param      resampling_grid  Define the space to which the stack of
     #                               slices shall be resampled; given as Stack
     #                               object
     # \param      interpolator      The interpolator
@@ -354,7 +401,7 @@ class Stack:
     # \return     resampled stack based on current position of slices as Stack
     #             object
     #
-    def get_resampled_stack_from_slices(self, resampling_space=None, interpolator="NearestNeighbor"):
+    def get_resampled_stack_from_slices(self, resampling_grid=None, interpolator="NearestNeighbor"):
 
          ## Choose interpolator
         try:
@@ -362,30 +409,35 @@ class Stack:
         except:
             raise ValueError("Error: interpolator is not known")
 
-        ## Use resampling space defined by original volumetric image
-        if resampling_space is None:
-            resampling_space = Stack.from_sitk_image(self.sitk)
+        ## Use resampling grid defined by original volumetric image
+        if resampling_grid is None:
+            resampling_grid = Stack.from_sitk_image(self.sitk)
 
-        ## Use resampling space defined by first slice (which might be shifted already)
-        elif resampling_space in ["first_slice"]:
-            stack_sitk = sitk.Image(self.sitk)
-            foo_sitk = sitk.Image(self._slices[0].sitk)
-            stack_sitk.SetDirection(foo_sitk.GetDirection())
-            stack_sitk.SetOrigin(foo_sitk.GetOrigin())
-            stack_sitk.SetDirection(foo_sitk.GetDirection())
-            resampling_space = Stack.from_sitk_image(stack_sitk)
+        else:
+            ## Use resampling grid defined by first slice (which might be shifted already)
+            if resampling_grid in ["on_first_slice"]:
+                stack_sitk = sitk.Image(self.sitk)
+                foo_sitk = sitk.Image(self._slices[0].sitk)
+                stack_sitk.SetDirection(foo_sitk.GetDirection())
+                stack_sitk.SetOrigin(foo_sitk.GetOrigin())
+                stack_sitk.SetSpacing(foo_sitk.GetSpacing())
+                resampling_grid = Stack.from_sitk_image(stack_sitk)
+
+            ## Use resampling grid defined by given sitk.Image
+            elif type(resampling_grid) is sitk.Image:
+                resampling_grid = Stack.from_sitk_image(resampling_grid)
 
         ## Get shape of image data array
-        nda_shape = resampling_space.sitk.GetSize()[::-1]
+        nda_shape = resampling_grid.sitk.GetSize()[::-1]
 
         ## Create zero image and its mask aligned with sitk.Image
         nda = np.zeros(nda_shape)
         
         stack_resampled_sitk = sitk.GetImageFromArray(nda)
-        stack_resampled_sitk.CopyInformation(resampling_space.sitk)
+        stack_resampled_sitk.CopyInformation(resampling_grid.sitk)
 
         stack_resampled_sitk_mask = sitk.GetImageFromArray(nda.astype("uint8"))
-        stack_resampled_sitk_mask.CopyInformation(resampling_space.sitk_mask)
+        stack_resampled_sitk_mask.CopyInformation(resampling_grid.sitk_mask)
 
         ## Create helper used for normalization at the end
         nda_stack_covered_indices = np.zeros(nda_shape)
@@ -399,19 +451,19 @@ class Stack:
             ## Resample slice and its mask to stack space
             stack_resampled_slice_sitk = sitk.Resample(
                 slice.sitk, 
-                resampling_space.sitk, 
+                resampling_grid.sitk, 
                 sitk.Euler3DTransform(), 
                 interpolator, 
                 default_pixel_value, 
-                resampling_space.sitk.GetPixelIDValue())
+                resampling_grid.sitk.GetPixelIDValue())
 
             stack_resampled_slice_sitk_mask = sitk.Resample(
                 slice.sitk_mask, 
-                resampling_space.sitk_mask, 
+                resampling_grid.sitk_mask, 
                 sitk.Euler3DTransform(), 
                 sitk.sitkNearestNeighbor, 
                 default_pixel_value, 
-                resampling_space.sitk_mask.GetPixelIDValue())
+                resampling_grid.sitk_mask.GetPixelIDValue())
 
             ## Add resampled slice and mask to stack space
             stack_resampled_sitk += stack_resampled_slice_sitk
@@ -429,7 +481,7 @@ class Stack:
 
         ## Normalize resampled image
         stack_normalization = sitk.GetImageFromArray(nda_stack_covered_indices)
-        stack_normalization.CopyInformation(resampling_space.sitk)
+        stack_normalization.CopyInformation(resampling_grid.sitk)
         stack_resampled_sitk /= stack_normalization
 
         ## Get valid binary mask
