@@ -289,6 +289,11 @@ class Stack:
         os.system(cmd)
 
 
+    def show_slices(self):
+        sitkh.plot_stack_of_slices(self.sitk, cmap="Greys_r", title=self.get_filename())
+
+
+
     ## Write information of Stack to HDD to given directory: 
     #  - sitk.Image object as entire volume
     #  - each single slice with its associated spatial transformation (optional)

@@ -11,10 +11,6 @@ import numpy as np
 import unittest
 import sys
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
-
 ## Import modules from src-folder
 import base.Stack as st
 import reconstruction.solver.DifferentialOperations as diffop
@@ -22,7 +18,7 @@ import reconstruction.solver.DifferentialOperations as diffop
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
-class Stack(unittest.TestCase):
+class TestDifferentialOperations(unittest.TestCase):
 
     ## Specify input data
     dir_test_data = "../../../test-data/"
@@ -46,8 +42,8 @@ class Stack(unittest.TestCase):
         Dx = differential_operations.Dx(nda_x)
         DTy = differential_operations.Dx_adj(nda_y)
         abs_diff = np.abs( np.sum(Dx*nda_y) - np.sum(DTy*nda_x) )
-        print("Periodic boundary conditions (wrap)")
-        print("\tx-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
+        # print("Periodic boundary conditions (wrap)")
+        # print("\tx-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
 
         self.assertEqual(np.around(
             abs_diff
@@ -57,7 +53,7 @@ class Stack(unittest.TestCase):
         Dx = differential_operations.Dy(nda_x)
         DTy = differential_operations.Dy_adj(nda_y)
         abs_diff = np.abs( np.sum(Dx*nda_y) - np.sum(DTy*nda_x) )
-        print("\ty-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
+        # print("\ty-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
 
         self.assertEqual(np.around(
             abs_diff
@@ -67,7 +63,7 @@ class Stack(unittest.TestCase):
         Dx = differential_operations.Dz(nda_x)
         DTy = differential_operations.Dz_adj(nda_y)
         abs_diff = np.abs( np.sum(Dx*nda_y) - np.sum(DTy*nda_x) )
-        print("\tz-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
+        # print("\tz-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
 
         self.assertEqual(np.around(
             abs_diff
@@ -88,8 +84,8 @@ class Stack(unittest.TestCase):
         Dx = differential_operations.Dx(nda_x)
         DTy = differential_operations.Dx_adj(nda_y)
         abs_diff = np.abs( np.sum(Dx*nda_y) - np.sum(DTy*nda_x) )
-        print("Zero boundary conditions (constant)")
-        print("\tx-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
+        # print("Zero boundary conditions (constant)")
+        # print("\tx-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
 
         self.assertEqual(np.around(
             abs_diff
@@ -99,7 +95,7 @@ class Stack(unittest.TestCase):
         Dx = differential_operations.Dy(nda_x)
         DTy = differential_operations.Dy_adj(nda_y)
         abs_diff = np.abs( np.sum(Dx*nda_y) - np.sum(DTy*nda_x) )
-        print("\ty-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
+        # print("\ty-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
 
         self.assertEqual(np.around(
             abs_diff
@@ -109,7 +105,7 @@ class Stack(unittest.TestCase):
         Dx = differential_operations.Dz(nda_x)
         DTy = differential_operations.Dz_adj(nda_y)
         abs_diff = np.abs( np.sum(Dx*nda_y) - np.sum(DTy*nda_x) )
-        print("\tz-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
+        # print("\tz-derivative: |(Dx,y) - (x,D'y)| = %s" %(abs_diff))
 
         self.assertEqual(np.around(
             abs_diff

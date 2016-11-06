@@ -29,6 +29,7 @@ from modules.TestDifferentialOperations import *
 # from modules.TestBrainStripping import *
 # from modules.TestStackInPlaneAlignment import *
 # from modules.TestRegistrationITK import *
+from modules.TestLinearImageQualityTransfer import *
 
 
 """ ###########################################################################

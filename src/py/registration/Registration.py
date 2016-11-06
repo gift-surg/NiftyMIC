@@ -262,13 +262,14 @@ class Registration(object):
 
     ##-------------------------------------------------------------------------
     # \brief      Compute residual y_k - A_k(theta)x based on parameters
-    #             (theta). 
+    #             (theta).
     # \date       2016-08-03 00:12:43+0100
     #
     # \param[in]  self        The object
     # \param[in]  parameters  The parameters
     #
-    # \return     The residual data fit as Nk-array and its Jacobian as (Nk x 6)-array
+    # \return     The residual data fit as Nk-array, i.e. the number of voxels
+    #             of slice y_k.
     #
     def _get_residual_data_fit(self, parameters):
 

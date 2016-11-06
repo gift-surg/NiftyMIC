@@ -13,6 +13,9 @@ import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
 
+## Import modules
+import utilities.PythonHelper as ph
+
 ## Import modules from src-folder
 # import utilities.SimpleITKHelper as sitkh
 
@@ -611,6 +614,19 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
         plt.show(block=False)       # does not pause, but needs plt.show() at end 
                                     # of file to be visible
     return fig
+
+
+##-----------------------------------------------------------------------------
+# \brief      Plot slices of stack separately
+# \date       2016-11-06 01:49:21+0000
+#
+# \param      stack_sitk  sitk.Image object to be plotted
+# \param      cmap        Color map "Greys_r", "jet", etc.
+# \param      title       The title
+#
+def plot_stack_of_slices(stack_sitk, cmap="Greys_r", title="slice"):
+    nda = sitk.GetArrayFromImage(stack_sitk)
+    ph.plot_numpy_array_of_slices(nda, cmap=cmap, title=title)
 
 
 ##-----------------------------------------------------------------------------
