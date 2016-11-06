@@ -43,15 +43,15 @@ class Stack:
 
         ## Append stacks as SimpleITK and ITK Image objects
         stack.sitk = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
-        stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
+        stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         ## Append masks (either provided or binary mask)
         if suffix_mask is not None and os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
             stack.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
-            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
         else:
             stack.sitk_mask = stack._generate_binary_mask()
-            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
         ## Extract all slices and their masks from the stack and store them 
         stack._N_slices = stack.sitk.GetSize()[-1]
@@ -76,15 +76,15 @@ class Stack:
 
         ## Get 3D images
         stack.sitk = sitk.ReadImage(dir_input + prefix_stack + ".nii.gz", sitk.sitkFloat64)
-        stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
+        stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         ## Append masks (either provided or binary mask)
         if suffix_mask is not None and os.path.isfile(dir_input + prefix_stack + suffix_mask + ".nii.gz"):
             stack.sitk_mask = sitk.ReadImage(dir_input + prefix_stack + suffix_mask + ".nii.gz", sitk.sitkUInt8)
-            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
         else:
             stack.sitk_mask = stack._generate_binary_mask()
-            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
         ## Get slices
         stack._N_slices = stack.sitk.GetDepth()
@@ -122,7 +122,7 @@ class Stack:
             stack.itk = None
         else:
             stack.sitk = stack_sitk
-            stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
+            stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         stack._N_slices = len(slices)
         stack._slices = slices
@@ -130,10 +130,10 @@ class Stack:
         ## Append masks (if provided)
         if mask_sitk is not None:
             stack.sitk_mask = mask_sitk
-            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
         else:
             stack.sitk_mask = stack._generate_binary_mask()
-            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
         return stack
 
@@ -151,7 +151,7 @@ class Stack:
         stack = cls()
         
         stack.sitk = sitk.Image(image_sitk)
-        stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
+        stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         if name is None:
             stack._filename = "unknown"
@@ -162,10 +162,10 @@ class Stack:
         ## Append masks (if provided)
         if image_sitk_mask is not None:
             stack.sitk_mask = image_sitk_mask
-            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
         else:
             stack.sitk_mask = stack._generate_binary_mask()
-            stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
         ## Extract all slices and their masks from the stack and store them 
         stack._N_slices = stack.sitk.GetSize()[-1]
@@ -184,10 +184,10 @@ class Stack:
         
         ## Copy image stack and mask
         stack.sitk = sitk.Image(stack_to_copy.sitk)
-        stack.itk = sitkh.convert_sitk_to_itk_image(stack.sitk)
+        stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         stack.sitk_mask = sitk.Image(stack_to_copy.sitk_mask)
-        stack.itk_mask = sitkh.convert_sitk_to_itk_image(stack.sitk_mask)
+        stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
         if filename is None:
             stack._filename = stack_to_copy.get_filename()
@@ -351,7 +351,7 @@ class Stack:
     def update_motion_correction(self, affine_transform_sitk):
 
         ## Apply transform to 3D image / stack of slices
-        self.sitk = sitkh.get_transformed_image_sitk(self.sitk, affine_transform_sitk)
+        self.sitk = sitkh.get_transformed_sitk_image(self.sitk, affine_transform_sitk)
         
         ## Update header information of other associated images
         origin = self.sitk.GetOrigin()
@@ -361,10 +361,10 @@ class Stack:
         self.sitk_mask.SetDirection(direction)
 
         self.itk.SetOrigin(orign)
-        self.itk.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+        self.itk.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
 
         self.itk_mask.SetOrigin(orign)
-        self.itk_mask.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+        self.itk_mask.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
 
         ## Update slices
         for i in range(0, self._N_slices):

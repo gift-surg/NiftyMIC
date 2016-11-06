@@ -299,7 +299,7 @@ class RegistrationSimpleITK:
             gaussian_yvv.Update()
             moving_itk = gaussian_yvv.GetOutput()
             moving_itk.DisconnectPipeline()
-            moving_sitk = sitkh.convert_itk_to_sitk_image(moving_itk)
+            moving_sitk = sitkh.get_sitk_from_itk_image(moving_itk)
 
         else:
             moving_sitk = moving.sitk

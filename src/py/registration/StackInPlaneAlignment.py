@@ -331,7 +331,7 @@ class StackInPlaneAlignment:
             rigid_registration_transform_2D_sitk = registration_2D.get_registration_transform_sitk()
 
             ## Debug
-            # foo_2D_sitk = sitkh.get_transformed_image_sitk(slice_2D_fixed.sitk, rigid_registration_transform_2D_sitk)
+            # foo_2D_sitk = sitkh.get_transformed_sitk_image(slice_2D_fixed.sitk, rigid_registration_transform_2D_sitk)
             # foo_2D_sitk = sitk.Resample(foo_2D_sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
             # before_2D_sitk = sitk.Resample(slice_2D_fixed.sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
             # sitkh.show_sitk_image([slice_2D_moving.sitk, before_2D_sitk, foo_2D_sitk], segmentation=slice_2D_moving.sitk_mask, title=["moving","fixed_before", "fixed_after"])
@@ -414,7 +414,7 @@ class StackInPlaneAlignment:
             # spacing *= scale
             # slice_2D_fixed_scaled.SetSpacing(spacing)
             
-            # foo_2D_sitk = sitkh.get_transformed_image_sitk(slice_2D_moving.sitk, sitk.Euler2DTransform(rigid_registration_transform_2D_sitk.GetInverse()))
+            # foo_2D_sitk = sitkh.get_transformed_sitk_image(slice_2D_moving.sitk, sitk.Euler2DTransform(rigid_registration_transform_2D_sitk.GetInverse()))
 
             # foo_2D_sitk_resample0 = sitk.Resample(foo_2D_sitk, slice_2D_fixed_scaled, sitk.Euler2DTransform())
             # foo_2D_sitk_resample1 = sitk.Resample(slice_2D_moving.sitk, slice_2D_fixed.sitk, similarity_registration_transform_2D_sitk)
@@ -439,8 +439,8 @@ class StackInPlaneAlignment:
 
             self._slices[i].sitk.SetSpacing(spacing)
             self._slices[i].sitk_mask.SetSpacing(spacing)
-            self._slices[i].itk = sitkh.convert_sitk_to_itk_image(self._slices[i].sitk)
-            self._slices[i].itk_mask = sitkh.convert_sitk_to_itk_image(self._slices[i].sitk_mask)
+            self._slices[i].itk = sitkh.get_itk_from_sitk_image(self._slices[i].sitk)
+            self._slices[i].itk_mask = sitkh.get_itk_from_sitk_image(self._slices[i].sitk_mask)
 
             ## Update affine transform (including scaling information)
             affine_transform_with_scale_sitk = sitk.AffineTransform(3)
@@ -502,7 +502,7 @@ class StackInPlaneAlignment:
             rigid_registration_transform_2D_sitk = registration_2D.get_registration_transform_sitk()
 
             ## Debug
-            # foo_2D_sitk = sitkh.get_transformed_image_sitk(slice_2D_fixed.sitk, rigid_registration_transform_2D_sitk)
+            # foo_2D_sitk = sitkh.get_transformed_sitk_image(slice_2D_fixed.sitk, rigid_registration_transform_2D_sitk)
             # foo_2D_sitk = sitk.Resample(foo_2D_sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
             # before_2D_sitk = sitk.Resample(slice_2D_fixed.sitk, slice_2D_moving.sitk, sitk.Euler2DTransform(), sitk.sitkNearestNeighbor, 0.0, slice_2D_moving.sitk.GetPixelIDValue())
             # sitkh.show_sitk_image([slice_2D_moving.sitk, before_2D_sitk, foo_2D_sitk],["moving","fixed_before", "fixed_after"])

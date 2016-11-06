@@ -262,7 +262,7 @@ class Registration(object):
 
     ##-------------------------------------------------------------------------
     # \brief      Compute residual y_k - A_k(theta)x based on parameters
-    #             (theta).
+    #             theta.
     # \date       2016-08-03 00:12:43+0100
     #
     # \param[in]  self        The object
@@ -356,7 +356,7 @@ class Registration(object):
         ## Set output to transformed fixed space
         self._filter_oriented_Gaussian.SetOutputOrigin(origin_sitk)
         self._filter_oriented_Gaussian.SetOutputSpacing(self._fixed_spacing)
-        self._filter_oriented_Gaussian.SetOutputDirection(sitkh.get_itk_direction_form_sitk_direction(direction_sitk))
+        self._filter_oriented_Gaussian.SetOutputDirection(sitkh.get_itk_from_sitk_direction(direction_sitk))
         self._filter_oriented_Gaussian.SetSize(self._fixed_size)
         self._filter_oriented_Gaussian.SetUseJacobian(use_jacobian)
         self._filter_oriented_Gaussian.UpdateLargestPossibleRegion()

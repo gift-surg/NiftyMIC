@@ -66,7 +66,7 @@ class IntensityNormalization:
             gaussian_yvv.Update()
             stack_smoothed_itk = gaussian_yvv.GetOutput()
             stack_smoothed_itk.DisconnectPipeline()
-            stack_smoothed_sitk = sitkh.convert_itk_to_sitk_image(stack_smoothed_itk)
+            stack_smoothed_sitk = sitkh.get_sitk_from_itk_image(stack_smoothed_itk)
 
             stacks_resampled[i] = st.Stack.from_sitk_image(stack_smoothed_sitk,"test_"+str(i))
 
@@ -143,7 +143,7 @@ class IntensityNormalization:
                 slice = slices[j]
 
                 slice.sitk = slice.sitk*c1
-                slice.itk = sitkh.convert_sitk_to_itk_image(slice.sitk)
+                slice.itk = sitkh.get_itk_from_sitk_image(slice.sitk)
 
 
 

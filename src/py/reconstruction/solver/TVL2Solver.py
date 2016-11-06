@@ -258,7 +258,7 @@ class TVL2Solver(Solver):
 
         ## Update volume
         self._HR_volume.itk = self._get_itk_image_from_array_vec( HR_nda.flatten(), self._HR_volume.itk )
-        self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( self._HR_volume.itk )
+        self._HR_volume.sitk = sitkh.get_sitk_from_itk_image( self._HR_volume.itk )
 
 
     ##-------------------------------------------------------------------------

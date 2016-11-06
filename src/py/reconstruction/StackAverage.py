@@ -127,7 +127,7 @@ class StackAverage:
         helper = sitk.GetImageFromArray(array)
         helper.CopyInformation(self._averaged_volume.sitk)
         self._averaged_volume.sitk = helper
-        self._averaged_volume.itk = sitkh.convert_sitk_to_itk_image(helper)
+        self._averaged_volume.itk = sitkh.get_itk_from_sitk_image(helper)
 
         ## Update HR volume (sitk image mask)
         # helper = sitk.GetImageFromArray(array_mask)

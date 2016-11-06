@@ -271,7 +271,7 @@ class InverseProblemSolver:
 
             ## After reconstruction: Update member attribute
             self._HR_volume.itk = HR_volume_itk
-            self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( HR_volume_itk )
+            self._HR_volume.sitk = sitkh.get_sitk_from_itk_image( HR_volume_itk )
 
 
         ## TK1-regularization
@@ -340,7 +340,7 @@ class InverseProblemSolver:
 
             ## After reconstruction: Update member attribute
             self._HR_volume.itk = HR_volume_itk
-            self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( HR_volume_itk )
+            self._HR_volume.sitk = sitkh.get_sitk_from_itk_image( HR_volume_itk )
 
 
         ## TV-L2-regularization
@@ -526,7 +526,7 @@ class InverseProblemSolver:
         ## TODO: Write itkBinaryFunctorImageFilter to multiply quicker
         ## Also, by changing to 
         ## itk.MultiplyImageFilter[itk.Image[itk.UC,3], image_type, image_type].New()
-        ## the mask could be considered a different type, see sitkh.convert_sitk_to_itk_image
+        ## the mask could be considered a different type, see sitkh.get_itk_from_sitk_image
         ## (which in turn could help mask-based registration with ITK objects)
         # multiplier = itk.MultiplyImageFilter[itk.Image[itk.UC,3], image_type, image_type].New()
         multiplier = itk.MultiplyImageFilter[image_type, image_type, image_type].New()
@@ -1085,7 +1085,7 @@ class InverseProblemSolver:
 
         ## Update volume
         self._HR_volume.itk = HR_volume_itk
-        self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( HR_volume_itk )
+        self._HR_volume.sitk = sitkh.get_sitk_from_itk_image( HR_volume_itk )
 
         return HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda
         

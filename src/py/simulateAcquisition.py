@@ -41,7 +41,7 @@ import validation.ValidationRegistration as vreg
 #  \return Rigid registration as sitk.Euler3DTransform object
 def get_rigid_registration_transform_sitk(fixed, moving, display_registration_info=0):
 
-    # moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
+    # moving_3D_sitk = sitkh.get_sitk_from_itk_image(moving_3D_itk)
     moving_3D_sitk = moving.sitk
 
     ## Instantiate interface method to the modular ITKv4 registration framework

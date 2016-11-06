@@ -36,26 +36,26 @@ class Slice:
 
         ## Append stacks as SimpleITK and ITK Image objects
         slice.sitk = slice_sitk
-        slice.itk = sitkh.convert_sitk_to_itk_image(slice_sitk)
+        slice.itk = sitkh.get_itk_from_sitk_image(slice_sitk)
 
         ## Append masks (if provided)
         if slice_sitk_mask is not None:
             slice.sitk_mask = slice_sitk_mask
-            slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice_sitk_mask)
+            slice.itk_mask = sitkh.get_itk_from_sitk_image(slice_sitk_mask)
         else:
             slice.sitk_mask = slice._generate_binary_mask()
-            slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
+            slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
 
         # slice._sitk_upsampled = None
 
         ## HACK (for current Slice-to-Volume Registration)
         #  See class SliceToVolumeRegistration
         # slice._sitk_upsampled = slice._get_upsampled_isotropic_resolution_slice(slice_sitk)
-        # slice._itk_upsampled = sitkh.convert_sitk_to_itk_image(slice._sitk_upsampled)
+        # slice._itk_upsampled = sitkh.get_itk_from_sitk_image(slice._sitk_upsampled)
 
         # if slice_sitk_mask is not None:
         #     slice._sitk_mask_upsampled = slice._get_upsampled_isotropic_resolution_slice(slice_sitk_mask)
-        #     slice._itk_mask_upsampled = sitkh.convert_sitk_to_itk_image(slice._sitk_mask_upsampled)
+        #     slice._itk_mask_upsampled = sitkh.get_itk_from_sitk_image(slice._sitk_mask_upsampled)
         # else:
         #     slice._sitk_mask_upsampled = None
         #     slice._itk_mask_upsampled = None
@@ -96,15 +96,15 @@ class Slice:
 
         ## Append stacks as SimpleITK and ITK Image objects
         slice.sitk = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
-        slice.itk = sitkh.convert_sitk_to_itk_image(slice.sitk)
+        slice.itk = sitkh.get_itk_from_sitk_image(slice.sitk)
 
         ## Append masks (if provided)
         if suffix_mask is not None and os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
             slice.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
-            slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
+            slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
         else:
             slice.sitk_mask = slice._generate_binary_mask()
-            slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
+            slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
 
         # slice._sitk_upsampled = None
 
@@ -132,10 +132,10 @@ class Slice:
         
         ## Copy image slice and mask
         slice.sitk = sitk.Image(slice_to_copy.sitk)
-        slice.itk = sitkh.convert_sitk_to_itk_image(slice.sitk)
+        slice.itk = sitkh.get_itk_from_sitk_image(slice.sitk)
 
         slice.sitk_mask = sitk.Image(slice_to_copy.sitk_mask)
-        slice.itk_mask = sitkh.convert_sitk_to_itk_image(slice.sitk_mask)
+        slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
         
         slice._filename = "copy_" + slice_to_copy.get_filename()
         slice._slice_number = slice_to_copy.get_slice_number()
@@ -311,7 +311,7 @@ class Slice:
         self.sitk.SetDirection(direction)
 
         self.itk.SetOrigin(origin)
-        self.itk.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+        self.itk.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
 
         ## Update image mask objects
         if self.sitk_mask is not None:
@@ -319,7 +319,7 @@ class Slice:
             self.sitk_mask.SetDirection(direction)
 
             self.itk_mask.SetOrigin(origin)
-            self.itk_mask.SetDirection(sitkh.get_itk_direction_form_sitk_direction(direction))
+            self.itk_mask.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
             
 
     # ## Upsample slices in k-direction to in-plane resolution.

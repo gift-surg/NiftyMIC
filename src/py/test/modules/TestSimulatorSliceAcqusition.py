@@ -161,7 +161,7 @@ class SliceAcqusition(unittest.TestCase):
             resampler.Update()
 
             HR_volume_resampled_itk = resampler.GetOutput()
-            HR_volume_resampled_sitk = sitkh.convert_itk_to_sitk_image(HR_volume_resampled_itk)
+            HR_volume_resampled_sitk = sitkh.get_sitk_from_itk_image(HR_volume_resampled_itk)
 
         self.assertEqual(np.round(
             np.linalg.norm(sitk.GetArrayFromImage(stacks_simulated[i].sitk - HR_volume_resampled_sitk))
@@ -316,7 +316,7 @@ class SliceAcqusition(unittest.TestCase):
                 resampler.Update()
 
                 HR_volume_resampled_slice_itk = resampler.GetOutput()
-                HR_volume_resampled_slice_sitk = sitkh.convert_itk_to_sitk_image(HR_volume_resampled_slice_itk)
+                HR_volume_resampled_slice_sitk = sitkh.get_sitk_from_itk_image(HR_volume_resampled_slice_itk)
 
                 # HR_volume_resampled_slice_sitk = sitk.Resample(
                 #     HR_volume.sitk, slice.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice.sitk.GetPixelIDValue()

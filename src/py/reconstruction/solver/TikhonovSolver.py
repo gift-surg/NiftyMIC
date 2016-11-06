@@ -206,7 +206,7 @@ class TikhonovSolver(Solver):
 
         ## After reconstruction: Update member attribute
         self._HR_volume.itk = self._get_itk_image_from_array_vec( HR_nda_vec, self._HR_volume.itk )
-        self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( self._HR_volume.itk )
+        self._HR_volume.sitk = sitkh.get_sitk_from_itk_image( self._HR_volume.itk )
 
 
     ## Compute

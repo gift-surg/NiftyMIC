@@ -16,23 +16,29 @@ import matplotlib.pyplot as plt
 ## Import modules
 # import utilities.SimpleITKHelper as sitkh
 
+##-----------------------------------------------------------------------------
+# \brief      Wait for <ENTER> to proceed the execution
+# \date       2016-11-06 15:41:43+0000
+#
 def pause():
     programPause = raw_input("Press the <ENTER> key to continue ...")
 
 
 ##-----------------------------------------------------------------------------
-# \brief      Plot numpy array of slices, i.e. 3D volume slice by slice next to
-#             each other
+# \brief      Plot 3D numpy array slice by slice next to each other
 # \date       2016-11-06 01:39:28+0000
 #
-# \param      nda    numpy data array in format (z,y,x) as it is given after
-#                    sitk.GetArrayFromImage
-# \param      title  The title
-# \param      cmap   Color map "Greys_r", "jet", etc.
+# All slices in the x-y-plane are plotted. The number of slices is given by the
+# dimension in the z-axis.
 #
-def plot_numpy_array_of_slices(nda, title="image", cmap="Greys_r"):
+# \param      nda3D_zyx  3D numpy data array in format (z,y,x) as it is given
+#                        after sitk.GetArrayFromImage for instance
+# \param      title      The title
+# \param      cmap       Color map "Greys_r", "jet", etc.
+#
+def plot_3D_array_slice_by_slice(nda3D_zyx, title="image", cmap="Greys_r"):
 
-    shape = nda.shape
+    shape = nda3D_zyx.shape
     N_slices = shape[0]
 
     ## Define the grid to arrange the slices
@@ -44,7 +50,7 @@ def plot_numpy_array_of_slices(nda, title="image", cmap="Greys_r"):
     for i in range(0, N_slices):
         
         plt.subplot(grid[0], grid[1], ctr)
-        plt.imshow(nda[i,:,:], cmap=cmap)
+        plt.imshow(nda3D_zyx[i,:,:], cmap=cmap)
         plt.title(title+"_"+str(i))
         plt.axis('off')
         
@@ -55,16 +61,14 @@ def plot_numpy_array_of_slices(nda, title="image", cmap="Greys_r"):
 
 
 ##-----------------------------------------------------------------------------
-# \brief      { function_description }
+# \brief      Plot list of 2D numpy arrays next to each other
 # \date       2016-11-06 02:02:36+0000
 #
-# \param      nda2D_list  The nda 2d list
+# \param      nda2D_list  List of 2D numpy data arrays
 # \param      title       The title
 # \param      cmap        The cmap
 #
-# \return     { description_of_the_return_value }
-#
-def plot_list_of_2D_numpy_arrays(nda2D_list, title="image", cmap="Greys_r"):
+def plot_2D_array_list(nda2D_list, title="image", cmap="Greys_r"):
 
     shape = nda2D_list[0].shape
     N_slices = len(nda2D_list)
@@ -104,7 +108,10 @@ def plot_list_of_2D_numpy_arrays(nda2D_list, title="image", cmap="Greys_r"):
 #
 def _get_grid_size(N_slices):
 
-    ## Define the grid to arrange the slices
+    if N_slices > 40:
+        raise ValueError("Too many slices to print")
+
+    ## Define the view grid to arrange the slices
     if N_slices < 5:
         grid = (1, N_slices)
     elif N_slices > 4 and N_slices < 9:

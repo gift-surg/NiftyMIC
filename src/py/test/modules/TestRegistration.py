@@ -186,8 +186,8 @@ class TestRegistration(unittest.TestCase):
         ## Apply motion
         transform_sitk = sitk.Euler3DTransform()
         transform_sitk.SetParameters(parameters_gd)
-        stack_sitk = sitkh.get_transformed_image_sitk(stack_sim.sitk, transform_sitk)
-        stack_sitk_mask = sitkh.get_transformed_image_sitk(stack_sim.sitk_mask, transform_sitk)
+        stack_sitk = sitkh.get_transformed_sitk_image(stack_sim.sitk, transform_sitk)
+        stack_sitk_mask = sitkh.get_transformed_sitk_image(stack_sim.sitk_mask, transform_sitk)
         stack_sim = st.Stack.from_sitk_image(stack_sitk, name=stack_sim.get_filename(), image_sitk_mask=stack_sitk_mask)
 
         time_start = time.time()

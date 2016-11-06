@@ -26,21 +26,34 @@ class TestLinearImageQualityTransfer(unittest.TestCase):
 
     accuracy = 6
 
-    # def setUp(self):
-    #     pass
+    def setUp(self):
+        pass
 
+    ##-------------------------------------------------------------------------
+    # \brief      Test whether interpretation of a 2D kernel in 3D is correct
+    # \date       2016-11-06 15:26:19+0000
+    #
+    # \param      self  The object
+    #
     def test_kernel_2D_as_kernel_3D(self):
 
+        ## Shape in (z,y,x)-coordinates
+        nda_shape = (40,200,200)
+        
+        ## Define size of kernel
         N = 6
 
-        nda_shape = (40,200,200)
+        ## Create random data array
+        nda =  255 * np.random.rand(nda_shape[0],nda_shape[1],nda_shape[2])
+
+        ## Create kernel with elements 1:N^2
         kernel = np.arange(1, N*N+1)
 
+        ## Define 2D- and equivalent 3D-kernel
         kernel_2D = kernel.reshape(N,N)
         kernel_3D = kernel.reshape(1,N,N)
 
-        nda =  255 * np.random.rand(nda_shape[0],nda_shape[1],nda_shape[2])
-
+        ## Create data array copies
         nda_2D = np.array(nda)
         nda_3D = np.array(nda)
 

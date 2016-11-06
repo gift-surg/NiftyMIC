@@ -498,8 +498,8 @@ class RegistrationITK:
         spacing_scaled[0:-1] *= scale
 
         ## Create 3D image based on the obtained (in-plane) similarity transform
-        stack_inplaneSimilar_sitk       = sitkh.get_transformed_image_sitk(self._fixed.sitk, rigid_sitk)
-        stack_inplaneSimilar_sitk_mask  = sitkh.get_transformed_image_sitk(self._fixed.sitk_mask, rigid_sitk)
+        stack_inplaneSimilar_sitk       = sitkh.get_transformed_sitk_image(self._fixed.sitk, rigid_sitk)
+        stack_inplaneSimilar_sitk_mask  = sitkh.get_transformed_sitk_image(self._fixed.sitk_mask, rigid_sitk)
         stack_inplaneSimilar_sitk.SetSpacing(spacing_scaled)
         stack_inplaneSimilar_sitk_mask.SetSpacing(spacing_scaled)
         stack_inplaneSimilar = st.Stack.from_sitk_image(stack_inplaneSimilar_sitk, name=stack.get_filename(), image_sitk_mask=stack_inplaneSimilar_sitk_mask)

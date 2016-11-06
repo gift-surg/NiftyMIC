@@ -64,7 +64,7 @@ class ValidationReconstruction:
 
         HR_init_itk = gaussian.GetOutput()
         HR_init_itk.DisconnectPipeline()
-        HR_init = st.Stack.from_sitk_image(sitkh.convert_itk_to_sitk_image(HR_init_itk))
+        HR_init = st.Stack.from_sitk_image(sitkh.get_sitk_from_itk_image(HR_init_itk))
         sitkh.show_sitk_image(HR_init.sitk, overlay=self._HR_volume_ref.sitk, title="altered_HR_as_HR_init")
 
         ## Configure SRR reconstruction
@@ -185,7 +185,7 @@ class ValidationReconstruction:
 
                     HR_slice_itk = resampler.GetOutput()
                     HR_slice_itk.DisconnectPipeline()
-                    HR_slice_sitk = sitkh.convert_itk_to_sitk_image(HR_slice_itk)
+                    HR_slice_sitk = sitkh.get_sitk_from_itk_image(HR_slice_itk)
 
                     slice_diff_sitk = (HR_slice_sitk - slice.sitk)*sitk.Cast(slice.sitk_mask, slice.sitk.GetPixelIDValue())
                     # sitkh.show_sitk_image(slice_diff_sitk)

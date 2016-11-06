@@ -283,7 +283,7 @@ class SliceAcqusition:
         ## Set output image information
         resampler.SetSize( (self._output_size[0], self._output_size[1], 1) )
         resampler.SetOutputSpacing( self._output_spacing )
-        resampler.SetOutputDirection( sitkh.get_itk_direction_form_sitk_direction(output_direction_sitk) )
+        resampler.SetOutputDirection( sitkh.get_itk_from_sitk_direction(output_direction_sitk) )
 
         ## Prepare to store correct physical positions of acquired slices
         rigid_motion_transforms = []
@@ -327,8 +327,8 @@ class SliceAcqusition:
             slice_itk_mask.DisconnectPipeline()
             
             ## Convert itk image and mask to sitk objects for easier handling
-            slice_sitk = sitkh.convert_itk_to_sitk_image(slice_itk)
-            slice_sitk_mask = sitkh.convert_itk_to_sitk_image(slice_itk_mask)
+            slice_sitk = sitkh.get_sitk_from_itk_image(slice_itk)
+            slice_sitk_mask = sitkh.get_sitk_from_itk_image(slice_itk_mask)
 
             ## Fill array information with acquired slice
             nda[i,:,:] = sitk.GetArrayFromImage(slice_sitk)
@@ -336,8 +336,8 @@ class SliceAcqusition:
             # nda_mask[i,:,:] = np.floor(sitk.GetArrayFromImage(slice_sitk_mask))
 
             ## Convert applied motion to sitk format to store ground truth motion transform
-            # rigid_motion_transform_sitk = sitkh.get_sitk_AffineTransform_from_itk_AffineTransform(rigid_motion_transform_itk)
-            rigid_motion_transform_sitk = sitkh.get_sitk_Euler3DTransform_from_itk_Euler3DTransform(rigid_motion_transform_itk)
+            # rigid_motion_transform_sitk = sitkh.get_sitk_from_itk_AffineTransform(rigid_motion_transform_itk)
+            rigid_motion_transform_sitk = sitkh.get_sitk_from_itk_Euler3DTransform(rigid_motion_transform_itk)
 
             rigid_motion_transforms.append(rigid_motion_transform_sitk)
 
@@ -394,8 +394,8 @@ class SliceAcqusition:
         PSF = psf.PSF()
 
         ## Convert applied motion to sitk format
-        # motion_transform_sitk = sitkh.get_sitk_AffineTransform_from_itk_AffineTransform(rigid_motion_transform_itk)
-        motion_transform_sitk = sitkh.get_sitk_Euler3DTransform_from_itk_Euler3DTransform(rigid_motion_transform_itk)
+        # motion_transform_sitk = sitkh.get_sitk_from_itk_AffineTransform(rigid_motion_transform_itk)
+        motion_transform_sitk = sitkh.get_sitk_from_itk_Euler3DTransform(rigid_motion_transform_itk)
 
         ## Get affine transform of slice given output transform (motion not considered and only orientation important, hence dummy origin)
         affine_transform_slice_sitk = sitkh.get_sitk_affine_transform_from_sitk_direction_and_origin(output_direction_sitk, (0,0,0), self._output_spacing)

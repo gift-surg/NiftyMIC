@@ -223,7 +223,7 @@ def get_inverse_of_sitk_rigid_registration_transform(rigid_registration_transfor
 #  \param[in] image_init_sitk image as sitk.Image object to be transformed
 #  \param[in] transform_sitk transform to be applied as sitk.AffineTransform object
 #  \return transformed image as sitk.Image object
-def get_transformed_image_sitk(image_init_sitk, transform_sitk):
+def get_transformed_sitk_image(image_init_sitk, transform_sitk):
     image_sitk = sitk.Image(image_init_sitk)
     
     affine_transform_sitk = get_sitk_affine_transform_from_sitk_image(image_sitk)
@@ -381,21 +381,7 @@ def print_itk_direction(direction_itk):
 def get_itk_direction_from_sitk_image(image_sitk):
     direction_sitk = image_sitk.GetDirection()
 
-    return get_itk_direction_form_sitk_direction(direction_sitk)
-
-
-## Convert direction from sitk.Image to itk.Image direction format
-#  \param[in] direction_sitk direction obtained via GetDirection() of sitk.Image
-#  \return direction which can be set as SetDirection() at itk.Image
-def get_itk_direction_form_sitk_direction(direction_sitk):
-    dim = np.sqrt(len(direction_sitk)).astype('int')
-    m = itk.vnl_matrix_fixed[itk.D, dim, dim]()
-
-    for i in range(0, dim):
-        for j in range(0, dim):
-            m.set(i,j,direction_sitk[dim*i + j])
-
-    return itk.Matrix[itk.D, dim, dim](m)    
+    return get_itk_from_sitk_direction(direction_sitk)
 
 
 ## Extract direction from ITK-image so that it can be injected into
@@ -405,13 +391,27 @@ def get_itk_direction_form_sitk_direction(direction_sitk):
 def get_sitk_direction_from_itk_image(image_itk):
     direction_itk = image_itk.GetDirection()
 
-    return get_sitk_direction_from_itk_direction(direction_itk)
+    return get_sitk_from_itk_direction(direction_itk)
+
+
+## Convert direction from sitk.Image to itk.Image direction format
+#  \param[in] direction_sitk direction obtained via GetDirection() of sitk.Image
+#  \return direction which can be set as SetDirection() at itk.Image
+def get_itk_from_sitk_direction(direction_sitk):
+    dim = np.sqrt(len(direction_sitk)).astype('int')
+    m = itk.vnl_matrix_fixed[itk.D, dim, dim]()
+
+    for i in range(0, dim):
+        for j in range(0, dim):
+            m.set(i,j,direction_sitk[dim*i + j])
+
+    return itk.Matrix[itk.D, dim, dim](m)    
     
 
 ## Convert direction from itk.Image to sitk.Image direction format
 #  \param[in] direction_itk direction obtained via GetDirection() of itk.Image
 #  \return direction which can be set as SetDirection() at sitk.Image
-def get_sitk_direction_from_itk_direction(direction_itk):
+def get_sitk_from_itk_direction(direction_itk):
     vnl_matrix = direction_itk.GetVnlMatrix()
     dim = np.sqrt(vnl_matrix.size()).astype('int')
 
@@ -426,7 +426,7 @@ def get_sitk_direction_from_itk_direction(direction_itk):
 ## Convert itk.Euler3DTransform to sitk.Euler3DTransform instance
 #  \param[in] Euler3DTransform_itk itk.Euler3DTransform instance
 #  \return converted sitk.Euler3DTransform instance
-def get_sitk_Euler3DTransform_from_itk_Euler3DTransform(Euler3DTransform_itk):
+def get_sitk_from_itk_Euler3DTransform(Euler3DTransform_itk):
     parameters_itk = Euler3DTransform_itk.GetParameters()
     fixed_parameters_itk = Euler3DTransform_itk.GetFixedParameters()
     
@@ -453,7 +453,7 @@ def get_sitk_Euler3DTransform_from_itk_Euler3DTransform(Euler3DTransform_itk):
 ## Convert itk.AffineTransform to sitk.AffineTransform instance
 #  \param[in] AffineTransform_itk itk.AffineTransform instance
 #  \return converted sitk.AffineTransform instance
-def get_sitk_AffineTransform_from_itk_AffineTransform(AffineTransform_itk):
+def get_sitk_from_itk_AffineTransform(AffineTransform_itk):
 
     dim = len(AffineTransform_itk.GetTranslation())
 
@@ -484,7 +484,7 @@ def get_sitk_AffineTransform_from_itk_AffineTransform(AffineTransform_itk):
 #  \todo Check whether it is sufficient to just set origin, spacing and direction!
 #  \param[in] image_sitk SimpleITK-image to be converted, sitk.Image object
 #  \return converted image as itk.Image object
-def convert_sitk_to_itk_image(image_sitk):
+def get_itk_from_sitk_image(image_sitk):
 
     ## Extract information ready to use for ITK-image
     dimension = image_sitk.GetDimension()
@@ -524,7 +524,7 @@ def convert_sitk_to_itk_image(image_sitk):
 #  \todo Check whether it is sufficient to just set origin, spacing and direction!
 #  \param[in] image_itk ITK-image to be converted, itk.Image object
 #  \return converted image as sitk.Image object
-def convert_itk_to_sitk_image(image_itk):
+def get_sitk_from_itk_image(image_itk):
 
     ## Extract information ready to use for SimpleITK-image
     dimension = image_itk.GetLargestPossibleRegion().GetImageDimension()
@@ -545,7 +545,15 @@ def convert_itk_to_sitk_image(image_itk):
 
     return image_sitk
 
-
+##-----------------------------------------------------------------------------
+# \brief      Print
+# \date       2016-11-06 15:43:19+0000
+#
+# \param      rigid_affine_similarity_transform_sitk  The rigid affine similarity transform sitk
+# \param      text                                    The text
+#
+# \return     { description_of_the_return_value }
+#
 def print_sitk_transform(rigid_affine_similarity_transform_sitk, text=None):
 
     dim = rigid_affine_similarity_transform_sitk.GetDimension()
@@ -626,7 +634,7 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
 #
 def plot_stack_of_slices(stack_sitk, cmap="Greys_r", title="slice"):
     nda = sitk.GetArrayFromImage(stack_sitk)
-    ph.plot_numpy_array_of_slices(nda, cmap=cmap, title=title)
+    ph.plot_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
 
 
 ##-----------------------------------------------------------------------------

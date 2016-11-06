@@ -272,7 +272,7 @@ class HierarchicalSliceAlignment:
         moving_3D_itk = self._gaussian_yvv.GetOutput()
         moving_3D_itk.DisconnectPipeline()
 
-        moving_3D_sitk = sitkh.convert_itk_to_sitk_image(moving_3D_itk)
+        moving_3D_sitk = sitkh.get_sitk_from_itk_image(moving_3D_itk)
         # moving_3D_sitk = moving_3D.sitk
 
         ## Instantiate interface method to the modular ITKv4 registration framework
