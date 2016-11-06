@@ -12,6 +12,8 @@
 # import SimpleITK as sitk
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+from datetime import timedelta
 
 ## Import modules
 # import utilities.SimpleITKHelper as sitkh
@@ -126,3 +128,33 @@ def _get_grid_size(N_slices):
         grid = (5, np.ceil(N_slices/5.).astype('int'))
 
     return grid
+
+
+##-----------------------------------------------------------------------------
+# \brief      Returns start time of execution
+# \date       2016-11-06 17:15:00+0000
+#
+# \return     Start time of execution
+#
+def start_timing():
+    return time.time()
+
+
+##-----------------------------------------------------------------------------
+# \brief      Stops a timing and returns the time passed between given start
+#             time.
+# \date       2016-11-06 17:18:42+0000
+#
+# Conversion of elapsed time to 'reasonable' format,  i.e. hours, minutes,
+# seconds, ... as appropriate.
+#
+# \param      start_time  The start time obtained via \p start_timing
+#
+# \return     Elapsed time as string
+#
+def stop_timing(start_time):
+    end_time = time.time()
+    elapsed_time_sec = end_time - start_time
+
+    ## Convert to 'readable' format
+    return timedelta(seconds=elapsed_time_sec)

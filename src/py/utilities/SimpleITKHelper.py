@@ -134,24 +134,53 @@ def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, imag
     # return affine_center + affine_translation - R.dot(affine_center)
 
 
+##-----------------------------------------------------------------------------
+# \brief      Gets the sitk affine transform from sitk image, to transform an
+#             index to the physical space
+# \date       2016-11-06 18:54:09+0000
+#
+# Returns the affine transform of an sitk image which links the voxel space
+# (i.e. its data array elements) with the p positions in the physical space.
+# I.e. it transforms a voxel index to the physical coordinate:
+# \f[ T(\vec{i}) = R\,S\,\vec(i) + \vec{o} = \vec{x}
+# \f] with
+# \f$R\f$ being the rotation matrix (direction matrix via \p GetDirection),
+# \f$S=diag(s_i)\f$ the scaling matrix,
+# \f$\vec{i}\f$ the voxel index,
+# \f$\vec{o}\f$ the image origin (via \p GetOrigin) and
+# \f$\vec{x}\f$ the final physical coordinate.
+#
+# \param      image_sitk  The image sitk
+#
+# \return     Transform T(i) = R*S*i + origin as sitk.AffineTransform
+#
+def get_sitk_affine_transform_from_sitk_image(image_sitk):
+    
+    ## Matrix A = R*S
+    A = get_sitk_affine_matrix_from_sitk_image(image_sitk)
+
+    ## Translation t = origin
+    t = np.array(image_sitk.GetOrigin())
+
+    ## T(i) = R*S*i + origin
+    return sitk.AffineTransform(A,t)
+
+
+##-----------------------------------------------------------------------------
+# \brief      Gets the sitk affine matrix from sitk image.
+# \date       2016-11-06 19:07:03+0000
+#
+# \param      image_sitk  The image sitk
+#
+# \return     Matrix R*S as flattened data array ready for SetMatrix
+#
 def get_sitk_affine_matrix_from_sitk_image(image_sitk):
     dim = len(image_sitk.GetSize())
     spacing_sitk = np.array(image_sitk.GetSpacing())
     S_sitk = np.diag(spacing_sitk)
-    A_sitk = np.array(image_sitk.GetDirection()).reshape(dim,dim)
+    R_sitk = np.array(image_sitk.GetDirection()).reshape(dim,dim)
 
-    return A_sitk.dot(S_sitk).flatten()
-
-
-def get_sitk_affine_translation_from_sitk_image(image_sitk):
-    return np.array(image_sitk.GetOrigin())
-
-
-def get_sitk_affine_transform_from_sitk_image(image_sitk):
-    A = get_sitk_affine_matrix_from_sitk_image(image_sitk)
-    t = get_sitk_affine_translation_from_sitk_image(image_sitk)
-
-    return sitk.AffineTransform(A,t)
+    return R_sitk.dot(S_sitk).flatten()
 
 
 ## Get sitk.AffineTransform object based on direction and origin. The idea is,

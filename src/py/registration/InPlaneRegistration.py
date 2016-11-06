@@ -1,4 +1,4 @@
-## \file StackInPlaneAlignment.py
+## \file InPlaneRegistration.py
 #  \brief  
 # 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
@@ -26,7 +26,7 @@ import registration.RegistrationSimpleITK as regsitk
 # \brief      Class to perform in-plane rigid registration
 # \date       2016-09-20 15:59:21+0100
 #
-class StackInPlaneAlignment:
+class InPlaneRegistration:
 
     ##-------------------------------------------------------------------------
     # \brief      TODO
@@ -402,7 +402,8 @@ class StackInPlaneAlignment:
             translation = np.array(similarity_registration_transform_2D_sitk.GetTranslation())
             R = np.array(similarity_registration_transform_2D_sitk.GetMatrix()).reshape(2,2)/scale
 
-            print("Slice %2d/%d: in-plane scaling factor = %.3f" %(i, self._N_slices-1, scale))
+            if self._use_verbose:
+                print("Slice %2d/%d: in-plane scaling factor = %.3f" %(i, self._N_slices-1, scale))
 
             rigid_registration_transform_2D_sitk = sitk.Euler2DTransform()
             rigid_registration_transform_2D_sitk.SetAngle(angle)
@@ -538,6 +539,7 @@ class StackInPlaneAlignment:
     #
     # \return     Projected 2D slice onto x-y-plane of 3D stack as Slice object
     #
+    # TODO: Change to make simpler
     def _get_2D_slice(self, slice_3D, transform_PP_sitk):
 
         ## Create copy of stack
@@ -584,6 +586,7 @@ class StackInPlaneAlignment:
     # \return     List of 3D rigid transforms (sitk.AffineTransform(3) objects)
     #             to arrive at the positions of the original 3D slices.
     #
+    # TODO: Change to make simpler
     def _get_list_of_3D_rigid_transforms_of_slices(self):
 
         N_slices = self._stack.get_number_of_slices()

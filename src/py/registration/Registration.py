@@ -14,17 +14,12 @@ import SimpleITK as sitk
 import numpy as np
 from scipy.optimize import least_squares
 import time
-
-## Add directories to import modules
-# DIR_SRC_ROOT = "../"
-# sys.path.append(DIR_SRC_ROOT)
+from datetime import timedelta
 
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
 import base.PSF as psf
 import base.Slice as sl
-import time
-from datetime import timedelta
 
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
@@ -368,14 +363,14 @@ class Registration(object):
         ## Compute simulated fixed from volume and its Jacobian w.r.t. to spatial coordinates
         self._filter_oriented_Gaussian.Update()
     
-        ## 1) Compute residual y_k - A_k(theta)x as 1D array
+        ## 1) Compute A_k(theta)x as itk.Image
         if not use_jacobian:
             Ak_vol_itk = self._filter_oriented_Gaussian.GetOutput()
             Ak_vol_itk.DisconnectPipeline()
 
             return Ak_vol_itk
 
-        ## 2) Compute gradient of residual w.r.t. to spatial coordinates
+        ## 2) Compute Jacobian w.r.t. to spatial coordinates
         else:
             jacobian_spatial_Ak_vol_itk = self._filter_oriented_Gaussian.GetJacobian()
             jacobian_spatial_Ak_vol_itk.DisconnectPipeline()

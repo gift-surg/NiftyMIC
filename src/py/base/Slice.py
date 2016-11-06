@@ -137,7 +137,7 @@ class Slice:
         slice.sitk_mask = sitk.Image(slice_to_copy.sitk_mask)
         slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
         
-        slice._filename = "copy_" + slice_to_copy.get_filename()
+        slice._filename = slice_to_copy.get_filename()
         slice._slice_number = slice_to_copy.get_slice_number()
         slice._dir_input = slice_to_copy.get_directory()
 

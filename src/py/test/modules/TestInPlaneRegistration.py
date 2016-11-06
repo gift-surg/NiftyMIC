@@ -1,5 +1,5 @@
-## \file TestStackInPlaneAlignment.py
-#  \brief  Class containing unit tests for module StackInPlaneAlignment
+## \file TestInPlaneRegistration.py
+#  \brief  Class containing unit tests for module InPlaneRegistration
 # 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date October 2016
@@ -20,7 +20,7 @@ sys.path.append( dir_src_root )
 
 ## Import modules
 import base.Stack as st
-import registration.StackInPlaneAlignment as sipa
+import registration.InPlaneRegistration as inplanereg
 import utilities.SimpleITKHelper as sitkh
 
 
@@ -86,7 +86,7 @@ def get_inplane_corrupted_stack(stack, angle_z, center, translation, scale=1, de
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
-class TestStackInPlaneAlignment(unittest.TestCase):
+class TestInPlaneRegistration(unittest.TestCase):
 
     ## Specify input data
     dir_test_data = "../../../test-data/"
@@ -125,7 +125,7 @@ class TestStackInPlaneAlignment(unittest.TestCase):
         # stack.show(1)
 
         ## Perform in-plane rigid registration
-        inplane_registration = sipa.StackInPlaneAlignment(stack=stack_corrupted, reference=stack)
+        inplane_registration = inplanereg.InPlaneRegistration(stack=stack_corrupted, reference=stack)
         inplane_registration.set_alignment_approach("rigid_inplane_to_reference")
         inplane_registration.set_metric("MeanSquares")
         inplane_registration.set_scales_estimator("Jacobian")
@@ -204,7 +204,7 @@ class TestStackInPlaneAlignment(unittest.TestCase):
         # stack.show(1)
     
         ## Perform in-plane similarity registration (exact same setting as rigid case above)
-        inplane_registration = sipa.StackInPlaneAlignment(stack=stack_corrupted, reference=stack)
+        inplane_registration = inplanereg.InPlaneRegistration(stack=stack_corrupted, reference=stack)
         inplane_registration.set_alignment_approach("similarity_inplane_to_reference")
         # inplane_registration.set_alignment_approach("rigid_inplane_to_reference")
         inplane_registration.set_metric("MeanSquares")
@@ -304,7 +304,7 @@ class TestStackInPlaneAlignment(unittest.TestCase):
         stack_resampled = st.Stack.from_sitk_image(stack_resampled_sitk, stack.get_filename()+"_resampled", stack_resampled_sitk_mask)
 
         ## Perform in-plane similarity registration
-        inplane_registration = sipa.StackInPlaneAlignment(stack=stack_corrupted, reference=stack_resampled)
+        inplane_registration = inplanereg.InPlaneRegistration(stack=stack_corrupted, reference=stack_resampled)
         inplane_registration.set_alignment_approach("similarity_inplane_to_reference")
         inplane_registration.set_metric("MeanSquares")
         inplane_registration.set_scales_estimator("Jacobian")

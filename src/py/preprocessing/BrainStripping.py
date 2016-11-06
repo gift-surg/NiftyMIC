@@ -212,6 +212,64 @@ class BrainStripping(object):
 
 
     ##-------------------------------------------------------------------------
+    # \brief      Gets the mask around skull which covers also a bit of the
+    #             brain. (It was used for the MS project)
+    # \date       2016-11-06 22:54:28+0000
+    #
+    # \param      self           The object
+    # \param      dilate_radius  The dilate radius
+    # \param      erode_radius   The erode radius
+    #
+    # \return     The mask around skull.
+    #
+    def get_mask_around_skull(self, dilate_radius=10, erode_radius=0):
+
+        ## Chose kernel
+        kernel_sitk = sitk.sitkBall
+        # kernel_sitk = sitk.sitkBox
+        # kernel_sitk = sitk.sitkAnnulus
+        # kernel_sitk = sitk.sitkCross
+
+        ## Define dilate and erode image filter
+        dilater = sitk.BinaryDilateImageFilter()
+        dilater.SetKernelType(kernel_sitk)
+        dilater.SetKernelRadius(dilate_radius)
+
+        eroder = sitk.BinaryErodeImageFilter()
+        eroder.SetKernelType(kernel_sitk)
+        eroder.SetKernelRadius(erode_radius)
+
+        ## Get complement of brain mask
+        mask_sitk = 1 - self._sitk_brain_mask
+        
+        shape = np.array(self._sitk_brain_mask.GetSize()[::-1])
+        mask_nda = np.zeros((shape[0], shape[1], shape[2]))
+        
+        ## Go slice by slice
+        for i in range(0, shape[0]):
+            slice_mask_sitk = mask_sitk[:,:,i:i+1]
+
+            ## Dilate mask of slice    
+            slice_mask_sitk = dilater.Execute(slice_mask_sitk)
+
+            ## Erode mask of slice
+            if erode_radius > 0:
+                slice_mask_sitk = slice_mask_sitk - eroder.Execute(slice_mask_sitk)
+            
+            ## Fill data array information
+            mask_nda[i,:,:] = sitk.GetArrayFromImage(slice_mask_sitk)
+
+        ## Convert mask back to 3D image
+        skull_mask_sitk = sitk.GetImageFromArray(mask_nda)
+        skull_mask_sitk.CopyInformation(self._sitk_brain_mask)
+
+        ## Debug:
+        # sitkh.show_sitk_image(self._sitk, segmentation=skull_mask_sitk, title="stack_brain_mask")
+
+        return skull_mask_sitk
+
+
+    ##-------------------------------------------------------------------------
     # \brief      Run Brain Extraction Tool given the chosen set of parameters
     # \date       2016-10-12 14:59:01+0100
     #

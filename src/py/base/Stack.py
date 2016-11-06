@@ -46,7 +46,9 @@ class Stack:
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         ## Append masks (either provided or binary mask)
-        if suffix_mask is not None and os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
+        if suffix_mask is not None:
+            if not os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
+                raise ValueError("File " + dir_input + filename + suffix_mask + ".nii.gz" +  " cannot be found." )
             stack.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
         else:

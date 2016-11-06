@@ -24,12 +24,13 @@ sys.path.append( dir_src_root )
 # from modules.TestStack import *
 # from modules.TestSimulatorSliceAcqusition import *
 # from modules.TestNiftyReg import *
-from modules.TestDifferentialOperations import *
+# from modules.TestDifferentialOperations import *
 # from modules.TestRegistration import *
 # from modules.TestBrainStripping import *
-# from modules.TestStackInPlaneAlignment import *
+# from modules.TestInPlaneRegistration import *
+from modules.TestRegularizedInPlaneRegistration import *
 # from modules.TestRegistrationITK import *
-from modules.TestLinearImageQualityTransfer import *
+# from modules.TestLinearImageQualityTransfer import *
 
 
 """ ###########################################################################
