@@ -15,14 +15,24 @@ from scipy import ndimage
 ## Class to implement differential operations used in solver class
 class DifferentialOperations:
 
-    ## Create differential kernel operators and store as member attributes.
-    #  Note: kernel = np.zeros((z,y,x)) in numpy!
-    #  \param[in] step_size step size for all discrete differentiations
-    #  \param[in] Laplace_comp_type can be either 'LaplaceStencil' or 'FiniteDifference'
-    def __init__(self, step_size=1, Laplace_comp_type="FiniteDifference"):
+    ##-------------------------------------------------------------------------
+    # Create differential kernel operators and store as member attributes.
+    # Note: kernel = np.zeros((z,y,x)) in numpy!
+    # \param[in]  step_size          step size for all discrete
+    #                                differentiations
+    # \param[in]  Laplace_comp_type  can be either 'LaplaceStencil' or
+    #                                'FiniteDifference'
+    # \param[in]  convolution_mode   Periodic/Circular boundary conditions
+    #                                ('wrap'). Zero boundary conditions
+    #                                ('constant'). See scipy help page.
+    #
+    def __init__(self, step_size=1, Laplace_comp_type="FiniteDifference", convolution_mode="constant"):
 
         ## step size for all discrete differentiations
         self._step_size = step_size
+
+        ## Convolution mode
+        self._convolution_mode = convolution_mode
 
         ## Computational type of Laplacian compuation
         if Laplace_comp_type not in ["LaplaceStencil", "FiniteDifference"]:
@@ -80,12 +90,11 @@ class DifferentialOperations:
 
 
     ## Forward differentiation in x
-    #  Periodic/Circular boundary conditions are used ('wrap')
     #  \param[in] nda data array of 3D image as numpy array
     #  \return differentiated numpy array
     def Dx(self, nda):
         kernel = self._KERNEL_DX_FW / self._step_size
-        return ndimage.convolve(nda, kernel, mode='wrap')
+        return ndimage.convolve(nda, kernel, mode=self._convolution_mode)
 
 
     ## Forward differentiation in x
@@ -94,7 +103,7 @@ class DifferentialOperations:
     #  \return differentiated numpy array
     def Dx_adj(self, nda):
         kernel = -self._KERNEL_DX_BW / self._step_size
-        return ndimage.convolve(nda, kernel, mode='wrap')
+        return ndimage.convolve(nda, kernel, mode=self._convolution_mode)
 
 
     ## Forward differentiation in y
@@ -103,7 +112,7 @@ class DifferentialOperations:
     #  \return differentiated numpy array
     def Dy(self, nda):
         kernel = self._KERNEL_DY_FW / self._step_size
-        return ndimage.convolve(nda, kernel, mode='wrap')
+        return ndimage.convolve(nda, kernel, mode=self._convolution_mode)
 
 
     ## Forward differentiation in y
@@ -112,7 +121,7 @@ class DifferentialOperations:
     #  \return differentiated numpy array
     def Dy_adj(self, nda):
         kernel = -self._KERNEL_DY_BW / self._step_size
-        return ndimage.convolve(nda, kernel, mode='wrap')
+        return ndimage.convolve(nda, kernel, mode=self._convolution_mode)
 
 
     ## Forward differentiation in z
@@ -121,7 +130,7 @@ class DifferentialOperations:
     #  \return differentiated numpy array
     def Dz(self, nda):
         kernel = self._KERNEL_DZ_FW / self._step_size
-        return ndimage.convolve(nda, kernel, mode='wrap')
+        return ndimage.convolve(nda, kernel, mode=self._convolution_mode)
 
 
     ## Forward differentiation in z
@@ -130,7 +139,7 @@ class DifferentialOperations:
     #  \return differentiated numpy array
     def Dz_adj(self, nda):
         kernel = -self._KERNEL_DZ_BW / self._step_size
-        return ndimage.convolve(nda, kernel, mode='wrap')
+        return ndimage.convolve(nda, kernel, mode=self._convolution_mode)
 
     ## Laplacian operation
     #  Periodic/Circular boundary conditions are used ('wrap')
@@ -146,7 +155,7 @@ class DifferentialOperations:
     #  \return differentiated numpy array
     def _Laplace_stencil(self, nda):
         kernel = self._KERNEL_L_STENCIL / self._step_size * self._step_size
-        return ndimage.convolve(nda, kernel, mode='wrap')
+        return ndimage.convolve(nda, kernel, mode=self._convolution_mode)
 
 
     ## Laplacian operation based on composite finite differences, i.e.
