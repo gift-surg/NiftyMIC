@@ -372,7 +372,7 @@ class Stack:
     # \date       2016-11-05 19:16:33+0000
     #
     # \param      self                    The object
-    # \param      affine_transforms_sitk  The affine transforms sitk
+    # \param      affine_transforms_sitk  List of sitk transform instances
     #
     def update_motion_correction_of_slices(self, affine_transforms_sitk):
         if type(affine_transforms_sitk) is list and len(affine_transforms_sitk) is self._N_slices:

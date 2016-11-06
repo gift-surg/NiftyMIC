@@ -16,10 +16,14 @@ import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
+from scipy.sparse.linalg import LinearOperator
+from scipy.sparse.linalg import lsqr
+from scipy.sparse.linalg import lsmr
+from scipy.optimize import lsq_linear
+from scipy.optimize import minimize
+from scipy.optimize import least_squares
+from scipy.optimize import nnls
 
-## Add directories to import modules
-DIR_SRC_ROOT = "../src/"
-sys.path.append( DIR_SRC_ROOT )
 
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
@@ -60,7 +64,7 @@ class Solver(object):
     #                                       (sigma_x2, sigma_y2, sigma_z2) or
     #                                       as full 3x3 numpy array
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, deconvolution_mode="full_3D", predefined_covariance=None):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
 
         ## Initialize variables
         self._stacks = stacks
@@ -75,6 +79,23 @@ class Solver(object):
             "full_3D":                  self._update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D,
             "only_in_plane":            self._update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane,
             "predefined_covariance":    self._update_oriented_adjoint_oriented_Gaussian_image_filters_predefined_covariance
+        }
+
+        self._minimizer = minimizer
+        self._get_approximate_solution = {
+            ## linear least-squares
+            "lsmr"          : self._get_approximate_solution_lsmr,
+            "lsqr"          : self._get_approximate_solution_lsqr,
+
+            ## non-negative linear least-squares
+            "nnls"          : self._get_approximate_solution_nnls,
+
+            ## linear least-squares solver with bounds
+            "lsq_linear"    : self._get_approximate_solution_lsq_linear,
+             
+            ## non-linear solver with bounds
+            "L-BFGS-B"      : self._get_approximate_solution_LBFGSB,
+            "least_squares" : self._get_approximate_solution_least_squares,
         }
 
         ## In case only diagonal entries are given, create diagonal matrix
@@ -164,6 +185,21 @@ class Solver(object):
     #  \return maximum number of iterations set for minimizer, scalar
     def get_iter_max(self):
         return self._iter_max
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the minimizer.
+    # \date       2016-11-05 23:40:31+0000
+    #
+    # \param      self       The object
+    # \param      minimizer  The minimizer
+    #
+    def set_minimizer(self, minimizer):
+        self._minimizer = minimizer
+
+
+    def get_minimizer(self):
+        return self._minimizer
 
 
     ## Get current estimate of HR volume
@@ -647,5 +683,181 @@ class Solver(object):
         return np.sum((MAx_nda_vec-My_nda_vec)**2)
 
 
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the approximate solution via LSMR solver 
+    #             (linear least-squares method)
+    # \date       2016-08-05 11:31:49+0100
+    #
+    # \param      self  The object
+    # \param      A_fw  Forward operator, function handle
+    # \param      A_bw  Backward operator, function handle
+    # \param      b     Right-hand side of linear system, 1D array
+    #
+    # \return     The approximate solution.
+    #
+    def _get_approximate_solution_lsmr(self, A_fw, A_bw, b):
+
+        ## Construct (sparse) linear operator A
+        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
+
+        ## Incorporate initial value for least-squares solver:
+        HR_nda_vec = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
+        b -= A_fw(HR_nda_vec)
+
+        ## Linear least-squares method: 
+        # One (!) test showed that lsqr has lower residual than lsmr in the 
+        # end. However, Fong2011 states that "although LSQR and LSMR ultimately
+        # converge to similar points, it is safer to use LSMR in situations 
+        # where the solver must be terminated early" => Go for that
+        delta_HR_nda_vec = lsmr(A, b, maxiter=self._iter_max, show=True)[0]
+
+        ## Correct for shift
+        HR_nda_vec += delta_HR_nda_vec
+
+        return HR_nda_vec
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the approximate solution via LSQR solver
+    #             (linear least-squares method)
+    # \date       2016-08-05 11:31:49+0100
+    #
+    # \param      self  The object
+    # \param      A_fw  Forward operator, function handle
+    # \param      A_bw  Backward operator, function handle
+    # \param      b     Right-hand side of linear system, 1D array
+    #
+    # \return     The approximate solution.
+    #
+    def _get_approximate_solution_lsqr(self, A_fw, A_bw, b):
+        
+        ## Construct (sparse) linear operator A
+        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
+
+        ## Incorporate initial value for least-squares solver:
+        HR_nda_vec = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
+        b -= A_fw(HR_nda_vec)
+
+        ## Linear least-squares methods: 
+        # One (!) test showed that lsqr has lower residual than lsmr in the 
+        # end. However, Fong2011 states that "although LSQR and LSMR ultimately
+        # converge to similar points, it is safer to use LSMR in situations 
+        # where the solver must be terminated early" => Go for that
+        delta_HR_nda_vec = lsqr(A, b, maxiter=self._iter_max, show=True)[0]
+
+        ## Correct for shift
+        HR_nda_vec += delta_HR_nda_vec
+
+        return HR_nda_vec
+
+
+    ##--------------------------------------------------------------------------
+    # \brief      Gets the approximate solution via L-BFGS-B solver
+    #             (non-linear with bounds).
+    # \date       2016-08-05 11:48:20+0100
+    #
+    # \param      self  The object
+    # \param      A_fw  Forward operator, function handle
+    # \param      A_bw  Backward operator, function handle
+    # \param      b     Right-hand side of linear system, 1D array
+    #
+    # \return     The approximate solution.
+    #
+    def _get_approximate_solution_LBFGSB(self, A_fw, A_bw, b):
+        
+        ## Set initial value and bounds
+        x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
+        bounds = [[0,None]]*x0.size
+
+        ## Set cost function and its jacobian
+        fun = lambda x: 0.5*np.sum((A_fw(x) - b)**2)
+        jac = lambda x: A_bw(A_fw(x)-b)
+
+        ## Run solver
+        HR_nda_vec = minimize(method='L-BFGS-B', fun=fun, x0=x0, options={'maxiter': self._iter_max, 'disp': True}, jac=jac, bounds=bounds).x
+
+        return HR_nda_vec
+        
+
+    ##--------------------------------------------------------------------------
+    # \brief      Gets the approximate solution via least_squares solver
+    #             (non-linear minimization with bounds).
+    # \date       2016-08-05 11:48:20+0100
+    # \remark     Does not go ahead in its computation
+    #
+    # \param      self  The object
+    # \param      A_fw  Forward operator, function handle
+    # \param      A_bw  Backward operator, function handle
+    # \param      b     Right-hand side of linear system, 1D array
+    #
+    # \return     The approximate solution.
+    #
+    def _get_approximate_solution_least_squares(self, A_fw, A_bw, b):
+
+        ## Set initial value and bounds
+        x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
+        bounds = (0,np.inf)
+
+        ## Construct (sparse) linear operator A
+        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
+
+        ## Set residual and its Jacobian
+        fun = lambda x: A*x - b
+        jac =  lambda x: A
+        
+        ## Run solver
+        HR_nda_vec = least_squares(fun=fun, x0=x0, jac=jac, jac_sparsity=jac, method='trf', tr_solver='lsmr', bounds=bounds, max_nfev=self._iter_max, verbose=2).x 
+
+        return HR_nda_vec
+
+    
+    ##--------------------------------------------------------------------------
+    # \brief      Gets the approximate solution via lsq_linear solver
+    #             (linear least-squares with bounds).
+    # \date       2016-08-05 11:48:20+0100
+    # \remark     Does not show any output
+    #
+    # \param      self  The object
+    # \param      A_fw  Forward operator, function handle
+    # \param      A_bw  Backward operator, function handle
+    # \param      b     Right-hand side of linear system, 1D array
+    #
+    # \return     The approximate solution.
+    #
+    def _get_approximate_solution_lsq_linear(self, A_fw, A_bw, b):
+
+        ## Construct (sparse) linear operator A
+        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
+
+        ## Run solver
+        HR_nda_vec = lsq_linear(A, b, bounds=(0, np.inf), max_iter=self._iter_max, lsq_solver='lsmr', lsmr_tol='auto', verbose=2).x
+        # HR_nda_vec = lsq_linear(A, b, max_iter=self._iter_max, lsq_solver=None, lsmr_tol='auto', verbose=2).x
+        
+        return HR_nda_vec
+
+
+    ##--------------------------------------------------------------------------
+    # \brief      Gets the approximate solution via nnls solver
+    #             (non-negative linear least-squares).
+    # \date       2016-08-05 11:48:20+0100
+    # \remark     Does not work with sparse linear operator
+    #
+    # \param      self  The object
+    # \param      A_fw  Forward operator, function handle
+    # \param      A_bw  Backward operator, function handle
+    # \param      b     Right-hand side of linear system, 1D array
+    #
+    # \return     The approximate solution.
+    #
+    def _get_approximate_solution_nnls(self, A_fw, A_bw, b):
+
+        ## Construct (sparse) linear operator A
+        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
+
+        ## Run solver:
+        HR_nda_vec = nnls(A, b)
+
+        return HR_nda_vec
 
 

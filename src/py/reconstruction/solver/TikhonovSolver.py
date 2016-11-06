@@ -14,13 +14,6 @@ import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
-from scipy.sparse.linalg import LinearOperator
-from scipy.sparse.linalg import lsqr
-from scipy.sparse.linalg import lsmr
-from scipy.optimize import lsq_linear
-from scipy.optimize import minimize
-from scipy.optimize import least_squares
-from scipy.optimize import nnls
 import time
 from datetime import timedelta
 
@@ -97,11 +90,10 @@ class TikhonovSolver(Solver):
     def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
 
         ## Run constructor of superclass
-        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, deconvolution_mode, predefined_covariance)
+        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, minimizer, deconvolution_mode, predefined_covariance)
         
         ## Settings for optimizer
         self._reg_type = reg_type
-        self._minimizer = minimizer
 
         self._A = {
             "TK0"   : self._A_TK0,
@@ -116,22 +108,6 @@ class TikhonovSolver(Solver):
         self._get_residual_prior = {
             "TK0"   : self._get_residual_prior_TK0,
             "TK1"   : self._get_residual_prior_TK1
-        }
-
-        self._get_approximate_solution = {
-            ## linear least-squares
-            "lsmr"          : self._get_approximate_solution_lsmr,
-            "lsqr"          : self._get_approximate_solution_lsqr,
-
-            ## non-negative linear least-squares
-            "nnls"          : self._get_approximate_solution_nnls,
-
-            ## linear least-squares solver with bounds
-            "lsq_linear"    : self._get_approximate_solution_lsq_linear,
-             
-            ## non-linear solver with bounds
-            "L-BFGS-B"      : self._get_approximate_solution_LBFGSB,
-            "least_squares" : self._get_approximate_solution_least_squares,
         }
 
 
@@ -217,7 +193,6 @@ class TikhonovSolver(Solver):
         ## Construct (sparse) linear operator A
         A_fw = lambda x: self._A[self._reg_type](x, self._alpha)
         A_bw = lambda x: self._A_adj[self._reg_type](x, self._alpha)
-        A = LinearOperator((N_voxels, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
 
         ## Construct right-hand side b
         b = self._get_b(N_voxels)
@@ -232,183 +207,6 @@ class TikhonovSolver(Solver):
         ## After reconstruction: Update member attribute
         self._HR_volume.itk = self._get_itk_image_from_array_vec( HR_nda_vec, self._HR_volume.itk )
         self._HR_volume.sitk = sitkh.convert_itk_to_sitk_image( self._HR_volume.itk )
-
-
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the approximate solution via LSMR solver 
-    #             (linear least-squares method)
-    # \date       2016-08-05 11:31:49+0100
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_lsmr(self, A_fw, A_bw, b):
-
-        ## Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
-
-        ## Incorporate initial value for least-squares solver:
-        HR_nda_vec = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
-        b -= A_fw(HR_nda_vec)
-
-        ## Linear least-squares method: 
-        # One (!) test showed that lsqr has lower residual than lsmr in the 
-        # end. However, Fong2011 states that "although LSQR and LSMR ultimately
-        # converge to similar points, it is safer to use LSMR in situations 
-        # where the solver must be terminated early" => Go for that
-        delta_HR_nda_vec = lsmr(A, b, maxiter=self._iter_max, show=True)[0]
-
-        ## Correct for shift
-        HR_nda_vec += delta_HR_nda_vec
-
-        return HR_nda_vec
-
-
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the approximate solution via LSQR solver
-    #             (linear least-squares method)
-    # \date       2016-08-05 11:31:49+0100
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_lsqr(self, A_fw, A_bw, b):
-        
-        ## Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
-
-        ## Incorporate initial value for least-squares solver:
-        HR_nda_vec = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
-        b -= A_fw(HR_nda_vec)
-
-        ## Linear least-squares methods: 
-        # One (!) test showed that lsqr has lower residual than lsmr in the 
-        # end. However, Fong2011 states that "although LSQR and LSMR ultimately
-        # converge to similar points, it is safer to use LSMR in situations 
-        # where the solver must be terminated early" => Go for that
-        delta_HR_nda_vec = lsqr(A, b, maxiter=self._iter_max, show=True)[0]
-
-        ## Correct for shift
-        HR_nda_vec += delta_HR_nda_vec
-
-        return HR_nda_vec
-
-
-    ##--------------------------------------------------------------------------
-    # \brief      Gets the approximate solution via L-BFGS-B solver
-    #             (non-linear with bounds).
-    # \date       2016-08-05 11:48:20+0100
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_LBFGSB(self, A_fw, A_bw, b):
-        
-        ## Set initial value and bounds
-        x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
-        bounds = [[0,None]]*x0.size
-
-        ## Set cost function and its jacobian
-        fun = lambda x: 0.5*np.sum((A_fw(x) - b)**2)
-        jac = lambda x: A_bw(A_fw(x)-b)
-
-        ## Run solver
-        HR_nda_vec = minimize(method='L-BFGS-B', fun=fun, x0=x0, options={'maxiter': self._iter_max, 'disp': True}, jac=jac, bounds=bounds).x
-
-        return HR_nda_vec
-        
-
-    ##--------------------------------------------------------------------------
-    # \brief      Gets the approximate solution via least_squares solver
-    #             (non-linear minimization with bounds).
-    # \date       2016-08-05 11:48:20+0100
-    # \remark     Does not go ahead in its computation
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_least_squares(self, A_fw, A_bw, b):
-
-        ## Set initial value and bounds
-        x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
-        bounds = (0,np.inf)
-
-        ## Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
-
-        ## Set residual and its Jacobian
-        fun = lambda x: A*x - b
-        jac =  lambda x: A
-        
-        ## Run solver
-        HR_nda_vec = least_squares(fun=fun, x0=x0, jac=jac, jac_sparsity=jac, method='trf', tr_solver='lsmr', bounds=bounds, max_nfev=self._iter_max, verbose=2).x 
-
-        return HR_nda_vec
-
-    
-    ##--------------------------------------------------------------------------
-    # \brief      Gets the approximate solution via lsq_linear solver
-    #             (linear least-squares with bounds).
-    # \date       2016-08-05 11:48:20+0100
-    # \remark     Does not show any output
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_lsq_linear(self, A_fw, A_bw, b):
-
-        ## Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
-
-        ## Run solver
-        HR_nda_vec = lsq_linear(A, b, bounds=(0, np.inf), max_iter=self._iter_max, lsq_solver='lsmr', lsmr_tol='auto', verbose=2).x
-        # HR_nda_vec = lsq_linear(A, b, max_iter=self._iter_max, lsq_solver=None, lsmr_tol='auto', verbose=2).x
-        
-        return HR_nda_vec
-
-
-    ##--------------------------------------------------------------------------
-    # \brief      Gets the approximate solution via nnls solver
-    #             (non-negative linear least-squares).
-    # \date       2016-08-05 11:48:20+0100
-    # \remark     Does not work with sparse linear operator
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_nnls(self, A_fw, A_bw, b):
-
-        ## Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
-
-        ## Run solver:
-        HR_nda_vec = nnls(A, b)
-
-        return HR_nda_vec
 
 
     ## Compute

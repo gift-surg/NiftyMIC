@@ -74,10 +74,10 @@ class TVL2Solver(Solver):
     # \param[in]     ADMM_iterations_output_dir              The ADMM iterations output dir
     # \param[in]     ADMM_iterations_output_filename_prefix  The ADMM iterations output filename prefix
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TV-L2"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TV-L2"):
 
         ## Run constructor of superclass
-        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max)               
+        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, minimizer, deconvolution_mode, predefined_covariance)               
         
         ## Settings for optimizer
         self._rho = rho
@@ -190,7 +190,7 @@ class TVL2Solver(Solver):
         ## Estimate inital value based on TK1 regularization
         if estimate_initial_value:
             print("Initial volume for ADMM is estimated by prior TK1 reconstruction step")
-            self._compute_initial_value_based_on_TK1()
+            self._compute_initial_value_based_on_TK1(alpha_cut=3, alpha=0.02, iter_max=10, minimizer="lsmr",deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
 
         ## Get data array of current volume estimate
         HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
@@ -271,8 +271,8 @@ class TVL2Solver(Solver):
     # \param[in]  alpha      The alpha
     # \param[in]  iter_max   The iterator maximum
     #
-    def _compute_initial_value_based_on_TK1(self, alpha_cut=3, alpha=0.02, iter_max=10):
-        SRR = tk.TikhonovSolver(self._stacks, self._HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max, reg_type="TK1")
+    def _compute_initial_value_based_on_TK1(self, alpha_cut, alpha, iter_max, minimizer, deconvolution_mode, predefined_covariance):
+        SRR = tk.TikhonovSolver(self._stacks, self._HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max, reg_type="TK1", minimizer=minimizer, deconvolution_mode=deconvolution_mode, predefined_covariance=predefined_covariance)
         SRR.run_reconstruction()
 
 
@@ -334,6 +334,11 @@ class TVL2Solver(Solver):
         print("\t\tMaximum number of TK1 solver iterations = " + str(self._iter_max))
         print("\t\tRegularization parameter alpha = " + str(self._alpha))
         print("\t\tRegularization parameter of augmented Lagrangian term rho = " + str(self._rho))
+        if self._deconvolution_mode in ["only_in_plane"]:
+            print("\t\t(Only in-plane deconvolution is performed)")
+
+        elif self._deconvolution_mode in ["predefined_covariance"]:
+            print("\t\t(Predefined covariance used: cov = diag(%s))" % (np.diag(self._predefined_covariance)))
         # print("\t\tTolerance = %.0e" %(self._tolerance))
 
         ## Update changing elements of right-hand side b
@@ -342,14 +347,12 @@ class TVL2Solver(Solver):
         ## Construct (sparse) linear operator A
         A_fw = lambda x: self._A_TK1(x, rho)
         A_bw = lambda x: self._A_adj_TK1(x, rho)
-        A = LinearOperator((self._N_total_slice_voxels+3*self._N_voxels_HR_volume, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
 
-        ## Compute least-square solution based on TK1-regularization
-        res = lsmr(A, b, maxiter=self._iter_max, show=True)
-        # res = lsqr(A, b, iter_lim=self._iter_max, show=True)
+        ## Run solver to compute least-square solution based on TK1-regularization
+        HR_nda_vec = self._get_approximate_solution[self._minimizer](A_fw, A_bw, b)
 
         ## Extract estimated solution as numpy array
-        HR_nda = res[0].reshape(self._HR_shape_nda)
+        HR_nda = HR_nda_vec.reshape(self._HR_shape_nda)
         
         return HR_nda
 

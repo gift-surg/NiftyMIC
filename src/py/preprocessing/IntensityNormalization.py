@@ -1,6 +1,10 @@
 ## \file IntensityNormalization.py
 #  \brief Normalize intensities of slices
 # 
+#  \remark Shall be replaced by IntensityCorrection class at some point. 
+#  Possibly add the Gaussian blurring used in here as additional step to the 
+#  class then
+# 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date June 2016
 
