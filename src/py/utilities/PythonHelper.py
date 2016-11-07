@@ -26,6 +26,29 @@ def pause():
     programPause = raw_input("Press the <ENTER> key to continue ...")
 
 
+
+##-----------------------------------------------------------------------------
+# \brief      Plot data array and save it if desired
+# \date       2016-11-07 21:29:13+0000
+#
+# \param      nda        Data array (2D so far)
+# \param      title      The title of the figure
+# \param      cmap       Color map "Greys_r", "jet", etc.
+# \param      directory  Directory where the figure shall be saved
+# \param      save_type  Filename extension of figure in case it is saved
+#
+def plot_array(nda, title="data", cmap="Greys_r", directory=None, save_type="pdf"):
+
+    ## Plot figure
+    fig = plt.figure(1)
+    plt.imshow(nda, cmap=cmap)
+    plt.title(title)
+    plt.axis('off')
+    if directory is not None:
+        fig.savefig(directory + title + "." + save_type)
+        print("Figure was saved to " + directory + title + "." + save_type)
+
+
 ##-----------------------------------------------------------------------------
 # \brief      Plot 3D numpy array slice by slice next to each other
 # \date       2016-11-06 01:39:28+0000
@@ -35,7 +58,7 @@ def pause():
 #
 # \param      nda3D_zyx  3D numpy data array in format (z,y,x) as it is given
 #                        after sitk.GetArrayFromImage for instance
-# \param      title      The title
+# \param      title      The title of the figure
 # \param      cmap       Color map "Greys_r", "jet", etc.
 #
 def plot_3D_array_slice_by_slice(nda3D_zyx, title="image", cmap="Greys_r"):

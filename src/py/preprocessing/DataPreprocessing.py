@@ -31,7 +31,7 @@ class DataPreprocessing:
         }        
         self._preprocessing_approach = "NoMaskProvided" # default
 
-        self._filename_prefix = ""
+        self._filename_prefix = None
 
         self._use_N4BiasFieldCorrector = False
         self._dilation_radius = 2
@@ -228,7 +228,11 @@ class DataPreprocessing:
             print "done"
 
             ## Create stack instance
-            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=self._filename_prefix+str(i), image_sitk_mask=mask_sitk)
+            if self._filename_prefix is not None:
+                filename = self._filename_prefix+str(i)
+            else:
+                filename = self._stacks[i].get_filename()
+            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=filename, image_sitk_mask=mask_sitk)
 
             ## Perform Bias Field correction if desired
             if self._use_N4BiasFieldCorrector:
@@ -252,7 +256,11 @@ class DataPreprocessing:
         for i in range(0, self._N_stacks):
 
             ## Preprocessed stack consists of untouched image and full binary mask
-            stack = st.Stack.from_sitk_image(image_sitk=self._stacks[i].sitk, name=self._filename_prefix+str(i), image_sitk_mask=self._stacks[i].sitk_mask)
+            if self._filename_prefix is not None:
+                filename = self._filename_prefix+str(i)
+            else:
+                filename = self._stacks[i].get_filename()
+            stack = st.Stack.from_sitk_image(image_sitk=self._stacks[i].sitk, name=filename, image_sitk_mask=self._stacks[i].sitk_mask)
 
             ## Perform Bias Field correction if desired
             if self._use_N4BiasFieldCorrector:
@@ -310,7 +318,11 @@ class DataPreprocessing:
             print "done"
 
             ## Create stack instance
-            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=self._filename_prefix+str(i), image_sitk_mask=mask_sitk)
+            if self._filename_prefix is not None:
+                filename = self._filename_prefix+str(i)
+            else:
+                filename = self._stacks[i].get_filename()
+            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=filename, image_sitk_mask=mask_sitk)
 
             ## Perform Bias Field correction if desired
             if self._use_N4BiasFieldCorrector:
@@ -341,7 +353,11 @@ class DataPreprocessing:
             print "done"
 
             ## Create stack instance
-            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=self._filename_prefix+str(i), image_sitk_mask=mask_sitk)
+            if self._filename_prefix is not None:
+                filename = self._filename_prefix+str(i)
+            else:
+                filename = self._stacks[i].get_filename()
+            stack = st.Stack.from_sitk_image(image_sitk=stack_sitk, name=filename, image_sitk_mask=mask_sitk)
 
             ## Perform Bias Field correction if desired
             if self._use_N4BiasFieldCorrector:

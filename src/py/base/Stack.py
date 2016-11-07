@@ -46,12 +46,11 @@ class Stack:
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         ## Append masks (either provided or binary mask)
-        if suffix_mask is not None:
-            if not os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
-                raise ValueError("File " + dir_input + filename + suffix_mask + ".nii.gz" +  " cannot be found." )
+        if suffix_mask is not None and os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
             stack.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
         else:
+            print("Mask file for " + dir_input + filename + ".nii.gz" +  " not be found. Binary mask created." )
             stack.sitk_mask = stack._generate_binary_mask()
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
@@ -302,7 +301,7 @@ class Stack:
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifying the filename. If not given the assigned one within Stack will be chosen.
     #  \param[in] write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
-    def write(self, directory="/tmp/", filename=None, write_mask=True, write_slices=False, write_transforms=False):
+    def write(self, directory="/tmp/", filename=None, write_mask=False, write_slices=False, write_transforms=False):
 
         ## Create directory if not existing
         os.system("mkdir -p " + directory)
@@ -410,9 +409,10 @@ class Stack:
     #
     def get_resampled_stack_from_slices(self, resampling_grid=None, interpolator="NearestNeighbor"):
 
-         ## Choose interpolator
+        ## Choose interpolator
         try:
-            interpolator = eval("sitk.sitk" + interpolator)
+            interpolator_str = interpolator
+            interpolator = eval("sitk.sitk" + interpolator_str)
         except:
             raise ValueError("Error: interpolator is not known")
 
@@ -494,7 +494,7 @@ class Stack:
         ## Get valid binary mask
         stack_resampled_slice_sitk_mask /= stack_resampled_slice_sitk_mask
 
-        stack = self.from_sitk_image(stack_resampled_sitk, "resampled_"+self._filename, stack_resampled_sitk_mask)
+        stack = self.from_sitk_image(stack_resampled_sitk, self._filename + "_" + interpolator_str, stack_resampled_sitk_mask)
 
         return stack
 
@@ -503,12 +503,15 @@ class Stack:
     #  its slices
     #  \param[in] spacing_new_scalar length of voxel side, scalar
     #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack_from_slices(self, spacing_new_scalar=None):
+    def get_isotropically_resampled_stack_from_slices(self, spacing_new_scalar=None, interpolator="NearestNeighbor"):
         resampled_stack = self.get_resampled_stack_from_slices()
 
         ## Choose interpolator
-        interpolator = sitk.sitkNearestNeighbor
-        # interpolator = sitk.sitkLinear
+        try:
+            interpolator_str = interpolator
+            interpolator = eval("sitk.sitk" + interpolator_str)
+        except:
+            raise ValueError("Error: interpolator is not known")
 
         ## Read original spacing (voxel dimension) and size of target stack:
         spacing = np.array(resampled_stack.sitk.GetSpacing())
@@ -550,7 +553,7 @@ class Stack:
             resampled_stack.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance
-        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, "isotropic_resampled_"+self._filename, isotropic_resampled_stack_sitk_mask)
+        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, self._filename + "_" + interpolator_str + "Iso", isotropic_resampled_stack_sitk_mask)
 
         return stack
 
@@ -564,7 +567,8 @@ class Stack:
 
         ## Choose interpolator
         try:
-            interpolator = eval("sitk.sitk" + interpolator)
+            interpolator_str = interpolator
+            interpolator = eval("sitk.sitk" + interpolator_str)
         except:
             raise ValueError("Error: interpolator is not known")
         
@@ -632,7 +636,7 @@ class Stack:
             self.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance
-        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, "isotropic_resampled_"+self._filename, isotropic_resampled_stack_sitk_mask)
+        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, self._filename + "_" + interpolator_str + "Iso", isotropic_resampled_stack_sitk_mask)
 
         return stack
 
