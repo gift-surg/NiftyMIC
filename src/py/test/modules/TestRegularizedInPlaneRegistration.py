@@ -107,31 +107,38 @@ class TestRegularizedInPlaneRegistration(unittest.TestCase):
     #
     def test_inplane_rigid_alignment_to_reference(self):
 
-        filename = "fetal_brain_0"
-        # filename = "FetalBrain_reconstruction_4stacks"
-        stack = st.Stack.from_filename(self.dir_test_data, filename)
+        filename_stack = "fetal_brain_0"
+        filename_recon = "FetalBrain_reconstruction_3stacks_myAlg"
+
+        stack_sitk = sitk.ReadImage(self.dir_test_data + filename_stack + ".nii.gz")
+        recon_sitk = sitk.ReadImage(self.dir_test_data + filename_recon + ".nii.gz")
+
+        recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
+        stack = st.Stack.from_sitk_image(recon_resampled_sitk)
+
+        # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
         ## Create in-plane motion corruption (last coordinate zero!)
-        angle_z = 0.03
+        angle_z = 0.2
         center = (0,0,0)
-        translation = np.array([0, 0, 0])
+        translation = np.array([1, -3, 0])
 
         ## Get corrupted stack and corresponding motions
         stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center, translation)
-        
-        sitkh.show_stacks([stack, stack_corrupted])
-        # stack.show(1)
 
         ## Perform in-plane rigid registration
-        inplane_registration = inplanereg.RegularizedInPlaneRegistration(stack_corrupted)
+        inplane_registration = inplanereg.RegularizedInPlaneRegistration(stack_corrupted, stack)
         # inplane_registration.use_verbose(True)
         inplane_registration.run_regularized_rigid_inplane_registration()
 
         stack_registered = inplane_registration.get_registered_stack()
         parameters = inplane_registration.get_parameters()
-        stack_registered.get_resampled_stack_from_slices().show()
-
+            
         print parameters
+
+        sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(interpolator="Linear")])
+
+        # print parameters
         
             # self.assertEqual(np.round(
             #     np.linalg.norm(nda_diff)
