@@ -18,7 +18,7 @@ sys.path.append( dir_src_root )
 
 ## Import modules
 import base.Stack as st
-import registration.RegularizedInPlaneRegistration as inplanereg
+import registration.IntraStackRegistration as inplanereg
 import utilities.SimpleITKHelper as sitkh
 
 
@@ -94,7 +94,6 @@ class TestRegularizedInPlaneRegistration(unittest.TestCase):
     def setUp(self):        
         pass
 
-    """
     ##-------------------------------------------------------------------------
     # \brief      Verify that in-plane rigid registration works
     # \date       2016-11-02 21:56:19+0000
@@ -120,17 +119,20 @@ class TestRegularizedInPlaneRegistration(unittest.TestCase):
         # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
         ## Create in-plane motion corruption (last coordinate zero!)
-        angle_z = 0.2
+        angle_z = 0.
         center = (0,0,0)
-        translation = np.array([1, -3, 0])
+        translation = np.array([1, -2, 0])
 
         ## Get corrupted stack and corresponding motions
         stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center, translation)
 
         ## Perform in-plane rigid registration
-        inplane_registration = inplanereg.RegularizedInPlaneRegistration(stack_corrupted, stack)
+        inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
+        inplane_registration.set_initializer_type("moments")
+        # inplane_registration._run_registration_pipeline_initialization()
+        # inplane_registration._apply_motion_correction_and_compute_slice_transforms()
         # inplane_registration.use_verbose(True)
-        inplane_registration.run_regularized_rigid_inplane_registration()
+        inplane_registration.run_registration()
 
         stack_registered = inplane_registration.get_registered_stack()
         parameters = inplane_registration.get_parameters()
@@ -145,9 +147,8 @@ class TestRegularizedInPlaneRegistration(unittest.TestCase):
             #     np.linalg.norm(nda_diff)
             # , decimals = self.accuracy), 0)
 
-    """
 
-    def test_get_initial_parameters(self):
+    def test_(self):
 
         ## Create stack of slice with only a dot in the middle
         shape_xy = 15
@@ -157,35 +158,32 @@ class TestRegularizedInPlaneRegistration(unittest.TestCase):
         # nda_2D[25,25] = 1
         # nda_3D = np.tile(nda_2D, (shape_z, 1, 1))
 
+        ## Create 'motion corrupted stack', i.e. point moves diagonally with step one
         nda_3D = np.zeros((shape_z, shape_xy, shape_xy))
         for i in range(0, shape_z):
             nda_3D[i,i,i] = 1
-
+        
         stack_sitk = sitk.GetImageFromArray(nda_3D)
         stack = st.Stack.from_sitk_image(stack_sitk)
+        # stack.show_slices()
 
-        ## Create in-plane motion corruption (last coordinate zero!)
-        angle_z = 0
-        center = (0,0,0)
-        translation = np.array([1, -3, 0])
+        ## Ground truth-parameter: zero angle but translation = (1, 1) from one slice to the next
+        parameters = np.ones((shape_z, 3))
+        parameters[:,0] = 0
+        for i in range(0, shape_z):
+            parameters[i,:] *= i
 
-        ## Get corrupted stack and corresponding motions
-        stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center, translation)
+        inplane_registration = inplanereg.IntraStackRegistration(stack)
+        inplane_registration.set_initializer_type("moments")
+        # inplane_registration.set_initializer_type("identity")
+        inplane_registration._run_registration_pipeline_initialization()
+        parameters_est = inplane_registration.get_parameters()
 
-        ## Perform in-plane rigid registration
-        transforms_sitk = [sitk.Euler2DTransform()] * shape_z
+        nda_diff = parameters - parameters_est
 
-        inplane_registration = inplanereg.RegularizedInPlaneRegistration(stack)
-        inplane_registration.set_initializer_type("MOMENTS")
-        inplane_registration.run_regularized_rigid_inplane_registration()
-        stack_registered = inplane_registration.get_registered_stack()
-        parameters = inplane_registration.get_parameters()
-            
-        print parameters
+        self.assertEqual(np.round(
+                np.linalg.norm(nda_diff)
+            , decimals = self.accuracy), 0)
 
-        sitkh.show_stacks([stack, stack_registered.get_resampled_stack_from_slices(interpolator="Linear")])
-
-
-        # inplane_registration.use_verbose(True)
 
 

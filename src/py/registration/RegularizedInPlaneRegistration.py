@@ -22,7 +22,7 @@ import base.Slice as sl
 import base.Stack as st
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
-from registration.RegistrationBase import RegistrationBase
+from registration.StackRegistrationBase import StackRegistrationBase
 
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
@@ -31,15 +31,18 @@ PIXEL_TYPE = itk.D
 IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 
 TODO: 
-    1 Start from registration_type="rigid" to design the class based on that input!
-    2 With that, create a possibility to test the initialization tranform routine!
-    3 change fixed/moving to stack/reference
-class RegularizedInPlaneRegistration(RegistrationBase):
+    - Start from registration_type="rigid" to design the class based on that input!
+    - With that, create a possibility to test the initialization tranform routine!
+    - change fixed/moving to stack/reference
+    - RegularizedInPlaneRegistration -> abstract IntraStackRegistration as superclass (how to test methods of abstract classes? e.g. get_initialize_transform will be part of it. well, not really ...)
+    - Name IntraStackRegistration -> Affine/Rigid/Similarity IntraStackRegistration (which includes regularization)
+    - Affine/Rigid StackToVolumeRegistration
+class RegularizedInPlaneRegistration(StackRegistrationBase):
 
     def __init__(self, fixed=None, moving=None, registration_type="rigid", use_fixed_mask=False, use_moving_mask=False, use_verbose=False, initializer_type=None):
 
         ## Run constructor of superclass
-        RegistrationBase.__init__(self, fixed=fixed, moving=moving, use_fixed_mask=use_fixed_mask, use_moving_mask=use_moving_mask, use_verbose=use_verbose, initializer_type=initializer_type)
+        StackRegistrationBase.__init__(self, fixed=fixed, moving=moving, use_fixed_mask=use_fixed_mask, use_moving_mask=use_moving_mask, use_verbose=use_verbose, initializer_type=initializer_type)
 
         self._nda_shape = np.array(self._fixed.sitk.GetSize())[::-1]
         
@@ -68,7 +71,6 @@ class RegularizedInPlaneRegistration(RegistrationBase):
 
 
     def get_registered_stack(self):
-   
         return st.Stack.from_stack(self._stack_corrected)
 
 
