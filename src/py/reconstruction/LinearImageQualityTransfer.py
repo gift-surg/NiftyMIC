@@ -29,16 +29,17 @@ import base.Stack as st
 class LinearImageQualityTransfer(object):
 
 
-    def __init__(self, stack, references, kernel_shape=(6,6), convolution_mode="constant"):
+    def __init__(self, stack, references=None, kernel_shape=(6,6), convolution_mode="constant"):
 
         self._stack = st.Stack.from_stack(stack)
         self._N_slices = self._stack.get_number_of_slices()
 
-        self._N_references = len(references)
-        self._references = [None]*self._N_references
+        if references is not None:
+            self._N_references = len(references)
+            self._references = [None]*self._N_references
 
-        for i in range(0, self._N_references):
-            self._references[i] = st.Stack.from_stack(references[i])
+            for i in range(0, self._N_references):
+                self._references[i] = st.Stack.from_stack(references[i])
     
         self._kernel_shape = np.array(kernel_shape)
         self._convolution_mode = convolution_mode
@@ -71,6 +72,9 @@ class LinearImageQualityTransfer(object):
     def get_kernel(self):
         return np.array(self._kernel)
 
+
+    def set_kernel(self, kernel):
+        self._kernel = np.array(kernel)
 
     ##-------------------------------------------------------------------------
     # \date       2016-07-29 12:30:30+0100

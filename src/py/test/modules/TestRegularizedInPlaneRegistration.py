@@ -94,6 +94,7 @@ class TestRegularizedInPlaneRegistration(unittest.TestCase):
     def setUp(self):        
         pass
 
+    """
     ##-------------------------------------------------------------------------
     # \brief      Verify that in-plane rigid registration works
     # \date       2016-11-02 21:56:19+0000
@@ -143,3 +144,48 @@ class TestRegularizedInPlaneRegistration(unittest.TestCase):
             # self.assertEqual(np.round(
             #     np.linalg.norm(nda_diff)
             # , decimals = self.accuracy), 0)
+
+    """
+
+    def test_get_initial_parameters(self):
+
+        ## Create stack of slice with only a dot in the middle
+        shape_xy = 15
+        shape_z = 15
+
+        # nda_2D = np.zeros((shape_xy, shape_xy))
+        # nda_2D[25,25] = 1
+        # nda_3D = np.tile(nda_2D, (shape_z, 1, 1))
+
+        nda_3D = np.zeros((shape_z, shape_xy, shape_xy))
+        for i in range(0, shape_z):
+            nda_3D[i,i,i] = 1
+
+        stack_sitk = sitk.GetImageFromArray(nda_3D)
+        stack = st.Stack.from_sitk_image(stack_sitk)
+
+        ## Create in-plane motion corruption (last coordinate zero!)
+        angle_z = 0
+        center = (0,0,0)
+        translation = np.array([1, -3, 0])
+
+        ## Get corrupted stack and corresponding motions
+        stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center, translation)
+
+        ## Perform in-plane rigid registration
+        transforms_sitk = [sitk.Euler2DTransform()] * shape_z
+
+        inplane_registration = inplanereg.RegularizedInPlaneRegistration(stack)
+        inplane_registration.set_initializer_type("MOMENTS")
+        inplane_registration.run_regularized_rigid_inplane_registration()
+        stack_registered = inplane_registration.get_registered_stack()
+        parameters = inplane_registration.get_parameters()
+            
+        print parameters
+
+        sitkh.show_stacks([stack, stack_registered.get_resampled_stack_from_slices(interpolator="Linear")])
+
+
+        # inplane_registration.use_verbose(True)
+
+

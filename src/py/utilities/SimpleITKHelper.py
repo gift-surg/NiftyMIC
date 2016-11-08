@@ -49,6 +49,13 @@ def get_composite_sitk_affine_transform(transform_outer, transform_inner):
     c_composite = c_inner
     t_composite = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
 
+    ## appropriate_transform needs to be the "biggest" of inner and outer trafo
+    # composite_transform = sitk.Transform(appropriate_transform)
+    # composite_transform.SetMatrix(A_composite)
+    # composite_transform.SetCenter(c_composite)
+    # composite_transform.SetTranslation(t_composite)
+    # return composite_transform
+
     return sitk.AffineTransform(A_composite.flatten(), t_composite, c_composite)
 
 
@@ -77,7 +84,7 @@ def get_composite_sitk_euler_transform(transform_outer, transform_inner):
     c_composite = c_inner
     t_composite = A_outer.dot(t_inner + c_inner - c_outer) + t_outer + c_outer - c_inner
 
-    euler = sitk.Euler3DTransform()
+    euler = eval("sitk." + transform_outer.GetName() + "()")
     euler.SetMatrix(A_composite.flatten())
     euler.SetTranslation(t_composite)
     euler.SetCenter(c_composite)

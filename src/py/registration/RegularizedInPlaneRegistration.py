@@ -30,13 +30,16 @@ PIXEL_TYPE = itk.D
 ## ITK image type
 IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 
-
+TODO: 
+    1 Start from registration_type="rigid" to design the class based on that input!
+    2 With that, create a possibility to test the initialization tranform routine!
+    3 change fixed/moving to stack/reference
 class RegularizedInPlaneRegistration(RegistrationBase):
 
-    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, use_verbose=False):
+    def __init__(self, fixed=None, moving=None, registration_type="rigid", use_fixed_mask=False, use_moving_mask=False, use_verbose=False, initializer_type=None):
 
         ## Run constructor of superclass
-        RegistrationBase.__init__(self, fixed=fixed, moving=moving, use_fixed_mask=use_fixed_mask, use_moving_mask=use_moving_mask, use_verbose=use_verbose)
+        RegistrationBase.__init__(self, fixed=fixed, moving=moving, use_fixed_mask=use_fixed_mask, use_moving_mask=use_moving_mask, use_verbose=use_verbose, initializer_type=initializer_type)
 
         self._nda_shape = np.array(self._fixed.sitk.GetSize())[::-1]
         
@@ -47,6 +50,13 @@ class RegularizedInPlaneRegistration(RegistrationBase):
 
         self._registration_transforms_sitk = [None]*self._N_slices
         self._parameters = [None]*self._N_slices
+
+
+        self._get_initial_parameters = {
+            None:           self._get_initial_parameters_None,
+            "MOMENTS":      self._get_initial_parameters_GEOMETRY_MOMENTS,
+            "GEOMETRY":     self._get_initial_parameters_GEOMETRY_MOMENTS
+        }
 
 
     def get_parameters(self):
@@ -62,7 +72,6 @@ class RegularizedInPlaneRegistration(RegistrationBase):
         return st.Stack.from_stack(self._stack_corrected)
 
 
-
     def run_regularized_rigid_inplane_registration(self):
         
         transforms_PP_3D_sitk = self._get_list_of_3D_rigid_transforms_of_slices(self._fixed)
@@ -70,7 +79,6 @@ class RegularizedInPlaneRegistration(RegistrationBase):
         ## Get projected (and masked) slices
         self._2D_projected_slices = self._get_2D_projected_and_masked_slices(self._fixed, transforms_PP_3D_sitk)
 
-        self._moving_nda = sitk.GetArrayFromImage(self._moving.sitk)
 
 
         self._degrees_of_freedom = 3
@@ -79,34 +87,63 @@ class RegularizedInPlaneRegistration(RegistrationBase):
         self._transform_PI_fixed_2D_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(self._2D_projected_slices[0].sitk)
         self._fixed_grid_2D_sitk = sitk.Image(self._2D_projected_slices[0].sitk)
 
-        parameters0 = np.zeros((self._N_slices, self._degrees_of_freedom)).flatten()
+        parameters0 = self._get_initial_parameters[self._initializer_type](transforms_sitk)
         
         fun_stack = lambda x: self._get_residual_data_fit(x, transforms_sitk)
+        
+        # self._moving_nda = sitk.GetArrayFromImage(self._moving.sitk)
         fun_ref = lambda x: self._get_residual_data_fit_reference(x, transforms_sitk)
-        fun_reg = lambda x: x
+        
+        fun_reg = lambda x: (x-parameters0)
+        
         alpha = 0.05
         beta = 0.001
 
-        fun = lambda x: np.concatenate((fun_ref(x), alpha*fun_stack(x), beta*fun_reg(x)))
+        ## Get combined cost function
+        fun = lambda x: fun_stack(x)
+        # fun = lambda x: np.concatenate((fun_ref(x), alpha*fun_stack(x), beta*fun_reg(x)))
 
 
         # Non-linear least-squares method:
         time_start = ph.start_timing()
-        res = least_squares(fun=fun, x0=parameters0, method='trf', loss='linear', verbose=2) 
+        # res = least_squares(fun=fun, x0=parameters0, method='trf', loss='linear', verbose=2) 
         # res = least_squares(fun=fun, x0=parameters0, method='trf', loss='soft_l1', verbose=2) 
         # res = least_squares(fun=fun, x0=parameters0, method='lm', loss='linear', verbose=1) 
         # res = least_squares(fun=fun, x0=parameters0, method='dogbox', loss='linear', verbose=2) 
         self._elapsed_time = ph.stop_timing(time_start)
 
         ## Get transformation parameters for each slice
-        self._parameters = res.x.reshape(self._N_slices, self._degrees_of_freedom)
+        # self._parameters = res.x.reshape(self._N_slices, self._degrees_of_freedom)
+        self._parameters = parameters0.reshape(self._N_slices, self._degrees_of_freedom)
 
         ## Get corrected stack based on registration
         self._stack_corrected, self._registration_transforms_sitk = self._apply_motion_correction(transforms_PP_3D_sitk)
 
 
-    # def _get_regularization_parameter(self, parameters_vec):
-        # return para
+    def _get_initial_parameters_None(self, transforms_sitk):
+        return np.zeros((self._N_slices, self._degrees_of_freedom)).flatten()
+
+
+    def _get_initial_parameters_GEOMETRY_MOMENTS(self, transforms_sitk):
+
+        parameters = np.zeros((self._N_slices, len(transforms_sitk[0].GetParameters())))
+
+        compensation_sitk = transforms_sitk[0]
+
+        for i in range(1, self._N_slices):
+            fixed_warped_sitk = sitkh.get_transformed_sitk_image(self._2D_projected_slices[i-1].sitk, sitk.Euler2DTransform(compensation_sitk.GetInverse()))
+            initial_transform_sitk = sitk.CenteredTransformInitializer(fixed_warped_sitk, self._2D_projected_slices[i].sitk, transforms_sitk[i], eval("sitk.CenteredTransformInitializerFilter." + self._initializer_type))
+
+            ## Create a copy of initial transform
+            initial_transform_sitk = eval("sitk." + transforms_sitk[i].GetName() + "(initial_transform_sitk)")
+
+            parameters[i,:] = initial_transform_sitk.GetParameters()
+
+            compensation_sitk = initial_transform_sitk
+
+        print parameters
+
+        return parameters.flatten()
 
 
     def _get_residual_data_fit_reference(self, parameters_vec, transforms_sitk, interpolator=sitk.sitkLinear):
@@ -115,7 +152,7 @@ class RegularizedInPlaneRegistration(RegistrationBase):
         residual = np.zeros((self._N_slices, self._N_2D_voxels))
         
         ## Reshape parameters for easier access
-        parameters = parameters_vec.reshape(-1, self._degrees_of_freedom)            
+        parameters = parameters_vec.reshape(-1, self._degrees_of_freedom)
 
         for i in range(0, self._N_slices):
             ## Get slice_i(T(theta_i, x))
@@ -123,7 +160,7 @@ class RegularizedInPlaneRegistration(RegistrationBase):
             slice_i_sitk = sitk.Resample(self._2D_projected_slices[i].sitk, self._fixed_grid_2D_sitk, transforms_sitk[i], interpolator)
             slice_i_nda = sitk.GetArrayFromImage(slice_i_sitk)
 
-            ## Compute residual slice_i(T(theta_i, x)) - slice_{i+1}(T(theta_{i+1}, x))
+            ## Compute residual slice_i(T(theta_i, x)) - ref(x))
             residual[i,:] = (slice_i_nda - self._moving_nda[i,:]).flatten()
 
         return residual.flatten()

@@ -160,7 +160,7 @@ class InPlaneRegistration:
 
     ## Set type of centered transform initializer
     #  \param[in] initializer_type
-    def set_centered_transform_initializer(self, initializer_type):
+    def set_initializer_type(self, initializer_type):
         if initializer_type not in [None, "MOMENTS", "GEOMETRY"]:
             raise ValueError("Error: centered transform initializer type can only be 'None', MOMENTS' or 'GEOMETRY'")
 
@@ -309,7 +309,7 @@ class InPlaneRegistration:
         registration_2D.set_metric(self._metric)
         registration_2D.set_interpolator(self._interpolator)
         registration_2D.set_scales_estimator(self._scales_estimator)
-        registration_2D.set_centered_transform_initializer(self._initializer_type)
+        registration_2D.set_initializer_type(self._initializer_type)
         registration_2D.use_verbose(self._use_verbose)
         registration_2D.use_multiresolution_framework(self._use_multiresolution_framework)
 
@@ -371,7 +371,7 @@ class InPlaneRegistration:
         registration_2D.set_metric(self._metric)
         registration_2D.set_interpolator(self._interpolator)
         registration_2D.set_scales_estimator(self._scales_estimator)
-        registration_2D.set_centered_transform_initializer(self._initializer_type)
+        registration_2D.set_initializer_type(self._initializer_type)
         registration_2D.use_verbose(self._use_verbose)
         registration_2D.use_multiresolution_framework(self._use_multiresolution_framework)
 
@@ -477,7 +477,7 @@ class InPlaneRegistration:
         registration_2D.set_metric(self._metric)
         registration_2D.set_interpolator(self._interpolator)
         registration_2D.set_scales_estimator(self._scales_estimator)
-        registration_2D.set_centered_transform_initializer(self._initializer_type)
+        registration_2D.set_initializer_type(self._initializer_type)
         registration_2D.use_verbose(self._use_verbose)
         registration_2D.use_multiresolution_framework(self._use_multiresolution_framework)
 

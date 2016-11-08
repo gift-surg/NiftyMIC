@@ -42,7 +42,7 @@ class RegistrationBase(object):
     # \param      use_moving_mask  The use moving mask
     # \param      use_verbose      The use verbose
     #
-    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, use_verbose=False):
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, use_verbose=False, initializer_type=None):
 
         ## Set Fixed and moving stacks
         if fixed is not None:
@@ -61,6 +61,9 @@ class RegistrationBase(object):
 
         ## Verbose computation
         self._use_verbose = use_verbose
+
+        ## Initializer type
+        self._initializer_type = initializer_type
 
 
     ##-------------------------------------------------------------------------
@@ -138,6 +141,36 @@ class RegistrationBase(object):
     #
     def use_verbose(self, flag):
         self._use_verbose = flag
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the initializer type used to initialize the registration
+    # \date       2016-11-08 00:20:29+0000
+    #
+    # The initial transform can either be the identity ('None') or be based on
+    # the moments ('MOMENTS') or geometry ('GEOMETRY') of the fixed and moving
+    # image.
+    #
+    # \param      self              The object
+    # \param      initializer_type  The initializer type to be either 'None',
+    #                               'MOMENTS' or 'GEOMETRY'
+    #
+    def set_initializer_type(self, initializer_type):
+        if initializer_type not in [None, "MOMENTS", "GEOMETRY"]:
+            raise ValueError("Error: centered transform initializer type can only be 'None', MOMENTS' or 'GEOMETRY'")
+
+        self._initializer_type = initializer_type
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the initializer type.
+    # \date       2016-11-08 00:25:00+0000
+    #
+    # \param      self  The object
+    #
+    # \return     The initializer type.
+    #
+    def get_initializer_type(self):
+        return self._initializer_type
 
 
     ##-------------------------------------------------------------------------

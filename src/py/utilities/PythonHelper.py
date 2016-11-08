@@ -6,7 +6,7 @@
 
 
 ## Import libraries
-# import os                       # used to execute terminal commands in python
+import os                       # used to execute terminal commands in python
 # import sys
 # import itk
 # import SimpleITK as sitk
@@ -17,6 +17,7 @@ from datetime import timedelta
 
 ## Import modules
 # import utilities.SimpleITKHelper as sitkh
+
 
 ##-----------------------------------------------------------------------------
 # \brief      Wait for <ENTER> to proceed the execution
@@ -31,22 +32,40 @@ def pause():
 # \brief      Plot data array and save it if desired
 # \date       2016-11-07 21:29:13+0000
 #
-# \param      nda        Data array (2D so far)
+# \param      nda        Data array (only 2D so far)
 # \param      title      The title of the figure
 # \param      cmap       Color map "Greys_r", "jet", etc.
-# \param      directory  Directory where the figure shall be saved
+# \param      directory  In case given, figure will be saved to this directory
 # \param      save_type  Filename extension of figure in case it is saved
 #
-def plot_array(nda, title="data", cmap="Greys_r", directory=None, save_type="pdf"):
+# \remark     Could possibly use that as "master plot" and call the respective
+#             function like 'plot_3D_array_slice_by_slice' depending on the
+#             type
+#
+def plot_array(nda, title="data", cmap="Greys_r", colorbar=False, directory=None, save_type="pdf"):
 
     ## Plot figure
     fig = plt.figure(1)
     plt.imshow(nda, cmap=cmap)
     plt.title(title)
     plt.axis('off')
+    if colorbar:
+        plt.colorbar()
+
+    ## If directory is given: Save 
     if directory is not None:
+        
+        ## Create directory in case it does not exist already
+        os.system("mkdir -p " + directory)
+        
+        ## Add backslash if not given
+        if directory[-1] is not "/":
+            directory += "/"
+        
         fig.savefig(directory + title + "." + save_type)
         print("Figure was saved to " + directory + title + "." + save_type)
+    
+    plt.show(block=False)
 
 
 ##-----------------------------------------------------------------------------

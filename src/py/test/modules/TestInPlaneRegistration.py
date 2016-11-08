@@ -129,7 +129,7 @@ class TestInPlaneRegistration(unittest.TestCase):
         inplane_registration.set_alignment_approach("rigid_inplane_to_reference")
         inplane_registration.set_metric("MeanSquares")
         inplane_registration.set_scales_estimator("Jacobian")
-        inplane_registration.set_centered_transform_initializer("MOMENTS") # MOMENTS works better than GEOMETRY here
+        inplane_registration.set_initializer_type("MOMENTS") # MOMENTS works better than GEOMETRY here
         # inplane_registration.use_verbose(True)
         inplane_registration.run_registration()
 
@@ -210,7 +210,7 @@ class TestInPlaneRegistration(unittest.TestCase):
         inplane_registration.set_metric("MeanSquares")
         # inplane_registration.use_multiresolution_framework(True) #improves for some slices but makes it worse for others
         inplane_registration.set_scales_estimator("Jacobian")
-        inplane_registration.set_centered_transform_initializer('MOMENTS')
+        inplane_registration.set_initializer_type('MOMENTS')
         # inplane_registration.use_verbose(True)
         inplane_registration.run_registration()
         stack_aligned = inplane_registration.get_inplane_registered_stack()
@@ -308,7 +308,7 @@ class TestInPlaneRegistration(unittest.TestCase):
         inplane_registration.set_alignment_approach("similarity_inplane_to_reference")
         inplane_registration.set_metric("MeanSquares")
         inplane_registration.set_scales_estimator("Jacobian")
-        inplane_registration.set_centered_transform_initializer('MOMENTS') #MOMENTS causes error message at times
+        inplane_registration.set_initializer_type('MOMENTS') #MOMENTS causes error message at times
         # inplane_registration.use_verbose(True)
         inplane_registration.use_multiresolution_framework(True) #improves for some slices but makes it worse for others
         inplane_registration.run_registration()
