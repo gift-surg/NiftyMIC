@@ -51,7 +51,7 @@ class RegularizedInPlaneRegistration(StackRegistrationBase):
 
         self._N_residual = (self._N_slices-1) * self._N_2D_voxels
 
-        self._registration_transforms_sitk = [None]*self._N_slices
+        self._slice_transforms_sitk = [None]*self._N_slices
         self._parameters = [None]*self._N_slices
 
 
@@ -67,7 +67,7 @@ class RegularizedInPlaneRegistration(StackRegistrationBase):
 
 
     def get_registration_transform_sitk(self):
-        return np.array(self._registration_transforms_sitk)
+        return np.array(self._slice_transforms_sitk)
 
 
     def get_registered_stack(self):
@@ -119,7 +119,7 @@ class RegularizedInPlaneRegistration(StackRegistrationBase):
         self._parameters = parameters0.reshape(self._N_slices, self._degrees_of_freedom)
 
         ## Get corrected stack based on registration
-        self._stack_corrected, self._registration_transforms_sitk = self._apply_motion_correction(transforms_PP_3D_sitk)
+        self._stack_corrected, self._slice_transforms_sitk = self._apply_motion_correction(transforms_PP_3D_sitk)
 
 
     def _get_initial_parameters_None(self, transforms_sitk):
@@ -226,7 +226,7 @@ class RegularizedInPlaneRegistration(StackRegistrationBase):
         slices = stack_corrected.get_slices()
         transform_2D_sitk = sitk.Euler2DTransform()
 
-        registration_transforms_sitk = [None] * self._N_slices
+        slice_transforms_sitk = [None] * self._N_slices
 
         for i in range(0, self._N_slices):
             transform_2D_sitk.SetParameters(self._parameters[i,:])
@@ -241,9 +241,9 @@ class RegularizedInPlaneRegistration(StackRegistrationBase):
 
             slices[i].update_motion_correction(affine_transform_sitk)
             
-            registration_transforms_sitk[i] = affine_transform_sitk
+            slice_transforms_sitk[i] = affine_transform_sitk
 
-        return stack_corrected, registration_transforms_sitk
+        return stack_corrected, slice_transforms_sitk
 
 
 

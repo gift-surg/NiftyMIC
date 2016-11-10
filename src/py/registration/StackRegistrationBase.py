@@ -45,7 +45,7 @@ class StackRegistrationBase(object):
     # \param      use_reference_mask  Use reference mask for registration, bool
     # \param      use_verbose         Verbose output, bool
     #
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear"):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1):
 
         ## Set Fixed and reference stacks
         if stack is not None:
@@ -67,12 +67,11 @@ class StackRegistrationBase(object):
         self._use_verbose = use_verbose
 
         ## Initializer type
-        self._get_initial_transform_parameters = {
-            "identity"  :   self._get_initial_transform_parameters_identity,
-            "moments"   :   self._get_initial_transform_parameters_geometry_moments,
-            "geometry"  :   self._get_initial_transform_parameters_geometry_moments
+        self._get_initial_transforms_and_parameters = {
+            "identity"  :   self._get_initial_transforms_and_parameters_identity,
+            "moments"   :   self._get_initial_transforms_and_parameters_geometry_moments,
+            "geometry"  :   self._get_initial_transforms_and_parameters_geometry_moments
         }
-
         self._dictionary_initializer_type_sitk = {
             "identity"  :   None,
             "moments"   :   "MOMENTS",
@@ -80,8 +79,14 @@ class StackRegistrationBase(object):
         }
         self._initializer_type = initializer_type
 
+        ## Interpolator
         self._interpolator = interpolator
         self._interpolator_sitk = eval("sitk.sitk" + self._interpolator)
+
+        ## Set weights for cost function of each term/residual
+        self._alpha_neighbour = alpha_neighbour
+        self._alpha_reference = alpha_reference
+        self._alpha_parameter = alpha_parameter
 
 
     ##-------------------------------------------------------------------------
@@ -210,6 +215,50 @@ class StackRegistrationBase(object):
 
 
     ##-------------------------------------------------------------------------
+    # \brief      Sets the weight for the residual between the slice neighbours
+    # \date       2016-11-10 00:59:59+0000
+    #
+    # \param      self             The object
+    # \param      alpha_neighbour  The alpha neighbour
+    #
+    def set_alpha_neighbour(self, alpha_neighbour):
+        self._alpha_neighbour = alpha_neighbour
+
+    def get_alpha_neighbour(self):
+        return self._alpha_neighbour
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the weight for the residual between the slice neighbours
+    #             and the reference
+    # \date       2016-11-10 01:00:41+0000
+    #
+    # \param      self             The object
+    # \param      alpha_reference  The alpha reference
+    #
+    def set_alpha_reference(self, alpha_reference):
+        self._alpha_reference = alpha_reference
+
+    def get_alpha_reference(self):
+        return self._alpha_reference
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the weight for the residual between the slice neighbours
+    # \date       2016-11-10 01:01:18+0000
+    #
+    # \param      self             The object
+    # \param      alpha_parameter  The alpha parameter
+    #
+    # \return     { description_of_the_return_value }
+    #
+    def set_alpha_parameter(self, alpha_parameter):
+        self._alpha_parameter = alpha_parameter
+
+    def get_alpha_parameter(self):
+        return self._alpha_parameter
+
+
+    ##-------------------------------------------------------------------------
     # \brief      Gets the parameters estimated by registration algorithm.
     # \date       2016-11-06 17:05:38+0000
     #
@@ -229,7 +278,7 @@ class StackRegistrationBase(object):
     #
     # \return     The registered stack with motion corrected slices
     #
-    def get_registered_stack(self):
+    def get_corrected_stack(self):
         return st.Stack.from_stack(self._stack_corrected)
 
 
@@ -255,8 +304,8 @@ class StackRegistrationBase(object):
     #
     # \return     The registraton transforms sitk.
     #
-    def get_registration_transforms_sitk(self):
-        return np.array(self._registration_transforms_sitk)
+    def get_slice_transforms_sitk(self):
+        return np.array(self._slice_transforms_sitk)
 
 
     ##-------------------------------------------------------------------------
@@ -275,6 +324,12 @@ class StackRegistrationBase(object):
         # print("\tprior residual = %.3e" %(self._residual_prior))
 
 
+    ##-------------------------------------------------------------------------
+    # \brief      Run the registration
+    # \date       2016-11-10 01:39:03+0000
+    #
+    # \param      self  The object
+    #
     def run_registration(self):
 
         ## Initialize registration pipeline         
@@ -286,8 +341,8 @@ class StackRegistrationBase(object):
 
         # Non-linear least-squares method:
         time_start = ph.start_timing()
-        # res = least_squares(fun=fun, x0=self._parameters.flatten(), method='trf', loss='linear', verbose=2) 
-        res = least_squares(fun=fun, x0=self._parameters.flatten(), method='trf', loss='soft_l1', verbose=2) 
+        res = least_squares(fun=fun, x0=self._parameters.flatten(), method='trf', loss='linear', verbose=2) 
+        # res = least_squares(fun=fun, x0=self._parameters.flatten(), method='trf', loss='soft_l1', verbose=2) 
         # res = least_squares(fun=fun, x0=parameters0, method='lm', loss='linear', verbose=1) 
         # res = least_squares(fun=fun, x0=parameters0, method='dogbox', loss='linear', verbose=2) 
         self._elapsed_time = ph.stop_timing(time_start)
@@ -300,8 +355,34 @@ class StackRegistrationBase(object):
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Gets the initial parameters for 'None', i.e. for identity
-    #             transform.
+    # \brief      Method to initialize the registration with all
+    #             precomputations which can be done before the actual
+    #             optimization.
+    # \date       2016-11-10 01:37:13+0000
+    #
+    # \param      self  The object
+    #
+    @abstractmethod
+    def _run_registration_pipeline_initialization(self):
+        pass
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the residual call used for the least_squares
+    #             optimization routine
+    # \date       2016-11-10 01:38:08+0000
+    #
+    # \param      self  The object
+    #
+    # \return     The residual call.
+    #
+    @abstractmethod
+    def _get_residual_call(self):
+        pass
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the initial parameters in case of identity transform.
     # \date       2016-11-08 15:06:54+0000
     #
     # \param      self  The object
@@ -309,7 +390,7 @@ class StackRegistrationBase(object):
     # \return     The initial parameters corresponding to identity transform.
     #
     @abstractmethod
-    def _get_initial_transform_parameters_identity(self):
+    def _get_initial_transforms_and_parameters_identity(self):
         pass
 
 
@@ -324,6 +405,20 @@ class StackRegistrationBase(object):
     #             'moments'.
     #
     @abstractmethod
-    def _get_initial_transform_parameters_geometry_moments(self):
+    def _get_initial_transforms_and_parameters_geometry_moments(self):
         pass
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Method that applies the obtained registration transforms to
+    #             update the slices positions and to get the affine slice
+    #             transforms capturing the performed motion correction.
+    # \date       2016-11-10 01:34:42+0000
+    #
+    # \param      self  The object
+    #
+    @abstractmethod
+    def _apply_motion_correction_and_compute_slice_transforms(self):
+        pass
+
 

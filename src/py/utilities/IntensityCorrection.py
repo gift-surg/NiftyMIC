@@ -15,6 +15,7 @@ import time
 ## Import modules
 import base.Stack as st
 import utilities.SimpleITKHelper as sitkh
+import utilities.PythonHelper as ph
 import matplotlib.pyplot as plt
 
 
@@ -118,6 +119,20 @@ class IntensityCorrection(object):
 
 
     ##-------------------------------------------------------------------------
+    # \brief      Gets the intensity correction coefficients obtained for each
+    #             slice of the stack.
+    # \date       2016-11-10 02:22:40+0000
+    #
+    # \param      self  The object
+    #
+    # \return     The intensity correction coefficients as (N_slices x
+    #             DOF)-array
+    #
+    def get_intensity_correction_coefficients(self):
+        return np.array(self._correction_coefficients)
+
+
+    ##-------------------------------------------------------------------------
     # \brief      Clip lower intensities based on percentile threshold
     # \date       2016-11-05 22:59:08+0000
     #
@@ -147,7 +162,7 @@ class IntensityCorrection(object):
     # \param      self  The object
     #
     def run_linear_intensity_correction(self):
-        self._stack = self._run_intensity_correction("linear")
+        self._stack, self._correction_coefficients = self._run_intensity_correction("linear")
 
 
     ##-------------------------------------------------------------------------
@@ -160,7 +175,7 @@ class IntensityCorrection(object):
     # \param      self  The object
     #
     def run_affine_intensity_correction(self):
-        self._stack = self._run_intensity_correction("affine")
+        self._stack, self._correction_coefficients = self._run_intensity_correction("affine")
 
 
     ##-------------------------------------------------------------------------
@@ -173,20 +188,27 @@ class IntensityCorrection(object):
     #
     def _run_intensity_correction(self, correction_model):
 
+        N_slices = self._stack.get_number_of_slices()
+
+        if correction_model in ["linear"]:
+            correction_coefficients = np.zeros((N_slices, 1))
+        elif correction_model in ["affine"]:
+            correction_coefficients = np.zeros((N_slices, 2))
+
         ## Gets the required data arrays to perform intensity correction
         nda, nda_masked, nda_reference_masked = self._get_data_arrays_prior_to_intensity_correction()
 
         if self._use_individual_slice_correction:
-            for i in range(0, self._stack.get_number_of_slices()):
+            for i in range(0, N_slices):
                 if self._use_verbose:
                     print("Slice %2d/%d:" %(i, self._stack.get_number_of_slices()-1))
-                nda[i,:,:] = self._apply_intensity_correction[correction_model](nda[i,:,:], nda_masked[i,:,:], nda_reference_masked[i,:,:])
-        
+                nda[i,:,:], correction_coefficients[i,:] = self._apply_intensity_correction[correction_model](nda[i,:,:], nda_masked[i,:,:], nda_reference_masked[i,:,:])
+
         else:
             nda = self._apply_intensity_correction[correction_model](nda, nda_masked, nda_reference_masked)
         
         ## Create Stack instance with correct image header information
-        return self._create_stack_from_corrected_intensity_array(nda)
+        return self._create_stack_from_corrected_intensity_array(nda), correction_coefficients
 
 
     ##-------------------------------------------------------------------------
@@ -205,20 +227,20 @@ class IntensityCorrection(object):
     def _apply_affine_intensity_correction(self, nda, nda_masked, nda_reference_masked):
 
         ## Model: y = x*c1 + c0 = [x, 1]*[c1, c0]' = A*[c1,c0]
-        x = nda_masked.flatten()
-        y = nda_reference_masked.flatten()
+        x = nda_masked.flatten().astype('double')
+        y = nda_reference_masked.flatten().astype('double')
 
         ## Solve via normal equations: [c1, c0] = (A'A)^{-1}A'y
         A = np.ones((x.size,2))
         A[:,0] = x
 
-        B = np.linalg.inv(A.transpose().dot(A)).dot(A.transpose())
+        B = np.linalg.pinv(A.transpose().dot(A)).dot(A.transpose())
         c1, c0 = B.dot(y)
 
         if self._use_verbose:
             print("\t(c1, c0) = (%.3f, %.3f)" %(c1, c0))
 
-        return nda*c1 + c0
+        return nda*c1 + c0, np.array([c1,c0])
 
 
     ##-------------------------------------------------------------------------
@@ -237,16 +259,17 @@ class IntensityCorrection(object):
     def _apply_linear_intensity_correction(self, nda, nda_masked, nda_reference_masked):
 
         ## Model: y = x*c1
-        x = nda_masked.flatten()
-        y = nda_reference_masked.flatten()
+        x = nda_masked.flatten().astype('double')
+        y = nda_reference_masked.flatten().astype('double')
 
+        # ph.plot_2D_array_list([nda_masked, nda_reference_masked])
         ## Solve via normal equations: c1 = x'y/(x'x)
         c1 = x.dot(y)/x.dot(x)
 
         if self._use_verbose:
             print("\tc1 = %.3f" %(c1))
         
-        return nda*c1
+        return nda*c1, c1
 
 
     ##-------------------------------------------------------------------------

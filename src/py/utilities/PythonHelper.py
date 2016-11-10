@@ -46,6 +46,7 @@ def plot_array(nda, title="data", cmap="Greys_r", colorbar=False, directory=None
 
     ## Plot figure
     fig = plt.figure(1)
+    fig.clf()
     plt.imshow(nda, cmap=cmap)
     plt.title(title)
     plt.axis('off')
@@ -90,6 +91,7 @@ def plot_3D_array_slice_by_slice(nda3D_zyx, title="image", cmap="Greys_r"):
 
     ## Plot figure
     fig = plt.figure(1)
+    fig.clf()
     ctr = 1
     for i in range(0, N_slices):
         
@@ -125,6 +127,7 @@ def plot_2D_array_list(nda2D_list, title="image", cmap="Greys_r"):
 
     ## Plot figure
     fig = plt.figure(1)
+    fig.clf()
     ctr = 1
     for i in range(0, N_slices):
         
