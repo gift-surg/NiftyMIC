@@ -45,7 +45,7 @@ class StackRegistrationBase(object):
     # \param      use_reference_mask  Use reference mask for registration, bool
     # \param      use_verbose         Verbose output, bool
     #
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1, nfev_max=20, use_parameter_normalization=False):
 
         ## Set Fixed and reference stacks
         if stack is not None:
@@ -88,6 +88,8 @@ class StackRegistrationBase(object):
         self._alpha_reference = alpha_reference
         self._alpha_parameter = alpha_parameter
 
+        self._nfev_max = nfev_max
+        self._use_parameter_normalization = use_parameter_normalization
 
     ##-------------------------------------------------------------------------
     # \brief      Sets stack/reference/target image.
@@ -259,6 +261,25 @@ class StackRegistrationBase(object):
 
 
     ##-------------------------------------------------------------------------
+    # \brief      Set maximum number of function evaluations for optimizer
+    #             least_squares
+    # \date       2016-11-10 19:24:35+0000
+    #
+    # \param      self      The object
+    # \param      nfev_max  The nfev maximum
+    #
+    def set_nfev_max(self, nfev_max):
+        self._nfev_max = nfev_max
+
+    def get_nfev_max(self):
+        return self._nfev_max
+
+
+    def use_parameter_normalization(self, flag):
+        self._use_parameter_normalization = flag
+
+
+    ##-------------------------------------------------------------------------
     # \brief      Gets the parameters estimated by registration algorithm.
     # \date       2016-11-06 17:05:38+0000
     #
@@ -332,6 +353,20 @@ class StackRegistrationBase(object):
     #
     def run_registration(self):
 
+        ## Parameterize least_squares solver
+        # loss = 'linear'
+        loss = 'soft_l1'
+        # loss = 'huber'
+
+        method = 'trf'
+        # method = 'lm'
+        # method = 'dogbox'
+
+        x_scale = 'jac' #or array
+        verbose = 2 #0,1,2
+
+        jac = '2-point'
+
         ## Initialize registration pipeline         
         self._run_registration_pipeline_initialization()
 
@@ -341,14 +376,16 @@ class StackRegistrationBase(object):
 
         # Non-linear least-squares method:
         time_start = ph.start_timing()
-        res = least_squares(fun=fun, x0=self._parameters.flatten(), method='trf', loss='linear', verbose=2) 
-        # res = least_squares(fun=fun, x0=self._parameters.flatten(), method='trf', loss='soft_l1', verbose=2) 
+        res = least_squares(fun=fun, x0=self._parameters0_normalized_vec.flatten(), method=method, loss=loss, max_nfev=self._nfev_max, verbose=verbose) 
         # res = least_squares(fun=fun, x0=parameters0, method='lm', loss='linear', verbose=1) 
         # res = least_squares(fun=fun, x0=parameters0, method='dogbox', loss='linear', verbose=2) 
         self._elapsed_time = ph.stop_timing(time_start)
 
         ## Get and reshape final transform parameters for each slice
-        self._parameters = res.x.reshape(self._parameters.shape)
+        parameters = res.x.reshape(self._parameters.shape)
+
+        ## Denormalize parameters
+        self._parameters = self._parameter_normalizer.denormalize_parameters(parameters)
 
         ## Apply motion correction and
         self._apply_motion_correction_and_compute_slice_transforms()

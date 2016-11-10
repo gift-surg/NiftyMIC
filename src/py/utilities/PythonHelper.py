@@ -114,7 +114,7 @@ def plot_3D_array_slice_by_slice(nda3D_zyx, title="image", cmap="Greys_r"):
 # \param      title       The title
 # \param      cmap        The cmap
 #
-def plot_2D_array_list(nda2D_list, title="image", cmap="Greys_r"):
+def plot_2D_array_list(nda2D_list, title="image", cmap="Greys_r", colorbar=False):
 
     shape = nda2D_list[0].shape
     N_slices = len(nda2D_list)
@@ -138,7 +138,8 @@ def plot_2D_array_list(nda2D_list, title="image", cmap="Greys_r"):
         else:
             plt.title(title[0]+"_"+str(i))
         plt.axis('off')
-        
+        if colorbar:
+            plt.colorbar()
         ctr += 1
 
     print("Slices of data arrays are shown in separate window.")

@@ -1,6 +1,5 @@
-## \file TestIntraStackRegistration.py
-
 ##-----------------------------------------------------------------------------
+## \file TestIntraStackRegistration.py
 #  \brief  Class containing unit tests for module IntraStackRegistration
 # 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
@@ -308,36 +307,38 @@ class TestIntraStackRegistration(unittest.TestCase):
         # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
         ## Create in-plane motion corruption
-        angle_z = 0.1
+        angle_z = 0.05
         center_2D = (0,0)
         translation_2D = np.array([1, -2])
 
-        intensity_scale = 5
-        intensity_bias = 100
+        intensity_scale = 1
+        intensity_bias = 0
 
         ## Get corrupted stack and corresponding motions
         stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D, intensity_scale=intensity_scale, intensity_bias=intensity_bias)
 
         ## Perform in-plane rigid registration
-        inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
+        # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
+        inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         inplane_registration.set_initializer_type("moments")
         inplane_registration.set_transform_type("rigid")
-        inplane_registration.set_intensity_correction_type("affine")
+        # inplane_registration.set_intensity_correction_type("linear")
         inplane_registration.use_verbose(True)
-        inplane_registration.set_alpha_reference(1)
-        inplane_registration.set_alpha_neighbour(100)
-        inplane_registration.set_alpha_parameter(100)
-        # inplane_registration.use_verbose(True)
+        # inplane_registration.set_alpha_reference(1)
+        # inplane_registration.set_alpha_neighbour(0)
+        inplane_registration.set_alpha_parameter(0)
+        inplane_registration.set_nfev_max(10)
+        inplane_registration.use_verbose(True)
         inplane_registration.run_registration()
         inplane_registration.print_statistics()
 
         stack_registered = inplane_registration.get_corrected_stack()
         parameters = inplane_registration.get_parameters()
             
-        sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(interpolator="Linear")])
+        sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(resampling_grid="on_first_slice", interpolator="Linear")])
 
-        print("Final parameters:")
-        print parameters
+        # print("Final parameters:")
+        # print parameters
         
         # self.assertEqual(np.round(
         #     np.linalg.norm(nda_diff)

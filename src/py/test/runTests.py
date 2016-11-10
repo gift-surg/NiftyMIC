@@ -29,6 +29,7 @@ sys.path.append( dir_src_root )
 # from modules.TestBrainStripping import *
 # from modules.TestInPlaneRegistration import *
 from modules.TestIntraStackRegistration import *
+# from modules.TestParameterNormalization import *
 # from modules.TestRegistrationITK import *
 # from modules.TestLinearImageQualityTransfer import *
 # from modules.TestIntensityCorrection import *

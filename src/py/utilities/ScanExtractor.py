@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ## \file ScanExtractor.py
-#  \brief Extract the scans semi-automatically from MR films
+#  \brief Extract scans semi-automatically from MR films
 #
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date Nov 2016

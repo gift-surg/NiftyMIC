@@ -1,3 +1,4 @@
+##-----------------------------------------------------------------------------
 ## \file IntensityCorrection.py
 #  \brief Class containing functions to correct for intensities
 # 

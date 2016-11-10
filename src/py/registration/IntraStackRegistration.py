@@ -25,12 +25,14 @@ import base.Slice as sl
 import base.Stack as st
 import utilities.SimpleITKHelper as sitkh
 import utilities.IntensityCorrection as ic
+import utilities.PythonHelper as ph
+import utilities.ParameterNormalization as pn
 from registration.StackRegistrationBase import StackRegistrationBase
 
 
 class IntraStackRegistration(StackRegistrationBase):
 
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1, transform_type="rigid", intensity_correction_type=None):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=0, transform_type="rigid", intensity_correction_type=None):
 
         ## Run constructor of superclass
         StackRegistrationBase.__init__(self, stack=stack, reference=reference, use_stack_mask=use_stack_mask, use_reference_mask=use_reference_mask, use_verbose=use_verbose, initializer_type=initializer_type, interpolator=interpolator, alpha_neighbour=alpha_neighbour, alpha_reference=alpha_reference, alpha_parameter=alpha_parameter)
@@ -119,13 +121,21 @@ class IntraStackRegistration(StackRegistrationBase):
             parameters_intensity = self._get_initial_intensity_correction_parameters()
             parameters = np.concatenate((parameters, parameters_intensity), axis=1)
 
-            if self._use_verbose:
-                print("Initial values for parameters:")
-                print parameters
-
-        ## Keep initial parameters for regularization term
+        ## Store parameters
         self._parameters = np.array(parameters)
-        self._parameters0_vec = parameters.flatten()
+
+        ## Parameter normalizer
+        self._parameter_normalizer = pn.ParameterNormalization(parameters)
+        if self._use_parameter_normalization:
+            self._parameter_normalizer.compute_normalization_coefficients()
+        self._parameter_normalizer.normalize_parameters(parameters)
+
+        if self._use_verbose:
+            print("Coefficients of parameter normalization [mean, std]' = ")
+            print self._parameter_normalizer.get_normalization_coefficients()
+
+        ## Keep parameters for initialization and for regularization term
+        self._parameters0_normalized_vec = parameters.flatten()
 
         ## Store number of degrees of freedom for overall optimization
         self._optimization_dofs = parameters.shape[1]
@@ -184,17 +194,23 @@ class IntraStackRegistration(StackRegistrationBase):
         return residual
 
 
-    def _get_residual_regularization(self, parameters_vec):
-        return parameters_vec - self._parameters0_vec
+    def _get_residual_regularization(self, parameters_normalized_vec):
+        return parameters_normalized_vec - self._parameters0_normalized_vec
 
 
-    def _get_residual_slice_neighbours_fit(self, parameters_vec):
+    def _get_residual_slice_neighbours_fit(self, parameters_normalized_vec):
 
         ## Allocate memory for residual
         residual = np.zeros((self._N_slices-1, self._N_slice_voxels))
         
         ## Reshape parameters for easier access
-        parameters = parameters_vec.reshape(-1, self._optimization_dofs)            
+        parameters = parameters_normalized_vec.reshape(-1, self._optimization_dofs)            
+
+        ## Denormalize parameters (not very efficient unfortunately but 
+        ## parameters have to be copied. Otherwise the optimization fails.
+        ## Alternatively, one could tarnsform back at the end of that function.
+        ## Not sure what is more efficient.)
+        parameters = self._parameter_normalizer.denormalize_parameters(parameters)
 
         ## Get slice_i(T(theta_i, x))
         self._transforms_2D_sitk[0].SetParameters(parameters[0,0:self._transform_type_dofs])
@@ -243,17 +259,23 @@ class IntraStackRegistration(StackRegistrationBase):
     # \date       2016-11-08 20:37:49+0000
     #
     # \param      self            The object
-    # \param      parameters_vec  The parameters vector
+    # \param      parameters_normalized_vec  The parameters vector
     #
     # \return     The residual reference fit.
     #
-    def _get_residual_reference_fit(self, parameters_vec):
+    def _get_residual_reference_fit(self, parameters_normalized_vec):
 
         ## Allocate memory for residual
         residual = np.zeros((self._N_slices, self._N_slice_voxels))
         
         ## Reshape parameters for easier access
-        parameters = parameters_vec.reshape(-1, self._optimization_dofs)
+        parameters = parameters_normalized_vec.reshape(-1, self._optimization_dofs)
+
+        ## Denormalize parameters (not very efficient unfortunately but 
+        ## parameters have to be copied. Otherwise the optimization fails.
+        ## Alternatively, one could tarnsform back at the end of that function.
+        ## Not sure what is more efficient.)
+        parameters = self._parameter_normalizer.denormalize_parameters(parameters)
 
         ## Compute residuals between each slice and reference
         for i in range(0, self._N_slices):
