@@ -354,13 +354,13 @@ class StackRegistrationBase(object):
     def run_registration(self):
 
         ## Parameterize least_squares solver
-        # loss = 'linear'
-        loss = 'soft_l1'
+        loss = 'linear'
+        # loss = 'soft_l1'
         # loss = 'huber'
 
-        method = 'trf'
+        # method = 'trf'
         # method = 'lm'
-        # method = 'dogbox'
+        method = 'dogbox'
 
         x_scale = 'jac' #or array
         verbose = 2 #0,1,2
@@ -387,8 +387,13 @@ class StackRegistrationBase(object):
         ## Denormalize parameters
         self._parameters = self._parameter_normalizer.denormalize_parameters(parameters)
 
-        ## Apply motion correction and
-        self._apply_motion_correction_and_compute_slice_transforms()
+        if self._use_verbose:
+            print("Final values = ")
+            print self._parameters
+
+
+        ## Apply motion correction and compute slice transforms
+        self._apply_motion_correction()
 
 
     ##-------------------------------------------------------------------------
@@ -455,7 +460,7 @@ class StackRegistrationBase(object):
     # \param      self  The object
     #
     @abstractmethod
-    def _apply_motion_correction_and_compute_slice_transforms(self):
+    def _apply_motion_correction(self):
         pass
 
 

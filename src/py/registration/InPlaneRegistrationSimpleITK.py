@@ -3,6 +3,8 @@
 # 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date September 2016
+#  
+#  \remark Will be removed since it is superseded by IntraStackRegistration class
 
 
 ## Import libraries
@@ -26,7 +28,7 @@ import registration.RegistrationSimpleITK as regsitk
 # \brief      Class to perform in-plane rigid registration
 # \date       2016-09-20 15:59:21+0100
 #
-class InPlaneRegistration:
+class InPlaneRegistrationSimpleITK:
 
     ##-------------------------------------------------------------------------
     # \brief      TODO

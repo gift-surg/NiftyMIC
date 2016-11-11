@@ -26,7 +26,7 @@ import reconstruction.ScatteredDataApproximation as sda
 import reconstruction.solver.TikhonovSolver as tk
 import simulation.SimulatorSliceAcqusition as sa
 import registration.Registration as myreg
-import registration.InPlaneRegistration as inplanereg
+import registration.InPlaneRegistrationSimpleITK as inplaneregsitk
 import preprocessing.DataPreprocessing as dp
 import preprocessing.BrainStripping as bs
 import utilities.IntensityCorrection as ic

@@ -1,4 +1,4 @@
-## \file TestInPlaneRegistration.py
+## \file TestInPlaneRegistrationSimpleITK.py
 #  \brief  Class containing unit tests for module InPlaneRegistration
 # 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
@@ -20,7 +20,7 @@ sys.path.append( dir_src_root )
 
 ## Import modules
 import base.Stack as st
-import registration.InPlaneRegistration as inplanereg
+import registration.InPlaneRegistrationSimpleITK as inplaneregsitk
 import utilities.SimpleITKHelper as sitkh
 
 
@@ -86,7 +86,7 @@ def get_inplane_corrupted_stack(stack, angle_z, center, translation, scale=1, de
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
-class TestInPlaneRegistration(unittest.TestCase):
+class TestInPlaneRegistrationSimpleITK(unittest.TestCase):
 
     ## Specify input data
     dir_test_data = "../../../test-data/"

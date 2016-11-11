@@ -46,6 +46,16 @@ class IntraStackRegistration(StackRegistrationBase):
             "affine"    :  self._correct_intensity_affine,
         }
 
+        self._apply_motion_correction_and_compute_slice_transforms = {
+            "rigid"     :  self._apply_rigid_motion_correction_and_compute_slice_transforms,    
+            "similarity":  self._apply_similarity_motion_correction_and_compute_slice_transforms
+        }
+
+        self._new_transform = {
+            "rigid"     :   self._new_transform_rigid,
+            "similarity":   self._new_transform_similarity
+        }
+
     ##-------------------------------------------------------------------------
     # \brief      Sets the transform type.
     # \date       2016-11-10 01:53:58+0000
@@ -82,6 +92,12 @@ class IntraStackRegistration(StackRegistrationBase):
         return self._intensity_correction_type
 
 
+    def _new_transform_rigid(self):
+        return sitk.Euler2DTransform()
+
+    def _new_transform_similarity(self):
+        return sitk.Similarity2DTransform()
+
     ##-------------------------------------------------------------------------
     # \brief      { function_description }
     # \date       2016-11-08 14:59:26+0000
@@ -92,14 +108,7 @@ class IntraStackRegistration(StackRegistrationBase):
     #
     def _run_registration_pipeline_initialization(self):
 
-        ## Parameters specific to chosen transform type
-        if self._transform_type in ["rigid"]:
-            self._transform_type_sitk_new = sitk.Euler2DTransform()
-        elif self._transform_type in ["similarity"]:
-            self._transform_type_sitk_new = sitk.Similarity2DTransform()
-        else:
-            raise ValueError("Given transform_type is not known.")
-        self._transform_type_dofs = len(self._transform_type_sitk_new.GetParameters())
+        self._transform_type_dofs = len(self._new_transform[self._transform_type]().GetParameters())
 
         ## Get number of voxels in the x-y image plane
         self._N_slice_voxels = self._stack.sitk.GetWidth() * self._stack.sitk.GetHeight()
@@ -120,6 +129,13 @@ class IntraStackRegistration(StackRegistrationBase):
         if self._intensity_correction_type is not None:
             parameters_intensity = self._get_initial_intensity_correction_parameters()
             parameters = np.concatenate((parameters, parameters_intensity), axis=1)
+
+        if self._use_verbose:
+            print("Initial values = ")
+            print parameters
+            # for i in range(0, self._N_slices):
+                # print self._transforms_2D_sitk[i].GetParameters()
+
 
         ## Store parameters
         self._parameters = np.array(parameters)
@@ -142,6 +158,10 @@ class IntraStackRegistration(StackRegistrationBase):
 
         ## Resampling grid, i.e. the fixed image space during registration
         self._slice_grid_2D_sitk = sitk.Image(self._slices_2D[0].sitk)
+
+
+    def _apply_motion_correction(self):
+        self._apply_motion_correction_and_compute_slice_transforms[self._transform_type]()
 
 
     def _get_residual_call(self):
@@ -306,15 +326,6 @@ class IntraStackRegistration(StackRegistrationBase):
         return residual.flatten()
 
 
-    def _correct_intensity_None(self, slice_nda, correction_coefficients):
-        return slice_nda
-
-    def _correct_intensity_linear(self, slice_nda, correction_coefficients):
-        return slice_nda * correction_coefficients[0]
-
-    def _correct_intensity_affine(self, slice_nda, correction_coefficients):
-        return slice_nda * correction_coefficients[0] + correction_coefficients[1]
-
     ##-------------------------------------------------------------------------
     # \brief      Gets the initial parameters for 'None', i.e. for identity
     #             transform.
@@ -328,11 +339,12 @@ class IntraStackRegistration(StackRegistrationBase):
     def _get_initial_transforms_and_parameters_identity(self):
         
         ## Create list of identity transforms for all slices
-        transforms_2D_sitk = [self._transform_type_sitk_new] * self._N_slices
+        transforms_2D_sitk = [None] * self._N_slices
         
         ## Get list of identity transform parameters for all slices
         parameters = np.zeros((self._N_slices, self._transform_type_dofs))
         for i in range(0, self._N_slices):
+            transforms_2D_sitk[i] = self._new_transform[self._transform_type]()
             parameters[i, :] = transforms_2D_sitk[i].GetParameters()
 
         return transforms_2D_sitk, parameters
@@ -353,17 +365,20 @@ class IntraStackRegistration(StackRegistrationBase):
         initializer_type_sitk = self._dictionary_initializer_type_sitk[self._initializer_type]
 
         ## Create list of identity transforms
-        transforms_2D_sitk = [self._transform_type_sitk_new] * self._N_slices
+        transforms_2D_sitk = [self._new_transform[self._transform_type]()] * self._N_slices
 
         ## Get list of identity transform parameters for all slices
         parameters = np.zeros((self._N_slices, self._transform_type_dofs))
+
+        ## Set identity parameters for first slice
+        parameters[0,:] = transforms_2D_sitk[0].GetParameters()
 
         ## No reference is given and slices are initialized to align with 
         ## neighbouring slice
         if self._reference is None:
             
             ## Create identity transform for first slice
-            compensation_transform_sitk = self._transform_type_sitk_new
+            compensation_transform_sitk = self._new_transform[self._transform_type]()
 
             ## First slice is kept at position and others are aligned accordingly
             for i in range(1, self._N_slices):
@@ -374,13 +389,12 @@ class IntraStackRegistration(StackRegistrationBase):
                 ## Use sitk.CenteredTransformInitializerFilter to get initial transform
                 fixed_sitk = slice_im1_sitk
                 moving_sitk = self._slices_2D[i].sitk
-                initial_transform_sitk = self._transform_type_sitk_new
+                initial_transform_sitk = self._new_transform[self._transform_type]()
                 operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + initializer_type_sitk)
                 
                 ## Get transform
                 initial_transform_sitk = sitk.CenteredTransformInitializer(fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
-                transforms_2D_sitk[i].SetParameters(initial_transform_sitk.GetParameters())
-                transforms_2D_sitk[i].SetFixedParameters(initial_transform_sitk.GetFixedParameters())
+                transforms_2D_sitk[i] = eval("sitk." + initial_transform_sitk.GetName() + "(initial_transform_sitk)")
 
                 ## Get parameters
                 parameters[i,:] = transforms_2D_sitk[i].GetParameters()
@@ -392,23 +406,21 @@ class IntraStackRegistration(StackRegistrationBase):
 
         ## Initialize transform to match each slice with the reference
         else:
-            ## First slice is kept at position and others are aligned accordingly
             for i in range(0, self._N_slices):
 
                 ## Use sitk.CenteredTransformInitializerFilter to get initial transform
                 fixed_sitk = self._slices_2D_reference[i].sitk
                 moving_sitk = self._slices_2D[i].sitk
-                initial_transform_sitk = self._transform_type_sitk_new
+                initial_transform_sitk = self._new_transform[self._transform_type]()
                 operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + initializer_type_sitk)
                 
                 ## Get transform
                 initial_transform_sitk = sitk.CenteredTransformInitializer(fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
-                transforms_2D_sitk[i].SetParameters(initial_transform_sitk.GetParameters())
-                transforms_2D_sitk[i].SetFixedParameters(initial_transform_sitk.GetFixedParameters())
+                transforms_2D_sitk[i] = eval("sitk." + initial_transform_sitk.GetName() + "(initial_transform_sitk)")
 
                 ## Get parameters
                 parameters[i,:] = transforms_2D_sitk[i].GetParameters()
-
+        
         return transforms_2D_sitk, parameters
 
 
@@ -441,6 +453,26 @@ class IntraStackRegistration(StackRegistrationBase):
             intensity_corrections_coefficients = intensity_correction.get_intensity_correction_coefficients()
 
             return intensity_corrections_coefficients
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Correct intensity implementations
+    # \date       2016-11-10 23:01:34+0000
+    #
+    # \param      self                     The object
+    # \param      slice_nda                The slice nda
+    # \param      correction_coefficients  The correction coefficients
+    #
+    # \return     intensity corrected slice / 2D data array
+    #
+    def _correct_intensity_None(self, slice_nda, correction_coefficients):
+        return slice_nda
+
+    def _correct_intensity_linear(self, slice_nda, correction_coefficients):
+        return slice_nda * correction_coefficients[0]
+
+    def _correct_intensity_affine(self, slice_nda, correction_coefficients):
+        return slice_nda * correction_coefficients[0] + correction_coefficients[1]
 
 
     def _get_projected_2D_slices_of_stack(self, stack):
@@ -487,25 +519,26 @@ class IntraStackRegistration(StackRegistrationBase):
 
         return slices_2D
 
+    """
+    Transform specific parts from here
+    """
 
-    def _apply_motion_correction_and_compute_slice_transforms(self):
+    def _apply_rigid_motion_correction_and_compute_slice_transforms(self):
         
         stack_corrected = st.Stack.from_stack(self._stack)
         slices_corrected = stack_corrected.get_slices()
 
         slices = self._stack.get_slices()
 
-        transform_2D_sitk = self._transform_type_sitk_new
         slice_transforms_sitk = [None] * self._N_slices
 
         for i in range(0, self._N_slices):
 
             ## Set transform for the 2D slice based on registration transform
-            transform_2D_sitk.SetParameters(self._parameters[i,0:self._transform_type_dofs])
+            self._transforms_2D_sitk[i].SetParameters(self._parameters[i,0:self._transform_type_dofs])
 
             ## Invert it to physically move the slice
-            transform_2D_sitk = sitk.Euler2DTransform(transform_2D_sitk.GetInverse())
-            # transform_2D_sitk = eval("sitk." + transform_2D_sitk.GetName() + "(transform_2D_sitk.GetInverse())")
+            transform_2D_sitk = sitk.Euler2DTransform(self._transforms_2D_sitk[i].GetInverse())
 
             ## Expand to 3D transform
             transform_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(transform_2D_sitk)
@@ -531,6 +564,83 @@ class IntraStackRegistration(StackRegistrationBase):
         self._stack_corrected = stack_corrected
         self._slice_transforms_sitk = slice_transforms_sitk
 
+
+    def _apply_similarity_motion_correction_and_compute_slice_transforms(self):
+
+        stack_corrected = st.Stack.from_stack(self._stack)
+        slices_corrected = stack_corrected.get_slices()
+
+        slices = self._stack.get_slices()
+
+        slice_transforms_sitk = [None] * self._N_slices
+
+        for i in range(0, self._N_slices):
+
+            ## Set transform for the 2D slice based on registration transform
+            self._transforms_2D_sitk[i].SetParameters(self._parameters[i,0:self._transform_type_dofs])
+
+            ## Invert it to physically move the slice
+            similarity_2D_sitk = sitk.Similarity2DTransform(self._transforms_2D_sitk[i].GetInverse())
+
+            ## Convert to 2D rigid registration transform
+            scale = similarity_2D_sitk.GetScale()
+            origin = np.array(self._slices_2D[i].sitk.GetOrigin())
+            center = np.array(similarity_2D_sitk.GetCenter())
+            angle = similarity_2D_sitk.GetAngle()
+            translation = np.array(similarity_2D_sitk.GetTranslation())
+            R = np.array(similarity_2D_sitk.GetMatrix()).reshape(2,2)/scale
+
+            if self._use_verbose:
+                print("Slice %2d/%d: in-plane scaling factor = %.3f" %(i, self._N_slices-1, scale))
+
+            rigid_2D_sitk = sitk.Euler2DTransform()
+            rigid_2D_sitk.SetAngle(angle)
+            rigid_2D_sitk.SetTranslation(scale*R.dot(origin-center) - R.dot(origin) + translation + center)
+
+            ## Expand to 3D rigid transform
+            rigid_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(rigid_2D_sitk)
+
+            ## Get transform to get axis aligned slice
+            origin_3D_sitk = np.array(slices[i].sitk.GetOrigin())
+            direction_3D_sitk = np.array(slices[i].sitk.GetDirection())
+            T_PP = sitk.AffineTransform(3)
+            T_PP.SetMatrix(direction_3D_sitk)
+            T_PP.SetTranslation(origin_3D_sitk)
+            T_PP = sitk.AffineTransform(T_PP.GetInverse())
+
+            ## Compose to 3D in-plane transform
+            affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(rigid_3D_sitk, T_PP)
+            affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(sitk.AffineTransform(T_PP.GetInverse()), affine_transform_sitk)
+
+            ## Update motion correction of slice
+            slices_corrected[i].update_motion_correction(affine_transform_sitk)
+            
+
+            ## Update spacing of slice accordingly
+            spacing = np.array(slices[i].sitk.GetSpacing())
+            spacing[0:-1] *= scale
+
+            slices[i].sitk.SetSpacing(spacing)
+            slices[i].sitk_mask.SetSpacing(spacing)
+            slices[i].itk = sitkh.get_itk_from_sitk_image(slices[i].sitk)
+            slices[i].itk_mask = sitkh.get_itk_from_sitk_image(slices[i].sitk_mask)
+
+            ## Update affine transform (including scaling information)
+            affine_3D_sitk = sitk.AffineTransform(3)
+            affine_matrix_sitk = np.array(rigid_3D_sitk.GetMatrix()).reshape(3,3)
+            affine_matrix_sitk[0:-1,0:-1] *= scale
+            affine_3D_sitk.SetMatrix(affine_matrix_sitk.flatten())
+            affine_3D_sitk.SetCenter(rigid_3D_sitk.GetCenter())
+            affine_3D_sitk.SetTranslation(rigid_3D_sitk.GetTranslation())
+
+            affine_3D_sitk = sitkh.get_composite_sitk_affine_transform(affine_3D_sitk, T_PP)
+            affine_3D_sitk = sitkh.get_composite_sitk_affine_transform(sitk.AffineTransform(T_PP.GetInverse()), affine_3D_sitk)
+
+            ## Keep affine slice transform
+            slice_transforms_sitk[i] = affine_3D_sitk
+
+        self._stack_corrected = stack_corrected
+        self._slice_transforms_sitk = slice_transforms_sitk
 
 
     ##-------------------------------------------------------------------------

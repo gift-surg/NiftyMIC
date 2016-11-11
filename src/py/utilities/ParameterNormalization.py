@@ -41,7 +41,7 @@ class ParameterNormalization(object):
         ## Amount of different parameters
         self._N_parameters = self._parameters_array.shape[1]
 
-        self._coefficients = np.concatenate((np.zeros((1,self._N_parameters)), np.ones((1,self._N_parameters))))
+        self._coefficients = 1.* np.concatenate((np.zeros((1,self._N_parameters)), np.ones((1,self._N_parameters))))
 
 
     ##-------------------------------------------------------------------------
@@ -76,7 +76,7 @@ class ParameterNormalization(object):
 
             sigma = np.std(self._parameters_array[:,i])
             if abs(sigma) < 1e-8:
-                coefficients[1,i] = 1
+                coefficients[1,i] = 1.
             else:
                 coefficients[1,i] = sigma
 
