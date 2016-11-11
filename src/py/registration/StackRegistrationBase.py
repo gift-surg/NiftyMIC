@@ -209,7 +209,7 @@ class StackRegistrationBase(object):
     #
     def set_interpolator(self, interpolator):
         self._interpolator = interpolator
-        self._interpolator_sitk = eval("sitk.sitk" + self._interpolator +")")
+        self._interpolator_sitk = eval("sitk.sitk" + self._interpolator)
 
 
     def get_interpolator(self):
@@ -358,9 +358,9 @@ class StackRegistrationBase(object):
         # loss = 'soft_l1'
         # loss = 'huber'
 
-        # method = 'trf'
+        method = 'trf'
         # method = 'lm'
-        method = 'dogbox'
+        # method = 'dogbox'
 
         x_scale = 'jac' #or array
         verbose = 2 #0,1,2
@@ -374,6 +374,7 @@ class StackRegistrationBase(object):
         fun = self._get_residual_call()
         # jac = self._get_jacobian_residual_call()
 
+
         # Non-linear least-squares method:
         time_start = ph.start_timing()
         res = least_squares(fun=fun, x0=self._parameters0_normalized_vec.flatten(), method=method, loss=loss, max_nfev=self._nfev_max, verbose=verbose) 
@@ -382,10 +383,10 @@ class StackRegistrationBase(object):
         self._elapsed_time = ph.stop_timing(time_start)
 
         ## Get and reshape final transform parameters for each slice
-        parameters = res.x.reshape(self._parameters.shape)
+        self._parameters = res.x.reshape(self._parameters.shape)
 
         ## Denormalize parameters
-        self._parameters = self._parameter_normalizer.denormalize_parameters(parameters)
+        # self._parameters = self._parameter_normalizer.denormalize_parameters(self._parameters)
 
         if self._use_verbose:
             print("Final values = ")

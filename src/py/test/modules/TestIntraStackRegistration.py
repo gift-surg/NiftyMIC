@@ -355,11 +355,11 @@ class TestIntraStackRegistration(unittest.TestCase):
         # stack.show(1)
 
         ## Create in-plane motion corruption
-        scale = 0.9
+        scale = 1.02
         angle_z = 0
         center_2D = (0,0)
         translation_2D = np.array([0,0])
-        # translation_2D = np.array([1, -2])
+        # translation_2D = np.array([1, -1])
 
         intensity_scale = 1
         intensity_bias = 0
@@ -373,18 +373,19 @@ class TestIntraStackRegistration(unittest.TestCase):
         ## Perform in-plane rigid registrations
         inplane_registration = inplanereg.IntraStackRegistration(stack=stack_corrupted, reference=stack)
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
-        # inplane_registration.set_initializer_type("moments")
-        inplane_registration.set_initializer_type("identity")
+        inplane_registration.set_initializer_type("moments")
+        # inplane_registration.set_initializer_type("identity")
         inplane_registration.set_transform_type("similarity")
-        # inplane_registration.use_reference_mask(True)
-        # inplane_registration.use_stack_mask(True)
-        inplane_registration.use_parameter_normalization(True)
+        # inplane_registration.set_interpolator("NearestNeighbor")
+        inplane_registration.use_reference_mask(True)
+        inplane_registration.use_stack_mask(True)
+        # inplane_registration.use_parameter_normalization(True)
         # inplane_registration.set_intensity_correction_type("linear")
         inplane_registration.use_verbose(True)
-        # inplane_registration.set_alpha_reference(1)
+        inplane_registration.set_alpha_reference(1)
         inplane_registration.set_alpha_neighbour(0)
         inplane_registration.set_alpha_parameter(0)
-        inplane_registration.set_nfev_max(100)
+        inplane_registration.set_nfev_max(2)
         inplane_registration.use_verbose(True)
         inplane_registration.run_registration()
         inplane_registration.print_statistics()
@@ -395,10 +396,10 @@ class TestIntraStackRegistration(unittest.TestCase):
         stack_registered = inplane_registration.get_corrected_stack()
         parameters = inplane_registration.get_parameters()
 
-        stack_corrupted_sitk = sitk.Resample(stack_corrupted.get_resampled_stack_from_slices().sitk, stack.sitk)        
-        stack_registered_sitk = sitk.Resample(stack_registered.get_resampled_stack_from_slices().sitk, stack.sitk)        
+        stack_corrupted_sitk = sitk.Resample(stack_corrupted.get_resampled_stack_from_slices().sitk, stack.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor)        
+        stack_registered_sitk = sitk.Resample(stack_registered.get_resampled_stack_from_slices().sitk, stack.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor)        
 
-        sitkh.show_sitk_image([stack.sitk, stack_corrupted_sitk, stack_registered_sitk], segmentation=stack.sitk_mask, title=["original", "corrupted", "recovered"])
+        sitkh.show_sitk_image([stack.sitk, stack_corrupted_sitk, stack_registered_sitk], title=["original", "corrupted", "recovered"])
 
         # self.assertEqual(np.round(
         #     np.linalg.norm(nda_diff)

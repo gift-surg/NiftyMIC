@@ -52,8 +52,8 @@ class IntraStackRegistration(StackRegistrationBase):
         }
 
         self._new_transform = {
-            "rigid"     :   self._new_transform_rigid,
-            "similarity":   self._new_transform_similarity
+            "rigid"     :   self._new_rigid_transform,
+            "similarity":   self._new_similarity_transform
         }
 
     ##-------------------------------------------------------------------------
@@ -91,12 +91,6 @@ class IntraStackRegistration(StackRegistrationBase):
     def get_intensity_correction_type(self):
         return self._intensity_correction_type
 
-
-    def _new_transform_rigid(self):
-        return sitk.Euler2DTransform()
-
-    def _new_transform_similarity(self):
-        return sitk.Similarity2DTransform()
 
     ##-------------------------------------------------------------------------
     # \brief      { function_description }
@@ -141,14 +135,14 @@ class IntraStackRegistration(StackRegistrationBase):
         self._parameters = np.array(parameters)
 
         ## Parameter normalizer
-        self._parameter_normalizer = pn.ParameterNormalization(parameters)
-        if self._use_parameter_normalization:
-            self._parameter_normalizer.compute_normalization_coefficients()
-        self._parameter_normalizer.normalize_parameters(parameters)
+        # self._parameter_normalizer = pn.ParameterNormalization(parameters)
+        # if self._use_parameter_normalization:
+        #     self._parameter_normalizer.compute_normalization_coefficients()
+        # parameters = self._parameter_normalizer.normalize_parameters(parameters)
 
-        if self._use_verbose:
-            print("Coefficients of parameter normalization [mean, std]' = ")
-            print self._parameter_normalizer.get_normalization_coefficients()
+        # if self._use_verbose:
+        #     print("Coefficients of parameter normalization [mean, std]' = ")
+        #     print self._parameter_normalizer.get_normalization_coefficients()
 
         ## Keep parameters for initialization and for regularization term
         self._parameters0_normalized_vec = parameters.flatten()
@@ -230,7 +224,7 @@ class IntraStackRegistration(StackRegistrationBase):
         ## parameters have to be copied. Otherwise the optimization fails.
         ## Alternatively, one could tarnsform back at the end of that function.
         ## Not sure what is more efficient.)
-        parameters = self._parameter_normalizer.denormalize_parameters(parameters)
+        # parameters = self._parameter_normalizer.denormalize_parameters(parameters)
 
         ## Get slice_i(T(theta_i, x))
         self._transforms_2D_sitk[0].SetParameters(parameters[0,0:self._transform_type_dofs])
@@ -295,7 +289,7 @@ class IntraStackRegistration(StackRegistrationBase):
         ## parameters have to be copied. Otherwise the optimization fails.
         ## Alternatively, one could tarnsform back at the end of that function.
         ## Not sure what is more efficient.)
-        parameters = self._parameter_normalizer.denormalize_parameters(parameters)
+        # parameters = self._parameter_normalizer.denormalize_parameters(parameters)
 
         ## Compute residuals between each slice and reference
         for i in range(0, self._N_slices):
@@ -523,6 +517,12 @@ class IntraStackRegistration(StackRegistrationBase):
     Transform specific parts from here
     """
 
+    def _new_rigid_transform(self):
+        return sitk.Euler2DTransform()
+
+    def _new_similarity_transform(self):
+        return sitk.Similarity2DTransform()
+
     def _apply_rigid_motion_correction_and_compute_slice_transforms(self):
         
         stack_corrected = st.Stack.from_stack(self._stack)
@@ -620,10 +620,10 @@ class IntraStackRegistration(StackRegistrationBase):
             spacing = np.array(slices[i].sitk.GetSpacing())
             spacing[0:-1] *= scale
 
-            slices[i].sitk.SetSpacing(spacing)
-            slices[i].sitk_mask.SetSpacing(spacing)
-            slices[i].itk = sitkh.get_itk_from_sitk_image(slices[i].sitk)
-            slices[i].itk_mask = sitkh.get_itk_from_sitk_image(slices[i].sitk_mask)
+            slices_corrected[i].sitk.SetSpacing(spacing)
+            slices_corrected[i].sitk_mask.SetSpacing(spacing)
+            slices_corrected[i].itk = sitkh.get_itk_from_sitk_image(slices_corrected[i].sitk)
+            slices_corrected[i].itk_mask = sitkh.get_itk_from_sitk_image(slices_corrected[i].sitk_mask)
 
             ## Update affine transform (including scaling information)
             affine_3D_sitk = sitk.AffineTransform(3)
