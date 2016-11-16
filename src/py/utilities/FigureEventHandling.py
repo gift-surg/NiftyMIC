@@ -29,13 +29,14 @@ import utilities.PythonHelper as ph
 #
 class FigureEventHandling(object):
 
-    ##-------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # \brief      Constructor
     # \date       2016-09-18 02:45:09+0100
     #
-    # \param      self  The object
-    # \param      nda   2D Numpy data array representing the film with all
-    #                   acquired 2D slices
+    # \param      self   The object
+    # \param      nda    2D Numpy data array representing the film with all
+    #                    acquired 2D slices
+    # \param      title  The title used for the data array plot in matploblib
     #
     def __init__(self, nda, title=None):
         self._nda = nda
@@ -54,9 +55,22 @@ class FigureEventHandling(object):
         ## Used for navigation through x-offset, y-offset, x-length and y-length
         self._index = 0
 
-        ##
+        ## Title used for the data array plot
         self._title = title
 
+        ## Define bookmarks for quicker switching between selection frames        
+        self._bookmark_offset = {
+              "left_circle"           : np.array([100,-900])
+            , "bottom_left_corner"    : np.array([600,-1650])
+            , "top_left_corner"       : np.array([600,150])
+            , "bottom_right_corner"   : np.array([-1800,-1850])
+        }
+        self._bookmark_length = {
+              "left_circle"           : np.array([1350,1700])
+            , "bottom_left_corner"    : np.array([1150,1500])
+            , "top_left_corner"       : np.array([1300,1700])
+            , "bottom_right_corner"   : np.array([1300,1700])
+        }
 
     ##-------------------------------------------------------------------------
     # \brief      Gets the marked coordinates.
@@ -170,6 +184,7 @@ class FigureEventHandling(object):
         print("\tdown:         Decrease chosen property by one.")
         print("\tpageup:       Increase chosen property by 50.")
         print("\tpagedown:     Decrease chosen property by 50.")
+        print("\tb:            Choose among bookmarks to define selection box dimension.")
         print("\tspace:        Use keyboard to define value of chosen property.")
         print("\tescape:       Close figure. Values for coordinates, offset and length are stored.")
         print("\th:            Print this information.")
@@ -230,8 +245,28 @@ class FigureEventHandling(object):
                 self._delete_previous_rectangles()
             self._redraw()
 
+        ## Choose dimension + offset of sele
+        elif event.key in ["b"]:
+            ## Get the bookmark keys and put them together for the info text
+            keys = self._bookmark_length.keys()
+            text = "0: " + keys[0]
+            for i in range(1, len(keys)):
+                text += ", " + str(i) + ": " + keys[i]
+            
+            ## Read bookmark selection
+            bookmark = int(ph.read_input("Chose number to select bookmark (" + text + ")", default=0))
+            
+            ## Update selection box accordingly
+            self._offset = self._bookmark_offset[keys[bookmark]]
+            self._length = self._bookmark_length[keys[bookmark]]
+            print("Bookmark '" + keys[bookmark] + "' is chosen." )
+            
+            ## Delete all rectangles before updated ones are drawn
+            self._delete_previous_rectangles()
+            self._redraw()
+
         ## Increase respective value by one
-        if event.key in ["up"]:
+        elif event.key in ["up"]:
             if self._index is 0:
                 self._offset[0] += 1
             if self._index is 1:
@@ -246,7 +281,7 @@ class FigureEventHandling(object):
             self._redraw()
 
         ## Decrease respective value by one
-        if event.key in ["down"]:
+        elif event.key in ["down"]:
             if self._index is 0:
                 self._offset[0] -= 1
             if self._index is 1:
@@ -261,7 +296,7 @@ class FigureEventHandling(object):
             self._redraw()
 
         ## Increase respective value by 50
-        if event.key in ["pageup"]:
+        elif event.key in ["pageup"]:
             if self._index is 0:
                 self._offset[0] += 50
             if self._index is 1:
@@ -276,7 +311,7 @@ class FigureEventHandling(object):
             self._redraw()
 
         ## Decrease respective value by 50
-        if event.key in ["pagedown"]:
+        elif event.key in ["pagedown"]:
             if self._index is 0:
                 self._offset[0] -= 50
             if self._index is 1:
@@ -291,7 +326,7 @@ class FigureEventHandling(object):
             self._redraw()
 
         ## Use console for value input of respective option
-        if event.key in [" "]:
+        elif event.key in [" "]:
             if self._index is 0:
                 self._offset[0] = int(float(ph.read_input("Enter value for x-offset", default=self._offset[0])))
             if self._index is 1:
@@ -306,7 +341,7 @@ class FigureEventHandling(object):
             self._redraw()
 
         ## Select option to the right in sequence x-offset, y-offset, x-length, y-length
-        if event.key in ["right"]:
+        elif event.key in ["right"]:
             if self._index<3:
                 self._index += 1
 
@@ -320,7 +355,7 @@ class FigureEventHandling(object):
                 print("Chosen option: y-length. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
 
         ## Select option to the left in sequence x-offset, y-offset, x-length, y-length
-        if event.key in ["left"]:
+        elif event.key in ["left"]:
             if self._index>0:
                 self._index -= 1
 
@@ -334,11 +369,11 @@ class FigureEventHandling(object):
                 print("Chosen option: y-length. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
 
         ## Print help information
-        if event.key in ["h"]:
+        elif event.key in ["h"]:
             self._print_help()
 
         ## Close
-        if event.key in ["escape"]:
+        elif event.key in ["escape"]:
             print("Close window ...")
             plt.close()
 

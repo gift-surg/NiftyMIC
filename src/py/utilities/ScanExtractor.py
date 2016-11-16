@@ -49,7 +49,7 @@ class ScanExtractor(object):
     # \return     Stack of extracted slices consisting of all images on
     #             number_mr_films MR films as sitk.Image object
     #
-    def __init__(self, dir_input, filenames, number_of_mr_films=None, selection_window_offset=(0,0), selection_window_dimension=(100,100), use_verbose=False, dir_output_verbose="/tmp/foo/"):
+    def __init__(self, dir_input, filenames, number_of_mr_films=None, selection_window_offset=(100,-900), selection_window_dimension=(1350,1700), use_verbose=False, dir_output_verbose="/tmp/foo/"):
 
         self._dir_input = dir_input
         self._filenames = filenames
@@ -136,6 +136,10 @@ class ScanExtractor(object):
             coordinates = figure_event_handling.get_coordinates()
             offset = figure_event_handling.get_offset()
             length = figure_event_handling.get_length()
+
+            ## Update member attributes
+            self._selection_window_offset = offset
+            self._selection_window_dimension = length
 
             ## Possible that no frame was selected (i.e. no appropriate image on film)
             if len(coordinates) > 0:
