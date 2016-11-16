@@ -27,6 +27,18 @@ def pause():
     programPause = raw_input("Press the <ENTER> key to continue ...")
 
 
+def read_input(infotext="None", default=None):
+    if default is None:
+        text_in = raw_input(infotext + ": ")
+        return text_in
+    else:
+        text_in = raw_input(infotext + " [" + str(default) + "]: ")
+
+        if text_in in [""]:
+            return default
+        else:
+            return text_in
+
 
 ##-----------------------------------------------------------------------------
 # \brief      Plot data array and save it if desired

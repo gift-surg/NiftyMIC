@@ -60,7 +60,6 @@ class ScanExtractor(object):
             self._number_of_mr_films = len(self._filenames)
         else:
             self._number_of_mr_films = number_of_mr_films
-        self._partial_stack_sitk = [None] * self._number_of_mr_films
         self._stack_sitk = None
 
         ## To follow
@@ -101,6 +100,8 @@ class ScanExtractor(object):
         os.system("mkdir -p " + self._dir_output_verbose)
 
         stack_nda_list = []
+        self._partial_stack_sitk = []
+
 
         for i in range(0, self._number_of_mr_films):
             ## Get filename with and without extension
@@ -119,12 +120,12 @@ class ScanExtractor(object):
             plt.imshow(nda, cmap="Greys_r")
 
             if self._use_verbose:
-                filename_out = self._dir_output_verbose + filename_without_extension[0:-1] + "_0_raw_part_" + str(i+1) + ".png"
+                filename_out = self._dir_output_verbose + filename_without_extension + ".png"
                 plt.savefig(filename_out, dpi=400)
                 print("File written to " + filename_out)
 
             ## Instantiate object to mark coordinates and feed with initial offset and length
-            figure_event_handling = feh.FigureEventHandling(nda)
+            figure_event_handling = feh.FigureEventHandling(nda, title=filename)
             figure_event_handling.set_offset(self._selection_window_offset)
             figure_event_handling.set_length(self._selection_window_dimension)
             
@@ -136,23 +137,25 @@ class ScanExtractor(object):
             offset = figure_event_handling.get_offset()
             length = figure_event_handling.get_length()
 
-            ## Get stacked array of slices
-            partial_stack_nda = self._get_stacked_slices_data_array_from_MR_film(nda, coordinates, offset, length)
+            ## Possible that no frame was selected (i.e. no appropriate image on film)
+            if len(coordinates) > 0:
+                ## Get stacked array of slices
+                partial_stack_nda = self._get_stacked_slices_data_array_from_MR_film(nda, coordinates, offset, length)
 
-            ## Append partial stack array to list
-            stack_nda_list.append(partial_stack_nda)
-            
-            ## Convert to sitk.Image 
-            self._partial_stack_sitk[i] = sitk.GetImageFromArray(partial_stack_nda)
+                ## Append partial stack array to list
+                stack_nda_list.append(partial_stack_nda)
+                
+                ## Convert to sitk.Image 
+                self._partial_stack_sitk.append(sitk.GetImageFromArray(partial_stack_nda))
 
             ## Show image
             # sitk.Show(self._partial_stack_sitk[i])
 
-            ## Write MRI film as stacked image of slices to nifti-file
-            if self._use_verbose:
-                filename_out = self._dir_output_verbose + filename_without_extension[0:-1] + "_0_raw_part_" + str(i+1) + ".nii.gz"
-                sitk.WriteImage(self._partial_stack_sitk[i], filename_out)
-                print("File written to " + filename_out)
+            # ## Write MRI film as stacked image of slices to nifti-file
+            # if self._use_verbose:
+            #     filename_out = self._dir_output_verbose + filename_without_extension + ".nii.gz"
+            #     sitk.WriteImage(self._partial_stack_sitk[i], filename_out)
+            #     print("File written to " + filename_out)
 
         ## Get one entire data array
         stack_nda = self._get_combined_stacked_slices_data_array_from_MR_films(stack_nda_list)
@@ -161,10 +164,10 @@ class ScanExtractor(object):
         self._stack_sitk = sitk.GetImageFromArray(stack_nda)
 
         ## Write sitk.Image as acquired stack of slices
-        if self._use_verbose:
-            filename_out = self._dir_output_verbose + filename_without_extension[0:-1] + "_0_raw.nii.gz"
-            sitk.WriteImage(self._stack_sitk, filename_out)
-            print("File written to " + filename_out)
+        # if self._use_verbose:
+        #     filename_out = self._dir_output_verbose + filename_without_extension[0:-1] + "0_raw.nii.gz"
+        #     sitk.WriteImage(self._stack_sitk, filename_out)
+        #     print("File written to " + filename_out)
 
 
     ##-----------------------------------------------------------------------------

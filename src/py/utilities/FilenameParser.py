@@ -45,7 +45,7 @@ class FilenameParser(object):
     # \return     filenames in directory without filename extension as list of
     #             strings
     #
-    def get_filenames_which_match_pattern_in_directory(self, directory, patterns, filename_extension=None):
+    def get_filenames_which_match_pattern_in_directory(self, directory, patterns, filename_extension=None, crop_filename_extension=True):
         
         if type(patterns) is not list:
             patterns = [patterns]
@@ -62,8 +62,64 @@ class FilenameParser(object):
             filenames = [f for f in filenames if fnmatch.fnmatch(f, "*"+patterns[i]+"*")]
 
         ## Crop filename extension
-        filenames = self.crop_filename_extension(filenames)
+        if crop_filename_extension:
+            filenames = self.crop_filename_extension(filenames)
 
+        ## Return sorted filenames
+        return sorted(filenames)
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the dash partitioned filename. Used for MS project
+    # \date       2016-11-14 18:52:07+0000
+    #
+    # \param      self       The object
+    # \param      filenames  The filenames as list of strings
+    #
+    # \return     The dash partitioned filename.
+    #
+    def get_dash_partitioned_filename(self, filenames, number_of_dashes=1):
+
+        filenames_cropped = []
+        for i in range(0,len(filenames)):
+            parts = filenames[i].split('-')
+
+            filename = parts[0]
+
+            ## Build filename "abc-xyz"
+            for i in range(1, number_of_dashes+1):
+                filename += "-" + parts[i]
+
+            filenames_cropped.append(filename)
+
+        ## Eliminate duplicate filenames
+        filenames_cropped = self.eliminate_duplicate_filenames(filenames_cropped)
+
+        if len(filenames_cropped) is 1:
+            filenames_cropped = filenames_cropped[0]
+
+        return filenames_cropped
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Eliminate duplicate filenames in list
+    # \date       2016-11-14 18:49:20+0000
+    #
+    # \param      self       The object
+    # \param      filenames  The filenames as list of strings
+    #
+    # \return     List without duplicates
+    #
+    def eliminate_duplicate_filenames(self, filenames):
+        filenames_single = []
+        for i in range(0, len(filenames)):
+            ## only add in case not existing already
+            if filenames[i] not in filenames_single:
+                filenames_single.append(filenames[i])
+
+        return filenames_single
+            
+        filenames = list(set(filenames))
         return filenames
 
 

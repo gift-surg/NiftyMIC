@@ -130,25 +130,14 @@ class IntraStackRegistration(StackRegistrationBase):
             # for i in range(0, self._N_slices):
                 # print self._transforms_2D_sitk[i].GetParameters()
 
+        ## Parameters for initialization and for regularization term
+        self._parameters0_vec = parameters.flatten()
 
-        ## Store parameters
+        ## Create copy for member variable
         self._parameters = np.array(parameters)
 
-        ## Parameter normalizer
-        # self._parameter_normalizer = pn.ParameterNormalization(parameters)
-        # if self._use_parameter_normalization:
-        #     self._parameter_normalizer.compute_normalization_coefficients()
-        # parameters = self._parameter_normalizer.normalize_parameters(parameters)
-
-        # if self._use_verbose:
-        #     print("Coefficients of parameter normalization [mean, std]' = ")
-        #     print self._parameter_normalizer.get_normalization_coefficients()
-
-        ## Keep parameters for initialization and for regularization term
-        self._parameters0_normalized_vec = parameters.flatten()
-
         ## Store number of degrees of freedom for overall optimization
-        self._optimization_dofs = parameters.shape[1]
+        self._optimization_dofs = self._parameters.shape[1]
 
         ## Resampling grid, i.e. the fixed image space during registration
         self._slice_grid_2D_sitk = sitk.Image(self._slices_2D[0].sitk)
@@ -208,23 +197,17 @@ class IntraStackRegistration(StackRegistrationBase):
         return residual
 
 
-    def _get_residual_regularization(self, parameters_normalized_vec):
-        return parameters_normalized_vec - self._parameters0_normalized_vec
+    def _get_residual_regularization(self, parameters_vec):
+        return parameters_vec - self._parameters0_vec
 
 
-    def _get_residual_slice_neighbours_fit(self, parameters_normalized_vec):
+    def _get_residual_slice_neighbours_fit(self, parameters_vec):
 
         ## Allocate memory for residual
         residual = np.zeros((self._N_slices-1, self._N_slice_voxels))
         
         ## Reshape parameters for easier access
-        parameters = parameters_normalized_vec.reshape(-1, self._optimization_dofs)            
-
-        ## Denormalize parameters (not very efficient unfortunately but 
-        ## parameters have to be copied. Otherwise the optimization fails.
-        ## Alternatively, one could tarnsform back at the end of that function.
-        ## Not sure what is more efficient.)
-        # parameters = self._parameter_normalizer.denormalize_parameters(parameters)
+        parameters = parameters_vec.reshape(-1, self._optimization_dofs)            
 
         ## Get slice_i(T(theta_i, x))
         self._transforms_2D_sitk[0].SetParameters(parameters[0,0:self._transform_type_dofs])
@@ -273,23 +256,17 @@ class IntraStackRegistration(StackRegistrationBase):
     # \date       2016-11-08 20:37:49+0000
     #
     # \param      self            The object
-    # \param      parameters_normalized_vec  The parameters vector
+    # \param      parameters_vec  The parameters vector
     #
     # \return     The residual reference fit.
     #
-    def _get_residual_reference_fit(self, parameters_normalized_vec):
+    def _get_residual_reference_fit(self, parameters_vec):
 
         ## Allocate memory for residual
         residual = np.zeros((self._N_slices, self._N_slice_voxels))
         
         ## Reshape parameters for easier access
-        parameters = parameters_normalized_vec.reshape(-1, self._optimization_dofs)
-
-        ## Denormalize parameters (not very efficient unfortunately but 
-        ## parameters have to be copied. Otherwise the optimization fails.
-        ## Alternatively, one could tarnsform back at the end of that function.
-        ## Not sure what is more efficient.)
-        # parameters = self._parameter_normalizer.denormalize_parameters(parameters)
+        parameters = parameters_vec.reshape(-1, self._optimization_dofs)
 
         ## Compute residuals between each slice and reference
         for i in range(0, self._N_slices):
@@ -313,6 +290,9 @@ class IntraStackRegistration(StackRegistrationBase):
 
             if self._use_reference_mask:
                 residual_slice_nda *= self._reference_nda_mask[i,:,:]
+
+            # ph.plot_2D_array_list([residual_slice_nda, slice_i_nda_mask, self._reference_nda_mask[i,:,:]]) 
+            # ph.pause()
 
             ## Set residual for current slice difference
             residual[i,:] = residual_slice_nda.flatten()

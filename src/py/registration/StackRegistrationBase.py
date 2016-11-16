@@ -23,6 +23,7 @@ from scipy.optimize import least_squares
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 import base.Stack as st
+import utilities.ParameterNormalization as pn
 
 
 ##-----------------------------------------------------------------------------
@@ -354,8 +355,8 @@ class StackRegistrationBase(object):
     def run_registration(self):
 
         ## Parameterize least_squares solver
-        loss = 'linear'
-        # loss = 'soft_l1'
+        # loss = 'linear'
+        loss = 'soft_l1'
         # loss = 'huber'
 
         method = 'trf'
@@ -365,10 +366,29 @@ class StackRegistrationBase(object):
         x_scale = 'jac' #or array
         verbose = 2 #0,1,2
 
-        jac = '2-point'
+        # jac = '2-point'
+        jac = '3-point'
 
         ## Initialize registration pipeline         
         self._run_registration_pipeline_initialization()
+
+        ## Parameter normalization
+        if self._use_parameter_normalization:
+            parameter_normalization = pn.ParameterNormalization(self._parameters)
+            parameter_normalization.compute_normalization_coefficients()
+            coefficients = parameter_normalization.get_normalization_coefficients()
+
+            ## Use absolute mean for normalization
+            scale = abs(np.array(coefficients[0]))
+
+            ## scale could be zero (like for rotation)
+            scale[np.where(scale==0)] = 1
+
+            if self._use_verbose:
+                print("Normalization parameters:")
+                print scale
+
+            x_scale = np.tile(scale, self._parameters.shape[0])
 
         ## Get cost function and its Jacobian w.r.t. the parameters
         fun = self._get_residual_call()
@@ -377,7 +397,7 @@ class StackRegistrationBase(object):
 
         # Non-linear least-squares method:
         time_start = ph.start_timing()
-        res = least_squares(fun=fun, x0=self._parameters0_normalized_vec.flatten(), method=method, loss=loss, max_nfev=self._nfev_max, verbose=verbose) 
+        res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=method, loss=loss, max_nfev=self._nfev_max, verbose=verbose, x_scale=x_scale) 
         # res = least_squares(fun=fun, x0=parameters0, method='lm', loss='linear', verbose=1) 
         # res = least_squares(fun=fun, x0=parameters0, method='dogbox', loss='linear', verbose=2) 
         self._elapsed_time = ph.stop_timing(time_start)

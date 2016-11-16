@@ -12,6 +12,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
+## Import modules
+import utilities.PythonHelper as ph
+
 ##-----------------------------------------------------------------------------
 # \brief      Class used to semi-automatically extract position and geometry of
 #             slices
@@ -34,7 +37,7 @@ class FigureEventHandling(object):
     # \param      nda   2D Numpy data array representing the film with all
     #                   acquired 2D slices
     #
-    def __init__(self, nda):
+    def __init__(self, nda, title=None):
         self._nda = nda
         self._coordinates = []
         self._rectangles = []
@@ -50,6 +53,9 @@ class FigureEventHandling(object):
 
         ## Used for navigation through x-offset, y-offset, x-length and y-length
         self._index = 0
+
+        ##
+        self._title = title
 
 
     ##-------------------------------------------------------------------------
@@ -141,11 +147,15 @@ class FigureEventHandling(object):
         ## Plot plain image in gray scale. aspect=auto yields more convenient
         ## view to work on in fullscreen
         self._ax.imshow(self._nda, cmap="Greys_r", aspect='auto')
+
+        if self._title is not None:
+            plt.title(self._title)
+
         plt.show()
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Print information of use on screen
+    # \brief      Print information of usage on screen
     # \date       2016-09-18 01:33:20+0100
     #
     # \param      self  The object
@@ -153,15 +163,17 @@ class FigureEventHandling(object):
     def _print_help(self):
         print("Use the following keys to navigate: ")
         print("\tmiddle click: Click on point to save coordinates.")
-        print("\td:      Delete most recent coordinates.")
-        print("\tright:  Move up to switch between x-offset, y-offset, x-length and y-length.")
-        print("\tleft:   Move down to switch between x-offset, y-offset, x-length and y-length.")
-        print("\tup:     Increase chosen property by one.")
-        print("\tdown:   Decrease chosen property by one.")
-        print("\tspace:  Use keyboard to define value of chosen property.")
-        print("\tescape: Close figure. Values for coordinates, offset and length are stored.")
-        print("\th:      Print this information.")
-        print("\tp:      Switch type of mouse (select and move/zoom).")
+        print("\td:            Delete most recent coordinate.")
+        print("\tright:        Move up to switch between x-offset, y-offset, x-length and y-length.")
+        print("\tleft:         Move down to switch between x-offset, y-offset, x-length and y-length.")
+        print("\tup:           Increase chosen property by one.")
+        print("\tdown:         Decrease chosen property by one.")
+        print("\tpageup:       Increase chosen property by 50.")
+        print("\tpagedown:     Decrease chosen property by 50.")
+        print("\tspace:        Use keyboard to define value of chosen property.")
+        print("\tescape:       Close figure. Values for coordinates, offset and length are stored.")
+        print("\th:            Print this information.")
+        print("\tp:            Switch type of mouse (select and move/zoom).")
 
 
     ##-------------------------------------------------------------------------
@@ -214,6 +226,8 @@ class FigureEventHandling(object):
             if len(self._coordinates)>0:
                 foo = self._coordinates.pop()
                 print("Deleted last entry: %s" %(foo))
+                ## Delete all rectangles before updated ones are drawn
+                self._delete_previous_rectangles()
             self._redraw()
 
         ## Increase respective value by one
@@ -246,16 +260,46 @@ class FigureEventHandling(object):
             self._delete_previous_rectangles()
             self._redraw()
 
+        ## Increase respective value by 50
+        if event.key in ["pageup"]:
+            if self._index is 0:
+                self._offset[0] += 50
+            if self._index is 1:
+                self._offset[1] += 50
+            if self._index is 2:
+                self._length[0] += 50
+            if self._index is 3:
+                self._length[1] += 50
+
+            ## Delete all rectangles before updated ones are drawn
+            self._delete_previous_rectangles()
+            self._redraw()
+
+        ## Decrease respective value by 50
+        if event.key in ["pagedown"]:
+            if self._index is 0:
+                self._offset[0] -= 50
+            if self._index is 1:
+                self._offset[1] -= 50
+            if self._index is 2:
+                self._length[0] -= 50
+            if self._index is 3:
+                self._length[1] -= 50
+
+            ## Delete all rectangles before updated ones are drawn
+            self._delete_previous_rectangles()
+            self._redraw()
+
         ## Use console for value input of respective option
         if event.key in [" "]:
             if self._index is 0:
-                self._offset[0] = input("Enter value of x-offset [%s]: " %(self._offset[0]))
+                self._offset[0] = int(float(ph.read_input("Enter value for x-offset", default=self._offset[0])))
             if self._index is 1:
-                self._offset[1] = input("Enter value of y-offset [%s]: " %(self._offset[1]))
+                self._offset[1] = int(float(ph.read_input("Enter value for y-offset", default=self._offset[1])))
             if self._index is 2:
-                self._length[0] = input("Enter value of x-length [%s]: " %(self._length[0]))
+                self._length[0] = int(float(ph.read_input("Enter value for x-length", default=self._length[0])))
             if self._index is 3:
-                self._length[1] = input("Enter value of y-length [%s]: " %(self._length[1]))
+                self._length[1] = int(float(ph.read_input("Enter value for y-length", default=self._length[1])))
 
             ## Delete all rectangles before updated ones are drawn
             self._delete_previous_rectangles()
@@ -267,13 +311,13 @@ class FigureEventHandling(object):
                 self._index += 1
 
             if self._index is 0:
-                print("Chosen option: x-offset. Use either 'space' or arrows 'up' and 'down' to adjust its value.")
+                print("Chosen option: x-offset. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
             if self._index is 1:
-                print("Chosen option: y-offset. Use either 'space' or arrows 'up' and 'down' to adjust its value.")
+                print("Chosen option: y-offset. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
             if self._index is 2:
-                print("Chosen option: x-length. Use either 'space' or arrows 'up' and 'down' to adjust its value.")
+                print("Chosen option: x-length. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
             if self._index is 3:
-                print("Chosen option: y-length. Use either 'space' or arrows 'up' and 'down' to adjust its value.")
+                print("Chosen option: y-length. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
 
         ## Select option to the left in sequence x-offset, y-offset, x-length, y-length
         if event.key in ["left"]:
@@ -281,13 +325,13 @@ class FigureEventHandling(object):
                 self._index -= 1
 
             if self._index is 0:
-                print("Chosen option: x-offset. Use either 'space' or arrows 'up' and 'down' to adjust its value.")
+                print("Chosen option: x-offset. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
             if self._index is 1:
-                print("Chosen option: y-offset. Use either 'space' or arrows 'up' and 'down' to adjust its value.")
+                print("Chosen option: y-offset. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
             if self._index is 2:
-                print("Chosen option: x-length. Use either 'space' or arrows 'up' and 'down' to adjust its value.")
+                print("Chosen option: x-length. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
             if self._index is 3:
-                print("Chosen option: y-length. Use either 'space' or arrows 'up' and 'down' to adjust its value.")
+                print("Chosen option: y-length. Use either 'space' or arrows 'up', 'down', 'pageup' and 'pagedown' to adjust its value.")
 
         ## Print help information
         if event.key in ["h"]:
