@@ -151,6 +151,33 @@ class TikhonovSolver(Solver):
 
 
     ##-------------------------------------------------------------------------
+    # \brief      Gets the setting specific filename indicating the information
+    #             used for the reconstruction step
+    # \date       2016-11-17 15:41:58+0000
+    #
+    # \param      self    The object
+    # \param      prefix  The prefix as string
+    #
+    # \return     The setting specific filename as string.
+    #
+    def get_setting_specific_filename(self, prefix="recon"):
+        
+        ## Build filename
+        filename = prefix
+        filename += "_stacks" + str(len(self._stacks))
+        if self._alpha > 0:
+            filename += "_" + self._reg_type
+        filename += "_" + self._minimizer
+        filename += "_alpha" + str(self._alpha)
+        filename += "_itermax" + str(self._iter_max)
+
+        ## Replace dots by 'p'
+        filename = filename.replace(".","p")
+
+        return filename
+
+
+    ##-------------------------------------------------------------------------
     # \brief      Run the reconstruction algorithm based on Tikhonov
     #             regularization
     # \date       2016-07-29 12:35:01+0100

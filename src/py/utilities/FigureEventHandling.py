@@ -67,7 +67,8 @@ class FigureEventHandling(object):
             , "top_left_corner"       : np.array([600,150])
             , "bottom_right_corner"   : np.array([-1800,-1850])
             , "L_corner"              : np.array([-1450,-550])
-            , "double_window"         : np.array([10,-10])
+            , "double_window_5yr"     : np.array([10,-10])
+            , "double_window_10yr"    : np.array([8,15])
         }
         self._bookmark_length = {
               "left_circle"           : np.array([1350,1700])
@@ -75,7 +76,8 @@ class FigureEventHandling(object):
             , "top_left_corner"       : np.array([1300,1700])
             , "bottom_right_corner"   : np.array([1300,1700])
             , "L_corner"              : np.array([1100,1300])
-            , "double_window"         : np.array([853,1400])
+            , "double_window_5yr"     : np.array([853,1400])
+            , "double_window_10yr"    : np.array([685,1024])
         }
 
     ##-------------------------------------------------------------------------

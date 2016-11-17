@@ -43,7 +43,7 @@ class DataPreprocessing:
     #  \param[in] filenames list of filenames referring to the data in dir_input to be processed (without .nii.gz)
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     @classmethod
-    def from_filenames(cls, dir_input, filenames, suffix_mask):
+    def from_filenames(cls, dir_input, filenames, suffix_mask="_mask"):
 
         self = cls()
 

@@ -74,7 +74,7 @@ class TVL2Solver(Solver):
     # \param[in]     ADMM_iterations_output_dir              The ADMM iterations output dir
     # \param[in]     ADMM_iterations_output_filename_prefix  The ADMM iterations output filename prefix
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TV-L2"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TVL2"):
 
         ## Run constructor of superclass
         Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, minimizer, deconvolution_mode, predefined_covariance)               
@@ -160,6 +160,35 @@ class TVL2Solver(Solver):
         print("\tElapsed time = %s" %(timedelta(seconds=self._elapsed_time_sec)))
         print("\tell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %(self._residual_ell2))
         print("\tprior residual = %.3e" %(self._residual_prior))
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the setting specific filename indicating the information
+    #             used for the reconstruction step
+    # \date       2016-11-17 15:41:58+0000
+    #
+    # \param      self    The object
+    # \param      prefix  The prefix as string
+    #
+    # \return     The setting specific filename as string.
+    #
+    def get_setting_specific_filename(self, prefix="recon"):
+        
+        ## Build filename
+        filename = prefix
+        filename += "_stacks" + str(len(self._stacks))
+        if self._alpha > 0:
+            filename += "_TVL2"
+        filename += "_" + self._minimizer
+        filename += "_alpha" + str(self._alpha)
+        filename += "_itermax" + str(self._iter_max)
+        filename += "_rho" + str(self._rho)
+        filename += "_ADMMiterations" + str(self._ADMM_iterations)
+        
+        ## Replace dots by 'p'
+        filename = filename.replace(".","p")
+
+        return filename
 
 
     ##-------------------------------------------------------------------------

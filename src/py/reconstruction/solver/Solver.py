@@ -12,6 +12,7 @@
 
 
 ## Import libraries
+from abc import ABCMeta, abstractmethod
 import sys
 import itk
 import SimpleITK as sitk
@@ -38,6 +39,8 @@ IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 
 
 class Solver(object):
+    __metaclass__ = ABCMeta
+    
     """ This class contains the common functions/attributes of the solvers """
 
     ##-------------------------------------------------------------------------
@@ -249,6 +252,20 @@ class Solver(object):
 
         return self._residual_prior
 
+
+    ##-------------------------------------------------------------------------
+    # \brief      Gets the setting specific filename indicating the information
+    #             used for the reconstruction step
+    # \date       2016-11-17 15:41:58+0000
+    #
+    # \param      self    The object
+    # \param      prefix  The prefix as string
+    #
+    # \return     The setting specific filename as string.
+    #
+    @abstractmethod
+    def get_setting_specific_filename(self, prefix=""):
+        pass
 
     ##-------------------------------------------------------------------------
     # \brief      Sets the predefined covariance matrix, representing
