@@ -55,11 +55,11 @@ class FilenameParser(object):
 
         ## Only consider files with given filename_extension
         if filename_extension is not None:
-            filenames = [f for f in filenames if fnmatch.fnmatch(f, "*"+filename_extension)]
+            filenames = self.get_filenames_which_match_pattern(filenames, "*"+filename_extension)
 
         ## Get filenames which match all patterns
         for i in range(0, len(patterns)):
-            filenames = [f for f in filenames if fnmatch.fnmatch(f, "*"+patterns[i]+"*")]
+            filenames = self.get_filenames_which_match_pattern(filenames, "*"+patterns[i]+"*")
 
         ## Crop filename extension
         if crop_filename_extension:
@@ -67,6 +67,14 @@ class FilenameParser(object):
 
         ## Return sorted filenames
         return sorted(filenames)
+
+
+    def get_filenames_which_match_pattern(self, filenames, pattern):
+        
+        filenames_reduced = [f for f in filenames if fnmatch.fnmatch(f, pattern)]
+
+        return filenames_reduced
+
 
 
     ##-------------------------------------------------------------------------

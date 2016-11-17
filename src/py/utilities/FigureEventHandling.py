@@ -45,12 +45,12 @@ class FigureEventHandling(object):
 
         ## Tested for subject 2
         ## Parameters in case left white circle exists (Click center of left circle)
-        self._offset = np.array([100,-900])
-        self._length = np.array([1350,1600])
+        # self._offset = np.array([100,-900])
+        # self._length = np.array([1350,1600])
 
         ## Parameters in case left white circle do not exist (Click L-corner in "LEFT")
-        # self._offset = np.array([-1450,-550])
-        # self._length = np.array([1100,1250])
+        self._offset = np.array([-1450,-550])
+        self._length = np.array([1100,1300])
 
         ## Used for navigation through x-offset, y-offset, x-length and y-length
         self._index = 0
@@ -58,18 +58,24 @@ class FigureEventHandling(object):
         ## Title used for the data array plot
         self._title = title
 
+        self._double_mode = False
+
         ## Define bookmarks for quicker switching between selection frames        
         self._bookmark_offset = {
               "left_circle"           : np.array([100,-900])
             , "bottom_left_corner"    : np.array([600,-1650])
             , "top_left_corner"       : np.array([600,150])
             , "bottom_right_corner"   : np.array([-1800,-1850])
+            , "L_corner"              : np.array([-1450,-550])
+            , "double_window"         : np.array([10,-10])
         }
         self._bookmark_length = {
               "left_circle"           : np.array([1350,1700])
             , "bottom_left_corner"    : np.array([1150,1500])
             , "top_left_corner"       : np.array([1300,1700])
             , "bottom_right_corner"   : np.array([1300,1700])
+            , "L_corner"              : np.array([1100,1300])
+            , "double_window"         : np.array([853,1400])
         }
 
     ##-------------------------------------------------------------------------
@@ -189,6 +195,7 @@ class FigureEventHandling(object):
         print("\tescape:       Close figure. Values for coordinates, offset and length are stored.")
         print("\th:            Print this information.")
         print("\tp:            Switch type of mouse (select and move/zoom).")
+        print("\tm:            Change between single and double selection mode.")
 
 
     ##-------------------------------------------------------------------------
@@ -206,13 +213,21 @@ class FigureEventHandling(object):
         if event.button is 2:
             # print('button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
               # (event.button, event.x, event.y, event.xdata, event.ydata))
-            print("%d.Point (%d, %d)" %(len(self._coordinates)+1, event.xdata, event.ydata))
             
             ## Get rounded integer value
             xdata = np.round(event.xdata).astype(int)
             ydata = np.round(event.ydata).astype(int)
 
+            if self._double_mode:
+                xdatapoint = xdata-2*self._offset[0]-self._length[0]
+                ydatapoint = ydata
+                print("%d.Point (%d, %d)" %(len(self._coordinates)+1, xdatapoint, ydatapoint))
+                self._coordinates.append([xdatapoint, ydatapoint])
+
             ## Save coordinates of selected point
+            xdatapoint = xdata
+            ydatapoint = ydata
+            print("%d.Point (%d, %d)" %(len(self._coordinates)+1, xdatapoint, ydatapoint))
             self._coordinates.append([xdata, ydata])
 
             ## Redraw in order to draw selected point on image
@@ -245,16 +260,24 @@ class FigureEventHandling(object):
                 self._delete_previous_rectangles()
             self._redraw()
 
+        if event.key in ["m"]:
+            if self._double_mode is False:
+                self._double_mode = True
+                print("Continue in double mode.")
+            else:
+                self._double_mode = False
+                print("Continue in single mode.")
+
         ## Choose dimension + offset of sele
         elif event.key in ["b"]:
             ## Get the bookmark keys and put them together for the info text
             keys = self._bookmark_length.keys()
-            text = "0: " + keys[0]
+            text = "\n\t0: " + keys[0]
             for i in range(1, len(keys)):
-                text += ", " + str(i) + ": " + keys[i]
+                text += ",\n\t" + str(i) + ": " + keys[i]
             
             ## Read bookmark selection
-            bookmark = int(ph.read_input("Chose number to select bookmark (" + text + ")", default=0))
+            bookmark = int(ph.read_input("Chose number to select bookmark:" + text + "\n", default=0))
             
             ## Update selection box accordingly
             self._offset = self._bookmark_offset[keys[bookmark]]

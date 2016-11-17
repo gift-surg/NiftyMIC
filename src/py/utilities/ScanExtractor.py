@@ -49,7 +49,7 @@ class ScanExtractor(object):
     # \return     Stack of extracted slices consisting of all images on
     #             number_mr_films MR films as sitk.Image object
     #
-    def __init__(self, dir_input, filenames, number_of_mr_films=None, selection_window_offset=(100,-900), selection_window_dimension=(1350,1700), use_verbose=False, dir_output_verbose="/tmp/foo/"):
+    def __init__(self, dir_input, filenames, number_of_mr_films=None, selection_window_offset=np.array([100,-900]), selection_window_dimension=np.array([1350,1700]), use_verbose=False, dir_output_verbose="/tmp/foo/"):
 
         self._dir_input = dir_input
         self._filenames = filenames
@@ -78,7 +78,11 @@ class ScanExtractor(object):
     # \return     The stack of extracted scans as sitk.Image object
     #
     def get_sitk_stack_of_extracted_scans(self):
-        return sitk.Image(self._stack_sitk)
+        if self._stack_sitk is None:
+            print("*** WARNING: No single slice was extracted to create a stack ***")
+            return None
+        else:
+            return sitk.Image(self._stack_sitk)
 
 
     ##-------------------------------------------------------------------------
@@ -161,17 +165,18 @@ class ScanExtractor(object):
             #     sitk.WriteImage(self._partial_stack_sitk[i], filename_out)
             #     print("File written to " + filename_out)
 
-        ## Get one entire data array
-        stack_nda = self._get_combined_stacked_slices_data_array_from_MR_films(stack_nda_list)
-        
-        ## Create sitk.Image
-        self._stack_sitk = sitk.GetImageFromArray(stack_nda)
+        if len(stack_nda_list) > 0:
+            ## Get one entire data array
+            stack_nda = self._get_combined_stacked_slices_data_array_from_MR_films(stack_nda_list)
+            
+            ## Create sitk.Image
+            self._stack_sitk = sitk.GetImageFromArray(stack_nda)
 
-        ## Write sitk.Image as acquired stack of slices
-        # if self._use_verbose:
-        #     filename_out = self._dir_output_verbose + filename_without_extension[0:-1] + "0_raw.nii.gz"
-        #     sitk.WriteImage(self._stack_sitk, filename_out)
-        #     print("File written to " + filename_out)
+            ## Write sitk.Image as acquired stack of slices
+            # if self._use_verbose:
+            #     filename_out = self._dir_output_verbose + filename_without_extension[0:-1] + "0_raw.nii.gz"
+            #     sitk.WriteImage(self._stack_sitk, filename_out)
+            #     print("File written to " + filename_out)
 
 
     ##-----------------------------------------------------------------------------
