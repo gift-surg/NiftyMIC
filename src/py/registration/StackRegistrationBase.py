@@ -414,15 +414,25 @@ class StackRegistrationBase(object):
 
             x_scale = np.tile(scale, self._parameters.shape[0])
 
+
+        ## HACK
+        self._transforms_2D_itk = [None]*self._N_slices
+        for i in range(0, self._N_slices):
+            self._transforms_2D_itk[i] = self._new_transform_itk[self._transform_type]()
+            self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](self._transforms_2D_sitk[i].GetParameters()))
+            self._transforms_2D_itk[i].SetFixedParameters(itk.OptimizerParameters[itk.D](self._transforms_2D_sitk[i].GetFixedParameters()))
+
+
         ## Get cost function and its Jacobian w.r.t. the parameters
         fun = self._get_residual_call()
-        # jac = self._get_jacobian_residual_call()
-
+        jac = self._get_jacobian_residual_call()
 
         # Non-linear least-squares optimizer_method:
         self._print_info_text()
         time_start = ph.start_timing()
-        res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
+        # res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) 
+        res = least_squares(fun=fun, jac=jac, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
+        # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
         # res = least_squares(fun=fun, x0=parameters0, optimizer_method='dogbox', optimizer_loss='linear', verbose=2) 
         self._elapsed_time = ph.stop_timing(time_start)
 

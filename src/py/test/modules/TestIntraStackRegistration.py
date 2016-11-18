@@ -265,7 +265,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
         ## Create in-plane motion corruption
-        angle_z = 0.1
+        angle_z = 0.2
         center_2D = (0,0)
         translation_2D = np.array([1, -2])
 
@@ -275,8 +275,9 @@ class TestIntraStackRegistration(unittest.TestCase):
         ## Perform in-plane rigid registration
         inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
         inplane_registration.set_initializer_type("moments")
-        inplane_registration.set_optimizer_nfev_max(5)
-        # inplane_registration.set_optimizer_loss("soft_l1")
+        inplane_registration.set_optimizer_nfev_max(20)
+        inplane_registration.set_alpha_neighbour(0)
+        # inplane_registration.set_optimizer_loss("linear")
         # inplane_registration.set_optimizer_method("trf")
         # inplane_registration._run_registration_pipeline_initialization()
         # inplane_registration._apply_motion_correction()

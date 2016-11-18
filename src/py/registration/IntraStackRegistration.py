@@ -51,18 +51,22 @@ class IntraStackRegistration(StackRegistrationBase):
             "similarity":  self._apply_similarity_motion_correction_and_compute_slice_transforms
         }
 
-        self._new_transform = {
-            "rigid"     :   self._new_rigid_transform,
-            "similarity":   self._new_similarity_transform
+        self._new_transform_sitk = {
+            "rigid"     :   self._new_rigid_transform_sitk,
+            "similarity":   self._new_similarity_transform_sitk
+        }
+        self._new_transform_itk = {
+            "rigid"     :   self._new_rigid_transform_itk,
+            "similarity":   self._new_similarity_transform_itk
         }
 
+
     ##
-    #       Sets the transform type.
+    # Sets the transform type.
     # \date       2016-11-10 01:53:58+0000
     #
     # \param      self            The object
     # \param      transform_type  The transform type
-    #
     #
     def set_transform_type(self, transform_type):
         if transform_type not in ["rigid", "similarity"]:
@@ -93,16 +97,14 @@ class IntraStackRegistration(StackRegistrationBase):
 
 
     ##
-    #       { function_description }
+    # { function_description }
     # \date       2016-11-08 14:59:26+0000
     #
     # \param      self  The object
     #
-    # \return     { description_of_the_return_value }
-    #
     def _run_registration_pipeline_initialization(self):
 
-        self._transform_type_dofs = len(self._new_transform[self._transform_type]().GetParameters())
+        self._transform_type_dofs = len(self._new_transform_sitk[self._transform_type]().GetParameters())
 
         ## Get number of voxels in the x-y image plane
         self._N_slice_voxels = self._stack.sitk.GetWidth() * self._stack.sitk.GetHeight()
@@ -196,6 +198,11 @@ class IntraStackRegistration(StackRegistrationBase):
 
         return residual
 
+    def _get_jacobian_residual_call(self):
+        jac = lambda x: self._get_jacobian_residual_reference_fit(x)
+
+        return jac
+
 
     def _get_residual_regularization(self, parameters_vec):
         return parameters_vec - self._parameters0_vec
@@ -250,6 +257,9 @@ class IntraStackRegistration(StackRegistrationBase):
 
         return residual.flatten()
 
+    def _get_jacobian_residual_slice_neighbours_fit(self, parameters_vec):
+        pass
+
 
     ##
     #       Gets the residual reference fit.
@@ -300,6 +310,44 @@ class IntraStackRegistration(StackRegistrationBase):
         return residual.flatten()
 
 
+    def _get_jacobian_residual_reference_fit(self, parameters_vec):
+
+        ## Allocate memory for Jacobian of residual
+        jacobian = np.zeros((self._N_slices*self._N_slice_voxels, self._optimization_dofs*self._N_slices))
+
+        gradient_image_filter_sitk = sitk.GradientImageFilter()
+
+        ## Reshape parameters for easier access
+        parameters = parameters_vec.reshape(-1, self._optimization_dofs)
+
+        ## Compute Jacobian of residuals between each slice and reference
+        for i in range(0, self._N_slices):
+            
+            ## Get slice_i(T(theta_i, x))
+            self._transforms_2D_sitk[i].SetParameters(parameters[i,0:self._transform_type_dofs])
+            slice_i_sitk = sitk.Resample(self._slices_2D[i].sitk, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], self._interpolator_sitk)
+
+            ## Compute d[slice_i(T(theta_i, x))]/dx
+            dslice_i_sitk = gradient_image_filter_sitk.Execute(slice_i_sitk)
+
+            ## Get associated (Ny x Nx x dim)-array
+            dslice_i_nda = sitk.GetArrayFromImage(dslice_i_sitk)
+
+            ## Reshape to (N_slice_voxels x dim)-array
+            dslice_i_nda = dslice_i_nda.reshape(self._N_slice_voxels,-1)
+
+            ## Get d[T(theta_i, x)]/dtheta_i as (N_slice_voxels x dim x transform_type_dofs)
+            self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](parameters[i,0:self._transform_type_dofs]))
+            dT_i_nda = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(self._transforms_2D_itk[i], slice_i_sitk)
+
+            ## Compute Jacobian for slice i
+            jacobian_slice_i = np.sum(dslice_i_nda[:,:,np.newaxis]*dT_i_nda, axis=1)
+            
+            jacobian[i*self._N_slice_voxels:(i+1)*self._N_slice_voxels, i*self._optimization_dofs:(i+1)*self._optimization_dofs] = jacobian_slice_i
+        
+        return jacobian
+
+
     ##
     #       Gets the initial parameters for 'None', i.e. for identity
     #             transform.
@@ -318,7 +366,7 @@ class IntraStackRegistration(StackRegistrationBase):
         ## Get list of identity transform parameters for all slices
         parameters = np.zeros((self._N_slices, self._transform_type_dofs))
         for i in range(0, self._N_slices):
-            transforms_2D_sitk[i] = self._new_transform[self._transform_type]()
+            transforms_2D_sitk[i] = self._new_transform_sitk[self._transform_type]()
             parameters[i, :] = transforms_2D_sitk[i].GetParameters()
 
         return transforms_2D_sitk, parameters
@@ -339,7 +387,7 @@ class IntraStackRegistration(StackRegistrationBase):
         initializer_type_sitk = self._dictionary_initializer_type_sitk[self._initializer_type]
 
         ## Create list of identity transforms
-        transforms_2D_sitk = [self._new_transform[self._transform_type]()] * self._N_slices
+        transforms_2D_sitk = [self._new_transform_sitk[self._transform_type]()] * self._N_slices
 
         ## Get list of identity transform parameters for all slices
         parameters = np.zeros((self._N_slices, self._transform_type_dofs))
@@ -352,7 +400,7 @@ class IntraStackRegistration(StackRegistrationBase):
         if self._reference is None:
             
             ## Create identity transform for first slice
-            compensation_transform_sitk = self._new_transform[self._transform_type]()
+            compensation_transform_sitk = self._new_transform_sitk[self._transform_type]()
 
             ## First slice is kept at position and others are aligned accordingly
             for i in range(1, self._N_slices):
@@ -363,7 +411,7 @@ class IntraStackRegistration(StackRegistrationBase):
                 ## Use sitk.CenteredTransformInitializerFilter to get initial transform
                 fixed_sitk = slice_im1_sitk
                 moving_sitk = self._slices_2D[i].sitk
-                initial_transform_sitk = self._new_transform[self._transform_type]()
+                initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
                 operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + initializer_type_sitk)
                 
                 ## Get transform
@@ -385,7 +433,7 @@ class IntraStackRegistration(StackRegistrationBase):
                 ## Use sitk.CenteredTransformInitializerFilter to get initial transform
                 fixed_sitk = self._slices_2D_reference[i].sitk
                 moving_sitk = self._slices_2D[i].sitk
-                initial_transform_sitk = self._new_transform[self._transform_type]()
+                initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
                 operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + initializer_type_sitk)
                 
                 ## Get transform
@@ -497,11 +545,17 @@ class IntraStackRegistration(StackRegistrationBase):
     Transform specific parts from here
     """
 
-    def _new_rigid_transform(self):
+    def _new_rigid_transform_sitk(self):
         return sitk.Euler2DTransform()
 
-    def _new_similarity_transform(self):
+    def _new_rigid_transform_itk(self):
+        return itk.Euler2DTransform.New()
+
+    def _new_similarity_transform_sitk(self):
         return sitk.Similarity2DTransform()
+
+    def _new_similarity_transform_itk(self):
+        return itk.Similarity2DTransform.New()
 
     def _apply_rigid_motion_correction_and_compute_slice_transforms(self):
         

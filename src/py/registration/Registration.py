@@ -319,10 +319,10 @@ class Registration(object):
         ## Get data array and reshape to self._fixed_voxels x DIMENSION x DOF
         nda_gradient_transform = self._itk2np_CVD183.GetArrayFromImage(gradient_transform_itk).reshape(self._fixed_voxels, DIMENSION, self._dof_transform)
 
-        ## Compute Jacobian of residual w.r.t. to parameters
-        for i in range(0, self._fixed_voxels):
-            ## Each multiplication is (1xDIMENSION) * (DIMENSIONxDOF) = 1xDOF
-            jacobian_nda[i,:] = nda_gradient_filter_vec[i,:].dot(nda_gradient_transform[i,:,:])
+        ## Vectorized: Compute Jacobian of residual w.r.t. to parameters
+        ## (see test_vectorization_of_dImage_times_dT)
+        ## Each multiplication is (1xDIMENSION) * (DIMENSIONxDOF) = 1xDOF
+        jacobian_nda = np.sum(nda_gradient_filter_vec[:,:,np.newaxis]*nda_gradient_transform, axis=1)
 
         if self._use_fixed_mask:
             ## Multiply each DOF column of Jacobian with mask pointwise.

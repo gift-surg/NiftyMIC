@@ -47,12 +47,11 @@ class TestRegistration(unittest.TestCase):
     def setUp(self):
         pass
 
+    
     def test_GradientEuler3DTransformImageFilter(self):
 
         filename_HRVolume = "HRVolume"
         HR_volume = st.Stack.from_filename(self.dir_test_data, filename_HRVolume)
-
-        shape = HR_volume.sitk.GetSize()
 
         DOF_transform = 6
         parameters = np.random.rand(DOF_transform)*(2*np.pi, 2*np.pi, 2*np.pi, 10, 10, 10)
@@ -83,32 +82,8 @@ class TestRegistration(unittest.TestCase):
         
         ##---------------------------------------------------------------------
         time_start = ph.start_timing()
-        # jacobian_transform_point_itk = itk.Array2D[PIXEL_TYPE]()
 
-        ## Generate arrays of 3D points bearing in mind that nifti-nda.shape = (z,y,x)-coord
-        x = np.arange(0,shape[2])
-        y = np.arange(0,shape[1])
-        z = np.arange(0,shape[0])
-        X,Y,Z = np.meshgrid(x,y,z, indexing='ij') # 'ij' yields vertical x-coordinate for image!
-        indices = np.array([Z.flatten(), Y.flatten(), X.flatten()])
-        A = sitkh.get_sitk_affine_matrix_from_sitk_image(HR_volume.sitk).reshape(3,3)
-        t = np.array(HR_volume.sitk.GetOrigin()).reshape(3,1)
-        points = A.dot(indices) + t
-
-
-        nda_gradient_transform_2 = np.zeros((indices.shape[1],3,DOF_transform))
-
-        # for i in range(0, indices.shape[1]):
-        #     ## Compute Jacobian
-        #     transform_itk.ComputeJacobianWithRespectToParameters(points[:,i], jacobian_transform_point_itk)
-
-        #     ## Convert itk to numpy object
-        #     nda_gradient_transform_2[i,:,:] = sitkh.get_numpy_from_itk_array(jacobian_transform_point_itk)
-
-        print ph.stop_timing(time_start)
-        time_start = ph.start_timing()
-        # nda_gradient_transform_2 = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_stack(transform_itk, HR_volume)
-        nda_gradient_transform_2 = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_stack(transform_itk, HR_volume, points, nda_gradient_transform_2)
+        nda_gradient_transform_2 = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(transform_itk, HR_volume.sitk)
 
         print ph.stop_timing(time_start)
 
@@ -117,9 +92,7 @@ class TestRegistration(unittest.TestCase):
             np.linalg.norm(nda_gradient_transform_2-nda_gradient_transform_1)
         , decimals = 6), 0)
 
-        
-
-    """
+    
     def test_reshaping_of_structures(self):
 
         # filename_prefix = "RigidTransform_"
@@ -172,8 +145,50 @@ class TestRegistration(unittest.TestCase):
             self.assertEqual(np.round(
                 abs_diff
             , decimals = self.accuracy), 0)
+    
+    
+    def test_vectorization_of_dImage_times_dT(self):
+
+        shape = np.array([200,200])
+        slice_nda = np.random.rand(shape[0],shape[1])*255
+
+        slice_sitk = sitk.GetImageFromArray(slice_nda)
+        N_voxels = shape.prod()
 
 
+        gradient_image_filter_sitk = sitk.GradientImageFilter()
+        dslice_sitk = gradient_image_filter_sitk.Execute(slice_sitk)
+        
+        ## Reshape to (N_slice_voxels x dim)-array
+        dslice_nda = sitk.GetArrayFromImage(dslice_sitk).reshape(-1,2)
+
+        euler_sitk = sitk.Euler2DTransform()
+        euler_itk = itk.Euler2DTransform.New()
+        
+        parameters_sitk = (0.5, -4, 10)
+        euler_sitk.SetParameters(parameters_sitk)
+        euler_itk.SetParameters(itk.OptimizerParameters[itk.D](parameters_sitk))
+
+        ## Get d[T(theta, x)]/dtheta as (N_slice_voxels x dim x transform_type_dofs)
+        dT_nda = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(euler_itk, slice_sitk)
+
+        jacobian = np.zeros((N_voxels, euler_itk.GetNumberOfParameters()))
+
+        time0 = ph.start_timing()
+        for i in range(0, N_voxels):
+            jacobian[i,:] = dslice_nda[i,:].dot(dT_nda[i,:,:])
+        print("For-loop:   " + str(ph.stop_timing(time0)))
+        
+        time0 = ph.start_timing()
+        jacobian_2 = np.sum((dslice_nda[:,:,np.newaxis]*dT_nda),axis=1)
+        print("Vectorized: " + str(ph.stop_timing(time0)))
+
+
+        self.assertEqual(np.round(
+            np.linalg.norm(jacobian - jacobian_2)
+        , decimals = 8), 0)
+
+    
     def test_translation_registration_of_slices(self):
 
         filename_prefix = "TranslationOnly_"
@@ -211,7 +226,7 @@ class TestRegistration(unittest.TestCase):
         time_end = time.time()
         # print("Translation only registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
-
+    
     def test_rigid_registration_of_slices(self):
 
         filename_prefix = "RigidTransform_"
@@ -249,7 +264,7 @@ class TestRegistration(unittest.TestCase):
         time_end = time.time()
         # print("Rigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
-
+    
     def test_rigid_registration_of_stack(self):
         filename_prefix = "NoMotion_"
         parameters_gd = (0.1,0.1,0.2,-1,3,2)
@@ -321,7 +336,7 @@ class TestRegistration(unittest.TestCase):
         print("\t|parameters-parameters_gd| = %s" %(str(norm_diff)) )
         print("\tRigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
-
+    """
     def test_inplane_similarity_registration(self):
         filename = "HRVolume"
         scale = 0.9

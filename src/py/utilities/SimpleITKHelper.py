@@ -480,8 +480,7 @@ def get_numpy_from_itk_array(array_itk):
 
 
 ##
-#          Gets the numpy array of jacobian itk transform applied on
-#                stack.
+# Gets the numpy array of jacobian itk transform applied on stack.
 # \date          2016-11-18 12:00:05+0000
 #
 # Compute
@@ -500,12 +499,15 @@ def get_numpy_from_itk_array(array_itk):
 # \return        The (N_voxel x transform_DOF)-numpy array of the Jacobian of
 #                the transform applied on the stack
 #
-def get_numpy_array_of_jacobian_itk_transform_applied_on_stack(transform_itk, stack, points=None, jacobian_transform_on_image_nda=None):
+def get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(transform_itk, image_sitk, points=None, jacobian_transform_on_image_nda=None):
 
-    shape = np.array(stack.sitk.GetSize())[::-1]
+    ## Shape of corresponding image data array
+    shape = np.array(image_sitk.GetSize())[::-1]
 
+    ## Shall reduce the computational burden in case points stay the same.
+    ## However, it does not add much to the computational time
     if points is None:
-        dim = stack.sitk.GetDimension()
+        dim = image_sitk.GetDimension()
 
         x = np.arange(0,shape[0])
         y = np.arange(0,shape[1])
@@ -524,8 +526,8 @@ def get_numpy_array_of_jacobian_itk_transform_applied_on_stack(transform_itk, st
             indices = np.array([Z.flatten(), Y.flatten(), X.flatten()])
         
         ## Get transform from voxel to image space coordinates
-        A = get_sitk_affine_matrix_from_sitk_image(stack.sitk).reshape(dim,dim)
-        t = np.array(stack.sitk.GetOrigin()).reshape(dim,1)
+        A = get_sitk_affine_matrix_from_sitk_image(image_sitk).reshape(dim,dim)
+        t = np.array(image_sitk.GetOrigin()).reshape(dim,1)
         
         ## Compute point array (3xN_voxels) of image in image space
         points = A.dot(indices) + t
@@ -546,6 +548,7 @@ def get_numpy_array_of_jacobian_itk_transform_applied_on_stack(transform_itk, st
         transform_itk.ComputeJacobianWithRespectToParameters(points[:,i], jacobian_transform_on_point_itk)
 
         ## Convert itk to numpy array
+        ## THE computational time consuming part!
         jacobian_transform_on_image_nda[i,:,:] = get_numpy_from_itk_array(jacobian_transform_on_point_itk)
 
     ## Return Jacobian w.r.t to parameters evaluated at all image points

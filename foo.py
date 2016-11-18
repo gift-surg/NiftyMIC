@@ -18,6 +18,7 @@ sys.path.append(dir_src_root)
 
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
+import utilities.PythonHelper as ph
 import base.Stack as st
 import base.Slice as sl
 import utilities.StackManager as sm
@@ -125,10 +126,10 @@ if __name__ == '__main__':
 
     dir_input = "test-data/"
 
-    # filename_stack = "FetalBrain_reconstruction_3stacks_myAlg"
+    filename_stack = "FetalBrain_reconstruction_3stacks_myAlg"
     # filename_stack_corrupted = "FetalBrain_reconstruction_3stacks_myAlg_corrupted_inplane"
 
-    # stack_sitk = sitk.ReadImage(dir_input + filename_stack + ".nii.gz")
+    stack_sitk = sitk.ReadImage(dir_input + filename_stack + ".nii.gz")
     # stack_corrupted_sitk = sitk.ReadImage(dir_input + filename_stack_corrupted + ".nii.gz")
 
     # stack_corrupted = st.Stack.from_sitk_image(stack_corrupted_sitk, "stack_corrupted")
@@ -156,15 +157,41 @@ if __name__ == '__main__':
 
     # print np.linalg.norm(parameters_array-parameters)
 
-    t = itk.Array
 
-    jacobian_point = itk.Array2D[PIXEL_TYPE]()
-    point = (1,0)
+    slice_sitk = stack_sitk[:,:,5]
 
+    shape = np.array(slice_sitk.GetSize())[::-1]
+    N_voxels = shape.prod()
+
+    # sitkh.print_itk_array(jacobian_point)
+
+    gradient_image_filter_sitk = sitk.GradientImageFilter()
+    dslice_sitk = gradient_image_filter_sitk.Execute(slice_sitk)
+    
+    ## Reshape to (N_slice_voxels x dim)-array
+    dslice_nda = sitk.GetArrayFromImage(dslice_sitk).reshape(-1,2)
+
+    euler_sitk = sitk.Euler2DTransform()
     euler_itk = itk.Euler2DTransform.New()
+    
+    parameters_sitk = (0.5, -4, 10)
+    euler_sitk.SetParameters(parameters_sitk)
+    euler_itk.SetParameters(itk.OptimizerParameters[itk.D](parameters_sitk))
 
-    euler_itk.ComputeJacobianWithRespectToParameters(point, jacobian_point)
+    ## Get d[T(theta, x)]/dtheta as (N_slice_voxels x dim x transform_type_dofs)
+    dT_nda = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(euler_itk, slice_sitk)
 
-    sitkh.print_itk_array(jacobian_point)
+    jacobian = np.zeros((N_voxels, euler_itk.GetNumberOfParameters()))
 
+    time0 = ph.start_timing()
+    for i in range(0, N_voxels):
+        jacobian[i,:] = dslice_nda[i,:].dot(dT_nda[i,:,:])
+    print ph.stop_timing(time0)
+    
+
+    time0 = ph.start_timing()
+    jacobian_2 = np.sum((dslice_nda[:,:,np.newaxis]*dT_nda),axis=1)
+    print ph.stop_timing(time0)
+
+    print (jacobian - jacobian_2).sum()
 
