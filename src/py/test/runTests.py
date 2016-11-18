@@ -25,10 +25,10 @@ sys.path.append( dir_src_root )
 # from modules.TestSimulatorSliceAcqusition import *
 # from modules.TestNiftyReg import *
 # from modules.TestDifferentialOperations import *
-# from modules.TestRegistration import *
+from modules.TestRegistration import *
 # from modules.TestBrainStripping import *
-# from modules.TestInPlaneRegistration import *
-from modules.TestIntraStackRegistration import *
+# from modules.TestInPlaneRegistrationSimpleITK import *
+# from modules.TestIntraStackRegistration import *
 # from modules.TestParameterNormalization import *
 # from modules.TestRegistrationITK import *
 # from modules.TestLinearImageQualityTransfer import *

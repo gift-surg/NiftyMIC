@@ -410,6 +410,53 @@ def print_itk_direction(direction_itk):
     print m_np
 
 
+##-----------------------------------------------------------------------------
+# \brief      Print the ITK array
+# \date       2016-11-17 19:51:53+0000
+#
+# The itk-array can be instantiated via \p array_itk = \p itk.Array2D[itk.D]().
+# Depending on the further use the size needs to be defined too, i.e. \p
+# array_itk.SetSize(m,n)
+#
+# \param      array_itk  array as itk.Array2D# \f$ \in R^{m \times n} \f$
+#                        or parameter type of itk transforms
+#
+def print_itk_array(array_itk):
+    
+    ## itk.Array2D[itk.D]()
+    try:
+        nda = self.get_numpy_from_itk_array(array_itk)
+    
+    ## Parameter type
+    except:
+        N = array_itk.size()
+        nda = np.zeros(N)
+
+        ## Fill array information
+        for i in range(0, N):
+            nda[i] = array_itk.GetElement(i)
+
+    ## Print array
+    print nda
+        
+
+def update_itk_parameters(parameters_itk, array):
+    for i in range(0, array.size):
+        parameters_itk.SetElement(i, array[i])
+
+def get_numpy_from_itk_array(array_itk):
+    cols = array_itk.cols()
+    rows = array_itk.rows()
+    nda = np.zeros((rows, cols))
+    
+    ## Fill array information
+    for i in range(0, rows):
+        for j in range(0, cols):
+            nda[i,j] = array_itk(i,j)
+
+    return nda
+
+
 ## Extract direction from SimpleITK-image so that it can be injected into
 #  ITK-image
 #  \param[in] image_sitk sitk.Image object

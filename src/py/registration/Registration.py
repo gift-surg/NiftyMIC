@@ -21,11 +21,13 @@ import utilities.SimpleITKHelper as sitkh
 import base.PSF as psf
 import base.Slice as sl
 
+DIMENSION = 3
+
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
 
 ## ITK image type
-IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
+IMAGE_TYPE = itk.Image[PIXEL_TYPE, DIMENSION]
 IMAGE_TYPE_CV33 = itk.Image.CVD33
 IMAGE_TYPE_CV183 = itk.Image.CVD183
 
@@ -299,7 +301,9 @@ class Registration(object):
 
         ## Get array of Jacobian of forward operator w.r.t. spatial coordinates
         nda_gradient_filter = self._itk2np_CVD33.GetArrayFromImage(jacobian_spatial_Ak_vol_itk)
-        nda_gradient_filter_vec = nda_gradient_filter.reshape(-1,3)
+        
+        ## Reshape to (self._fixed_voxels x DIMENSION)-array
+        nda_gradient_filter_vec = nda_gradient_filter.reshape(-1,DIMENSION)
 
         ## Get array of Jacobian of transform w.r.t. parameters
         for i in range(0, self._dof_transform):
@@ -307,17 +311,23 @@ class Registration(object):
 
         self._rigid_transform_itk.SetParameters(self._parameters_itk)
         self._filter_gradient_transform.Update()
+
+        ## Get Jacobian of transform w.r.t. parameters at locations specified by fixed image
         gradient_transform_itk = self._filter_gradient_transform.GetOutput()
         gradient_transform_itk.DisconnectPipeline()
 
-        nda_gradient_transform = self._itk2np_CVD183.GetArrayFromImage(gradient_transform_itk).reshape(-1,3,self._dof_transform)
+        ## Get data array and reshape to self._fixed_voxels x DIMENSION x DOF
+        nda_gradient_transform = self._itk2np_CVD183.GetArrayFromImage(gradient_transform_itk).reshape(self._fixed_voxels, DIMENSION, self._dof_transform)
 
         ## Compute Jacobian of residual w.r.t. to parameters
         for i in range(0, self._fixed_voxels):
+            ## Each multiplication is (1xDIMENSION) * (DIMENSIONxDOF) = 1xDOF
             jacobian_nda[i,:] = nda_gradient_filter_vec[i,:].dot(nda_gradient_transform[i,:,:])
 
         if self._use_fixed_mask:
-        ## https://mail.scipy.org/pipermail/numpy-discussion/2007-March/026506.html
+            ## Multiply each DOF column of Jacobian with mask pointwise.
+            ## Dimensions for multiplication are (fixed_voxels x DOF) * (fixed_voxels,1)
+            ## https://mail.scipy.org/pipermail/numpy-discussion/2007-March/026506.html
             jacobian_nda = jacobian_nda*self._nda_mask[:,np.newaxis]
 
         return -jacobian_nda

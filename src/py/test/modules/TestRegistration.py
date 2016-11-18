@@ -22,14 +22,17 @@ sys.path.append( dir_src_root )
 import base.Stack as st
 import registration.Registration as myreg
 import utilities.SimpleITKHelper as sitkh
+import utilities.PythonHelper as ph
 import registration.RegistrationSimpleITK as regsitk
-import registration.RegistrationSimpleITK as regitk
+import registration.RegistrationITK as regitk
 
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
 
 ## ITK image type
 IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
+IMAGE_TYPE_CV33 = itk.Image.CVD33
+IMAGE_TYPE_CV183 = itk.Image.CVD183
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -44,6 +47,75 @@ class TestRegistration(unittest.TestCase):
     def setUp(self):
         pass
 
+    def test_GradientEuler3DTransformImageFilter(self):
+
+        filename_HRVolume = "HRVolume"
+        HR_volume = st.Stack.from_filename(self.dir_test_data, filename_HRVolume)
+
+        shape = HR_volume.sitk.GetSize()
+
+        DOF_transform = 6
+        parameters = np.random.rand(DOF_transform)*(2*np.pi, 2*np.pi, 2*np.pi, 10, 10, 10)
+
+        itk2np = itk.PyBuffer[IMAGE_TYPE]
+        itk2np_CVD33 = itk.PyBuffer[IMAGE_TYPE_CV33]
+        itk2np_CVD183 = itk.PyBuffer[IMAGE_TYPE_CV183]
+
+        ## Create Euler3DTransform and update with random parameters        
+        transform_itk = itk.Euler3DTransform.New()
+        parameters_itk = transform_itk.GetParameters()
+        sitkh.update_itk_parameters(parameters_itk, parameters)
+        transform_itk.SetParameters(parameters_itk)
+        # sitkh.print_itk_array(parameters_itk)
+
+        ##---------------------------------------------------------------------
+        time_start = ph.start_timing()
+        filter_gradient_transform = itk.GradientEuler3DTransformImageFilter[IMAGE_TYPE, PIXEL_TYPE, PIXEL_TYPE].New()
+        filter_gradient_transform.SetInput(HR_volume.itk)
+        filter_gradient_transform.SetTransform(transform_itk)
+        filter_gradient_transform.Update()
+        gradient_transform_itk = filter_gradient_transform.GetOutput()
+        ## Get data array of Jacobian of transform w.r.t. parameters  and 
+        ## reshape to N_HR_volume_voxels x DIMENSION x DOF
+        nda_gradient_transform_1 = itk2np_CVD183.GetArrayFromImage(gradient_transform_itk).reshape(-1,3,DOF_transform)
+        
+        print ph.stop_timing(time_start)
+        
+        ##---------------------------------------------------------------------
+        time_start = ph.start_timing()
+        jacobian_transform_point_itk = itk.Array2D[PIXEL_TYPE]()
+
+        ## Generate arrays of 3D points bearing in mind that nifti-nda.shape = (z,y,x)-coord
+        x = np.arange(0,shape[2])
+        y = np.arange(0,shape[1])
+        z = np.arange(0,shape[0])
+        X,Y,Z = np.meshgrid(x,y,z, indexing='ij') # 'ij' yields vertical x-coordinate for image!
+        indices = np.array([Z.flatten(), Y.flatten(), X.flatten()])
+        A = sitkh.get_sitk_affine_matrix_from_sitk_image(HR_volume.sitk).reshape(3,3)
+        t = np.array(HR_volume.sitk.GetOrigin()).reshape(3,1)
+        points = A.dot(indices) + t
+
+        print ph.stop_timing(time_start)
+
+        nda_gradient_transform_2 = np.zeros((indices.shape[1],3,DOF_transform))
+
+        for i in range(0, indices.shape[1]):
+            ## Compute Jacobian
+            transform_itk.ComputeJacobianWithRespectToParameters(points[:,i], jacobian_transform_point_itk)
+
+            ## Convert itk to numpy object
+            nda_gradient_transform_2[i,:,:] = sitkh.get_numpy_from_itk_array(jacobian_transform_point_itk)
+
+        print ph.stop_timing(time_start)
+
+        ##---------------------------------------------------------------------
+        self.assertEqual(np.round(
+            np.linalg.norm(nda_gradient_transform_2-nda_gradient_transform_1)
+        , decimals = 6), 0)
+
+        
+
+    """
     def test_reshaping_of_structures(self):
 
         # filename_prefix = "RigidTransform_"
@@ -393,3 +465,4 @@ class TestRegistration(unittest.TestCase):
         #                     # print euler_sitk.GetParameters()
         #                 # print(diff)
         #             print("Minimum = %s at index = %s" %(foo, foo_index))
+    """

@@ -46,7 +46,7 @@ class StackRegistrationBase(object):
     # \param      use_reference_mask  Use reference mask for registration, bool
     # \param      use_verbose         Verbose output, bool
     #
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1, nfev_max=20, use_parameter_normalization=False):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1, use_parameter_normalization=False, optimizer_nfev_max=50, optimizer_loss="soft_l1", optimizer_method="trf"):
 
         ## Set Fixed and reference stacks
         if stack is not None:
@@ -63,6 +63,11 @@ class StackRegistrationBase(object):
         ## Set booleans to use mask            
         self._use_stack_mask = use_stack_mask
         self._use_reference_mask = use_reference_mask
+
+        ## Parameters for solver
+        self._optimizer_nfev_max = optimizer_nfev_max
+        self._optimizer_loss = optimizer_loss
+        self._optimizer_method = optimizer_method
 
         ## Verbose computation
         self._use_verbose = use_verbose
@@ -89,8 +94,8 @@ class StackRegistrationBase(object):
         self._alpha_reference = alpha_reference
         self._alpha_parameter = alpha_parameter
 
-        self._nfev_max = nfev_max
         self._use_parameter_normalization = use_parameter_normalization
+
 
     ##-------------------------------------------------------------------------
     # \brief      Sets stack/reference/target image.
@@ -103,12 +108,6 @@ class StackRegistrationBase(object):
         self._stack = st.Stack.from_stack(stack)
         self._N_slices = self._stack.get_number_of_slices()
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets stack.
-    # \date       2016-11-06 17:00:18+0000
-    #
-    # \return     The stack image as Stack object.
-    #
     def get_stack(self):
         return self._stack
 
@@ -123,14 +122,6 @@ class StackRegistrationBase(object):
     def set_reference(self, reference):
         self._reference = st.Stack.from_Stack(reference)
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets reference/floating/source image.
-    # \date       2016-11-06 17:02:16+0000
-    #
-    # \param      self  The object
-    #
-    # \return     The reference stack as Stack object.
-    #
     def get_reference(self):
         return self._reference
 
@@ -171,12 +162,23 @@ class StackRegistrationBase(object):
 
 
     ##-------------------------------------------------------------------------
+    # \brief      Perform parameter normalization for optimizer
+    # \date       2016-11-17 16:10:14+0000
+    #
+    # \param      self  The object
+    # \param      flag  The flag, boolean
+    #
+    def use_parameter_normalization(self, flag):
+        self._use_parameter_normalization = flag
+
+
+    ##-------------------------------------------------------------------------
     # \brief      Sets the initializer type used to initialize the registration
     # \date       2016-11-08 00:20:29+0000
     #
     # The initial transform can either be the identity ('None') or be based on
-    # the moments ('moments') or geometry ('geometry') of the stack and reference
-    # image.
+    # the moments ('moments') or geometry ('geometry') of the stack and
+    # reference image.
     #
     # \param      self              The object
     # \param      initializer_type  The initializer type to be either 'None',
@@ -188,15 +190,6 @@ class StackRegistrationBase(object):
 
         self._initializer_type = initializer_type
 
-
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the initializer type.
-    # \date       2016-11-08 00:25:00+0000
-    #
-    # \param      self  The object
-    #
-    # \return     The initializer type.
-    #
     def get_initializer_type(self):
         return self._initializer_type
 
@@ -211,7 +204,6 @@ class StackRegistrationBase(object):
     def set_interpolator(self, interpolator):
         self._interpolator = interpolator
         self._interpolator_sitk = eval("sitk.sitk" + self._interpolator)
-
 
     def get_interpolator(self):
         return self._interpolator
@@ -262,22 +254,59 @@ class StackRegistrationBase(object):
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Set maximum number of function evaluations for optimizer
-    #             least_squares
+    # \brief      Set maximum number of function evaluations for least_squares
+    #             optimizer
     # \date       2016-11-10 19:24:35+0000
     #
     # \param      self      The object
-    # \param      nfev_max  The nfev maximum
+    # \param      optimizer_nfev_max  The nfev maximum
+    # 
+    # \see        https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html#scipy.optimize.least_squares
     #
-    def set_nfev_max(self, nfev_max):
-        self._nfev_max = nfev_max
+    def set_optimizer_nfev_max(self, optimizer_nfev_max):
+        self._optimizer_nfev_max = optimizer_nfev_max
 
-    def get_nfev_max(self):
-        return self._nfev_max
+    def get_optimizer_nfev_max(self):
+        return self._optimizer_nfev_max
 
 
-    def use_parameter_normalization(self, flag):
-        self._use_parameter_normalization = flag
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the optimizer_loss function for least_squares optimizer
+    # \date       2016-11-17 16:07:29+0000
+    #
+    # \param      self  The object
+    # \param      optimizer_loss  The optimizer_loss in ["linear", "soft_l1", "huber", "cauchy",
+    #                   "arctan"]
+    #
+    # \see        https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html#scipy.optimize.least_squares
+    #
+    def set_optimizer_loss(self, optimizer_loss):
+        if optimizer_loss not in ["linear", "soft_l1", "huber", "cauchy", "arctan"]:
+            raise ErrorValue("Optimizer optimizer_loss for least_squares must either be 'linear', 'soft_l1', 'huber', 'cauchy' or 'arctan'.")
+
+        self._optimizer_loss = optimizer_loss
+
+    def get_optimizer_loss(self):
+        return self._optimizer_loss
+
+
+    ##-------------------------------------------------------------------------
+    # \brief      Sets the optimizer_method for least_squares optimizer
+    # \date       2016-11-17 16:08:37+0000
+    #
+    # \param      self    The object
+    # \param      optimizer_method  The optimizer_method in ["trf", "lm", "dogbox"]
+    #
+    # \see        https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html#scipy.optimize.least_squares
+    #
+    def set_optimizer_method(self, optimizer_method):
+        if optimizer_method not in ["trf", "lm", "dogbox"]:
+            raise ValueError("Optimizer optimizer_method for least_squares must either be 'trf', 'lm' or 'dogbox'.")
+
+        self._optimizer_method = optimizer_method
+
+    def get_optimizer_method(self):
+        return self._optimizer_method
 
 
     ##-------------------------------------------------------------------------
@@ -354,20 +383,15 @@ class StackRegistrationBase(object):
     #
     def run_registration(self):
 
-        ## Parameterize least_squares solver
-        # loss = 'linear'
-        loss = 'soft_l1'
-        # loss = 'huber'
-
-        method = 'trf'
-        # method = 'lm'
-        # method = 'dogbox'
-
-        x_scale = 'jac' #or array
-        verbose = 2 #0,1,2
+        if self._optimizer_method in ["lm"]:
+            verbose = 1
+        else:        
+            verbose = 2
 
         # jac = '2-point'
         jac = '3-point'
+        x_scale = 1.0 #or array
+        # x_scale = 'jac' #or array
 
         ## Initialize registration pipeline         
         self._run_registration_pipeline_initialization()
@@ -395,11 +419,11 @@ class StackRegistrationBase(object):
         # jac = self._get_jacobian_residual_call()
 
 
-        # Non-linear least-squares method:
+        # Non-linear least-squares optimizer_method:
+        self._print_info_text()
         time_start = ph.start_timing()
-        res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=method, loss=loss, max_nfev=self._nfev_max, verbose=verbose, x_scale=x_scale) 
-        # res = least_squares(fun=fun, x0=parameters0, method='lm', loss='linear', verbose=1) 
-        # res = least_squares(fun=fun, x0=parameters0, method='dogbox', loss='linear', verbose=2) 
+        res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
+        # res = least_squares(fun=fun, x0=parameters0, optimizer_method='dogbox', optimizer_loss='linear', verbose=2) 
         self._elapsed_time = ph.stop_timing(time_start)
 
         ## Get and reshape final transform parameters for each slice
@@ -416,9 +440,16 @@ class StackRegistrationBase(object):
         ## Apply motion correction and compute slice transforms
         self._apply_motion_correction()
 
+    def _print_info_text(self):
+        print("Minimization via least_squares solver")
+        print("\tMethod = " + self._optimizer_method)
+        print("\tLoss = " + self._optimizer_loss)
+        print("\tMaximum number of function evaluations = " + str(self._optimizer_nfev_max))
+        print("\tRegularization parameters: %s (reference), %s (neighbour), %s (parameter)" %(str(self._alpha_reference), str(self._alpha_neighbour), str(self._alpha_parameter)))
+
 
     ##-------------------------------------------------------------------------
-    # \brief      Method to initialize the registration with all
+    # \brief      optimizer_Method to initialize the registration with all
     #             precomputations which can be done before the actual
     #             optimization.
     # \date       2016-11-10 01:37:13+0000
@@ -473,7 +504,7 @@ class StackRegistrationBase(object):
 
 
     ##-------------------------------------------------------------------------
-    # \brief      Method that applies the obtained registration transforms to
+    # \brief      optimizer_Method that applies the obtained registration transforms to
     #             update the slices positions and to get the affine slice
     #             transforms capturing the performed motion correction.
     # \date       2016-11-10 01:34:42+0000

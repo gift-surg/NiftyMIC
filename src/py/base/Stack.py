@@ -46,13 +46,17 @@ class Stack:
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         ## Append masks (either provided or binary mask)
-        if suffix_mask is not None and os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
-            stack.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
-            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
-        else:
-            print("Mask file for " + dir_input + filename + ".nii.gz" +  " not be found. Binary mask created." )
+        if suffix_mask is None:
             stack.sitk_mask = stack._generate_binary_mask()
-            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
+        else:    
+            if os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
+                stack.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
+            else:
+                print("Mask file for " + dir_input + filename + ".nii.gz" +  " not found. Binary mask created." )
+                stack.sitk_mask = stack._generate_binary_mask()
+        
+        ## Append itk object
+        stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
         ## Extract all slices and their masks from the stack and store them 
         stack._N_slices = stack.sitk.GetSize()[-1]

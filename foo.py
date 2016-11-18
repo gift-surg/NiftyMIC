@@ -125,35 +125,46 @@ if __name__ == '__main__':
 
     dir_input = "test-data/"
 
-    filename_stack = "FetalBrain_reconstruction_3stacks_myAlg"
-    filename_stack_corrupted = "FetalBrain_reconstruction_3stacks_myAlg_corrupted_inplane"
+    # filename_stack = "FetalBrain_reconstruction_3stacks_myAlg"
+    # filename_stack_corrupted = "FetalBrain_reconstruction_3stacks_myAlg_corrupted_inplane"
 
-    stack_sitk = sitk.ReadImage(dir_input + filename_stack + ".nii.gz")
-    stack_corrupted_sitk = sitk.ReadImage(dir_input + filename_stack_corrupted + ".nii.gz")
+    # stack_sitk = sitk.ReadImage(dir_input + filename_stack + ".nii.gz")
+    # stack_corrupted_sitk = sitk.ReadImage(dir_input + filename_stack_corrupted + ".nii.gz")
 
-    stack_corrupted = st.Stack.from_sitk_image(stack_corrupted_sitk, "stack_corrupted")
-    stack = st.Stack.from_sitk_image(sitk.Resample(stack_sitk, stack_corrupted.sitk),"stack")
+    # stack_corrupted = st.Stack.from_sitk_image(stack_corrupted_sitk, "stack_corrupted")
+    # stack = st.Stack.from_sitk_image(sitk.Resample(stack_sitk, stack_corrupted.sitk),"stack")
 
     # sitkh.show_stacks([stack, stack_corrupted])
 
-    inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
-    inplane_registration.set_initializer_type("moments")
-    inplane_registration.set_intensity_correction_type("affine")
-    inplane_registration.set_transform_type("rigid")
-    inplane_registration._run_registration_pipeline_initialization()
-    parameters = inplane_registration.get_parameters()
+    # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
+    # inplane_registration.set_initializer_type("moments")
+    # inplane_registration.set_intensity_correction_type("affine")
+    # inplane_registration.set_transform_type("rigid")
+    # inplane_registration._run_registration_pipeline_initialization()
+    # parameters = inplane_registration.get_parameters()
 
-    parameters_array = np.array(parameters)
+    # parameters_array = np.array(parameters)
 
-    parameter_normalization = pn.ParameterNormalization(parameters)
+    # parameter_normalization = pn.ParameterNormalization(parameters)
 
-    parameter_normalization.compute_normalization_coefficients()
-    print parameter_normalization.get_normalization_coefficients()
+    # parameter_normalization.compute_normalization_coefficients()
+    # print parameter_normalization.get_normalization_coefficients()
 
-    parameter_normalization.normalize_parameters(parameters_array)
+    # parameter_normalization.normalize_parameters(parameters_array)
 
-    print parameter_normalization.denormalize_parameters(parameters_array)
+    # print parameter_normalization.denormalize_parameters(parameters_array)
 
-    print np.linalg.norm(parameters_array-parameters)
+    # print np.linalg.norm(parameters_array-parameters)
+
+    t = itk.Array
+
+    jacobian_point = itk.Array2D[PIXEL_TYPE]()
+    point = (1,0)
+
+    euler_itk = itk.Euler2DTransform.New()
+
+    euler_itk.ComputeJacobianWithRespectToParameters(point, jacobian_point)
+
+    sitkh.print_itk_array(jacobian_point)
 
 
