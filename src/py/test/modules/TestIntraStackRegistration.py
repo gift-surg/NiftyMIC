@@ -105,6 +105,7 @@ class TestIntraStackRegistration(unittest.TestCase):
     def setUp(self):        
         pass
 
+    """
     ##
     #       Test whether the function
     #             _get_initial_transforms_and_parameters_geometry_moments
@@ -239,7 +240,7 @@ class TestIntraStackRegistration(unittest.TestCase):
                 np.linalg.norm(nda_diff)
             , decimals = self.accuracy), 0)
 
-  
+    """
     ##
     #       Verify that in-plane rigid registration works
     # \date       2016-11-02 21:56:19+0000
@@ -254,29 +255,34 @@ class TestIntraStackRegistration(unittest.TestCase):
     def test_inplane_rigid_alignment_to_reference(self):
 
         filename_stack = "fetal_brain_0"
-        filename_recon = "FetalBrain_reconstruction_3stacks_myAlg"
+        # filename_recon = "FetalBrain_reconstruction_3stacks_myAlg"
 
-        stack_sitk = sitk.ReadImage(self.dir_test_data + filename_stack + ".nii.gz")
-        recon_sitk = sitk.ReadImage(self.dir_test_data + filename_recon + ".nii.gz")
+        # stack_sitk = sitk.ReadImage(self.dir_test_data + filename_stack + ".nii.gz")
+        # recon_sitk = sitk.ReadImage(self.dir_test_data + filename_recon + ".nii.gz")
 
-        recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
-        stack = st.Stack.from_sitk_image(recon_resampled_sitk)
+        # recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
+        # stack = st.Stack.from_sitk_image(recon_resampled_sitk)
 
-        # stack = st.Stack.from_filename(self.dir_test_data, filename)
+        stack = st.Stack.from_filename(self.dir_test_data, filename_stack, "_mask")
 
         ## Create in-plane motion corruption
-        angle_z = 0.2
+        angle_z = 0.1
         center_2D = (0,0)
         translation_2D = np.array([1, -2])
 
         ## Get corrupted stack and corresponding motions
         stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D)
 
+        # stack.show(1)
+        # stack_corrupted.show(1)
+
         ## Perform in-plane rigid registration
         inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
         inplane_registration.set_initializer_type("moments")
-        inplane_registration.set_optimizer_nfev_max(20)
-        inplane_registration.set_alpha_neighbour(0)
+        inplane_registration.set_optimizer_nfev_max(15)
+        inplane_registration.set_alpha_neighbour(1)
+        inplane_registration.use_stack_mask(0)
+        inplane_registration.use_reference_mask(0)
         # inplane_registration.set_optimizer_loss("linear")
         # inplane_registration.set_optimizer_method("trf")
         # inplane_registration._run_registration_pipeline_initialization()

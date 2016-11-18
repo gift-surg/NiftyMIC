@@ -442,10 +442,9 @@ class StackRegistrationBase(object):
         ## Denormalize parameters
         # self._parameters = self._parameter_normalizer.denormalize_parameters(self._parameters)
 
-        if self._use_verbose:
-            print("Final values = ")
-            print self._parameters
-
+        # if self._use_verbose:
+        #     print("Final values = ")
+        #     print self._parameters
 
         ## Apply motion correction and compute slice transforms
         self._apply_motion_correction()
@@ -455,6 +454,9 @@ class StackRegistrationBase(object):
         print("\tMethod = " + self._optimizer_method)
         print("\tLoss = " + self._optimizer_loss)
         print("\tMaximum number of function evaluations = " + str(self._optimizer_nfev_max))
+        print("\tStack mask used: " + str(self._use_stack_mask))
+        if self._reference is not None:
+            print("\tReference mask used: " + str(self._use_reference_mask))
         print("\tRegularization parameters: %s (reference), %s (neighbour), %s (parameter)" %(str(self._alpha_reference), str(self._alpha_neighbour), str(self._alpha_parameter)))
 
 

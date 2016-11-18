@@ -199,9 +199,53 @@ class IntraStackRegistration(StackRegistrationBase):
         return residual
 
     def _get_jacobian_residual_call(self):
-        jac = lambda x: self._get_jacobian_residual_reference_fit(x)
 
-        return jac
+        alpha_neighbour = self._alpha_neighbour
+        alpha_parameter = self._alpha_parameter
+        alpha_reference = self._alpha_reference
+
+        if self._reference is None:
+            if alpha_neighbour <= 0:
+                raise ErrorValue("A weight of alpha_neighbour <= 0 is not meaningful.")
+
+            # if alpha_parameter is 0:
+            jacobian = lambda x: self._get_jacobian_residual_slice_neighbours_fit(x)
+
+            # else:
+            #     jacobian = lambda x: np.concatenate((
+            #               self._get_jacobian_residual_slice_neighbours_fit(x),
+            #               alpha_parameter/alpha_neighbour * self._get_jacobian_residual_regularization(x)
+            #         ))
+            
+        else:
+
+            if alpha_reference <= 0:
+                raise ErrorValue("A weight of alpha_reference <= 0 is not meaningful in case reference is given")
+            
+            if alpha_neighbour is 0 and alpha_parameter is 0:
+                jacobian = lambda x: self._get_jacobian_residual_reference_fit(x)
+            
+            elif alpha_neighbour > 0 and alpha_parameter is 0:
+                jacobian = lambda x: np.concatenate((
+                          self._get_jacobian_residual_reference_fit(x),
+                          alpha_neighbour/alpha_reference * self._get_jacobian_residual_slice_neighbours_fit(x)
+                    ))
+            
+            # elif alpha_neighbour is 0 and alpha_parameter > 0:
+            #     jacobian = lambda x: np.concatenate((
+            #               self._get_jacobian_residual_reference_fit(x),
+            #               alpha_paramete/ralpha_reference * self._get_jacobian_residual_regularization(x)
+            #         ))
+            
+
+            # elif alpha_neighbour > 0 and alpha_parameter > 0:
+            #     jacobian = lambda x: np.concatenate((
+            #               self._get_jacobian_residual_reference_fit(x),
+            #               alpha_neighbour/alpha_reference * self._get_jacobian_residual_slice_neighbours_fit(x),
+            #               alpha_parameter/alpha_reference * self._get_jacobian_residual_regularization(x)
+            #         ))
+
+        return jacobian
 
 
     def _get_residual_regularization(self, parameters_vec):
@@ -255,10 +299,7 @@ class IntraStackRegistration(StackRegistrationBase):
             ## Prepare for next iteration
             slice_i_nda = slice_ip1_nda
 
-        return residual.flatten()
-
-    def _get_jacobian_residual_slice_neighbours_fit(self, parameters_vec):
-        pass
+        return residual.flatten()        
 
 
     ##
@@ -310,12 +351,111 @@ class IntraStackRegistration(StackRegistrationBase):
         return residual.flatten()
 
 
+    def _get_jacobian_slice(self, slice_sitk, transform_itk, slice_nda_mask=None):
+
+        ## Gradient image filter
+        gradient_image_filter_sitk = sitk.GradientImageFilter()
+
+        ## Compute d[slice_i(T(theta_i, x))]/dx
+        dslice_sitk = gradient_image_filter_sitk.Execute(slice_sitk)
+
+        ## Get associated (Ny x Nx x dim)-array
+        dslice_nda = sitk.GetArrayFromImage(dslice_sitk)
+
+        if slice_nda_mask is not None:
+            dslice_nda *= slice_nda_mask[:,:,np.newaxis]
+
+        ## Reshape to (N_slice_voxels x dim)-array
+        dslice_nda = dslice_nda.reshape(self._N_slice_voxels,-1)
+
+        ## Get d[T(theta_i, x)]/dtheta_i as (N_slice_voxels x dim x transform_type_dofs)
+        dT_nda = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(transform_itk, slice_sitk)
+
+        ## Compute Jacobian for slice i
+        jacobian_slice = np.sum(dslice_nda[:,:,np.newaxis]*dT_nda, axis=1)
+
+        return jacobian_slice
+
+    def _get_jacobian_residual_slice_neighbours_fit(self, parameters_vec):
+
+        gradient_image_filter_sitk = sitk.GradientImageFilter()
+
+
+        ## Allocate memory for Jacobian of residual
+        jacobian = np.zeros(((self._N_slices-1)*self._N_slice_voxels, self._optimization_dofs*self._N_slices))
+
+        ## Reshape parameters for easier access
+        parameters = parameters_vec.reshape(-1, self._optimization_dofs)
+
+        ## Update transforms
+        parameters_slice = parameters[0,0:self._transform_type_dofs]
+        self._transforms_2D_sitk[0].SetParameters(parameters_slice)
+        self._transforms_2D_itk[0].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice))
+        
+        ## Get slice_i(T(theta_i, x))
+        slice_i_sitk = sitk.Resample(self._slices_2D[0].sitk, self._slice_grid_2D_sitk, self._transforms_2D_sitk[0], self._interpolator_sitk)
+
+        if self._use_stack_mask:
+            slice_i_sitk_mask = sitk.Resample(self._slices_2D[0].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[0], sitk.sitkNearestNeighbor)
+            slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
+        else:
+            slice_i_nda_mask = None
+
+        jacobian_slice_i = self._get_jacobian_slice(slice_i_sitk, self._transforms_2D_itk[0], slice_i_nda_mask)
+
+        # ## Compute d[slice_i(T(theta_i, x))]/dx
+        # dslice_i_sitk = gradient_image_filter_sitk.Execute(slice_i_sitk)
+
+        # ## Get associated (Ny x Nx x dim)-array
+        # dslice_i_nda = sitk.GetArrayFromImage(dslice_i_sitk)
+
+        # ## Reshape to (N_slice_voxels x dim)-array
+        # dslice_i_nda = dslice_i_nda.reshape(self._N_slice_voxels,-1)
+        
+        # ## Get d[T(theta_i, x)]/dtheta_i as (N_slice_voxels x dim x transform_type_dofs)
+        # dT_i_nda = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(self._transforms_2D_itk[0], slice_i_sitk)
+
+        # ## Compute Jacobian for slice i
+        # jacobian_slice_i = np.sum(dslice_i_nda[:,:,np.newaxis]*dT_i_nda, axis=1)
+
+        ## Compute Jacobian of residuals
+        for i in range(0, self._N_slices-1):
+
+            ## Update transforms
+            parameters_slice = parameters[i+1,0:self._transform_type_dofs]
+            self._transforms_2D_sitk[i+1].SetParameters(parameters_slice)
+            self._transforms_2D_itk[i+1].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice))
+
+            ## Get slice_i(T(theta_i, x))
+            slice_ip1_sitk = sitk.Resample(self._slices_2D[i+1].sitk, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i+1], self._interpolator_sitk)
+
+            if self._use_stack_mask:
+                slice_ip1_sitk_mask = sitk.Resample(self._slices_2D[i+1].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i+1], sitk.sitkNearestNeighbor)
+                slice_ip1_nda_mask = sitk.GetArrayFromImage(slice_ip1_sitk_mask)
+            else:
+                slice_ip1_nda_mask = None
+
+            # if self._use_reference_mask:
+            #     dslice_ip1_nda *= self._reference_nda_mask[i,:,:][:,:,np.newaxis]
+
+            ## Get d[slice_i(T(theta_i, x))]/dtheta_i
+            jacobian_slice_ip1 = self._get_jacobian_slice(slice_ip1_sitk, self._transforms_2D_itk[i+1], slice_ip1_nda_mask)
+
+            ## Set elements in Jacobian for entire stack
+            jacobian[i*self._N_slice_voxels:(i+1)*self._N_slice_voxels, i*self._optimization_dofs:(i+1)*self._optimization_dofs] = jacobian_slice_i
+            jacobian[i*self._N_slice_voxels:(i+1)*self._N_slice_voxels, (i+1)*self._optimization_dofs:(i+2)*self._optimization_dofs] = -jacobian_slice_ip1
+
+            ## Prepare for next iteration
+            jacobian_slice_i = jacobian_slice_ip1
+
+        return jacobian
+
+
+
     def _get_jacobian_residual_reference_fit(self, parameters_vec):
 
         ## Allocate memory for Jacobian of residual
         jacobian = np.zeros((self._N_slices*self._N_slice_voxels, self._optimization_dofs*self._N_slices))
-
-        gradient_image_filter_sitk = sitk.GradientImageFilter()
 
         ## Reshape parameters for easier access
         parameters = parameters_vec.reshape(-1, self._optimization_dofs)
@@ -323,26 +463,27 @@ class IntraStackRegistration(StackRegistrationBase):
         ## Compute Jacobian of residuals between each slice and reference
         for i in range(0, self._N_slices):
             
+            ## Update transforms
+            parameters_slice = parameters[i,0:self._transform_type_dofs]
+            self._transforms_2D_sitk[i].SetParameters(parameters_slice)
+            self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice))
+
             ## Get slice_i(T(theta_i, x))
-            self._transforms_2D_sitk[i].SetParameters(parameters[i,0:self._transform_type_dofs])
             slice_i_sitk = sitk.Resample(self._slices_2D[i].sitk, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], self._interpolator_sitk)
 
-            ## Compute d[slice_i(T(theta_i, x))]/dx
-            dslice_i_sitk = gradient_image_filter_sitk.Execute(slice_i_sitk)
+            if self._use_stack_mask:
+                slice_i_sitk_mask = sitk.Resample(self._slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
+                slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
+            else:
+                slice_i_nda_mask = None
 
-            ## Get associated (Ny x Nx x dim)-array
-            dslice_i_nda = sitk.GetArrayFromImage(dslice_i_sitk)
+            # if self._use_reference_mask:
+            #     dslice_i_nda *= self._reference_nda_mask[i,:,:][:,:,np.newaxis]
 
-            ## Reshape to (N_slice_voxels x dim)-array
-            dslice_i_nda = dslice_i_nda.reshape(self._N_slice_voxels,-1)
-
-            ## Get d[T(theta_i, x)]/dtheta_i as (N_slice_voxels x dim x transform_type_dofs)
-            self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](parameters[i,0:self._transform_type_dofs]))
-            dT_i_nda = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(self._transforms_2D_itk[i], slice_i_sitk)
-
-            ## Compute Jacobian for slice i
-            jacobian_slice_i = np.sum(dslice_i_nda[:,:,np.newaxis]*dT_i_nda, axis=1)
+            ## Get d[slice_i(T(theta_i, x))]/dtheta_i
+            jacobian_slice_i = self._get_jacobian_slice(slice_i_sitk, self._transforms_2D_itk[i], slice_i_nda_mask)
             
+            ## Set elements in Jacobian for entire stack
             jacobian[i*self._N_slice_voxels:(i+1)*self._N_slice_voxels, i*self._optimization_dofs:(i+1)*self._optimization_dofs] = jacobian_slice_i
         
         return jacobian
