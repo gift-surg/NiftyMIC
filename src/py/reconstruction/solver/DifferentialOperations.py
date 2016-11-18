@@ -15,7 +15,7 @@ from scipy import ndimage
 ## Class to implement differential operations used in solver class
 class DifferentialOperations:
 
-    ##-------------------------------------------------------------------------
+    ##
     # Create differential kernel operators and store as member attributes.
     # Note: kernel = np.zeros((z,y,x)) in numpy!
     # \param[in]  step_size          step size for all discrete

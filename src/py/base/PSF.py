@@ -35,8 +35,8 @@ class PSF:
         return self.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(direction_slice, spacing_slice, HR_volume)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the Gaussian PSF covariance matrix HR volume coordinates from covariance.
+    ##
+    #       Gets the Gaussian PSF covariance matrix HR volume coordinates from covariance.
     # \date       2016-10-14 16:02:26+0100
     #
     # \param      self       The object
@@ -91,8 +91,8 @@ class PSF:
         return np.diag([sigma_x2, sigma_y2, sigma_z2])
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the relative rotation matrix to express slice-axis
+    ##
+    #       Gets the relative rotation matrix to express slice-axis
     #             aligned covariance matrix in coordinates of HR volume
     # \date       2016-10-14 16:37:57+0100
     #

@@ -1,4 +1,4 @@
-##-----------------------------------------------------------------------------
+##
 ## \file TestIntraStackRegistration.py
 #  \brief  Class containing unit tests for module IntraStackRegistration
 # 
@@ -105,8 +105,8 @@ class TestIntraStackRegistration(unittest.TestCase):
     def setUp(self):        
         pass
 
-    ##-------------------------------------------------------------------------
-    # \brief      Test whether the function
+    ##
+    #       Test whether the function
     #             _get_initial_transforms_and_parameters_geometry_moments
     #             works.
     # \date       2016-11-09 23:59:25+0000
@@ -169,8 +169,8 @@ class TestIntraStackRegistration(unittest.TestCase):
             , decimals = self.accuracy), 0)
 
     
-    ##-------------------------------------------------------------------------
-    # \brief      Test that initial intensity coefficients are computed
+    ##
+    #       Test that initial intensity coefficients are computed
     #             correctly
     # \date       2016-11-10 04:28:06+0000
     #
@@ -240,8 +240,8 @@ class TestIntraStackRegistration(unittest.TestCase):
             , decimals = self.accuracy), 0)
 
   
-    ##-------------------------------------------------------------------------
-    # \brief      Verify that in-plane rigid registration works
+    ##
+    #       Verify that in-plane rigid registration works
     # \date       2016-11-02 21:56:19+0000
     #
     # Verify that in-plane rigid registration works, i.e. test 

@@ -1,6 +1,6 @@
 ## \file TestIntensityCorrection.py
 
-##-----------------------------------------------------------------------------
+##
 #  \brief  Class containing unit tests for module IntensityCorrection
 # 
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)

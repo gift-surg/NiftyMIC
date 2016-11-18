@@ -40,8 +40,8 @@ from reconstruction.solver.Solver import Solver
 #  TODO
 class TVL2Solver(Solver):
 
-    ##-------------------------------------------------------------------------
-    # \brief         Constructor
+    ##
+    #          Constructor
     # \date          2016-08-01 22:57:21+0100
     #
     # \param         self                                    The object
@@ -162,8 +162,8 @@ class TVL2Solver(Solver):
         print("\tprior residual = %.3e" %(self._residual_prior))
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the setting specific filename indicating the information
+    ##
+    #       Gets the setting specific filename indicating the information
     #             used for the reconstruction step
     # \date       2016-11-17 15:41:58+0000
     #
@@ -191,8 +191,8 @@ class TVL2Solver(Solver):
         return filename
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Reconstruct volume using TV-L2 regularization via Alternating
+    ##
+    #       Reconstruct volume using TV-L2 regularization via Alternating
     #             Direction Method of Multipliers (ADMM) method.
     # \post       self._HR_volume is updated with new volume and can be fetched
     #             via \p get_HR_volume
@@ -290,8 +290,8 @@ class TVL2Solver(Solver):
         self._HR_volume.sitk = sitkh.get_sitk_from_itk_image( self._HR_volume.itk )
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Calculates the initial value based on first-order Tikhonov.
+    ##
+    #       Calculates the initial value based on first-order Tikhonov.
     # \post       self._HR_volume is updated
     # \date       2016-08-01 22:51:41+0100
     #

@@ -1,4 +1,4 @@
-##-----------------------------------------------------------------------------
+##
 ## \file TestParameterNormalization.py
 #  \brief  Class containing unit tests for module ParameterNormalization
 # 

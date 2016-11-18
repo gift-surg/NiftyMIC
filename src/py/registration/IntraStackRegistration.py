@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-##-----------------------------------------------------------------------------
+##
 # \file IntraStackRegistration.py
 # \brief      Abstract class used for intra-stack registration steps. Slices
 #             are only transformed in-plane. Hence, only 2D transforms are
@@ -56,8 +56,8 @@ class IntraStackRegistration(StackRegistrationBase):
             "similarity":   self._new_similarity_transform
         }
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the transform type.
+    ##
+    #       Sets the transform type.
     # \date       2016-11-10 01:53:58+0000
     #
     # \param      self            The object
@@ -73,8 +73,8 @@ class IntraStackRegistration(StackRegistrationBase):
         return self._transform_type
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      { function_description }
+    ##
+    #       { function_description }
     # \date       2016-11-10 01:58:39+0000
     #
     # \param      self  The object
@@ -92,8 +92,8 @@ class IntraStackRegistration(StackRegistrationBase):
         return self._intensity_correction_type
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      { function_description }
+    ##
+    #       { function_description }
     # \date       2016-11-08 14:59:26+0000
     #
     # \param      self  The object
@@ -251,8 +251,8 @@ class IntraStackRegistration(StackRegistrationBase):
         return residual.flatten()
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the residual reference fit.
+    ##
+    #       Gets the residual reference fit.
     # \date       2016-11-08 20:37:49+0000
     #
     # \param      self            The object
@@ -300,8 +300,8 @@ class IntraStackRegistration(StackRegistrationBase):
         return residual.flatten()
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the initial parameters for 'None', i.e. for identity
+    ##
+    #       Gets the initial parameters for 'None', i.e. for identity
     #             transform.
     # \date       2016-11-08 15:06:54+0000
     #
@@ -324,8 +324,8 @@ class IntraStackRegistration(StackRegistrationBase):
         return transforms_2D_sitk, parameters
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the initial parameters for either 'GEOMETRY' or
+    ##
+    #       Gets the initial parameters for either 'GEOMETRY' or
     #             'MOMENTS'.
     # \date       2016-11-08 15:08:07+0000
     #
@@ -398,8 +398,8 @@ class IntraStackRegistration(StackRegistrationBase):
         return transforms_2D_sitk, parameters
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the initial intensity correction parameters.
+    ##
+    #       Gets the initial intensity correction parameters.
     # \date       2016-11-10 02:38:17+0000
     #
     # \param      self  The object
@@ -429,8 +429,8 @@ class IntraStackRegistration(StackRegistrationBase):
             return intensity_corrections_coefficients
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Correct intensity implementations
+    ##
+    #       Correct intensity implementations
     # \date       2016-11-10 23:01:34+0000
     #
     # \param      self                     The object
@@ -623,8 +623,8 @@ class IntraStackRegistration(StackRegistrationBase):
         self._slice_transforms_sitk = slice_transforms_sitk
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Create 3D from 2D transform.
+    ##
+    #       Create 3D from 2D transform.
     # \date       2016-09-20 23:18:55+0100
     #
     # The generated 3D transform performs in-plane operations in case the

@@ -19,14 +19,25 @@ from datetime import timedelta
 # import utilities.SimpleITKHelper as sitkh
 
 
-##-----------------------------------------------------------------------------
-# \brief      Wait for <ENTER> to proceed the execution
+##
+#       Wait for <ENTER> to proceed the execution
 # \date       2016-11-06 15:41:43+0000
 #
 def pause():
     programPause = raw_input("Press the <ENTER> key to continue ...")
 
 
+##
+# Reads an input from the command line and returns it
+# \date       2016-11-18 12:45:10+0000
+#
+# \param      infotext  The infotext
+# \param      default   The default value which will be shown in square
+#                       brackets
+#
+# \return     Input as either string, int or float, depending on what was
+#             entered
+#
 def read_input(infotext="None", default=None):
     if default is None:
         text_in = raw_input(infotext + ": ")
@@ -40,8 +51,8 @@ def read_input(infotext="None", default=None):
             return text_in
 
 
-##-----------------------------------------------------------------------------
-# \brief      Plot data array and save it if desired
+##
+# Plot data array and save it if desired
 # \date       2016-11-07 21:29:13+0000
 #
 # \param      nda        Data array (only 2D so far)
@@ -81,8 +92,8 @@ def plot_array(nda, title="data", cmap="Greys_r", colorbar=False, directory=None
     plt.show(block=False)
 
 
-##-----------------------------------------------------------------------------
-# \brief      Plot 3D numpy array slice by slice next to each other
+##
+#       Plot 3D numpy array slice by slice next to each other
 # \date       2016-11-06 01:39:28+0000
 #
 # All slices in the x-y-plane are plotted. The number of slices is given by the
@@ -118,8 +129,8 @@ def plot_3D_array_slice_by_slice(nda3D_zyx, title="image", cmap="Greys_r"):
     plt.show(block=False)
 
 
-##-----------------------------------------------------------------------------
-# \brief      Plot list of 2D numpy arrays next to each other
+##
+#       Plot list of 2D numpy arrays next to each other
 # \date       2016-11-06 02:02:36+0000
 #
 # \param      nda2D_list  List of 2D numpy data arrays
@@ -158,8 +169,8 @@ def plot_2D_array_list(nda2D_list, title="image", cmap="Greys_r", colorbar=False
     plt.show(block=False)
 
 
-##-----------------------------------------------------------------------------
-# \brief      Gets the grid size given a number of 2D images
+##
+#       Gets the grid size given a number of 2D images
 # \date       2016-11-06 02:02:20+0000
 #
 # \param      N_slices  The n slices
@@ -188,8 +199,8 @@ def _get_grid_size(N_slices):
     return grid
 
 
-##-----------------------------------------------------------------------------
-# \brief      Returns start time of execution
+##
+#       Returns start time of execution
 # \date       2016-11-06 17:15:00+0000
 #
 # \return     Start time of execution
@@ -198,8 +209,8 @@ def start_timing():
     return time.time()
 
 
-##-----------------------------------------------------------------------------
-# \brief      Stops a timing and returns the time passed between given start
+##
+#       Stops a timing and returns the time passed between given start
 #             time.
 # \date       2016-11-06 17:18:42+0000
 #

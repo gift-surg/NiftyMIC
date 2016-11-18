@@ -155,8 +155,8 @@ class Slice:
         return slice
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Motion correction update.
+    ##
+    #       Motion correction update.
     # \date       2016-09-21 00:50:08+0100
     #
     # Update motion correction of slice and update its position in physical

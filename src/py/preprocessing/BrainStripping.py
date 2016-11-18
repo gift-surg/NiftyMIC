@@ -22,8 +22,8 @@ import utilities.SimpleITKHelper as sitkh
 #  TODO
 class BrainStripping(object):
 
-    ##-------------------------------------------------------------------------
-    # \brief      Constructor
+    ##
+    #       Constructor
     # \date       2016-10-12 12:43:38+0100
     #
     # \param      self                 The object
@@ -48,8 +48,8 @@ class BrainStripping(object):
         self._sitk_skull_image = None
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Initialize brain stripping class based on image to be read
+    ##
+    #       Initialize brain stripping class based on image to be read
     # \date       2016-10-12 12:19:18+0100
     #
     # \param      cls                  The cls
@@ -71,8 +71,8 @@ class BrainStripping(object):
         return self
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Initialize brain stripping class based on given sitk.Image
+    ##
+    #       Initialize brain stripping class based on given sitk.Image
     #             object
     # \date       2016-10-12 12:18:35+0100
     #
@@ -95,8 +95,8 @@ class BrainStripping(object):
 
         return self
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the sitk image for brain stripping
+    ##
+    #       Sets the sitk image for brain stripping
     # \date       2016-10-12 15:46:20+0100
     #
     # \param      self        The object
@@ -107,8 +107,8 @@ class BrainStripping(object):
         self._sitk = sitk.Image(sitk_image)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Set flag of whether or not to compute the brain image
+    ##
+    #       Set flag of whether or not to compute the brain image
     # \date       2016-10-12 12:35:46+0100
     #
     # \param      self                 The object
@@ -118,8 +118,8 @@ class BrainStripping(object):
         self._compute_brain_image = compute_brain_image
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Set flag of whether or not to compute the brain image mask
+    ##
+    #       Set flag of whether or not to compute the brain image mask
     # \date       2016-10-12 12:36:46+0100
     #
     # \param      self                The object
@@ -129,8 +129,8 @@ class BrainStripping(object):
         self._compute_brain_mask = compute_brain_mask
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Set flag of whether or not to compute the skull mask
+    ##
+    #       Set flag of whether or not to compute the skull mask
     # \date       2016-10-12 12:37:06+0100
     #
     # \param      self                The object
@@ -140,8 +140,8 @@ class BrainStripping(object):
         self._compute_skull_image = compute_skull_image
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Set Brain Extraction Tool specific options
+    ##
+    #       Set Brain Extraction Tool specific options
     # \date       2016-10-12 14:38:38+0100
     #
     # \param      self         The object
@@ -151,8 +151,8 @@ class BrainStripping(object):
         self._bet_options = bet_options
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the input image
+    ##
+    #       Gets the input image
     # \date       2016-10-12 14:41:05+0100
     #
     # \param      self  The object
@@ -166,8 +166,8 @@ class BrainStripping(object):
         return sitk.Image(self._sitk)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Get computed brain image
+    ##
+    #       Get computed brain image
     # \date       2016-10-12 14:33:53+0100
     #
     # \param      self  The object
@@ -181,8 +181,8 @@ class BrainStripping(object):
         return self._sitk_brain_image
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Get computed brain image mask
+    ##
+    #       Get computed brain image mask
     # \date       2016-10-12 14:33:53+0100
     #
     # \param      self  The object
@@ -196,8 +196,8 @@ class BrainStripping(object):
         return self._sitk_brain_mask
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Get computed skull image mask
+    ##
+    #       Get computed skull image mask
     # \date       2016-10-12 14:33:53+0100
     #
     # \param      self  The object
@@ -211,8 +211,8 @@ class BrainStripping(object):
         return self._sitk_skull_image
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the mask around skull which covers also a bit of the
+    ##
+    #       Gets the mask around skull which covers also a bit of the
     #             brain. (It was used for the MS project)
     # \date       2016-11-06 22:54:28+0000
     #
@@ -269,8 +269,8 @@ class BrainStripping(object):
         return skull_mask_sitk
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run Brain Extraction Tool given the chosen set of parameters
+    ##
+    #       Run Brain Extraction Tool given the chosen set of parameters
     # \date       2016-10-12 14:59:01+0100
     #
     # \param      self  The object
@@ -279,8 +279,8 @@ class BrainStripping(object):
         self._run_bet_for_brain_stripping()
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run Brain Extraction Tool
+    ##
+    #       Run Brain Extraction Tool
     # \date       2016-10-12 14:59:24+0100
     #
     # \param      self  The object

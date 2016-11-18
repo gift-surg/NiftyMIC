@@ -33,8 +33,8 @@ import reconstruction.regularization_parameter_estimator.TVL2RegularizationParam
 
 class AnalysisRegularizationParameterEstimator(object):
 
-    ##-------------------------------------------------------------------------
-    # \brief      Constructor
+    ##
+    #       Constructor
     # \date       2016-08-01 23:40:34+0100
     #
     # \param      self                                    The object
@@ -117,8 +117,8 @@ class AnalysisRegularizationParameterEstimator(object):
 
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Set the types of regularization used to sweep through the
+    ##
+    #       Set the types of regularization used to sweep through the
     #             regularization parameters (alpha and rho where applicable)
     # \date       2016-08-02 00:08:50+0100
     #
@@ -130,8 +130,8 @@ class AnalysisRegularizationParameterEstimator(object):
         self._reg_types = reg_types
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Set the directory to store the computed results or, in case
+    ##
+    #       Set the directory to store the computed results or, in case
     #             results have already been computed, where existing results
     #             are located.
     # \date       2016-08-02 00:11:21+0100
@@ -144,8 +144,8 @@ class AnalysisRegularizationParameterEstimator(object):
 
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      In case existing files shall be used to perform the L-curve
+    ##
+    #       In case existing files shall be used to perform the L-curve
     #             analysis, you can specify those here. Hence, specify
     #             filenames and dir_results before running 'show_L_curves'.
     # \date       2016-08-02 00:12:01+0100
@@ -157,8 +157,8 @@ class AnalysisRegularizationParameterEstimator(object):
         self._filenames = filenames
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Reconstruct volumes for each type of regularization by
+    ##
+    #       Reconstruct volumes for each type of regularization by
     #             sweeping through the parameter space specified by alpha (and
     #             rho)
     # \date       2016-08-02 00:14:44+0100
@@ -175,8 +175,8 @@ class AnalysisRegularizationParameterEstimator(object):
             self._run_reconstructions[reg_type]()
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Shows the L-curves based on the infomration stored in
+    ##
+    #       Shows the L-curves based on the infomration stored in
     #             filenames and dir_results
     # \date       2016-08-02 00:17:03+0100
     #
@@ -220,8 +220,8 @@ class AnalysisRegularizationParameterEstimator(object):
             fig.savefig(self._dir_results + filename_out + ".eps")
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Return the regularization approach used to compute results
+    ##
+    #       Return the regularization approach used to compute results
     #             stored in filename
     # \date       2016-08-02 00:53:54+0100
     #
@@ -239,8 +239,8 @@ class AnalysisRegularizationParameterEstimator(object):
             return "TV-L2"
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Reconstruct the volumes based on zeroth-order Tikhonov
+    ##
+    #       Reconstruct the volumes based on zeroth-order Tikhonov
     #             regularization by sweeping through all alphas specified in
     #             alpha_array
     # \date       2016-08-02 00:20:20+0100
@@ -259,8 +259,8 @@ class AnalysisRegularizationParameterEstimator(object):
         self._filenames.append(regularization_parameter_estimator.get_filename_of_txt_file())
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Reconstruct the volumes based on first-order Tikhonov
+    ##
+    #       Reconstruct the volumes based on first-order Tikhonov
     #             regularization by sweeping through all alphas specified in
     #             alpha_array
     # \date       2016-08-02 00:20:20+0100
@@ -279,8 +279,8 @@ class AnalysisRegularizationParameterEstimator(object):
         self._filenames.append(regularization_parameter_estimator.get_filename_of_txt_file())
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Reconstruct the volumes based on TV-L2 regularization by
+    ##
+    #       Reconstruct the volumes based on TV-L2 regularization by
     #             sweeping through all alphas specified in alpha_array
     # \date       2016-08-02 00:20:20+0100
     #
@@ -304,8 +304,8 @@ class AnalysisRegularizationParameterEstimator(object):
 
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Print information on screen for zeroth-order Tikhonov
+    ##
+    #       Print information on screen for zeroth-order Tikhonov
     # \date       2016-08-02 00:54:55+0100
     #
     # \param      self  The object
@@ -317,8 +317,8 @@ class AnalysisRegularizationParameterEstimator(object):
         self._print_data_on_screen_TK(data, TK_approach)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Print information on screen for first-order Tikhonov
+    ##
+    #       Print information on screen for first-order Tikhonov
     # \date       2016-08-02 00:54:55+0100
     #
     # \param      self  The object
@@ -330,8 +330,8 @@ class AnalysisRegularizationParameterEstimator(object):
         self._print_data_on_screen_TK(data, TK_approach)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Print information on screen for zeroth/first-order Tikhonov
+    ##
+    #       Print information on screen for zeroth/first-order Tikhonov
     # \date       2016-08-02 00:54:55+0100
     #
     # \param      self         The object
@@ -352,8 +352,8 @@ class AnalysisRegularizationParameterEstimator(object):
             print("\t\t%d\t%s\t\t%.3e\t\t%.3e" %(alpha_ids[i], alphas[i], residuals_data_fit[i], residuals_prior[i]))
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Print information on screen for TV-L2
+    ##
+    #       Print information on screen for TV-L2
     # \date       2016-08-02 00:54:55+0100
     #
     # \param      self  The object
@@ -375,8 +375,8 @@ class AnalysisRegularizationParameterEstimator(object):
             print("\t(%d,%d)\t%s\t%s\t\t%.3e\t\t%.3e" %(rho_ids[i], alpha_ids[i], rhos[i], alphas[i], residuals_data_fit[i], residuals_prior[i]))
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Add curve on graph based on data from zeroth-order Tikhonov
+    ##
+    #       Add curve on graph based on data from zeroth-order Tikhonov
     #             reconstruction
     # \date       2016-08-02 01:02:02+0100
     #
@@ -390,8 +390,8 @@ class AnalysisRegularizationParameterEstimator(object):
         self._plot_add_curve_TK(data, i_file, ax, TK_approach)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Add curve on graph based on data from first-order Tikhonov
+    ##
+    #       Add curve on graph based on data from first-order Tikhonov
     #             reconstruction
     # \date       2016-08-02 01:02:02+0100
     #
@@ -405,8 +405,8 @@ class AnalysisRegularizationParameterEstimator(object):
         self._plot_add_curve_TK(data, i_file, ax, TK_approach)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Add curve on graph based on data from zeroth/first-order
+    ##
+    #       Add curve on graph based on data from zeroth/first-order
     #             Tikhonov reconstruction
     # \date       2016-08-02 01:02:02+0100
     #
@@ -427,8 +427,8 @@ class AnalysisRegularizationParameterEstimator(object):
         ax.plot(residuals_data_fit, residuals_prior, self._PLOT_FORMAT[i_file], label=TK_approach)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Add curve on graph based on data from TV-L2 reconstruction
+    ##
+    #       Add curve on graph based on data from TV-L2 reconstruction
     # \date       2016-08-02 01:02:02+0100
     #
     # \param      self         The object
@@ -460,8 +460,8 @@ class AnalysisRegularizationParameterEstimator(object):
             i_file += 1
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Add information on figure
+    ##
+    #       Add information on figure
     # \date       2016-08-02 01:06:15+0100
     #
     # \param      self  The object

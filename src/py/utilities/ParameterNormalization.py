@@ -1,4 +1,4 @@
-##-----------------------------------------------------------------------------
+##
 # \file ParameterNormalization.py
 # \brief      Class containing functions to normalize parameters. This can be
 #             used to normalize parameters used for optimization e.g.
@@ -18,14 +18,14 @@ import numpy as np
 import utilities.SimpleITKHelper as sitkh
 
 
-##-----------------------------------------------------------------------------
-# \brief      Class to normalize parameters
+##
+#       Class to normalize parameters
 # \date       2016-11-10 17:05:30+0000
 #
 class ParameterNormalization(object):
 
-    ##-------------------------------------------------------------------------
-    # \brief      Constructor
+    ##
+    #       Constructor
     # \date       2016-11-10 17:08:25+0000
     #
     # \param      self              The object
@@ -44,8 +44,8 @@ class ParameterNormalization(object):
         self._coefficients = 1.* np.concatenate((np.zeros((1,self._N_parameters)), np.ones((1,self._N_parameters))))
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the normalization coefficients as (2 x
+    ##
+    #       Gets the normalization coefficients as (2 x
     #             N_param)-np.array.
     # \date       2016-11-10 18:00:52+0000
     #
@@ -60,8 +60,8 @@ class ParameterNormalization(object):
         return np.array(self._coefficients)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Calculates the normalization coefficients which will be used
+    ##
+    #       Calculates the normalization coefficients which will be used
     #             for normalization and denormalization routines.
     # \date       2016-11-10 18:01:17+0000
     #
@@ -83,8 +83,8 @@ class ParameterNormalization(object):
         self._coefficients = coefficients
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Normalize parameters based on previously computed
+    ##
+    #       Normalize parameters based on previously computed
     #             coefficients.
     # \date       2016-11-10 18:04:05+0000
     #
@@ -106,8 +106,8 @@ class ParameterNormalization(object):
         return parameters
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Denormalize parameters based on previously computed
+    ##
+    #       Denormalize parameters based on previously computed
     #             coefficients.
     # \date       2016-11-10 18:05:49+0000
     #

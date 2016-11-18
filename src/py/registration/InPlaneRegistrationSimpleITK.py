@@ -24,14 +24,14 @@ import base.Stack as st
 import base.Slice as sl
 import registration.RegistrationSimpleITK as regsitk
 
-##-----------------------------------------------------------------------------
-# \brief      Class to perform in-plane rigid registration
+##
+#       Class to perform in-plane rigid registration
 # \date       2016-09-20 15:59:21+0100
 #
 class InPlaneRegistrationSimpleITK:
 
-    ##-------------------------------------------------------------------------
-    # \brief      TODO
+    ##
+    #       TODO
     # \date       2016-09-26 10:20:03+0100
     #
     # \param      self                The object
@@ -76,8 +76,8 @@ class InPlaneRegistrationSimpleITK:
 
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the stack.
+    ##
+    #       Sets the stack.
     # \date       2016-09-20 22:30:54+0100
     #
     # \param      self   The object
@@ -90,8 +90,8 @@ class InPlaneRegistrationSimpleITK:
         self._affine_transformations = [sitk.AffineTransform(3)] * self._N_slices
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the reference for in-plane alignment. Reference stack
+    ##
+    #       Sets the reference for in-plane alignment. Reference stack
     #             must be in the same physical space as the stack to be
     #             aligned.
     # \date       2016-10-12 15:32:24+0100
@@ -109,8 +109,8 @@ class InPlaneRegistrationSimpleITK:
         self._alignment_approach = "rigid_inplane_to_reference"
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the alignment approach which is used for the slice
+    ##
+    #       Sets the alignment approach which is used for the slice
     #             in-plane alignment
     # \date       2016-10-13 21:40:09+0100
     #
@@ -126,8 +126,8 @@ class InPlaneRegistrationSimpleITK:
         self._alignment_approach = alignment_approach
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the alignment approach.
+    ##
+    #       Gets the alignment approach.
     # \date       2016-10-13 21:41:55+0100
     #
     # \param      self  The object
@@ -138,8 +138,8 @@ class InPlaneRegistrationSimpleITK:
         return self._alignment_approach
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Set whether mask is used for stack of slices for registration
+    ##
+    #       Set whether mask is used for stack of slices for registration
     # \date       2016-10-12 15:33:45+0100
     #
     # \param      self  The object
@@ -149,8 +149,8 @@ class InPlaneRegistrationSimpleITK:
         self._use_stack_mask = flag
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Set whether mask is used for reference image for registration
+    ##
+    #       Set whether mask is used for reference image for registration
     # \date       2016-10-12 15:34:34+0100
     #
     # \param      self  The object
@@ -241,8 +241,8 @@ class InPlaneRegistrationSimpleITK:
         self._scales_estimator = scales_estimator
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the verbose to define whether or not output is produced
+    ##
+    #       Sets the verbose to define whether or not output is produced
     # \date       2016-09-20 18:49:19+0100
     #
     # \param      self     The object
@@ -258,8 +258,8 @@ class InPlaneRegistrationSimpleITK:
         self._use_multiresolution_framework = flag
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the in-plane rigidly registered stack.
+    ##
+    #       Gets the in-plane rigidly registered stack.
     # \date       2016-09-20 22:38:53+0100
     #
     # \param      self  The object
@@ -270,8 +270,8 @@ class InPlaneRegistrationSimpleITK:
         return st.Stack.from_stack(self._stack, filename=self._stack.get_filename())
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the affine transformations obtained to align the slices
+    ##
+    #       Gets the affine transformations obtained to align the slices
     # \date       2016-10-29 15:41:53+0300
     #
     # \param      self  The object
@@ -282,8 +282,8 @@ class InPlaneRegistrationSimpleITK:
         return np.array(self._affine_transformations)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run in-plane rigid registration algorithm
+    ##
+    #       Run in-plane rigid registration algorithm
     # \date       2016-09-21 02:19:31+0100
     #
     # \param      self  The object
@@ -293,8 +293,8 @@ class InPlaneRegistrationSimpleITK:
         self._run_in_plane_registration[self._alignment_approach]()
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run in-plane rigid alignment to match the reference
+    ##
+    #       Run in-plane rigid alignment to match the reference
     # \date       2016-10-12 15:38:14+0100
     #
     # \param      self  The object
@@ -352,8 +352,8 @@ class InPlaneRegistrationSimpleITK:
 
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run in-plane similarity alignment to match the reference
+    ##
+    #       Run in-plane similarity alignment to match the reference
     # \date       2016-10-13 21:44:49+0100
     #
     # \param      self  The object
@@ -459,8 +459,8 @@ class InPlaneRegistrationSimpleITK:
             self._affine_transformations[i] = affine_transform_with_scale_sitk
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run in-plane rigid registration to align within stack
+    ##
+    #       Run in-plane rigid registration to align within stack
     # \date       2016-09-26 16:11:14+0100
     #
     # \param      self  The object
@@ -522,8 +522,8 @@ class InPlaneRegistrationSimpleITK:
             self._affine_transformations[i] = affine_transform_sitk
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Get 2D slice for in-plane operations as projection from 3D
+    ##
+    #       Get 2D slice for in-plane operations as projection from 3D
     #             space onto the x-y-plane.
     # \date       2016-09-20 22:42:45+0100
     #
@@ -574,8 +574,8 @@ class InPlaneRegistrationSimpleITK:
         return slice_2D
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Get the 3D rigid transforms to arrive at the positions of
+    ##
+    #       Get the 3D rigid transforms to arrive at the positions of
     #             original 3D slices starting from the physically aligned
     #             space with the main image axes.
     # \date       2016-09-20 23:37:05+0100
@@ -613,8 +613,8 @@ class InPlaneRegistrationSimpleITK:
         return transforms_PP_3D_sitk
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Create 3D from 2D transform.
+    ##
+    #       Create 3D from 2D transform.
     # \date       2016-09-20 23:18:55+0100
     #
     # The generated 3D transform performs in-plane operations in case the

@@ -28,8 +28,8 @@ import base.Stack as st
 
 class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator):
     
-    ##-------------------------------------------------------------------------
-    # \brief      Constructor
+    ##
+    #       Constructor
     # \date       2016-08-01 23:40:34+0100
     #
     # \param      self                     The object
@@ -60,8 +60,8 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
         self._reg_type = reg_type
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the regularization type.
+    ##
+    #       Sets the regularization type.
     # \date       2016-08-01 19:53:16+0100
     #
     # \param      self      The object
@@ -71,8 +71,8 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
         self._reg_type = reg_type
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run reconstruction for several alphas based on Tikhonov
+    ##
+    #       Run reconstruction for several alphas based on Tikhonov
     #             regularization
     # \date       2016-08-01 19:47:53+0100
     # \post       "filename" contains the name of the text-file containing the
@@ -130,8 +130,8 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
             self._write_array_to_file(self._filename_of_txt_file, array_out, format=format, delimiter="\t")
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the filename and header.
+    ##
+    #       Gets the filename and header.
     # \date       2016-08-01 19:42:35+0100
     #
     # \param      self  The object
@@ -160,8 +160,8 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
         return filename, header
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the filename of reconstructed image.
+    ##
+    #       Gets the filename of reconstructed image.
     # \date       2016-08-01 19:42:46+0100
     #
     # \param      self   The object

@@ -1,4 +1,4 @@
-##-----------------------------------------------------------------------------
+##
 # \file LinearImageQualityTransfer.py
 # \brief      Class deploying a linear model for image quality transfer
 #
@@ -76,7 +76,7 @@ class LinearImageQualityTransfer(object):
     def set_kernel(self, kernel):
         self._kernel = np.array(kernel)
 
-    ##-------------------------------------------------------------------------
+    ##
     # \date       2016-07-29 12:30:30+0100
     # \brief      Print statistics associated to performed reconstruction
     #
@@ -92,8 +92,8 @@ class LinearImageQualityTransfer(object):
         # print("\tprior residual = %.3e" %(self._residual_prior))
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Apply linear transfer model, i.e. A(kernel)x
+    ##
+    #       Apply linear transfer model, i.e. A(kernel)x
     # \date       2016-11-06 05:10:30+0000
     #
     # \param      self   The object
@@ -116,8 +116,8 @@ class LinearImageQualityTransfer(object):
         self._stack = st.Stack.from_sitk_image(stack_sitk, stack.get_filename()+"_liqt")
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Learn linear mapping, i.e. kernel coefficients, so that y_PD
+    ##
+    #       Learn linear mapping, i.e. kernel coefficients, so that y_PD
     #             = A(kernel)x
     # \date       2016-11-06 05:11:18+0000
     #
@@ -163,8 +163,8 @@ class LinearImageQualityTransfer(object):
         self._elapsed_time_sec = time_end-time_start
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Compute residual y_PD - A(theta)x based on parameters
+    ##
+    #       Compute residual y_PD - A(theta)x based on parameters
     #             theta representing the kernel coefficients
     # \date       2016-11-06 05:03:31+0000
     #
@@ -191,8 +191,8 @@ class LinearImageQualityTransfer(object):
         return residual.flatten()
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the jacobian residual data fit. Given the structure, the
+    ##
+    #       Gets the jacobian residual data fit. Given the structure, the
     #             jacobian is constant.
     # \date       2016-11-06 05:06:15+0000
     #

@@ -43,8 +43,8 @@ class Solver(object):
     
     """ This class contains the common functions/attributes of the solvers """
 
-    ##-------------------------------------------------------------------------
-    # \brief         Constructor
+    ##
+    #          Constructor
     # \date          2016-08-01 22:53:37+0100
     #
     # \param         self                   The object
@@ -173,8 +173,8 @@ class Solver(object):
         return self._alpha
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the maximum number of iterations for Tikhonov solver.
+    ##
+    #       Sets the maximum number of iterations for Tikhonov solver.
     # \date       2016-08-01 16:35:09+0100
     #
     # \param      self      The object
@@ -190,8 +190,8 @@ class Solver(object):
         return self._iter_max
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the minimizer.
+    ##
+    #       Sets the minimizer.
     # \date       2016-11-05 23:40:31+0000
     #
     # \param      self       The object
@@ -253,8 +253,8 @@ class Solver(object):
         return self._residual_prior
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the setting specific filename indicating the information
+    ##
+    #       Gets the setting specific filename indicating the information
     #             used for the reconstruction step
     # \date       2016-11-17 15:41:58+0000
     #
@@ -267,8 +267,8 @@ class Solver(object):
     def get_setting_specific_filename(self, prefix=""):
         pass
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the predefined covariance matrix, representing
+    ##
+    #       Sets the predefined covariance matrix, representing
     #             slice-axis aligned Gaussian blurring covariance.
     # \date       2016-10-14 16:49:41+0100
     #
@@ -286,8 +286,8 @@ class Solver(object):
             cov = np.diag(cov)
         self._predefined_covariance = cov
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the predefined covariance.
+    ##
+    #       Gets the predefined covariance.
     # \date       2016-10-14 16:52:10+0100
     #
     # \param      self  The object
@@ -701,8 +701,8 @@ class Solver(object):
 
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the approximate solution via LSMR solver 
+    ##
+    #       Gets the approximate solution via LSMR solver 
     #             (linear least-squares method)
     # \date       2016-08-05 11:31:49+0100
     #
@@ -735,8 +735,8 @@ class Solver(object):
         return HR_nda_vec
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the approximate solution via LSQR solver
+    ##
+    #       Gets the approximate solution via LSQR solver
     #             (linear least-squares method)
     # \date       2016-08-05 11:31:49+0100
     #
@@ -769,7 +769,7 @@ class Solver(object):
         return HR_nda_vec
 
 
-    ##--------------------------------------------------------------------------
+    ##-
     # \brief      Gets the approximate solution via L-BFGS-B solver
     #             (non-linear with bounds).
     # \date       2016-08-05 11:48:20+0100
@@ -797,7 +797,7 @@ class Solver(object):
         return HR_nda_vec
         
 
-    ##--------------------------------------------------------------------------
+    ##-
     # \brief      Gets the approximate solution via least_squares solver
     #             (non-linear minimization with bounds).
     # \date       2016-08-05 11:48:20+0100
@@ -829,7 +829,7 @@ class Solver(object):
         return HR_nda_vec
 
     
-    ##--------------------------------------------------------------------------
+    ##-
     # \brief      Gets the approximate solution via lsq_linear solver
     #             (linear least-squares with bounds).
     # \date       2016-08-05 11:48:20+0100
@@ -854,7 +854,7 @@ class Solver(object):
         return HR_nda_vec
 
 
-    ##--------------------------------------------------------------------------
+    ##-
     # \brief      Gets the approximate solution via nnls solver
     #             (non-negative linear least-squares).
     # \date       2016-08-05 11:48:20+0100

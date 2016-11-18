@@ -83,7 +83,7 @@ class TestRegistration(unittest.TestCase):
         
         ##---------------------------------------------------------------------
         time_start = ph.start_timing()
-        jacobian_transform_point_itk = itk.Array2D[PIXEL_TYPE]()
+        # jacobian_transform_point_itk = itk.Array2D[PIXEL_TYPE]()
 
         ## Generate arrays of 3D points bearing in mind that nifti-nda.shape = (z,y,x)-coord
         x = np.arange(0,shape[2])
@@ -95,16 +95,20 @@ class TestRegistration(unittest.TestCase):
         t = np.array(HR_volume.sitk.GetOrigin()).reshape(3,1)
         points = A.dot(indices) + t
 
-        print ph.stop_timing(time_start)
 
         nda_gradient_transform_2 = np.zeros((indices.shape[1],3,DOF_transform))
 
-        for i in range(0, indices.shape[1]):
-            ## Compute Jacobian
-            transform_itk.ComputeJacobianWithRespectToParameters(points[:,i], jacobian_transform_point_itk)
+        # for i in range(0, indices.shape[1]):
+        #     ## Compute Jacobian
+        #     transform_itk.ComputeJacobianWithRespectToParameters(points[:,i], jacobian_transform_point_itk)
 
-            ## Convert itk to numpy object
-            nda_gradient_transform_2[i,:,:] = sitkh.get_numpy_from_itk_array(jacobian_transform_point_itk)
+        #     ## Convert itk to numpy object
+        #     nda_gradient_transform_2[i,:,:] = sitkh.get_numpy_from_itk_array(jacobian_transform_point_itk)
+
+        print ph.stop_timing(time_start)
+        time_start = ph.start_timing()
+        # nda_gradient_transform_2 = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_stack(transform_itk, HR_volume)
+        nda_gradient_transform_2 = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_stack(transform_itk, HR_volume, points, nda_gradient_transform_2)
 
         print ph.stop_timing(time_start)
 

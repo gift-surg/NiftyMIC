@@ -164,8 +164,8 @@ class RegistrationITK:
         return self._transform_sitk
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the parameters obtained by the registration.
+    ##
+    #       Gets the parameters obtained by the registration.
     # \date       2016-09-22 21:17:09+0100
     #
     # \param      self  The object
@@ -176,8 +176,8 @@ class RegistrationITK:
         return np.array(self._parameters)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the fixed parameters obtained by the registration.
+    ##
+    #       Gets the fixed parameters obtained by the registration.
     # \date       2016-09-22 21:17:26+0100
     #
     # \param      self  The object
@@ -194,8 +194,8 @@ class RegistrationITK:
         return self._registered_image
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the verbose to define whether or not output information
+    ##
+    #       Sets the verbose to define whether or not output information
     #             is produced
     # \date       2016-09-20 18:49:19+0100
     #
@@ -206,8 +206,8 @@ class RegistrationITK:
         self._use_verbose = flag
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the verbose.
+    ##
+    #       Gets the verbose.
     # \date       2016-09-20 18:49:54+0100
     #
     # \param      self  The object
@@ -386,8 +386,8 @@ class RegistrationITK:
         # 
     
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the affine transform from similarity registration.
+    ##
+    #       Gets the affine transform from similarity registration.
     # \date       2016-11-02 15:55:00+0000
     #
     #  Returns registration transform 
@@ -434,8 +434,8 @@ class RegistrationITK:
         return affine_transform_sitk
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the rigid transform and scale from similarity registration.
+    ##
+    #       Gets the rigid transform and scale from similarity registration.
     # \date       2016-11-02 15:55:57+0000
     #
     # Returns rigid transform (center set to zero)
@@ -476,8 +476,8 @@ class RegistrationITK:
         return rigid_sitk, scale
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the stack with similarity inplane transformed slices.
+    ##
+    #       Gets the stack with similarity inplane transformed slices.
     # \date       2016-11-02 18:21:17+0000
     #
     # \param      self           The object

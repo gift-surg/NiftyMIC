@@ -63,8 +63,8 @@ from reconstruction.solver.Solver import Solver
 #  \see \p itOrientedGaussianInterpolateImageFunction of \p ITK
 class TikhonovSolver(Solver):
 
-    ##-------------------------------------------------------------------------
-    # \brief         Constructor
+    ##
+    #          Constructor
     # \date          2016-08-01 23:00:04+0100
     #
     # \param         self                The object
@@ -134,8 +134,8 @@ class TikhonovSolver(Solver):
         self._residual_prior = self._get_residual_prior[self._reg_type](HR_nda_vec)
 
     
-    ##-------------------------------------------------------------------------
-    # \brief      Print statistics associated to performed reconstruction
+    ##
+    #       Print statistics associated to performed reconstruction
     # \date       2016-07-29 12:30:30+0100
     #
     # \param      self  The object
@@ -150,8 +150,8 @@ class TikhonovSolver(Solver):
         print("\tprior residual = %.3e" %(self._residual_prior))
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the setting specific filename indicating the information
+    ##
+    #       Gets the setting specific filename indicating the information
     #             used for the reconstruction step
     # \date       2016-11-17 15:41:58+0000
     #
@@ -177,8 +177,8 @@ class TikhonovSolver(Solver):
         return filename
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run the reconstruction algorithm based on Tikhonov
+    ##
+    #       Run the reconstruction algorithm based on Tikhonov
     #             regularization
     # \date       2016-07-29 12:35:01+0100
     # \post       self._HR_volume is updated with new volume and can be fetched

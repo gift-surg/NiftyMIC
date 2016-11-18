@@ -21,14 +21,14 @@ import utilities.FigureEventHandling as feh
 import utilities.FilenameParser as fp
 
 
-##-----------------------------------------------------------------------------
-# \brief      Extract scans semi-automatically from MR films
+##
+#       Extract scans semi-automatically from MR films
 # \date       2016-11-02 00:17:44+0000
 #
 class ScanExtractor(object):
 
-    ##-------------------------------------------------------------------------
-    # \brief      Constructor
+    ##
+    #       Constructor
     # \date       2016-09-19 11:00:37+0100
     #
     # \param[in]  dir_input                   Input directory where all MRI
@@ -67,10 +67,8 @@ class ScanExtractor(object):
         self._dir_output_verbose = dir_output_verbose
 
 
-    ##-------------------------------------------------------------------------
+    ##
     # Get semi-automatically extracted stack of scans
-    #
-    # \brief      Gets the stack of extracted scans.
     # \date       2016-11-02 01:23:39+0000
     #
     # \param      self  The object
@@ -85,8 +83,8 @@ class ScanExtractor(object):
             return sitk.Image(self._stack_sitk)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run semi-automatic pipeline to extract the scans from the film
+    ##
+    #       Run semi-automatic pipeline to extract the scans from the film
     # \date       2016-11-02 00:23:58+0000
     #
     # \param[in]  dir_input                   The dir input
@@ -179,8 +177,8 @@ class ScanExtractor(object):
             #     print("File written to " + filename_out)
 
 
-    ##-----------------------------------------------------------------------------
-    # \brief      Get the data array of the stacked slices of one MRI film
+    ##
+    #       Get the data array of the stacked slices of one MRI film
     # \date       2016-09-19 11:07:14+0100
     #
     # \param[in]  nda          2D data array representing the MRI film
@@ -204,8 +202,8 @@ class ScanExtractor(object):
         return stack_nda
 
 
-    ##-----------------------------------------------------------------------------
-    # \brief      Gets the combined stack of all slices from all MR films to one
+    ##
+    #       Gets the combined stack of all slices from all MR films to one
     #             patient
     # \date       2016-09-19 11:15:46+0100
     #

@@ -29,8 +29,8 @@ class TestLinearImageQualityTransfer(unittest.TestCase):
     def setUp(self):
         pass
 
-    ##-------------------------------------------------------------------------
-    # \brief      Test whether interpretation of a 2D kernel in 3D is correct
+    ##
+    #       Test whether interpretation of a 2D kernel in 3D is correct
     # \date       2016-11-06 15:26:19+0000
     #
     # \param      self  The object

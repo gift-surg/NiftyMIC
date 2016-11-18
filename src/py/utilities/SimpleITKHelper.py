@@ -141,9 +141,8 @@ def get_sitk_image_origin_from_sitk_affine_transform(affine_transform_sitk, imag
     # return affine_center + affine_translation - R.dot(affine_center)
 
 
-##-----------------------------------------------------------------------------
-# \brief      Gets the sitk affine transform from sitk image, to transform an
-#             index to the physical space
+## Gets the sitk affine transform from sitk image, to transform an index to the
+# physical space
 # \date       2016-11-06 18:54:09+0000
 #
 # Returns the affine transform of an sitk image which links the voxel space
@@ -172,10 +171,22 @@ def get_sitk_affine_transform_from_sitk_image(image_sitk):
     ## T(i) = R*S*i + origin
     return sitk.AffineTransform(A,t)
 
+##
+# afadfds 
+# \date       2016-11-18 12:41:12+0000
+#
+# \param      a     { parameter_description }
+# \param      b     { parameter_description }
+#
+# \return     { description_of_the_return_value }
+#
+def bla(a,b):
+    pass
 
-##-----------------------------------------------------------------------------
+##  adfdsf
 # \brief      Gets the sitk affine matrix from sitk image.
 # \date       2016-11-06 19:07:03+0000
+#
 #
 # \param      image_sitk  The image sitk
 #
@@ -296,8 +307,8 @@ def read_itk_image(filename, pixel_type=itk.D, dim=3):
     return image_itk
 
 
-##-----------------------------------------------------------------------------
-# \brief      Reads 3D vector image and return as SimpleITK image
+##
+#       Reads 3D vector image and return as SimpleITK image
 # \date       2016-09-20 15:31:05+0100
 #
 # \param      filename             The filename
@@ -390,8 +401,8 @@ def write_itk_image(image_itk, filename):
     writer.Update()
 
 
-##-----------------------------------------------------------------------------
-# \brief      Print the ITK direction matrix
+##
+#       Print the ITK direction matrix
 # \date       2016-09-20 15:52:28+0100
 #
 # \param      direction_itk  direction as obtained via image_itk.GetDirection()
@@ -410,8 +421,8 @@ def print_itk_direction(direction_itk):
     print m_np
 
 
-##-----------------------------------------------------------------------------
-# \brief      Print the ITK array
+##
+#       Print the ITK array
 # \date       2016-11-17 19:51:53+0000
 #
 # The itk-array can be instantiated via \p array_itk = \p itk.Array2D[itk.D]().
@@ -425,7 +436,7 @@ def print_itk_array(array_itk):
     
     ## itk.Array2D[itk.D]()
     try:
-        nda = self.get_numpy_from_itk_array(array_itk)
+        nda = get_numpy_from_itk_array(array_itk)
     
     ## Parameter type
     except:
@@ -444,6 +455,17 @@ def update_itk_parameters(parameters_itk, array):
     for i in range(0, array.size):
         parameters_itk.SetElement(i, array[i])
 
+##
+#       Gets the numpy from itk array.
+# \date       2016-11-18 11:59:18+0000
+#
+# \todo That is VERY slow! needs improvement but no clue how to access the
+# array quicker
+#
+# \param      array_itk  The array itk
+#
+# \return     The numpy from itk array.
+#
 def get_numpy_from_itk_array(array_itk):
     cols = array_itk.cols()
     rows = array_itk.rows()
@@ -455,6 +477,79 @@ def get_numpy_from_itk_array(array_itk):
             nda[i,j] = array_itk(i,j)
 
     return nda
+
+
+##
+#          Gets the numpy array of jacobian itk transform applied on
+#                stack.
+# \date          2016-11-18 12:00:05+0000
+#
+# Compute
+# \f$ \frac{d\vec{T}}{d\vec{\theta}}(\vec{x}, \vec{\theta})
+# \f$ for all points of the stack. The used parameter values
+# \f$ \theta
+# \f$ for evaluation are encoded in \p transform_itk.
+#
+# \param[in]     transform_itk                    Transform as itk object
+# \param[in]     stack                            Image as Stack object
+# \param[in]     points                           Grid points of image as
+#                                                 (Dimension x N_voxel)-array.
+# \param[in,out] jacobian_transform_on_image_nda  (N_voxel x transform_DOF)-
+#                                                 array.
+#
+# \return        The (N_voxel x transform_DOF)-numpy array of the Jacobian of
+#                the transform applied on the stack
+#
+def get_numpy_array_of_jacobian_itk_transform_applied_on_stack(transform_itk, stack, points=None, jacobian_transform_on_image_nda=None):
+
+    shape = np.array(stack.sitk.GetSize())[::-1]
+
+    if points is None:
+        dim = stack.sitk.GetDimension()
+
+        x = np.arange(0,shape[0])
+        y = np.arange(0,shape[1])
+        if dim is 3:
+            z = np.arange(0,shape[2])
+        
+        if dim is 2:
+            X,Y = np.meshgrid(x,y, indexing='ij') # 'ij' yields vertical x-coordinate for image!
+            
+            ## Index array (2xN_voxels) of image in voxel space
+            indices = np.array([Y.flatten(), X.flatten()])
+        else:
+            X,Y,Z = np.meshgrid(x,y,z, indexing='ij') # 'ij' yields vertical x-coordinate for image!
+            
+            ## Index array (3xN_voxels) of image in voxel space
+            indices = np.array([Z.flatten(), Y.flatten(), X.flatten()])
+        
+        ## Get transform from voxel to image space coordinates
+        A = get_sitk_affine_matrix_from_sitk_image(stack.sitk).reshape(dim,dim)
+        t = np.array(stack.sitk.GetOrigin()).reshape(dim,1)
+        
+        ## Compute point array (3xN_voxels) of image in image space
+        points = A.dot(indices) + t
+
+    if jacobian_transform_on_image_nda is None:
+        ## Allocate memory
+        transform_dof = int(transform_itk.GetNumberOfParameters())
+        jacobian_transform_on_image_nda = np.zeros((points.shape[1], dim, transform_dof))
+
+    ## Create 2D itk-array
+    jacobian_transform_on_point_itk = itk.Array2D[itk.D]()
+    
+    ## Evaluate the Jacobian of transform at all points
+    for i in range(0, points.shape[1]):
+        
+        ## Compute Jacobian of transform w.r.t. parameters evaluated at point
+        ## jacobian_transform_point_itk is (Dimension x transform_DOF) array
+        transform_itk.ComputeJacobianWithRespectToParameters(points[:,i], jacobian_transform_on_point_itk)
+
+        ## Convert itk to numpy array
+        jacobian_transform_on_image_nda[i,:,:] = get_numpy_from_itk_array(jacobian_transform_on_point_itk)
+
+    ## Return Jacobian w.r.t to parameters evaluated at all image points
+    return jacobian_transform_on_image_nda
 
 
 ## Extract direction from SimpleITK-image so that it can be injected into
@@ -628,8 +723,8 @@ def get_sitk_from_itk_image(image_itk):
 
     return image_sitk
 
-##-----------------------------------------------------------------------------
-# \brief      Print
+##
+#       Print
 # \date       2016-11-06 15:43:19+0000
 #
 # \param      rigid_affine_similarity_transform_sitk  The rigid affine similarity transform sitk
@@ -707,8 +802,8 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
     return fig
 
 
-##-----------------------------------------------------------------------------
-# \brief      Plot slices of stack separately
+##
+#       Plot slices of stack separately
 # \date       2016-11-06 01:49:21+0000
 #
 # \param      stack_sitk  sitk.Image object to be plotted
@@ -720,8 +815,8 @@ def plot_stack_of_slices(stack_sitk, cmap="Greys_r", title="slice"):
     ph.plot_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
 
 
-##-----------------------------------------------------------------------------
-# \brief      Show image with ITK-Snap. Image is saved to /tmp/ for that
+##
+#       Show image with ITK-Snap. Image is saved to /tmp/ for that
 #             purpose.
 # \date       2016-09-19 16:47:18+0100
 #
@@ -774,8 +869,8 @@ def show_sitk_image(image_sitk, title="test", segmentation=None):
     os.system(cmd)
 
 
-##-----------------------------------------------------------------------------
-# \brief      Visualize a list of Stack objects.
+##
+#       Visualize a list of Stack objects.
 # \date       2016-11-05 23:18:23+0000
 #
 # \param      stacks        List of stack objects

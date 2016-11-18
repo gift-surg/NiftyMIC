@@ -26,14 +26,14 @@ import base.PSF as psf
 import base.Slice as sl
 
 
-##-----------------------------------------------------------------------------
-# \brief      Class for parsing operations
+##
+#       Class for parsing operations
 # \date       2016-11-02 00:15:47+0000
 #
 class FilenameParser(object):
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the filenames in directory (of certain type) which match
+    ##
+    #       Gets the filenames in directory (of certain type) which match
     #             pattern(s).
     # \date       2016-08-05 17:06:30+0100
     #
@@ -77,8 +77,8 @@ class FilenameParser(object):
 
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the dash partitioned filename. Used for MS project
+    ##
+    #       Gets the dash partitioned filename. Used for MS project
     # \date       2016-11-14 18:52:07+0000
     #
     # \param      self       The object
@@ -109,8 +109,8 @@ class FilenameParser(object):
         return filenames_cropped
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Eliminate duplicate filenames in list
+    ##
+    #       Eliminate duplicate filenames in list
     # \date       2016-11-14 18:49:20+0000
     #
     # \param      self       The object
@@ -131,8 +131,8 @@ class FilenameParser(object):
         return filenames
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Exclude filenames which match pattern(s)
+    ##
+    #       Exclude filenames which match pattern(s)
     # \date       2016-11-03 16:26:20+0000
     #
     # \param      self       The object
@@ -155,8 +155,8 @@ class FilenameParser(object):
 
         return filenames
 
-    ##-------------------------------------------------------------------------
-    # \brief      Crop extensions from filenames
+    ##
+    #       Crop extensions from filenames
     # \date       2016-11-02 00:40:01+0000
     #
     # \param      self       The object

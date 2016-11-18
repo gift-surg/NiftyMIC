@@ -1,4 +1,4 @@
-##-----------------------------------------------------------------------------
+##
 # \file Stack.py
 # \brief      Class containing a stack as sitk.Image object with additional
 #             helper methods
@@ -346,8 +346,8 @@ class Stack:
                 print(err.message)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Apply transform on stack and all its slices
+    ##
+    #       Apply transform on stack and all its slices
     # \date       2016-11-05 19:15:57+0000
     #
     # \param      self                   The object
@@ -376,8 +376,8 @@ class Stack:
             self._slices[i].update_motion_correction(affine_transform_sitk)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Apply transforms on all the slices of the stack. Stack itself
+    ##
+    #       Apply transforms on all the slices of the stack. Stack itself
     #             is not getting transformed
     # \date       2016-11-05 19:16:33+0000
     #
@@ -393,8 +393,8 @@ class Stack:
             raise ValueErr("Number of affine transforms does not match the number of slices")
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the resampled stack from slices.
+    ##
+    #       Gets the resampled stack from slices.
     # \date       2016-09-26 17:28:43+0100
     #
     # After slice-based registrations slice j does not correspond to the

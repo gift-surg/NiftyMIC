@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 import utilities.SimpleITKHelper as sitkh
 import base.Stack as st
 
-##-----------------------------------------------------------------------------
-# \brief      Perform in-plane rigid registration
+##
+#       Perform in-plane rigid registration
 # \date       2016-09-20 15:59:21+0100
 #
 class InPlaneRigidRegistration:

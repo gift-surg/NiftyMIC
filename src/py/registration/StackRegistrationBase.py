@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-##-----------------------------------------------------------------------------
+##
 # \file StackRegistrationBase.py
 # \brief      Abstract class containing the shared attributes and functions for
 #             registrations of stack of slices
@@ -26,16 +26,16 @@ import base.Stack as st
 import utilities.ParameterNormalization as pn
 
 
-##-----------------------------------------------------------------------------
-# \brief      Abstract class containing the shared attributes and functions for
+##
+#       Abstract class containing the shared attributes and functions for
 #             registrations of stack of slices
 # \date       2016-11-06 16:58:15+0000
 #
 class StackRegistrationBase(object):
     __metaclass__ = ABCMeta
 
-    ##-------------------------------------------------------------------------
-    # \brief      Constructor
+    ##
+    #       Constructor
     # \date       2016-11-06 16:58:43+0000
     #
     # \param      self                The object
@@ -97,8 +97,8 @@ class StackRegistrationBase(object):
         self._use_parameter_normalization = use_parameter_normalization
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets stack/reference/target image.
+    ##
+    #       Sets stack/reference/target image.
     # \date       2016-11-06 16:59:14+0000
     #
     # \param      self   The object
@@ -112,8 +112,8 @@ class StackRegistrationBase(object):
         return self._stack
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets reference stack.
+    ##
+    #       Sets reference stack.
     # \date       2016-11-06 17:00:50+0000
     #
     # \param      self       The object
@@ -126,8 +126,8 @@ class StackRegistrationBase(object):
         return self._reference
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Specify whether mask of stack image shall be used for
+    ##
+    #       Specify whether mask of stack image shall be used for
     #             registration
     # \date       2016-11-06 17:03:05+0000
     #
@@ -138,8 +138,8 @@ class StackRegistrationBase(object):
         self._use_stack_mask = flag
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Specify whether mask of reference image shall be used for
+    ##
+    #       Specify whether mask of reference image shall be used for
     #             registration
     # \date       2016-11-06 17:03:05+0000
     #
@@ -150,8 +150,8 @@ class StackRegistrationBase(object):
         self._use_reference_mask = flag
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Specify whether output information shall be produced.
+    ##
+    #       Specify whether output information shall be produced.
     # \date       2016-11-06 17:07:01+0000
     #
     # \param      self  The object
@@ -161,8 +161,8 @@ class StackRegistrationBase(object):
         self._use_verbose = flag
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Perform parameter normalization for optimizer
+    ##
+    #       Perform parameter normalization for optimizer
     # \date       2016-11-17 16:10:14+0000
     #
     # \param      self  The object
@@ -172,8 +172,8 @@ class StackRegistrationBase(object):
         self._use_parameter_normalization = flag
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the initializer type used to initialize the registration
+    ##
+    #       Sets the initializer type used to initialize the registration
     # \date       2016-11-08 00:20:29+0000
     #
     # The initial transform can either be the identity ('None') or be based on
@@ -194,8 +194,8 @@ class StackRegistrationBase(object):
         return self._initializer_type
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the interpolator used for resampling operations
+    ##
+    #       Sets the interpolator used for resampling operations
     # \date       2016-11-08 16:19:33+0000
     #
     # \param      self          The object
@@ -209,8 +209,8 @@ class StackRegistrationBase(object):
         return self._interpolator
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the weight for the residual between the slice neighbours
+    ##
+    #       Sets the weight for the residual between the slice neighbours
     # \date       2016-11-10 00:59:59+0000
     #
     # \param      self             The object
@@ -222,8 +222,8 @@ class StackRegistrationBase(object):
     def get_alpha_neighbour(self):
         return self._alpha_neighbour
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the weight for the residual between the slice neighbours
+    ##
+    #       Sets the weight for the residual between the slice neighbours
     #             and the reference
     # \date       2016-11-10 01:00:41+0000
     #
@@ -237,8 +237,8 @@ class StackRegistrationBase(object):
         return self._alpha_reference
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the weight for the residual between the slice neighbours
+    ##
+    #       Sets the weight for the residual between the slice neighbours
     # \date       2016-11-10 01:01:18+0000
     #
     # \param      self             The object
@@ -253,8 +253,8 @@ class StackRegistrationBase(object):
         return self._alpha_parameter
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Set maximum number of function evaluations for least_squares
+    ##
+    #       Set maximum number of function evaluations for least_squares
     #             optimizer
     # \date       2016-11-10 19:24:35+0000
     #
@@ -270,8 +270,8 @@ class StackRegistrationBase(object):
         return self._optimizer_nfev_max
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the optimizer_loss function for least_squares optimizer
+    ##
+    #       Sets the optimizer_loss function for least_squares optimizer
     # \date       2016-11-17 16:07:29+0000
     #
     # \param      self  The object
@@ -290,8 +290,8 @@ class StackRegistrationBase(object):
         return self._optimizer_loss
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the optimizer_method for least_squares optimizer
+    ##
+    #       Sets the optimizer_method for least_squares optimizer
     # \date       2016-11-17 16:08:37+0000
     #
     # \param      self    The object
@@ -309,8 +309,8 @@ class StackRegistrationBase(object):
         return self._optimizer_method
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the parameters estimated by registration algorithm.
+    ##
+    #       Gets the parameters estimated by registration algorithm.
     # \date       2016-11-06 17:05:38+0000
     #
     # \param      self  The object
@@ -321,8 +321,8 @@ class StackRegistrationBase(object):
         return np.array(self._parameters)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the registered stack.
+    ##
+    #       Gets the registered stack.
     # \date       2016-11-08 19:44:15+0000
     #
     # \param      self  The object
@@ -333,8 +333,8 @@ class StackRegistrationBase(object):
         return st.Stack.from_stack(self._stack_corrected)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the parameters information.
+    ##
+    #       Gets the parameters information.
     # \date       2016-11-08 14:56:12+0000
     #
     # \param      self  The object
@@ -347,8 +347,8 @@ class StackRegistrationBase(object):
     #     pass
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the registraton transform sitk.
+    ##
+    #       Gets the registraton transform sitk.
     # \date       2016-11-06 17:10:14+0000
     #
     # \param      self  The object
@@ -359,8 +359,8 @@ class StackRegistrationBase(object):
         return np.array(self._slice_transforms_sitk)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Print statistics associated to performed registration
+    ##
+    #       Print statistics associated to performed registration
     # \date       2016-11-06 17:07:56+0000
     #
     # \param      self  The object
@@ -375,8 +375,8 @@ class StackRegistrationBase(object):
         # print("\tprior residual = %.3e" %(self._residual_prior))
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run the registration
+    ##
+    #       Run the registration
     # \date       2016-11-10 01:39:03+0000
     #
     # \param      self  The object
@@ -448,8 +448,8 @@ class StackRegistrationBase(object):
         print("\tRegularization parameters: %s (reference), %s (neighbour), %s (parameter)" %(str(self._alpha_reference), str(self._alpha_neighbour), str(self._alpha_parameter)))
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      optimizer_Method to initialize the registration with all
+    ##
+    #       optimizer_Method to initialize the registration with all
     #             precomputations which can be done before the actual
     #             optimization.
     # \date       2016-11-10 01:37:13+0000
@@ -461,8 +461,8 @@ class StackRegistrationBase(object):
         pass
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the residual call used for the least_squares
+    ##
+    #       Gets the residual call used for the least_squares
     #             optimization routine
     # \date       2016-11-10 01:38:08+0000
     #
@@ -475,8 +475,8 @@ class StackRegistrationBase(object):
         pass
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the initial parameters in case of identity transform.
+    ##
+    #       Gets the initial parameters in case of identity transform.
     # \date       2016-11-08 15:06:54+0000
     #
     # \param      self  The object
@@ -488,8 +488,8 @@ class StackRegistrationBase(object):
         pass
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the initial parameters for either 'geometry' or
+    ##
+    #       Gets the initial parameters for either 'geometry' or
     #             'moments'.
     # \date       2016-11-08 15:08:07+0000
     #
@@ -503,8 +503,8 @@ class StackRegistrationBase(object):
         pass
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      optimizer_Method that applies the obtained registration transforms to
+    ##
+    #       optimizer_Method that applies the obtained registration transforms to
     #             update the slices positions and to get the affine slice
     #             transforms capturing the performed motion correction.
     # \date       2016-11-10 01:34:42+0000

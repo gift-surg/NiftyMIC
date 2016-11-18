@@ -1,4 +1,4 @@
-##-----------------------------------------------------------------------------
+##
 ## \file IntensityCorrection.py
 #  \brief Class containing functions to correct for intensities
 # 
@@ -20,14 +20,14 @@ import utilities.PythonHelper as ph
 import matplotlib.pyplot as plt
 
 
-##-----------------------------------------------------------------------------
-# \brief      Class to correct intensities
+##
+#       Class to correct intensities
 # \date       2016-11-01 20:12:46+0000
 #
 class IntensityCorrection(object):
 
-    ##-------------------------------------------------------------------------
-    # \brief      Constructor
+    ##
+    #       Constructor
     # \date       2016-11-01 21:57:13+0000
     #
     # \param      self                             The object
@@ -74,8 +74,8 @@ class IntensityCorrection(object):
         self._use_individual_slice_correction = use_individual_slice_correction
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the stack.
+    ##
+    #       Sets the stack.
     # \date       2016-11-05 22:58:01+0000
     #
     # \param      self   The object
@@ -85,8 +85,8 @@ class IntensityCorrection(object):
         self._stack = st.Stack.from_stack(stack)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the reference.
+    ##
+    #       Sets the reference.
     # \date       2016-11-05 22:58:10+0000
     #
     # \param      self       The object
@@ -96,8 +96,8 @@ class IntensityCorrection(object):
         self._reference = st.Stack.from_stack(reference)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Use verbose
+    ##
+    #       Use verbose
     # \date       2016-11-05 22:58:28+0000
     #
     # \param      self     The object
@@ -107,8 +107,8 @@ class IntensityCorrection(object):
         self._use_verbose = verbose
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the intensity corrected stack
+    ##
+    #       Gets the intensity corrected stack
     # \date       2016-11-05 22:58:50+0000
     #
     # \param      self  The object
@@ -119,8 +119,8 @@ class IntensityCorrection(object):
         return st.Stack.from_stack(self._stack)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the intensity correction coefficients obtained for each
+    ##
+    #       Gets the intensity correction coefficients obtained for each
     #             slice of the stack.
     # \date       2016-11-10 02:22:40+0000
     #
@@ -133,8 +133,8 @@ class IntensityCorrection(object):
         return np.array(self._correction_coefficients)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Clip lower intensities based on percentile threshold
+    ##
+    #       Clip lower intensities based on percentile threshold
     # \date       2016-11-05 22:59:08+0000
     #
     # \param      self        The object
@@ -153,8 +153,8 @@ class IntensityCorrection(object):
         self._stack = self._create_stack_from_corrected_intensity_array(nda)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run linear intensity correction model.
+    ##
+    #       Run linear intensity correction model.
     # \date       2016-11-05 23:02:46+0000
     #
     # Perform linear intensity correction, i.e. 
@@ -166,8 +166,8 @@ class IntensityCorrection(object):
         self._stack, self._correction_coefficients = self._run_intensity_correction("linear")
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run affine intensity correction model.
+    ##
+    #       Run affine intensity correction model.
     # \date       2016-11-05 23:05:48+0000
     #
     # Perform affine intensity correction, i.e. 
@@ -179,8 +179,8 @@ class IntensityCorrection(object):
         self._stack, self._correction_coefficients = self._run_intensity_correction("affine")
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Execute respective intensity correction model.
+    ##
+    #       Execute respective intensity correction model.
     # \date       2016-11-05 23:06:37+0000
     #
     # \param      self              The object
@@ -212,8 +212,8 @@ class IntensityCorrection(object):
         return self._create_stack_from_corrected_intensity_array(nda), correction_coefficients
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Perform affine intensity correction via normal equations
+    ##
+    #       Perform affine intensity correction via normal equations
     # \date       2016-11-05 23:10:49+0000
     #
     # \param      self                  The object
@@ -244,8 +244,8 @@ class IntensityCorrection(object):
         return nda*c1 + c0, np.array([c1,c0])
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Perform linear intensity correction via normal equations
+    ##
+    #       Perform linear intensity correction via normal equations
     # \date       2016-11-05 23:12:13+0000
     #
     # \param      self                  The object
@@ -273,8 +273,8 @@ class IntensityCorrection(object):
         return nda*c1, c1
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the data arrays prior to intensity correction.
+    ##
+    #       Gets the data arrays prior to intensity correction.
     # \date       2016-11-05 23:07:37+0000
     #
     # \param      self  The object
@@ -298,8 +298,8 @@ class IntensityCorrection(object):
         return nda, nda_masked, nda_reference_masked
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Creates a Stack object from corrected intensity array with
+    ##
+    #       Creates a Stack object from corrected intensity array with
     #             same image header information as input \p stack.
     # \date       2016-11-05 23:15:33+0000
     #

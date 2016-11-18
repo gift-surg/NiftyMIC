@@ -34,8 +34,8 @@ from reconstruction.solver.TikhonovSolver import TikhonovSolver
 #  TODO
 class NonnegativeTikhonovSolver(TikhonovSolver):
 
-    ##-------------------------------------------------------------------------
-    # \brief         Constructor
+    ##
+    #          Constructor
     # \date          2016-08-01 22:57:21+0100
     #
     # \param         self                                    The object
@@ -140,8 +140,8 @@ class NonnegativeTikhonovSolver(TikhonovSolver):
         return self._ADMM_iterations_output_filename_prefix
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run the reconstruction algorithm based on Tikhonov
+    ##
+    #       Run the reconstruction algorithm based on Tikhonov
     #             regularization
     # \post       self._HR_volume is updated with new volume and can be fetched
     #             by \p get_HR_volume

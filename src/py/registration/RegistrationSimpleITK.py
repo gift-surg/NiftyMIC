@@ -243,8 +243,8 @@ class RegistrationSimpleITK:
         self._scales_estimator = scales_estimator
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the verbose to define whether or not output is produced
+    ##
+    #       Sets the verbose to define whether or not output is produced
     # \date       2016-09-20 18:49:19+0100
     #
     # \param      self     The object
@@ -254,8 +254,8 @@ class RegistrationSimpleITK:
         self._use_verbose = flag
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the verbose.
+    ##
+    #       Gets the verbose.
     # \date       2016-09-20 18:49:54+0100
     #
     # \param      self  The object

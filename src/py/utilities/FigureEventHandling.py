@@ -15,8 +15,8 @@ from matplotlib.patches import Rectangle
 ## Import modules
 import utilities.PythonHelper as ph
 
-##-----------------------------------------------------------------------------
-# \brief      Class used to semi-automatically extract position and geometry of
+##
+#       Class used to semi-automatically extract position and geometry of
 #             slices
 # \date       2016-09-16 16:05:06+0100
 #
@@ -80,8 +80,8 @@ class FigureEventHandling(object):
             , "double_window_10yr"    : np.array([685,1024])
         }
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the marked coordinates.
+    ##
+    #       Gets the marked coordinates.
     # \date       2016-09-16 16:16:47+0100
     #
     # \param      self  The object
@@ -92,8 +92,8 @@ class FigureEventHandling(object):
         return self._coordinates
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the offset of the region with respect to set coordinates
+    ##
+    #       Sets the offset of the region with respect to set coordinates
     #             on image.
     # \date       2016-09-19 13:35:57+0100
     #
@@ -104,8 +104,8 @@ class FigureEventHandling(object):
         self._offset = offset
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the offset.
+    ##
+    #       Gets the offset.
     # \date       2016-09-17 22:29:33+0100
     #
     # \param      self  The object
@@ -116,8 +116,8 @@ class FigureEventHandling(object):
         return self._offset
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the length of the region with respect to the set
+    ##
+    #       Sets the length of the region with respect to the set
     #             coordinates on image
     # \date       2016-09-19 13:36:50+0100
     #
@@ -128,8 +128,8 @@ class FigureEventHandling(object):
         self._length = length
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the length.
+    ##
+    #       Gets the length.
     # \date       2016-09-17 22:30:10+0100
     #
     # \param      self  The object
@@ -140,8 +140,8 @@ class FigureEventHandling(object):
         return self._length
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Plot 2D array and extract slices by clicking on the figure.
+    ##
+    #       Plot 2D array and extract slices by clicking on the figure.
     #             Exit this process by hitting enter.
     # \date       2016-09-16 15:50:09+0100
     #
@@ -176,8 +176,8 @@ class FigureEventHandling(object):
         plt.show()
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Print information of usage on screen
+    ##
+    #       Print information of usage on screen
     # \date       2016-09-18 01:33:20+0100
     #
     # \param      self  The object
@@ -200,8 +200,8 @@ class FigureEventHandling(object):
         print("\tm:            Change between single and double selection mode.")
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Event handling for image clicks on plots. Used to store
+    ##
+    #       Event handling for image clicks on plots. Used to store
     #             coordinates of clicked position
     # \see        http://matplotlib.org/users/event_handling.html
     # \date       2016-09-16 15:51:00+0100
@@ -241,8 +241,8 @@ class FigureEventHandling(object):
             # print("Right click")
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Event handling for hitting keys
+    ##
+    #       Event handling for hitting keys
     # \see        http://matplotlib.org/users/event_handling.html
     # \date       2016-09-16 15:51:53+0100
     #
@@ -403,8 +403,8 @@ class FigureEventHandling(object):
             plt.close()
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Redraw points and rectangle in case any update has happened
+    ##
+    #       Redraw points and rectangle in case any update has happened
     # \date       2016-09-16 17:03:12+0100
     # \see        http://stackoverflow.com/questions/19592422/python-gui-that-draw-a-dot-when-clicking-on-plot
     #
@@ -434,8 +434,8 @@ class FigureEventHandling(object):
         plt.draw()
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Delete all drawn rectangles after update has happened
+    ##
+    #       Delete all drawn rectangles after update has happened
     # \date       2016-09-18 02:42:00+0100
     #
     # \param      self  The object

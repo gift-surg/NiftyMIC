@@ -97,8 +97,8 @@ class TestInPlaneRegistrationSimpleITK(unittest.TestCase):
         pass
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Verify that in-plane rigid registration works
+    ##
+    #       Verify that in-plane rigid registration works
     # \date       2016-11-02 21:56:19+0000
     #
     # Verify that in-plane rigid registration works, i.e. test 
@@ -170,8 +170,8 @@ class TestInPlaneRegistrationSimpleITK(unittest.TestCase):
             , decimals = self.accuracy), 0)
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Verify that in-plane rigid registration works
+    ##
+    #       Verify that in-plane rigid registration works
     # \date       2016-11-02 21:56:19+0000
     #
     # Same idea as rigid test above, i.e. test 
@@ -265,8 +265,8 @@ class TestInPlaneRegistrationSimpleITK(unittest.TestCase):
                 np.linalg.norm(nda_diff)
             , decimals = self.accuracy), 0)
 
-    ##-------------------------------------------------------------------------
-    # \brief      Verify that in-plane rigid registration works
+    ##
+    #       Verify that in-plane rigid registration works
     # \date       2016-11-02 21:56:19+0000
     #
     # Same idea as rigid test above, i.e. test 

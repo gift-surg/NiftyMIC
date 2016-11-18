@@ -32,8 +32,8 @@ IMAGE_TYPE_CV33 = itk.Image.CVD33
 IMAGE_TYPE_CV183 = itk.Image.CVD183
 
 
-##-----------------------------------------------------------------------------
-# \brief      Class for registration in 3D based on least-squares optimization
+##
+#       Class for registration in 3D based on least-squares optimization
 # \date       2016-09-21 12:27:13+0100
 #
 class Registration(object):
@@ -77,8 +77,8 @@ class Registration(object):
         self._use_verbose = use_verbose
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Initialize registration class
+    ##
+    #       Initialize registration class
     # \date       2016-09-21 12:58:57+0100
     #
     # Idea: Have same structure as other registration classes and add moving
@@ -154,8 +154,8 @@ class Registration(object):
         return self._alpha_cut
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the parameters estimated by registration algorithm.
+    ##
+    #       Gets the parameters estimated by registration algorithm.
     # \date       2016-08-03 00:10:45+0100
     #
     # \param[in]  self  The object
@@ -166,8 +166,8 @@ class Registration(object):
         return self._parameters
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Returns the rigid registration transform
+    ##
+    #       Returns the rigid registration transform
     # \date       2016-09-21 12:09:41+0100
     #
     # \param      self  The object
@@ -180,8 +180,8 @@ class Registration(object):
         return transform_sitk
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Sets the verbose to define whether or not output is produced
+    ##
+    #       Sets the verbose to define whether or not output is produced
     # \date       2016-09-20 18:49:19+0100
     #
     # \param      self     The object
@@ -191,8 +191,8 @@ class Registration(object):
         self._use_verbose = flag
 
     
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the verbose.
+    ##
+    #       Gets the verbose.
     # \date       2016-09-20 18:49:54+0100
     #
     # \param      self  The object
@@ -203,7 +203,7 @@ class Registration(object):
         return self._use_verbose
 
 
-    ##-------------------------------------------------------------------------
+    ##
     # \date       2016-07-29 12:30:30+0100
     # \brief      Print statistics associated to performed reconstruction
     #
@@ -219,8 +219,8 @@ class Registration(object):
         # print("\tprior residual = %.3e" %(self._residual_prior))
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Run registration
+    ##
+    #       Run registration
     # \date       2016-08-03 00:11:51+0100
     # \post       self._paramters is updated
     #
@@ -257,8 +257,8 @@ class Registration(object):
         self._elapsed_time_sec = time_end-time_start
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Compute residual y_k - A_k(theta)x based on parameters
+    ##
+    #       Compute residual y_k - A_k(theta)x based on parameters
     #             theta.
     # \date       2016-08-03 00:12:43+0100
     #
@@ -282,8 +282,8 @@ class Registration(object):
         return residual
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Gets the jacobian residual data fit.
+    ##
+    #       Gets the jacobian residual data fit.
     # \date       2016-09-08 12:11:13+0100
     #
     # \param[in]  self                         The object
@@ -333,8 +333,8 @@ class Registration(object):
         return -jacobian_nda
 
     
-    ##-------------------------------------------------------------------------
-    # \brief      Execute Oriented Gaussian Interpolate Image Filter
+    ##
+    #       Execute Oriented Gaussian Interpolate Image Filter
     # \date       2016-09-20 18:32:12+0100
     #
     # \param[in]  self          The object
@@ -388,8 +388,8 @@ class Registration(object):
             return jacobian_spatial_Ak_vol_itk
 
 
-    ##-------------------------------------------------------------------------
-    # \brief      Compute squared ell^2 norm of residual, i.e. compute residual
+    ##
+    #       Compute squared ell^2 norm of residual, i.e. compute residual
     #             of data fit \f$ \Vert \vec{y}_k - A_k(\theta)\vec{x} \f$
     # \date       2016-08-03 00:43:29+0100
     #
