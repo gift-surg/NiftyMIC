@@ -385,6 +385,10 @@ class StackRegistrationBase(object):
 
         if self._optimizer_method in ["lm"]:
             verbose = 1
+            if self._optimizer_loss not in ["linear"]:
+                self._optimizer_loss = "linear"
+                print("Optimizer method 'lm' only supports 'linear' loss function. ")
+                
         else:        
             verbose = 2
 
@@ -430,8 +434,8 @@ class StackRegistrationBase(object):
         # Non-linear least-squares optimizer_method:
         self._print_info_text()
         time_start = ph.start_timing()
-        # res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) 
-        res = least_squares(fun=fun, jac=jac, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
+        res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) 
+        # res = least_squares(fun=fun, jac=jac, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
         # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
         # res = least_squares(fun=fun, x0=parameters0, optimizer_method='dogbox', optimizer_loss='linear', verbose=2) 
         self._elapsed_time = ph.stop_timing(time_start)
@@ -451,9 +455,9 @@ class StackRegistrationBase(object):
 
     def _print_info_text(self):
         print("Minimization via least_squares solver")
-        print("\tMethod = " + self._optimizer_method)
-        print("\tLoss = " + self._optimizer_loss)
-        print("\tMaximum number of function evaluations = " + str(self._optimizer_nfev_max))
+        print("\tMethod: " + self._optimizer_method)
+        print("\tLoss: " + self._optimizer_loss)
+        print("\tMaximum number of function evaluations: " + str(self._optimizer_nfev_max))
         print("\tStack mask used: " + str(self._use_stack_mask))
         if self._reference is not None:
             print("\tReference mask used: " + str(self._use_reference_mask))

@@ -518,7 +518,8 @@ def get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(transform_it
             X,Y = np.meshgrid(x,y, indexing='ij') # 'ij' yields vertical x-coordinate for image!
             
             ## Index array (2xN_voxels) of image in voxel space
-            indices = np.array([Y.flatten(), X.flatten()])
+            # indices = np.array([Y.flatten(), X.flatten()])
+            indices = np.array([X.flatten(), Y.flatten()])
         else:
             X,Y,Z = np.meshgrid(x,y,z, indexing='ij') # 'ij' yields vertical x-coordinate for image!
             
