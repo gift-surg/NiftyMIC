@@ -46,7 +46,7 @@ class StackRegistrationBase(object):
     # \param      use_reference_mask  Use reference mask for registration, bool
     # \param      use_verbose         Verbose output, bool
     #
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, transform_initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1, use_parameter_normalization=False, optimizer_nfev_max=50, optimizer_loss="soft_l1", optimizer_method="trf"):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, transform_initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1, use_parameter_normalization=False, optimizer_nfev_max=20, optimizer_loss="soft_l1", optimizer_method="trf"):
 
         ## Set Fixed and reference stacks
         if stack is not None:
@@ -473,7 +473,7 @@ class StackRegistrationBase(object):
         print("\tStack mask used: " + str(self._use_stack_mask))
         if self._reference is not None:
             print("\tReference mask used: " + str(self._use_reference_mask))
-        print("\tRegularization parameters: %s (reference), %s (neighbour), %s (parameter)" %(str(self._alpha_reference), str(self._alpha_neighbour), str(self._alpha_parameter)))
+        print("\tRegularization coefficients: %s (reference), %s (neighbour), %s (parameter)" %(str(self._alpha_reference), str(self._alpha_neighbour), str(self._alpha_parameter)))
 
 
     ##

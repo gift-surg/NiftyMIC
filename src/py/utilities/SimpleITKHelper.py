@@ -840,6 +840,18 @@ def plot_stack_of_slices(stack_sitk, cmap="Greys_r", title="slice"):
     ph.plot_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
 
 
+def plot_slices(slices, cmap="Greys_r", title="slice"):
+    N = len(slices)
+    nda0 = sitk.GetArrayFromImage(slices[0].sitk)
+
+    nda = np.zeros((N, nda0.shape[0], nda0.shape[1]))
+    nda[0,:,:] = nda0
+    for i in range(1, N):
+        nda[i,:,:] = sitk.GetArrayFromImage(slices[i].sitk)
+
+    ph.plot_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
+
+
 ##
 #       Show image with ITK-Snap. Image is saved to /tmp/ for that
 #             purpose.

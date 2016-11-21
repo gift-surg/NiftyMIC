@@ -331,7 +331,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         #     np.linalg.norm(nda_diff)
         # , decimals = self.accuracy), 0)
 
-    """
+    
     def test_inplane_rigid_alignment_to_reference(self):
 
         filename_stack = "fetal_brain_0"
@@ -357,14 +357,15 @@ class TestIntraStackRegistration(unittest.TestCase):
         # stack_corrupted.show(1)
 
         ## Perform in-plane rigid registration
-        inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
+        inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
+        # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         inplane_registration.set_transform_initializer_type("moments")
-        inplane_registration.set_optimizer_nfev_max(20)
-        inplane_registration.set_alpha_neighbour(1)
+        inplane_registration.set_optimizer_nfev_max(10)
+        inplane_registration.set_alpha_neighbour(2)
         inplane_registration.set_alpha_parameter(0)
-        inplane_registration.use_stack_mask(0)
+        inplane_registration.use_stack_mask(1)
         inplane_registration.use_reference_mask(0)
-        inplane_registration.set_optimizer_loss("linear")
+        inplane_registration.set_optimizer_loss("soft_l1")
         # inplane_registration.set_optimizer_method("trf")
         # inplane_registration._run_registration_pipeline_initialization()
         # inplane_registration._apply_motion_correction()
@@ -374,8 +375,8 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         stack_registered = inplane_registration.get_corrected_stack()
         parameters = inplane_registration.get_parameters()
-            
-        sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(interpolator="Linear")])
+        
+        sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(interpolator="Linear", resampling_grid=stack.sitk)])
 
         print parameters
         
@@ -383,7 +384,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         #     np.linalg.norm(nda_diff)
         # , decimals = self.accuracy), 0)
     
-    """
+    
     def test_inplane_rigid_alignment_to_reference_with_intensity_correction_linear(self):
 
         filename_stack = "fetal_brain_0"
@@ -456,8 +457,8 @@ class TestIntraStackRegistration(unittest.TestCase):
         center_2D = (0,0)
         translation_2D = np.array([0, 0])
 
-        intensity_scale = 10
-        intensity_bias = 50
+        intensity_scale = 5
+        intensity_bias = 5
 
         ## Get corrupted stack and corresponding motions
         stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D, intensity_scale=intensity_scale, intensity_bias=intensity_bias)
@@ -467,15 +468,15 @@ class TestIntraStackRegistration(unittest.TestCase):
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         inplane_registration.set_transform_type("rigid")
         inplane_registration.set_transform_initializer_type("identity")
-        # inplane_registration.set_optimizer_loss("linear")
+        inplane_registration.set_optimizer_loss("linear")
         inplane_registration.set_intensity_correction_initializer_type(None)
         inplane_registration.set_intensity_correction_type("affine")
         inplane_registration.use_parameter_normalization(True)
         inplane_registration.use_verbose(True)
         inplane_registration.use_stack_mask(True)
         inplane_registration.set_alpha_reference(1)
-        inplane_registration.set_alpha_neighbour(0)
-        inplane_registration.set_alpha_parameter(1e10)
+        inplane_registration.set_alpha_neighbour(1)
+        inplane_registration.set_alpha_parameter(1e8)
         inplane_registration.set_optimizer_nfev_max(15)
         inplane_registration.use_verbose(True)
         inplane_registration.run_registration()
@@ -490,7 +491,7 @@ class TestIntraStackRegistration(unittest.TestCase):
             np.linalg.norm(parameters[:,-2:] - np.array([intensity_scale, intensity_bias]))
         , decimals = 0), 0)
 
-    
+    """
     def test_inplane_similarity_alignment_to_reference(self):
 
         filename_stack = "fetal_brain_0"
@@ -517,14 +518,14 @@ class TestIntraStackRegistration(unittest.TestCase):
         stack = st.Stack.from_sitk_image(stack_sitk, stack.get_filename(), stack_sitk_mask)
 
         ## Create in-plane motion corruption
-        scale = 1.1
-        angle_z = 0
+        scale = 1.2
+        angle_z = 0.1
         center_2D = (0,0)
-        translation_2D = np.array([0,0])
-        # translation_2D = np.array([1, -1])
+        # translation_2D = np.array([0,0])
+        translation_2D = np.array([1, -1])
 
-        intensity_scale = 1
-        intensity_bias = 0
+        intensity_scale = 10
+        intensity_bias = 50
 
         ## Get corrupted stack and corresponding motions
         stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D, scale=scale, intensity_scale=intensity_scale, intensity_bias=intensity_bias, debug=0)
@@ -536,18 +537,21 @@ class TestIntraStackRegistration(unittest.TestCase):
         inplane_registration = inplanereg.IntraStackRegistration(stack=stack_corrupted, reference=stack)
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         # inplane_registration.set_transform_initializer_type("geometry")
-        inplane_registration.set_transform_initializer_type("identity")
+        inplane_registration.set_transform_initializer_type("moments")
+        inplane_registration.set_intensity_correction_initializer_type("affine")
         inplane_registration.set_transform_type("similarity")
         inplane_registration.set_interpolator("Linear")
+        inplane_registration.set_optimizer_loss("linear")
         # inplane_registration.use_reference_mask(True)
         inplane_registration.use_stack_mask(True)
         inplane_registration.use_parameter_normalization(True)
-        inplane_registration.set_estimated_scale(1/scale)
-        inplane_registration.set_intensity_correction_type(None)
+        inplane_registration.set_prior_scale(1/scale)
+        inplane_registration.set_prior_intensity_coefficients((intensity_scale, intensity_bias))
+        inplane_registration.set_intensity_correction_type("affine")
         inplane_registration.use_verbose(True)
         inplane_registration.set_alpha_reference(1)
         inplane_registration.set_alpha_neighbour(0)
-        inplane_registration.set_alpha_parameter(1e14)
+        inplane_registration.set_alpha_parameter(1e10)
         inplane_registration.set_optimizer_nfev_max(20)
         inplane_registration.use_verbose(True)
         inplane_registration.run_registration()
@@ -559,12 +563,9 @@ class TestIntraStackRegistration(unittest.TestCase):
         stack_registered = inplane_registration.get_corrected_stack()
         parameters = inplane_registration.get_parameters()
 
-        stack_corrupted_sitk = sitk.Resample(stack_corrupted.get_resampled_stack_from_slices().sitk, stack.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor)        
-        stack_registered_sitk = sitk.Resample(stack_registered.get_resampled_stack_from_slices().sitk, stack.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor)        
-
-        sitkh.show_sitk_image([stack.sitk, stack_corrupted_sitk, stack_registered_sitk], title=["original", "corrupted", "recovered"])
+        sitkh.show_sitk_image([stack.sitk, stack_corrupted.get_resampled_stack_from_slices(interpolator="Linear", resampling_grid=stack.sitk).sitk, stack_registered.get_resampled_stack_from_slices(interpolator="Linear", resampling_grid=stack.sitk).sitk], title=["original", "corrupted", "recovered"])
 
         # self.assertEqual(np.round(
         #     np.linalg.norm(nda_diff)
         # , decimals = self.accuracy), 0)
-    """
+    
