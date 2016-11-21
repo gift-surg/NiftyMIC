@@ -206,8 +206,8 @@ class IntensityCorrection(object):
                 nda[i,:,:], correction_coefficients[i,:] = self._apply_intensity_correction[correction_model](nda[i,:,:], nda_masked[i,:,:], nda_reference_masked[i,:,:])
 
         else:
-            nda = self._apply_intensity_correction[correction_model](nda, nda_masked, nda_reference_masked)
-        
+            nda, cc = self._apply_intensity_correction[correction_model](nda, nda_masked, nda_reference_masked)
+            correction_coefficients[:,] = np.tile(cc, (N_slices,1))
         ## Create Stack instance with correct image header information
         return self._create_stack_from_corrected_intensity_array(nda), correction_coefficients
 

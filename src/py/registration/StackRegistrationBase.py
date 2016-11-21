@@ -46,7 +46,7 @@ class StackRegistrationBase(object):
     # \param      use_reference_mask  Use reference mask for registration, bool
     # \param      use_verbose         Verbose output, bool
     #
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1, use_parameter_normalization=False, optimizer_nfev_max=50, optimizer_loss="soft_l1", optimizer_method="trf"):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, transform_initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=1, use_parameter_normalization=False, optimizer_nfev_max=50, optimizer_loss="soft_l1", optimizer_method="trf"):
 
         ## Set Fixed and reference stacks
         if stack is not None:
@@ -78,12 +78,12 @@ class StackRegistrationBase(object):
             "moments"   :   self._get_initial_transforms_and_parameters_geometry_moments,
             "geometry"  :   self._get_initial_transforms_and_parameters_geometry_moments
         }
-        self._dictionary_initializer_type_sitk = {
+        self._dictionary_transform_initializer_type_sitk = {
             "identity"  :   None,
             "moments"   :   "MOMENTS",
             "geometry"  :   "GEOMETRY"
         }
-        self._initializer_type = initializer_type
+        self._transform_initializer_type = transform_initializer_type
 
         ## Interpolator
         self._interpolator = interpolator
@@ -96,6 +96,7 @@ class StackRegistrationBase(object):
 
         self._use_parameter_normalization = use_parameter_normalization
 
+        self._ZERO = 1e-8
 
     ##
     #       Sets stack/reference/target image.
@@ -181,17 +182,17 @@ class StackRegistrationBase(object):
     # reference image.
     #
     # \param      self              The object
-    # \param      initializer_type  The initializer type to be either 'None',
+    # \param      transform_initializer_type  The initializer type to be either 'None',
     #                               'moments' or 'geometry'
     #
-    def set_initializer_type(self, initializer_type):
-        if initializer_type not in ["identity", "moments", "geometry"]:
+    def set_transform_initializer_type(self, transform_initializer_type):
+        if transform_initializer_type not in ["identity", "moments", "geometry"]:
             raise ValueError("Error: centered transform initializer type can only be 'identity', moments' or 'geometry'")
 
-        self._initializer_type = initializer_type
+        self._transform_initializer_type = transform_initializer_type
 
-    def get_initializer_type(self):
-        return self._initializer_type
+    def get_transform_initializer_type(self):
+        return self._transform_initializer_type
 
 
     ##
@@ -383,6 +384,9 @@ class StackRegistrationBase(object):
     #
     def run_registration(self):
 
+        print_precisicion = 3
+        print_suppress = True
+
         if self._optimizer_method in ["lm"]:
             verbose = 1
             if self._optimizer_loss not in ["linear"]:
@@ -392,13 +396,17 @@ class StackRegistrationBase(object):
         else:        
             verbose = 2
 
-        # jac = '2-point'
-        jac = '3-point'
+        jac = '2-point'
+        # jac = '3-point'
         x_scale = 1.0 #or array
         # x_scale = 'jac' #or array
 
         ## Initialize registration pipeline         
         self._run_registration_pipeline_initialization()
+
+        if self._use_verbose:
+            print("Initial values = ")
+            ph.print_numpy_array(self._parameters, precision=print_precisicion, suppress=print_suppress)
 
         ## Parameter normalization
         if self._use_parameter_normalization:
@@ -414,8 +422,9 @@ class StackRegistrationBase(object):
 
             if self._use_verbose:
                 print("Normalization parameters:")
-                print scale
+                ph.print_numpy_array(scale, precision=print_precisicion, suppress=print_suppress)
 
+            ## Each slice with the same scaling
             x_scale = np.tile(scale, self._parameters.shape[0])
 
 
@@ -434,8 +443,8 @@ class StackRegistrationBase(object):
         # Non-linear least-squares optimizer_method:
         self._print_info_text()
         time_start = ph.start_timing()
-        res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) 
-        # res = least_squares(fun=fun, jac=jac, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
+        # res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) 
+        res = least_squares(fun=fun, jac=jac, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale) # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
         # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
         # res = least_squares(fun=fun, x0=parameters0, optimizer_method='dogbox', optimizer_loss='linear', verbose=2) 
         self._elapsed_time = ph.stop_timing(time_start)
@@ -446,6 +455,9 @@ class StackRegistrationBase(object):
         ## Denormalize parameters
         # self._parameters = self._parameter_normalizer.denormalize_parameters(self._parameters)
 
+        if self._use_verbose:
+            print("Final values = ")
+            ph.print_numpy_array(self._parameters, precision=print_precisicion, suppress=print_suppress)
         # if self._use_verbose:
         #     print("Final values = ")
         #     print self._parameters

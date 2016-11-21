@@ -421,6 +421,36 @@ class TestSimpleITKHelper(unittest.TestCase):
         # sitkh.show_sitk_image(moving_rigidly_warped_sitk, overlay=moving_affinely_warped_sitk, title="rigid_affine")
 
 
+    def test_get_indices_array_to_flattened_sitk_image(self):
+        # filename = "fetal_brain_0"
+        filename = "FetalBrain_reconstruction_3stacks_myAlg"
+
+        ## 3D
+        image_sitk = sitk.ReadImage(self.dir_test_data + filename + ".nii.gz")
+        nda = sitk.GetArrayFromImage(image_sitk).flatten()
+        
+        indices = sitkh.get_indices_array_to_flattened_sitk_image_data_array(image_sitk)
+        nda_2 = np.zeros_like(nda)
+        for i in range(0,nda_2.size):
+            nda_2[i] = image_sitk.GetPixel(*indices[:,i])
+        
+        self.assertEqual(np.round( 
+            np.linalg.norm(nda_2 - nda), 
+        decimals = self.accuracy), 0)
+
+        ## 2D
+        image_sitk = image_sitk[:,:,5]
+        nda = sitk.GetArrayFromImage(image_sitk).flatten()
+        
+        indices = sitkh.get_indices_array_to_flattened_sitk_image_data_array(image_sitk)
+        nda_2 = np.zeros_like(nda)
+        for i in range(0,nda_2.size):
+            nda_2[i] = image_sitk.GetPixel(*indices[:,i])
+        
+        self.assertEqual(np.round( 
+            np.linalg.norm(nda_2 - nda), 
+        decimals = self.accuracy), 0)
+        
 
 
 # nda_rigid = sitk.GetArrayFromImage(moving_rigidly_warped_sitk)

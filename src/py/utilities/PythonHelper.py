@@ -11,6 +11,7 @@ import os                       # used to execute terminal commands in python
 # import itk
 # import SimpleITK as sitk
 import numpy as np
+import contextlib
 import matplotlib.pyplot as plt
 import time
 from datetime import timedelta
@@ -227,3 +228,29 @@ def stop_timing(start_time):
 
     ## Convert to 'readable' format
     return timedelta(seconds=elapsed_time_sec)
+
+
+##
+# Print numpy array in certain format via \p printoptions below
+# \date       2016-11-21 12:56:19+0000
+# \see        http://stackoverflow.com/questions/2891790/pretty-printing-of-numpy-array
+#
+# \param      nda        numpy array
+# \param      precision  Specifies the number of significant digits
+# \param      suppress   Specifies whether or not scientific notation is
+#                        suppressed for small numbers
+#
+def print_numpy_array(nda, precision=3, suppress=False):
+    with printoptions(precision=precision, suppress=suppress):
+        print(nda)
+
+##
+# Used in print_numpy_array to apply specific print formatting
+# \see http://stackoverflow.com/questions/2891790/pretty-printing-of-numpy-array
+#
+@contextlib.contextmanager
+def printoptions(*args, **kwargs):
+    original = np.get_printoptions()
+    np.set_printoptions(*args, **kwargs)
+    yield 
+    np.set_printoptions(**original)

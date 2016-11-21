@@ -32,10 +32,10 @@ from registration.StackRegistrationBase import StackRegistrationBase
 
 class IntraStackRegistration(StackRegistrationBase):
 
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=0, transform_type="rigid", intensity_correction_type=None):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, transform_initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=0, transform_type="rigid", intensity_correction_type=None, intensity_correction_initializer_type=None, estimated_scale=1.0):
 
         ## Run constructor of superclass
-        StackRegistrationBase.__init__(self, stack=stack, reference=reference, use_stack_mask=use_stack_mask, use_reference_mask=use_reference_mask, use_verbose=use_verbose, initializer_type=initializer_type, interpolator=interpolator, alpha_neighbour=alpha_neighbour, alpha_reference=alpha_reference, alpha_parameter=alpha_parameter)
+        StackRegistrationBase.__init__(self, stack=stack, reference=reference, use_stack_mask=use_stack_mask, use_reference_mask=use_reference_mask, use_verbose=use_verbose, transform_initializer_type=transform_initializer_type, interpolator=interpolator, alpha_neighbour=alpha_neighbour, alpha_reference=alpha_reference, alpha_parameter=alpha_parameter)
 
         self._transform_type = transform_type
 
@@ -52,6 +52,13 @@ class IntraStackRegistration(StackRegistrationBase):
             "affine"    : self._get_jacobian_intensity_correction_affine,
         }
 
+        self._intensity_correction_initializer_type = intensity_correction_initializer_type
+        self._get_initial_intensity_correction_parameters = {
+            None        : self._get_initial_intensity_correction_parameters_None,
+            "linear"    : self._get_initial_intensity_correction_parameters_linear,
+            "affine"    : self._get_initial_intensity_correction_parameters_affine
+        }
+
         self._apply_motion_correction_and_compute_slice_transforms = {
             "rigid"     :  self._apply_rigid_motion_correction_and_compute_slice_transforms,    
             "similarity":  self._apply_similarity_motion_correction_and_compute_slice_transforms
@@ -66,6 +73,16 @@ class IntraStackRegistration(StackRegistrationBase):
             "similarity":   self._new_similarity_transform_itk
         }
 
+        self._estimated_scale = estimated_scale
+        self._parameters_reference_transform = {
+            "rigid"     :   np.array([0, 0, 0]),
+            "similarity":   np.array([self._estimated_scale, 0, 0, 0])
+        }
+        self._parameters_reference_intensity_correction = {
+            None        :  None,
+            "linear"    :  np.array(1),
+            "affine"    :  np.array([1, 0])
+        }
 
     ##
     # Sets the transform type.
@@ -84,22 +101,58 @@ class IntraStackRegistration(StackRegistrationBase):
 
 
     ##
-    #       { function_description }
+    # Set the intensity correction type
     # \date       2016-11-10 01:58:39+0000
     #
     # \param      self  The object
     # \param      flag  The flag
     #
-    # \return     { description_of_the_return_value }
-    #
     def set_intensity_correction_type(self, intensity_correction_type):
         if intensity_correction_type not in [None, "linear", "affine"]:
-            raise ErrorValue("Transform type must either be None, 'linear' or 'affine'")
+            raise ErrorValue("Intensity correction type must either be None, 'linear' or 'affine'")
         self._intensity_correction_type = intensity_correction_type
 
 
     def get_intensity_correction_type(self):
         return self._intensity_correction_type
+
+
+    def set_intensity_correction_initializer_type(self, intensity_correction_initializer_type):
+        if intensity_correction_initializer_type not in [None, "linear", "affine"]:
+            raise ErrorValue("Intensity correction initializer type must either be None, 'linear' or 'affine'")
+        self._intensity_correction_initializer_type = intensity_correction_initializer_type
+
+
+    def get_intensity_correction_initializer_type(self):
+        return self._intensity_correction_initializer_type
+
+
+    ##
+    # Sets the estimated scale.
+    # \date       2016-11-21 15:45:14+0000
+    #
+    # \param      self             The object
+    # \param      estimated_scale  The estimated scale
+    #
+    def set_estimated_scale(self, estimated_scale):
+        self._estimated_scale = estimated_scale
+        self._parameters_reference_transform["similarity"][0] = estimated_scale
+
+    def print_statistics(self):
+        StackRegistrationBase.print_statistics(self)
+
+        if self._alpha_reference > self._ZERO:
+            res = self._get_residual_reference_fit(self._parameters.flatten())
+            print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - ref||_2^2 = %.3e" %(np.sum(res**2)))
+
+        if self._alpha_neighbour > self._ZERO:
+            res = self._get_residual_slice_neighbours_fit(self._parameters.flatten())
+            print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - slice_{k+1}(T(theta_{k+1}))||_2^2 = %.3e" %(np.sum(res**2)))
+
+        if self._alpha_parameter > self._ZERO:
+            res = self._get_residual_parameters(self._parameters.flatten())
+            print("\tell^2-residual sum_k ||theta_k - theta_k0||_2^2 = %.3e" %(np.sum(res**2)))
+
 
 
     ##
@@ -120,23 +173,25 @@ class IntraStackRegistration(StackRegistrationBase):
 
         ## If reference is given, precompute required data
         if self._reference is not None:
+
             self._slices_2D_reference = self._get_projected_2D_slices_of_stack(self._reference)
             self._reference_nda = sitk.GetArrayFromImage(self._reference.sitk)
             self._reference_nda_mask = sitk.GetArrayFromImage(self._reference.sitk_mask)
 
+            ## Resampling grid, i.e. the fixed image space during registration
+            self._slice_grid_2D_sitk = sitk.Image(self._slices_2D_reference[0].sitk)
+
+        else:
+            ## Resampling grid, i.e. the fixed image space during registration
+            self._slice_grid_2D_sitk = sitk.Image(self._slices_2D[0].sitk)
+
         ## Get inital transform and the respective initial transform parameters
         ## used for further optimisation
-        self._transforms_2D_sitk, parameters = self._get_initial_transforms_and_parameters[self._initializer_type]()
+        self._transforms_2D_sitk, parameters = self._get_initial_transforms_and_parameters[self._transform_initializer_type]()
 
         if self._intensity_correction_type is not None:
-            parameters_intensity = self._get_initial_intensity_correction_parameters()
+            parameters_intensity = self._get_initial_intensity_correction_parameters[self._intensity_correction_initializer_type]()
             parameters = np.concatenate((parameters, parameters_intensity), axis=1)
-
-        if self._use_verbose:
-            print("Initial values = ")
-            print parameters
-            # for i in range(0, self._N_slices):
-                # print self._transforms_2D_sitk[i].GetParameters()
 
         ## Parameters for initialization and for regularization term
         self._parameters0_vec = parameters.flatten()
@@ -147,9 +202,6 @@ class IntraStackRegistration(StackRegistrationBase):
         ## Store number of degrees of freedom for overall optimization
         self._optimization_dofs = self._parameters.shape[1]
 
-        ## Resampling grid, i.e. the fixed image space during registration
-        self._slice_grid_2D_sitk = sitk.Image(self._slices_2D[0].sitk)
-
 
     def _apply_motion_correction(self):
         self._apply_motion_correction_and_compute_slice_transforms[self._transform_type]()
@@ -157,21 +209,21 @@ class IntraStackRegistration(StackRegistrationBase):
 
     def _get_residual_call(self):
 
-        alpha_neighbour = self._alpha_neighbour
-        alpha_parameter = self._alpha_parameter
-        alpha_reference = self._alpha_reference
+        alpha_neighbour = float(self._alpha_neighbour)
+        alpha_parameter = float(self._alpha_parameter)
+        alpha_reference = float(self._alpha_reference)
 
         if self._reference is None:
             if alpha_neighbour <= 0:
                 raise ErrorValue("A weight of alpha_neighbour <= 0 is not meaningful.")
 
-            if alpha_parameter is 0:
+            if abs(alpha_parameter) < self._ZERO:
                 residual = lambda x: self._get_residual_slice_neighbours_fit(x)
 
             else:
                 residual = lambda x: np.concatenate((
                           self._get_residual_slice_neighbours_fit(x),
-                          alpha_parameter/alpha_neighbour * self._get_residual_regularization(x)
+                          alpha_parameter/alpha_neighbour * self._get_residual_parameters(x)
                     ))
             
         else:
@@ -179,36 +231,36 @@ class IntraStackRegistration(StackRegistrationBase):
             if alpha_reference <= 0:
                 raise ErrorValue("A weight of alpha_reference <= 0 is not meaningful in case reference is given")
             
-            if alpha_neighbour is 0 and alpha_parameter is 0:
+            if abs(alpha_neighbour) < self._ZERO and abs(alpha_parameter) < self._ZERO:
                 residual = lambda x: self._get_residual_reference_fit(x)
             
-            elif alpha_neighbour > 0 and alpha_parameter is 0:
+            elif alpha_neighbour > self._ZERO and abs(alpha_parameter) < self._ZERO:
                 residual = lambda x: np.concatenate((
                           self._get_residual_reference_fit(x),
                           alpha_neighbour/alpha_reference * self._get_residual_slice_neighbours_fit(x)
                     ))
             
-            elif alpha_neighbour is 0 and alpha_parameter > 0:
+            elif abs(alpha_neighbour) < self._ZERO and alpha_parameter > self._ZERO:
                 residual = lambda x: np.concatenate((
                           self._get_residual_reference_fit(x),
-                          alpha_paramete/ralpha_reference * self._get_residual_regularization(x)
+                          alpha_parameter/alpha_reference * self._get_residual_parameters(x)
                     ))
             
 
-            elif alpha_neighbour > 0 and alpha_parameter > 0:
+            elif alpha_neighbour > self._ZERO and alpha_parameter > self._ZERO:
                 residual = lambda x: np.concatenate((
                           self._get_residual_reference_fit(x),
                           alpha_neighbour/alpha_reference * self._get_residual_slice_neighbours_fit(x),
-                          alpha_parameter/alpha_reference * self._get_residual_regularization(x)
+                          alpha_parameter/alpha_reference * self._get_residual_parameters(x)
                     ))
 
         return residual
 
     def _get_jacobian_residual_call(self):
 
-        alpha_neighbour = self._alpha_neighbour
-        alpha_parameter = self._alpha_parameter
-        alpha_reference = self._alpha_reference
+        alpha_neighbour = float(self._alpha_neighbour)
+        alpha_parameter = float(self._alpha_parameter)
+        alpha_reference = float(self._alpha_reference)
 
         if self._reference is None:
             self._alpha_reference = 0
@@ -216,48 +268,93 @@ class IntraStackRegistration(StackRegistrationBase):
             if alpha_neighbour <= 0:
                 raise ErrorValue("A weight of alpha_neighbour <= 0 is not meaningful.")
 
-            # if alpha_parameter is 0:
-            jacobian = lambda x: self._get_jacobian_residual_slice_neighbours_fit(x)
+            if abs(alpha_parameter) < self._ZERO:
+                jacobian = lambda x: self._get_jacobian_residual_slice_neighbours_fit(x)
 
-            # else:
-            #     jacobian = lambda x: np.concatenate((
-            #               self._get_jacobian_residual_slice_neighbours_fit(x),
-            #               alpha_parameter/alpha_neighbour * self._get_jacobian_residual_regularization(x)
-            #         ))
+            else:
+                jacobian = lambda x: np.concatenate((
+                          self._get_jacobian_residual_slice_neighbours_fit(x),
+                          alpha_parameter/alpha_neighbour * self._get_jacobian_residual_parameters(x)
+                    ))
             
         else:
 
             if alpha_reference <= 0:
                 raise ErrorValue("A weight of alpha_reference <= 0 is not meaningful in case reference is given")
             
-            if alpha_neighbour is 0 and alpha_parameter is 0:
+            if abs(alpha_neighbour) < self._ZERO and abs(alpha_parameter) < self._ZERO:
                 jacobian = lambda x: self._get_jacobian_residual_reference_fit(x)
             
-            elif alpha_neighbour > 0 and alpha_parameter is 0:
+            elif alpha_neighbour > self._ZERO and abs(alpha_parameter) < self._ZERO:
                 jacobian = lambda x: np.concatenate((
                           self._get_jacobian_residual_reference_fit(x),
                           alpha_neighbour/alpha_reference * self._get_jacobian_residual_slice_neighbours_fit(x)
                     ))
             
-            # elif alpha_neighbour is 0 and alpha_parameter > 0:
-            #     jacobian = lambda x: np.concatenate((
-            #               self._get_jacobian_residual_reference_fit(x),
-            #               alpha_paramete/ralpha_reference * self._get_jacobian_residual_regularization(x)
-            #         ))
+            elif abs(alpha_neighbour) < self._ZERO and alpha_parameter > self._ZERO:
+                jacobian = lambda x: np.concatenate((
+                          self._get_jacobian_residual_reference_fit(x),
+                          alpha_parameter/alpha_reference * self._get_jacobian_residual_parameters(x)
+                    ))
             
 
-            # elif alpha_neighbour > 0 and alpha_parameter > 0:
-            #     jacobian = lambda x: np.concatenate((
-            #               self._get_jacobian_residual_reference_fit(x),
-            #               alpha_neighbour/alpha_reference * self._get_jacobian_residual_slice_neighbours_fit(x),
-            #               alpha_parameter/alpha_reference * self._get_jacobian_residual_regularization(x)
-            #         ))
+            elif alpha_neighbour > self._ZERO and alpha_parameter > self._ZERO:
+                jacobian = lambda x: np.concatenate((
+                          self._get_jacobian_residual_reference_fit(x),
+                          alpha_neighbour/alpha_reference * self._get_jacobian_residual_slice_neighbours_fit(x),
+                          alpha_parameter/alpha_reference * self._get_jacobian_residual_parameters(x)
+                    ))
 
         return jacobian
 
 
-    def _get_residual_regularization(self, parameters_vec):
-        return parameters_vec - self._parameters0_vec
+    ##
+    #       Gets the residual reference fit.
+    # \date       2016-11-08 20:37:49+0000
+    #
+    # \param      self            The object
+    # \param      parameters_vec  The parameters vector
+    #
+    # \return     The residual reference fit.
+    #
+    def _get_residual_reference_fit(self, parameters_vec):
+
+        ## Allocate memory for residual
+        residual = np.zeros((self._N_slices, self._N_slice_voxels))
+        
+        ## Reshape parameters for easier access
+        parameters = parameters_vec.reshape(-1, self._optimization_dofs)
+
+        ## Compute residuals between each slice and reference
+        for i in range(0, self._N_slices):
+            
+            ## Get slice_i(T(theta_i, x))
+            self._transforms_2D_sitk[i].SetParameters(parameters[i,0:self._transform_type_dofs])
+            slice_i_sitk = sitk.Resample(self._slices_2D[i].sitk, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], self._interpolator_sitk)
+            slice_i_nda = sitk.GetArrayFromImage(slice_i_sitk)
+
+            ## Correct intensities according to chosen model
+            slice_i_nda = self._correct_intensity[self._intensity_correction_type](slice_i_nda, parameters[i, self._transform_type_dofs:])
+
+            ## Compute residual slice_i(T(theta_i, x)) - ref(x))
+            residual_slice_nda = slice_i_nda - self._reference_nda[i,:,:]
+            
+            if self._use_stack_mask:
+                slice_i_sitk_mask = sitk.Resample(self._slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
+                slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
+
+                residual_slice_nda *= slice_i_nda_mask
+
+            if self._use_reference_mask:
+                residual_slice_nda *= self._reference_nda_mask[i,:,:]
+
+            # ph.plot_2D_array_list([residual_slice_nda, slice_i_nda_mask, self._reference_nda_mask[i,:,:]]) 
+            # ph.pause()
+
+            ## Set residual for current slice difference
+            residual[i,:] = residual_slice_nda.flatten()
+
+        return residual.flatten()
 
 
     def _get_residual_slice_neighbours_fit(self, parameters_vec):
@@ -318,54 +415,35 @@ class IntraStackRegistration(StackRegistrationBase):
 
         return residual.flatten()        
 
-
-    ##
-    #       Gets the residual reference fit.
-    # \date       2016-11-08 20:37:49+0000
-    #
-    # \param      self            The object
-    # \param      parameters_vec  The parameters vector
-    #
-    # \return     The residual reference fit.
-    #
-    def _get_residual_reference_fit(self, parameters_vec):
-
-        ## Allocate memory for residual
-        residual = np.zeros((self._N_slices, self._N_slice_voxels))
+    
+    def _get_residual_parameters(self, parameters_vec):
         
         ## Reshape parameters for easier access
         parameters = parameters_vec.reshape(-1, self._optimization_dofs)
+        
+        parameters_reference = np.zeros(parameters.shape)
+        
+        ##
+        parameters_reference[:, 0: self._transform_type_dofs] = self._parameters_reference_transform[self._transform_type]
+        parameters_reference[:,self._transform_type_dofs:] = self._parameters_reference_intensity_correction[self._intensity_correction_type]
 
-        ## Compute residuals between each slice and reference
-        for i in range(0, self._N_slices):
-            
-            ## Get slice_i(T(theta_i, x))
-            self._transforms_2D_sitk[i].SetParameters(parameters[i,0:self._transform_type_dofs])
-            slice_i_sitk = sitk.Resample(self._slices_2D[i].sitk, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], self._interpolator_sitk)
-            slice_i_nda = sitk.GetArrayFromImage(slice_i_sitk)
+        # return parameters_vec/self._parameters0_vec
+        return parameters_vec-parameters_reference.flatten()
 
-            ## Correct intensities according to chosen model
-            slice_i_nda = self._correct_intensity[self._intensity_correction_type](slice_i_nda, parameters[i, self._transform_type_dofs:])
 
-            ## Compute residual slice_i(T(theta_i, x)) - ref(x))
-            residual_slice_nda = slice_i_nda - self._reference_nda[i,:,:]
-            
-            if self._use_stack_mask:
-                slice_i_sitk_mask = sitk.Resample(self._slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
-                slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
+    def _get_jacobian_residual_parameters(self, parameters_vec):
+        ## Reshape parameters for easier access
+        parameters = parameters_vec.reshape(-1, self._optimization_dofs)
+        
+        parameters_reference = np.zeros(parameters.shape)
 
-                residual_slice_nda *= slice_i_nda_mask
+        # parameters_reference[:, self._transform_type_dofs:] = np.array([10.,50.])        
 
-            if self._use_reference_mask:
-                residual_slice_nda *= self._reference_nda_mask[i,:,:]
+        ## Allocate memory for Jacobian of residual
+        jacobian = np.eye(self._N_slices*self._optimization_dofs)
+        # jacobian = np.diag(1/parameters_reference.flatten())
 
-            # ph.plot_2D_array_list([residual_slice_nda, slice_i_nda_mask, self._reference_nda_mask[i,:,:]]) 
-            # ph.pause()
-
-            ## Set residual for current slice difference
-            residual[i,:] = residual_slice_nda.flatten()
-
-        return residual.flatten()
+        return jacobian
 
 
     def _get_jacobian_slice(self, slice, transform_sitk, transform_itk):
@@ -414,12 +492,12 @@ class IntraStackRegistration(StackRegistrationBase):
 
 
     def _get_jacobian_intensity_correction_linear(self, jacobian_slice, slice_sitk, mask_nda):
-        slice_nda = sitk.GetArrayFromImage(slice_sitk).reshape(self._N_slice_voxels, -1)
+        slice_nda = sitk.GetArrayFromImage(slice_sitk)
 
         if mask_nda is not None:
             slice_nda *= mask_nda
 
-        jacobian_slice = np.concatenate((jacobian_slice, slice_nda), axis=1)
+        jacobian_slice = np.concatenate((jacobian_slice, slice_nda.reshape(self._N_slice_voxels, -1)), axis=1)
 
         return jacobian_slice
 
@@ -530,7 +608,7 @@ class IntraStackRegistration(StackRegistrationBase):
     #
     def _get_initial_transforms_and_parameters_geometry_moments(self):
 
-        initializer_type_sitk = self._dictionary_initializer_type_sitk[self._initializer_type]
+        transform_initializer_type_sitk = self._dictionary_transform_initializer_type_sitk[self._transform_initializer_type]
 
         ## Create list of identity transforms
         transforms_2D_sitk = [self._new_transform_sitk[self._transform_type]()] * self._N_slices
@@ -558,7 +636,7 @@ class IntraStackRegistration(StackRegistrationBase):
                 fixed_sitk = slice_im1_sitk
                 moving_sitk = self._slices_2D[i].sitk
                 initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
-                operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + initializer_type_sitk)
+                operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + transform_initializer_type_sitk)
                 
                 ## Get transform
                 initial_transform_sitk = sitk.CenteredTransformInitializer(fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
@@ -580,7 +658,7 @@ class IntraStackRegistration(StackRegistrationBase):
                 fixed_sitk = self._slices_2D_reference[i].sitk
                 moving_sitk = self._slices_2D[i].sitk
                 initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
-                operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + initializer_type_sitk)
+                operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + transform_initializer_type_sitk)
                 
                 ## Get transform
                 initial_transform_sitk = sitk.CenteredTransformInitializer(fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
@@ -593,7 +671,7 @@ class IntraStackRegistration(StackRegistrationBase):
 
 
     ##
-    #       Gets the initial intensity correction parameters.
+    # Gets the initial intensity correction parameters.
     # \date       2016-11-10 02:38:17+0000
     #
     # \param      self  The object
@@ -601,30 +679,49 @@ class IntraStackRegistration(StackRegistrationBase):
     # \return     The initial intensity correction parameters as (N_slices x
     #             DOF)-array with DOF being either 1 (linear) or 2 (affine)
     #
-    def _get_initial_intensity_correction_parameters(self):
+    def _get_initial_intensity_correction_parameters_None(self):
+        
+        ## Set intensity correction parameters to identity
+        if self._intensity_correction_type in ["linear"]:
+            return np.ones((self._N_slices,1))
+        
+        ## affine intensity correction type requires additional column (but set to zero)
+        elif self._intensity_correction_type in ["affine"]:
+            return np.concatenate((np.ones((self._N_slices,1)), np.zeros((self._N_slices,1))), axis=1)
+        
+    def _get_initial_intensity_correction_parameters_linear(self):
         
         if self._reference is None:
-            if self._intensity_correction_type in ["linear"]:
-                return np.ones((self._N_slices,1))
-            elif self._intensity_correction_type in ["affine"]:
-                return np.ones((self._N_slices,2))
+            print("No reference given. Initial intensity correction parameters are set to identity")
+            intensity_corrections_coefficients = self._get_initial_intensity_correction_parameters_None()
 
         else:
-            intensity_correction = ic.IntensityCorrection(stack=self._stack, reference=self._reference, use_individual_slice_correction=True, use_verbose=False)
-
-            if self._intensity_correction_type in ["linear"]:
-                intensity_correction.run_linear_intensity_correction()
-
-            elif self._intensity_correction_type in ["affine"]:
-                intensity_correction.run_affine_intensity_correction()
-
+            intensity_correction = ic.IntensityCorrection(stack=self._stack, reference=self._reference, use_individual_slice_correction=False, use_verbose=False)
+            intensity_correction.run_linear_intensity_correction()
             intensity_corrections_coefficients = intensity_correction.get_intensity_correction_coefficients()
 
-            return intensity_corrections_coefficients
+            ## affine intensity correction type requires additional column (but set to zero)
+            if self._intensity_correction_type in ["affine"]:
+                intensity_corrections_coefficients = np.concatenate((intensity_corrections_coefficients, np.zeros((self._N_slices,1))), axis=1)
+        
+        return intensity_corrections_coefficients
+
+    def _get_initial_intensity_correction_parameters_affine(self):
+
+        if self._reference is not None:
+            intensity_correction = ic.IntensityCorrection(stack=self._stack, reference=self._reference, use_individual_slice_correction=False, use_verbose=False)
+            intensity_correction.run_affine_intensity_correction()
+            intensity_corrections_coefficients = intensity_correction.get_intensity_correction_coefficients()
+
+        else:
+            print("No reference given. Initial intensity correction parameters are set to identity")
+            intensity_corrections_coefficients = np.ones((self._N_slices,1))
+        
+        return intensity_corrections_coefficients
 
 
     ##
-    #       Correct intensity implementations
+    # Correct intensity implementations
     # \date       2016-11-10 23:01:34+0000
     #
     # \param      self                     The object
@@ -737,6 +834,9 @@ class IntraStackRegistration(StackRegistrationBase):
 
             ## Update motion correction of slice
             slices_corrected[i].update_motion_correction(affine_transform_sitk)
+
+            ##
+
             
             ## Keep slice transform
             slice_transforms_sitk[i] = affine_transform_sitk

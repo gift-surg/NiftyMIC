@@ -193,5 +193,4 @@ if __name__ == '__main__':
     jacobian_2 = np.sum((dslice_nda[:,:,np.newaxis]*dT_nda),axis=1)
     print ph.stop_timing(time0)
 
-    print (jacobian - jacobian_2).sum()
 

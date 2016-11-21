@@ -24,6 +24,7 @@ import utilities.PythonHelper as ph
 os.environ['SITK_SHOW_COMMAND'] = "/usr/local/bin/itksnap"
 # os.environ['SITK_SHOW_COMMAND'] = "itksnap"
 
+# np.set_printoptions(precision=3)
 
 ## AddTransform does not work! Python always crashes! Moreover, the composition
 # of AddTransform is stack based, i.e. first in -- last applied. Wtf!?
@@ -480,6 +481,40 @@ def get_numpy_from_itk_array(array_itk):
 
 
 ##
+# Gets the indices array to flattened sitk image data array.
+# \date       2016-11-21 00:26:27+0000
+#
+# Get an (image_dimension x N_voxels)-numpy array which holds the indices 
+# corresponding to a sitk.GetArrayFromImage(image_sitk).flatten() data array
+# 
+# \param      image_sitk  The image sitk
+#
+# \return     (image_dimension x N_voxels)-numpy array 
+#
+def get_indices_array_to_flattened_sitk_image_data_array(image_sitk):
+
+    shape = np.array(image_sitk.GetSize())[::-1]
+    dim = image_sitk.GetDimension()
+
+    x = np.arange(0,shape[0])
+    y = np.arange(0,shape[1])
+    if dim is 3:
+        z = np.arange(0,shape[2])
+    
+    if dim is 2:
+        X,Y = np.meshgrid(x,y, indexing='ij') # 'ij' yields vertical x-coordinate for image!
+        
+        ## Index array (2xN_voxels) of image in voxel space
+        indices = np.array([Y.flatten(), X.flatten()])
+    else:
+        X,Y,Z = np.meshgrid(x,y,z, indexing='ij') # 'ij' yields vertical x-coordinate for image!
+        
+        ## Index array (3xN_voxels) of image in voxel space
+        indices = np.array([Z.flatten(), Y.flatten(), X.flatten()])
+
+    return indices
+
+##
 # Gets the numpy array of jacobian itk transform applied on stack.
 # \date          2016-11-18 12:00:05+0000
 #
@@ -502,29 +537,15 @@ def get_numpy_from_itk_array(array_itk):
 def get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(transform_itk, image_sitk, points=None, jacobian_transform_on_image_nda=None):
 
     ## Shape of corresponding image data array
-    shape = np.array(image_sitk.GetSize())[::-1]
+    shape = np.array(image_sitk.GetSize())
+    dim = image_sitk.GetDimension()
 
     ## Shall reduce the computational burden in case points stay the same.
     ## However, it does not add much to the computational time
     if points is None:
-        dim = image_sitk.GetDimension()
 
-        x = np.arange(0,shape[0])
-        y = np.arange(0,shape[1])
-        if dim is 3:
-            z = np.arange(0,shape[2])
-        
-        if dim is 2:
-            X,Y = np.meshgrid(x,y, indexing='ij') # 'ij' yields vertical x-coordinate for image!
-            
-            ## Index array (2xN_voxels) of image in voxel space
-            # indices = np.array([Y.flatten(), X.flatten()])
-            indices = np.array([X.flatten(), Y.flatten()])
-        else:
-            X,Y,Z = np.meshgrid(x,y,z, indexing='ij') # 'ij' yields vertical x-coordinate for image!
-            
-            ## Index array (3xN_voxels) of image in voxel space
-            indices = np.array([Z.flatten(), Y.flatten(), X.flatten()])
+        ## Index array (dimension x N_voxels) of image in voxel space
+        indices = get_indices_array_to_flattened_sitk_image_data_array(image_sitk)
         
         ## Get transform from voxel to image space coordinates
         A = get_sitk_affine_matrix_from_sitk_image(image_sitk).reshape(dim,dim)
