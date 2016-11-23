@@ -1,9 +1,10 @@
 ##
-## \file IntensityCorrection.py
-#  \brief Class containing functions to correct for intensities
-# 
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date Nov 2016
+# \file IntensityCorrection.py
+# \brief      Class containing functions to correct for intensities
+#
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       Nov 2016
+#
 
 
 ## Import libraries

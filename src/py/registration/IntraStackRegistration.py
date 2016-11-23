@@ -235,6 +235,8 @@ class IntraStackRegistration(StackRegistrationBase):
 
     def _print_info_text(self):
         print("Minimization via least_squares solver")
+        print("\tTransform type: " + self._transform_type)
+        print("\tIntensity correction type: " + str(self._intensity_correction_type))
         print("\tMethod: " + self._optimizer_method)
         print("\tLoss: " + self._optimizer_loss)
         print("\tMaximum number of function evaluations: " + str(self._optimizer_nfev_max))
@@ -885,9 +887,15 @@ class IntraStackRegistration(StackRegistrationBase):
                 moving_sitk = self._slices_2D[i].sitk
                 initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
                 operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + transform_initializer_type_sitk)
-                
+                    
                 ## Get transform
-                initial_transform_sitk = sitk.CenteredTransformInitializer(fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
+                try:
+                    ## For operation_mode_sitk="MOMENTS" errors can occur!
+                    initial_transform_sitk = sitk.CenteredTransformInitializer(fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
+                except:
+                    print("WARNING: Slice %d/%d" %(i, self._N_slices-1))
+                    print("\tsitk.CenteredTransformInitializerFilter with " + transform_initializer_type_sitk + " does not work. Identity transform is used instead for initialization")
+                    initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
                 transforms_2D_sitk[i] = eval("sitk." + initial_transform_sitk.GetName() + "(initial_transform_sitk)")
 
                 ## Get parameters
@@ -909,7 +917,13 @@ class IntraStackRegistration(StackRegistrationBase):
                 operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + transform_initializer_type_sitk)
                 
                 ## Get transform
-                initial_transform_sitk = sitk.CenteredTransformInitializer(fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
+                try:
+                    ## For operation_mode_sitk="MOMENTS" errors can occur!
+                    initial_transform_sitk = sitk.CenteredTransformInitializer(fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
+                except:
+                    print("WARNING: Slice %d/%d" %(i, self._N_slices-1))
+                    print("\tsitk.CenteredTransformInitializerFilter with " + transform_initializer_type_sitk + " does not work. Identity transform is used instead for initialization")
+                    initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
                 transforms_2D_sitk[i] = eval("sitk." + initial_transform_sitk.GetName() + "(initial_transform_sitk)")
 
                 ## Get parameters

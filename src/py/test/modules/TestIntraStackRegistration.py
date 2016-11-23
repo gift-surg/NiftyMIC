@@ -331,6 +331,20 @@ class TestIntraStackRegistration(unittest.TestCase):
         #     np.linalg.norm(nda_diff)
         # , decimals = self.accuracy), 0)
 
+        ## 2) Test slice transforms
+        slice_transforms_sitk = inplane_registration.get_slice_transforms_sitk()
+
+        stack_tmp = st.Stack.from_stack(stack_corrupted)
+        stack_tmp.update_motion_correction_of_slices(slice_transforms_sitk)
+
+        stack_diff_sitk = stack_tmp.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk - stack_registered.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk
+
+        stack_diff_nda = sitk.GetArrayFromImage(stack_diff_sitk)
+
+        self.assertEqual(np.round(
+            np.linalg.norm(stack_diff_nda)
+        , decimals = 8), 0)
+
     
     def test_inplane_rigid_alignment_to_reference(self):
 
@@ -384,6 +398,20 @@ class TestIntraStackRegistration(unittest.TestCase):
         #     np.linalg.norm(nda_diff)
         # , decimals = self.accuracy), 0)
     
+        ## 2) Test slice transforms
+        slice_transforms_sitk = inplane_registration.get_slice_transforms_sitk()
+
+        stack_tmp = st.Stack.from_stack(stack_corrupted)
+        stack_tmp.update_motion_correction_of_slices(slice_transforms_sitk)
+
+        stack_diff_sitk = stack_tmp.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk - stack_registered.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk
+
+        stack_diff_nda = sitk.GetArrayFromImage(stack_diff_sitk)
+
+        self.assertEqual(np.round(
+            np.linalg.norm(stack_diff_nda)
+        , decimals = 8), 0)
+
     
     def test_inplane_rigid_alignment_to_reference_with_intensity_correction_linear(self):
 
@@ -438,6 +466,21 @@ class TestIntraStackRegistration(unittest.TestCase):
             np.linalg.norm(parameters[:,-1] - intensity_scale)
         , decimals = 0), 0)
 
+
+        ## 2) Test slice transforms
+        slice_transforms_sitk = inplane_registration.get_slice_transforms_sitk()
+
+        stack_tmp = st.Stack.from_stack(stack_corrupted)
+        stack_tmp.update_motion_correction_of_slices(slice_transforms_sitk)
+
+        stack_diff_sitk = stack_tmp.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk - stack_registered.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk
+
+        stack_diff_nda = sitk.GetArrayFromImage(stack_diff_sitk)
+
+        self.assertEqual(np.round(
+            np.linalg.norm(stack_diff_nda)
+        , decimals = 8), 0)
+    
     
     def test_inplane_rigid_alignment_to_reference_with_intensity_correction_affine(self):
 
@@ -490,6 +533,21 @@ class TestIntraStackRegistration(unittest.TestCase):
         self.assertEqual(np.round(
             np.linalg.norm(parameters[:,-2:] - np.array([intensity_scale, intensity_bias]))
         , decimals = 0), 0)
+
+
+        ## 2) Test slice transforms
+        slice_transforms_sitk = inplane_registration.get_slice_transforms_sitk()
+
+        stack_tmp = st.Stack.from_stack(stack_corrupted)
+        stack_tmp.update_motion_correction_of_slices(slice_transforms_sitk)
+
+        stack_diff_sitk = stack_tmp.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk - stack_registered.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk
+
+        stack_diff_nda = sitk.GetArrayFromImage(stack_diff_sitk)
+
+        self.assertEqual(np.round(
+            np.linalg.norm(stack_diff_nda)
+        , decimals = 8), 0)
 
     """
     def test_inplane_similarity_alignment_to_reference(self):
@@ -568,4 +626,19 @@ class TestIntraStackRegistration(unittest.TestCase):
         # self.assertEqual(np.round(
         #     np.linalg.norm(nda_diff)
         # , decimals = self.accuracy), 0)
+
+
+        ## 2) Test slice transforms
+        slice_transforms_sitk = inplane_registration.get_slice_transforms_sitk()
+
+        stack_tmp = st.Stack.from_stack(stack_corrupted)
+        stack_tmp.update_motion_correction_of_slices(slice_transforms_sitk)
+
+        stack_diff_sitk = stack_tmp.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk - stack_registered.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk
+
+        stack_diff_nda = sitk.GetArrayFromImage(stack_diff_sitk)
+
+        self.assertEqual(np.round(
+            np.linalg.norm(stack_diff_nda)
+        , decimals = 8), 0)
     
