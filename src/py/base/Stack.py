@@ -385,7 +385,8 @@ class Stack:
     # \param      affine_transforms_sitk  List of sitk transform instances
     #
     def update_motion_correction_of_slices(self, affine_transforms_sitk):
-        if type(affine_transforms_sitk) is list and len(affine_transforms_sitk) is self._N_slices:
+        if [type(affine_transforms_sitk) is list or type(affine_transforms_sitk) is np.array] \
+        and len(affine_transforms_sitk) is self._N_slices:
             for i in range(0, self._N_slices):
                 self._slices[i].update_motion_correction(affine_transforms_sitk[i])
                     

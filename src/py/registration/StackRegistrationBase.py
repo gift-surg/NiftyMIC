@@ -465,15 +465,9 @@ class StackRegistrationBase(object):
         ## Apply motion correction and compute slice transforms
         self._apply_motion_correction()
 
+    @abstractmethod
     def _print_info_text(self):
-        print("Minimization via least_squares solver")
-        print("\tMethod: " + self._optimizer_method)
-        print("\tLoss: " + self._optimizer_loss)
-        print("\tMaximum number of function evaluations: " + str(self._optimizer_nfev_max))
-        print("\tStack mask used: " + str(self._use_stack_mask))
-        if self._reference is not None:
-            print("\tReference mask used: " + str(self._use_reference_mask))
-        print("\tRegularization coefficients: %g (reference), %g (neighbour), %g (parameter)" %(self._alpha_reference, self._alpha_neighbour, self._alpha_parameter))
+        pass
 
 
     ##

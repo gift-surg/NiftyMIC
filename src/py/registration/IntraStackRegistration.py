@@ -205,22 +205,43 @@ class IntraStackRegistration(StackRegistrationBase):
 
     def get_setting_specific_filename(self, prefix="_"):
 
+        dictionary_method = {
+            "trf"       : "TRF",
+            "dogbox"    : "DogBox",
+            "lm"        : "LM"
+        }
+        dictionary_loss = {
+            "linear"    : "Linear",
+            "soft_l1"   : "Softl1",
+            "huber"     : "Huber"
+        }
+
         ## Build filename
         filename  = prefix
         filename += self._transform_type.capitalize()
-        filename += "_" + str(self._intensity_correction_type)
-        filename += "_Optimizer" 
-        filename += self._optimizer_method.capitalize()
-        filename += re.sub("_", "", self._optimizer_loss.capitalize()) # replace "_" in "soft_l1"
+        filename += "_IC" + str(self._intensity_correction_type)
+        filename += "_Opt" 
+        filename += dictionary_method[self._optimizer_method]
+        filename += dictionary_loss[self._optimizer_loss]
         filename += "_Nfevmax" + str(self._optimizer_nfev_max)
-        filename += "_AlphaReference" + "%g" %(self._alpha_reference)
-        filename += "_AlphaNeighbour" + "%g" %(self._alpha_neighbour)
-        filename += "_AlphaParameter" + "%g" %(self._alpha_parameter)
+        filename += "_alphaR" + "%.g" %(self._alpha_reference)
+        filename += "_alphaN" + "%.g" %(self._alpha_neighbour)
+        filename += "_alphaP" + "%.g" %(self._alpha_parameter)
 
         ## Replace dots by 'p'
         filename = filename.replace(".","p")
 
         return filename
+
+    def _print_info_text(self):
+        print("Minimization via least_squares solver")
+        print("\tMethod: " + self._optimizer_method)
+        print("\tLoss: " + self._optimizer_loss)
+        print("\tMaximum number of function evaluations: " + str(self._optimizer_nfev_max))
+        print("\tStack mask used: " + str(self._use_stack_mask))
+        if self._reference is not None:
+            print("\tReference mask used: " + str(self._use_reference_mask))
+        print("\tRegularization coefficients: %.g (reference), %.g (neighbour), %.g (parameter)" %(self._alpha_reference, self._alpha_neighbour, self._alpha_parameter))
 
     ##
     # { function_description }
@@ -1025,7 +1046,7 @@ class IntraStackRegistration(StackRegistrationBase):
             slice_3D = sl.Slice.from_slice(slices_3D[i])
 
             ## Get transform to get axis aligned slice of original stack
-            T_PP = self._get_TPP_transform(stack.sitk[:,:,i:i+1])
+            T_PP = self._get_TPP_transform(slice_3D.sitk)
 
             ## Get current transform from image to physical space of slice
             T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(slice_3D.sitk)
@@ -1139,7 +1160,8 @@ class IntraStackRegistration(StackRegistrationBase):
             transform_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(transform_2D_sitk)
 
             ## Get transform to get axis aligned slice
-            T_PP = self._get_TPP_transform(self._stack.sitk[:,:,i:i+1])
+            # T_PP = self._get_TPP_transform(self._stack.sitk[:,:,i:i+1])
+            T_PP = self._get_TPP_transform(slices[i].sitk)
 
             ## Compose to 3D in-plane transform
             affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(transform_3D_sitk, T_PP)
@@ -1199,7 +1221,8 @@ class IntraStackRegistration(StackRegistrationBase):
             rigid_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(rigid_2D_sitk)
 
             ## Get transform to get axis aligned slice
-            T_PP = self._get_TPP_transform(self._stack.sitk[:,:,i:i+1])
+            # T_PP = self._get_TPP_transform(self._stack.sitk[:,:,i:i+1])
+            T_PP = self._get_TPP_transform(slices[i].sitk)
 
             ## Compose to 3D in-plane transform
             affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(rigid_3D_sitk, T_PP)
