@@ -223,6 +223,9 @@ class IntraStackRegistration(StackRegistrationBase):
         filename += "_Opt" 
         filename += dictionary_method[self._optimizer_method]
         filename += dictionary_loss[self._optimizer_loss]
+        filename += "_maskStack" + str(int(self._use_stack_mask))
+        if self._reference is not None:
+            filename += "_maskRef" + str(int(self._use_reference_mask))
         filename += "_Nfevmax" + str(self._optimizer_nfev_max)
         filename += "_alphaR" + "%.g" %(self._alpha_reference)
         filename += "_alphaN" + "%.g" %(self._alpha_neighbour)
