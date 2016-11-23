@@ -16,6 +16,7 @@ import sys
 import SimpleITK as sitk
 import itk
 import numpy as np
+import re
 from scipy.optimize import least_squares
 import time
 from datetime import timedelta
@@ -202,6 +203,24 @@ class IntraStackRegistration(StackRegistrationBase):
             print("\tell^2-residual sum_k ||theta_k - theta_k0||_2^2 = %.3e" %(np.sum(res**2)))
 
 
+    def get_setting_specific_filename(self, prefix="_"):
+
+        ## Build filename
+        filename  = prefix
+        filename += self._transform_type.capitalize()
+        filename += "_" + str(self._intensity_correction_type)
+        filename += "_Optimizer" 
+        filename += self._optimizer_method.capitalize()
+        filename += re.sub("_", "", self._optimizer_loss.capitalize()) # replace "_" in "soft_l1"
+        filename += "_Nfevmax" + str(self._optimizer_nfev_max)
+        filename += "_AlphaReference" + "%g" %(self._alpha_reference)
+        filename += "_AlphaNeighbour" + "%g" %(self._alpha_neighbour)
+        filename += "_AlphaParameter" + "%g" %(self._alpha_parameter)
+
+        ## Replace dots by 'p'
+        filename = filename.replace(".","p")
+
+        return filename
 
     ##
     # { function_description }

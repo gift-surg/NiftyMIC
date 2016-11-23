@@ -16,6 +16,7 @@ from ast import literal_eval
 
 ## Import modules from src-folder
 import utilities.SimpleITKHelper as sitkh
+import base.Stack as st
 import base.PSF as psf
 
 
@@ -129,8 +130,10 @@ class RegistrationSimpleITK:
 
     ## Get registered image
     #  \return registered image as Stack object
-    def get_registered_image(self):
-        return self._registered_image
+    def get_corrected_stack(self):
+        corrected_stack = st.Stack.from_stack(self._fixed)
+        corrected_stack.update_motion_correction(self._transform_sitk)
+        return corrected_stack
   
 
     ## Set interpolator

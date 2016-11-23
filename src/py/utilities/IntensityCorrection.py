@@ -108,6 +108,17 @@ class IntensityCorrection(object):
 
 
     ##
+    # Sets the use individual slice correction.
+    # \date       2016-11-22 22:47:47+0000
+    #
+    # \param      self  The object
+    # \param      flag  The flag
+    #
+    def use_individual_slice_correction(self, flag):
+        self._use_individual_slice_correction = flag
+
+
+    ##
     #       Gets the intensity corrected stack
     # \date       2016-11-05 22:58:50+0000
     #
@@ -200,12 +211,15 @@ class IntensityCorrection(object):
         nda, nda_masked, nda_reference_masked = self._get_data_arrays_prior_to_intensity_correction()
 
         if self._use_individual_slice_correction:
+            print("Run " + correction_model + " intensity correction for each slice individually")
             for i in range(0, N_slices):
                 if self._use_verbose:
-                    print("Slice %2d/%d:" %(i, self._stack.get_number_of_slices()-1))
+                    sys.stdout.write("Slice %2d/%d: " %(i, self._stack.get_number_of_slices()-1))
+                    sys.stdout.flush()
                 nda[i,:,:], correction_coefficients[i,:] = self._apply_intensity_correction[correction_model](nda[i,:,:], nda_masked[i,:,:], nda_reference_masked[i,:,:])
 
         else:
+            print("Run " + correction_model + " intensity correction uniformly for entire stack")
             nda, cc = self._apply_intensity_correction[correction_model](nda, nda_masked, nda_reference_masked)
             correction_coefficients[:,] = np.tile(cc, (N_slices,1))
         ## Create Stack instance with correct image header information
@@ -239,7 +253,7 @@ class IntensityCorrection(object):
         c1, c0 = B.dot(y)
 
         if self._use_verbose:
-            print("\t(c1, c0) = (%.3f, %.3f)" %(c1, c0))
+            print("(c1, c0) = (%.3f, %.3f)" %(c1, c0))
 
         return nda*c1 + c0, np.array([c1,c0])
 
@@ -268,7 +282,7 @@ class IntensityCorrection(object):
         c1 = x.dot(y)/x.dot(x)
 
         if self._use_verbose:
-            print("\tc1 = %.3f" %(c1))
+            print("c1 = %.3f" %(c1))
         
         return nda*c1, c1
 

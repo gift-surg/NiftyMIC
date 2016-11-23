@@ -473,7 +473,7 @@ class StackRegistrationBase(object):
         print("\tStack mask used: " + str(self._use_stack_mask))
         if self._reference is not None:
             print("\tReference mask used: " + str(self._use_reference_mask))
-        print("\tRegularization coefficients: %s (reference), %s (neighbour), %s (parameter)" %(str(self._alpha_reference), str(self._alpha_neighbour), str(self._alpha_parameter)))
+        print("\tRegularization coefficients: %g (reference), %g (neighbour), %g (parameter)" %(self._alpha_reference, self._alpha_neighbour, self._alpha_parameter))
 
 
     ##

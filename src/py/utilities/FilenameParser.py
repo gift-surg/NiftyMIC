@@ -173,6 +173,21 @@ class FilenameParser(object):
             filenames = filenames.split(".")[0]
 
         ## Subtract the (known) filename-extension
-        # filenames = [re.sub(filename_extension,"",f) for f in filenames]
+
+        return filenames
+
+
+    ##
+    # Replace certain pattern in list of filenames
+    # \date       2016-11-22 01:33:47+0000
+    #
+    # \param      self       The object
+    # \param      filenames  The filenames
+    # \param      pattern    The pattern
+    #
+    # \return     { description_of_the_return_value }
+    #
+    def replace_pattern(self, filenames, pattern, replacement=""):
+        filenames = [re.sub(pattern,replacement,f) for f in filenames]
 
         return filenames

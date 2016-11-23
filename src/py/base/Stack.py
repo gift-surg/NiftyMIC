@@ -362,13 +362,13 @@ class Stack:
         origin = self.sitk.GetOrigin()
         direction = self.sitk.GetDirection()
 
-        self.sitk_mask.SetOrigin(orign)
+        self.sitk_mask.SetOrigin(origin)
         self.sitk_mask.SetDirection(direction)
 
-        self.itk.SetOrigin(orign)
+        self.itk.SetOrigin(origin)
         self.itk.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
 
-        self.itk_mask.SetOrigin(orign)
+        self.itk_mask.SetOrigin(origin)
         self.itk_mask.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
 
         ## Update slices

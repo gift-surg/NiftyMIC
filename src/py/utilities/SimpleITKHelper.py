@@ -172,20 +172,9 @@ def get_sitk_affine_transform_from_sitk_image(image_sitk):
     ## T(i) = R*S*i + origin
     return sitk.AffineTransform(A,t)
 
-##
-# afadfds 
-# \date       2016-11-18 12:41:12+0000
-#
-# \param      a     { parameter_description }
-# \param      b     { parameter_description }
-#
-# \return     { description_of_the_return_value }
-#
-def bla(a,b):
-    pass
 
-##  adfdsf
-# \brief      Gets the sitk affine matrix from sitk image.
+##
+# Gets the sitk affine matrix from sitk image.
 # \date       2016-11-06 19:07:03+0000
 #
 #
@@ -981,4 +970,46 @@ def show_itk_image(image_itk, segmentation=None, overlay=None, title="test"):
     os.system(cmd)
 
 
+##
+# Gets the downsampled sitk image.
+# \date       2016-11-21 20:50:59+0000
+#
+# \param      image_sitk            The image sitk
+# \param      downsampling_factors  The downsampling factors in x,y and z
+#                                   direction as tuple
+# \param      interpolator          The interpolator
+# \param      default_pixel_value   The default pixel value
+# \param      new_spacing           The new spacing in x, y and z as tuple
+#
+# \return     The downsampled sitk image.
+#
+def get_downsampled_sitk_image(image_sitk, downsampling_factors=(1,1,1), interpolator="NearestNeighbor", default_pixel_value=0.0, new_spacing=None):
+
+    ## Read required information from original image:
+    dimension = image_sitk.GetDimension()
+    spacing = np.array(image_sitk.GetSpacing()).astype('double')
+    size = np.array(image_sitk.GetSize()).astype("int")
+
+    if new_spacing is not None:
+        downsampling_factors = new_spacing/spacing
+
+    else:
+        ## Convert to array
+        downsampling_factors = np.array(downsampling_factors).astype('double')
+
+    ## Choose interpolator
+    try:
+        interpolator_str = interpolator
+        interpolator = eval("sitk.sitk" + interpolator_str)
+    except:
+        raise ValueError("Error: interpolator is not known")
+
+    ## Define new image space
+    spacing_new = spacing*downsampling_factors[0:dimension]
+    size_new = np.round(size/downsampling_factors[0:dimension]).astype("int")
+
+    ## Resampling
+    image_sitk_resampled = sitk.Resample(image_sitk, size_new, eval("sitk.Euler" + str(dimension) + "DTransform()"), interpolator, image_sitk.GetOrigin(), spacing_new, image_sitk.GetDirection(), default_pixel_value, image_sitk.GetPixelIDValue())
+
+    return image_sitk_resampled
 
