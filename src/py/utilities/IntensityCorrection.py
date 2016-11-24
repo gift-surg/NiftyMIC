@@ -154,6 +154,8 @@ class IntensityCorrection(object):
     #
     def run_lower_percentile_capping_of_stack(self, percentile=10):
 
+        print("Cap lower intensities at %d%%-percentile" %(percentile))
+
         nda = sitk.GetArrayFromImage(self._stack.sitk)
 
         ## Clip lower intensity values

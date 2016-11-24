@@ -102,7 +102,10 @@ class FilenamesSelector(object):
         filenames_common = list(set(filenames_5yr_short).intersection(filenames_electronic_5yr_PD_short))
         print("\n%2d filenames where for both 5yr film and electronic version are available" %(len(filenames_common)))
 
-        return sorted(filenames_common), [subfolder]
+        ## Get full extension
+        filenames_5yr_common = [f + "-5yr" for f in filenames_common]
+
+        return sorted(filenames_common), [subfolder], filenames_5yr_common
 
 
     def _get_filenames_and_subfolders_10yr_where_electronic_version(self):
