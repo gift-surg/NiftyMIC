@@ -44,11 +44,13 @@ class IntraStackRegistration(StackRegistrationBase):
         ## Dictionaries to create new transform depending on the chosen transform type
         self._new_transform_sitk = {
             "rigid"     :   self._new_rigid_transform_sitk,
-            "similarity":   self._new_similarity_transform_sitk
+            "similarity":   self._new_similarity_transform_sitk,
+            "affine"    :   self._new_affine_transform_sitk
         }
         self._new_transform_itk = {
             "rigid"     :   self._new_rigid_transform_itk,
-            "similarity":   self._new_similarity_transform_itk
+            "similarity":   self._new_similarity_transform_itk,
+            "affine"    :   self._new_affine_transform_itk
         }
 
         ## Chosen intensity correction type
@@ -100,7 +102,8 @@ class IntraStackRegistration(StackRegistrationBase):
         ## Dictionary, to update the the slices according to the obtained registration
         self._apply_motion_correction_and_compute_slice_transforms = {
             "rigid"     :  self._apply_rigid_motion_correction_and_compute_slice_transforms,    
-            "similarity":  self._apply_similarity_motion_correction_and_compute_slice_transforms
+            "similarity":  self._apply_similarity_motion_correction_and_compute_slice_transforms,
+            "affine"    :  self._apply_affine_motion_correction_and_compute_slice_transforms
         }
 
         # self._parameters_prior_transform = {
@@ -121,8 +124,8 @@ class IntraStackRegistration(StackRegistrationBase):
     # \param      transform_type  The transform type
     #
     def set_transform_type(self, transform_type):
-        if transform_type not in ["rigid", "similarity"]:
-            raise ErrorValue("Transform type must either be 'rigid' or 'similarity'")
+        if transform_type not in self._new_transform_sitk.keys():
+            raise ValueError("Transform type " + transform_type + " not possible.\nAllowed values: " + str(self._new_transform_sitk.keys()))
         self._transform_type = transform_type
 
     def get_transform_type(self):
@@ -137,8 +140,8 @@ class IntraStackRegistration(StackRegistrationBase):
     # \param      flag  The flag
     #
     def set_intensity_correction_type(self, intensity_correction_type):
-        if intensity_correction_type not in [None, "linear", "affine"]:
-            raise ErrorValue("Intensity correction type must either be None, 'linear' or 'affine'")
+        if intensity_correction_type not in self._apply_intensity_correction.keys():
+            raise ValueError("Intensity correction type " + intensity_correction_type + " not possible.\nAllowed values: " + str(self._apply_intensity_correction.keys()))
         self._intensity_correction_type = intensity_correction_type
 
     def get_intensity_correction_type(self):
@@ -155,8 +158,8 @@ class IntraStackRegistration(StackRegistrationBase):
     #                                                    type
     #
     def set_intensity_correction_initializer_type(self, intensity_correction_initializer_type):
-        if intensity_correction_initializer_type not in [None, "linear", "affine"]:
-            raise ErrorValue("Intensity correction initializer type must either be None, 'linear' or 'affine'")
+        if intensity_correction_initializer_type not in self._apply_intensity_correction.keys():
+            raise ValueError("Intensity correction initializer type " + intensity_correction_initializer_type + " not possible.\nAllowed values: " + str(self._apply_intensity_correction.keys()))
         self._intensity_correction_initializer_type = intensity_correction_initializer_type
 
     def get_intensity_correction_initializer_type(self):
@@ -183,7 +186,7 @@ class IntraStackRegistration(StackRegistrationBase):
         elif coefficients.size is 2:
             self._prior_intensity_correction_coefficients = coefficients
         else:
-            raise ErrorValue("Coefficients must be of length 1 or 2")
+            raise ValueError("Coefficients must be of length 1 or 2")
 
 
 
@@ -238,8 +241,8 @@ class IntraStackRegistration(StackRegistrationBase):
 
     def _print_info_text(self):
         print("Minimization via least_squares solver")
-        print("\tTransform type: " + self._transform_type)
-        print("\tIntensity correction type: " + str(self._intensity_correction_type))
+        print("\tTransform type: " + self._transform_type + " (Initialization: " + str(self._transform_initializer_type) +")")
+        print("\tIntensity correction type: " + str(self._intensity_correction_type) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
         print("\tMethod: " + self._optimizer_method)
         print("\tLoss: " + self._optimizer_loss)
         print("\tMaximum number of function evaluations: " + str(self._optimizer_nfev_max))
@@ -327,7 +330,7 @@ class IntraStackRegistration(StackRegistrationBase):
         ## 2) Construct overall residual
         if self._reference is None:
             if alpha_neighbour < self._ZERO:
-                raise ErrorValue("A weight of alpha_neighbour <= 0 is not meaningful.")
+                raise ValueError("A weight of alpha_neighbour <= 0 is not meaningful.")
 
             if abs(alpha_parameter) < self._ZERO:
                 residual = lambda x: self._get_residual_slice_neighbours_fit(x)
@@ -339,7 +342,7 @@ class IntraStackRegistration(StackRegistrationBase):
                     ))
         else:
             if alpha_reference < self._ZERO:
-                raise ErrorValue("A weight of alpha_reference <= 0 is not meaningful in case reference is given")
+                raise ValueError("A weight of alpha_reference <= 0 is not meaningful in case reference is given")
             
             if abs(alpha_neighbour) < self._ZERO and abs(alpha_parameter) < self._ZERO:
                 residual = lambda x: self._get_residual_reference_fit(x)
@@ -399,7 +402,7 @@ class IntraStackRegistration(StackRegistrationBase):
             self._alpha_reference = 0
 
             if alpha_neighbour < self._ZERO:
-                raise ErrorValue("A weight of alpha_neighbour <= 0 is not meaningful.")
+                raise ValueError("A weight of alpha_neighbour <= 0 is not meaningful.")
 
             if abs(alpha_parameter) < self._ZERO:
                 jacobian = lambda x: self._get_jacobian_residual_slice_neighbours_fit(x)
@@ -412,7 +415,7 @@ class IntraStackRegistration(StackRegistrationBase):
             
         else:
             if alpha_reference < self._ZERO:
-                raise ErrorValue("A weight of alpha_reference <= 0 is not meaningful in case reference is given")
+                raise ValueError("A weight of alpha_reference <= 0 is not meaningful in case reference is given")
             
             if abs(alpha_neighbour) < self._ZERO and abs(alpha_parameter) < self._ZERO:
                 jacobian = lambda x: self._get_jacobian_residual_reference_fit(x)
@@ -583,9 +586,6 @@ class IntraStackRegistration(StackRegistrationBase):
 
         ## Get slice(T(theta, x))
         slice_sitk = sitk.Resample(slice.sitk, self._slice_grid_2D_sitk, transform_sitk, self._interpolator_sitk)
-
-        # if self._use_reference_mask:
-        #     dslice_ip1_nda *= self._reference_nda_mask[i,:,:][:,:,np.newaxis]
 
         ## Gradient image filter
         gradient_image_filter_sitk = sitk.GradientImageFilter()
@@ -1063,7 +1063,8 @@ class IntraStackRegistration(StackRegistrationBase):
             slice_3D = sl.Slice.from_slice(slices_3D[i])
 
             ## Get transform to get axis aligned slice of original stack
-            T_PP = self._get_TPP_transform(slice_3D.sitk)
+            # T_PP = self._get_TPP_transform(slice_3D.sitk)
+            T_PP = self._get_TPP_transform(slices_3D[0].sitk)
 
             ## Get current transform from image to physical space of slice
             T_PI = sitkh.get_sitk_affine_transform_from_sitk_image(slice_3D.sitk)
@@ -1135,6 +1136,11 @@ class IntraStackRegistration(StackRegistrationBase):
     def _new_similarity_transform_itk(self):
         return itk.Similarity2DTransform.New()
 
+    def _new_affine_transform_sitk(self):
+        return sitk.AffineTransform(2)
+
+    def _new_affine_transform_itk(self):
+        return itk.AffineTransform.D2.New()
 
     ##
     # Perform motion correction based on performed registration to get motion
@@ -1177,8 +1183,8 @@ class IntraStackRegistration(StackRegistrationBase):
             transform_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(transform_2D_sitk)
 
             ## Get transform to get axis aligned slice
-            # T_PP = self._get_TPP_transform(self._stack.sitk[:,:,i:i+1])
-            T_PP = self._get_TPP_transform(slices[i].sitk)
+            # T_PP = self._get_TPP_transform(slices[i].sitk)
+            T_PP = self._get_TPP_transform(slices[0].sitk)
 
             ## Compose to 3D in-plane transform
             affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(transform_3D_sitk, T_PP)
@@ -1238,8 +1244,8 @@ class IntraStackRegistration(StackRegistrationBase):
             rigid_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(rigid_2D_sitk)
 
             ## Get transform to get axis aligned slice
-            # T_PP = self._get_TPP_transform(self._stack.sitk[:,:,i:i+1])
-            T_PP = self._get_TPP_transform(slices[i].sitk)
+            # T_PP = self._get_TPP_transform(slices[i].sitk)
+            T_PP = self._get_TPP_transform(slices[0].sitk)
 
             ## Compose to 3D in-plane transform
             affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(rigid_3D_sitk, T_PP)
@@ -1276,6 +1282,51 @@ class IntraStackRegistration(StackRegistrationBase):
 
 
     ##
+    # Apply motion correction after affine registration
+    # \date       2016-11-21 20:14:05+0000
+    #
+    # \param      self  The object
+    # \post       self._stack_corrected updated
+    # \post       self._slice_transforms_sitk updated
+    #
+    def _apply_affine_motion_correction_and_compute_slice_transforms(self):
+        
+        stack_corrected = st.Stack.from_stack(self._stack)
+        slices_corrected = stack_corrected.get_slices()
+
+        slices = self._stack.get_slices()
+
+        slice_transforms_sitk = [None] * self._N_slices
+
+        for i in range(0, self._N_slices):
+
+            ## Set transform for the 2D slice based on registration transform
+            self._transforms_2D_sitk[i].SetParameters(self._parameters[i,0:self._transform_type_dofs])
+
+            ## Invert it to physically move the slice
+            transform_2D_sitk = sitk.AffineTransform(self._transforms_2D_sitk[i].GetInverse())
+
+            ## Expand to 3D transform
+            transform_3D_sitk = self._get_3D_from_2D_affine_transform_sitk(transform_2D_sitk)
+
+            ## Get transform to get axis aligned slice
+            # T_PP = self._get_TPP_transform(slices[i].sitk)
+            T_PP = self._get_TPP_transform(slices[0].sitk)
+
+            ## Compose to 3D in-plane transform
+            affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(transform_3D_sitk, T_PP)
+            affine_transform_sitk = sitkh.get_composite_sitk_affine_transform(sitk.AffineTransform(T_PP.GetInverse()), affine_transform_sitk)
+
+            ## Update motion correction of slice
+            slices_corrected[i].update_motion_correction(affine_transform_sitk)
+
+            ## Keep slice transform
+            slice_transforms_sitk[i] = affine_transform_sitk
+
+        self._stack_corrected = stack_corrected
+        self._slice_transforms_sitk = slice_transforms_sitk
+
+    ##
     # Create 3D from 2D transform.
     # \date       2016-09-20 23:18:55+0100
     #
@@ -1304,3 +1355,38 @@ class IntraStackRegistration(StackRegistrationBase):
         rigid_transform_3D.SetFixedParameters(center_3D)
         
         return rigid_transform_3D
+
+    ##
+    # Create 3D from 2D transform.
+    # \date       2016-09-20 23:18:55+0100
+    #
+    # The generated 3D transform performs in-plane operations in case the
+    # physical coordinate system is aligned with the axis of the stack/slice
+    #
+    # \param      self                     The object
+    # \param      rigid_transform_2D_sitk  sitk.Euler2DTransform object
+    #
+    # \return     sitk.Euler3DTransform object.
+    #
+    def _get_3D_from_2D_affine_transform_sitk(self, affine_transform_2D_sitk):
+    
+        # Get parameters of 2D registration
+        a00, a01, a10, a11, translation_x, translation_y = affine_transform_2D_sitk.GetParameters()
+        center_x, center_y = affine_transform_2D_sitk.GetCenter()
+
+        # Expand obtained translation to 3D vector
+        translation_3D = (translation_x, translation_y, 0)
+        center_3D = (center_x, center_y, 0)
+        matrix_3D = np.eye(3).flatten()
+        matrix_3D[0] = a00
+        matrix_3D[1] = a01
+        matrix_3D[3] = a10
+        matrix_3D[4] = a11
+
+        # Create 3D affine transform based on 2D
+        affine_transform_3D = sitk.AffineTransform(3)
+        affine_transform_3D.SetMatrix(matrix_3D)
+        affine_transform_3D.SetTranslation(translation_3D)
+        affine_transform_3D.SetFixedParameters(center_3D)
+        
+        return affine_transform_3D

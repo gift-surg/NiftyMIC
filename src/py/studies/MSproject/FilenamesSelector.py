@@ -105,7 +105,7 @@ class FilenamesSelector(object):
         ## Get full extension
         filenames_5yr_common = [f + "-5yr" for f in filenames_common]
 
-        return sorted(filenames_common), [subfolder], filenames_5yr_common
+        return sorted(filenames_common), [subfolder], sorted(filenames_5yr_common)
 
 
     def _get_filenames_and_subfolders_10yr_where_electronic_version(self):

@@ -595,7 +595,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         inplane_registration = inplanereg.IntraStackRegistration(stack=stack_corrupted, reference=stack)
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         # inplane_registration.set_transform_initializer_type("geometry")
-        inplane_registration.set_transform_initializer_type("moments")
+        inplane_registration.set_transform_initializer_type("identity")
         inplane_registration.set_intensity_correction_initializer_type("affine")
         inplane_registration.set_transform_type("similarity")
         inplane_registration.set_interpolator("Linear")

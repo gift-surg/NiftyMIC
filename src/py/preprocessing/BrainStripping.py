@@ -189,11 +189,26 @@ class BrainStripping(object):
     #
     # \return     The brain mask as sitk.Image object
     #
-    def get_brain_mask_sitk(self):
+    def get_brain_mask_sitk(self, dilate_radius=0):
         if self._sitk_brain_mask is None:
             raise ValueError("Brain mask was not asked for. Set option '-m' and run again.")
 
-        return self._sitk_brain_mask
+        if dilate_radius > 0:
+            ## Chose kernel
+            kernel_sitk = sitk.sitkBall
+            # kernel_sitk = sitk.sitkBox
+            # kernel_sitk = sitk.sitkAnnulus
+            # kernel_sitk = sitk.sitkCross
+
+            ## Define dilate and erode image filter
+            dilater = sitk.BinaryDilateImageFilter()
+            dilater.SetKernelType(kernel_sitk)
+            dilater.SetKernelRadius(dilate_radius)
+            brain_mask_sitk = dilater.Execute(self._sitk_brain_mask)
+        else:
+            brain_mask_sitk = sitk.Image(self._sitk_brain_mask)
+
+        return brain_mask_sitk
 
 
     ##

@@ -254,3 +254,38 @@ def printoptions(*args, **kwargs):
     np.set_printoptions(*args, **kwargs)
     yield 
     np.set_printoptions(**original)
+
+
+##
+# Creates a file. Possibly existing file with the same name will be
+# overwritten.
+# \date       2016-11-24 12:16:50+0000
+#
+# \param      directory           The directory
+# \param      filename            The filename
+# \param      header              The header
+# \param      filename_extension  The filename extension
+#
+def create_file(directory, filename, filename_extension="txt", header=""):
+    file_handle = open(directory + filename + "." + filename_extension, "w")
+    file_handle.write(header)
+    file_handle.close()
+    print("File " + str(directory + filename + "." + filename_extension) + " was created.")
+
+
+##
+# Appends an array to file.
+# \date       2016-11-24 12:17:36+0000
+#
+# \param      directory           The directory
+# \param      filename            The filename
+# \param      array               The array
+# \param      format              The format
+# \param      delimiter           The delimiter
+# \param      filename_extension  The filename extension
+#
+def append_array_to_file(directory, filename, array, filename_extension="txt", header="", format="%.10e", delimiter="\t"):
+    file_handle = open(directory + filename + "." + filename_extension, "a")
+    np.savetxt(file_handle, array, fmt=format, delimiter=delimiter)
+    file_handle.close()
+    print("Array was appended to file " + str(directory + filename + "." + filename_extension) + ".")
