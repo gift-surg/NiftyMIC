@@ -7,7 +7,7 @@
 
 ## Import libraries
 import os                       # used to execute terminal commands in python
-# import sys
+import sys
 # import itk
 # import SimpleITK as sitk
 import numpy as np
@@ -240,8 +240,11 @@ def stop_timing(start_time):
 # \param      suppress   Specifies whether or not scientific notation is
 #                        suppressed for small numbers
 #
-def print_numpy_array(nda, precision=3, suppress=False):
+def print_numpy_array(nda, title=None, precision=3, suppress=False):
     with printoptions(precision=precision, suppress=suppress):
+        if title is not None:
+            sys.stdout.write(title + " = ")
+            sys.stdout.flush()
         print(nda)
 
 ##
@@ -284,7 +287,7 @@ def create_file(directory, filename, filename_extension="txt", header=""):
 # \param      delimiter           The delimiter
 # \param      filename_extension  The filename extension
 #
-def append_array_to_file(directory, filename, array, filename_extension="txt", header="", format="%.10e", delimiter="\t"):
+def append_array_to_file(directory, filename, array, filename_extension="txt", format="%.10e", delimiter="\t"):
     file_handle = open(directory + filename + "." + filename_extension, "a")
     np.savetxt(file_handle, array, fmt=format, delimiter=delimiter)
     file_handle.close()

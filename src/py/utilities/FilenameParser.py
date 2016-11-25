@@ -9,11 +9,11 @@
 
 ## Import libraries
 import sys
-import itk
 import SimpleITK as sitk
 import numpy as np
 import os
 import re
+import sys
 import fnmatch
 
 ## Add directories to import modules
@@ -86,17 +86,24 @@ class FilenameParser(object):
     #
     # \return     The dash partitioned filename.
     #
-    def get_dash_partitioned_filename(self, filenames, number_of_dashes=1):
+    def get_separator_partitioned_filename(self, filenames, separator="-", number_of_separators=1, order="first"):
 
         filenames_cropped = []
         for i in range(0,len(filenames)):
-            parts = filenames[i].split('-')
-
-            filename = parts[0]
+            parts = filenames[i].split(separator)
+            # print parts
 
             ## Build filename "abc-xyz"
-            for i in range(1, number_of_dashes+1):
-                filename += "-" + parts[i]
+            if order in ["first"]:
+                filename = parts[0]
+                
+                for i in range(1, number_of_separators+1):
+                    filename += separator + parts[i]
+
+            else:
+                filename = parts[-1]
+                for i in range(len(parts)-1,len(parts)-number_of_separators,-1):
+                    filename += separator + parts[i]
 
             filenames_cropped.append(filename)
 
