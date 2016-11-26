@@ -88,6 +88,9 @@ class FilenameParser(object):
     #
     def get_separator_partitioned_filename(self, filenames, separator="-", number_of_separators=1, order="first"):
 
+        if type(filenames) is not list:
+            filenames = [filenames]
+
         filenames_cropped = []
         for i in range(0,len(filenames)):
             parts = filenames[i].split(separator)
@@ -113,7 +116,7 @@ class FilenameParser(object):
         if len(filenames_cropped) is 1:
             filenames_cropped = filenames_cropped[0]
 
-        return sorted(filenames_cropped)
+        return filenames_cropped
 
 
     ##

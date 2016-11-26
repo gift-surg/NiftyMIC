@@ -12,6 +12,9 @@ import itk
 import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
+import datetime
+import fnmatch
+import re
 
 ## Import modules
 import utilities.PythonHelper as ph
@@ -851,7 +854,7 @@ def plot_slices(slices, cmap="Greys_r", title="slice"):
 # \param[in]  title         filename or list of filenames
 # \param[in]  segmentation  sitk.Image used as segmentation
 #
-def show_sitk_image(image_sitk, title="test", segmentation=None):
+def show_sitk_image(image_sitk, title="test", segmentation=None, show_comparison_file=False):
     
     dir_output = "/tmp/"
     # cmd = "fslview " + dir_output + title + ".nii.gz & "
@@ -894,6 +897,35 @@ def show_sitk_image(image_sitk, title="test", segmentation=None):
     ## Execute command
     os.system(cmd)
 
+    ## Create python script for the command above
+    if show_comparison_file:
+        ## Build executable file containing the information
+        now = datetime.datetime.now()
+        date_time = str(now.year) + "-" + str(now.month).zfill(2) + "-"  + str(now.day).zfill(2) + " "
+        date_time += str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2)
+        
+        call  = "#!/usr/bin/python\n"
+        call += "\n"
+        call += "##\n"
+        call += "#  \\file showComparison.py\n"
+        call += "#  \\author Michael Ebner (michael.ebner.14@ucl.ac.uk)\n"
+        call += "#  " + date_time + "\n"
+        call += "\n"
+        call += "import os" 
+        call += "\n"
+        call += "directory = " + '"' + dir_output + '"'
+        call += "\n"
+        call += "cmd = " + '"' + re.sub(dir_output, '" + directory + "', cmd) + '" '
+        call += "\n"
+        call += "print(cmd); os.system(cmd)"
+
+        ## Write function call to python file
+        text_file = open("/tmp/showComparison.py", "w")
+        text_file.write("%s" % call)
+        text_file.close()
+
+        ## Make python file executable
+        os.system("chmod +x /tmp/showComparison.py")
 
 ##
 #       Visualize a list of Stack objects.
@@ -902,7 +934,7 @@ def show_sitk_image(image_sitk, title="test", segmentation=None):
 # \param      stacks        List of stack objects
 # \param      segmentation  Stack containing the desired segmentation.
 #
-def show_stacks(stacks, segmentation=None):
+def show_stacks(stacks, segmentation=None, show_comparison_file=False):
 
     N_stacks = len(stacks)
     images_sitk = [None]*N_stacks
@@ -918,7 +950,7 @@ def show_stacks(stacks, segmentation=None):
     else:
         segmentation_sitk = None
 
-    show_sitk_image(images_sitk, titles, segmentation_sitk)
+    show_sitk_image(images_sitk, titles, segmentation_sitk, show_comparison_file)
 
 
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose

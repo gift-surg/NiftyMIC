@@ -51,13 +51,16 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
     #                                      Either zeroth-order ('TK0') or
     #                                      first-order ('TK1') Tikhonov
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, iter_max=10, alpha_array=[None], dir_results="RegularizationParameterEstimation/", filename_results_prefix="", reg_type="TK1"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, iter_max=10, alpha_array=[None], dir_results="RegularizationParameterEstimation/", filename_results_prefix="", reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
 
         ## Run constructor of superclass
         RegularizationParameterEstimator.__init__(self, stacks, HR_volume, alpha_cut=alpha_cut, iter_max=iter_max, alpha_array=alpha_array, dir_results=dir_results, filename_results_prefix=filename_results_prefix)               
-        
         ## Set regularization type
         self._reg_type = reg_type
+
+        self._minimizer = minimizer
+        self._deconvolution_mode = deconvolution_mode
+        self._predefined_covariance = predefined_covariance
 
 
     ##
@@ -105,7 +108,7 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
 
             ## Initialize solver
             HR_volume_init = st.Stack.from_stack(self._HR_volume)
-            solver = tk.TikhonovSolver(self._stacks, HR_volume_init, alpha_cut=self._alpha_cut, alpha=alpha, iter_max=self._iter_max, reg_type=self._reg_type)
+            solver = tk.TikhonovSolver(self._stacks, HR_volume_init, alpha_cut=self._alpha_cut, alpha=alpha, iter_max=self._iter_max, reg_type=self._reg_type, minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
 
             ## Reconstruct volume for given alpha
             solver.run_reconstruction()

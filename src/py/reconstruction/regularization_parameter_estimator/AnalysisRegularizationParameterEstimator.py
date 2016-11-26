@@ -74,7 +74,7 @@ class AnalysisRegularizationParameterEstimator(object):
     #                                                     output filename
     #                                                     prefix
     #
-    def __init__(self, stacks, HR_volume_init, dir_results="/tmp/AnalysisRegularizationParameterEstimation/", alpha_cut=3, iter_max=10, alpha_array=[0.01, 0.05, 0.1, 0.5], rho_array=[0.5, 1, 2], ADMM_iterations=5, ADMM_iterations_output_dir="TV-L2_ADMM_iterations/", ADMM_iterations_output_filename_prefix="TV-L2"):
+    def __init__(self, stacks, HR_volume_init, dir_results="/tmp/AnalysisRegularizationParameterEstimation/", alpha_cut=3, iter_max=10, alpha_array=[0.01, 0.05, 0.1, 0.5], rho_array=[0.5, 1, 2], ADMM_iterations=5, ADMM_iterations_output_dir="TV-L2_ADMM_iterations/", ADMM_iterations_output_filename_prefix="TV-L2", minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
 
         self._stacks = stacks
         self._HR_volume_init = HR_volume_init
@@ -87,6 +87,10 @@ class AnalysisRegularizationParameterEstimator(object):
         self._rho_array = rho_array
         self._ADMM_iterations_output_dir = ADMM_iterations_output_dir
         self._ADMM_iterations_output_filename_prefix = ADMM_iterations_output_filename_prefix
+
+        self._minimizer = minimizer
+        self._deconvolution_mode = deconvolution_mode
+        self._predefined_covariance = predefined_covariance
 
         ## colors: r,b,g,c,m,y,k,w (http://matplotlib.org/api/colors_api.html)
         ## markers: http://matplotlib.org/api/markers_api.html#module-matplotlib.markers
@@ -250,7 +254,7 @@ class AnalysisRegularizationParameterEstimator(object):
     def _run_reconstructions_TK0(self):
 
         ## Initialize zeroth-order Tikhonov solver
-        regularization_parameter_estimator = tkrpe.TikhonovRegularizationParameterEstimator(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, iter_max=self._iter_max, alpha_array=self._alpha_array, dir_results=self._dir_results, reg_type="TK0")
+        regularization_parameter_estimator = tkrpe.TikhonovRegularizationParameterEstimator(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, iter_max=self._iter_max, alpha_array=self._alpha_array, dir_results=self._dir_results, reg_type="TK0", minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
         
         ## Reconstruct volumes for all alphas
         regularization_parameter_estimator.run_reconstructions()
@@ -270,7 +274,7 @@ class AnalysisRegularizationParameterEstimator(object):
     def _run_reconstructions_TK1(self):
 
         ## Initialize first-order Tikhonov solver
-        regularization_parameter_estimator = tkrpe.TikhonovRegularizationParameterEstimator(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, iter_max=self._iter_max, alpha_array=self._alpha_array, dir_results=self._dir_results, reg_type="TK1")
+        regularization_parameter_estimator = tkrpe.TikhonovRegularizationParameterEstimator(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, iter_max=self._iter_max, alpha_array=self._alpha_array, dir_results=self._dir_results, reg_type="TK1", minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
         
         ## Reconstruct volumes for all alphas
         regularization_parameter_estimator.run_reconstructions()
@@ -290,11 +294,11 @@ class AnalysisRegularizationParameterEstimator(object):
 
         ## Estimate inital value based on TK1-regularization step prior ADMM algorithm
         ## \post self._HR_volume_init is updated
-        SRR = tk.TikhonovSolver(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, alpha=0.05, iter_max=10, reg_type="TK1")
+        SRR = tk.TikhonovSolver(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, alpha=0.05, iter_max=10, reg_type="TK1", minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
         SRR.run_reconstruction()
 
         ## Initialize TV-L2 solver
-        regularization_parameter_estimator = tvl2rpe.TVL2RegularizationParameterEstimator(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, iter_max=self._iter_max, alpha_array=self._alpha_array, dir_results=self._dir_results, ADMM_iterations=self._ADMM_iterations, rho_array=self._rho_array, ADMM_iterations_output_dir=self._ADMM_iterations_output_dir, ADMM_iterations_output_filename_prefix=self._ADMM_iterations_output_filename_prefix)
+        regularization_parameter_estimator = tvl2rpe.TVL2RegularizationParameterEstimator(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, iter_max=self._iter_max, alpha_array=self._alpha_array, dir_results=self._dir_results, ADMM_iterations=self._ADMM_iterations, rho_array=self._rho_array, ADMM_iterations_output_dir=self._ADMM_iterations_output_dir, ADMM_iterations_output_filename_prefix=self._ADMM_iterations_output_filename_prefix, minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
 
         ## Reconstruct volumes for all alphas and rhos
         regularization_parameter_estimator.run_reconstructions(estimate_initial_value=False)

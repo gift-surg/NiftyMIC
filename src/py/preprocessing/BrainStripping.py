@@ -265,7 +265,8 @@ class BrainStripping(object):
             slice_mask_sitk = mask_sitk[:,:,i:i+1]
 
             ## Dilate mask of slice    
-            slice_mask_sitk = dilater.Execute(slice_mask_sitk)
+            if dilate_radius > 0:
+                slice_mask_sitk = dilater.Execute(slice_mask_sitk)
 
             ## Erode mask of slice
             if erode_radius > 0:

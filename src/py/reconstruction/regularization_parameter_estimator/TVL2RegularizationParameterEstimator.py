@@ -72,16 +72,18 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
     #                                                     output filename
     #                                                     prefix
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, iter_max=10, alpha_array=[None], dir_results="RegularizationParameterEstimation/", filename_results_prefix="", ADMM_iterations=5, rho_array=[None], ADMM_iterations_output_dir="TV-L2_ADMM_iterations/", ADMM_iterations_output_filename_prefix="TV-L2"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, iter_max=10, alpha_array=[None], dir_results="RegularizationParameterEstimation/", filename_results_prefix="", ADMM_iterations=5, rho_array=[None], ADMM_iterations_output_dir="TV-L2_ADMM_iterations/", ADMM_iterations_output_filename_prefix="TV-L2", minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
 
         ## Run constructor of superclass
         RegularizationParameterEstimator.__init__(self, stacks, HR_volume, alpha_cut=alpha_cut, iter_max=iter_max, alpha_array=alpha_array, dir_results=dir_results, filename_results_prefix=filename_results_prefix)               
-        
         self._rho_array = rho_array
         self._ADMM_iterations = ADMM_iterations   # Number of performed ADMM iterations
         self._ADMM_iterations_output_dir = self._dir_results + ADMM_iterations_output_dir
         self._ADMM_iterations_output_filename_prefix = ADMM_iterations_output_filename_prefix
 
+        self._minimizer = minimizer
+        self._deconvolution_mode = deconvolution_mode
+        self._predefined_covariance = predefined_covariance
 
     ##
     #       Run reconstruction for several alphas based on Tikhonov
@@ -122,7 +124,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
 
                 ## Initialize solver
                 HR_volume_init = st.Stack.from_stack(self._HR_volume)
-                solver = tvl2.TVL2Solver(self._stacks, HR_volume_init, alpha_cut=self._alpha_cut, alpha=alpha, iter_max=self._iter_max, rho=rho, ADMM_iterations=self._ADMM_iterations, ADMM_iterations_output_dir=self._ADMM_iterations_output_dir, ADMM_iterations_output_filename_prefix=self._ADMM_iterations_output_filename_prefix)
+                solver = tvl2.TVL2Solver(self._stacks, HR_volume_init, alpha_cut=self._alpha_cut, alpha=alpha, iter_max=self._iter_max, rho=rho, ADMM_iterations=self._ADMM_iterations, ADMM_iterations_output_dir=self._ADMM_iterations_output_dir, ADMM_iterations_output_filename_prefix=self._ADMM_iterations_output_filename_prefix, minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
 
                 ## Reconstruct volume for given alpha
                 solver.run_reconstruction(estimate_initial_value=estimate_initial_value)
