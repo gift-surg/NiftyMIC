@@ -77,15 +77,16 @@ class ImageSimilarity(object):
         reference_nda = np.array(self._reference_nda)    
         if use_reference_mask:
             reference_nda *= self._reference_mask_nda
-            N = self._reference_mask_nda.sum()
-
+            N = self._reference_mask_nda.sum().astype('float')
+        else:
+            N = np.array(self._reference.sitk.GetSize()).prod().astype('float')
 
         for i in range(0, self._N_stacks):
             stack_nda = np.array(self._stacks_nda[i])
             if use_reference_mask:
                 stack_nda *= self._reference_mask_nda
 
-            self._mse[i] = ((stack_nda - reference_nda)**2).sum()/(N*N)
+            self._mse[i] = ((stack_nda - reference_nda)**2).sum()/N
 
         return np.array(self._mse)
         

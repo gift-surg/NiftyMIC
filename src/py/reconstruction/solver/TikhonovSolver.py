@@ -110,6 +110,10 @@ class TikhonovSolver(Solver):
             "TK1"   : self._get_residual_prior_TK1
         }
 
+        ## Residual values after optimization
+        self._residual_prior = None
+        self._residual_ell2 = None
+
 
     ## Set type of regularization. It can be either 'TK0' or 'TK1'
     #  \param[in] reg_type Either 'TK0' or 'TK1', string
@@ -133,7 +137,22 @@ class TikhonovSolver(Solver):
         self._residual_ell2 = self._get_residual_ell2(HR_nda_vec)
         self._residual_prior = self._get_residual_prior[self._reg_type](HR_nda_vec)
 
+    ##
+    # Gets the final cost after optimization
+    # \date       2016-11-25 18:33:00+0000
+    #
+    # \param      self  The object
+    #
+    # \return     The final cost.
+    #
+    def get_final_cost(self):
+
+        if self._residual_ell2 is None or self._residual_prior is None:
+            self.compute_statistics()
+
+        return self._residual_ell2 + self._alpha*self._residual_prior
     
+
     ##
     #       Print statistics associated to performed reconstruction
     # \date       2016-07-29 12:30:30+0100

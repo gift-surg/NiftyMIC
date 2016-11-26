@@ -99,13 +99,36 @@ class FilenamesSelector(object):
         print("\n%2d filenames where 5yr PD electronic versions are available" %(len(filenames_electronic_5yr_PD_short)))
         # print filenames_electronic_5yr_PD_short
 
-        filenames_common = list(set(filenames_5yr_short).intersection(filenames_electronic_5yr_PD_short))
+        filenames_common = sorted(list(set(filenames_5yr_short).intersection(filenames_electronic_5yr_PD_short)))
         print("\n%2d filenames where for both 5yr film and electronic version are available" %(len(filenames_common)))
 
         ## Get full extension
         filenames_5yr_common = [f + "-5yr" for f in filenames_common]
 
-        return sorted(filenames_common), [subfolder], sorted(filenames_5yr_common)
+        ## Get reference for motion correction
+        filenames_reference = [None]*len(filenames_5yr_common)
+        for i in range(0, len(filenames_5yr_common)):
+            
+            tmp = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input, [filenames_common[i], "PD"])
+            
+            # ph.print_numpy_array(tmp,"all")
+            tmp = self._filename_parser.exclude_filenames_which_match_pattern(tmp, "5yr")
+            # ph.print_numpy_array(tmp,"reduced by '5yr'")
+            
+            if len(tmp) is 0:
+                print(filenames_common[i]+":")
+                print("\tNo PD reference available")
+                tmp = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input, [filenames_common[i]])
+                ph.print_numpy_array(tmp,"\tAlternatives")
+            else:
+                filenames_reference[i] = tmp[-1]
+                # print tmp
+                # print filenames_reference[i]
+
+        # print filenames_reference
+
+
+        return sorted(filenames_common), [subfolder], sorted(filenames_5yr_common), filenames_reference
 
 
     def _get_filenames_and_subfolders_10yr_where_electronic_version(self):
@@ -122,13 +145,35 @@ class FilenamesSelector(object):
         print("\n%2d filenames where 10yr PD electronic versions are available" %(len(filenames_electronic_10yr_PD_short)))
         # print filenames_electronic_10yr_PD_short
 
-        filenames_common = list(set(filenames_10yr_short).intersection(filenames_electronic_10yr_PD_short))
+        filenames_common = sorted(list(set(filenames_10yr_short).intersection(filenames_electronic_10yr_PD_short)))
         print("\n%2d filenames where for both 10yr film and electronic version are available" %(len(filenames_common)))
 
         ## Get full extension
         filenames_10yr_common = [f + "-10yr" for f in filenames_common]
 
-        return sorted(filenames_common), [subfolder], sorted(filenames_10yr_common)
+        ## Get reference for motion correction
+        filenames_reference = [None]*len(filenames_10yr_common)
+        for i in range(0, len(filenames_10yr_common)):
+            
+            tmp = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input, [filenames_common[i], "PD"])
+            
+            # ph.print_numpy_array(tmp,"all")
+            tmp = self._filename_parser.exclude_filenames_which_match_pattern(tmp, "10yr")
+            # ph.print_numpy_array(tmp,"reduced by '10yr'")
+            
+            if len(tmp) is 0:
+                print(filenames_common[i]+":")
+                print("\tNo PD reference available")
+                tmp = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input, [filenames_common[i]])
+                ph.print_numpy_array(tmp,"\tAlternatives")
+            else:
+                filenames_reference[i] = tmp[-1]
+                # print tmp
+                # print filenames_reference[i]
+
+        print filenames_reference
+
+        return sorted(filenames_common), [subfolder], sorted(filenames_10yr_common), filenames_reference
 
 
     ## NOT DONE YET! (will it ever be?)

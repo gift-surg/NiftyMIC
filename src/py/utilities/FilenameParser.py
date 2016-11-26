@@ -73,7 +73,7 @@ class FilenameParser(object):
         
         filenames_reduced = [f for f in filenames if fnmatch.fnmatch(f, pattern)]
 
-        return filenames_reduced
+        return sorted(filenames_reduced)
 
 
 
@@ -113,7 +113,7 @@ class FilenameParser(object):
         if len(filenames_cropped) is 1:
             filenames_cropped = filenames_cropped[0]
 
-        return filenames_cropped
+        return sorted(filenames_cropped)
 
 
     ##
@@ -132,10 +132,10 @@ class FilenameParser(object):
             if filenames[i] not in filenames_single:
                 filenames_single.append(filenames[i])
 
-        return filenames_single
+        return sorted(filenames_single)
             
         filenames = list(set(filenames))
-        return filenames
+        return sorted(filenames)
 
 
     ##
@@ -160,7 +160,7 @@ class FilenameParser(object):
                 if fnmatch.fnmatch(f, "*"+patterns[i]+"*"):
                     filenames.remove(f)
 
-        return filenames
+        return sorted(filenames)
 
     ##
     #       Crop extensions from filenames
@@ -181,7 +181,7 @@ class FilenameParser(object):
 
         ## Subtract the (known) filename-extension
 
-        return filenames
+        return sorted(filenames)
 
 
     ##
@@ -197,4 +197,4 @@ class FilenameParser(object):
     def replace_pattern(self, filenames, pattern, replacement=""):
         filenames = [re.sub(pattern,replacement,f) for f in filenames]
 
-        return filenames
+        return sorted(filenames)

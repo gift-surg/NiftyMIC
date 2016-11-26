@@ -116,6 +116,12 @@ class IntraStackRegistration(StackRegistrationBase):
         #     "affine"    :  np.array([1, 0])
         # }
 
+        ## Costs
+        self._final_cost = None
+        self._residual_paramters_ell2 = None
+        self._residual_reference_fit_ell2 = None
+        self._residual_slice_neighbours_ell2 = None
+
     ##
     # Sets the transform type.
     # \date       2016-11-10 01:53:58+0000
@@ -189,21 +195,47 @@ class IntraStackRegistration(StackRegistrationBase):
             raise ValueError("Coefficients must be of length 1 or 2")
 
 
-
-    def print_statistics(self):
-        StackRegistrationBase.print_statistics(self)
+    def _compute_statistics_residuals_ell2(self):
+        
+        self._final_cost = 0
 
         if self._alpha_reference > self._ZERO:
-            res = self._get_residual_reference_fit(self._parameters.flatten())
-            print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - ref||_2^2 = %.3e" %(np.sum(res**2)))
+            self._residual_reference_fit_ell2 = np.sum(self._get_residual_reference_fit(self._parameters.flatten())**2)
+            self._final_cost += self._alpha_reference*self._residual_reference_fit_ell2
+        
+        if self._alpha_neighbour > self._ZERO:
+            self._residual_slice_neighbours_ell2 = np.sum(self._get_residual_slice_neighbours_fit(self._parameters.flatten())**2)
+            self._final_cost += self._alpha_neighbour*self._residual_slice_neighbours_ell2
+        
+        if self._alpha_parameter > self._ZERO:
+            self._residual_paramters_ell2 = np.sum(self._get_residual_parameters(self._parameters.flatten())**2)
+            self._final_cost += self._alpha_parameter*self._residual_paramters_ell2
+
+
+    def get_final_cost(self):
+        if self._final_cost is None:
+            self._compute_statistics_residuals_ell2()
+        return self._final_cost
+
+
+    def print_statistics(self):
+        
+        ## Compute ell2-norm of residuals
+        self._compute_statistics_residuals_ell2()
+        
+        StackRegistrationBase.print_statistics(self)
+
+
+        if self._alpha_reference > self._ZERO:
+            print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - ref||_2^2 = %.3e" %(self._residual_reference_fit_ell2))
 
         if self._alpha_neighbour > self._ZERO:
-            res = self._get_residual_slice_neighbours_fit(self._parameters.flatten())
-            print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - slice_{k+1}(T(theta_{k+1}))||_2^2 = %.3e" %(np.sum(res**2)))
+            print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - slice_{k+1}(T(theta_{k+1}))||_2^2 = %.3e" %(self._residual_slice_neighbours_ell2))
 
         if self._alpha_parameter > self._ZERO:
-            res = self._get_residual_parameters(self._parameters.flatten())
-            print("\tell^2-residual sum_k ||theta_k - theta_k0||_2^2 = %.3e" %(np.sum(res**2)))
+            print("\tell^2-residual sum_k ||theta_k - theta_k0||_2^2 = %.3e" %(self._residual_paramters_ell2))
+
+        print("\tFinal cost: %.3e" %(self._final_cost))
 
 
     def get_setting_specific_filename(self, prefix="_"):
