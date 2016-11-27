@@ -187,7 +187,7 @@ class AnalysisRegularizationParameterEstimator(object):
     # \param      self         The object
     # \param      save_figure  Save figure as eps-file to dir_results
     #
-    def show_L_curves(self, save_figure=False):
+    def show_L_curves(self, save_figure=False, extension="pdf"):
 
         ## Plot
         fig = plt.figure(1)
@@ -221,7 +221,8 @@ class AnalysisRegularizationParameterEstimator(object):
             filename_out += str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
             filename_out += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
 
-            fig.savefig(self._dir_results + filename_out + ".eps")
+            print("Figure saved to " + self._dir_results + filename_out + "." + extension)
+            fig.savefig(self._dir_results + filename_out + "." + extension)
 
 
     ##
@@ -252,6 +253,8 @@ class AnalysisRegularizationParameterEstimator(object):
     # \param      self  The object
     #
     def _run_reconstructions_TK0(self):
+        print("\n***************************************************************************************************")
+        print("*** Run Analysis of Regularization Parameter: TK0 ***")
 
         ## Initialize zeroth-order Tikhonov solver
         regularization_parameter_estimator = tkrpe.TikhonovRegularizationParameterEstimator(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, iter_max=self._iter_max, alpha_array=self._alpha_array, dir_results=self._dir_results, reg_type="TK0", minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
@@ -272,6 +275,8 @@ class AnalysisRegularizationParameterEstimator(object):
     # \param      self  The object
     #
     def _run_reconstructions_TK1(self):
+        print("\n***************************************************************************************************")
+        print("*** Run Analysis of Regularization Parameter: TK1 ***")
 
         ## Initialize first-order Tikhonov solver
         regularization_parameter_estimator = tkrpe.TikhonovRegularizationParameterEstimator(self._stacks, self._HR_volume_init, alpha_cut=self._alpha_cut, iter_max=self._iter_max, alpha_array=self._alpha_array, dir_results=self._dir_results, reg_type="TK1", minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
@@ -291,6 +296,8 @@ class AnalysisRegularizationParameterEstimator(object):
     # \param      self  The object
     #
     def _run_reconstructions_TVL2(self):
+        print("\n***************************************************************************************************")
+        print("*** Run Analysis of Regularization Parameter: TVL2 ***")
 
         ## Estimate inital value based on TK1-regularization step prior ADMM algorithm
         ## \post self._HR_volume_init is updated

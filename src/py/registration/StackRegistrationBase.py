@@ -371,7 +371,7 @@ class StackRegistrationBase(object):
         # if self._elapsed_time_sec < 0:
         #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
         # else:
-        print("\tElapsed time = %s" %(self._elapsed_time))
+        print("\tElapsed time: %s" %(self._elapsed_time))
         # print("\tell^2-residual sum_k ||M_k(A_k x - y_k||_2^2 = %.3e" %(self._residual_ell2))
         # print("\tprior residual = %.3e" %(self._residual_prior))
 

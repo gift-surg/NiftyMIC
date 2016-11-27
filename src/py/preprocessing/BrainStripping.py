@@ -212,18 +212,45 @@ class BrainStripping(object):
 
 
     ##
-    #       Get computed skull image mask
+    # Get computed skull image mask
     # \date       2016-10-12 14:33:53+0100
     #
-    # \param      self  The object
+    # \param      self           The object
+    # \param      dilate_radius  The dilate radius
+    # \param      erode_radius   The erode radius
+    # \param      kernel         The kernel in "Ball", "Box", "Annulus" or "Cross"
     #
     # \return     The skull mask image as sitk object.
     #
-    def get_skull_image_sitk(self):
+    def get_skull_mask_sitk(self, dilate_radius=10, erode_radius=0, kernel="Ball"):
         if self._sitk_skull_image is None:
             raise ValueError("Skull mask was not asked for. Set option '-s' and run again.")
 
-        return self._sitk_skull_image
+        skull_mask_sitk = sitk.Image(self._sitk_skull_image)
+
+        ## Skull mask from BET has values of either 0 or 100. Threshold to 0,1
+        thresholder = sitk.BinaryThresholdImageFilter()
+        thresholder.SetUpperThreshold(255)
+        thresholder.SetLowerThreshold(1)
+        skull_mask_sitk = thresholder.Execute(skull_mask_sitk)
+
+        ## Translate kernel
+        kernel_sitk = eval("sitk.sitk" + kernel)
+
+        ## Define dilate and erode image filter
+        if dilate_radius > 0:
+            dilater = sitk.BinaryDilateImageFilter()
+            dilater.SetKernelType(kernel_sitk)
+            dilater.SetKernelRadius(dilate_radius)
+            skull_mask_sitk = dilater.Execute(skull_mask_sitk)
+
+        if erode_radius > 0:
+            eroder = sitk.BinaryErodeImageFilter()
+            eroder.SetKernelType(kernel_sitk)
+            eroder.SetKernelRadius(erode_radius)
+            skull_mask_sitk = eroder.Execute(skull_mask_sitk)
+
+        return skull_mask_sitk
 
 
     ##
@@ -234,16 +261,14 @@ class BrainStripping(object):
     # \param      self           The object
     # \param      dilate_radius  The dilate radius
     # \param      erode_radius   The erode radius
+    # \param      kernel         The kernel in "Ball", "Box", "Annulus" or "Cross"
     #
     # \return     The mask around skull.
     #
-    def get_mask_around_skull(self, dilate_radius=10, erode_radius=0):
+    def get_mask_around_skull(self, dilate_radius=10, erode_radius=0, kernel="Ball"):
 
-        ## Chose kernel
-        kernel_sitk = sitk.sitkBall
-        # kernel_sitk = sitk.sitkBox
-        # kernel_sitk = sitk.sitkAnnulus
-        # kernel_sitk = sitk.sitkCross
+        ## Translate kernel
+        kernel_sitk = eval("sitk.sitk" + kernel)
 
         ## Define dilate and erode image filter
         dilater = sitk.BinaryDilateImageFilter()
@@ -270,7 +295,7 @@ class BrainStripping(object):
 
             ## Erode mask of slice
             if erode_radius > 0:
-                slice_mask_sitk = slice_mask_sitk - eroder.Execute(slice_mask_sitk)
+                slice_mask_sitk = eroder.Execute(slice_mask_sitk)
             
             ## Fill data array information
             mask_nda[i,:,:] = sitk.GetArrayFromImage(slice_mask_sitk)
@@ -281,6 +306,7 @@ class BrainStripping(object):
 
         ## Debug:
         # sitkh.show_sitk_image(self._sitk, segmentation=skull_mask_sitk, title="stack_brain_mask")
+
 
         return skull_mask_sitk
 

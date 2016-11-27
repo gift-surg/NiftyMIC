@@ -27,14 +27,6 @@ class ImageSimilarity(object):
 
         ## Number of input stacks
         self._N_stacks = len(stacks)
-        
-        ## Test that stacks and reference are in the same image space
-        try:
-            for i in range(0, self._N_stacks):
-                stacks[i].sitk - reference.sitk
-            
-        except:
-            raise ValueError("Reference and stack are not in the same space")
 
         ## Input stacks for comparison with reference
         self._stacks = [None]*self._N_stacks
@@ -57,10 +49,15 @@ class ImageSimilarity(object):
 
     def compute_structural_similarity(self, use_reference_mask=True):
 
+        ## Test that all images are in the same physical space
+        self._test_space(self._reference, self._stacks)
+
+        ## Get data array information for reference
         reference_nda = np.array(self._reference_nda)    
         if use_reference_mask:
             reference_nda *= self._reference_mask_nda
 
+        ## Get data array information for stacks
         for i in range(0, self._N_stacks):
             stack_nda = np.array(self._stacks_nda[i])
             if use_reference_mask:
@@ -74,6 +71,10 @@ class ImageSimilarity(object):
 
     def compute_mean_squared_error(self, use_reference_mask=True):
 
+        ## Test that all images are in the same physical space
+        self._test_space(self._reference, self._stacks)
+
+        ## Get data array information for reference
         reference_nda = np.array(self._reference_nda)    
         if use_reference_mask:
             reference_nda *= self._reference_mask_nda
@@ -81,6 +82,7 @@ class ImageSimilarity(object):
         else:
             N = np.array(self._reference.sitk.GetSize()).prod().astype('float')
 
+        ## Get data array information for stacks
         for i in range(0, self._N_stacks):
             stack_nda = np.array(self._stacks_nda[i])
             if use_reference_mask:
@@ -103,3 +105,13 @@ class ImageSimilarity(object):
             self._psnr[i] = 10*np.log10(np.max(stack_nda)**2/self._mse[i])
 
         return np.array(self._psnr)
+
+
+    def _test_space(self, reference, stacks):
+        ## Test that stacks and reference are in the same image space
+        try:
+            for i in range(0, self._N_stacks):
+                stacks[i].sitk - reference.sitk
+            
+        except:
+            raise ValueError("Reference and stack are not in the same space")
