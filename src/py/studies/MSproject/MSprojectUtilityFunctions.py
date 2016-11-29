@@ -9,10 +9,78 @@
 import SimpleITK as sitk
 import argparse
 import numpy as np
+import os
 
 
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
+
+LEFT_RIGHT_MIRRORED_STACKS = [
+      "A0045632-B1463033-5yr"
+    , "A0045632-B1463033-5yr-0-PD"  # ground-truth stack
+
+    , "A0742401-B4903730-5yr"
+    , "A0742401-B4903730-5yr-0-PD"  # ground-truth stack
+    
+    , "A0885540-B5650504-5yr"
+    , "A0885540-B5650504-5yr-0-PD"  # ground-truth stack
+    
+    , "A2192428-B3117859-5yr"
+    , "A2192428-B3117859-5yr-0-PD"  # ground-truth stack
+    
+    , "A2890283-B1234334-5yr"
+    , "A2890283-B1234334-5yr-0-PD"  # ground-truth stack
+    
+    , "A2921508-B6991743-5yr"
+    , "A2921508-B6991743-5yr-0-PD"  # ground-truth stack
+    
+    , "A3451463-B7126393-5yr"
+    , "A3451463-B7126393-5yr-0-PD"  # ground-truth stack
+    
+    , "A3594681-B1352386-5yr"
+    , "A3594681-B1352386-5yr-0-PD"  # ground-truth stack
+    
+    , "A3733074-B3575525-5yr"
+    , "A3733074-B3575525-5yr-0-PD"  # ground-truth stack
+    
+    , "A4345560-B3508298-5yr"
+    , "A4345560-B3508298-5yr-0-PD"  # ground-truth stack
+    
+    , "A4892602-B9035827-5yr"
+    , "A4892602-B9035827-5yr-0-PD"  # ground-truth stack
+    
+    , "A5222915-B2849383-5yr"
+    , "A5222915-B2849383-5yr-0-PD"  # ground-truth stack
+    
+    , "A5330058-B8071825-5yr"
+    , "A5330058-B8071825-5yr-0-PD"  # ground-truth stack
+    
+    , "A5602960-B3234150-5yr"
+    , "A5602960-B3234150-5yr-0-PD"  # ground-truth stack
+    
+    , "A6125346-B0853727-5yr"
+    , "A6125346-B0853727-5yr-0-PD"  # ground-truth stack
+    
+    , 'A5884831-B6601288-5yr-0-PD'  # ground-truth stack
+
+    , "A6137029-B3531778-5yr"
+    , "A6137029-B3531778-5yr-0-PD"  # ground-truth stack
+    
+    , "A7333875-B7213936-5yr"
+    , "A7333875-B7213936-5yr-0-PD"  # ground-truth stack
+    
+    ## no reference available for motion correction!
+    # , "A7429556-B9898126-5yr"
+    # , "A7429556-B9898126-5yr-0-PD"  # ground-truth stack
+    
+    , "A7434519-B3842837-5yr-0-PD"  # ground-truth stack
+    
+    , "A9493003-B3862085-5yr"
+    , "A9493003-B3862085-5yr-0-PD"  # ground-truth stack
+    
+    , "A9832766-B0023954-5yr"       # interesting case, references do not match?!
+    , "A9832766-B0023954-5yr-0-PD"  # ground-truth stack ## interesting case, references do not match?!
+]
 
 
 ##
@@ -106,6 +174,7 @@ def get_updated_affine_transforms(transforms_outer, transforms_inner):
     return composite_transforms
 
 
+
 ##
 # Gets the left right mirrored stack if required.
 # \date       2016-11-26 18:20:39+0000
@@ -122,86 +191,63 @@ def get_left_right_mirrored_stack_if_required(image_sitk, filename_subject):
 
     image_sitk = sitk.Image(image_sitk)
 
-    left_right_mirrored_stacks = [
-          "A0045632-B1463033-5yr"
-        , "A0045632-B1463033-5yr-0-PD"  # ground-truth stack
-
-        , "A0742401-B4903730-5yr"
-        , "A0742401-B4903730-5yr-0-PD"  # ground-truth stack
-        
-        , "A0885540-B5650504-5yr"
-        , "A0885540-B5650504-5yr-0-PD"  # ground-truth stack
-        
-        , "A2192428-B3117859-5yr"
-        , "A2192428-B3117859-5yr-0-PD"  # ground-truth stack
-        
-        , "A2890283-B1234334-5yr"
-        , "A2890283-B1234334-5yr-0-PD"  # ground-truth stack
-        
-        , "A2921508-B6991743-5yr"
-        , "A2921508-B6991743-5yr-0-PD"  # ground-truth stack
-        
-        , "A3451463-B7126393-5yr"
-        , "A3451463-B7126393-5yr-0-PD"  # ground-truth stack
-        
-        , "A3594681-B1352386-5yr"
-        , "A3594681-B1352386-5yr-0-PD"  # ground-truth stack
-        
-        , "A3733074-B3575525-5yr"
-        , "A3733074-B3575525-5yr-0-PD"  # ground-truth stack
-        
-        , "A4345560-B3508298-5yr"
-        , "A4345560-B3508298-5yr-0-PD"  # ground-truth stack
-        
-        , "A4892602-B9035827-5yr"
-        , "A4892602-B9035827-5yr-0-PD"  # ground-truth stack
-        
-        , "A5222915-B2849383-5yr"
-        , "A5222915-B2849383-5yr-0-PD"  # ground-truth stack
-        
-        , "A5330058-B8071825-5yr"
-        , "A5330058-B8071825-5yr-0-PD"  # ground-truth stack
-        
-        , "A5602960-B3234150-5yr"
-        , "A5602960-B3234150-5yr-0-PD"  # ground-truth stack
-        
-        , "A6125346-B0853727-5yr"
-        , "A6125346-B0853727-5yr-0-PD"  # ground-truth stack
-        
-        , 'A5884831-B6601288-5yr-0-PD'  # ground-truth stack
-
-        , "A6137029-B3531778-5yr"
-        , "A6137029-B3531778-5yr-0-PD"  # ground-truth stack
-        
-        , "A7333875-B7213936-5yr"
-        , "A7333875-B7213936-5yr-0-PD"  # ground-truth stack
-        
-        ## no reference available for motion correction!
-        # , "A7429556-B9898126-5yr"
-        # , "A7429556-B9898126-5yr-0-PD"  # ground-truth stack
-        
-        , "A7434519-B3842837-5yr-0-PD"  # ground-truth stack
-        
-        , "A9493003-B3862085-5yr"
-        , "A9493003-B3862085-5yr-0-PD"  # ground-truth stack
-        
-        , "A9832766-B0023954-5yr"       # interesting case, references do not match?!
-        , "A9832766-B0023954-5yr-0-PD"  # ground-truth stack ## interesting case, references do not match?!
-    ]
-
     ## Affine transform defining the mirroring transform
     transform_sitk = sitk.AffineTransform(3)
 
     ## Mirror stack
-    if filename_subject in left_right_mirrored_stacks:
+    if filename_subject in LEFT_RIGHT_MIRRORED_STACKS:
         print("Mirrored stack: Flip left and right")
         matrix = np.eye(3)
         matrix[0,0] = -1
         direction_matrix = np.array(image_sitk.GetDirection()).reshape(3,3)
+
+        ## Update direction and corresponding image header
         image_sitk.SetDirection((matrix.dot(direction_matrix)).flatten())
+        # image_sitk = update_left_right_image_header_information(image_sitk)
 
         ## Transform to apply (in case of zero origin) to original image
         transform_sitk.SetMatrix(matrix.flatten())
 
+
     # return image_sitk, transform_sitk
     return image_sitk
+
+##
+# Update header information after left-right swapping
+# \date       2016-11-28 17:46:22+0000
+#
+# \param      image_sitk  Either sitk Image to the path to the file
+#
+# \return     sitk image with updated header
+#
+def update_left_right_image_header_information(image_sitk):
+
+    print("Update image header for left-right flipping")
+    dir_output_tmp = "/tmp/fslhd/"
+    filename_tmp = "A"
+    os.system("mkdir -p " + dir_output_tmp)
+    os.system("rm -rf " + dir_output_tmp + "*")
+    
+    try:
+        sitk.WriteImage(image_sitk, dir_output_tmp + filename_tmp + ".nii.gz")
+    except:
+        os.system("cp " + image_sitk + " " + dir_output_tmp + filename_tmp + ".nii.gz")
+
+    ## Possibility A:
+    cmd  = "fslswapdim "
+    cmd += dir_output_tmp + filename_tmp + " LR PA IS "
+    cmd += dir_output_tmp + filename_tmp + "_swapped"
+    flag = os.system(cmd)
+
+    ## Possibility B:
+    if flag is not 0:
+        cmd  = "fslswapdim "
+        cmd += dir_output_tmp + filename_tmp + " RL PA IS "
+        cmd += dir_output_tmp + filename_tmp + "_swapped"
+        os.system(cmd)
+    print("done")
+
+    image_swapped_sitk = sitk.ReadImage(dir_output_tmp + filename_tmp + "_swapped" + ".nii.gz")
+
+    return image_swapped_sitk
+

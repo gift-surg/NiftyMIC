@@ -845,19 +845,18 @@ def plot_slices(slices, cmap="Greys_r", title="slice"):
 
 
 ##
-#       Show image with ITK-Snap. Image is saved to /tmp/ for that
-#             purpose.
-# \date       2016-09-19 16:47:18+0100
+# Open provided files for visualization
+# \date       2016-11-28 17:00:24+0000
 #
-# \param[in]  image_sitk    either single sitk.Image or list of sitk.Images to
-#                           overlay
-# \param[in]  title         filename or list of filenames
-# \param[in]  segmentation  sitk.Image used as segmentation
+# \param      image_sitk            The image sitk
+# \param      title                 The title
+# \param      segmentation          The segmentation
+# \param      dir_output            The dir output
+# \param      show_comparison_file  The show comparison file
 #
-def show_sitk_image(image_sitk, title="test", segmentation=None, show_comparison_file=False):
-    
-    dir_output = "/tmp/"
-    # cmd = "fslview " + dir_output + title + ".nii.gz & "
+# \return     { description_of_the_return_value }
+#
+def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False):
 
     if type(image_sitk) is not list:
         image_sitk = [image_sitk]
@@ -900,32 +899,92 @@ def show_sitk_image(image_sitk, title="test", segmentation=None, show_comparison
     ## Create python script for the command above
     if show_comparison_file:
         ## Build executable file containing the information
-        now = datetime.datetime.now()
-        date_time = str(now.year) + "-" + str(now.month).zfill(2) + "-"  + str(now.day).zfill(2) + " "
-        date_time += str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2)
-        
-        call  = "#!/usr/bin/python\n"
-        call += "\n"
-        call += "##\n"
-        call += "#  \\file showComparison.py\n"
-        call += "#  \\author Michael Ebner (michael.ebner.14@ucl.ac.uk)\n"
-        call += "#  " + date_time + "\n"
-        call += "\n"
-        call += "import os" 
-        call += "\n"
-        call += "directory = " + '"' + dir_output + '"'
-        call += "\n"
-        call += "cmd = " + '"' + re.sub(dir_output, '" + directory + "', cmd) + '" '
-        call += "\n"
-        call += "print(cmd); os.system(cmd)"
+        write_executable_file(cmd, dir_output=dir_output, filename="showComparison")
 
-        ## Write function call to python file
-        text_file = open("/tmp/showComparison.py", "w")
-        text_file.write("%s" % call)
-        text_file.close()
 
-        ## Make python file executable
-        os.system("chmod +x /tmp/showComparison.py")
+def call_viewer_fslview(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False):
+    
+    ## Convert to list objects
+    if type(image_sitk) is not list:
+        image_sitk = [image_sitk]
+    if type(title) is not list:
+        title = [title]
+
+    ## Ensure title and image_sitk have same length
+    if len(title) is not len(image_sitk):
+        tmp = title
+        title = [None]*len(image_sitk)
+        for i in range(0, len(image_sitk)):
+            title[i] = tmp[0] + str(i)
+
+    ## Write images to tmp-folder
+    for i in range(0, len(image_sitk)):
+        sitk.WriteImage(image_sitk[i], dir_output + title[i] + ".nii.gz")
+    if segmentation is not None:
+        sitk.WriteImage(segmentation, dir_output + title[0] + "_seg.nii.gz")
+            
+    ##
+    cmd = "fslview "
+    for i in range(0, len(image_sitk)):
+        cmd += dir_output + title[i] + ".nii.gz "
+    if segmentation is not None:
+        cmd += dir_output + title[0] + "_seg.nii.gz -t 0.3 "
+    cmd += "& "
+
+    ## Execute command
+    print(cmd); os.system(cmd)
+
+    ## Create python script for the command above
+    if show_comparison_file:
+        ## Build executable file containing the information
+        write_executable_file(cmd, dir_output=dir_output, filename="showComparison")
+
+def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
+    now = datetime.datetime.now()
+    date_time = str(now.year) + "-" + str(now.month).zfill(2) + "-"  + str(now.day).zfill(2) + " "
+    date_time += str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2)
+    
+    call  = "#!/usr/bin/python\n"
+    call += "\n"
+    call += "##\n"
+    call += "#  \\file showComparison.py\n"
+    call += "#  \\author Michael Ebner (michael.ebner.14@ucl.ac.uk)\n"
+    call += "#  " + date_time + "\n"
+    call += "\n"
+    call += "import os" 
+    call += "\n"
+    call += "directory = " + '"' + dir_output + '"'
+    call += "\n"
+    call += "cmd = " + '"' + re.sub(dir_output, '" + directory + "', cmd) + '" '
+    call += "\n"
+    call += "print(cmd); os.system(cmd)"
+
+    ## Write function call to python file
+    text_file = open(dir_output + filename + ".py", "w")
+    text_file.write("%s" % call)
+    text_file.close()
+
+    ## Make python file executable
+    os.system("chmod +x " + dir_output + filename + ".py")    
+
+
+##
+#       Show image with ITK-Snap. Image is saved to /tmp/ for that
+#             purpose.
+# \date       2016-09-19 16:47:18+0100
+#
+# \param[in]  image_sitk    either single sitk.Image or list of sitk.Images to
+#                           overlay
+# \param[in]  title         filename or list of filenames
+# \param[in]  segmentation  sitk.Image used as segmentation
+#
+def show_sitk_image(image_sitk, title="test", segmentation=None, show_comparison_file=False, viewer="itksnap"):
+    
+    dir_output = "/tmp/"
+
+
+    eval("call_viewer_"+viewer+"(image_sitk, title, segmentation, dir_output, show_comparison_file)")
+    
 
 ##
 #       Visualize a list of Stack objects.
@@ -934,15 +993,18 @@ def show_sitk_image(image_sitk, title="test", segmentation=None, show_comparison
 # \param      stacks        List of stack objects
 # \param      segmentation  Stack containing the desired segmentation.
 #
-def show_stacks(stacks, segmentation=None, show_comparison_file=False):
+def show_stacks(stacks, title=None, segmentation=None, show_comparison_file=False, viewer="itksnap"):
 
     N_stacks = len(stacks)
     images_sitk = [None]*N_stacks
-    titles = [None]*N_stacks
 
     for i in range(0, N_stacks):
         images_sitk[i] = stacks[i].sitk
-        titles[i] = stacks[i].get_filename()
+    
+    if title is None:
+        title = [None]*N_stacks
+        for i in range(0, N_stacks):
+            title[i] = stacks[i].get_filename()
 
     if segmentation is not None:
         segmentation_sitk = segmentation.sitk_mask
@@ -950,7 +1012,7 @@ def show_stacks(stacks, segmentation=None, show_comparison_file=False):
     else:
         segmentation_sitk = None
 
-    show_sitk_image(images_sitk, titles, segmentation_sitk, show_comparison_file)
+    show_sitk_image(images_sitk, title, segmentation_sitk, show_comparison_file, viewer)
 
 
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose

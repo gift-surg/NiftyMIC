@@ -199,14 +199,17 @@ class IntraStackRegistration(StackRegistrationBase):
         
         self._final_cost = 0
 
-        self._residual_reference_fit_ell2 = np.sum(self._get_residual_reference_fit(self._parameters.flatten())**2)
-        self._final_cost += self._residual_reference_fit_ell2
+        if self._alpha_reference > self._ZERO:
+            self._residual_reference_fit_ell2 = np.sum(self._get_residual_reference_fit(self._parameters.flatten())**2)
+            self._final_cost += self._residual_reference_fit_ell2
         
-        self._residual_slice_neighbours_ell2 = np.sum(self._get_residual_slice_neighbours_fit(self._parameters.flatten())**2)
-        self._final_cost += self._residual_slice_neighbours_ell2
+        if self._alpha_neighbour > self._ZERO:
+            self._residual_slice_neighbours_ell2 = np.sum(self._get_residual_slice_neighbours_fit(self._parameters.flatten())**2)
+            self._final_cost += self._residual_slice_neighbours_ell2
         
-        self._residual_paramters_ell2 = np.sum(self._get_residual_parameters(self._parameters.flatten())**2)
-        self._final_cost += self._residual_paramters_ell2
+        if self._alpha_parameter > self._ZERO:
+            self._residual_paramters_ell2 = np.sum(self._get_residual_parameters(self._parameters.flatten())**2)
+            self._final_cost += self._residual_paramters_ell2
 
 
     def get_final_cost(self):
@@ -222,15 +225,14 @@ class IntraStackRegistration(StackRegistrationBase):
         
         StackRegistrationBase.print_statistics(self)
 
+        if self._alpha_reference > self._ZERO:
+            print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - ref||_2^2 = %.3e" %(self._residual_reference_fit_ell2))
 
-        # if self._alpha_reference > self._ZERO:
-        print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - ref||_2^2 = %.3e" %(self._residual_reference_fit_ell2))
+        if self._alpha_neighbour > self._ZERO:
+            print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - slice_{k+1}(T(theta_{k+1}))||_2^2 = %.3e" %(self._residual_slice_neighbours_ell2))
 
-        # if self._alpha_neighbour > self._ZERO:
-        print("\tell^2-residual sum_k ||slice_k(T(theta_k)) - slice_{k+1}(T(theta_{k+1}))||_2^2 = %.3e" %(self._residual_slice_neighbours_ell2))
-
-        # if self._alpha_parameter > self._ZERO:
-        print("\tell^2-residual sum_k ||theta_k - theta_k0||_2^2 = %.3e" %(self._residual_paramters_ell2))
+        if self._alpha_parameter > self._ZERO:
+            print("\tell^2-residual sum_k ||theta_k - theta_k0||_2^2 = %.3e" %(self._residual_paramters_ell2))
 
         print("\tFinal cost: %.3e" %(self._final_cost))
 
