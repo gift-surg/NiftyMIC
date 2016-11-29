@@ -229,10 +229,10 @@ class TikhonovSolver(Solver):
         elif self._deconvolution_mode in ["predefined_covariance"]:
             print("(Predefined covariance used: cov = diag(%s))" % (np.diag(self._predefined_covariance)))
 
-        print("Minimizer = " + self._minimizer)
-        print("Regularization parameter = " + str(self._alpha))
-        print("Maximum number of iterations = " + str(self._iter_max))
-        # print("Tolerance = %.0e" %(self._tolerance))
+        print("Minimizer: " + self._minimizer)
+        print("Regularization parameter: " + str(self._alpha))
+        print("Maximum number of iterations: " + str(self._iter_max))
+        # print("Tolerance: %.0e" %(self._tolerance))
 
         time_start = time.time()
 

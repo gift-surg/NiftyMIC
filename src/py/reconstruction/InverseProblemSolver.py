@@ -253,9 +253,9 @@ class InverseProblemSolver:
         ## TK0-regularization
         if self._reg_type in ["TK0"]:
             print("Chosen regularization type: zero-order Tikhonov")
-            print("Regularization parameter = " + str(self._alpha))
-            print("Maximum number of iterations = " + str(self._iter_max))
-            print("Tolerance = %.0e" %(self._tolerance))
+            print("Regularization parameter: " + str(self._alpha))
+            print("Maximum number of iterations: " + str(self._iter_max))
+            print("Tolerance: %.0e" %(self._tolerance))
 
             ## Provide constant variable for optimization
             op0_sum_ATMy_itk = self._op0(sum_ATMy_itk, self._alpha)
@@ -283,9 +283,9 @@ class InverseProblemSolver:
             ## DTD is computed direclty via Laplace stencil
             if self._DTD_comp_type in ["Laplace"]:
                 print("Chosen regularization type: first-order Tikhonov via Laplace stencil")
-                print("Regularization parameter = " + str(self._alpha))
-                print("Maximum number of iterations = " + str(self._iter_max))
-                print("Tolerance = %.0e" %(self._tolerance))
+                print("Regularization parameter: " + str(self._alpha))
+                print("Maximum number of iterations: " + str(self._iter_max))
+                print("Tolerance: %.0e" %(self._tolerance))
                 
                 # Laplace kernel (for isotropic spacing)
                 self._kernel_L = self._get_laplacian_kernel() / (spacing[0]*spacing[0])
@@ -301,9 +301,9 @@ class InverseProblemSolver:
             ## DTD is computed as sequence of forward and backward operators
             else:
                 print("Chosen regularization type: first-order Tikhonov via forward/backward finite differences")
-                print("Regularization parameter = " + str(self._alpha))
-                print("Maximum number of iterations = " + str(self._iter_max))
-                print("Tolerance = %.0e" %(self._tolerance))
+                print("Regularization parameter: " + str(self._alpha))
+                print("Maximum number of iterations: " + str(self._iter_max))
+                print("Tolerance: %.0e" %(self._tolerance))
 
                 # Forward difference kernels (for isotropic spacing)
                 kernel_Dxf = self._get_forward_diff_x_kernel() / spacing[0]
@@ -347,11 +347,11 @@ class InverseProblemSolver:
         elif self._reg_type in ["TV-L2"]:
 
             print("Chosen regularization type: TV-L2")
-            print("Regularization parameter alpha = " + str(self._alpha))
-            print("Regularization parameter of augmented Lagrangian term rho = " + str(self._rho))
-            print("Number of ADMM iterations = " + str(self._ADMM_iterations))
-            print("Maximum number of TK1 solver iterations = " + str(self._iter_max))
-            print("Tolerance = %.0e" %(self._tolerance))
+            print("Regularization parameter alpha: " + str(self._alpha))
+            print("Regularization parameter of augmented Lagrangian term rho: " + str(self._rho))
+            print("Number of ADMM iterations: " + str(self._ADMM_iterations))
+            print("Maximum number of TK1 solver iterations: " + str(self._iter_max))
+            print("Tolerance: %.0e" %(self._tolerance))
 
             ## Compute kernels for differentiation in image space, i.e. including scaling
             spacing = self._HR_volume.sitk.GetSpacing()
@@ -1108,10 +1108,10 @@ class InverseProblemSolver:
     #  \return updated HR volume data array
     def _perform_ADMM_step_1_TK1_recon_solution(self, HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho):
         print("\tTK1-regularization step (" + self._DTD_comp_type + ")" )
-        print("\t\tMaximum number of TK1 solver iterations = " + str(self._iter_max))
-        print("\t\tRegularization parameter alpha = " + str(self._alpha))
-        print("\t\tRegularization parameter of augmented Lagrangian term rho = " + str(self._rho))
-        print("\t\tTolerance = %.0e" %(self._tolerance))
+        print("\t\tMaximum number of TK1 solver iterations: " + str(self._iter_max))
+        print("\t\tRegularization parameter alpha: " + str(self._alpha))
+        print("\t\tRegularization parameter of augmented Lagrangian term rho: " + str(self._rho))
+        print("\t\tTolerance: %.0e" %(self._tolerance))
 
         ## Compute RHS = sum_k A_k' M_k y_k + rho*D'(v-w)
         RHS_itk = self._sum_ATMy_plus_rho_DT_v_minus_w(sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho)

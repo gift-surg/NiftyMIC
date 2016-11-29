@@ -167,12 +167,12 @@ class NonnegativeTikhonovSolver(TikhonovSolver):
 
             print("Chosen regularization type: first-order Tikhonov with non-negativity constraints")
 
-        print("Minimizer = " + self._MINIMIZER)
-        print("Regularization parameter = " + str(self._alpha))
-        print("Maximum number of TK solver iterations = " + str(self._iter_max))
-        print("Regularization parameter of augmented Lagrangian term rho = " + str(self._rho))
-        print("Number of ADMM iterations = " + str(self._ADMM_iterations))
-        # print("Tolerance = %.0e" %(self._tolerance))
+        print("Minimizer: " + self._MINIMIZER)
+        print("Regularization parameter: " + str(self._alpha))
+        print("Maximum number of TK solver iterations: " + str(self._iter_max))
+        print("Regularization parameter of augmented Lagrangian term rho: " + str(self._rho))
+        print("Number of ADMM iterations: " + str(self._ADMM_iterations))
+        # print("Tolerance: %.0e" %(self._tolerance))
 
         time_start = time.time()
 

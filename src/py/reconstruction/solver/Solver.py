@@ -700,7 +700,6 @@ class Solver(object):
         return np.sum((MAx_nda_vec-My_nda_vec)**2)
 
 
-
     ##
     #       Gets the approximate solution via LSMR solver 
     #             (linear least-squares method)
@@ -713,26 +712,22 @@ class Solver(object):
     #
     # \return     The approximate solution.
     #
-    def _get_approximate_solution_lsmr(self, A_fw, A_bw, b):
+    def _get_approximate_solution_lsmr(self, A_fw, A_bw, b, x0=None):
 
         ## Construct (sparse) linear operator A
         A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
-
-        ## Incorporate initial value for least-squares solver:
-        HR_nda_vec = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
-        b -= A_fw(HR_nda_vec)
 
         ## Linear least-squares method: 
         # One (!) test showed that lsqr has lower residual than lsmr in the 
         # end. However, Fong2011 states that "although LSQR and LSMR ultimately
         # converge to similar points, it is safer to use LSMR in situations 
         # where the solver must be terminated early" => Go for that
-        delta_HR_nda_vec = lsmr(A, b, maxiter=self._iter_max, show=True)[0]
+        x = lsmr(A, b, maxiter=self._iter_max, show=True)[0]
 
-        ## Correct for shift
-        HR_nda_vec += delta_HR_nda_vec
+        ## Chop off negative values
+        x = np.clip(x, 0, np.inf)
 
-        return HR_nda_vec
+        return x
 
 
     ##
@@ -747,24 +742,36 @@ class Solver(object):
     #
     # \return     The approximate solution.
     #
-    def _get_approximate_solution_lsqr(self, A_fw, A_bw, b):
+    def _get_approximate_solution_lsqr(self, A_fw, A_bw, b, x0=None):
         
         ## Construct (sparse) linear operator A
         A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
 
+        ## --- Initial value begin --------------------------------------------
+        ## Do not incorporate initial value! It seems to not help in case of
+        ## TV-L2! Way faster regardless of all
+        ## 
         ## Incorporate initial value for least-squares solver:
-        HR_nda_vec = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
-        b -= A_fw(HR_nda_vec)
+        # HR_nda_vec = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
+        # HR_nda_vec = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
+        # b = b - A_fw(HR_nda_vec)
 
-        ## Linear least-squares methods: 
+        ## Linear least-squares method: 
         # One (!) test showed that lsqr has lower residual than lsmr in the 
         # end. However, Fong2011 states that "although LSQR and LSMR ultimately
         # converge to similar points, it is safer to use LSMR in situations 
         # where the solver must be terminated early" => Go for that
-        delta_HR_nda_vec = lsqr(A, b, maxiter=self._iter_max, show=True)[0]
+        # delta_HR_nda_vec = lsqr(A, b, maxiter=self._iter_max, show=True)[0]
 
         ## Correct for shift
-        HR_nda_vec += delta_HR_nda_vec
+        # HR_nda_vec += delta_HR_nda_vec
+        ## --- Initial value end ----------------------------------------------
+
+        ## Linear least-squares methods: 
+        HR_nda_vec = lsqr(A, b, maxiter=self._iter_max, show=True)[0]
+
+        ## Chop off negative values
+        x = np.clip(x, 0, np.inf)
 
         return HR_nda_vec
 
@@ -781,10 +788,16 @@ class Solver(object):
     #
     # \return     The approximate solution.
     #
-    def _get_approximate_solution_LBFGSB(self, A_fw, A_bw, b):
+    def _get_approximate_solution_LBFGSB(self, A_fw, A_bw, b, x0=None):
         
         ## Set initial value and bounds
-        x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
+        if x0 is None:
+            # x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
+            x0 = np.zeros(np.array(self._HR_volume.sitk.GetSize())[::-1])
+        else:
+            ## In case initial value is given, the non-masked voxels will
+            ## smoothly vary but will not be zero! Hence, prefer zero-init
+            x0 = np.clip(x0, 0, np.inf)
         bounds = [[0,None]]*x0.size
 
         ## Set cost function and its jacobian
@@ -810,7 +823,7 @@ class Solver(object):
     #
     # \return     The approximate solution.
     #
-    def _get_approximate_solution_least_squares(self, A_fw, A_bw, b):
+    def _get_approximate_solution_least_squares(self, A_fw, A_bw, b, x0=None):
 
         ## Set initial value and bounds
         x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
@@ -842,7 +855,7 @@ class Solver(object):
     #
     # \return     The approximate solution.
     #
-    def _get_approximate_solution_lsq_linear(self, A_fw, A_bw, b):
+    def _get_approximate_solution_lsq_linear(self, A_fw, A_bw, b, x0=None):
 
         ## Construct (sparse) linear operator A
         A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)
@@ -867,7 +880,7 @@ class Solver(object):
     #
     # \return     The approximate solution.
     #
-    def _get_approximate_solution_nnls(self, A_fw, A_bw, b):
+    def _get_approximate_solution_nnls(self, A_fw, A_bw, b, x0=None):
 
         ## Construct (sparse) linear operator A
         A = LinearOperator((b.size, self._N_voxels_HR_volume), matvec=A_fw, rmatvec=A_bw)

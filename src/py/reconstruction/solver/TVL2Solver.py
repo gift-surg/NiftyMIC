@@ -206,18 +206,19 @@ class TVL2Solver(Solver):
     def run_reconstruction(self, estimate_initial_value=True):
 
         print("Chosen regularization type: TV-L2")
-        print("Regularization parameter alpha = " + str(self._alpha))
-        print("Regularization parameter of augmented Lagrangian term rho = " + str(self._rho))
-        print("Number of ADMM iterations = " + str(self._ADMM_iterations))
-        print("Maximum number of TK1 solver iterations = " + str(self._iter_max))
+        print("Regularization parameter alpha: " + str(self._alpha))
+        print("Regularization parameter of augmented Lagrangian term rho: " + str(self._rho))
+        print("Number of ADMM iterations: " + str(self._ADMM_iterations))
+        print("Maximum number of TK1 solver iterations: " + str(self._iter_max))
         if self._ADMM_iterations_output_dir is not None:
             print("ADMM iterations are written to " + self._ADMM_iterations_output_dir)
-        # print("Tolerance = %.0e" %(self._tolerance))
+        # print("Tolerance: %.0e" %(self._tolerance))
 
         time_start = time.time()
 
-        ## Estimate inital value based on TK1 regularization
+        ## Estimate initial value based on TK1 regularization
         if estimate_initial_value:
+            print("\n***********************************************************************************")
             print("Initial volume for ADMM is estimated by prior TK1 reconstruction step")
             self._compute_initial_value_based_on_TK1(alpha_cut=3, alpha=0.02, iter_max=10, minimizer="lsmr",deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
 
@@ -240,7 +241,8 @@ class TVL2Solver(Solver):
 
         ## Perform ADMM_iterations
         for iter in range(0, self._ADMM_iterations):
-            print("\tADMM iteration %s/%s:" %(iter+1, self._ADMM_iterations))
+            print("\n***********************************************************************************")
+            print("ADMM iteration %s/%s:" %(iter+1, self._ADMM_iterations))
 
             ## Perform ADMM step
             HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = self._perform_ADMM_iteration(HR_nda, b, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, self._alpha, self._rho)
@@ -359,16 +361,16 @@ class TVL2Solver(Solver):
     #  \param[in] rho regularization parameter for augmented Lagrangian term, scalar>0
     #  \return updated HR volume data array
     def _perform_ADMM_step_1_TK1_recon_solution(self, HR_nda, b, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, rho):
-        print("\tTK1-regularization step" )
-        print("\t\tMaximum number of TK1 solver iterations = " + str(self._iter_max))
-        print("\t\tRegularization parameter alpha = " + str(self._alpha))
-        print("\t\tRegularization parameter of augmented Lagrangian term rho = " + str(self._rho))
+        print("TK1-regularization step" )
+        print("\tMaximum number of TK1 solver iterations: " + str(self._iter_max))
+        print("\tRegularization parameter alpha: " + str(self._alpha))
+        print("\tRegularization parameter of augmented Lagrangian term rho: " + str(self._rho))
         if self._deconvolution_mode in ["only_in_plane"]:
-            print("\t\t(Only in-plane deconvolution is performed)")
+            print("\t(Only in-plane deconvolution is performed)")
 
         elif self._deconvolution_mode in ["predefined_covariance"]:
-            print("\t\t(Predefined covariance used: cov = diag(%s))" % (np.diag(self._predefined_covariance)))
-        # print("\t\tTolerance = %.0e" %(self._tolerance))
+            print("\t(Predefined covariance used: cov = diag(%s))" % (np.diag(self._predefined_covariance)))
+        # print("\tTolerance: %.0e" %(self._tolerance))
 
         ## Update changing elements of right-hand side b
         b[-3*self._N_voxels_HR_volume:] = np.sqrt(rho)*self._get_unscaled_b_lower(vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda)
