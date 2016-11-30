@@ -1,9 +1,10 @@
-results/
-data/
 backups/
-doc/html/
-doc/latex/
+build/
+doc/py/html/
+doc/py/latex/
+results/
 .*
 *.nii.gz
 *.nii
+*.tfm
 *iterate.dat
