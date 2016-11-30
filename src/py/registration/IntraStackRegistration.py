@@ -33,7 +33,7 @@ from registration.StackRegistrationBase import StackRegistrationBase
 
 class IntraStackRegistration(StackRegistrationBase):
 
-    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, transform_initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=0, transform_type="rigid", intensity_correction_type=None, intensity_correction_initializer_type=None, prior_scale=1.0, prior_intensity_correction_coefficients=np.array([1,0])):
+    def __init__(self, stack=None, reference=None, use_stack_mask=False, use_reference_mask=False, use_verbose=False, transform_initializer_type="identity", interpolator="Linear", alpha_neighbour=1, alpha_reference=1, alpha_parameter=0, transform_type="rigid", intensity_correction_type_slice_neighbour_fit=None, intensity_correction_initializer_type=None, prior_scale=1.0, prior_intensity_correction_coefficients=np.array([1,0]), registration_image_type_reference="standard"):
 
         ## Run constructor of superclass
         StackRegistrationBase.__init__(self, stack=stack, reference=reference, use_stack_mask=use_stack_mask, use_reference_mask=use_reference_mask, use_verbose=use_verbose, transform_initializer_type=transform_initializer_type, interpolator=interpolator, alpha_neighbour=alpha_neighbour, alpha_reference=alpha_reference, alpha_parameter=alpha_parameter)
@@ -54,7 +54,11 @@ class IntraStackRegistration(StackRegistrationBase):
         }
 
         ## Chosen intensity correction type
-        self._intensity_correction_type = intensity_correction_type
+        self._intensity_correction_type_slice_neighbour_fit = intensity_correction_type_slice_neighbour_fit
+        self._intensity_correction_type_reference_fit = intensity_correction_type_slice_neighbour_fit
+
+        ## Define image type for reference cost
+        self._registration_image_type_reference = registration_image_type_reference
 
         ## Dictionary to apply requested intensity correction
         self._apply_intensity_correction = {
@@ -145,13 +149,30 @@ class IntraStackRegistration(StackRegistrationBase):
     # \param      self  The object
     # \param      flag  The flag
     #
-    def set_intensity_correction_type(self, intensity_correction_type):
-        if intensity_correction_type not in self._apply_intensity_correction.keys():
-            raise ValueError("Intensity correction type " + intensity_correction_type + " not possible.\nAllowed values: " + str(self._apply_intensity_correction.keys()))
-        self._intensity_correction_type = intensity_correction_type
+    def set_intensity_correction_type_slice_neighbour_fit(self, intensity_correction_type_slice_neighbour_fit):
+        if intensity_correction_type_slice_neighbour_fit not in self._apply_intensity_correction.keys():
+            raise ValueError("Intensity correction type " + intensity_correction_type_slice_neighbour_fit + " not possible.\nAllowed values: " + str(self._apply_intensity_correction.keys()))
+        self._intensity_correction_type_slice_neighbour_fit = intensity_correction_type_slice_neighbour_fit
 
-    def get_intensity_correction_type(self):
-        return self._intensity_correction_type
+    def get_intensity_correction_type_slice_neighbour_fit(self):
+        return self._intensity_correction_type_slice_neighbour_fit
+
+
+    ##
+    # Set the intensity correction type for neighbour fit
+    # \date       2016-11-10 01:58:39+0000
+    #
+    # \param      self  The object
+    # \param      flag  The flag
+    #
+    def set_intensity_correction_type_reference_fit(self, intensity_correction_type_slice_reference_fit):
+        if intensity_correction_type_slice_reference_fit not in self._apply_intensity_correction.keys():
+            raise ValueError("Intensity correction type " + intensity_correction_type_slice_reference_fit + " not possible.\nAllowed values: " + str(self._apply_intensity_correction.keys()))
+        self._intensity_correction_type_reference_fit = intensity_correction_type_slice_reference_fit
+
+    def get_intensity_correction_type_reference_fit(self):
+        return self._intensity_correction_type_reference_fit
+
 
     ##
     # Sets the intensity correction initializer type. It specifies how the
@@ -195,21 +216,17 @@ class IntraStackRegistration(StackRegistrationBase):
             raise ValueError("Coefficients must be of length 1 or 2")
 
 
-    def _compute_statistics_residuals_ell2(self):
-        
-        self._final_cost = 0
-
-        if self._alpha_reference > self._ZERO:
-            self._residual_reference_fit_ell2 = np.sum(self._get_residual_reference_fit(self._parameters.flatten())**2)
-            self._final_cost += self._residual_reference_fit_ell2
-        
-        if self._alpha_neighbour > self._ZERO:
-            self._residual_slice_neighbours_ell2 = np.sum(self._get_residual_slice_neighbours_fit(self._parameters.flatten())**2)
-            self._final_cost += self._residual_slice_neighbours_ell2
-        
-        if self._alpha_parameter > self._ZERO:
-            self._residual_paramters_ell2 = np.sum(self._get_residual_parameters(self._parameters.flatten())**2)
-            self._final_cost += self._residual_paramters_ell2
+    ##
+    # Set image type used to compute the reference cost
+    # \date       2016-11-30 14:14:36+0000
+    #
+    # \param      self                       The object
+    # \param      registration_image_type_reference  The image type reference cost
+    #
+    def set_registration_image_type_reference(self, registration_image_type_reference):
+        if registration_image_type_reference not in ["standard", "gradient_magnitude", "partial_derivative"]:
+            raise ValueError("Registration image type" + registration_image_type_reference + " for the reference residuals is not possible.")
+        self._registration_image_type_reference = registration_image_type_reference
 
 
     def get_final_cost(self):
@@ -253,7 +270,7 @@ class IntraStackRegistration(StackRegistrationBase):
         ## Build filename
         filename  = prefix
         filename += self._transform_type.capitalize()
-        filename += "_IC" + str(self._intensity_correction_type)
+        filename += "_IC" + str(self._intensity_correction_type_slice_neighbour_fit)
         filename += "_Opt" 
         filename += dictionary_method[self._optimizer_method]
         filename += dictionary_loss[self._optimizer_loss]
@@ -273,12 +290,15 @@ class IntraStackRegistration(StackRegistrationBase):
     def _print_info_text(self):
         print("Minimization via least_squares solver")
         print("\tTransform type: " + self._transform_type + " (Initialization: " + str(self._transform_initializer_type) +")")
-        print("\tIntensity correction type: " + str(self._intensity_correction_type) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
+        print("\tIntensity correction type: " + str(self._intensity_correction_type_slice_neighbour_fit) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
+        if self._reference is not None:
+            print("\tIntensity correction type reference term: " + str(self._intensity_correction_type_reference_fit) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
         print("\tMethod: " + self._optimizer_method)
         print("\tLoss: " + self._optimizer_loss)
         print("\tMaximum number of function evaluations: " + str(self._optimizer_nfev_max))
         print("\tStack mask used: " + str(self._use_stack_mask))
         if self._reference is not None:
+            print("\tReference residual image type: " + self._registration_image_type_reference)
             print("\tReference mask used: " + str(self._use_reference_mask))
         print("\tRegularization coefficients: %.g (reference), %.g (neighbour), %.g (parameter)" %(self._alpha_reference, self._alpha_neighbour, self._alpha_parameter))
 
@@ -301,7 +321,31 @@ class IntraStackRegistration(StackRegistrationBase):
         ## If reference is given, precompute required data
         if self._reference is not None:
 
-            self._slices_2D_reference = self._get_projected_2D_slices_of_stack(self._reference)
+            if abs(self._alpha_neighbour) < self._ZERO:
+                self._intensity_correction_type_slice_neighbour_fit = self._intensity_correction_type_reference_fit
+
+            if self._registration_image_type_reference in ["standard"]:
+                self._stack_reference_term = self._stack
+
+            elif self._registration_image_type_reference in ["gradient_magnitude"]:
+                gradient_magnitude_filter_sitk = sitk.GradientMagnitudeImageFilter()
+                
+                ## Apply gradient magnitude filter to stack
+                stack_gradient_magnitude_sitk = gradient_magnitude_filter_sitk.Execute(self._stack.sitk)
+                self._stack_reference_term = st.Stack.from_sitk_image(stack_gradient_magnitude_sitk, self._stack.get_filename(), self._stack.sitk_mask)
+
+                ## Apply gradient magnitude filter to reference
+                reference_gradient_magnitude_sitk = gradient_magnitude_filter_sitk.Execute(self._reference.sitk)
+                self._reference = st.Stack.from_sitk_image(reference_gradient_magnitude_sitk, self._reference.get_filename(), self._reference.sitk_mask)
+            
+            # elif self._registration_image_type_reference in ["gradient"]:
+
+            else:
+                raise ValueError("Registration image type" + self._registration_image_type_reference + " for the reference residuals is not possible.")
+
+            ## Get projected 2D slices onto x-y image plane
+            self._slices_2D_stack_reference_term = self._get_projected_2D_slices_of_stack(self._stack, registration_image_type=self._registration_image_type_reference)
+            self._slices_2D_reference = self._get_projected_2D_slices_of_stack(self._reference, registration_image_type=self._registration_image_type_reference)
             self._reference_nda = sitk.GetArrayFromImage(self._reference.sitk)
             self._reference_nda_mask = sitk.GetArrayFromImage(self._reference.sitk_mask)
 
@@ -316,7 +360,7 @@ class IntraStackRegistration(StackRegistrationBase):
         ## used for further optimisation
         self._transforms_2D_sitk, parameters = self._get_initial_transforms_and_parameters[self._transform_initializer_type]()
 
-        if self._intensity_correction_type is not None:
+        if self._intensity_correction_type_slice_neighbour_fit is not None:
             parameters_intensity = self._get_initial_intensity_correction_parameters[self._intensity_correction_initializer_type]()
             parameters = np.concatenate((parameters, parameters_intensity), axis=1)
 
@@ -351,10 +395,10 @@ class IntraStackRegistration(StackRegistrationBase):
             if self._transform_type in ["similarity"]:
                 self._get_residual_parameters = lambda x: np.concatenate((
                     self._get_residual_scale(x),
-                    self._get_residual_intensity_coefficients[self._intensity_correction_type](x)
+                    self._get_residual_intensity_coefficients[self._intensity_correction_type_slice_neighbour_fit](x)
                 ))
             else:
-                self._get_residual_parameters = lambda x: self._get_residual_intensity_coefficients[self._intensity_correction_type](x)
+                self._get_residual_parameters = lambda x: self._get_residual_intensity_coefficients[self._intensity_correction_type_slice_neighbour_fit](x)
 
 
         ##---------------------------------------------------------------------
@@ -419,13 +463,13 @@ class IntraStackRegistration(StackRegistrationBase):
         ## 1) Define Jacobian of the prior term on the parameters
         if alpha_parameter > self._ZERO:
             if self._transform_type in ["similarity"]:
-                # if self._intensity_correction_type in ["affine"]:
+                # if self._intensity_correction_type_slice_neighbour_fit in ["affine"]:
                 self._get_jacobian_residual_parameters = lambda x: np.concatenate((
                     self._get_jacobian_residual_scale(x),
-                    self._get_jacobian_residual_intensity_coefficients[self._intensity_correction_type](x)
+                    self._get_jacobian_residual_intensity_coefficients[self._intensity_correction_type_slice_neighbour_fit](x)
                 ))
             else:
-                self._get_jacobian_residual_parameters = lambda x: self._get_jacobian_residual_intensity_coefficients[self._intensity_correction_type](x)
+                self._get_jacobian_residual_parameters = lambda x: self._get_jacobian_residual_intensity_coefficients[self._intensity_correction_type_slice_neighbour_fit](x)
 
         ##---------------------------------------------------------------------
         ## 2) Construct overall Jacobian of residual
@@ -499,17 +543,17 @@ class IntraStackRegistration(StackRegistrationBase):
             
             ## Get slice_i(T(theta_i, x))
             self._transforms_2D_sitk[i].SetParameters(parameters[i,0:self._transform_type_dofs])
-            slice_i_sitk = sitk.Resample(self._slices_2D[i].sitk, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], self._interpolator_sitk)
+            slice_i_sitk = sitk.Resample(self._slices_2D_stack_reference_term[i].sitk, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], self._interpolator_sitk)
             slice_i_nda = sitk.GetArrayFromImage(slice_i_sitk)
 
             ## Correct intensities according to chosen model
-            slice_i_nda = self._apply_intensity_correction[self._intensity_correction_type](slice_i_nda, parameters[i, self._transform_type_dofs:])
+            slice_i_nda = self._apply_intensity_correction[self._intensity_correction_type_reference_fit](slice_i_nda, parameters[i, self._transform_type_dofs:])
 
             ## Compute residual slice_i(T(theta_i, x)) - ref(x))
             residual_slice_nda = slice_i_nda - self._reference_nda[i,:,:]
             
             if self._use_stack_mask:
-                slice_i_sitk_mask = sitk.Resample(self._slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
+                slice_i_sitk_mask = sitk.Resample(self._slices_2D_stack_reference_term[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
                 slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
 
                 residual_slice_nda *= slice_i_nda_mask
@@ -556,7 +600,7 @@ class IntraStackRegistration(StackRegistrationBase):
         slice_i_nda = sitk.GetArrayFromImage(slice_i_sitk)
 
         ## Correct intensities according to chosen model
-        slice_i_nda = self._apply_intensity_correction[self._intensity_correction_type](slice_i_nda, parameters[i, self._transform_type_dofs:])
+        slice_i_nda = self._apply_intensity_correction[self._intensity_correction_type_slice_neighbour_fit](slice_i_nda, parameters[i, self._transform_type_dofs:])
 
         if self._use_stack_mask:
             slice_i_sitk_mask = sitk.Resample(self._slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
@@ -574,7 +618,7 @@ class IntraStackRegistration(StackRegistrationBase):
             slice_ip1_nda = sitk.GetArrayFromImage(slice_ip1_sitk)
 
             ## Correct intensities according to chosen model
-            slice_ip1_nda = self._apply_intensity_correction[self._intensity_correction_type](slice_ip1_nda, parameters[i+1, self._transform_type_dofs:])
+            slice_ip1_nda = self._apply_intensity_correction[self._intensity_correction_type_slice_neighbour_fit](slice_ip1_nda, parameters[i+1, self._transform_type_dofs:])
 
             ## Compute residual slice_i(T(theta_i, x)) - slice_{i+1}(T(theta_{i+1}, x))
             residual_slice_nda = slice_i_nda - slice_ip1_nda
@@ -613,7 +657,7 @@ class IntraStackRegistration(StackRegistrationBase):
     # \return     The Jacobian of a slice as (N_slice_voxels x
     #             transform_type_dofs)-array.
     #
-    def _get_jacobian_slice(self, slice, transform_sitk, transform_itk):
+    def _get_jacobian_slice(self, slice, transform_sitk, transform_itk, intensity_correction_type):
 
         ## Get slice(T(theta, x))
         slice_sitk = sitk.Resample(slice.sitk, self._slice_grid_2D_sitk, transform_sitk, self._interpolator_sitk)
@@ -646,7 +690,7 @@ class IntraStackRegistration(StackRegistrationBase):
         jacobian_slice = np.sum(dslice_nda[:,:,np.newaxis]*dT_nda, axis=1)
 
         ## Intensity correction
-        jacobian_slice = self._get_jacobian_intensity_correction[self._intensity_correction_type](jacobian_slice, slice_sitk, slice_nda_mask)
+        jacobian_slice = self._get_jacobian_intensity_correction[intensity_correction_type](jacobian_slice, slice_sitk, slice_nda_mask)
 
         return jacobian_slice
 
@@ -676,7 +720,7 @@ class IntraStackRegistration(StackRegistrationBase):
         self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice_i))
 
         ## Get d[slice_i(T(theta_i, x))]/dtheta_i
-        jacobian_slice_i = self._get_jacobian_slice(self._slices_2D[i], self._transforms_2D_sitk[i], self._transforms_2D_itk[i])
+        jacobian_slice_i = self._get_jacobian_slice(self._slices_2D[i], self._transforms_2D_sitk[i], self._transforms_2D_itk[i], self._intensity_correction_type_slice_neighbour_fit)
 
         ## Compute Jacobian of residuals
         for i in range(0, self._N_slices-1):
@@ -687,7 +731,7 @@ class IntraStackRegistration(StackRegistrationBase):
             self._transforms_2D_itk[i+1].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice_ip1))
 
             ## Get d[slice_{i+1}(T(theta_{i+1}, x))]/dtheta_{i+1}
-            jacobian_slice_ip1 = self._get_jacobian_slice(self._slices_2D[i+1], self._transforms_2D_sitk[i+1], self._transforms_2D_itk[i+1])
+            jacobian_slice_ip1 = self._get_jacobian_slice(self._slices_2D[i+1], self._transforms_2D_sitk[i+1], self._transforms_2D_itk[i+1], self._intensity_correction_type_slice_neighbour_fit)
 
             ## Set elements in Jacobian for entire stack
             jacobian[i*self._N_slice_voxels:(i+1)*self._N_slice_voxels, i*self._optimization_dofs:(i+1)*self._optimization_dofs] = jacobian_slice_i
@@ -714,6 +758,8 @@ class IntraStackRegistration(StackRegistrationBase):
         ## Allocate memory for Jacobian of residual
         jacobian = np.zeros((self._N_slices*self._N_slice_voxels, self._optimization_dofs*self._N_slices))
 
+        jacobian_slice_i = np.zeros((self._N_slice_voxels, self._optimization_dofs))
+
         ## Reshape parameters for easier access
         parameters = parameters_vec.reshape(-1, self._optimization_dofs)
 
@@ -726,8 +772,13 @@ class IntraStackRegistration(StackRegistrationBase):
             self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice))
 
             ## Get d[slice_i(T(theta_i, x))]/dtheta_i
-            jacobian_slice_i = self._get_jacobian_slice(self._slices_2D[i], self._transforms_2D_sitk[i], self._transforms_2D_itk[i])
+            jacobian_slice_i_tmp = self._get_jacobian_slice(self._slices_2D_stack_reference_term[i], self._transforms_2D_sitk[i], self._transforms_2D_itk[i], self._intensity_correction_type_reference_fit)
             
+            ## Second dimension is decided by intensity_correction_type_slice_neighbour_fit
+            ## as being of "higher order"
+            ## (e.g. affine for slice fit term and linear for reference fit term)
+            jacobian_slice_i[:,0:jacobian_slice_i_tmp.shape[1]] = jacobian_slice_i_tmp
+
             ## Set elements in Jacobian for entire stack
             jacobian[i*self._N_slice_voxels:(i+1)*self._N_slice_voxels, i*self._optimization_dofs:(i+1)*self._optimization_dofs] = jacobian_slice_i
         
@@ -754,7 +805,7 @@ class IntraStackRegistration(StackRegistrationBase):
     #     parameters_prior[:, 0: self._transform_type_dofs] = self._parameters_prior_transform[self._transform_type]
 
     #     ## Prior for intensity correction parameters
-    #     parameters_prior[:,self._transform_type_dofs:] = self._parameters_prior_intensity_correction[self._intensity_correction_type]
+    #     parameters_prior[:,self._transform_type_dofs:] = self._parameters_prior_intensity_correction[self._intensity_correction_type_slice_neighbour_fit]
 
     #     # return parameters_vec/self._parameters0_vec
     #     return parameters_vec - parameters_prior.flatten()
@@ -858,6 +909,31 @@ class IntraStackRegistration(StackRegistrationBase):
 
 
     ##
+    # Calculates the statistics of residuals based on ell^2 norm
+    # \date       2016-11-30 14:16:20+0000
+    #
+    # \param      self  The object
+    #
+    # \return     The statistics residuals ell 2.
+    #
+    def _compute_statistics_residuals_ell2(self):
+        
+        self._final_cost = 0
+
+        if self._alpha_reference > self._ZERO:
+            self._residual_reference_fit_ell2 = np.sum(self._get_residual_reference_fit(self._parameters.flatten())**2)
+            self._final_cost += self._residual_reference_fit_ell2
+        
+        if self._alpha_neighbour > self._ZERO:
+            self._residual_slice_neighbours_ell2 = np.sum(self._get_residual_slice_neighbours_fit(self._parameters.flatten())**2)
+            self._final_cost += self._residual_slice_neighbours_ell2
+        
+        if self._alpha_parameter > self._ZERO:
+            self._residual_paramters_ell2 = np.sum(self._get_residual_parameters(self._parameters.flatten())**2)
+            self._final_cost += self._residual_paramters_ell2
+
+
+    ##
     #       Gets the initial parameters for 'None', i.e. for identity
     #             transform.
     # \date       2016-11-08 15:06:54+0000
@@ -951,7 +1027,7 @@ class IntraStackRegistration(StackRegistrationBase):
 
                 ## Use sitk.CenteredTransformInitializerFilter to get initial transform
                 fixed_sitk = self._slices_2D_reference[i].sitk
-                moving_sitk = self._slices_2D[i].sitk
+                moving_sitk = self._slices_2D_stack_reference_term[i].sitk
                 initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
                 operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + transform_initializer_type_sitk)
                 
@@ -983,11 +1059,11 @@ class IntraStackRegistration(StackRegistrationBase):
     def _get_initial_intensity_correction_parameters_None(self):
         
         ## Set intensity correction parameters to identity
-        if self._intensity_correction_type in ["linear"]:
+        if self._intensity_correction_type_slice_neighbour_fit in ["linear"]:
             return np.ones((self._N_slices,1))
         
         ## affine intensity correction type requires additional column (but set to zero)
-        elif self._intensity_correction_type in ["affine"]:
+        elif self._intensity_correction_type_slice_neighbour_fit in ["affine"]:
             return np.concatenate((np.ones((self._N_slices,1)), np.zeros((self._N_slices,1))), axis=1)
         
     def _get_initial_intensity_correction_parameters_linear(self):
@@ -997,12 +1073,12 @@ class IntraStackRegistration(StackRegistrationBase):
             intensity_corrections_coefficients = self._get_initial_intensity_correction_parameters_None()
 
         else:
-            intensity_correction = ic.IntensityCorrection(stack=self._stack, reference=self._reference.get_resampled_stack_from_slices(resampling_grid=self._stack.sitk), use_individual_slice_correction=True, use_verbose=False)
+            intensity_correction = ic.IntensityCorrection(stack=self._stack_reference_term, reference=self._reference.get_resampled_stack_from_slices(resampling_grid=self._stack.sitk), use_individual_slice_correction=True, use_verbose=False)
             intensity_correction.run_linear_intensity_correction()
             intensity_corrections_coefficients = intensity_correction.get_intensity_correction_coefficients()
 
             ## affine intensity correction type requires additional column (but set to zero)
-            if self._intensity_correction_type in ["affine"]:
+            if self._intensity_correction_type_slice_neighbour_fit in ["affine"]:
                 intensity_corrections_coefficients = np.concatenate((intensity_corrections_coefficients, np.zeros((self._N_slices,1))), axis=1)
         
         return intensity_corrections_coefficients
@@ -1010,7 +1086,7 @@ class IntraStackRegistration(StackRegistrationBase):
     def _get_initial_intensity_correction_parameters_affine(self):
 
         if self._reference is not None:
-            intensity_correction = ic.IntensityCorrection(stack=self._stack, reference=self._reference.get_resampled_stack_from_slices(resampling_grid=self._stack.sitk), use_individual_slice_correction=True, use_verbose=False)
+            intensity_correction = ic.IntensityCorrection(stack=self._stack_reference_term, reference=self._reference.get_resampled_stack_from_slices(resampling_grid=self._stack.sitk), use_individual_slice_correction=True, use_verbose=False)
             intensity_correction.run_affine_intensity_correction()
             intensity_corrections_coefficients = intensity_correction.get_intensity_correction_coefficients()
 
@@ -1083,12 +1159,13 @@ class IntraStackRegistration(StackRegistrationBase):
     # Gets the projected 2d slices of stack.
     # \date       2016-11-21 19:59:13+0000
     #
-    # \param      self   The object
-    # \param      stack  The stack
+    # \param      self                     The object
+    # \param      stack                    The stack
+    # \param      registration_image_type_reference  Either "standard" or "gradient_magnitude"
     #
     # \return     The projected 2d slices of stack.
     #
-    def _get_projected_2D_slices_of_stack(self, stack):
+    def _get_projected_2D_slices_of_stack(self, stack, registration_image_type="standard"):
 
         slices_3D = stack.get_slices()
         slices_2D = [None]*self._N_slices
@@ -1122,6 +1199,17 @@ class IntraStackRegistration(StackRegistrationBase):
             slice_number = slice_3D.get_slice_number()
 
             slice_2D_sitk = slice_3D.sitk[:,:,0]
+
+            if registration_image_type in ["gradient_magnitude"]:
+                # print("Gradient magnitude image type is chosen")
+                gradient_magnitude_filter_sitk = sitk.GradientMagnitudeImageFilter()
+                slice_2D_sitk = gradient_magnitude_filter_sitk.Execute(slice_2D_sitk)
+                
+                ## Debug
+                # sitkh.show_sitk_image([slice_3D.sitk[:,:,0],slice_2D_sitk], title=["standard_slice"+str(i), "gradient_magnitude_slice"+str(i)])
+                # ph.pause()
+                # ph.killall_itksnap()
+
             slice_2D_sitk_mask = slice_3D.sitk_mask[:,:,0]
 
             slices_2D[i] = sl.Slice.from_sitk_image(slice_2D_sitk, dir_input=None, filename=filename, slice_number=slice_number, slice_sitk_mask=slice_2D_sitk_mask)

@@ -28,6 +28,10 @@ def pause():
     programPause = raw_input("Press the <ENTER> key to continue ...")
 
 
+def killall_itksnap():
+    os.system("killall ITK-SNAP")
+
+
 ##
 # Reads an input from the command line and returns it
 # \date       2016-11-18 12:45:10+0000

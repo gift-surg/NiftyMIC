@@ -116,6 +116,7 @@ class TestIntraStackRegistration(unittest.TestCase):
     def setUp(self):        
         pass
 
+
     """
     ##
     #       Test whether the function
@@ -168,6 +169,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         ## 2) Get initial transform in case reference is given
         inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
         inplane_registration.set_transform_initializer_type("moments")
+        # inplane_registration.set_registration_image_type_reference("gradient_magnitude")
         # inplane_registration.set_transform_initializer_type("identity")
         inplane_registration._run_registration_pipeline_initialization()
         inplane_registration._apply_motion_correction()
@@ -176,6 +178,8 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         parameters_est = inplane_registration.get_parameters()
         nda_diff = parameters - parameters_est
+        # print nda_diff
+        # print parameters
         self.assertEqual(np.round(
                 np.linalg.norm(nda_diff)
             , decimals = self.accuracy), 0)
@@ -214,7 +218,8 @@ class TestIntraStackRegistration(unittest.TestCase):
         ## Get initial transform in case no reference is given
         inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
         # inplane_registration.set_transform_initializer_type("moments")
-        inplane_registration.set_intensity_correction_type("linear")
+        inplane_registration.set_intensity_correction_type_slice_neighbour_fit("linear")
+        inplane_registration.set_intensity_correction_initializer_type("linear")
         inplane_registration._run_registration_pipeline_initialization()
         
         parameters_est = inplane_registration.get_parameters()
@@ -242,7 +247,8 @@ class TestIntraStackRegistration(unittest.TestCase):
         ## Get initial transform in case no reference is given
         inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
         # inplane_registration.set_transform_initializer_type("moments")
-        inplane_registration.set_intensity_correction_type("affine")
+        inplane_registration.set_intensity_correction_type_slice_neighbour_fit("affine")
+        inplane_registration.set_intensity_correction_initializer_type("affine")
         inplane_registration._run_registration_pipeline_initialization()
         
         parameters_est = inplane_registration.get_parameters()
@@ -251,7 +257,7 @@ class TestIntraStackRegistration(unittest.TestCase):
                 np.linalg.norm(nda_diff)
             , decimals = self.accuracy), 0)
 
-    
+  
     ##
     #       Verify that in-plane rigid registration works
     # \date       2016-11-02 21:56:19+0000
@@ -272,7 +278,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         # recon_sitk = sitk.ReadImage(self.dir_test_data + filename_recon + ".nii.gz")
 
         # recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
-        # stack = st.Stack.from_sitk_image(recon_resampled_sitk)
+        # stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
 
         stack = st.Stack.from_filename(self.dir_test_data, filename_stack, "_mask")
 
@@ -355,7 +361,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         # recon_sitk = sitk.ReadImage(self.dir_test_data + filename_recon + ".nii.gz")
 
         # recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
-        # stack = st.Stack.from_sitk_image(recon_resampled_sitk)
+        # stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
 
         stack = st.Stack.from_filename(self.dir_test_data, filename_stack, "_mask")
 
@@ -422,7 +428,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         recon_sitk = sitk.ReadImage(self.dir_test_data + filename_recon + ".nii.gz")
 
         recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
-        stack = st.Stack.from_sitk_image(recon_resampled_sitk)
+        stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
 
         # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
@@ -442,7 +448,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         inplane_registration.set_transform_initializer_type("moments")
         inplane_registration.set_transform_type("rigid")
-        inplane_registration.set_intensity_correction_type("linear")
+        inplane_registration.set_intensity_correction_type_slice_neighbour_fit("linear")
         inplane_registration.set_optimizer_loss("linear") # linear, soft_l1, huber
         inplane_registration.use_parameter_normalization(True)
         inplane_registration.use_verbose(True)
@@ -491,7 +497,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         recon_sitk = sitk.ReadImage(self.dir_test_data + filename_recon + ".nii.gz")
 
         recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
-        stack = st.Stack.from_sitk_image(recon_resampled_sitk)
+        stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
 
         # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
@@ -513,7 +519,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         inplane_registration.set_transform_initializer_type("identity")
         inplane_registration.set_optimizer_loss("linear")
         inplane_registration.set_intensity_correction_initializer_type(None)
-        inplane_registration.set_intensity_correction_type("affine")
+        inplane_registration.set_intensity_correction_type_slice_neighbour_fit("affine")
         inplane_registration.use_parameter_normalization(True)
         inplane_registration.use_verbose(True)
         inplane_registration.use_stack_mask(True)
@@ -549,7 +555,7 @@ class TestIntraStackRegistration(unittest.TestCase):
             np.linalg.norm(stack_diff_nda)
         , decimals = 8), 0)
 
-    """
+    
     def test_inplane_similarity_alignment_to_reference(self):
 
         filename_stack = "fetal_brain_0"
@@ -605,7 +611,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         inplane_registration.use_parameter_normalization(True)
         inplane_registration.set_prior_scale(1/scale)
         inplane_registration.set_prior_intensity_coefficients((intensity_scale, intensity_bias))
-        inplane_registration.set_intensity_correction_type("affine")
+        inplane_registration.set_intensity_correction_type_slice_neighbour_fit("affine")
         inplane_registration.use_verbose(True)
         inplane_registration.set_alpha_reference(1)
         inplane_registration.set_alpha_neighbour(0)
@@ -641,4 +647,75 @@ class TestIntraStackRegistration(unittest.TestCase):
         self.assertEqual(np.round(
             np.linalg.norm(stack_diff_nda)
         , decimals = 8), 0)
-    
+
+    """
+    def test_inplane_rigid_alignment_to_reference_multimodal(self):
+
+        filename_stack = "fetal_brain_0"
+        filename_recon = "FetalBrain_reconstruction_3stacks_myAlg"
+
+        stack_sitk = sitk.ReadImage(self.dir_test_data + filename_stack + ".nii.gz")
+        recon_sitk = sitk.ReadImage(self.dir_test_data + filename_recon + ".nii.gz")
+
+        recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
+        stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
+
+        # stack = st.Stack.from_filename(self.dir_test_data, filename)
+
+        ## Create in-plane motion corruption
+        angle_z = 0.05
+        center_2D = (0,0)
+        translation_2D = np.array([1, -2])
+
+        intensity_scale = 1
+        intensity_bias = 0
+
+        ## Get corrupted stack and corresponding motions
+        stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D, intensity_scale=intensity_scale, intensity_bias=intensity_bias)
+
+        ## Perform in-plane rigid registration
+        inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
+        # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
+        inplane_registration.set_registration_image_type_reference("gradient_magnitude")
+        # inplane_registration.set_registration_image_type_reference("partial_derivative")
+        inplane_registration.set_transform_initializer_type("moments")
+        inplane_registration.set_transform_type("rigid")
+        inplane_registration.set_intensity_correction_type_slice_neighbour_fit("affine")
+        inplane_registration.set_intensity_correction_type_reference_fit("linear")
+        inplane_registration.set_optimizer_loss("linear") # linear, soft_l1, huber
+        inplane_registration.use_parameter_normalization(True)
+        # inplane_registration.use_verbose(True)
+        inplane_registration.set_alpha_reference(1)
+        inplane_registration.set_alpha_neighbour(1)
+        inplane_registration.set_alpha_parameter(0)
+        inplane_registration.set_optimizer_nfev_max(8)
+        inplane_registration.run_registration()
+        inplane_registration.print_statistics()
+
+        stack_registered = inplane_registration.get_corrected_stack()
+        parameters = inplane_registration.get_parameters()
+            
+        sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(resampling_grid=None, interpolator="Linear")])
+
+        print("Final parameters:")
+        print parameters
+        
+        self.assertEqual(np.round(
+            np.linalg.norm(parameters[:,-1] - intensity_scale)
+        , decimals = 0), 0)
+
+
+        ## 2) Test slice transforms
+        slice_transforms_sitk = inplane_registration.get_slice_transforms_sitk()
+
+        stack_tmp = st.Stack.from_stack(stack_corrupted)
+        stack_tmp.update_motion_correction_of_slices(slice_transforms_sitk)
+
+        stack_diff_sitk = stack_tmp.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk - stack_registered.get_resampled_stack_from_slices(resampling_grid=stack.sitk).sitk
+
+        stack_diff_nda = sitk.GetArrayFromImage(stack_diff_sitk)
+
+        self.assertEqual(np.round(
+            np.linalg.norm(stack_diff_nda)
+        , decimals = 8), 0)
+
