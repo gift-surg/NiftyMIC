@@ -163,6 +163,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
 
         filename = self._filename_results_prefix
         filename += "TV-L2-regularization"
+        filename += "_" + self._minimizer
         # filename += "_alpha" + str(alpha)
         # filename += "_rho" + str(rho)
         filename += "_ADMMiterations" + str(self._ADMM_iterations)
@@ -202,6 +203,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
         filename_image =  self._filename_results_prefix
         filename_image += "TVL2"
         filename_image += "_stacks" + str(self._N_stacks)
+        filename_image += "_" + self._minimizer
         filename_image += "_rho" + rho_str
         filename_image += "_alpha" + alpha_str
         filename_image += "_TK1itermax" + str(self._iter_max)

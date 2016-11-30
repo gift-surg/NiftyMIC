@@ -148,6 +148,7 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
         filename = self._filename_results_prefix
         filename += self._reg_type
         filename += "-regularization"
+        filename += "_" + self._minimizer
         filename += "_itermax" + str(self._iter_max)
         filename += "_" + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
         filename += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
@@ -181,6 +182,7 @@ class TikhonovRegularizationParameterEstimator(RegularizationParameterEstimator)
         filename_image =  self._filename_results_prefix
         filename_image += self._reg_type
         filename_image += "_stacks" + str(self._N_stacks)
+        filename_image += "_" + self._minimizer
         filename_image += "_alpha" + alpha_str
         filename_image += "_itermax" + str(self._iter_max)
 

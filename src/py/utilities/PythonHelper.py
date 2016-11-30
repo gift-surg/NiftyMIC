@@ -292,3 +292,9 @@ def append_array_to_file(directory, filename, array, filename_extension="txt", f
     np.savetxt(file_handle, array, fmt=format, delimiter=delimiter)
     file_handle.close()
     print("Array was appended to file " + str(directory + filename + "." + filename_extension) + ".")
+
+
+def print_line_separator(add_newline=True, symbol="*"):
+    if add_newline:
+        print("\n")
+    print(symbol*90)

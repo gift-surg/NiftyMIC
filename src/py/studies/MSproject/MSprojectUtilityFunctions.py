@@ -203,7 +203,7 @@ def get_left_right_mirrored_stack_if_required(image_sitk, filename_subject):
 
         ## Update direction and corresponding image header
         image_sitk.SetDirection((matrix.dot(direction_matrix)).flatten())
-        # image_sitk = update_left_right_image_header_information(image_sitk)
+        image_sitk = update_left_right_image_header_information(image_sitk)
 
         ## Transform to apply (in case of zero origin) to original image
         transform_sitk.SetMatrix(matrix.flatten())
