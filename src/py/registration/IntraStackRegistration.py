@@ -1041,15 +1041,15 @@ class IntraStackRegistration(StackRegistrationBase):
 
         if self._alpha_reference > self._ZERO:
             self._residual_reference_fit_ell2 = np.sum(self._get_residual_reference_fit_total(self._parameters.flatten())**2)
-            self._final_cost += self._residual_reference_fit_ell2
+            self._final_cost += self._alpha_reference*self._residual_reference_fit_ell2
         
         if self._alpha_neighbour > self._ZERO:
             self._residual_slice_neighbours_ell2 = np.sum(self._get_residual_slice_neighbours_fit(self._parameters.flatten())**2)
-            self._final_cost += self._residual_slice_neighbours_ell2
+            self._final_cost += self._alpha_neighbour*self._residual_slice_neighbours_ell2
         
         if self._alpha_parameter > self._ZERO:
             self._residual_paramters_ell2 = np.sum(self._get_residual_parameters(self._parameters.flatten())**2)
-            self._final_cost += self._residual_paramters_ell2
+            self._final_cost += self._alpha_parameter*self._residual_paramters_ell2
 
 
     ##
