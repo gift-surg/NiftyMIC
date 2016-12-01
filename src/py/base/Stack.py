@@ -447,9 +447,11 @@ class Stack:
         
         stack_resampled_sitk = sitk.GetImageFromArray(nda)
         stack_resampled_sitk.CopyInformation(resampling_grid.sitk)
-
+        stack_resampled_sitk = sitk.Cast(stack_resampled_sitk, resampling_grid.sitk.GetPixelIDValue())
+        
         stack_resampled_sitk_mask = sitk.GetImageFromArray(nda.astype("uint8"))
         stack_resampled_sitk_mask.CopyInformation(resampling_grid.sitk_mask)
+        stack_resampled_sitk_mask = sitk.Cast(stack_resampled_sitk_mask, resampling_grid.sitk_mask.GetPixelIDValue())
 
         ## Create helper used for normalization at the end
         nda_stack_covered_indices = np.zeros(nda_shape)
@@ -494,6 +496,7 @@ class Stack:
         ## Normalize resampled image
         stack_normalization = sitk.GetImageFromArray(nda_stack_covered_indices)
         stack_normalization.CopyInformation(resampling_grid.sitk)
+        stack_normalization = sitk.Cast(stack_normalization, resampling_grid.sitk.GetPixelIDValue())
         stack_resampled_sitk /= stack_normalization
 
         ## Get valid binary mask

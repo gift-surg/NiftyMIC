@@ -435,7 +435,6 @@ class StackRegistrationBase(object):
             self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](self._transforms_2D_sitk[i].GetParameters()))
             self._transforms_2D_itk[i].SetFixedParameters(itk.OptimizerParameters[itk.D](self._transforms_2D_sitk[i].GetFixedParameters()))
 
-
         ## Get cost function and its Jacobian w.r.t. the parameters
         fun = self._get_residual_call()
         jac = self._get_jacobian_residual_call()

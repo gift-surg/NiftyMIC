@@ -169,7 +169,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         ## 2) Get initial transform in case reference is given
         inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
         inplane_registration.set_transform_initializer_type("moments")
-        # inplane_registration.set_registration_image_type_reference("gradient_magnitude")
+        # inplane_registration.set_image_transform_reference_fit_term("gradient_magnitude")
         # inplane_registration.set_transform_initializer_type("identity")
         inplane_registration._run_registration_pipeline_initialization()
         inplane_registration._apply_motion_correction()
@@ -257,7 +257,7 @@ class TestIntraStackRegistration(unittest.TestCase):
                 np.linalg.norm(nda_diff)
             , decimals = self.accuracy), 0)
 
-  
+    
     ##
     #       Verify that in-plane rigid registration works
     # \date       2016-11-02 21:56:19+0000
@@ -351,7 +351,7 @@ class TestIntraStackRegistration(unittest.TestCase):
             np.linalg.norm(stack_diff_nda)
         , decimals = 8), 0)
 
-    
+
     def test_inplane_rigid_alignment_to_reference(self):
 
         filename_stack = "fetal_brain_0"
@@ -381,11 +381,11 @@ class TestIntraStackRegistration(unittest.TestCase):
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         inplane_registration.set_transform_initializer_type("moments")
         inplane_registration.set_optimizer_nfev_max(10)
-        inplane_registration.set_alpha_neighbour(2)
+        inplane_registration.set_alpha_neighbour(0)
         inplane_registration.set_alpha_parameter(0)
         inplane_registration.use_stack_mask(1)
         inplane_registration.use_reference_mask(0)
-        inplane_registration.set_optimizer_loss("soft_l1")
+        inplane_registration.set_optimizer_loss("linear")
         # inplane_registration.set_optimizer_method("trf")
         # inplane_registration._run_registration_pipeline_initialization()
         # inplane_registration._apply_motion_correction()
@@ -448,14 +448,16 @@ class TestIntraStackRegistration(unittest.TestCase):
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         inplane_registration.set_transform_initializer_type("moments")
         inplane_registration.set_transform_type("rigid")
+        inplane_registration.set_intensity_correction_initializer_type("linear")
         inplane_registration.set_intensity_correction_type_slice_neighbour_fit("linear")
+        inplane_registration.set_intensity_correction_type_reference_fit("linear")
         inplane_registration.set_optimizer_loss("linear") # linear, soft_l1, huber
         inplane_registration.use_parameter_normalization(True)
         inplane_registration.use_verbose(True)
-        # inplane_registration.set_alpha_reference(1)
+        inplane_registration.set_alpha_reference(1)
         inplane_registration.set_alpha_neighbour(0)
         inplane_registration.set_alpha_parameter(0)
-        inplane_registration.set_optimizer_nfev_max(15)
+        inplane_registration.set_optimizer_nfev_max(30)
         inplane_registration.use_verbose(True)
         inplane_registration.run_registration()
         inplane_registration.print_statistics()
@@ -502,9 +504,9 @@ class TestIntraStackRegistration(unittest.TestCase):
         # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
         ## Create in-plane motion corruption
-        angle_z = 0.0
+        angle_z = 0.01
         center_2D = (0,0)
-        translation_2D = np.array([0, 0])
+        translation_2D = np.array([1, 0])
 
         intensity_scale = 5
         intensity_bias = 5
@@ -518,14 +520,15 @@ class TestIntraStackRegistration(unittest.TestCase):
         inplane_registration.set_transform_type("rigid")
         inplane_registration.set_transform_initializer_type("identity")
         inplane_registration.set_optimizer_loss("linear")
-        inplane_registration.set_intensity_correction_initializer_type(None)
+        inplane_registration.set_intensity_correction_initializer_type("affine")
         inplane_registration.set_intensity_correction_type_slice_neighbour_fit("affine")
         inplane_registration.use_parameter_normalization(True)
         inplane_registration.use_verbose(True)
         inplane_registration.use_stack_mask(True)
+        inplane_registration.set_prior_intensity_coefficients((intensity_scale-0.4, intensity_bias+0.7))
         inplane_registration.set_alpha_reference(1)
         inplane_registration.set_alpha_neighbour(1)
-        inplane_registration.set_alpha_parameter(1e8)
+        inplane_registration.set_alpha_parameter(1e3)
         inplane_registration.set_optimizer_nfev_max(15)
         inplane_registration.use_verbose(True)
         inplane_registration.run_registration()
@@ -583,7 +586,7 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         ## Create in-plane motion corruption
         scale = 1.2
-        angle_z = 0.1
+        angle_z = 0.05
         center_2D = (0,0)
         # translation_2D = np.array([0,0])
         translation_2D = np.array([1, -1])
@@ -600,8 +603,8 @@ class TestIntraStackRegistration(unittest.TestCase):
         ## Perform in-plane rigid registrations
         inplane_registration = inplanereg.IntraStackRegistration(stack=stack_corrupted, reference=stack)
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
-        # inplane_registration.set_transform_initializer_type("geometry")
-        inplane_registration.set_transform_initializer_type("identity")
+        inplane_registration.set_transform_initializer_type("geometry")
+        # inplane_registration.set_transform_initializer_type("identity")
         inplane_registration.set_intensity_correction_initializer_type("affine")
         inplane_registration.set_transform_type("similarity")
         inplane_registration.set_interpolator("Linear")
@@ -612,6 +615,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         inplane_registration.set_prior_scale(1/scale)
         inplane_registration.set_prior_intensity_coefficients((intensity_scale, intensity_bias))
         inplane_registration.set_intensity_correction_type_slice_neighbour_fit("affine")
+        inplane_registration.set_intensity_correction_type_reference_fit("affine")
         inplane_registration.use_verbose(True)
         inplane_registration.set_alpha_reference(1)
         inplane_registration.set_alpha_neighbour(0)
@@ -648,6 +652,7 @@ class TestIntraStackRegistration(unittest.TestCase):
             np.linalg.norm(stack_diff_nda)
         , decimals = 8), 0)
 
+    
     """
     def test_inplane_rigid_alignment_to_reference_multimodal(self):
 
@@ -663,32 +668,34 @@ class TestIntraStackRegistration(unittest.TestCase):
         # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
         ## Create in-plane motion corruption
+        scale = 1.05
         angle_z = 0.05
         center_2D = (0,0)
         translation_2D = np.array([1, -2])
 
-        intensity_scale = 1
-        intensity_bias = 0
+        intensity_scale = 1.3
+        intensity_bias = 10
 
         ## Get corrupted stack and corresponding motions
-        stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D, intensity_scale=intensity_scale, intensity_bias=intensity_bias)
+        stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D, intensity_scale=intensity_scale, scale=scale, intensity_bias=intensity_bias)
 
         ## Perform in-plane rigid registration
         inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
-        inplane_registration.set_registration_image_type_reference("gradient_magnitude")
-        # inplane_registration.set_registration_image_type_reference("partial_derivative")
+        # inplane_registration.set_image_transform_reference_fit_term("gradient_magnitude")
+        # inplane_registration.set_image_transform_reference_fit_term("partial_derivative")
         inplane_registration.set_transform_initializer_type("moments")
-        inplane_registration.set_transform_type("rigid")
-        inplane_registration.set_intensity_correction_type_slice_neighbour_fit("affine")
-        inplane_registration.set_intensity_correction_type_reference_fit("linear")
-        inplane_registration.set_optimizer_loss("linear") # linear, soft_l1, huber
+        inplane_registration.set_transform_type("similarity")
+        inplane_registration.set_intensity_correction_initializer_type(None)
+        inplane_registration.set_intensity_correction_type_slice_neighbour_fit(None)
+        inplane_registration.set_intensity_correction_type_reference_fit(None)
         inplane_registration.use_parameter_normalization(True)
-        # inplane_registration.use_verbose(True)
-        inplane_registration.set_alpha_reference(1)
+        inplane_registration.use_verbose(True)
+        inplane_registration.set_optimizer_loss("linear") # linear, soft_l1, huber
+        inplane_registration.set_alpha_reference(100)
         inplane_registration.set_alpha_neighbour(1)
-        inplane_registration.set_alpha_parameter(0)
-        inplane_registration.set_optimizer_nfev_max(8)
+        inplane_registration.set_alpha_parameter(1)
+        inplane_registration.set_optimizer_nfev_max(15)
         inplane_registration.run_registration()
         inplane_registration.print_statistics()
 
@@ -697,12 +704,12 @@ class TestIntraStackRegistration(unittest.TestCase):
             
         sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(resampling_grid=None, interpolator="Linear")])
 
-        print("Final parameters:")
-        print parameters
+        # print("Final parameters:")
+        # print parameters
         
-        self.assertEqual(np.round(
-            np.linalg.norm(parameters[:,-1] - intensity_scale)
-        , decimals = 0), 0)
+        # self.assertEqual(np.round(
+        #     np.linalg.norm(parameters[:,-1] - intensity_scale)
+        # , decimals = 0), 0)
 
 
         ## 2) Test slice transforms
@@ -718,4 +725,3 @@ class TestIntraStackRegistration(unittest.TestCase):
         self.assertEqual(np.round(
             np.linalg.norm(stack_diff_nda)
         , decimals = 8), 0)
-
