@@ -473,7 +473,7 @@ class Stack:
                 resampling_grid.sitk_mask, 
                 sitk.Euler3DTransform(), 
                 sitk.sitkNearestNeighbor, 
-                default_pixel_value, 
+                0, 
                 resampling_grid.sitk_mask.GetPixelIDValue())
 
             ## Add resampled slice and mask to stack space
@@ -538,8 +538,8 @@ class Stack:
             resampling_grid, 
             sitk.Euler3DTransform(), 
             sitk.sitkNearestNeighbor, 
-            default_pixel_value,
-            self.sitk.GetPixelIDValue())
+            0,
+            self.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance
         stack = self.from_sitk_image(resampled_stack_sitk, self._filename + "_" + interpolator_str, resampled_stack_sitk_mask)
@@ -551,7 +551,7 @@ class Stack:
     #  its slices
     #  \param[in] spacing_new_scalar length of voxel side, scalar
     #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack_from_slices(self, spacing_new_scalar=None, interpolator="NearestNeighbor"):
+    def get_isotropically_resampled_stack_from_slices(self, spacing_new_scalar=None, interpolator="NearestNeighbor", default_pixel_value=0.0):
         resampled_stack = self.get_resampled_stack_from_slices()
 
         ## Choose interpolator
@@ -576,8 +576,6 @@ class Stack:
             size_new = np.round(spacing/spacing_new*size).astype("int")
 
         ## Resample image and its mask to isotropic grid
-        default_pixel_value = 0.0
-
         isotropic_resampled_stack_sitk =  sitk.Resample(
             resampled_stack.sitk, 
             size_new, 
@@ -597,7 +595,7 @@ class Stack:
             resampled_stack.sitk.GetOrigin(), 
             spacing_new,
             resampled_stack.sitk.GetDirection(),
-            default_pixel_value,
+            0,
             resampled_stack.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance
@@ -680,7 +678,7 @@ class Stack:
             origin, 
             spacing_new,
             direction,
-            default_pixel_value,
+            0,
             self.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance
@@ -730,7 +728,7 @@ class Stack:
             origin, 
             spacing,
             direction,
-            default_pixel_value,
+            0,
             self.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance
