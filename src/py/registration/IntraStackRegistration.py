@@ -67,10 +67,10 @@ class IntraStackRegistration(StackRegistrationBase):
             "affine"    :  self._apply_intensity_correction_affine,
         }
 
-        self._get_jacobian_intensity_correction = {
-            None        : self._get_jacobian_intensity_correction_None,
-            "linear"    : self._get_jacobian_intensity_correction_linear,
-            "affine"    : self._get_jacobian_intensity_correction_affine,
+        self._add_gradient_with_respect_to_intensity_correction_parameters = {
+            None        : self._add_gradient_with_respect_to_intensity_correction_parameters_None,
+            "linear"    : self._add_gradient_with_respect_to_intensity_correction_parameters_linear,
+            "affine"    : self._add_gradient_with_respect_to_intensity_correction_parameters_affine,
         }
 
         ## Specifies how the initial values for the intensity correction shall
@@ -121,8 +121,8 @@ class IntraStackRegistration(StackRegistrationBase):
         # }
 
         ## Derivative Image Filter
-        self._derivative_imge_filter_sitk = sitk.DerivativeImageFilter()
-        self._derivative_imge_filter_sitk.SetUseImageSpacing(True)
+        # self._derivative_imge_filter_sitk = sitk.DerivativeImageFilter()
+        # self._derivative_imge_filter_sitk.SetUseImageSpacing(True)
         
         ## Gradient Magnitude Filter
         self._gradient_magnitude_filter_sitk = sitk.GradientMagnitudeImageFilter()
@@ -132,6 +132,7 @@ class IntraStackRegistration(StackRegistrationBase):
         self._gradient_image_filter_sitk = sitk.GradientImageFilter()
         self._gradient_image_filter_sitk.SetUseImageDirection(True)
         self._gradient_image_filter_sitk.SetUseImageSpacing(True)
+
 
         self._apply_image_transform = {
             "identity"              :   self._apply_image_transform_identity,
@@ -310,17 +311,20 @@ class IntraStackRegistration(StackRegistrationBase):
     def _print_info_text(self):
         print("Minimization via least_squares solver")
         print("\tTransform type: " + self._transform_type + " (Initialization: " + str(self._transform_initializer_type) +")")
-        print("\tIntensity correction type: " + str(self._intensity_correction_type_slice_neighbour_fit) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
-        if self._reference is not None:
-            print("\tIntensity correction type reference term: " + str(self._intensity_correction_type_reference_fit) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
+        if self._alpha_neighbour > self._ZERO:
+            print("\tSlice neighbour fit term:")
+            print("\t\tIntensity correction type: " + str(self._intensity_correction_type_slice_neighbour_fit) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
+            print("\t\tStack mask used: " + str(self._use_stack_mask))
+        if self._alpha_reference > self._ZERO:
+            print("\tReference fit term:")
+            print("\t\tIntensity correction type: " + str(self._intensity_correction_type_reference_fit) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
+            print("\t\tImage transform: " + self._image_transform_reference_fit_term)
+            print("\t\tStack mask used: " + str(self._use_stack_mask))
+            print("\t\tReference mask used: " + str(self._use_reference_mask))
+        print("\tRegularization coefficients: %.g (reference), %.g (neighbour), %.g (parameter)" %(self._alpha_reference, self._alpha_neighbour, self._alpha_parameter))
         print("\tMethod: " + self._optimizer_method)
         print("\tLoss: " + self._optimizer_loss)
         print("\tMaximum number of function evaluations: " + str(self._optimizer_nfev_max))
-        print("\tStack mask used: " + str(self._use_stack_mask))
-        if self._reference is not None:
-            print("\tReference residual image type: " + self._image_transform_reference_fit_term)
-            print("\tReference mask used: " + str(self._use_reference_mask))
-        print("\tRegularization coefficients: %.g (reference), %.g (neighbour), %.g (parameter)" %(self._alpha_reference, self._alpha_neighbour, self._alpha_parameter))
 
     ##
     # { function_description }
@@ -635,11 +639,12 @@ class IntraStackRegistration(StackRegistrationBase):
             slice_i_nda = sitk.GetArrayFromImage(slice_i_sitk)
 
             ## Correct intensities according to chosen model
-            slice_i_nda = self._apply_intensity_correction[self._intensity_correction_type_reference_fit](slice_i_nda, parameters[i, self._transform_type_dofs:])
+            slice_i_nda = self._apply_intensity_correction[self._intensity_correction_type_reference_fit](slice_i_nda, parameters[i, self._transform_type_dofs:])            
 
             ## Compute residual slice_i(T(theta_i, x)) - ref(x))
-            residual_slice_nda = slice_i_nda - reference_nda[i,:,:]
-            
+            residual_slice_nda = slice_i_nda - reference_nda[i,:,:]            
+
+            ## Incorporate mask computations
             if self._use_stack_mask:
                 slice_i_sitk_mask = sitk.Resample(slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
                 slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
@@ -656,6 +661,88 @@ class IntraStackRegistration(StackRegistrationBase):
 
 
         return residual.flatten()
+
+
+    ##
+    # Gets the Jacobian to \p _get_residual_reference_fit used for the
+    # least_squares method.
+    # \date       2016-11-21 20:09:36+0000
+    #
+    # \param      self            The object
+    # \param      parameters_vec  The parameters vector
+    #
+    # \return     The jacobian residual reference fit.
+    #
+    def _get_jacobian_residual_reference_fit(self, slices_2D, trafo, parameters_vec):
+
+        ## Allocate memory for Jacobian of residual
+        jacobian = np.zeros((self._N_slices*self._N_slice_voxels, self._optimization_dofs*self._N_slices))
+
+        jacobian_slice_i = np.zeros((self._N_slice_voxels, self._optimization_dofs))
+
+        ## Reshape parameters for easier access
+        parameters = parameters_vec.reshape(-1, self._optimization_dofs)
+
+        ## Compute Jacobian of residuals between each slice and reference
+        for i in range(0, self._N_slices):
+            
+            ## Update transforms
+            parameters_slice = parameters[i,0:self._transform_type_dofs]
+            self._transforms_2D_sitk[i].SetParameters(parameters_slice)
+            self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice))
+
+            ## Get slice_i(T(theta, x))
+            slice_i_sitk = sitk.Resample(slices_2D[i].sitk, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], self._interpolator_sitk)
+
+            ## Apply image transform, i.e. gradients etc
+            slice_i_sitk = self._apply_image_transform[trafo](slice_i_sitk)
+
+            ## Get d[slice(T(theta, x))]/dx as (Ny x Nx x dim)-array
+            dslice_i_nda = self._get_gradient_image_nda_from_sitk_image(slice_i_sitk)
+            
+            ## Get slice data array (used for intensity correction parameter gradient)
+            slice_i_nda = sitk.GetArrayFromImage(slice_i_sitk)
+            
+            ## Incorporate mask computations
+            if self._use_stack_mask:
+                ## Slice mask
+                slice_i_sitk_mask = sitk.Resample(slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
+                slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
+
+                ## Mask data
+                slice_i_nda *= slice_i_nda_mask
+                
+                ## Mask gradient data
+                dslice_i_nda *= slice_i_nda_mask[:,:,np.newaxis]
+
+                ph.plot_2D_array_list
+            
+            if self._use_reference_mask:
+                ## Reference mask
+                reference_i_nda_mask = self._reference_nda_mask[i,:,:]
+                
+                ## Mask data
+                slice_i_nda *= reference_i_nda_mask
+
+                ## Mask gradient data
+                dslice_i_nda *= reference_i_nda_mask[:,:,np.newaxis]
+
+            ## Get Jacobian of slice w.r.t to transform parameters
+            jacobian_slice_nda = self._get_gradient_with_respect_to_transform_parameters(dslice_i_nda, self._transforms_2D_itk[i], slice_i_sitk)
+
+            ## Get d[slice_i(T(theta_i, x))]/dtheta_i:
+            ## Add Jacobian w.r.t. to intensity correction parameters
+            jacobian_slice_i_tmp = self._add_gradient_with_respect_to_intensity_correction_parameters[self._intensity_correction_type_reference_fit](jacobian_slice_nda, slice_i_nda)
+
+            ## Second dimension is decided by intensity_correction_type_slice_neighbour_fit
+            ## as being of "higher order"
+            ## (e.g. affine for slice fit term and linear for reference fit term)
+            jacobian_slice_i[:,0:jacobian_slice_i_tmp.shape[1]] = jacobian_slice_i_tmp
+
+            ## Set elements in Jacobian for entire stack
+            jacobian[i*self._N_slice_voxels:(i+1)*self._N_slice_voxels, i*self._optimization_dofs:(i+1)*self._optimization_dofs] = jacobian_slice_i
+        
+        return jacobian
 
     
     ##
@@ -728,59 +815,6 @@ class IntraStackRegistration(StackRegistrationBase):
 
         return residual.flatten()        
 
-    ##
-    # Gets the Jacobian of a slice based on the spatial transformation.
-    # \date       2016-11-21 18:23:53+0000
-    #
-    # Compute the Jacobian
-    # \f$ \frac{dI(T(\theta, x))}{d\theta} =
-    # \frac{dI}{dy}(T(\theta,x))\,\frac{dT}{d\theta}(\theta, x)
-    # \f$. It also considers the (affine) intensity correction model
-    #
-    # \param      self            The object
-    # \param      slice           The slice
-    # \param      transform_sitk  The transform sitk
-    # \param      transform_itk   The transform itk
-    #
-    # \return     The Jacobian of a slice as (N_slice_voxels x
-    #             transform_type_dofs)-array.
-    #
-    def _get_jacobian_slice(self, slice, transform_sitk, transform_itk, intensity_correction_type, trafo="identity"):
-
-        ## Get slice(T(theta, x))
-        slice_sitk = sitk.Resample(slice.sitk, self._slice_grid_2D_sitk, transform_sitk, self._interpolator_sitk)
-
-        ## Apply image transform, i.e. gradients etc
-        slice_sitk = self._apply_image_transform[trafo](slice_sitk)    
-
-        ## Compute d[slice(T(theta, x))]/dx
-        dslice_sitk = self._gradient_image_filter_sitk.Execute(slice_sitk)
-
-        ## Get associated (Ny x Nx x dim)-array
-        dslice_nda = sitk.GetArrayFromImage(dslice_sitk)
-
-        if self._use_stack_mask:
-            slice_sitk_mask = sitk.Resample(slice.sitk_mask, self._slice_grid_2D_sitk, transform_sitk, sitk.sitkNearestNeighbor)
-            slice_nda_mask = sitk.GetArrayFromImage(slice_sitk_mask)
-
-            dslice_nda *= slice_nda_mask[:,:,np.newaxis]
-        else:
-            slice_nda_mask = None
-
-        ## Reshape to (N_slice_voxels x dim)-array
-        dslice_nda = dslice_nda.reshape(self._N_slice_voxels,-1)
-
-        ## Get d[T(theta, x)]/dtheta as (N_slice_voxels x dim x transform_type_dofs)
-        dT_nda = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(transform_itk, slice_sitk)
-
-        ## Compute Jacobian for slice
-        jacobian_slice = np.sum(dslice_nda[:,:,np.newaxis]*dT_nda, axis=1)
-
-        ## Intensity correction
-        jacobian_slice = self._get_jacobian_intensity_correction[intensity_correction_type](jacobian_slice, slice_sitk, slice_nda_mask)
-
-        return jacobian_slice
-
 
     ##
     # Gets the Jacobian to \p _get_residual_slice_neighbours_fit used for the
@@ -807,7 +841,7 @@ class IntraStackRegistration(StackRegistrationBase):
         self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice_i))
 
         ## Get d[slice_i(T(theta_i, x))]/dtheta_i
-        jacobian_slice_i = self._get_jacobian_slice(self._slices_2D[i], self._transforms_2D_sitk[i], self._transforms_2D_itk[i], self._intensity_correction_type_slice_neighbour_fit)
+        jacobian_slice_i = self._get_jacobian_slice_in_slice_neighbours_fit(self._slices_2D[i], self._transforms_2D_sitk[i], self._transforms_2D_itk[i])
 
         ## Compute Jacobian of residuals
         for i in range(0, self._N_slices-1):
@@ -818,7 +852,7 @@ class IntraStackRegistration(StackRegistrationBase):
             self._transforms_2D_itk[i+1].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice_ip1))
 
             ## Get d[slice_{i+1}(T(theta_{i+1}, x))]/dtheta_{i+1}
-            jacobian_slice_ip1 = self._get_jacobian_slice(self._slices_2D[i+1], self._transforms_2D_sitk[i+1], self._transforms_2D_itk[i+1], self._intensity_correction_type_slice_neighbour_fit)
+            jacobian_slice_ip1 = self._get_jacobian_slice_in_slice_neighbours_fit(self._slices_2D[i+1], self._transforms_2D_sitk[i+1], self._transforms_2D_itk[i+1])
 
             ## Set elements in Jacobian for entire stack
             jacobian[i*self._N_slice_voxels:(i+1)*self._N_slice_voxels, i*self._optimization_dofs:(i+1)*self._optimization_dofs] = jacobian_slice_i
@@ -831,46 +865,70 @@ class IntraStackRegistration(StackRegistrationBase):
 
 
     ##
-    # Gets the Jacobian to \p _get_residual_reference_fit used for the
-    # least_squares method.
-    # \date       2016-11-21 20:09:36+0000
+    # Gets the Jacobian of a slice based on the spatial transformation.
+    # \date       2016-11-21 18:23:53+0000
+    #
+    # Compute the Jacobian
+    # \f$ \frac{dI(T(\theta, x))}{d\theta} =
+    # \frac{dI}{dy}(T(\theta,x))\,\frac{dT}{d\theta}(\theta, x)
+    # \f$. It also considers the (affine) intensity correction model
     #
     # \param      self            The object
-    # \param      parameters_vec  The parameters vector
+    # \param      slice           The slice
+    # \param      transform_sitk  The transform sitk
+    # \param      transform_itk   The transform itk
     #
-    # \return     The jacobian residual reference fit.
+    # \return     The Jacobian of a slice as (N_slice_voxels x
+    #             transform_type_dofs)-array.
     #
-    def _get_jacobian_residual_reference_fit(self, slices_2D, trafo, parameters_vec):
+    def _get_jacobian_slice_in_slice_neighbours_fit(self, slice, transform_sitk, transform_itk):
 
-        ## Allocate memory for Jacobian of residual
-        jacobian = np.zeros((self._N_slices*self._N_slice_voxels, self._optimization_dofs*self._N_slices))
+        ## Get slice(T(theta, x))
+        slice_sitk = sitk.Resample(slice.sitk, self._slice_grid_2D_sitk, transform_sitk, self._interpolator_sitk)
 
-        jacobian_slice_i = np.zeros((self._N_slice_voxels, self._optimization_dofs))
+        ## Get d[slice(T(theta, x))]/dx as (Ny x Nx x dim)-array
+        dslice_nda = self._get_gradient_image_nda_from_sitk_image(slice_sitk)
 
-        ## Reshape parameters for easier access
-        parameters = parameters_vec.reshape(-1, self._optimization_dofs)
+        ## Get slice data array (used for intensity correction parameter gradient)
+        slice_nda = sitk.GetArrayFromImage(slice_sitk)
 
-        ## Compute Jacobian of residuals between each slice and reference
-        for i in range(0, self._N_slices):
-            
-            ## Update transforms
-            parameters_slice = parameters[i,0:self._transform_type_dofs]
-            self._transforms_2D_sitk[i].SetParameters(parameters_slice)
-            self._transforms_2D_itk[i].SetParameters(itk.OptimizerParameters[itk.D](parameters_slice))
+        if self._use_stack_mask:
+            slice_sitk_mask = sitk.Resample(slice.sitk_mask, self._slice_grid_2D_sitk, transform_sitk, sitk.sitkNearestNeighbor)
+            slice_nda_mask = sitk.GetArrayFromImage(slice_sitk_mask)
 
-            ## Get d[slice_i(T(theta_i, x))]/dtheta_i
-            jacobian_slice_i_tmp = self._get_jacobian_slice(slices_2D[i], self._transforms_2D_sitk[i], self._transforms_2D_itk[i], self._intensity_correction_type_reference_fit, trafo)
-            
-            ## Second dimension is decided by intensity_correction_type_slice_neighbour_fit
-            ## as being of "higher order"
-            ## (e.g. affine for slice fit term and linear for reference fit term)
-            jacobian_slice_i[:,0:jacobian_slice_i_tmp.shape[1]] = jacobian_slice_i_tmp
+            # slice_nda *= slice_nda_mask[:,:,np.newaxis]
+            slice_nda *= slice_nda_mask
 
-            ## Set elements in Jacobian for entire stack
-            jacobian[i*self._N_slice_voxels:(i+1)*self._N_slice_voxels, i*self._optimization_dofs:(i+1)*self._optimization_dofs] = jacobian_slice_i
+        ## Get Jacobian of slice w.r.t to transform parameters
+        jacobian_slice_nda = self._get_gradient_with_respect_to_transform_parameters(dslice_nda, transform_itk, slice_sitk)
+
+        ## Add Jacobian w.r.t. to intensity correction parameters
+        jacobian_slice_nda = self._add_gradient_with_respect_to_intensity_correction_parameters[self._intensity_correction_type_slice_neighbour_fit](jacobian_slice_nda, slice_nda)
+
+        return jacobian_slice_nda
         
-        return jacobian
+    def _get_gradient_with_respect_to_transform_parameters(self, dslice_nda, transform_itk, slice_sitk):
 
+        ## Reshape to (N_slice_voxels x dim)-array
+        dslice_nda = dslice_nda.reshape(self._N_slice_voxels,-1)
+
+        ## Get d[T(theta, x)]/dtheta as (N_slice_voxels x dim x transform_type_dofs)-array
+        dT_nda = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(transform_itk, slice_sitk)
+
+        ## Compute Jacobian for slice as (N_slice_voxels x transform_type_dofs)-array
+        jacobian_slice = np.sum(dslice_nda[:,:,np.newaxis]*dT_nda, axis=1)
+
+        return jacobian_slice
+
+    def _get_gradient_image_nda_from_sitk_image(self, slice_sitk):
+
+        ## Compute d[slice(T(theta, x))]/dx
+        dslice_sitk = self._gradient_image_filter_sitk.Execute(slice_sitk)
+
+        ## Get associated (Ny x Nx x dim)-array
+        dslice_nda = sitk.GetArrayFromImage(dslice_sitk)
+
+        return dslice_nda
 
     # ##
     # # Gets the residual parameters for all optimization parameters
@@ -1007,15 +1065,13 @@ class IntraStackRegistration(StackRegistrationBase):
         return slice_2D_sitk
 
     def _apply_image_transform_dx(self, slice_2D_sitk):
-        self._derivative_imge_filter_sitk.SetDirection(0)
-        dx_slice_2D_sitk = self._derivative_imge_filter_sitk.Execute(slice_2D_sitk)
+        dx_slice_2D_sitk = self._get_dx_image_sitk(slice_2D_sitk)
         ## Debug
         # sitkh.show_sitk_image([slice_2D_sitk, dx_slice_2D_sitk], title=["original", "dx"])
         return dx_slice_2D_sitk
 
     def _apply_image_transform_dy(self, slice_2D_sitk):
-        self._derivative_imge_filter_sitk.SetDirection(1)
-        dy_slice_2D_sitk = self._derivative_imge_filter_sitk.Execute(slice_2D_sitk)
+        dy_slice_2D_sitk = self._get_dy_image_sitk(slice_2D_sitk)
         ## Debug
         # sitkh.show_sitk_image([slice_2D_sitk, dy_slice_2D_sitk], title=["original", "dy"])
         return dy_slice_2D_sitk
@@ -1026,6 +1082,18 @@ class IntraStackRegistration(StackRegistrationBase):
         # sitkh.show_sitk_image([slice_2D_sitk, gradient_magnitude_slice_2D_sitk], title=["original", "gradient_magnitude"])
         return gradient_magnitude_slice_2D_sitk
 
+    def _get_dx_image_sitk(self, image_sitk):
+        dimage_sitk = self._gradient_image_filter_sitk.Execute(image_sitk)
+        dx_image_sitk = sitk.VectorIndexSelectionCast(dimage_sitk, 0)
+
+        return dx_image_sitk
+
+    def _get_dy_image_sitk(self, image_sitk):
+        dimage_sitk = self._gradient_image_filter_sitk.Execute(image_sitk)
+        dy_image_sitk = sitk.VectorIndexSelectionCast(dimage_sitk, 1)
+
+        return dy_image_sitk
+        
 
     ##
     # Calculates the statistics of residuals based on ell^2 norm
@@ -1248,25 +1316,20 @@ class IntraStackRegistration(StackRegistrationBase):
     #
     # \return     Jacobian including intensity correction parameters
     #
-    def _get_jacobian_intensity_correction_None(self, jacobian_slice_nda, slice_sitk, mask_nda):
+    def _add_gradient_with_respect_to_intensity_correction_parameters_None(self, jacobian_slice_nda, slice_nda):
         return jacobian_slice_nda
 
-    def _get_jacobian_intensity_correction_linear(self, jacobian_slice_nda, slice_sitk, mask_nda):
-        slice_nda = sitk.GetArrayFromImage(slice_sitk)
-
-        ## Apply mask
-        if mask_nda is not None:
-            slice_nda *= mask_nda
+    def _add_gradient_with_respect_to_intensity_correction_parameters_linear(self, jacobian_slice_nda, slice_nda):
 
         ## Add the Jacobian w.r.t. intensity correction parameter (slope) to existing Jacobian
         jacobian_slice_nda = np.concatenate((jacobian_slice_nda, slice_nda.reshape(self._N_slice_voxels, -1)), axis=1)
 
         return jacobian_slice_nda
 
-    def _get_jacobian_intensity_correction_affine(self, jacobian_slice_nda, slice_sitk, mask_nda):
+    def _add_gradient_with_respect_to_intensity_correction_parameters_affine(self, jacobian_slice_nda, slice_nda):
         
         ## Add the Jacobian w.r.t. intensity correction parameter (slope) to existing Jacobian
-        jacobian_slice_nda = self._get_jacobian_intensity_correction_linear(jacobian_slice_nda, slice_sitk, mask_nda)
+        jacobian_slice_nda = self._add_gradient_with_respect_to_intensity_correction_parameters_linear(jacobian_slice_nda, slice_nda)
         
         ## Add the Jacobian w.r.t. intensity correction parameter (bias) to existing Jacobian
         jacobian_slice_nda = np.concatenate((jacobian_slice_nda, np.ones((self._N_slice_voxels,1))), axis=1)
@@ -1335,11 +1398,9 @@ class IntraStackRegistration(StackRegistrationBase):
                 
             elif registration_image_type in ["partial_derivative"]:
                 # print("Partial derivatives of image")
-                self._derivative_imge_filter_sitk.SetDirection(0)
-                dx_slice_2D_sitk = self._derivative_imge_filter_sitk.Execute(slice_2D_sitk)
-
-                self._derivative_imge_filter_sitk.SetDirection(1)
-                dy_slice_2D_sitk = self._derivative_imge_filter_sitk.Execute(slice_2D_sitk)
+                
+                dx_slice_2D_sitk = self._get_dx_image_sitk(slice_2D_sitk)
+                dy_slice_2D_sitk = self._get_dy_image_sitk(slice_2D_sitk)
 
                 slices_2D[i] = sl.Slice.from_sitk_image(dx_slice_2D_sitk, dir_input=None, filename="dx_"+filename, slice_number=slice_number, slice_sitk_mask=slice_2D_sitk_mask)
                 dy_slices_2D[i] = sl.Slice.from_sitk_image(dy_slice_2D_sitk, dir_input=None, filename="dy_"+filename, slice_number=slice_number, slice_sitk_mask=slice_2D_sitk_mask)

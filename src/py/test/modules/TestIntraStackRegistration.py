@@ -659,11 +659,15 @@ class TestIntraStackRegistration(unittest.TestCase):
         filename_stack = "fetal_brain_0"
         filename_recon = "FetalBrain_reconstruction_3stacks_myAlg"
 
-        stack_sitk = sitk.ReadImage(self.dir_test_data + filename_stack + ".nii.gz")
-        recon_sitk = sitk.ReadImage(self.dir_test_data + filename_recon + ".nii.gz")
+        stack_tmp = st.Stack.from_filename(self.dir_test_data, filename_stack, "_mask")
+        recon = st.Stack.from_filename(self.dir_test_data, filename_recon)
 
-        recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
-        stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
+        recon_sitk = recon.get_resampled_stack_from_slices(resampling_grid=stack_tmp.sitk, interpolator="Linear").sitk
+
+        stack = st.Stack.from_sitk_image(recon_sitk, "original", stack_tmp.sitk_mask)
+
+        # recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
+        # stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
 
         # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
@@ -673,19 +677,22 @@ class TestIntraStackRegistration(unittest.TestCase):
         center_2D = (0,0)
         translation_2D = np.array([1, -2])
 
-        intensity_scale = 1.3
-        intensity_bias = 10
+        intensity_scale = 1
+        intensity_bias = 0
 
         ## Get corrupted stack and corresponding motions
         stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D, intensity_scale=intensity_scale, scale=scale, intensity_bias=intensity_bias)
+
+        # stack_corrupted.show(1)
+        # stack.show(1)
 
         ## Perform in-plane rigid registration
         inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         # inplane_registration.set_image_transform_reference_fit_term("gradient_magnitude")
-        # inplane_registration.set_image_transform_reference_fit_term("partial_derivative")
+        inplane_registration.set_image_transform_reference_fit_term("partial_derivative")
         inplane_registration.set_transform_initializer_type("moments")
-        inplane_registration.set_transform_type("similarity")
+        # inplane_registration.set_transform_type("similarity")
         inplane_registration.set_intensity_correction_initializer_type(None)
         inplane_registration.set_intensity_correction_type_slice_neighbour_fit(None)
         inplane_registration.set_intensity_correction_type_reference_fit(None)
@@ -693,9 +700,11 @@ class TestIntraStackRegistration(unittest.TestCase):
         inplane_registration.use_verbose(True)
         inplane_registration.set_optimizer_loss("linear") # linear, soft_l1, huber
         inplane_registration.set_alpha_reference(100)
-        inplane_registration.set_alpha_neighbour(1)
+        inplane_registration.set_alpha_neighbour(0)
         inplane_registration.set_alpha_parameter(1)
-        inplane_registration.set_optimizer_nfev_max(15)
+        # inplane_registration.use_stack_mask(True)
+        # inplane_registration.use_reference_mask(True)
+        inplane_registration.set_optimizer_nfev_max(10)
         inplane_registration.run_registration()
         inplane_registration.print_statistics()
 

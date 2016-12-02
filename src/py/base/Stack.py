@@ -412,7 +412,7 @@ class Stack:
     # \return     resampled stack based on current position of slices as Stack
     #             object
     #
-    def get_resampled_stack_from_slices(self, resampling_grid=None, interpolator="NearestNeighbor"):
+    def get_resampled_stack_from_slices(self, resampling_grid=None, interpolator="NearestNeighbor", default_pixel_value=0.0):
 
         ## Choose interpolator
         try:
@@ -456,13 +456,10 @@ class Stack:
         ## Create helper used for normalization at the end
         nda_stack_covered_indices = np.zeros(nda_shape)
 
-
-        default_pixel_value = 0.0
-
         for i in range(0, self._N_slices):
             slice = self._slices[i]
 
-            ## Resample slice and its mask to stack space
+            ## Resample slice and its mask to stack space (volume)
             stack_resampled_slice_sitk = sitk.Resample(
                 slice.sitk, 
                 resampling_grid.sitk, 
@@ -503,6 +500,49 @@ class Stack:
         stack_resampled_slice_sitk_mask /= stack_resampled_slice_sitk_mask
 
         stack = self.from_sitk_image(stack_resampled_sitk, self._filename + "_" + interpolator_str, stack_resampled_sitk_mask)
+
+        return stack
+
+
+    ##
+    # Gets the resampled stack.
+    # \date       2016-12-02 17:05:10+0000
+    #
+    # \param      self                 The object
+    # \param      resampling_grid      The resampling grid as SimpleITK image
+    # \param      interpolator         The interpolator
+    # \param      default_pixel_value  The default pixel value
+    #
+    # \return     The resampled stack as Stack object
+    #
+    def get_resampled_stack(self, resampling_grid, interpolator="Linear", default_pixel_value=0.0):
+
+        ## Get SimpleITK-interpolator
+        try:
+            interpolator_str = interpolator
+            interpolator = eval("sitk.sitk" + interpolator_str)
+        except:
+            raise ValueError("Error: interpolator is not known")
+
+
+        resampled_stack_sitk =  sitk.Resample(
+            self.sitk, 
+            resampling_grid, 
+            sitk.Euler3DTransform(), 
+            interpolator, 
+            default_pixel_value,
+            self.sitk.GetPixelIDValue())
+
+        resampled_stack_sitk_mask =  sitk.Resample(
+            self.sitk_mask, 
+            resampling_grid, 
+            sitk.Euler3DTransform(), 
+            sitk.sitkNearestNeighbor, 
+            default_pixel_value,
+            self.sitk.GetPixelIDValue())
+
+        ## Create Stack instance
+        stack = self.from_sitk_image(resampled_stack_sitk, self._filename + "_" + interpolator_str, resampled_stack_sitk_mask)
 
         return stack
 
