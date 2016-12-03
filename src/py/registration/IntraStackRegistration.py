@@ -1557,8 +1557,8 @@ class IntraStackRegistration(StackRegistrationBase):
             translation = np.array(similarity_2D_sitk.GetTranslation())
             R = np.array(similarity_2D_sitk.GetMatrix()).reshape(2,2)/scale
 
-            if self._use_verbose:
-                print("Slice %2d/%d: in-plane scaling factor = %.3f" %(i, self._N_slices-1, scale))
+            # if self._use_verbose:
+            #     print("Slice %2d/%d: in-plane scaling factor = %.3f" %(i, self._N_slices-1, 1/scale))
 
             rigid_2D_sitk = sitk.Euler2DTransform()
             rigid_2D_sitk.SetAngle(angle)

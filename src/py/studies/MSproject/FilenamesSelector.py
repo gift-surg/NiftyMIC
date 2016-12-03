@@ -122,7 +122,7 @@ class FilenamesSelector(object):
                 ph.print_numpy_array(tmp,"\tAlternatives")
             else:
                 filenames_reference[i] = tmp[-1]
-                # print tmp
+                # filenames_reference[i] = tmp[0]
                 # print filenames_reference[i]
 
         # print filenames_reference
