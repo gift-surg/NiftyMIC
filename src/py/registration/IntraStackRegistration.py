@@ -147,6 +147,9 @@ class IntraStackRegistration(StackRegistrationBase):
         self._residual_reference_fit_ell2 = 0
         self._residual_slice_neighbours_ell2 = 0
 
+        self._use_stack_mask_reference_fit_term = self._use_stack_mask
+        self._use_stack_mask_neighbour_fit_term = self._use_stack_mask
+
     ##
     # Sets the transform type.
     # \date       2016-11-10 01:53:58+0000
@@ -250,6 +253,13 @@ class IntraStackRegistration(StackRegistrationBase):
         self._image_transform_reference_fit_term = image_transform_reference_fit_term
 
 
+    def use_stack_mask_reference_fit_term(self, flag):
+        self._use_stack_mask_reference_fit_term = flag
+
+    def use_stack_mask_neighbour_fit_term(self, flag):
+        self._use_stack_mask_neighbour_fit_term = flag
+
+
     def get_final_cost(self):
         if self._final_cost is None:
             self._compute_statistics_residuals_ell2()
@@ -314,12 +324,12 @@ class IntraStackRegistration(StackRegistrationBase):
         if self._alpha_neighbour > self._ZERO:
             print("\tSlice neighbour fit term:")
             print("\t\tIntensity correction type: " + str(self._intensity_correction_type_slice_neighbour_fit) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
-            print("\t\tStack mask used: " + str(self._use_stack_mask))
+            print("\t\tStack mask used: " + str(self._use_stack_mask_neighbour_fit_term))
         if self._alpha_reference > self._ZERO:
             print("\tReference fit term:")
             print("\t\tIntensity correction type: " + str(self._intensity_correction_type_reference_fit) + " (Initialization: " + str(self._intensity_correction_initializer_type) +")")
             print("\t\tImage transform: " + self._image_transform_reference_fit_term)
-            print("\t\tStack mask used: " + str(self._use_stack_mask))
+            print("\t\tStack mask used: " + str(self._use_stack_mask_reference_fit_term))
             print("\t\tReference mask used: " + str(self._use_reference_mask))
         print("\tRegularization coefficients: %.g (reference), %.g (neighbour), %.g (parameter)" %(self._alpha_reference, self._alpha_neighbour, self._alpha_parameter))
         print("\tMethod: " + self._optimizer_method)
@@ -645,7 +655,7 @@ class IntraStackRegistration(StackRegistrationBase):
             residual_slice_nda = slice_i_nda - reference_nda[i,:,:]            
 
             ## Incorporate mask computations
-            if self._use_stack_mask:
+            if self._use_stack_mask_reference_fit_term:
                 slice_i_sitk_mask = sitk.Resample(slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
                 slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
                 residual_slice_nda *= slice_i_nda_mask
@@ -704,7 +714,7 @@ class IntraStackRegistration(StackRegistrationBase):
             slice_i_nda = sitk.GetArrayFromImage(slice_i_sitk)
             
             ## Incorporate mask computations
-            if self._use_stack_mask:
+            if self._use_stack_mask_reference_fit_term:
                 ## Slice mask
                 slice_i_sitk_mask = sitk.Resample(slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
                 slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
@@ -777,7 +787,7 @@ class IntraStackRegistration(StackRegistrationBase):
         ## Correct intensities according to chosen model
         slice_i_nda = self._apply_intensity_correction[self._intensity_correction_type_slice_neighbour_fit](slice_i_nda, parameters[i, self._transform_type_dofs:])
 
-        if self._use_stack_mask:
+        if self._use_stack_mask_neighbour_fit_term:
             slice_i_sitk_mask = sitk.Resample(self._slices_2D[i].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i], sitk.sitkNearestNeighbor)
             slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
 
@@ -799,7 +809,7 @@ class IntraStackRegistration(StackRegistrationBase):
             residual_slice_nda = slice_i_nda - slice_ip1_nda
             
             ## Eliminate residual for non-masked regions
-            if self._use_stack_mask:
+            if self._use_stack_mask_neighbour_fit_term:
                 slice_ip1_sitk_mask = sitk.Resample(self._slices_2D[i+1].sitk_mask, self._slice_grid_2D_sitk, self._transforms_2D_sitk[i+1], sitk.sitkNearestNeighbor)
                 slice_ip1_nda_mask = sitk.GetArrayFromImage(slice_ip1_sitk_mask)
 
@@ -892,7 +902,7 @@ class IntraStackRegistration(StackRegistrationBase):
         ## Get slice data array (used for intensity correction parameter gradient)
         slice_nda = sitk.GetArrayFromImage(slice_sitk)
 
-        if self._use_stack_mask:
+        if self._use_stack_mask_neighbour_fit_term:
             slice_sitk_mask = sitk.Resample(slice.sitk_mask, self._slice_grid_2D_sitk, transform_sitk, sitk.sitkNearestNeighbor)
             slice_nda_mask = sitk.GetArrayFromImage(slice_sitk_mask)
 
@@ -1178,14 +1188,14 @@ class IntraStackRegistration(StackRegistrationBase):
 
                 ## Take into account the initialization of slice i-1
                 slice_im1_sitk = sitk.Image(self._slices_2D[i-1].sitk)
-                if self._use_stack_mask:
-                    slice_im1_sitk *= self._slices_2D[i-1].sitk_mask
+                if self._use_stack_mask_neighbour_fit_term:
+                    slice_im1_sitk *= sitk.Cast(self._slices_2D[i-1].sitk_mask, slice_im1_sitk.GetPixelIDValue())
                 slice_im1_sitk = sitkh.get_transformed_sitk_image(slice_im1_sitk, compensation_transform_sitk)
 
                 ## Use sitk.CenteredTransformInitializerFilter to get initial transform
                 fixed_sitk = slice_im1_sitk
                 moving_sitk = sitk.Image(self._slices_2D[i].sitk)
-                if self._use_stack_mask:
+                if self._use_stack_mask_neighbour_fit_term:
                     moving_sitk *= self._slices_2D[i].sitk_mask
                 initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
                 operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + transform_initializer_type_sitk)
@@ -1214,7 +1224,11 @@ class IntraStackRegistration(StackRegistrationBase):
 
                 ## Use sitk.CenteredTransformInitializerFilter to get initial transform
                 fixed_sitk = self._init_slices_2D_reference[i].sitk
+                # if self._use_reference_mask:
+                #     fixed_sitk = sitk.Cast(self._init_slices_2D_reference[i].sitk_mask, fixed_sitk.GetPixelIDValue())
                 moving_sitk = self._init_slices_2D_stack_reference_term[i].sitk
+                # if self._use_stack_mask_reference_fit_term:
+                #     moving_sitk *= sitk.Cast(self._init_slices_2D_stack_reference_term[i].sitk_mask, moving_sitk.GetPixelIDValue())
                 initial_transform_sitk = self._new_transform_sitk[self._transform_type]()
                 operation_mode_sitk = eval("sitk.CenteredTransformInitializerFilter." + transform_initializer_type_sitk)
                 
