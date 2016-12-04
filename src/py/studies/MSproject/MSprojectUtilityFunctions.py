@@ -82,6 +82,12 @@ LEFT_RIGHT_MIRRORED_STACKS = [
     , "A9832766-B0023954-5yr-0-PD"  # ground-truth stack ## interesting case, references do not match?!
 ]
 
+def is_subject_left_right_flipped(filename_subject):
+    if filename_subject in LEFT_RIGHT_MIRRORED_STACKS:
+        return True
+    else:
+        return False
+
 
 ##
 def get_parsed_input_line():
@@ -207,7 +213,6 @@ def get_left_right_mirrored_stack_if_required(image_sitk, filename_subject):
 
         ## Transform to apply (in case of zero origin) to original image
         transform_sitk.SetMatrix(matrix.flatten())
-
 
     # return image_sitk, transform_sitk
     return image_sitk

@@ -302,3 +302,13 @@ def print_line_separator(add_newline=True, symbol="*"):
     if add_newline:
         print("\n")
     print(symbol*90)
+
+
+def execute_command(cmd, show_command=True):
+    if show_command:
+        print("")
+        print("---- Executed command: ----")
+        print(cmd)
+        print("---------------------------")
+        print("")
+    os.system(cmd)

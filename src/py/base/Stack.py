@@ -355,22 +355,9 @@ class Stack:
     #
     def update_motion_correction(self, affine_transform_sitk):
 
-        ## Apply transform to 3D image / stack of slices
-        self.sitk = sitkh.get_transformed_sitk_image(self.sitk, affine_transform_sitk)
+        ## Update sitk and itk stack position
+        self._update_sitk_and_itk_stack_position(affine_transform_sitk)
         
-        ## Update header information of other associated images
-        origin = self.sitk.GetOrigin()
-        direction = self.sitk.GetDirection()
-
-        self.sitk_mask.SetOrigin(origin)
-        self.sitk_mask.SetDirection(direction)
-
-        self.itk.SetOrigin(origin)
-        self.itk.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
-
-        self.itk_mask.SetOrigin(origin)
-        self.itk_mask.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
-
         ## Update slices
         for i in range(0, self._N_slices):
             self._slices[i].update_motion_correction(affine_transform_sitk)
@@ -392,6 +379,25 @@ class Stack:
                     
         else:
             raise ValueErr("Number of affine transforms does not match the number of slices")
+
+
+    def _update_sitk_and_itk_stack_position(self, affine_transform_sitk):
+
+        ## Apply transform to 3D image / stack of slices
+        self.sitk = sitkh.get_transformed_sitk_image(self.sitk, affine_transform_sitk)
+        
+        ## Update header information of other associated images
+        origin = self.sitk.GetOrigin()
+        direction = self.sitk.GetDirection()
+
+        self.sitk_mask.SetOrigin(origin)
+        self.sitk_mask.SetDirection(direction)
+
+        self.itk.SetOrigin(origin)
+        self.itk.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
+
+        self.itk_mask.SetOrigin(origin)
+        self.itk_mask.SetDirection(sitkh.get_itk_from_sitk_direction(direction))
 
 
     ##
