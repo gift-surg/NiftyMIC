@@ -521,7 +521,7 @@ class Stack:
     #
     # \return     The resampled stack as Stack object
     #
-    def get_resampled_stack(self, resampling_grid, interpolator="Linear", default_pixel_value=0.0):
+    def get_resampled_stack(self, resampling_grid, interpolator="Linear", default_pixel_value=0.0, filename=None):
 
         ## Get SimpleITK-interpolator
         try:
@@ -548,7 +548,9 @@ class Stack:
             self.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance
-        stack = self.from_sitk_image(resampled_stack_sitk, self._filename + "_" + interpolator_str, resampled_stack_sitk_mask)
+        if filename is None:
+            filename = self._filename + "_" + interpolator_str
+        stack = self.from_sitk_image(resampled_stack_sitk, filename, resampled_stack_sitk_mask)
 
         return stack
 
@@ -557,7 +559,7 @@ class Stack:
     #  its slices
     #  \param[in] spacing_new_scalar length of voxel side, scalar
     #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack_from_slices(self, spacing_new_scalar=None, interpolator="NearestNeighbor", default_pixel_value=0.0):
+    def get_isotropically_resampled_stack_from_slices(self, spacing_new_scalar=None, interpolator="NearestNeighbor", default_pixel_value=0.0, filename=None):
         resampled_stack = self.get_resampled_stack_from_slices()
 
         ## Choose interpolator
@@ -605,7 +607,9 @@ class Stack:
             resampled_stack.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance
-        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, self._filename + "_" + interpolator_str + "Iso", isotropic_resampled_stack_sitk_mask)
+        if filename is None:
+            filename = self._filename + "_" + interpolator_str + "Iso"
+        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, filename, isotropic_resampled_stack_sitk_mask)
 
         return stack
 
@@ -615,7 +619,7 @@ class Stack:
     #  \param[in] interpolator choose type of interpolator for resampling
     #  \param[in] extra_frame additional extra frame of zero intensities surrounding the stack in mm
     #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", extra_frame=0):
+    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", extra_frame=0, filename=None):
 
         ## Choose interpolator
         try:
@@ -688,7 +692,9 @@ class Stack:
             self.sitk_mask.GetPixelIDValue())
 
         ## Create Stack instance
-        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, self._filename + "_" + interpolator_str + "Iso", isotropic_resampled_stack_sitk_mask)
+        if filename is None:
+            filename = self._filename + "_" + interpolator_str + "Iso"
+        stack = self.from_sitk_image(isotropic_resampled_stack_sitk, filename, isotropic_resampled_stack_sitk_mask)
 
         return stack
 

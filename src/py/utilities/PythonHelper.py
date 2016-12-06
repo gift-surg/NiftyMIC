@@ -67,13 +67,13 @@ def read_input(infotext="None", default=None):
 # \param      save_type  Filename extension of figure in case it is saved
 #
 # \remark     Could possibly use that as "master plot" and call the respective
-#             function like 'plot_3D_array_slice_by_slice' depending on the
+#             function like 'show_3D_array_slice_by_slice' depending on the
 #             type
 #
-def plot_array(nda, title="data", cmap="Greys_r", colorbar=False, directory=None, save_type="pdf"):
+def show_array(nda, title="data", cmap="Greys_r", colorbar=False, directory=None, save_type="pdf", fig_number=None):
 
     ## Plot figure
-    fig = plt.figure(1)
+    fig = plt.figure(fig_number)
     fig.clf()
     plt.imshow(nda, cmap=cmap)
     plt.title(title)
@@ -109,7 +109,7 @@ def plot_array(nda, title="data", cmap="Greys_r", colorbar=False, directory=None
 # \param      title      The title of the figure
 # \param      cmap       Color map "Greys_r", "jet", etc.
 #
-def plot_3D_array_slice_by_slice(nda3D_zyx, title="image", cmap="Greys_r"):
+def show_3D_array_slice_by_slice(nda3D_zyx, title="image", cmap="Greys_r", fig_number=None):
 
     shape = nda3D_zyx.shape
     N_slices = shape[0]
@@ -118,14 +118,15 @@ def plot_3D_array_slice_by_slice(nda3D_zyx, title="image", cmap="Greys_r"):
     grid = _get_grid_size(N_slices)
 
     ## Plot figure
-    fig = plt.figure(1)
+    fig = plt.figure(fig_number)
     fig.clf()
+    plt.suptitle(title)
     ctr = 1
     for i in range(0, N_slices):
         
         plt.subplot(grid[0], grid[1], ctr)
         plt.imshow(nda3D_zyx[i,:,:], cmap=cmap)
-        plt.title(title+"_"+str(i))
+        plt.title(str(i))
         plt.axis('off')
         
         ctr += 1
@@ -142,7 +143,7 @@ def plot_3D_array_slice_by_slice(nda3D_zyx, title="image", cmap="Greys_r"):
 # \param      title       The title
 # \param      cmap        The cmap
 #
-def plot_2D_array_list(nda2D_list, title="image", cmap="Greys_r", colorbar=False):
+def show_2D_array_list(nda2D_list, title="image", cmap="Greys_r", colorbar=False, fig_number=None):
 
     shape = nda2D_list[0].shape
     N_slices = len(nda2D_list)
@@ -154,7 +155,7 @@ def plot_2D_array_list(nda2D_list, title="image", cmap="Greys_r", colorbar=False
     grid = _get_grid_size(N_slices)
 
     ## Plot figure
-    fig = plt.figure(1)
+    fig = plt.figure(fig_number)
     fig.clf()
     ctr = 1
     for i in range(0, N_slices):

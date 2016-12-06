@@ -47,7 +47,7 @@ class Siena(object):
         cmd += self._options
 
         time_start = ph.start_timing()
-        print(cmd); os.system(cmd)
+        ph.execute_command(cmd)
         self._elapsed_time = ph.stop_timing(time_start)
 
         ## Extract measures from report

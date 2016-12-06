@@ -48,12 +48,18 @@ class IntensityCorrection(object):
     #                                              bool
     # \param      use_verbose                      Verbose; bool
     #
-    def __init__(self, stack=None, reference=None, use_reference_mask=True, use_individual_slice_correction=False, use_verbose=False):
+    def __init__(self, stack=None, reference=None, use_reference_mask=True, use_individual_slice_correction=False, use_verbose=False, additional_stack=None):
 
         if stack is not None:
             self._stack = st.Stack.from_stack(stack)
         else:
             self._stack is None
+
+        ## Additional stack to correct alongside given stack
+        if additional_stack is not None:
+            self._additional_stack = st.Stack.from_stack(additional_stack)
+        else:
+            self._additional_stack = None
 
         ## Check that stack and reference are in the same space
         if reference is not None:
@@ -98,6 +104,19 @@ class IntensityCorrection(object):
 
 
     ##
+    # Sets additional stack to correct alongside given stack
+    # \date       2016-12-05 12:19:25+0000
+    #
+    # \param      self              The object
+    # \param      additional_stack  The additional stack
+    #
+    # \return     { description_of_the_return_value }
+    #
+    def set_additional_stack(self, additional_stack):
+        self._additional_stack = st.Stack.from_stack(additional_stack)
+
+
+    ##
     #       Use verbose
     # \date       2016-11-05 22:58:28+0000
     #
@@ -130,6 +149,9 @@ class IntensityCorrection(object):
     def get_intensity_corrected_stack(self):
         return st.Stack.from_stack(self._stack)
 
+
+    def get_intensity_corrected_additional_stack(self):
+        return st.Stack.from_stack(self._additional_stack)
 
     ##
     #       Gets the intensity correction coefficients obtained for each
@@ -164,7 +186,16 @@ class IntensityCorrection(object):
         nda[np.where(nda>=i0)] -= i0
 
         ## Create Stack instance with correct image header information        
-        self._stack = self._create_stack_from_corrected_intensity_array(nda)
+        self._stack = self._create_stack_from_corrected_intensity_array(nda, self._stack)
+
+        if self._additional_stack is not None:
+            nda_additional_stack = sitk.GetArrayFromImage(self._additional_stack.sitk)
+
+            nda_additional_stack[np.where(nda_additional_stack<i0)] = 0
+            nda_additional_stack[np.where(nda_additional_stack>=i0)] -= i0
+
+            ## Create Stack instance with correct image header information        
+            self._additional_stack = self._create_stack_from_corrected_intensity_array(nda_additional_stack, self._additional_stack)
 
 
     ##
@@ -177,7 +208,7 @@ class IntensityCorrection(object):
     # \param      self  The object
     #
     def run_linear_intensity_correction(self):
-        self._stack, self._correction_coefficients = self._run_intensity_correction("linear")
+        self._stack, self._correction_coefficients, self._additional_stack = self._run_intensity_correction("linear")
 
 
     ##
@@ -190,7 +221,7 @@ class IntensityCorrection(object):
     # \param      self  The object
     #
     def run_affine_intensity_correction(self):
-        self._stack, self._correction_coefficients = self._run_intensity_correction("affine")
+        self._stack, self._correction_coefficients, self._additional_stack = self._run_intensity_correction("affine")
 
 
     ##
@@ -211,7 +242,7 @@ class IntensityCorrection(object):
             correction_coefficients = np.zeros((N_slices, 2))
 
         ## Gets the required data arrays to perform intensity correction
-        nda, nda_masked, nda_reference_masked = self._get_data_arrays_prior_to_intensity_correction()
+        nda, nda_reference, nda_mask, nda_additional_stack = self._get_data_arrays_prior_to_intensity_correction()
 
         if self._use_individual_slice_correction:
             print("Run " + correction_model + " intensity correction for each slice individually")
@@ -219,14 +250,24 @@ class IntensityCorrection(object):
                 if self._use_verbose:
                     sys.stdout.write("Slice %2d/%d: " %(i, self._stack.get_number_of_slices()-1))
                     sys.stdout.flush()
-                nda[i,:,:], correction_coefficients[i,:] = self._apply_intensity_correction[correction_model](nda[i,:,:], nda_masked[i,:,:], nda_reference_masked[i,:,:])
-
+                if self._additional_stack is None:
+                    nda[i,:,:], correction_coefficients[i,:] = self._apply_intensity_correction[correction_model](nda[i,:,:], nda_reference[i,:,:], nda_mask[i,:,:])
+                else:
+                    nda[i,:,:], correction_coefficients[i,:], nda_additional_stack[i,:,:] = self._apply_intensity_correction[correction_model](nda[i,:,:], nda_reference[i,:,:], nda_mask[i,:,:], nda_additional_stack[i,:,:])
         else:
             print("Run " + correction_model + " intensity correction uniformly for entire stack")
-            nda, cc = self._apply_intensity_correction[correction_model](nda, nda_masked, nda_reference_masked)
+            if self._additional_stack is None:
+                nda, cc = self._apply_intensity_correction[correction_model](nda, nda_reference, nda_mask)
+            else:
+                nda, cc, nda_additional_stack = self._apply_intensity_correction[correction_model](nda, nda_reference, nda_mask, nda_additional_stack)
             correction_coefficients[:,] = np.tile(cc, (N_slices,1))
+        
         ## Create Stack instance with correct image header information
-        return self._create_stack_from_corrected_intensity_array(nda), correction_coefficients
+        if self._additional_stack is None:
+            return self._create_stack_from_corrected_intensity_array(nda, self._stack), correction_coefficients
+        else:
+            return self._create_stack_from_corrected_intensity_array(nda, self._stack), correction_coefficients, self._create_stack_from_corrected_intensity_array(nda_additional_stack, self._additional_stack)
+
 
 
     ##
@@ -235,18 +276,21 @@ class IntensityCorrection(object):
     #
     # \param      self                  The object
     # \param      nda                   Data array to be corrected
-    # \param      nda_masked            Masked data array used to compute
-    #                                   coefficients
-    # \param      nda_reference_masked  Masked reference data array used to
+    # \param      nda_mask              Mask to be used
+    # \param      nda_reference  Masked reference data array used to
     #                                   compute coefficients
     #
     # \return     intensity corrected data array as np.array
     #
-    def _apply_affine_intensity_correction(self, nda, nda_masked, nda_reference_masked):
+    def _apply_affine_intensity_correction(self, nda, nda_reference, nda_mask, nda_additional_stack=None):
+
+
+        ## Find masked indices
+        indices = np.where(nda_mask>0)
 
         ## Model: y = x*c1 + c0 = [x, 1]*[c1, c0]' = A*[c1,c0]
-        x = nda_masked.flatten().astype('double')
-        y = nda_reference_masked.flatten().astype('double')
+        x = nda[indices].flatten().astype('double')
+        y = nda_reference[indices].flatten().astype('double')
 
         ## Solve via normal equations: [c1, c0] = (A'A)^{-1}A'y
         A = np.ones((x.size,2))
@@ -258,7 +302,10 @@ class IntensityCorrection(object):
         if self._use_verbose:
             print("(c1, c0) = (%.3f, %.3f)" %(c1, c0))
 
-        return nda*c1 + c0, np.array([c1,c0])
+        if nda_additional_stack is None:
+            return nda*c1 + c0, np.array([c1,c0]), None
+        else:
+            return nda*c1 + c0, np.array([c1,c0]), nda_additional_stack*c1 + c0
 
 
     ##
@@ -267,27 +314,32 @@ class IntensityCorrection(object):
     #
     # \param      self                  The object
     # \param      nda                   Data array to be corrected
-    # \param      nda_masked            Masked data array used to compute
-    #                                   coefficients
-    # \param      nda_reference_masked  Masked reference data array used to
+    # \param      nda_mask            Mask to be used
+    # \param      nda_reference  Masked reference data array used to
     #                                   compute coefficients
     #
     # \return     intensity corrected data array as np.array
     #
-    def _apply_linear_intensity_correction(self, nda, nda_masked, nda_reference_masked):
+    def _apply_linear_intensity_correction(self, nda, nda_reference, nda_mask, nda_additional_stack=None):
+
+        ## Find masked indices
+        indices = np.where(nda_mask>0)
 
         ## Model: y = x*c1
-        x = nda_masked.flatten().astype('double')
-        y = nda_reference_masked.flatten().astype('double')
+        x = nda.flatten().astype('double')
+        y = nda_reference.flatten().astype('double')
 
-        # ph.plot_2D_array_list([nda_masked, nda_reference_masked])
+        # ph.show_2D_array_list([nda, nda_reference])
         ## Solve via normal equations: c1 = x'y/(x'x)
         c1 = x.dot(y)/x.dot(x)
 
         if self._use_verbose:
             print("c1 = %.3f" %(c1))
         
-        return nda*c1, c1
+        if nda_additional_stack is None:
+            return nda*c1, c1, None
+        else:
+            return nda*c1, c1, nda_additional_stack*c1
 
 
     ##
@@ -302,17 +354,19 @@ class IntensityCorrection(object):
         
         ## Get required data arrays for intensity correction
         nda = sitk.GetArrayFromImage(self._stack.sitk)
-        nda_masked = np.array(nda)
-        nda_reference_masked = sitk.GetArrayFromImage(self._reference.sitk)
-
-        ## Mask them if mask is given
-        if self._use_reference_mask:
-            nda_masked = nda_masked * sitk.GetArrayFromImage(self._reference.sitk_mask)
+        nda_reference = sitk.GetArrayFromImage(self._reference.sitk)
 
         if self._use_reference_mask:
-            nda_reference_masked = nda_reference_masked * sitk.GetArrayFromImage(self._reference.sitk_mask)
+            nda_mask = sitk.GetArrayFromImage(self._reference.sitk_mask)
+        else:
+            nda_mask = np.ones_like(nda)
 
-        return nda, nda_masked, nda_reference_masked
+        if self._additional_stack is None:
+            nda_additional_stack = None
+        else:
+            nda_additional_stack = sitk.GetArrayFromImage(self._additional_stack.sitk)
+
+        return nda, nda_reference, nda_mask, nda_additional_stack
 
 
     ##
@@ -326,12 +380,12 @@ class IntensityCorrection(object):
     # \return     Stack object with image containing the given array
     #             information.
     #
-    def _create_stack_from_corrected_intensity_array(self, nda):
+    def _create_stack_from_corrected_intensity_array(self, nda, stack):
 
         ## Convert back to image with correct header
         image_sitk = sitk.GetImageFromArray(nda)
-        image_sitk.CopyInformation(self._stack.sitk)
+        image_sitk.CopyInformation(stack.sitk)
 
-        return st.Stack.from_sitk_image(image_sitk, self._stack.get_filename(), self._stack.sitk_mask)
+        return st.Stack.from_sitk_image(image_sitk, stack.get_filename(), stack.sitk_mask)
 
 

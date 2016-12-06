@@ -829,7 +829,7 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
 #
 def plot_stack_of_slices(stack_sitk, cmap="Greys_r", title="slice"):
     nda = sitk.GetArrayFromImage(stack_sitk)
-    ph.plot_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
+    ph.show_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
 
 
 def plot_slices(slices, cmap="Greys_r", title="slice"):
@@ -841,7 +841,7 @@ def plot_slices(slices, cmap="Greys_r", title="slice"):
     for i in range(1, N):
         nda[i,:,:] = sitk.GetArrayFromImage(slices[i].sitk)
 
-    ph.plot_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
+    ph.show_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
 
 
 ##
@@ -891,10 +891,9 @@ def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output=
 
     ## Add termination and print command
     cmd += "& "
-    print cmd
 
     ## Execute command
-    os.system(cmd)
+    ph.execute_command(cmd)
 
     ## Create python script for the command above
     if show_comparison_file:
@@ -932,7 +931,7 @@ def call_viewer_fslview(image_sitk, title="test", segmentation=None, dir_output=
     cmd += "& "
 
     ## Execute command
-    print(cmd); os.system(cmd)
+    ph.execute_command(cmd)
 
     ## Create python script for the command above
     if show_comparison_file:
@@ -1061,7 +1060,7 @@ def show_itk_image(image_itk, segmentation=None, overlay=None, title="test"):
             + "-g " + dir_output + title + ".nii.gz " \
             "& "
 
-    os.system(cmd)
+    ph.execute_command(cmd)
 
 
 ##

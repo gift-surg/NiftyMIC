@@ -12,6 +12,7 @@ import numpy as np
 
 ## Import modules from src-folder
 import utilities.SimpleITKHelper as sitkh
+import utilities.PythonHelper as ph
 import base.PSF as psf
 import base.Stack as st
 import base.Slice as sl
@@ -277,10 +278,7 @@ class RegistrationITK:
             cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
         # if self._use_verbose:
-        print("\t----- print command -----------------------------")
-        print cmd
-        print("\t-------------------------------------------------")
-        os.system(cmd)
+        ph.execute_command(cmd)
 
         ## Read transformation file
         params_all = np.loadtxt(self._dir_tmp + registration_transform_str + ".txt")
@@ -356,10 +354,7 @@ class RegistrationITK:
             cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
         # if self._use_verbose:
-        print("\t----- print command -----------------------------")
-        print cmd
-        print("\t-------------------------------------------------")
-        os.system(cmd)
+        ph.execute_command(cmd)
 
         ## Read transformation file
         params_all = np.loadtxt(self._dir_tmp + registration_transform_str + ".txt")

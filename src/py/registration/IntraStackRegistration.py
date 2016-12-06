@@ -663,7 +663,7 @@ class IntraStackRegistration(StackRegistrationBase):
             if self._use_reference_mask:
                 residual_slice_nda *= self._reference_nda_mask[i,:,:]
 
-            # ph.plot_2D_array_list([residual_slice_nda, slice_i_nda_mask, self._reference_nda_mask[i,:,:]]) 
+            # ph.show_2D_array_list([residual_slice_nda, slice_i_nda_mask, self._reference_nda_mask[i,:,:]]) 
             # ph.pause()
 
             ## Set residual for current slice difference
@@ -725,7 +725,7 @@ class IntraStackRegistration(StackRegistrationBase):
                 ## Mask gradient data
                 dslice_i_nda *= slice_i_nda_mask[:,:,np.newaxis]
 
-                ph.plot_2D_array_list
+                ph.show_2D_array_list
             
             if self._use_reference_mask:
                 ## Reference mask
