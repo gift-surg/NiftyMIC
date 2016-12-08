@@ -198,6 +198,10 @@ class FilenameParser(object):
     # \return     { description_of_the_return_value }
     #
     def replace_pattern(self, filenames, pattern, replacement=""):
+
+        if type(filenames) is not list:
+            filenames = [filenames]
+
         filenames = [re.sub(pattern,replacement,f) for f in filenames]
 
         return sorted(filenames)

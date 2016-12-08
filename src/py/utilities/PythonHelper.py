@@ -14,7 +14,8 @@ import numpy as np
 import contextlib
 import matplotlib.pyplot as plt
 import time
-from datetime import timedelta
+import datetime
+# from datetime import timedelta
 
 ## Import modules
 # import utilities.SimpleITKHelper as sitkh
@@ -232,7 +233,7 @@ def stop_timing(start_time):
     elapsed_time_sec = end_time - start_time
 
     ## Convert to 'readable' format
-    return timedelta(seconds=elapsed_time_sec)
+    return datetime.timedelta(seconds=elapsed_time_sec)
 
 
 ##
@@ -305,11 +306,53 @@ def print_line_separator(add_newline=True, symbol="*"):
     print(symbol*90)
 
 
-def execute_command(cmd, show_command=True):
-    if show_command:
+##
+# Execute and show command in command window.
+# \date       2016-12-06 17:37:57+0000
+#
+# \param      cmd           The command
+# \param      verbose  The show command
+#
+# \return     { description_of_the_return_value }
+#
+def execute_command(cmd, verbose=True):
+    if verbose:
         print("")
         print("---- Executed command: ----")
         print(cmd)
         print("---------------------------")
         print("")
     os.system(cmd)
+
+
+##
+# Creates a directory on the HDD
+# \date       2016-12-06 18:02:23+0000
+#
+# \param      directory     The directory
+# \param      delete_files  The delete files
+#
+def create_directory(directory, delete_files=False):
+
+    ## Add slash in case not existing
+    if directory[-1] not in ["/"]:
+        print directory
+        directory += "/"
+        print directory
+
+    ## Create directory in case it does not exist already
+    if not os.path.isdir(directory):
+        os.system("mkdir -p " + directory)
+        print("Directory " + directory + " created.")
+
+    if delete_files:
+        os.system("rm -rf " + directory + "*")
+        print("Files in " + directory + " are removed.")
+
+
+def get_current_date_and_time_strings():
+    now = datetime.datetime.now()
+    date = str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
+    time = str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
+
+    return date, time
