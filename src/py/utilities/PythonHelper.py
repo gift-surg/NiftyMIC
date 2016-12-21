@@ -279,7 +279,17 @@ def create_file(directory, filename, filename_extension="txt", header=""):
     file_handle = open(directory + filename + "." + filename_extension, "w")
     file_handle.write(header)
     file_handle.close()
-    print("File " + str(directory + filename + "." + filename_extension) + " was created.")
+    print_debug_info("File " + str(directory + filename + "." + filename_extension) + " was created.")
+
+def print_debug_info(text):
+    # print("---- Debug info: ----")
+    print("--- " + text)
+    # print("---------------------------")
+
+
+def print_title(text):
+    print_line_separator()
+    print("*** " + text + " ***")
 
 
 ##
@@ -297,7 +307,7 @@ def append_array_to_file(directory, filename, array, filename_extension="txt", f
     file_handle = open(directory + filename + "." + filename_extension, "a")
     np.savetxt(file_handle, array, fmt=format, delimiter=delimiter)
     file_handle.close()
-    print("Array was appended to file " + str(directory + filename + "." + filename_extension) + ".")
+    print_debug_info("Array was appended to file " + str(directory + filename + "." + filename_extension) + ".")
 
 
 def print_line_separator(add_newline=True, symbol="*"):
@@ -343,11 +353,11 @@ def create_directory(directory, delete_files=False):
     ## Create directory in case it does not exist already
     if not os.path.isdir(directory):
         os.system("mkdir -p " + directory)
-        print("Directory " + directory + " created.")
+        print_debug_info("Directory " + directory + " created.")
 
     if delete_files:
         os.system("rm -rf " + directory + "*")
-        print("Files in " + directory + " are removed.")
+        print_debug_info("All files in " + directory + " are removed.")
 
 
 def get_current_date_and_time_strings():

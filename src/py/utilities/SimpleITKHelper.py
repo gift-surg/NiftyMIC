@@ -856,7 +856,7 @@ def plot_slices(slices, cmap="Greys_r", title="slice"):
 #
 # \return     { description_of_the_return_value }
 #
-def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False):
+def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False, verbose=True):
 
     if type(image_sitk) is not list:
         image_sitk = [image_sitk]
@@ -893,7 +893,7 @@ def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output=
     cmd += "& "
 
     ## Execute command
-    ph.execute_command(cmd)
+    ph.execute_command(cmd, verbose)
 
     ## Create python script for the command above
     if show_comparison_file:
@@ -901,7 +901,7 @@ def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output=
         write_executable_file(cmd, dir_output=dir_output, filename="showComparison")
 
 
-def call_viewer_fslview(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False):
+def call_viewer_fslview(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False, verbose=True):
     
     ## Convert to list objects
     if type(image_sitk) is not list:
@@ -931,7 +931,7 @@ def call_viewer_fslview(image_sitk, title="test", segmentation=None, dir_output=
     cmd += "& "
 
     ## Execute command
-    ph.execute_command(cmd)
+    ph.execute_command(cmd, verbose)
 
     ## Create python script for the command above
     if show_comparison_file:
@@ -963,6 +963,8 @@ def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
     text_file.write("%s" % call)
     text_file.close()
 
+    print("File " + dir_output + filename + ".py generated.")
+
     ## Make python file executable
     os.system("chmod +x " + dir_output + filename + ".py")    
 
@@ -977,12 +979,12 @@ def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
 # \param[in]  title         filename or list of filenames
 # \param[in]  segmentation  sitk.Image used as segmentation
 #
-def show_sitk_image(image_sitk, title="test", segmentation=None, show_comparison_file=False, viewer="itksnap"):
+def show_sitk_image(image_sitk, title="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True):
     
     dir_output = "/tmp/"
 
 
-    eval("call_viewer_"+viewer+"(image_sitk, title, segmentation, dir_output, show_comparison_file)")
+    eval("call_viewer_"+viewer+"(image_sitk, title, segmentation, dir_output, show_comparison_file, verbose)")
     
 
 ##

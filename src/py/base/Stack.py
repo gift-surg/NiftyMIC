@@ -268,30 +268,17 @@ class Stack:
 
     ## Display stack with external viewer (ITK-Snap)
     #  \param[in][in] show_segmentation display stack with or without associated segmentation (default=0)
-    def show(self, show_segmentation=0, title=None):
-        dir_output = "/tmp/"
+    def show(self, show_segmentation=0, title=None, viewer="itksnap", verbose=True):
 
         if title is None:
             title = self._filename
 
         if show_segmentation:
-            sitk.WriteImage(self.sitk, dir_output + title + ".nii.gz")
-            sitk.WriteImage(self.sitk_mask, dir_output + title + "_mask.nii.gz")
-
-            cmd = "itksnap " \
-                    + "-g " + dir_output + title + ".nii.gz " \
-                    + "-s " +  dir_output + title + "_mask.nii.gz " + \
-                    "& "
-
+            sitk_mask = self.sitk_mask
         else:
-            sitk.WriteImage(self.sitk, dir_output + title + ".nii.gz")
+            sitk_mask = None
 
-            cmd = "itksnap " \
-                    + "-g " + dir_output + title + ".nii.gz " \
-                    "& "
-
-        # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
-        os.system(cmd)
+        sitkh.show_sitk_image(self.sitk, title=title, segmentation=sitk_mask, viewer=viewer, verbose=verbose)
 
 
     def show_slices(self):
