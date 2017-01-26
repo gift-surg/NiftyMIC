@@ -49,8 +49,8 @@ class FigureEventHandling(object):
         # self._length = np.array([1350,1600])
 
         ## Parameters in case left white circle do not exist (Click L-corner in "LEFT")
-        self._offset = np.array([-1450,-550])
-        self._length = np.array([1100,1300])
+        # self._offset = np.array([-1450,-550])
+        # self._length = np.array([1100,1300])
 
         ## Used for navigation through x-offset, y-offset, x-length and y-length
         self._index = 0
@@ -58,6 +58,12 @@ class FigureEventHandling(object):
         ## Title used for the data array plot
         self._title = title
 
+
+        ## Single and double mode
+        self._double_mode_dict = {
+            False:      "single",
+            True:       "double"
+        }
         self._double_mode = False
 
         ## Define bookmarks for quicker switching between selection frames        
@@ -79,6 +85,13 @@ class FigureEventHandling(object):
             , "double_window_5yr"     : np.array([853,1400])
             , "double_window_10yr"    : np.array([685,1024])
         }
+
+        ## Set offset for bookmarks
+        self._bookmark_default_integer = 3
+
+        keys = self._bookmark_length.keys()
+        self._offset = self._bookmark_offset[keys[self._bookmark_default_integer]]
+        self._length = self._bookmark_length[keys[self._bookmark_default_integer]]
 
     ##
     #       Gets the marked coordinates.
@@ -102,6 +115,14 @@ class FigureEventHandling(object):
     #
     def set_offset(self, offset):
         self._offset = offset
+
+
+    def set_bookmark_default_integer(self, bookmark_default_integer):
+        self._bookmark_default_integer = bookmark_default_integer
+
+        keys = self._bookmark_length.keys()
+        self._offset = self._bookmark_offset[keys[self._bookmark_default_integer]]
+        self._length = self._bookmark_length[keys[self._bookmark_default_integer]]
 
 
     ##
@@ -183,7 +204,15 @@ class FigureEventHandling(object):
     # \param      self  The object
     #
     def _print_help(self):
+
+        keys = self._bookmark_length.keys()
+            # print("Bookmark '" + keys[bookmark] + "' is chosen." )
+
         print("Use the following keys to navigate: ")
+        print("\th:            Print this information.")
+        print("\tp:            Switch type of mouse (select and move/zoom).")
+        print("\tm:            Change between single and double selection mode [%s]." %(self._double_mode_dict[self._double_mode]))
+        print("\tb:            Choose among %s bookmarks to define selection box dimension [%s]." %(len(self._bookmark_length.keys()), keys[self._bookmark_default_integer]))
         print("\tmiddle click: Click on point to save coordinates.")
         print("\td:            Delete most recent coordinate.")
         print("\tright:        Move up to switch between x-offset, y-offset, x-length and y-length.")
@@ -192,12 +221,8 @@ class FigureEventHandling(object):
         print("\tdown:         Decrease chosen property by one.")
         print("\tpageup:       Increase chosen property by 50.")
         print("\tpagedown:     Decrease chosen property by 50.")
-        print("\tb:            Choose among bookmarks to define selection box dimension.")
         print("\tspace:        Use keyboard to define value of chosen property.")
         print("\tescape:       Close figure. Values for coordinates, offset and length are stored.")
-        print("\th:            Print this information.")
-        print("\tp:            Switch type of mouse (select and move/zoom).")
-        print("\tm:            Change between single and double selection mode.")
 
 
     ##
@@ -279,11 +304,12 @@ class FigureEventHandling(object):
                 text += ",\n\t" + str(i) + ": " + keys[i]
             
             ## Read bookmark selection
-            bookmark = int(ph.read_input("Chose number to select bookmark:" + text + "\n", default=0))
+            bookmark = int(ph.read_input("Chose number to select bookmark:" + text + "\n", default=self._bookmark_default_integer))
             
             ## Update selection box accordingly
             self._offset = self._bookmark_offset[keys[bookmark]]
             self._length = self._bookmark_length[keys[bookmark]]
+            self._bookmark_default_integer = bookmark
             print("Bookmark '" + keys[bookmark] + "' is chosen." )
             
             ## Delete all rectangles before updated ones are drawn

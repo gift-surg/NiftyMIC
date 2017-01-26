@@ -49,12 +49,13 @@ class ScanExtractor(object):
     # \return     Stack of extracted slices consisting of all images on
     #             number_mr_films MR films as sitk.Image object
     #
-    def __init__(self, dir_input, filenames, number_of_mr_films=None, selection_window_offset=np.array([100,-900]), selection_window_dimension=np.array([1350,1700]), use_verbose=False, dir_output_verbose="/tmp/foo/"):
+    def __init__(self, dir_input, filenames, number_of_mr_films=None, selection_window_offset=np.array([100,-900]), selection_window_dimension=np.array([1350,1700]), use_verbose=False, dir_output_verbose="/tmp/foo/", bookmark_default_integer=3):
 
         self._dir_input = dir_input
         self._filenames = filenames
         self._selection_window_offset = selection_window_offset
         self._selection_window_dimension = selection_window_dimension
+        self._bookmark_default_integer = bookmark_default_integer
 
         if number_of_mr_films is None:
             self._number_of_mr_films = len(self._filenames)
@@ -65,6 +66,18 @@ class ScanExtractor(object):
         ## To follow
         self._use_verbose = use_verbose
         self._dir_output_verbose = dir_output_verbose
+
+
+    ##
+    # Sets the bookmark default integer value to choose predefined
+    # dimensions for selection window
+    # \date       2017-01-26 16:33:08+0000
+    #
+    # \param      self                      The object
+    # \param      bookmark_default_integer  The bookmark default integer
+    #
+    def set_bookmark_default_integer(self, bookmark_default_integer):
+        self._bookmark_default_integer = bookmark_default_integer
 
 
     ##
@@ -128,8 +141,9 @@ class ScanExtractor(object):
 
             ## Instantiate object to mark coordinates and feed with initial offset and length
             figure_event_handling = feh.FigureEventHandling(nda, title=filename)
-            figure_event_handling.set_offset(self._selection_window_offset)
-            figure_event_handling.set_length(self._selection_window_dimension)
+            figure_event_handling.set_bookmark_default_integer(self._bookmark_default_integer)
+            # figure_event_handling.set_offset(self._selection_window_offset)
+            # figure_event_handling.set_length(self._selection_window_dimension)
             
             ## Mark coordinates to extract images and stack them
             figure_event_handling.extract_slices_semiautomatically()

@@ -1,6 +1,6 @@
 ##
 # \file FilenamesSelector.py
-# \brief      Class containing functions to correct for intensities
+# \brief      
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       Nov 2016
@@ -63,16 +63,16 @@ class FilenamesSelector(object):
     def _get_filenames_and_subfolders_baseline_and_1yr_and_20yr_and_30yr(self):
 
         filenames_1yr = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input + "1yr_3x3/", "1yr")
-        filenames_1yr_short =  self._filename_parser.get_separator_partitioned_filename(filenames_1yr)
+        filenames_1yr_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_1yr)
         
         filenames_Baseline = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input + "Baseline_3x3/", "Baseline")
-        filenames_Baseline_short =  self._filename_parser.get_separator_partitioned_filename(filenames_Baseline)
+        filenames_Baseline_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_Baseline)
 
         filenames_ref_20 = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input, "20yr-0-PD")
-        filenames_ref_20_short =  self._filename_parser.get_separator_partitioned_filename(filenames_ref_20)
+        filenames_ref_20_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_ref_20)
 
         filenames_ref_30 = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input, "30yr-0-T1")
-        filenames_ref_30_short =  self._filename_parser.get_separator_partitioned_filename(filenames_ref_30)
+        filenames_ref_30_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_ref_30)
 
         ## Intersection of lists to figure out the amount of files with common features
         timepoints = list(set(filenames_1yr_short).intersection(filenames_Baseline_short))
@@ -91,11 +91,11 @@ class FilenamesSelector(object):
         
         ## Get filenames of 5yr scans with more than two films
         filenames_5yr = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input + "5yr_5x3/", "5yr")
-        filenames_5yr_short =  self._filename_parser.get_separator_partitioned_filename(filenames_5yr)
+        filenames_5yr_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_5yr)
         
         ## Get filenames of existing, electronic stacks of 5yr, PD slices
         filenames_electronic_5yr_PD = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input_existing_volumes, patterns=["5yr", "PD"])
-        filenames_electronic_5yr_PD_short =  self._filename_parser.get_separator_partitioned_filename(filenames_electronic_5yr_PD)
+        filenames_electronic_5yr_PD_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_electronic_5yr_PD)
         print("\n%2d filenames where 5yr PD electronic versions are available" %(len(filenames_electronic_5yr_PD_short)))
         # print filenames_electronic_5yr_PD_short
 
@@ -137,11 +137,11 @@ class FilenamesSelector(object):
         
         ## Get filenames of 10yr scans with more than two films
         filenames_10yr = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input + "10yr_5x3/", "10yr")
-        filenames_10yr_short =  self._filename_parser.get_separator_partitioned_filename(filenames_10yr)
+        filenames_10yr_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_10yr)
         
         ## Get filenames of existing, electronic stacks of 10yr, PD slices
         filenames_electronic_10yr_PD = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input_existing_volumes, patterns=["10yr", "PD"])
-        filenames_electronic_10yr_PD_short =  self._filename_parser.get_separator_partitioned_filename(filenames_electronic_10yr_PD)
+        filenames_electronic_10yr_PD_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_electronic_10yr_PD)
         print("\n%2d filenames where 10yr PD electronic versions are available" %(len(filenames_electronic_10yr_PD_short)))
         # print filenames_electronic_10yr_PD_short
 
@@ -187,7 +187,7 @@ class FilenamesSelector(object):
     def _get_filenames_and_subfolders_5yr_and_10yr_and_ge2scans(self):
         ## Get filenames of 5yr scans with more than two films (then brains/skulls are not merged!)
         filenames_5yr = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input + "5yr_5x3/", "5yr")
-        filenames_5yr_short =  self._filename_parser.get_separator_partitioned_filename(filenames_5yr)
+        filenames_5yr_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_5yr)
         filenames_5yr_ge2_scans = []
         for i in range(0, len(filenames_5yr_short)):
             filenames_tmp = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input + "5yr_5x3/", filenames_5yr_short[i])
@@ -199,7 +199,7 @@ class FilenamesSelector(object):
 
         ## Get filenames of 5yr scans with more than two films (then brains/skulls are not merged!)
         filenames_10yr = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input + "10yr_5x3/", "10yr")
-        filenames_10yr_short =  self._filename_parser.get_separator_partitioned_filename(filenames_10yr)
+        filenames_10yr_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_10yr)
         filenames_10yr_ge2_scans = []
         for i in range(0, len(filenames_10yr_short)):
             filenames_tmp = self._filename_parser.get_filenames_which_match_pattern_in_directory(self._dir_input + "10yr_5x3/", filenames_10yr_short[i])
@@ -211,7 +211,7 @@ class FilenamesSelector(object):
         
         ## Get filenames of existing stacks of slices
         filenames_electronic_5yr_PD = self._filename_parser.get_filenames_which_match_pattern_in_directory(DIR_INPUT_STACKED_VOLUMES, patterns=["5yr", "PD"])
-        filenames_electronic_5yr_PD_short =  self._filename_parser.get_separator_partitioned_filename(filenames_electronic_5yr_PD)
+        filenames_electronic_5yr_PD_short =  self._filename_parser.get_separator_partitioned_filenames(filenames_electronic_5yr_PD)
         print("\n%2d filenames where 5yr PD electronic versions are available" %(len(filenames_electronic_5yr_PD_short)))
         # print filenames_electronic_5yr_PD_short
 

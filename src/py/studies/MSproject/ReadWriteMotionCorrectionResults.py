@@ -51,7 +51,7 @@ class ReadWriteMotionCorrectionResults(object):
 
         ## Read PD reference used for motion correction
         filename_parser = fp.FilenameParser()
-        filename_AB = filename_parser.get_separator_partitioned_filename([filename], number_of_separators=1)
+        filename_AB = filename_parser.get_separator_partitioned_filenames([filename], number_of_separators=1)
         # filename_reference_full = filename_parser.get_filenames_which_match_pattern_in_directory(directory, ["Ref_", filename_AB])[0]
         filename_reference_full = filename_parser.get_filenames_which_match_pattern_in_directory(directory, ["Ref_"])[0]
         filename_reference = filename_parser.replace_pattern([filename_reference_full], "Ref_")[0]

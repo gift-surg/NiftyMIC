@@ -9,22 +9,11 @@
 
 ## Import libraries
 import sys
-import SimpleITK as sitk
 import numpy as np
 import os
 import re
 import sys
 import fnmatch
-
-## Add directories to import modules
-# DIR_SRC_ROOT = "../"
-# sys.path.append(DIR_SRC_ROOT)
-
-## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
-import base.PSF as psf
-import base.Slice as sl
-
 
 ##
 #       Class for parsing operations
@@ -78,20 +67,22 @@ class FilenameParser(object):
 
 
     ##
-    #       Gets the dash partitioned filename. Used for MS project
+    # Gets the dash partitioned filenames and eliminates possibly existing
+    # duplicate filenames. Used for MS project.
     # \date       2016-11-14 18:52:07+0000
     #
     # \param      self       The object
     # \param      filenames  The filenames as list of strings
     #
-    # \return     The dash partitioned filename.
+    # \return     The dash partitioned filename as list.
     #
-    def get_separator_partitioned_filename(self, filenames, separator="-", number_of_separators=1, order="first"):
+    def get_separator_partitioned_filenames(self, filenames, separator="-", number_of_separators=1, order="first"):
 
         if type(filenames) is not list:
             filenames = [filenames]
 
         filenames_cropped = []
+
         for i in range(0,len(filenames)):
             parts = filenames[i].split(separator)
             # print parts
@@ -113,8 +104,8 @@ class FilenameParser(object):
         ## Eliminate duplicate filenames
         filenames_cropped = self.eliminate_duplicate_filenames(filenames_cropped)
 
-        if len(filenames_cropped) is 1:
-            filenames_cropped = filenames_cropped[0]
+        if len(filenames_cropped) > 1:
+            filenames_cropped = sorted(filenames_cropped)
 
         return filenames_cropped
 
@@ -176,6 +167,9 @@ class FilenameParser(object):
     #
     def crop_filename_extension(self, filenames):
 
+        if type(filenames) is not list:
+            filenames = [filenames]
+
         if type(filenames) is list:
             filenames = [f.split(".")[0] for f in filenames]
 
@@ -184,7 +178,12 @@ class FilenameParser(object):
 
         ## Subtract the (known) filename-extension
 
-        return sorted(filenames)
+        if len(filenames) > 1:
+            filenames = sorted(filenames)
+        else:
+            filenames = filenames[0]
+
+        return filenames
 
 
     ##

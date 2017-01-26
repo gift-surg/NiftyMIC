@@ -4,6 +4,34 @@
 		"selected_items":
 		[
 			[
+				"stacks_",
+				"stacks_resampled"
+			],
+			[
+				"f",
+				"filename"
+			],
+			[
+				"get_",
+				"get_setting_specific_filename\tfunction"
+			],
+			[
+				"fil",
+				"filenames_references"
+			],
+			[
+				"filen",
+				"filenames_stacks"
+			],
+			[
+				"angl",
+				"angle_rad"
+			],
+			[
+				"angle_",
+				"angle_rad"
+			],
+			[
 				"stack_gd_r",
 				"stack_gd_ring_mask"
 			],
@@ -88,10 +116,6 @@
 				"stack_gd_resampled\t(computeStatistics.py)"
 			],
 			[
-				"fil",
-				"filenames_subject"
-			],
-			[
 				"filename_p",
 				"filename_prefix"
 			],
@@ -130,10 +154,6 @@
 			[
 				"files",
 				"files_in_directory"
-			],
-			[
-				"filen",
-				"filename_groundtruth"
 			],
 			[
 				"revea",
@@ -494,36 +514,42 @@
 			[
 				"Ex",
 				"Execute"
-			],
-			[
-				"_gra",
-				"_gradient_magnitude_filter_sitk"
-			],
-			[
-				"gradient",
-				"gradient_magnitude_filter_sitk"
-			],
-			[
-				"plot_",
-				"plot_3D_array_slice_by_slice\t(SimpleITKHelper.py)"
-			],
-			[
-				"_dx_slices",
-				"_dx_slices_2D_stack_reference_term\t(IntraStackRegistration.py)"
-			],
-			[
-				"dx",
-				"dx_reference_sitk"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "src/py/utilities/ImageSimilarity.py",
+			"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
 			"settings":
 			{
-				"buffer_size": 5482,
+				"buffer_size": 7621,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/py/utilities/SimpleITKHelper.py",
+			"settings":
+			{
+				"buffer_size": 42867,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/py/registration/Registration.py",
+			"settings":
+			{
+				"buffer_size": 15149,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "studies/SRRUpperGIAnatomyStudy/results/subject02/data/showComparison.py",
+			"settings":
+			{
+				"buffer_size": 551,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -533,58 +559,14 @@
 			"settings":
 			{
 				"buffer_size": 10586,
-				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "studies/30YearMSLongitudinalStudy/computeStatistics.py",
+			"file": "studies/SRRUpperGIAnatomyStudy/computeObliqueOrientation.py",
 			"settings":
 			{
-				"buffer_size": 13462,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "studies/30YearMSLongitudinalStudy/copyFiles.py",
-			"settings":
-			{
-				"buffer_size": 3996,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "studies/30YearMSLongitudinalStudy/correctMotion.py",
-			"settings":
-			{
-				"buffer_size": 26114,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "studies/30YearMSLongitudinalStudy/reconstructVolume.py",
-			"settings":
-			{
-				"buffer_size": 14648,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "studies/30YearMSLongitudinalStudy/computeStatisticsExtended.py",
-			"settings":
-			{
-				"buffer_size": 13869,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "studies/30YearMSLongitudinalStudy/showComparison.py",
-			"settings":
-			{
-				"buffer_size": 10186,
+				"buffer_size": 3476,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -821,21 +803,29 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/2016_RAMBO_UpperGastrointestinalStudy"
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/2016_RAMBO_UpperGastrointestinalStudy",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/SRRUpperGIAnatomyStudy"
 	],
 	"file_history":
 	[
+		"/Users/mebner/Downloads/10.1007%2F978-3-319-46726-9_5.bib",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/reconstruction/solver/TikhonovSolver.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/base/Stack.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/showComparison.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/computeStatisticsExtended.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/reconstructVolume.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/correctMotion.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/copyFiles.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/computeStatistics.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/ImageSimilarity.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/PythonHelper.py",
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/SimpleITKHelper.py",
 		"/Volumes/UCLMEBNER1TB/IPMI/Assessment02_reconstructed_20161204_124638/runVisualisation.py",
 		"/Volumes/UCLMEBNER1TB/IPMI/Assessment02_reconstructed_20161204_124638_siena/runVisualisation.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/copyFiles.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/SimpleITKHelper.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/PythonHelper.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/2016_RAMBO_UpperGastrointestinalStudy/EvaluationUpperGIReconstructionResults.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/computeStatistics.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/preprocessing/BrainStripping.py",
 		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/5yr_5x3/reconstructed_20161204_124638/ReconstructionAnalysis_20161204_124638_stack_recon.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/runStudy.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/base/Stack.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/randomizeFilenames.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/FilenameParser.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/registration/NiftyReg.py",
@@ -854,7 +844,6 @@
 		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/10yr_5x3/reconstructed_20161204_124638 copy/ReconstructionAnalysis_20161204_124638_stack_recon.txt",
 		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/10yr_5x3/reconstructed_20161204_124638/ReconstructionAnalysis_20161204_124638_stack_recon.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/IntensityCorrection.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/ImageSimilarity.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/Siena.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/registration/RegistrationSimpleITK.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/registration/RegistrationITK.py",
@@ -872,7 +861,6 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/preprocessing/IntensityNormalization.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/test/modules/TestIntraStackRegistration.py",
 		"/Users/mebner/UCL/UCL/Publications/2016_IPMI/paper/paper.tex",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/showComparison.py",
 		"/Users/mebner/.oh-my-zsh/themes/jispwoso_meb.zsh-theme",
 		"/Users/mebner/Downloads/get-pip-1.py",
 		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/10yr_5x3/reconstructed_20161126_030209/ReconstructionAnalysis_20161126_030209_PBVC.txt",
@@ -906,7 +894,6 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/reconstruction/InverseProblemSolver.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/reconstruction/solver/NonnegativeTikhonovSolver.py",
 		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/src_py_reconstruction_solver_TVL2Solver_Before_7bb08d80fc30a6f9da68919df365bf114109cba3.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/reconstruction/solver/TikhonovSolver.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/backups/v1_20150915/SimilarityMeasures.py",
 		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/src_py_reconstruction_solver_TVL2Solver_Before_89177eb49f2a3e6587d19c9c9b4d4cab082a8c6d.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/Assessment/showComparison.py",
@@ -934,12 +921,10 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/registration/Registration.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/studies/MSproject/ReadWriteMotionCorrectionResults.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/preprocessing/DataPreprocessing.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/correctMotion.py",
 		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/5yr_5x3/reconstructed_20161126_030209/ReconstructionAnalysis_20161126_030209_ground-truth.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/ParameterStudyReconstruction/DeconvolutionParameter/showReconstructions.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/backups/v1_20150915/DataPreprocessing.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/runMotionCorrection.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/reconstructVolume.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/base/Slice.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/buildStacksFromScans.py",
 		"/Volumes/VERBATIM HD/data_for_michael_recons/5yr_5x3/reconstructed_20161124_155923/ReconstructionAnalysis_20161124_155923_stack_recon.txt",
@@ -950,9 +935,7 @@
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/runMotionCorrectionStudy.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/reconstructVolume_v1.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/registration/InPlaneRegistrationSimpleITK.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/ScanExtractor.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/performMotionCorrection.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/prototyping-scripts/ITK_Registration.py"
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/utilities/ScanExtractor.py"
 	],
 	"find":
 	{
@@ -989,6 +972,23 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"_filter_gradient_transform",
+			"get_resampled_stack_from_slices",
+			"dir_output",
+			"##",
+			"a",
+			"_x",
+			"euler",
+			"= ",
+			"euler_x = ",
+			"get_composite_sitk_euler_transform",
+			"y",
+			"euler_x",
+			"x",
+			"e_",
+			"e",
+			"x",
+			"_values",
 			"show_stacks",
 			"recon",
 			"j",
@@ -1099,24 +1099,7 @@
 			"motion-corrected and intensity-corrected results",
 			"extension",
 			"stack_scaled",
-			"stack_gd",
-			"reference",
-			"ysis,",
-			"caled",
-			"filename",
-			"dir_output_reconstruction_analysis",
-			"intensityCorrected",
-			"_apply_intensity_correction",
-			"self._additional_stack",
-			"_create_stack_from_corrected_intensity_array",
-			"_additional_stack",
-			"self._additional_stack",
-			"_get_data_arrays_prior_to_intensity_correction",
-			"additional_stack",
-			"nda_additional",
-			"nda_additional_stack",
-			"_apply_intensity_correction",
-			"plot_array"
+			"stack_gd"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1262,24 +1245,24 @@
 	"groups":
 	[
 		{
-			"selected": 3,
+			"selected": 2,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "src/py/utilities/ImageSimilarity.py",
+					"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 5482,
+						"buffer_size": 7621,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4770,
-								4770
+								5231,
+								5231
 							]
 						],
 						"settings":
@@ -1290,14 +1273,104 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1080.0,
+						"translation.y": 1812.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 6,
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
+					"file": "src/py/utilities/SimpleITKHelper.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 42867,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								12475,
+								12475
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 3986.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "src/py/registration/Registration.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 15149,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								10693,
+								10693
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 4350.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "studies/SRRUpperGIAnatomyStudy/results/subject02/data/showComparison.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 551,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								153,
+								153
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
 					"file": "src/py/utilities/PythonHelper.py",
 					"semi_transient": false,
 					"settings":
@@ -1309,39 +1382,8 @@
 						"selection":
 						[
 							[
-								9337,
-								9337
-							]
-						],
-						"settings":
-						{
-							"auto_complete": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 3823.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 5,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "studies/30YearMSLongitudinalStudy/computeStatistics.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 13462,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								158,
-								158
+								9236,
+								9236
 							]
 						],
 						"settings":
@@ -1351,194 +1393,64 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 4256.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "studies/30YearMSLongitudinalStudy/copyFiles.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 3996,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								2009,
-								2009
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 508.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
+					"stack_index": 6,
 					"type": "text"
 				}
 			]
 		},
 		{
-			"selected": 3,
+			"selected": 0,
 			"sheets":
 			[
 				{
-					"buffer": 4,
-					"file": "studies/30YearMSLongitudinalStudy/correctMotion.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 26114,
-						"regions":
-						{
-							"bookmarks":
-							{
-								"flags": 144,
-								"icon": "bookmark",
-								"regions":
-								[
-									[
-										1319,
-										1319
-									],
-									[
-										17354,
-										17354
-									],
-									[
-										21693,
-										21693
-									]
-								],
-								"scope": "bookmarks"
-							}
-						},
-						"selection":
-						[
-							[
-								268,
-								268
-							]
-						],
-						"settings":
-						{
-							"auto_complete": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 7,
-					"type": "text"
-				},
-				{
 					"buffer": 5,
-					"file": "studies/30YearMSLongitudinalStudy/reconstructVolume.py",
+					"file": "studies/SRRUpperGIAnatomyStudy/computeObliqueOrientation.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 14648,
+						"buffer_size": 3476,
 						"regions":
 						{
-							"bookmarks":
-							{
-								"flags": 144,
-								"icon": "bookmark",
-								"regions":
-								[
-									[
-										2605,
-										2605
-									],
-									[
-										8530,
-										8530
-									]
-								],
-								"scope": "bookmarks"
-							},
-							"bp-d3e052d8":
-							{
-								"flags": 16,
-								"icon": "circle",
-								"regions":
-								[
-									[
-										9645,
-										9645
-									]
-								],
-								"scope": "invalid"
-							}
 						},
 						"selection":
 						[
 							[
-								10745,
-								10745
+								1503,
+								1503
 							]
 						],
 						"settings":
 						{
 							"auto_complete": false,
-							"history_list_is_closing": true,
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2038.0,
+						"translation.y": 547.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 3,
 					"type": "text"
 				},
 				{
-					"buffer": 6,
-					"file": "studies/30YearMSLongitudinalStudy/computeStatisticsExtended.py",
+					"buffer": 1,
+					"file": "src/py/utilities/SimpleITKHelper.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 13869,
+						"buffer_size": 42867,
 						"regions":
 						{
-							"bookmarks":
-							{
-								"flags": 144,
-								"icon": "bookmark",
-								"regions":
-								[
-									[
-										2966,
-										2966
-									],
-									[
-										9052,
-										9052
-									]
-								],
-								"scope": "bookmarks"
-							}
 						},
 						"selection":
 						[
 							[
-								6704,
-								6704
+								34966,
+								34966
 							]
 						],
 						"settings":
@@ -1549,41 +1461,10 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2052.0,
+						"translation.y": 13328.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
-					"type": "text"
-				},
-				{
-					"buffer": 7,
-					"file": "studies/30YearMSLongitudinalStudy/showComparison.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 10186,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								913,
-								913
-							]
-						],
-						"settings":
-						{
-							"auto_complete": false,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
+					"stack_index": 5,
 					"type": "text"
 				}
 			]
@@ -1653,6 +1534,38 @@
 		"selected_items":
 		[
 			[
+				"registration",
+				"Volumetric Reconstruction/src/py/registration/Registration.py"
+			],
+			[
+				"simp",
+				"Volumetric Reconstruction/src/py/utilities/SimpleITKHelper.py"
+			],
+			[
+				"tik",
+				"Volumetric Reconstruction/src/py/reconstruction/solver/TikhonovSolver.py"
+			],
+			[
+				"pytho",
+				"Volumetric Reconstruction/src/py/utilities/PythonHelper.py"
+			],
+			[
+				"si",
+				"Volumetric Reconstruction/src/py/utilities/SimpleITKHelper.py"
+			],
+			[
+				"stack",
+				"Volumetric Reconstruction/src/py/base/Stack.py"
+			],
+			[
+				"sim",
+				"Volumetric Reconstruction/src/py/utilities/SimpleITKHelper.py"
+			],
+			[
+				"py",
+				"Volumetric Reconstruction/src/py/utilities/PythonHelper.py"
+			],
+			[
 				"copy",
 				"Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/copyFiles.py"
 			],
@@ -1667,10 +1580,6 @@
 			[
 				"computes",
 				"Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/computeStatistics.py"
-			],
-			[
-				"py",
-				"Volumetric Reconstruction/src/py/utilities/PythonHelper.py"
 			],
 			[
 				"pyt",
@@ -1733,16 +1642,8 @@
 				"Volumetric Reconstruction/src/py/registration/IntraStackRegistration.py"
 			],
 			[
-				"stack",
-				"Volumetric Reconstruction/src/py/base/Stack.py"
-			],
-			[
 				"msut",
 				"Volumetric Reconstruction/src/py/studies/MSproject/MSprojectUtilityFunctions.py"
-			],
-			[
-				"pytho",
-				"Volumetric Reconstruction/src/py/utilities/PythonHelper.py"
 			],
 			[
 				"filenamese",
@@ -1771,10 +1672,6 @@
 			[
 				"brains",
 				"Volumetric Reconstruction/src/py/preprocessing/BrainStripping.py"
-			],
-			[
-				"simp",
-				"Volumetric Reconstruction/src/py/utilities/SimpleITKHelper.py"
 			],
 			[
 				"registrationb",
@@ -1867,10 +1764,6 @@
 			[
 				"anal",
 				"Volumetric Reconstruction/src/py/reconstruction/regularization_parameter_estimator/AnalysisRegularizationParameterEstimator.py"
-			],
-			[
-				"tik",
-				"Volumetric Reconstruction/src/py/reconstruction/solver/TikhonovSolver.py"
 			],
 			[
 				"runst",
@@ -1985,10 +1878,6 @@
 				"Volumetric Reconstruction/src/py/studies/MSproject/ReadWriteMotionCorrectionResults.py"
 			],
 			[
-				"sim",
-				"Volumetric Reconstruction/src/py/utilities/SimpleITKHelper.py"
-			],
-			[
 				"inpl",
 				"Volumetric Reconstruction/src/py/registration/InPlaneRegistrationSimpleITK.py"
 			],
@@ -2077,10 +1966,6 @@
 				"Volumetric Reconstruction/src/py/utilities/SimpleITKHelper.py"
 			],
 			[
-				"registration",
-				"Volumetric Reconstruction/src/py/registration/Registration.py"
-			],
-			[
 				"tv",
 				"Volumetric Reconstruction/src/py/reconstruction/solver/TVL2Solver.py"
 			],
@@ -2159,10 +2044,6 @@
 			[
 				"sli",
 				"Volumetric Reconstruction/src/py/base/Slice.py"
-			],
-			[
-				"inplan",
-				"Volumetric Reconstruction/src/py/registration/InPlaneRegistration.py"
 			]
 		],
 		"width": 0.0
