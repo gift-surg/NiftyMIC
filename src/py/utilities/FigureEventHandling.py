@@ -208,22 +208,34 @@ class FigureEventHandling(object):
         keys = self._bookmark_length.keys()
             # print("Bookmark '" + keys[bookmark] + "' is chosen." )
 
-        print("Use the following keys to navigate: ")
+        ph.print_line_separator(symbol="-")
+        ph.print_subtitle("Help: List of Navigation Keys",symbol="-")
+        
+        print("\nGeneral Handling")
         print("\th:            Print this information.")
-        print("\tp:            Switch type of mouse (select and move/zoom).")
-        print("\tm:            Change between single and double selection mode [%s]." %(self._double_mode_dict[self._double_mode]))
+        print("\tp:            Switch mouse cursor type (select and move/zoom).")
+        print("\t              'Cross':   Zoom in/out with held right click.")
+        print("\t                         (Hit 'r' to zoom out entirely again).")
+        print("\t              'Arrow':   More precise selection possible.")
+        print("\tMiddle click: Click on image position to save its coordinates.")
+        print("\td:            Delete most recent point coordinates.")
+        print("\tEsc:          Close figure and continue with next MR film (in case existing).")
+        print("\t              Selected coordinates and cropping window (offset and length) are stored.")
+
+        print("\nAdapt Selection Window:")
         print("\tb:            Choose among %s bookmarks to define selection box dimension [%s]." %(len(self._bookmark_length.keys()), keys[self._bookmark_default_integer]))
-        print("\tmiddle click: Click on point to save coordinates.")
-        print("\td:            Delete most recent coordinate.")
         print("\tright:        Move up to switch between x-offset, y-offset, x-length and y-length.")
         print("\tleft:         Move down to switch between x-offset, y-offset, x-length and y-length.")
-        print("\tup:           Increase chosen property by one.")
-        print("\tdown:         Decrease chosen property by one.")
-        print("\tpageup:       Increase chosen property by 50.")
-        print("\tpagedown:     Decrease chosen property by 50.")
-        print("\tspace:        Use keyboard to define value of chosen property.")
-        print("\tescape:       Close figure. Values for coordinates, offset and length are stored.")
+        print("\t              up:        Increase chosen property by one pixel.")
+        print("\t              down:      Decrease chosen property by one pixel.")
+        print("\t              pageup:    Increase chosen property by 50 pixels.")
+        print("\t              pagedown:  Decrease chosen property by 50 pixels.")
+        print("\t              space:     Use keyboard to define value of chosen property.")
 
+        print("\nSingle/Double Mode:")
+        print("\tm:            Change between single and double selection mode [%s]." %(self._double_mode_dict[self._double_mode]))
+        
+        ph.print_line_separator(add_newline=False,symbol="-")
 
     ##
     #       Event handling for image clicks on plots. Used to store

@@ -704,7 +704,7 @@ def get_itk_from_sitk_image(image_sitk):
 
     ## Create ITK image
     itk2np = itk.PyBuffer[image_type]
-    image_itk = itk2np.GetImageFromArray(nda) 
+    image_itk = itk2np.GetImageFromArray(nda)
 
     image_itk.SetOrigin(origin)
     image_itk.SetSpacing(spacing)

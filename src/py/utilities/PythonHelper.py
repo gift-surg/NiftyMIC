@@ -29,6 +29,14 @@ def pause():
     programPause = raw_input("Press the <ENTER> key to continue ...")
 
 
+##
+# Exit/Terminate execution
+# \date       2017-02-02 16:04:48+0000
+#
+def exit():
+    sys.exit()
+
+
 def killall_itksnap():
     os.system("killall ITK-SNAP")
 
@@ -287,10 +295,19 @@ def print_debug_info(text):
     # print("---------------------------")
 
 
-def print_title(text):
-    print_line_separator()
-    print("*** " + text + " ***")
+def print_title(text, symbol="*"):
+    print_line_separator(symbol=symbol)
+    print_subtitle(text,symbol=symbol)
 
+
+def print_subtitle(text, symbol="*"):
+    print(3*symbol + " " + text + " " + 3*symbol)
+
+
+def print_line_separator(add_newline=True, symbol="*", length=99):
+    if add_newline:
+        print("\n")
+    print(symbol*length)
 
 ##
 # Appends an array to file.
@@ -308,13 +325,6 @@ def append_array_to_file(directory, filename, array, filename_extension="txt", f
     np.savetxt(file_handle, array, fmt=format, delimiter=delimiter)
     file_handle.close()
     print_debug_info("Array was appended to file " + str(directory + filename + "." + filename_extension) + ".")
-
-
-def print_line_separator(add_newline=True, symbol="*"):
-    if add_newline:
-        print("\n")
-    print(symbol*90)
-
 
 ##
 # Execute and show command in command window.
@@ -356,8 +366,17 @@ def create_directory(directory, delete_files=False):
         print_debug_info("Directory " + directory + " created.")
 
     if delete_files:
-        os.system("rm -rf " + directory + "*")
-        print_debug_info("All files in " + directory + " are removed.")
+        clear_directory(directory)
+
+##
+# Clear all data in given directory
+# \date       2017-02-02 16:47:15+0000
+#
+# \param      directory  The directory
+#
+def clear_directory(directory):
+    os.system("rm -rf " + directory + "*")
+    print_debug_info("All files in " + directory + " are removed.")
 
 
 def get_current_date_and_time_strings():

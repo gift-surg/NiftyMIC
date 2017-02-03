@@ -11,18 +11,19 @@ import SimpleITK as sitk
 import numpy as np
 
 ## Import modules from src-folder
+import utilities.PythonHelper as ph
 import utilities.SimpleITKHelper as sitkh
 import base.PSF as psf
 import base.Stack as st
 
 class NiftyReg:
 
-    def __init__(self):
-        self._moving = None
-        self._fixed = None
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", registration_method="reg_aladin", options="", verbose=True):
+        self._fixed = fixed
+        self._moving = moving
 
-        self._use_fixed_mask = False
-        self._use_moving_mask = False
+        self._use_fixed_mask = use_fixed_mask
+        self._use_moving_mask = use_moving_mask
 
         self._affine_transform_sitk = None
         self._control_point_grid_sitk = None
@@ -30,16 +31,17 @@ class NiftyReg:
 
         ## Temporary output where files are written in order to use NiftyReg
         self._dir_tmp = "/tmp/NiftyReg/"
-        os.system("mkdir -p " + self._dir_tmp)
-        os.system("rm -rf " + self._dir_tmp + "*")
+        ph.create_directory(self._dir_tmp, delete_files=False)
 
         self._run_registration = {
             "reg_aladin"    :   self._run_reg_aladin,
             "reg_f3d"       :   self._run_reg_f3d
         }
-        self._registration_type = "reg_aladin"
+        self._registration_method = registration_method
+        self._registration_type = registration_type
 
-        self._options = ""
+        self._options = options + " "
+        self._verbose = verbose
 
 
     ## Set fixed/reference/target image
@@ -68,9 +70,25 @@ class NiftyReg:
 
     ## Set type of registration used
     #  \param[in] registration_type
+    def set_registration_method(self, registration_method):
+        if registration_method not in self._run_registration.keys():
+            raise ValueError("Error: Registration method not possible'")
+        self._registration_method = registration_method
+
+    def get_registration_method(self):
+        return self._registration_method
+
+
+    ##
+    # Sets the registration type.
+    # \date       2017-02-02 16:42:13+0000
+    #
+    # \param      self               The object
+    # \param      registration_type  The registration type
+    #
     def set_registration_type(self, registration_type):
-        if registration_type not in ["reg_aladin", "reg_f3d"]:
-            raise ValueError("Error: Registration type can only be either 'reg_aladin' or 'reg_f3d'")
+        if registration_type not in ["Rigid", "Affine"]:
+            raise ValueError("Error: Registration type not possible")
         self._registration_type = registration_type
 
 
@@ -94,6 +112,13 @@ class NiftyReg:
         return self._options
 
 
+    def use_verbose(self, flag):
+        self._verbose = flag
+
+    def get_verbose(self):
+        return self._verbose
+
+
     ## Get affine transform in (Simple)ITK format after having run reg_aladin
     #  \return affine transform as SimpleITK object
     def get_registration_transform_sitk(self):
@@ -107,7 +132,11 @@ class NiftyReg:
 
 
     def run_registration(self):
-        self._run_registration[self._registration_type]()
+
+        ## Clean output directory first
+        ph.clear_directory(self._dir_tmp)
+
+        self._run_registration[self._registration_method]()
 
 
     ## Run reg_aladin, i.e. Block matching algorithm for global affine registration.
@@ -115,6 +144,12 @@ class NiftyReg:
 
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
+
+        if self._registration_type in ["Rigid"]:
+            self._options += "-rigOnly "
+
+        if not self._verbose:
+            self._options += "-voff "
 
         moving_str = "NiftyReg_moving_" + self._moving.get_filename()
         fixed_str = "NiftyReg_fixed_" + self._fixed.get_filename()
@@ -129,9 +164,9 @@ class NiftyReg:
             sitk.WriteImage(self._moving.sitk, self._dir_tmp + moving_str + ".nii.gz")
         if not os.path.isfile(self._dir_tmp + fixed_str + ".nii.gz"):
             sitk.WriteImage(self._fixed.sitk, self._dir_tmp + fixed_str + ".nii.gz")
-        if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz"):
+        if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz") and self._use_moving_mask:
             sitk.WriteImage(self._moving.sitk_mask, self._dir_tmp + moving_mask_str + ".nii.gz")
-        if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz"):
+        if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz") and self._use_fixed_mask:
             sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
 
         ## Run reg_aladin

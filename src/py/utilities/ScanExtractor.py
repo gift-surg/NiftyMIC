@@ -15,8 +15,6 @@ import sys
 import matplotlib.pyplot as plt
 
 ## Import modules from src-folder
-import base.Stack as st
-import utilities.SimpleITKHelper as sitkh
 import utilities.FigureEventHandling as feh
 import utilities.FilenameParser as fp
 
@@ -80,6 +78,9 @@ class ScanExtractor(object):
         self._bookmark_default_integer = bookmark_default_integer
 
 
+    def get_bookmark_default_integer(self):
+        return self._bookmark_default_integer
+
     ##
     # Get semi-automatically extracted stack of scans
     # \date       2016-11-02 01:23:39+0000
@@ -123,7 +124,8 @@ class ScanExtractor(object):
             filename = self._filenames[i]
             filename_without_extension = fp.FilenameParser().crop_filename_extension(filename)
             
-            print("Chosen MRI film: " + self._dir_input + filename + " (" + str(i+1) +"/" + str(self._number_of_mr_films) + ")")
+            sys.stdout.write("Open MRI film " + self._dir_input + filename + " (" + str(i+1) +"/" + str(self._number_of_mr_films) + ") ... ")
+            sys.stdout.flush()
 
             ## Read image
             image = sitk.ReadImage(self._dir_input + filename)
@@ -133,7 +135,7 @@ class ScanExtractor(object):
 
             ## Save image as png for easier comparison
             plt.imshow(nda, cmap="Greys_r")
-
+            
             if self._use_verbose:
                 filename_out = self._dir_output_verbose + filename_without_extension + ".png"
                 plt.savefig(filename_out, dpi=400)
@@ -141,9 +143,9 @@ class ScanExtractor(object):
 
             ## Instantiate object to mark coordinates and feed with initial offset and length
             figure_event_handling = feh.FigureEventHandling(nda, title=filename)
-            figure_event_handling.set_bookmark_default_integer(self._bookmark_default_integer)
-            # figure_event_handling.set_offset(self._selection_window_offset)
-            # figure_event_handling.set_length(self._selection_window_dimension)
+            # figure_event_handling.set_bookmark_default_integer(self._bookmark_default_integer)
+            figure_event_handling.set_offset(self._selection_window_offset)
+            figure_event_handling.set_length(self._selection_window_dimension)
             
             ## Mark coordinates to extract images and stack them
             figure_event_handling.extract_slices_semiautomatically()

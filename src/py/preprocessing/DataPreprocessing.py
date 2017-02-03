@@ -13,7 +13,11 @@ import numpy as np
 
 
 ## Import modules from src-folder
+import utilities.PythonHelper as ph
 import utilities.SimpleITKHelper as sitkh
+import registration.RegistrationSimpleITK as regsitk
+import registration.RegistrationITK as regitk
+import registration.NiftyReg as regniftyreg
 import base.Stack as st
 
 
@@ -161,7 +165,13 @@ class DataPreprocessing:
     ## Get preprocessed stacks
     #  \return preprocessed stacks as list of Stack objects
     def get_preprocessed_stacks(self):
-        return self._stacks_preprocessed
+
+        ## Return a copy of preprocessed stacks
+        stacks_copy = [None]*len(self._stacks)
+        for i in range(0, len(self._stacks)):
+            stacks_copy[i] = st.Stack.from_stack(self._stacks_preprocessed[i])
+
+        return stacks_copy
 
 
     ## Write preprocessed data to specified output directory
@@ -293,15 +303,16 @@ class DataPreprocessing:
         ##*** Propagate masks
 
         ## Specify target stack and mask to be used as template
-        template_sitk = self._stacks[self._mask_template_number].sitk
-        template_mask_sitk = self._stacks[self._mask_template_number].sitk_mask
+        template = self._stacks[self._mask_template_number]
 
         for i in range_prop_mask:
 
-            ## Propagate mask
-            sys.stdout.write("\tStack %s: Propagate mask ... " %(i))
+            sys.stdout.write("\tStack %s: Rigidly align stack with template and propagate mask ... " %(i))
             sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
-            mask_sitk = self._get_propagated_mask(self._stacks[i].sitk, template_sitk, template_mask_sitk)
+            
+            ## Rigidly align stack with template and propagate the mask
+            self._stacks[i] = self._propagate_mask_from_template_to_stack(self._stacks[i], template)
+            mask_sitk = self._stacks[i].sitk_mask
             print "done"
 
             ## Dilate propagated mask (to smooth mask)
@@ -401,130 +412,42 @@ class DataPreprocessing:
         return indices_complement, indices
 
 
-    ## Obtain propagated mask based on a given template (moving). The mask 
-    #  propagation is obtained via rigid registration.
-    #  \param[in] fixed_sitk stack as sitk.Image for which a mask is desired
-    #  \param[in] moving_sitk stack as sitk.Image for which a mask is available
-    #  \param[in] moving_mask_sitk mask of moving_sitk as sitk.Image to propagate
-    #  \return approximate mask of fixed_sitk based on the given template
-    def _get_propagated_mask(self, fixed_sitk, moving_sitk, moving_mask_sitk):
+    ##
+    # Rigidly align stack with template and propagate the template mask.
+    # \date       2017-02-02 17:36:50+0000
+    #
+    # \param      self      The object
+    # \param      stack     The stack
+    # \param      template  The template
+    #
+    # \post       stack object is rigidly aligned with template
+    # \return     The propagated mask sitk.
+    #
+    def _propagate_mask_from_template_to_stack(self, stack, template):
 
-        ## Get transform which aligns fixed_sitk with the template moving_sitk
-        transform = self._get_rigid_registration_transform_3D(fixed_sitk, moving_sitk)
+        # registration = regniftyreg.NiftyReg(fixed=template, moving=stack, registration_type="Rigid", verbose=False)
+        registration = regitk.RegistrationITK(fixed=template, moving=stack, registration_type="Rigid", interpolator="Linear", verbose=False, metric="Correlation")
+        # registration = regsitk.RegistrationSimpleITK(fixed=template, moving=stack, registration_type="Rigid", interpolator="Linear", verbose=True, metric="Correlation", use_centered_transform_initializer=True, scales_estimator="IndexShift", initializer_type="MOMENTS")
+        registration.use_fixed_mask(True)
+        registration.run_registration()
+
+        ## Get transform which aligns
+        # transform_sitk = sitk.AffineTransform(registration.get_registration_transform_sitk().GetInverse())
+        transform_sitk = sitk.Euler3DTransform(registration.get_registration_transform_sitk().GetInverse())
+        stack.update_motion_correction(transform_sitk)
+
+        # ## Get transform which aligns fixed_sitk with the template moving_sitk
+        # transform = self._get_rigid_registration_transform_3D(fixed_sitk, moving_sitk)
 
         ## Resample propagated mask to fixed_sitk grid
-        default_pixel_value = 0.0
+        stack_mask_sitk = sitk.Resample(template.sitk_mask, stack.sitk_mask, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, template.sitk_mask.GetPixelIDValue())       
 
-        # fixed_mask_prop_sitk = sitk.Resample(moving_mask_sitk, fixed_sitk, transform, sitk.sitkLinear, default_pixel_value, moving_mask_sitk.GetPixelIDValue())
-        fixed_mask_prop_sitk = sitk.Resample(moving_mask_sitk, fixed_sitk, transform, sitk.sitkNearestNeighbor, default_pixel_value, moving_mask_sitk.GetPixelIDValue())
+        stack_aligned_masked = st.Stack.from_sitk_image(stack.sitk, stack.get_filename(), stack_mask_sitk)
+        # stack_aligned_masked = st.Stack.from_sitk_image(stack.sitk, stack.get_filename())
 
-        return fixed_mask_prop_sitk
+        # slice_k = stack_aligned_masked
 
-
-    ## Rigid registration routine based on SimpleITK
-    #  \param fixed_3D_sitk upsampled fixed Slice
-    #  \param moving_3D_sitk moving Stack
-    #  \param display_registration_info display registration summary at the end of execution (default=0)
-    #  \return Rigid transform as sitk.Euler3DTransform object
-    def _get_rigid_registration_transform_3D(self, fixed_3D_sitk, moving_3D_sitk, display_registration_info=0):
-
-        ## Instantiate interface method to the modular ITKv4 registration framework
-        registration_method = sitk.ImageRegistrationMethod()
-
-        ## Select between using the geometrical center (GEOMETRY) of the images or using the center of mass (MOMENTS) given by the image intensities
-        # initial_transform = sitk.CenteredTransformInitializer(fixed_3D_sitk._sitk_upsampled, moving_3D_sitk.sitk, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
-        initial_transform = sitk.Euler3DTransform()
-
-        ## Set the initial transform and parameters to optimize
-        registration_method.SetInitialTransform(initial_transform)
-
-        ## Set an image masks in order to restrict the sampled points for the metric
-        # registration_method.SetMetricFixedMask(fixed_3D_sitk._sitk_mask_upsampled)
-        # registration_method.SetMetricMovingMask(moving_3D_sitk.sitk_mask)
-
-        ## Set percentage of pixels sampled for metric evaluation
-        # registration_method.SetMetricSamplingStrategy(registration_method.NONE)
-
-        ## Set interpolator to use
-        registration_method.SetInterpolator(sitk.sitkLinear)
-
-        """
-        similarity metric settings
-        """
-        ## Use normalized cross correlation using a small neighborhood for each voxel between two images, with speed optimizations for dense registration
-        # registration_method.SetMetricAsANTSNeighborhoodCorrelation(radius=5)
-        
-        ## Use negative normalized cross correlation image metric
-        # registration_method.SetMetricAsCorrelation()
-
-        ## Use demons image metric
-        # registration_method.SetMetricAsDemons(intensityDifferenceThreshold=1e-3)
-
-        ## Use mutual information between two images
-        # registration_method.SetMetricAsJointHistogramMutualInformation(numberOfHistogramBins=100, varianceForJointPDFSmoothing=1)
-        
-        ## Use the mutual information between two images to be registered using the method of Mattes2001
-        registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=100)
-
-        ## Use negative means squares image metric
-        # registration_method.SetMetricAsMeanSquares()
-        
-        """
-        optimizer settings
-        """
-        ## Set optimizer to Nelder-Mead downhill simplex algorithm
-        # registration_method.SetOptimizerAsAmoeba(simplexDelta=0.1, numberOfIterations=100, parametersConvergenceTolerance=1e-8, functionConvergenceTolerance=1e-4, withRestarts=False)
-
-        ## Conjugate gradient descent optimizer with a golden section line search for nonlinear optimization
-        # registration_method.SetOptimizerAsConjugateGradientLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-8, convergenceWindowSize=10)
-
-        ## Set the optimizer to sample the metric at regular steps
-        # registration_method.SetOptimizerAsExhaustive(numberOfSteps=50, stepLength=1.0)
-
-        ## Gradient descent optimizer with a golden section line search
-        # registration_method.SetOptimizerAsGradientDescentLineSearch(learningRate=1, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
-
-        ## Limited memory Broyden Fletcher Goldfarb Shannon minimization with simple bounds
-        # registration_method.SetOptimizerAsLBFGSB(gradientConvergenceTolerance=1e-5, maximumNumberOfIterations=500, maximumNumberOfCorrections=5, maximumNumberOfFunctionEvaluations=200, costFunctionConvergenceFactor=1e+7)
-
-        ## Regular Step Gradient descent optimizer
-        registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1, minStep=0.05, numberOfIterations=2000)
-
-        ## Estimating scales of transform parameters a step sizes, from the maximum voxel shift in physical space caused by a parameter change
-        ## (Many more possibilities to estimate scales)
-        registration_method.SetOptimizerScalesFromPhysicalShift()
-        
-        """
-        setup for the multi-resolution framework            
-        """
-        ## Set the shrink factors for each level where each level has the same shrink factor for each dimension
-        # registration_method.SetShrinkFactorsPerLevel(shrinkFactors = [4,2,1])
-
-        ## Set the sigmas of Gaussian used for smoothing at each level
-        # registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2,1,0])
-
-        ## Enable the smoothing sigmas for each level in physical units (default) or in terms of voxels (then *UnitsOff instead)
-        registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
-
-        ## Connect all of the observers so that we can perform plotting during registration
-        # registration_method.AddCommand(sitk.sitkStartEvent, start_plot)
-        # registration_method.AddCommand(sitk.sitkEndEvent, end_plot)
-        # registration_method.AddCommand(sitk.sitkMultiResolutionIterationEvent, update_multires_iterations) 
-        # registration_method.AddCommand(sitk.sitkIterationEvent, lambda: plot_values(registration_method))
-
-        # print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
-        # print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
-        # print("\n")
-
-        ## Execute 3D registration
-        final_transform_3D_sitk = registration_method.Execute(fixed_3D_sitk, moving_3D_sitk) 
-
-        if display_registration_info:
-            print("SimpleITK Image Registration Method:")
-            print('  Final metric value: {0}'.format(registration_method.GetMetricValue()))
-            print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
-
-        return final_transform_3D_sitk
+        return stack_aligned_masked
 
 
     ## Dilate mask
@@ -561,6 +484,9 @@ class DataPreprocessing:
         ## Crop stack and mask to defined image region
         stack_crop_sitk = self._crop_image_to_region(stack_sitk, x_range, y_range, z_range)
         mask_crop_sitk = self._crop_image_to_region(mask_sitk, x_range, y_range, z_range)
+
+        ## Update header of mask accordingly! Otherwise, not necessarily in the same space!!!
+        mask_crop_sitk.CopyInformation(stack_crop_sitk)
 
         return stack_crop_sitk, mask_crop_sitk
         
