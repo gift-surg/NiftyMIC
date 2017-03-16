@@ -40,9 +40,7 @@ class RegistrationITK:
 
         ## Temporary output where files are written in order to use ITK from the commandline
         self._dir_tmp = dir_tmp
-        os.system("mkdir -p " + self._dir_tmp)
-        os.system("rm -rf " + self._dir_tmp + "*")
-
+        ph.create_directory(self._dir_tmp, delete_files=False)
 
         self._run_registration = {
             "Rigid"             : self._run_registration_rigid_affine,
@@ -220,6 +218,10 @@ class RegistrationITK:
 
 
     def run_registration(self, id=""):
+
+        ## Clean output directory first
+        ph.clear_directory(self._dir_tmp)
+        
         self._run_registration[self._registration_type](id)
 
 
@@ -232,9 +234,6 @@ class RegistrationITK:
             verbose = "1"
         else:
             verbose = "0"
-
-        ## Clean output directory first
-        os.system("rm -rf " + self._dir_tmp + "*")
 
         moving_str = "RegistrationITK_moving_" + id + self._moving.get_filename()
         fixed_str = "RegistrationITK_fixed_" + id + self._fixed.get_filename()

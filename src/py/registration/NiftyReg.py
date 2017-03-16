@@ -225,7 +225,10 @@ class NiftyReg:
         cmd += "-aff " + self._dir_tmp + res_affine_matrix_str + ".txt "
 
         # print(cmd)
-        sys.stdout.write("Affine registration (NiftyReg reg_aladin) ... ")
+        if self._registration_type in ["Rigid"]:
+            sys.stdout.write("Rigid registration (NiftyReg reg_aladin) ... ")
+        else:
+            sys.stdout.write("Affine registration (NiftyReg reg_aladin) ... ")
         sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
         os.system(cmd)
         print "done"

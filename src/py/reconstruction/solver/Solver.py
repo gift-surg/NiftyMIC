@@ -207,7 +207,7 @@ class Solver(object):
 
     ## Get current estimate of HR volume
     #  \return current estimate of HR volume, instance of Stack
-    def get_HR_volume(self):
+    def get_reconstruction(self):
         return self._HR_volume
 
 

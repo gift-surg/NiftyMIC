@@ -114,7 +114,7 @@ class StackAverage:
 
         ## Average over the amount of non-zero contributions of the stacks at each index
         ind[ind==0] = 1                 # exclude division by zero
-        array = np.divide(array,ind.astype(float))    # elemenwise division
+        array = np.divide(array,ind.astype(float))    # elementwise division
 
         ## Create (joint) binary mask. Mask represents union of all masks
         array_mask[array_mask>0] = 1

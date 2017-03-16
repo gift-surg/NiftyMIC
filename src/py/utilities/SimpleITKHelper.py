@@ -704,7 +704,7 @@ def get_itk_from_sitk_image(image_sitk):
 
     ## Create ITK image
     itk2np = itk.PyBuffer[image_type]
-    image_itk = itk2np.GetImageFromArray(nda)
+    image_itk = itk2np.GetImageFromArray(nda) 
 
     image_itk.SetOrigin(origin)
     image_itk.SetSpacing(spacing)
@@ -856,13 +856,20 @@ def plot_slices(slices, cmap="Greys_r", title="slice"):
 #
 # \return     { description_of_the_return_value }
 #
-def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False, verbose=True):
+def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False, verbose=True, interpolator="Linear"):
 
     if type(image_sitk) is not list:
         image_sitk = [image_sitk]
 
     if type(title) is not list:
         title = [title]
+
+    ## Ensure title and image_sitk have same length
+    if len(title) is not len(image_sitk):
+        tmp = title
+        title = [None]*len(image_sitk)
+        for i in range(0, len(image_sitk)):
+            title[i] = tmp[0] + str(i)
 
     ## Write image
     sitk.WriteImage(image_sitk[0], dir_output + title[0] + ".nii.gz")
@@ -875,12 +882,17 @@ def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output=
         overlay_txt = ""
 
         for i in range(1, len(image_sitk)):
-            if len(title) is len(image_sitk):
-                sitk.WriteImage(image_sitk[i], dir_output + title[i] + ".nii.gz")
-                overlay_txt += dir_output + title[i] + ".nii.gz "
-            else:
-                sitk.WriteImage(image_sitk[i], dir_output + title[0] + "_overlay" + str(i) + ".nii.gz")
-                overlay_txt += dir_output + title[0] + "_overlay" + str(i) + ".nii.gz "
+            
+            ## In case images are not in the same physical space, resample them
+            try:
+                image_sitk[i] - image_sitk[0]
+            except:
+                image_sitk[i] = sitk.Resample(image_sitk[i], image_sitk[0], sitk.Euler3DTransform(), eval("sitk.sitk" + interpolator))
+                title[i] += "_" + interpolator
+
+            filename = dir_output + title[i] + ".nii.gz"
+            sitk.WriteImage(image_sitk[i], filename)
+            overlay_txt += filename + " "
                 
         cmd += "-o " + overlay_txt \
 
@@ -901,7 +913,7 @@ def call_viewer_itksnap(image_sitk, title="test", segmentation=None, dir_output=
         write_executable_file(cmd, dir_output=dir_output, filename="showComparison")
 
 
-def call_viewer_fslview(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False, verbose=True):
+def call_viewer_fslview(image_sitk, title="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False, verbose=True, interpolator="Linear"):
     
     ## Convert to list objects
     if type(image_sitk) is not list:
@@ -915,6 +927,14 @@ def call_viewer_fslview(image_sitk, title="test", segmentation=None, dir_output=
         title = [None]*len(image_sitk)
         for i in range(0, len(image_sitk)):
             title[i] = tmp[0] + str(i)
+
+    for i in range(1, len(image_sitk)):
+        ## In case images are not in the same physical space, resample them
+        try:
+            image_sitk[i] - image_sitk[0]
+        except:
+            image_sitk[i] = sitk.Resample(image_sitk[i], image_sitk[0], sitk.Euler3DTransform(), eval("sitk.sitk" + interpolator))
+            title[i] += "_" + interpolator
 
     ## Write images to tmp-folder
     for i in range(0, len(image_sitk)):
@@ -943,20 +963,34 @@ def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
     date_time = str(now.year) + "-" + str(now.month).zfill(2) + "-"  + str(now.day).zfill(2) + " "
     date_time += str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2)
     
+    dir_output_file = "./"
+
+    ## Substitute commands
+    cmd = re.sub(dir_output, '" + directory + "', cmd)
+    cmd = re.sub("itksnap", 'itksnap_exe + "', cmd)
+
     call  = "#!/usr/bin/python\n"
     call += "\n"
     call += "##\n"
-    call += "#  \\file showComparison.py\n"
-    call += "#  \\author Michael Ebner (michael.ebner.14@ucl.ac.uk)\n"
-    call += "#  " + date_time + "\n"
+    call += "#  \\file\t" + "showComparison.py\n"
+    call += "#  \\author\t" + "Michael Ebner (michael.ebner.14@ucl.ac.uk)\n"
+    call += "#  \\date\t" + date_time + "\n"
     call += "\n"
     call += "import os" 
     call += "\n"
-    call += "directory = " + '"' + dir_output + '"'
     call += "\n"
-    call += "cmd = " + '"' + re.sub(dir_output, '" + directory + "', cmd) + '" '
+    call += "directory = " + '"' + dir_output_file + '"'
     call += "\n"
-    call += "print(cmd); os.system(cmd)"
+    call += "#itksnap_exe = " + '"/Applications/ITK-SNAP.app/Contents/MacOS/ITK-SNAP"'
+    call += "\n"
+    call += "itksnap_exe = " + '"itksnap"'
+    call += "\n"
+    call += "\n"
+    call += "cmd = " + cmd + '" '
+    call += "\n"
+    call += "print(cmd)"
+    call += "\n"
+    call += "os.system(cmd)"
 
     ## Write function call to python file
     text_file = open(dir_output + filename + ".py", "w")

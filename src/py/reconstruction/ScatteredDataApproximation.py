@@ -15,17 +15,23 @@ import numpy as np
 import time                     
 
 ## Import modules from src-folder
+import base.Stack as st
 import utilities.SimpleITKHelper as sitkh
 
 
 ## Class implementing Scattered Data Approximation
 class ScatteredDataApproximation:
 
-    ## Constructor
-    #  \param[in] stack_manager instance of StackManager containing all stacks and additional information
-    #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (required for defining HR space)
-    #  \post HR_volume is updated with current volumetric estimate
-    def __init__(self, stack_manager, HR_volume):
+    ##
+    # Constructor
+    # \param[in]  stack_manager  instance of StackManager containing all stacks
+    #                            and additional information
+    # \param[in]  HR_volume      Stack object containing the current estimate
+    #                            of the HR volume (required for defining HR
+    #                            space)
+    # \post       HR_volume is updated with current volumetric estimate
+    #
+    def __init__(self, stack_manager, HR_volume, sigma=1, sigma_array=None):
 
         ## Initialize variables
         self._stack_manager = stack_manager
@@ -34,7 +40,12 @@ class ScatteredDataApproximation:
         self._HR_volume = HR_volume
 
         ## Define sigma for recursive smoothing filter
-        self._sigma_array = np.ones(3)
+        if sigma_array is None:
+            self._sigma_array = np.ones(3)*sigma
+        elif len(sigma_array) is not 3:
+            raise ValueError("Error: Sigma array must contain 3 elements")
+        else:
+            self._sigma_array = np.array(sigma_array)
 
         ## Define dictionary to choose computational approach for SDA
         self._run_reconstruction = {
@@ -95,7 +106,7 @@ class ScatteredDataApproximation:
 
     ## Get current estimate of HR volume
     #  \return current estimate of HR volume, instance of Stack
-    def get_HR_volume(self):
+    def get_reconstruction(self):
         return self._HR_volume
 
 
@@ -110,6 +121,100 @@ class ScatteredDataApproximation:
 
         time_elapsed = time.clock() - t0
         # print("Elapsed time for SDA: %s seconds" %(time_elapsed))
+
+
+    ##
+    # Add mask based on union of all masks
+    # \date       2017-02-03 16:46:33+0000
+    #
+    # \param      self                  The object
+    # \param      mask_dilation_radius  The mask dilation radius
+    # \param      mask_dilation_kernel  The kernel in "Ball", "Box", "Annulus"
+    #                                   or "Cross"
+    #                                   
+    def generate_mask_from_stack_mask_unions(self, mask_dilation_radius=0, mask_dilation_kernel="Ball"):
+
+        ## Define helpers to obtain averaged stack
+        shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
+        array_mask = np.zeros(shape)
+
+        ## Average over domain specified by the joint mask ("union mask")
+        for i in range(0,self._N_stacks):
+
+            ## Resample warped stack masks
+            stack_sitk_mask =  sitk.Resample(
+                self._stacks[i].sitk_mask,
+                self._HR_volume.sitk_mask, 
+                sitk.Euler3DTransform(), 
+                sitk.sitkNearestNeighbor, 
+                0,
+                self._HR_volume.sitk_mask.GetPixelIDValue())
+
+            ## Get arrays of resampled warped stack and mask
+            array_mask_tmp = sitk.GetArrayFromImage(stack_sitk_mask)
+
+            ## Sum intensities of stack and mask
+            array_mask += array_mask_tmp
+
+        ## Create (joint) binary mask. Mask represents union of all masks
+        array_mask[array_mask>0] = 1
+
+        HR_volume_mask_sitk = sitk.GetImageFromArray(array_mask)
+        HR_volume_mask_sitk.CopyInformation(self._HR_volume.sitk)
+
+        if mask_dilation_radius > 0:
+            dilater = sitk.BinaryDilateImageFilter()
+            dilater.SetKernelType(eval("sitk.sitk" + mask_dilation_kernel))
+            dilater.SetKernelRadius(mask_dilation_radius)
+            HR_volume_mask_sitk = dilater.Execute(HR_volume_mask_sitk)
+
+        self._HR_volume = st.Stack.from_sitk_image(self._HR_volume.sitk, self._HR_volume.get_filename(), HR_volume_mask_sitk)
+
+    ##
+    # Add mask based on union of intersection of masks
+    # \date       2017-02-03 16:46:33+0000
+    #
+    # \param      self                  The object
+    # \param      mask_dilation_radius  The mask dilation radius
+    # \param      mask_dilation_kernel  The kernel in "Ball", "Box", "Annulus"
+    #                                   or "Cross"
+    def generate_mask_from_stack_mask_intersections(self, mask_dilation_radius=0, mask_dilation_kernel="Ball"):
+
+        ## Define helpers to obtain averaged stack
+        shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
+        array_mask = np.ones(shape, dtype=np.uint8)
+
+        ## Average over domain specified by the joint mask ("union mask")
+        for i in range(0,self._N_stacks):
+
+            ## Resample warped stack masks
+            stack_sitk_mask =  sitk.Resample(
+                self._stacks[i].sitk_mask,
+                self._HR_volume.sitk_mask, 
+                sitk.Euler3DTransform(), 
+                sitk.sitkNearestNeighbor, 
+                0,
+                self._stacks[i].sitk_mask.GetPixelIDValue())
+
+            ## Get arrays of resampled warped stack and mask
+            array_mask_tmp = sitk.GetArrayFromImage(stack_sitk_mask)
+
+            ## Sum intensities of stack and mask
+            array_mask *= array_mask_tmp
+
+        ## Create (joint) binary mask. Mask represents union of all masks
+        array_mask[array_mask>0] = 1
+
+        HR_volume_mask_sitk = sitk.GetImageFromArray(array_mask)
+        HR_volume_mask_sitk.CopyInformation(self._HR_volume.sitk)
+
+        if mask_dilation_radius > 0:
+            dilater = sitk.BinaryDilateImageFilter()
+            dilater.SetKernelType(eval("sitk.sitk" + mask_dilation_kernel))
+            dilater.SetKernelRadius(mask_dilation_radius)
+            HR_volume_mask_sitk = dilater.Execute(HR_volume_mask_sitk)
+
+        self._HR_volume = st.Stack.from_sitk_image(self._HR_volume.sitk, self._HR_volume.get_filename(), HR_volume_mask_sitk)
 
 
 

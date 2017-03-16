@@ -601,12 +601,34 @@ class Stack:
         return stack
 
 
-    ## Get isotropically resampled grid
-    #  \param[in] spacing_new_scalar length of voxel side, scalar
-    #  \param[in] interpolator choose type of interpolator for resampling
-    #  \param[in] extra_frame additional extra frame of zero intensities surrounding the stack in mm
-    #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", extra_frame=0, filename=None):
+    ##
+    # Get isotropically resampled grid
+    # \param[in]  spacing_new_scalar  
+    # \param[in]  interpolator        choose type of interpolator for
+    #                                 resampling
+    # \param[in]  extra_frame         additional extra frame of zero
+    #                                 intensities surrounding the stack in mm
+    # \return     isotropically, resampled stack as Stack object
+    #
+    
+    ##
+    # Gets the isotropically resampled stack.
+    # \date       2017-02-03 16:34:24+0000
+    #
+    # \param      self                  The object
+    # \param      spacing_new_scalar    length of voxel side, scalar
+    # \param      interpolator          choose type of interpolator for
+    #                                   resampling
+    # \param      extra_frame           additional extra frame of zero
+    #                                   intensities surrounding the stack in mm
+    # \param      filename              Filename of resampled stack
+    # \param      mask_dilation_radius  The mask dilation radius
+    # \param      mask_dilation_kernel  The kernel in "Ball", "Box", "Annulus"
+    #                                   or "Cross"
+    #
+    # \return     The isotropically resampled stack.
+    #
+    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", extra_frame=0, filename=None, mask_dilation_radius=0, mask_dilation_kernel="Ball"):
 
         ## Choose interpolator
         try:
@@ -677,6 +699,12 @@ class Stack:
             direction,
             0,
             self.sitk_mask.GetPixelIDValue())
+
+        if mask_dilation_radius > 0:
+            dilater = sitk.BinaryDilateImageFilter()
+            dilater.SetKernelType(eval("sitk.sitk" + mask_dilation_kernel))
+            dilater.SetKernelRadius(mask_dilation_radius)
+            isotropic_resampled_stack_sitk_mask = dilater.Execute(isotropic_resampled_stack_sitk_mask)
 
         ## Create Stack instance
         if filename is None:

@@ -106,6 +106,8 @@ class FilenameParser(object):
 
         if len(filenames_cropped) > 1:
             filenames_cropped = sorted(filenames_cropped)
+        elif len(filenames) is 1:
+            filenames = filenames[0]
 
         return filenames_cropped
 
@@ -180,7 +182,7 @@ class FilenameParser(object):
 
         if len(filenames) > 1:
             filenames = sorted(filenames)
-        else:
+        elif len(filenames) is 1:
             filenames = filenames[0]
 
         return filenames
