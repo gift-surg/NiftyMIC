@@ -8,18 +8,120 @@
 ## Import libraries
 import os                       # used to execute terminal commands in python
 import sys
-# import itk
-# import SimpleITK as sitk
+import pickle
 import numpy as np
 import contextlib
+import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import time
 import datetime
 from PIL import Image
 # from datetime import timedelta
+import itertools
 
 ## Import modules
 # import utilities.SimpleITKHelper as sitkh
+
+## 
+COLORS = [
+    "r",        # red
+    "b",        # blue
+    "g",        # green
+    "c",        # cyan
+    "m",        # magenta
+    "y",        # yellow
+    "k",        # black
+    "w",        # white
+]
+MARKERS = [
+    "s",        #square
+    "o",        #circle
+    "v",        #triangle_down
+    "x",        #x
+    "p",        #pentagon
+    "X",        #x (filled)
+    "*",        #star
+    "P",        #plus (filled)
+    "^",        #triangle_up
+    "<",        #triangle_left
+    ">",        #triangle_right
+    ".",        #point
+    "+",        #plus
+    "1",        #tri_down
+    "2",        #tri_up
+    "3",        #tri_left
+    "4",        #tri_right
+    "8",        #octagon
+    ",",        #pixel
+    "h",        #hexagon1
+    "H",        #hexagon2
+    "D",        #diamond
+    "d",        #thin_diamond
+    "|",        #vline
+    "_",        #hline
+    "None",     #nothing
+    " ",        #nothing
+    "",         #nothing 
+    '$...$',    #render the string using mathtext
+]
+LINESTYLES = [
+    "-",        #solid line
+    "--",       #dashed line
+    "-.",       #dash-dotted line
+    ":",        #dotted line
+    "None",     #draw nothing
+    " ",        #draw nothing
+    "",         #draw nothing
+]
+
+##
+# Writes variables.
+# \date       2017-02-18 16:51:31+0000
+#
+# \param      variables  List of variables to store
+# \param      directory  The directory
+# \param      filename   The filename without extension
+#
+def write_variables(variables, directory, filename, filetype=".pckl"):
+
+    directory = create_directory(directory)
+    filename_out = directory + filename + filetype
+
+    f = open(filename_out, 'wb')
+    pickle.dump(variables, f, protocol=-1) #protocol=-1 for large files
+    flag = f.close()
+
+    if not flag:
+        print_debug_info("Variables successfully written to " + filename_out )
+    else:
+        print_debug_info("Error: Variables could not be written")
+
+
+##
+# Reads variables.
+# \date       2017-02-18 16:55:35+0000
+#
+# \param      directory  The directory
+# \param      filename   The filename
+#
+# \return     List of read variables
+#
+def read_variables(directory, filename, filetype=".pckl"):
+    
+    filename_in = directory + filename + filetype
+
+    f = open(filename_in, 'rb')
+    variables = pickle.load(f)
+    flag = f.close()
+
+    if not flag:
+        print_debug_info("Variables successfully read from " + filename_in )
+    else:
+        print_debug_info("Error: Variables could not be read")
+
+    return variables
+
 
 
 ##
@@ -66,6 +168,249 @@ def read_input(infotext="None", default=None):
             return text_in
 
 
+def flip(items, ncol):
+    return itertools.chain(*[items[i::ncol] for i in range(ncol)])
+##
+# { function_description }
+# \date       2017-02-18 04:21:27+0000
+#
+# \param      y                 { parameter_description }
+# \param      x                 { parameter_description }
+# \param      xlabel            The xlabel
+# \param      ylabel            The ylabel
+# \param      title             The title
+# \param      y_axis_style      The y axis style ("plot", "semilogy")
+# \param      labels            The label
+# \param      label_location    The label location
+# \param      color             The color
+# \param      markers           The marker
+# \param      markevery         The markevery
+# \param      linestyle         The linestyle
+# \param      label_shadow      The label shadow
+# \param      label_frameon     The label frameon
+# \param      linewidth         The linewidth
+# \param      markerfacecolors  The markerfacecolor ("none", None)
+# \param      markersize        The markersize
+# \param      fontfamily        The fontfamily ("serif", "sans-serif", "monospace")
+# \param      fontname          The fontname ("Arial", "Times New Roman")
+# \param      use_tex           The use tex
+# \param      fontsize          The fontsize
+# \param      backgroundcolor   The backgroundcolor
+# \param      aspect_ratio      The aspect ratio ("auto", "equal")
+# \param      save_figure       The save fig
+# \param      directory         The directory
+# \param      filename          The filename including extension
+# \param      fig_number        The fig number
+#
+# \return     figure
+#
+def show_curves(y, x=None, xlabel="", ylabel="", title="", xlim=None, ylim=None, y_axis_style="plot", labels=None, label_location="upper right", color=None, markers=None, markevery=10, linestyle=None, label_shadow=False, label_frameon=True, label_fontsize=None, label_boundingboxtoanchor=None, label_ncol=1, linewidth=1, markerfacecolors=None, markersize=10, fontfamily="serif", fontname="Arial", use_tex=False, fontsize=12, backgroundcolor="None", aspect_ratio="auto", save_figure=False, directory="/tmp/", filename="figure.pdf", fig_number=None, show_compact=0, subplots_left=0.08, subplots_bottom=0.11, subplots_right=0.99, subplots_top=0.83, subplots_wspace=0, subplots_hspace=0, figuresize=None):
+
+    y = list(y)
+    N_curves = len(y)
+
+    ## Change font
+    font = {
+        "family"        :   fontfamily,
+        fontfamily      :   fontname,
+        "size"          :   fontsize,
+        }
+    matplotlib.rc('font', **font)
+    matplotlib.rc('text', usetex=use_tex)
+
+    if x is None:
+        x = [None]*N_curves
+        for i in range(N_curves):
+            x[i] = np.arange(y[i].size)+1
+    
+    if type(linewidth) is not list and not isinstance(linewidth, np.ndarray):
+        linewidth = [linewidth]*N_curves
+
+    if type(labels) is not list:
+        labels = [labels]*N_curves
+
+
+    if figuresize is None:
+        fig = plt.figure(fig_number)
+    else:
+        fig = plt.figure(fig_number, figsize=figuresize[::-1])
+    
+    if show_compact:
+        plt.subplots_adjust(wspace=subplots_wspace, hspace=subplots_hspace, left=subplots_left, right=subplots_right, bottom=subplots_bottom, top=subplots_top)
+    fig.clf()
+
+    ax = fig.add_subplot(111)
+    for i in range(N_curves):
+
+        ## Print line with preferred y axis style
+        lines = eval("plt." + y_axis_style + "(x[i], y[i], label=labels[i])")
+        
+        ## Extract line object to adjust line settings
+        line = lines[0]
+        
+        ## Specify line settings
+        line.set_linewidth(linewidth[i])
+        if color is not None:
+            line.set_color(color[i])
+        if linestyle is not None:
+            line.set_linestyle(linestyle[i])
+        if markers is not None:
+            line.set_marker(markers[i])
+            line.set_markevery(markevery)
+            line.set_markerfacecolor(markerfacecolors)
+            line.set_markersize(markersize)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+    ## Add legend
+    # legend = plt.legend(loc=label_location, shadow=label_shadow, frameon=label_frameon)
+    # handles, labels = ax.get_legend_handles_labels()
+    # plt.legend(flip(handles, 2), flip(labels, 2), loc="lower center", shadow=label_shadow, frameon=label_frameon, bbox_to_anchor=(0.5, 1), ncol=N_curves/2)
+
+    if label_fontsize is None:
+        label_fontsize = fontsize
+
+    # legend = plt.legend(loc="lower center", shadow=label_shadow, frameon=label_frameon, bbox_to_anchor=(0.47, 1), ncol=4, fontsize=label_fontsize)
+    legend = plt.legend(loc=label_location, shadow=label_shadow, frameon=label_frameon, bbox_to_anchor=label_boundingboxtoanchor, ncol=label_ncol, fontsize=label_fontsize)
+    
+    ax.set_aspect(aspect_ratio)
+    ax.set_facecolor(backgroundcolor)
+    
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+    plt.show(block=False)
+    
+
+    if save_figure:
+        ## Create directory in case it does not exist already
+        create_directory(directory)
+
+        ## Save figure to directory
+        _save_figure(fig, directory, filename)
+
+    return fig
+
+
+##
+# Show 2D images
+# \date       2017-02-18 05:55:08+0000
+#
+# \param      images            The images
+# \param      titles            The title
+# \param      cmap              The cmap ("Greys_r", "jet", ...)
+# \param      colorbar          The color
+# \param      fontfamily        The fontfamily ("serif", "sans-serif", "monospace")
+# \param      fontname          The fontname ("Arial", "Times New Roman")
+# \param      use_tex           The use tex
+# \param      fontsize          The fontsize
+# \param      backgroundcolor   The backgroundcolor
+# \param      aspect_ratio      The aspect ratio ("auto", "equal")
+# \param      save_figure       The save fig
+# \param      directory         The directory
+# \param      filename          The filename including extension
+# \param      fig_number        The fig number
+# \param      use_same_scaling  The use same scaling
+# \param      show_compact      The show compact
+# \param      subplots_wspace   The subplots wspace
+# \param      subplots_hspace   The subplots hspace
+# \param      subplots_left     The subplots left
+# \param      subplots_right    The subplots right
+# \param      subplots_bottom   The subplots bottom
+# \param      subplots_top      The subplots top
+#
+# \return     figure
+#
+def show_images(images, titles=None, cmap="Greys_r", use_colorbar=False, fontfamily="serif", fontname="Arial", use_tex=False, fontsize=12, backgroundcolor="None", aspect_ratio="auto", save_figure=False, directory="/tmp/", filename="figure.pdf", fig_number=None, use_same_scaling=False, show_compact=False, subplots_wspace=0, subplots_hspace=0, subplots_left=0, subplots_right=1, subplots_bottom=0, subplots_top=0.85, grid_shape=None, figuresize=None):
+
+    images = list(images)
+    N_images = len(images)
+
+    ## Change font
+    font = {
+        "family"        :   fontfamily,
+        fontfamily      :   fontname,
+        "size"          :   fontsize,
+        }
+    matplotlib.rc('font', **font)
+    matplotlib.rc('text', usetex=use_tex)
+
+    ## Define the grid to arrange the slices
+    if grid_shape is None:
+        grid = _get_grid_size(N_images)
+    else:
+        grid = grid_shape
+
+    ## Use same scaling for all images
+    if use_same_scaling:
+        ## Extract min and max value of arrays for same scaling
+        value_min = np.min(images[0])
+        value_max = np.max(images[0])
+        for i in range(1, N_images):
+            value_min = np.min([value_min, np.min(images[i])])
+            value_max = np.max([value_max, np.max(images[i])])
+    else:
+        value_min = None
+        value_max = None
+
+
+    # print("value_min = %.2f" %(value_min))
+    # print("value_max = %.2f" %(value_max))
+    ## Plot figure
+    if show_compact:
+        if figuresize is None:
+            fig = plt.figure(fig_number, figsize=2*np.array(grid[::-1]))
+        else:
+            fig = plt.figure(fig_number, figsize=figuresize[::-1])
+
+        plt.subplots_adjust(wspace=subplots_wspace, hspace=subplots_hspace, left=subplots_left, right=subplots_right, bottom=subplots_bottom, top=subplots_top)
+    else:
+        if figuresize is None:
+            fig = plt.figure(fig_number)
+        else:
+            fig = plt.figure(fig_number, figsize=figuresize[::-1])
+
+    fig.clf()
+
+
+    for i in range(0, N_images):
+        if i is 0:
+            ax1 = plt.subplot(grid[0], grid[1], i+1)
+            ax1.set_aspect(aspect_ratio)
+        else:
+            # ax2 = plt.subplot(gs1[i])
+            ax2 = plt.subplot(grid[0], grid[1], i+1, sharex=ax1)
+            ax2.set_aspect(aspect_ratio)
+        im = plt.imshow(images[i], cmap=cmap, vmin=value_min, vmax=value_max)
+        if titles is not None:
+            if i < len(titles):
+                plt.title(titles[i])
+        
+        ## Suppress axes
+        plt.axis('off')
+        
+        ## Add colorbar on the side
+        if use_colorbar:
+            # add_axes([left, bottom, width, height])
+            cax = fig.add_axes([0.92, 0.05, 0.01, 0.9])
+            fig.colorbar(im, cax=cax)
+
+
+    plt.show(block=False)
+
+    if save_figure:
+        
+        ## Create directory in case it does not exist already
+        create_directory(directory)
+
+        ## Save figure to directory
+        _save_figure(fig, directory, filename)
+
+    return fig
+
+
 ##
 # Shows single 2D/3D array or a list of 2D arrays.
 # \date       2017-02-07 10:06:25+0000
@@ -78,17 +423,18 @@ def read_input(infotext="None", default=None):
 # \param      save_type   Filename extension of figure in case it is saved
 # \param      fig_number  Figure number. If 'None' previous figure will not be
 #                         closed
-#                         
-def show_arrays(nda, title="data", cmap="Greys_r", colorbar=False, directory=None, save_type="pdf", fig_number=1):
+#
+def show_arrays(nda, title=None, cmap="Greys_r", use_colorbar=False, directory=None, fig_number=None, use_same_scaling=False):
 
     ## Show list of 2D arrays slice by slice
     if type(nda) is list:
-        _show_2D_array_list_array_by_array(nda, title=title, cmap=cmap, colorbar=colorbar, fig_number=fig_number, directory=directory, save_type=save_type)
-    
+        fig = _show_2D_array_list_array_by_array(nda, title=title, cmap=cmap, colorbar=use_colorbar, fig_number=fig_number, directory=directory, use_same_scaling=use_same_scaling)
+
     ## Show single 2D/3D array
     else:
-        show_array(nda, title=title, cmap=cmap, colorbar=colorbar, directory=directory, save_type=save_type, fig_number=fig_number)
+        fig = show_array(nda, title=title, cmap=cmap, colorbar=use_colorbar, directory=directory, fig_number=fig_number)
 
+    return fig
 
 ##
 # Show single 2D or 3D array
@@ -102,16 +448,18 @@ def show_arrays(nda, title="data", cmap="Greys_r", colorbar=False, directory=Non
 # \param      save_type   Filename extension of figure in case it is saved
 # \param      fig_number  Figure number. If 'None' previous figure will not be
 #                         closed
-#                         
+#
 def show_array(nda, title="data", cmap="Greys_r", colorbar=False, directory=None, save_type="pdf", fig_number=None):
 
     ## Show single 2D array
     if len(nda.shape) is 2:
-        _show_2D_array(nda, title=title, cmap=cmap, colorbar=colorbar, directory=directory, save_type=save_type, fig_number=fig_number)
+        fig = _show_2D_array(nda, title=title, cmap=cmap, colorbar=colorbar, directory=directory, save_type=save_type, fig_number=fig_number)
 
     ## Show single 3D array
     elif len(nda.shape) is 3:
-        _show_3D_array_slice_by_slice(nda, title=title, cmap=cmap, colorbar=colorbar, directory=directory, save_type=save_type, fig_number=fig_number)
+        fig = _show_3D_array_slice_by_slice(nda, title=title, cmap=cmap, colorbar=colorbar, directory=directory, save_type=save_type, fig_number=fig_number)
+
+    return fig
 
 
 ##
@@ -136,14 +484,16 @@ def _show_2D_array(nda, title="data", cmap="Greys_r", colorbar=False, directory=
         plt.colorbar()
 
     plt.show(block=False)
-    
-    ## If directory is given: Save 
-    if directory is not None:    
+
+    ## If directory is given: Save
+    if directory is not None:
         ## Create directory in case it does not exist already
         create_directory(directory)
-        
+
         ## Save figure to directory
         _save_figure(fig, directory, title, save_type)
+
+    return fig
 
 
 ##
@@ -172,24 +522,26 @@ def _show_3D_array_slice_by_slice(nda3D_zyx, title="data", cmap="Greys_r", color
     plt.suptitle(title)
     ctr = 1
     for i in range(0, N_slices):
-        
+
         plt.subplot(grid[0], grid[1], ctr)
         plt.imshow(nda3D_zyx[i,:,:], cmap=cmap)
         plt.title(str(i))
         plt.axis('off')
-        
+
         ctr += 1
 
     print("Slices of " + title + " are shown in separate window.")
     plt.show(block=False)
 
-    ## If directory is given: Save 
-    if directory is not None:    
+    ## If directory is given: Save
+    if directory is not None:
         ## Create directory in case it does not exist already
         create_directory(directory)
-        
+
         ## Save figure to directory
         _save_figure(fig, directory, title+"_slice_0_to_"+str(N_slices-1), save_type)
+
+    return fig
 
 
 ##
@@ -207,65 +559,91 @@ def _show_3D_array_slice_by_slice(nda3D_zyx, title="data", cmap="Greys_r", color
 #
 # \return     { description_of_the_return_value }
 #
-def _show_2D_array_list_array_by_array(nda2D_list, title="image", cmap="Greys_r", colorbar=False, fig_number=None, directory=None, save_type="pdf", axis_aspect='auto'):
+def _show_2D_array_list_array_by_array(nda2D_list, title=None, cmap="Greys_r", colorbar=False, fig_number=None, directory=None, axis_aspect='equal', use_same_scaling=False):
+
+    # my_fontname = "Arial"
+    my_fontname = "Times New Roman"
+    title_font = {
+        'fontname':my_fontname, 
+        'size':'8', 
+        'color':'black', 
+        'weight':'normal',
+        'verticalalignment':'center'  # Bottom vertical alignment for more space
+        }
+
 
     shape = nda2D_list[0].shape
     N_slices = len(nda2D_list)
 
-    if type(title) is not list:
+    if type(title) is not list and title is not None:
         title = [title]
 
     ## Define the grid to arrange the slices
     grid = _get_grid_size(N_slices)
 
-    ## Extract min and max value of arrays for same scaling
-    value_min = np.min(nda2D_list[0])
-    value_max = np.max(nda2D_list[0])
-    for i in range(1, N_slices):
-        value_min = np.min([value_min, np.min(nda2D_list[i])])
-        value_max = np.max([value_max, np.max(nda2D_list[i])])
+    if use_same_scaling:
+        ## Extract min and max value of arrays for same scaling
+        value_min = np.min(nda2D_list[0])
+        value_max = np.max(nda2D_list[0])
+        for i in range(1, N_slices):
+            value_min = np.min([value_min, np.min(nda2D_list[i])])
+            value_max = np.max([value_max, np.max(nda2D_list[i])])
+    else:
+        value_min = None
+        value_max = None
+
 
     # print("value_min = %.2f" %(value_min))
     # print("value_max = %.2f" %(value_max))
     ## Plot figure
-    fig = plt.figure(fig_number)
+    fig = plt.figure(fig_number, figsize=2*np.array(grid[::-1]))
+    # fig = plt.figure(fig_number)
     fig.clf()
-    ctr = 1
+
+
+    # gs1 = gridspec.GridSpec(grid[0], grid[1])
+    # gs1.update(wspace=0, hspace=0, ) #set spacing between axes
+    
     for i in range(0, N_slices):
-        if ctr is 1:
-            ax1 = plt.subplot(grid[0], grid[1], ctr)
+        if i is 0:
+            # ax1 = plt.subplot(gs1[i])
+            ax1 = plt.subplot(grid[0], grid[1], i+1)
             ax1.set_aspect(axis_aspect)
         else:
-            ax2 = plt.subplot(grid[0], grid[1], ctr, sharex=ax1)
+            # ax2 = plt.subplot(gs1[i])
+            ax2 = plt.subplot(grid[0], grid[1], i+1, sharex=ax1)
             ax2.set_aspect(axis_aspect)
         im = plt.imshow(nda2D_list[i], cmap=cmap, vmin=value_min, vmax=value_max)
-        if len(title) is N_slices:
-            plt.title(title[i])
-        else:
-            plt.title(title[0]+"_"+str(i))
+        if title is not None:
+            if i < len(title):
+                plt.title(title[i], **title_font)
         plt.axis('off')
         if colorbar:
             # add_axes([left, bottom, width, height])
             cax = fig.add_axes([0.92, 0.05, 0.01, 0.9])
             fig.colorbar(im, cax=cax)
-        ctr += 1
+
+    plt.subplots_adjust(wspace=0, hspace=0, left=0, right=1, bottom=0, top=None)
+
 
     print("Slices of data arrays are shown in separate window.")
     plt.show(block=False)
 
-    ## If directory is given: Save 
-    if directory is not None:    
+    ## If directory is given: Save
+    if directory is not None:
         ## Create directory in case it does not exist already
         create_directory(directory)
-        
+
         filename = title[0]
         for i in range(1, N_slices):
-            filename += "_" + title[i]
+            if i < len(title):
+                filename += "_" + title[i]
 
 
         ## Save figure to directory
-        _save_figure(fig, directory, filename, save_type)
+        _save_figure(fig, directory, filename)
 
+    return fig
 
 ##
 #       Gets the grid size given a number of 2D images
@@ -281,18 +659,18 @@ def _get_grid_size(N_slices):
         raise ValueError("Too many slices to print")
 
     ## Define the view grid to arrange the slices
-    if N_slices < 3:
+    if N_slices <= 4:
         grid = (1, N_slices)
-    elif N_slices > 2 and N_slices < 9:
+    elif N_slices > 4 and N_slices <= 10:
         grid = (2, np.ceil(N_slices/2.).astype('int'))
-    elif N_slices > 8 and N_slices < 13:
+    elif N_slices > 10 and N_slices <= 15:
         grid = (3, np.ceil(N_slices/3.).astype('int'))
-    elif N_slices > 12 and N_slices < 22:
-        grid = (3, np.ceil(N_slices/3.).astype('int'))
-    elif N_slices > 21 and N_slices < 29:
-        grid = (4, np.ceil(N_slices/4.).astype('int'))
+    elif N_slices > 15 and N_slices <= 20:
+        grid = (4, np.ceil(N_slices/3.).astype('int'))
+    elif N_slices > 21 and N_slices <= 30:
+        grid = (5, np.ceil(N_slices/4.).astype('int'))
     else:
-        grid = (5, np.ceil(N_slices/5.).astype('int'))
+        grid = (6, np.ceil(N_slices/5.).astype('int'))
 
     return grid
 
@@ -303,17 +681,16 @@ def _get_grid_size(N_slices):
 #
 # \param      fig        The fig
 # \param      directory  The directory
-# \param      filename   The filename
-# \param      save_type  Filename extension of figure in case it is saved
+# \param      filename   The filename including filename extension
 #
-def _save_figure(fig, directory, filename, save_type):
+def _save_figure(fig, directory, filename):
 
     ## Add backslash if not given
     if directory[-1] is not "/":
         directory += "/"
-    
-    fig.savefig(directory + filename + "." + save_type)
-    print("Figure was saved to " + directory + filename + "." + save_type)
+
+    fig.savefig(directory + filename)
+    print("Figure was saved to " + directory + filename)
 
 
 ##
@@ -379,8 +756,31 @@ def print_numpy_array(nda, title=None, precision=3, suppress=False):
 def printoptions(*args, **kwargs):
     original = np.get_printoptions()
     np.set_printoptions(*args, **kwargs)
-    yield 
+    yield
     np.set_printoptions(**original)
+
+
+def print_debug_info(text):
+    # print("---- Debug info: ----")
+    print("--- " + text)
+    # print("---------------------------")
+
+
+def print_title(text, symbol="*", add_newline=False):
+    print_line_separator(symbol=symbol)
+    print_subtitle(text,symbol=symbol, add_newline=add_newline)
+
+
+def print_subtitle(text, symbol="*", add_newline=True):
+    if add_newline:
+        print("")
+    print(3*symbol + " " + text + " " + 3*symbol)
+
+
+def print_line_separator(add_newline=True, symbol="*", length=99):
+    if add_newline:
+        print("\n")
+    print(symbol*length)
 
 
 ##
@@ -399,25 +799,6 @@ def create_file(directory, filename, filename_extension="txt", header=""):
     file_handle.close()
     print_debug_info("File " + str(directory + filename + "." + filename_extension) + " was created.")
 
-def print_debug_info(text):
-    # print("---- Debug info: ----")
-    print("--- " + text)
-    # print("---------------------------")
-
-
-def print_title(text, symbol="*"):
-    print_line_separator(symbol=symbol)
-    print_subtitle(text,symbol=symbol)
-
-
-def print_subtitle(text, symbol="*"):
-    print(3*symbol + " " + text + " " + 3*symbol)
-
-
-def print_line_separator(add_newline=True, symbol="*", length=99):
-    if add_newline:
-        print("\n")
-    print(symbol*length)
 
 ##
 # Appends an array to file.
@@ -466,9 +847,7 @@ def create_directory(directory, delete_files=False):
 
     ## Add slash in case not existing
     if directory[-1] not in ["/"]:
-        print directory
         directory += "/"
-        print directory
 
     ## Create directory in case it does not exist already
     if not os.path.isdir(directory):
@@ -477,6 +856,9 @@ def create_directory(directory, delete_files=False):
 
     if delete_files:
         clear_directory(directory)
+
+    return directory
+
 
 ##
 # Clear all data in given directory
@@ -508,7 +890,7 @@ def get_current_date_and_time_strings():
 #
 # \return    image grid as numpy array
 #
-def create_image_grid(shape, spacing, value_bg=255, value_fg=0):
+def create_image_grid(shape, spacing, value_bg=1, value_fg=0):
 
     nda = np.ones(shape)*value_bg
 
@@ -533,7 +915,7 @@ def create_image_grid(shape, spacing, value_bg=255, value_fg=0):
 #
 # \return     image with slope intensity as numpy array
 #
-def create_image_with_slope(shape, slope=1, value_bg=0, value_fg=255, offset=0):
+def create_image_with_slope(shape, slope=1, value_bg=0, value_fg=1, offset=0):
 
     nda = np.ones(shape)*value_bg
 
@@ -556,7 +938,7 @@ def create_image_with_slope(shape, slope=1, value_bg=0, value_fg=255, offset=0):
 #
 # \return     { description_of_the_return_value }
 #
-def create_image_pyramid(length, slope=1, value_bg=0, value_fg=255, offset=(0,0)):
+def create_image_pyramid(length, slope=1, value_bg=0, value_fg=1, offset=(0,0)):
 
     shape = np.array([length,length])
 
@@ -571,7 +953,7 @@ def create_image_pyramid(length, slope=1, value_bg=0, value_fg=255, offset=(0,0)
         nda_offset[offset[0]:, offset[1]:] = nda[0:-offset[0],0:-offset[1]]
 
         nda = nda_offset
-    
+
     return nda
 
 
@@ -595,5 +977,6 @@ def read_image(filename):
 # \param      filename  The filename including filename extension
 #
 def write_image(nda, filename):
+    nda = np.round(np.array(nda))
     im = Image.fromarray(nda)
     im.save(filename)

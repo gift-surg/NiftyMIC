@@ -670,7 +670,7 @@ class Stack:
             e_y = a_y/np.linalg.norm(a_y)
             e_z = a_z/np.linalg.norm(a_z)
 
-            translation = (e_x + e_y + e_z)*extra_frame_vox*spacing[0]
+            translation = (e_x + e_y + e_z)*extra_frame_vox*spacing_new
 
             origin = origin - translation
 
