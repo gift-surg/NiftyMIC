@@ -4,6 +4,18 @@
 		"selected_items":
 		[
 			[
+				"get_dir",
+				"get_directions_from_scans"
+			],
+			[
+				"dir_",
+				"dir_input"
+			],
+			[
+				"fil",
+				"filenames_stacks"
+			],
+			[
 				"angle_x",
 				"angle_x_deg"
 			],
@@ -18,10 +30,6 @@
 			[
 				"refere",
 				"reference_image_sitk"
-			],
-			[
-				"dir_",
-				"dir_output_file"
 			],
 			[
 				"spac",
@@ -114,10 +122,6 @@
 			[
 				"filena",
 				"filename_AB"
-			],
-			[
-				"fil",
-				"filenames"
 			],
 			[
 				"dire",
@@ -510,29 +514,16 @@
 			[
 				"msutilitiy",
 				"msutilitiy.get_updated_affine_transforms\t(reconstructVolume.py)"
-			],
-			[
-				"msut",
-				"msutilitiy\timport"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
-			"settings":
-			{
-				"buffer_size": 9383,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
 			"file": "studies/SRRUpperGIAnatomyStudy/computeObliqueOrientation.py",
 			"settings":
 			{
-				"buffer_size": 4800,
+				"buffer_size": 4777,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -542,6 +533,15 @@
 			"settings":
 			{
 				"buffer_size": 717,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
+			"settings":
+			{
+				"buffer_size": 9383,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
@@ -971,6 +971,10 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"vec",
+			"1",
+			"e_x",
+			"np",
 			"s",
 			"45",
 			"directory",
@@ -1094,11 +1098,7 @@
 			"]",
 			"erod",
 			"write_analysis_files",
-			"write_results",
-			"stack_gd_resampled",
-			"()",
-			"_",
-			"."
+			"write_results"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1249,32 +1249,19 @@
 			[
 				{
 					"buffer": 0,
-					"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
+					"file": "studies/SRRUpperGIAnatomyStudy/computeObliqueOrientation.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 9383,
+						"buffer_size": 4777,
 						"regions":
 						{
-							"bp-939797ce":
-							{
-								"flags": 16,
-								"icon": "circle",
-								"regions":
-								[
-									[
-										7603,
-										7664
-									]
-								],
-								"scope": "invalid"
-							}
 						},
 						"selection":
 						[
 							[
-								3961,
-								3961
+								3008,
+								3008
 							]
 						],
 						"settings":
@@ -1286,7 +1273,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1105.0,
+						"translation.y": 1210.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -1294,38 +1281,6 @@
 				},
 				{
 					"buffer": 1,
-					"file": "studies/SRRUpperGIAnatomyStudy/computeObliqueOrientation.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 4800,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								303,
-								303
-							]
-						],
-						"settings":
-						{
-							"auto_complete": false,
-							"git_gutter_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
 					"file": "studies/SRRUpperGIAnatomyStudy/results/subject00/data/showComparison.py",
 					"semi_transient": false,
 					"settings":
@@ -1357,9 +1312,54 @@
 			]
 		},
 		{
-			"selected": 1,
+			"selected": 0,
 			"sheets":
 			[
+				{
+					"buffer": 2,
+					"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 9383,
+						"regions":
+						{
+							"bp-939797ce":
+							{
+								"flags": 16,
+								"icon": "circle",
+								"regions":
+								[
+									[
+										7603,
+										7664
+									]
+								],
+								"scope": "invalid"
+							}
+						},
+						"selection":
+						[
+							[
+								2089,
+								2089
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"git_gutter_enabled": true,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 771.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
 				{
 					"buffer": 3,
 					"file": "src/py/base/Stack.py",
@@ -1417,7 +1417,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 4538.0,
+						"translation.y": 2816.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 2,
