@@ -81,10 +81,19 @@ class StacksVisualizer(object):
     # \param      self    The object
     # \param      colors  The colors as list
     #
-    def show_slice_select_directions(self, colors=None):
+    def show_slice_select_directions(self, colors=None, titles=None):
 
         if colors is None:
-            colors = ['red'] * self._N_stacks
+            # http://matplotlib.org/examples/color/colormaps_reference.html
+            cmap = plt.get_cmap('Vega10')
+            # cmap = plt.get_cmap('nipy_spectral')
+            # cmap = plt.get_cmap('rainbow')
+            colors = [cmap(i) for i in np.linspace(0, 1, self._N_stacks)]
+
+            # colors = ['red'] * self._N_stacks
+
+        if titles is None:
+            titles = self._titles
 
         slice_select_directions = [None] * self._N_stacks
 
@@ -104,12 +113,18 @@ class StacksVisualizer(object):
         fig.clf()
         ax = fig.add_subplot(111, projection='3d')
 
+        legend_objects = [None] * self._N_stacks
+        legend_labels = [None] * self._N_stacks
+
         for i in range(0, self._N_stacks):
             arrow = slice_select_directions[i]
             arrow_3D = self.Arrow3D(
                 [0,arrow[0]],[0,arrow[1]],[0,arrow[2]], 
                 color=colors[i], alpha=0.8, lw=3, arrowstyle="-|>", mutation_scale=20); 
             ax.add_artist(arrow_3D)
+
+            legend_objects[i] = arrow_3D
+            legend_labels[i] = titles[i]
 
         ax.set_xlabel('x')
         ax.set_ylabel('y')
@@ -119,12 +134,17 @@ class StacksVisualizer(object):
         ax.set_ylim([-1,1])
         ax.set_zlim([-1,1])
         ax.set_aspect('equal')
-        
+
         step = 0.5
         tick_range_max = 1
         ax.set_xticks(np.arange(-tick_range_max, tick_range_max+step, step))
         ax.set_yticks(np.arange(-tick_range_max, tick_range_max+step, step))
         ax.set_zticks(np.arange(-tick_range_max, tick_range_max+step, step))
+
+        # fig.tight_layout()
+
+        ax.legend(legend_objects, legend_labels, loc=8, bbox_to_anchor=(0.5,0.92), ncol=self._N_stacks/2)
+
         
         plt.show(block=False)
 
