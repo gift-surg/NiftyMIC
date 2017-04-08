@@ -763,6 +763,83 @@ class Stack:
 
         return stack
 
+    ## Return rectangular region surrounding masked region. 
+    #  \param[in] mask_sitk sitk.Image representing the mask
+    #  \return range_x pair defining x interval of mask in voxel space 
+    #  \return range_y pair defining y interval of mask in voxel space
+    #  \return range_z pair defining z interval of mask in voxel space
+    def _get_rectangular_masked_region(self, mask_sitk):
+
+        spacing = np.array(mask_sitk.GetSpacing())
+
+        ## Get mask array
+        nda = sitk.GetArrayFromImage(mask_sitk)
+        
+        ## Get shape defining the dimension in each direction
+        shape = nda.shape
+
+        ## Compute sum of pixels of each slice along specified directions
+        sum_xy = np.sum(nda, axis=(0,1)) # sum within x-y-plane
+        sum_xz = np.sum(nda, axis=(0,2)) # sum within x-z-plane
+        sum_yz = np.sum(nda, axis=(1,2)) # sum within y-z-plane
+
+        ## Find masked regions (non-zero sum!)
+        range_x = np.zeros(2)
+        range_y = np.zeros(2)
+        range_z = np.zeros(2)
+
+        ## Non-zero elements of numpy array nda defining x_range
+        ran = np.nonzero(sum_yz)[0]
+        range_x[0] = np.max( [0,         ran[0]] )
+        range_x[1] = np.min( [shape[0], ran[-1]+1] )
+
+        ## Non-zero elements of numpy array nda defining y_range
+        ran = np.nonzero(sum_xz)[0]
+        range_y[0] = np.max( [0,         ran[0]] )
+        range_y[1] = np.min( [shape[1], ran[-1]+1] )
+
+        ## Non-zero elements of numpy array nda defining z_range
+        ran = np.nonzero(sum_xy)[0]
+        range_z[0] = np.max( [0,         ran[0]] )
+        range_z[1] = np.min( [shape[2], ran[-1]+1] )
+
+        ## Numpy reads the array as z,y,x coordinates! So swap them accordingly
+        return range_z.astype(int), range_y.astype(int), range_x.astype(int)
+
+
+    ## Crop given image to region defined by voxel space ranges
+    #  \param[in] image_sitk image which will be cropped
+    #  \param[in] range_x pair defining x interval in voxel space for image cropping
+    #  \param[in] range_y pair defining y interval in voxel space for image cropping
+    #  \param[in] range_z pair defining z interval in voxel space for image cropping
+    #  \return image cropped to defined region
+    def _crop_image_to_region(self, image_sitk, range_x, range_y, range_z):
+
+        image_cropped_sitk = image_sitk[\
+                                range_x[0]:range_x[1],\
+                                range_y[0]:range_y[1],\
+                                range_z[0]:range_z[1]\
+                            ]
+
+        return image_cropped_sitk
+
+
+    def get_cropped_stack_based_on_mask(self, boundary_x=0, boundary_y=0, boundary_z=0, unit="mm"):
+
+        ## Get rectangular region surrounding the masked voxels
+        [x_range, y_range, z_range] = self._get_rectangular_masked_region(self.sitk_mask)
+
+        ## Crop stack and mask to defined image region
+        stack_crop_sitk = self._crop_image_to_region(self.sitk, x_range, y_range, z_range)
+        mask_crop_sitk = self._crop_image_to_region(self.sitk_mask, x_range, y_range, z_range)
+
+        ## Increase stack dimensions
+        stack_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(stack_crop_sitk, boundary_x, boundary_y, boundary_z, unit=unit)
+        mask_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(mask_crop_sitk, boundary_x, boundary_y, boundary_z, unit=unit)
+
+        stack = self.from_sitk_image(stack_crop_sitk, self._filename, mask_crop_sitk)
+
+        return stack
 
     ## Burst the stack into its slices and return all slices of the stack
     #  return list of Slice objects

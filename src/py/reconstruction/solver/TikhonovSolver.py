@@ -165,8 +165,11 @@ class TikhonovSolver(Solver):
         #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
         # else:
         print("\tElapsed time: %s" %(timedelta(seconds=self._elapsed_time_sec)))
-        print("\tell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %(self._residual_ell2))
-        print("\tprior residual = %.3e" %(self._residual_prior))
+        if self._residual_ell2 is not None:
+            print("\tell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %(self._residual_ell2))
+            print("\tprior residual = %.3e" %(self._residual_prior))
+        else:
+            print("Run 'compute_statistics' for data and prior residuals")
 
 
     ##

@@ -257,7 +257,94 @@ def get_inverse_of_sitk_rigid_registration_transform(rigid_registration_transfor
 
         ## Return inverse of rigid_transform_3D as instance of Euler3DTransform
         return sitk.Euler3DTransform(center, angle_x, angle_y, angle_z, (translation_x, translation_y, translation_z))
- 
+
+
+##
+# Gets the altered field of view sitk image.
+# \date       2017-04-08 22:20:40+0100
+#
+# \param      image_sitk  The image sitk
+# \param      boundary_x  added value to first coordinate (can also be negative)
+# \param      boundary_y  added value to second coordinate (can also be negative)
+# \param      boundary_z  added value to third coordinate (can also be negative)
+# \param      unit        Unit can either be "mm" or "voxel"
+#
+# \return     sitk.Image with altered field of view, i.e. with 
+#             shape_new[i] = shape[i] + 2*boundary_voxel[i]
+#
+def get_altered_field_of_view_sitk_image(image_sitk, boundary_x=0, boundary_y=0, boundary_z=0, unit="mm"):
+
+    size = np.array(image_sitk.GetSize()).astype("int")
+    origin = np.array(image_sitk.GetOrigin())
+    spacing = np.array(image_sitk.GetSpacing())
+    dimension = image_sitk.GetDimension()
+
+    ## Get unit vectors of respective image dimension
+    if dimension is 2:
+        e_x = np.array([1,0])
+        e_y = np.array([0,1])
+    elif dimension is 3:
+        e_x = np.array([1,0,0])
+        e_y = np.array([0,1,0])
+        e_z = np.array([0,0,1])
+
+    ## Dimension is given in mm
+    if unit in ["mm"]:
+        boundary_x_voxel = np.round(boundary_x / spacing[0])
+        boundary_y_voxel = np.round(boundary_y / spacing[1])
+
+        ## compute new shape of image
+        size[0] += 2*boundary_x_voxel
+        size[1] += 2*boundary_y_voxel
+        
+        if dimension is 3:
+            boundary_z_voxel = np.round(boundary_z / spacing[2])
+            
+            size[2] += 2*boundary_z_voxel
+
+    ## Dimension is given in voxels
+    else:
+        ## compute new shape of image
+        size[0] += 2*boundary_x
+        size[1] += 2*boundary_y
+
+        ## express change in mm
+        boundary_x *= spacing[0]
+        boundary_y *= spacing[1]
+        
+        if dimension is 3:
+            size[2] += 2*boundary_z
+            boundary_z *= spacing[2]
+
+
+    ## Compute new origin so that image intensity information is not altered
+    ## in the physical space
+    a_x = image_sitk.TransformIndexToPhysicalPoint(e_x) - origin
+    a_y = image_sitk.TransformIndexToPhysicalPoint(e_y) - origin
+
+    translation = a_x/np.linalg.norm(a_x) * boundary_x
+    translation += a_y/np.linalg.norm(a_y) * boundary_y
+    
+    if dimension is 3:
+        a_z = image_sitk.TransformIndexToPhysicalPoint(e_z) - origin
+        translation += a_z/np.linalg.norm(a_z) * boundary_z
+
+    origin = origin - translation
+
+    ## Resample image to new space, i.e. just change shape without changing
+    ## the image in the physical space
+    image_sitk = sitk.Resample(
+        image_sitk,
+        size,
+        eval("sitk.Euler" + str(dimension) + "DTransform()"),
+        sitk.sitkNearestNeighbor,
+        origin,
+        spacing,
+        image_sitk.GetDirection()
+        )
+
+    return image_sitk
+
 
 ## Get transformed (deepcopied) image
 #  \param[in] image_init_sitk image as sitk.Image object to be transformed
