@@ -65,11 +65,11 @@ class StacksVisualizer(object):
 
         stacks_visualizer._N_stacks = N_stacks
         stacks_visualizer._stacks_sitk = [None] * N_stacks
-        stacks_visualizer._titles = [None] * N_stacks
+        stacks_visualizer._labels = [None] * N_stacks
 
         for i in range(0, N_stacks):
             stacks_visualizer._stacks_sitk[i] = sitk.ReadImage(dir_input + "/" + filenames[i] + ".nii.gz")
-            stacks_visualizer._titles[i] = filenames[i]
+            stacks_visualizer._labels[i] = filenames[i]
 
         return stacks_visualizer
 
@@ -81,19 +81,19 @@ class StacksVisualizer(object):
     # \param      self    The object
     # \param      colors  The colors as list
     #
-    def show_slice_select_directions(self, colors=None, titles=None):
+    def show_slice_select_directions(self, colors=None, labels=None, fig_number=None):
 
         if colors is None:
             # http://matplotlib.org/examples/color/colormaps_reference.html
-            cmap = plt.get_cmap('Vega10')
+            cmap = plt.get_cmap('Vega20')
             # cmap = plt.get_cmap('nipy_spectral')
             # cmap = plt.get_cmap('rainbow')
             colors = [cmap(i) for i in np.linspace(0, 1, self._N_stacks)]
 
             # colors = ['red'] * self._N_stacks
 
-        if titles is None:
-            titles = self._titles
+        if labels is None:
+            labels = self._labels
 
         slice_select_directions = [None] * self._N_stacks
 
@@ -109,7 +109,7 @@ class StacksVisualizer(object):
             slice_select_directions[i] = slice_select_directions[i] / np.linalg.norm(slice_select_directions[i])
 
         ## Visualize slice-select orientations
-        fig = plt.figure(1)
+        fig = plt.figure(fig_number)
         fig.clf()
         ax = fig.add_subplot(111, projection='3d')
 
@@ -124,7 +124,7 @@ class StacksVisualizer(object):
             ax.add_artist(arrow_3D)
 
             legend_objects[i] = arrow_3D
-            legend_labels[i] = titles[i]
+            legend_labels[i] = labels[i]
 
         ax.set_xlabel('x')
         ax.set_ylabel('y')
