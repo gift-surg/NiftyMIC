@@ -148,7 +148,7 @@ class Number03VolunteerSRRUpperGI(VolunteerSRRUpperGI):
         
         ## Oblique planes (0.78 x 0.78 x 5)
         filenames.append("T2WTSECorBHSENSEs2301a1023")
-        # filenames.append("T2WTSECorBHSENSEs2401a1024")  ## something went wrong here! angulation and position is not correct!
+        filenames.append("T2WTSECorBHSENSEs2401a1024")
         filenames.append("T2WTSECorBHSENSEs2501a1025")
         filenames.append("T2WTSECorBHSENSEs2601a1026")
         # filenames.append("T2WTSECorBHSENSEs3601a1036") ## same direction as 1023!

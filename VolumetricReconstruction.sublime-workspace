@@ -4,6 +4,146 @@
 		"selected_items":
 		[
 			[
+				"dir_",
+				"dir_output\tstatement"
+			],
+			[
+				"_re",
+				"_residual_ell2"
+			],
+			[
+				"get_f",
+				"get_filename\t(Stack.py)"
+			],
+			[
+				"from_s",
+				"from_sitk_image\tfunction"
+			],
+			[
+				"refere",
+				"reference_frame"
+			],
+			[
+				"bou",
+				"boundary_x_voxel"
+			],
+			[
+				"boun",
+				"boundary_x"
+			],
+			[
+				"dim",
+				"dimension"
+			],
+			[
+				"boundar",
+				"boundary_x"
+			],
+			[
+				"boundary",
+				"boundary_x\t(Stack.py)"
+			],
+			[
+				"bound",
+				"boundary_x"
+			],
+			[
+				"bond",
+				"boundary_z\t(Stack.py)"
+			],
+			[
+				"suffi",
+				"suffix_mask\t(Stack.py)"
+			],
+			[
+				"refe",
+				"reference_stack"
+			],
+			[
+				"f",
+				"filenames"
+			],
+			[
+				"get_fi",
+				"get_filenames_single_shot_t2_weighted"
+			],
+			[
+				"file",
+				"filenames"
+			],
+			[
+				"tit",
+				"titles\t(PythonHelper.py)"
+			],
+			[
+				"_D",
+				"_DIR_INPUT_BRAIN"
+			],
+			[
+				"_get_filenam",
+				"_get_filename_heavily_t2_weighted_volume_brain"
+			],
+			[
+				"_get_fil",
+				"_get_filename_balanced_fast_field_echo_brain"
+			],
+			[
+				"fil",
+				"filename"
+			],
+			[
+				"get_fil",
+				"get_filename_balanced_fast_field_echo\t(VolunteerSRRUpperGI.py)"
+			],
+			[
+				"dir",
+				"directory"
+			],
+			[
+				"_label_",
+				"_label_SST2W_oblique\tstatement"
+			],
+			[
+				"_label",
+				"_label_T2w\tstatement"
+			],
+			[
+				"_label_SST2W_s",
+				"_label_SST2W_standard_offset\t(VolunteerSRRUpperGI.py)"
+			],
+			[
+				"sele",
+				"select_anatomy"
+			],
+			[
+				"_get_filenames_single_shot_t2_weighted",
+				"_get_filenames_single_shot_t2_weighted_standard\t(VolunteerSRRUpperGI.py)"
+			],
+			[
+				"subje",
+				"subject03"
+			],
+			[
+				"Nu",
+				"Number03VolunteerSRRUpperGI"
+			],
+			[
+				"Num",
+				"Number03VolunteerSRRUpperGI\t(Number03VolunteerSRRUpperGI.py)"
+			],
+			[
+				"DIr",
+				"DIR_INPUT_ROOT"
+			],
+			[
+				"DIR",
+				"DIR_INPUT_ROOT"
+			],
+			[
+				"DIR_",
+				"DIR_INPUT_ROOT\t(reconstructVolume.py)"
+			],
+			[
 				"stacks_",
 				"stacks_visualizer"
 			],
@@ -28,20 +168,8 @@
 				"N_acquisitions"
 			],
 			[
-				"file",
-				"filenames_acquisitions"
-			],
-			[
-				"fil",
-				"filenames_acquisitions"
-			],
-			[
 				"get_dir",
 				"get_directions_from_scans"
-			],
-			[
-				"dir_",
-				"dir_input"
 			],
 			[
 				"angle_x",
@@ -56,10 +184,6 @@
 				"for (edited)\t(Edited) For Loop"
 			],
 			[
-				"refere",
-				"reference_image_sitk"
-			],
-			[
 				"spac",
 				"spacing_new_scalar\t(Stack.py)"
 			],
@@ -68,20 +192,12 @@
 				"stacks"
 			],
 			[
-				"dir",
-				"dir_input_data"
-			],
-			[
 				"di",
 				"directory\t(FilenameParser.py)"
 			],
 			[
 				"filenames_all",
 				"filenames_all_subjects_complete"
-			],
-			[
-				"get_fil",
-				"get_filenames_which_match_pattern\t(FilenameParser.py)"
 			],
 			[
 				"print_",
@@ -154,10 +270,6 @@
 			[
 				"stac",
 				"stacks_visualization"
-			],
-			[
-				"f",
-				"filename"
 			],
 			[
 				"get_",
@@ -328,10 +440,6 @@
 				"copy_files"
 			],
 			[
-				"get_f",
-				"get_filenames\t(DataAnonymizer.py)"
-			],
-			[
 				"data_a",
 				"data_anonymizer\tstatement"
 			],
@@ -406,114 +514,6 @@
 			[
 				"stack_",
 				"stack_reconstructed"
-			],
-			[
-				"Ne",
-				"NearestNeighbor\t(Stack.py)"
-			],
-			[
-				"write_",
-				"write_results"
-			],
-			[
-				"stack_reference_",
-				"stack_referenceregistration_str"
-			],
-			[
-				"exe",
-				"execute_command\t(runStudy.py)"
-			],
-			[
-				"reference_",
-				"reference_image_resampled"
-			],
-			[
-				"reference",
-				"reference_image_resampled"
-			],
-			[
-				"stack_mo",
-				"stack_motion-corrected"
-			],
-			[
-				"interp",
-				"interpolator=\"BSpline\t(correctMotion.py)"
-			],
-			[
-				"_motion",
-				"_motion-corrected-ic\t(runParameterStudyReconstruction.py)"
-			],
-			[
-				"show",
-				"sitkh.show_stacks"
-			],
-			[
-				"slice_",
-				"slice_transforms_sitk"
-			],
-			[
-				"upda",
-				"update_motion_correction\t(Stack.py)"
-			],
-			[
-				"stack0_",
-				"stack0_resampled"
-			],
-			[
-				"GetA",
-				"GetArrayFromImage"
-			],
-			[
-				"ti",
-				"title\t(Stack.py)"
-			],
-			[
-				"plo",
-				"plot_3D_array_slice_by_slice\t(PythonHelper.py)"
-			],
-			[
-				"ind",
-				"indices"
-			],
-			[
-				"GetIm",
-				"GetImageFromArray"
-			],
-			[
-				"recon",
-				"recongrid"
-			],
-			[
-				"_use_stack_mask",
-				"_use_stack_mask_neighbour_fit_term"
-			],
-			[
-				"use_stack_",
-				"use_stack_mask_reference_fit_term\t(IntraStackRegistration.py)"
-			],
-			[
-				"fixed",
-				"fixed_sitk"
-			],
-			[
-				"_use",
-				"_use_reference_mask\tstatement"
-			],
-			[
-				"moving",
-				"moving_sitk"
-			],
-			[
-				"_use_stack_mask_",
-				"_use_stack_mask_reference_fit_term"
-			],
-			[
-				"affin",
-				"affine_transform_sitk"
-			],
-			[
-				"get_res",
-				"get_resampled_stack_from_slices"
 			]
 		]
 	},
@@ -529,35 +529,37 @@
 			}
 		},
 		{
-			"file": "src/py/utilities/PythonHelper.py",
+			"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
 			"settings":
 			{
-				"buffer_size": 30482,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "studies/SRRUpperGIAnatomyStudy/showAcquisitions.py",
-			"settings":
-			{
-				"buffer_size": 2353,
+				"buffer_size": 7801,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "src/py/utilities/ScanExtractor.py",
+			"file": "src/py/reconstruction/solver/TikhonovSolver.py",
 			"settings":
 			{
-				"buffer_size": 10095,
+				"buffer_size": 13582,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "studies/SRRUpperGIAnatomyStudy/results/subject00/data/showComparison.py",
+			"file": "src/py/utilities/VolumeReconstruction.py",
 			"settings":
 			{
-				"buffer_size": 717,
+				"buffer_size": 11600,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/py/studies/SRRUpperGI/VolunteerSRRUpperGI.py",
+			"settings":
+			{
+				"buffer_size": 6950,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
@@ -565,16 +567,24 @@
 			"file": "src/py/base/Stack.py",
 			"settings":
 			{
-				"buffer_size": 31195,
+				"buffer_size": 34679,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
+			"file": "src/py/preprocessing/DataPreprocessing.py",
 			"settings":
 			{
-				"buffer_size": 9383,
+				"buffer_size": 25340,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/py/studies/SRRUpperGI/Number03VolunteerSRRUpperGI.py",
+			"settings":
+			{
+				"buffer_size": 7017,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -583,16 +593,8 @@
 			"file": "src/py/utilities/StacksVisualizer.py",
 			"settings":
 			{
-				"buffer_size": 4800,
+				"buffer_size": 4826,
 				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "src/py/registration/SliceToVolumeRegistration.py",
-			"settings":
-			{
-				"buffer_size": 23877,
 				"line_ending": "Unix"
 			}
 		},
@@ -600,7 +602,8 @@
 			"file": "src/py/utilities/SimpleITKHelper.py",
 			"settings":
 			{
-				"buffer_size": 43988,
+				"buffer_size": 46837,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		}
@@ -698,7 +701,7 @@
 		[
 			[
 				"doxy up",
-				"DoxyDoxygen: Update Comment With Preferred Style"
+				"DoxyDoxygen: Comment Update Preserving Style"
 			],
 			[
 				"dox",
@@ -844,17 +847,30 @@
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction",
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src",
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py",
-		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/registration",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/SRRUpperGI",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/utilities",
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/studies",
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/studies/SRRUpperGIAnatomyStudy"
 	],
 	"file_history":
 	[
-		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/StacksVisualizer.py",
+		"/Users/mebner/.zshrc",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/SRRUpperGI/TestSessionVolunteerSRRUpperGI.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/SRRUpperGI/Number01VolunteerSRRUpperGI.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/SRRUpperGI/VolunteersSRRUpperGI.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/SRRUpperGI/Number03VolunteerSRRUpperGI.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/SRRUpperGI/Number02VolunteerSRRUpperGI.py",
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/utilities/PythonHelper.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/studies/SRRUpperGIAnatomyStudy/showAcquisitions.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/studies/SRRUpperGIAnatomyStudy/results/subject00/data/showComparison.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/base/Stack.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/reconstruction/solver/Solver.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/reconstruction/solver/TikhonovSolver.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/SRRUpperGI/VolunteerSRRUpperGI.py",
+		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/StacksVisualizer.py",
 		"/Users/mebner/UCL/UCL/Software/ForwardBackwardSplittingDemons/src/utilities/PythonHelper.py",
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/utilities/SimpleITKHelper.py",
-		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/base/Stack.py",
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/studies/MSproject/FilenamesSelector.py",
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/src/py/utilities/FilenameParser.py",
 		"/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/studies/30YearMSLongitudinalStudy/correctMotion.py",
@@ -903,7 +919,6 @@
 		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/5yr_5x3/reconstructed_20161204_124638/ReconstructionAnalysis_20161204_124638_stack_recon.txt",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/src/py/registration/NiftyReg.py",
 		"/private/tmp/anonymization/runVisualisation.py",
-		"/Users/mebner/.zshrc",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/randomizeFilenames_v1.py",
 		"/Volumes/UCLMEBNER1TB/IPMI/Assessment01_reconstructed_20161126_030209/runVisualisation.py",
 		"/Users/mebner/UCL/UCL/Courses/Computational Modelling for Biomedical Imaging/coursework_02/run_cw_01.m",
@@ -967,17 +982,7 @@
 		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/src_py_reconstruction_solver_TVL2Solver_Before_7bb08d80fc30a6f9da68919df365bf114109cba3.py",
 		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/backups/v1_20150915/SimilarityMeasures.py",
 		"/private/var/folders/t8/4cbhcmtj071b6_19sk5lr8fr0000gn/T/src_py_reconstruction_solver_TVL2Solver_Before_89177eb49f2a3e6587d19c9c9b4d4cab082a8c6d.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/Assessment/showComparison.py",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/FetalBrain/RegularizationParameterEstimation/LSMR/TV-L2-regularization_ADMMiterations10_TK1itermax10.txt",
-		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/5yr_5x3/reconstructed_20161126_030209/ReconstructionAnalysis_20161126_030209_PBVC.txt",
-		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/FetalBrain/runStudiesRegularizationParameterEstimate.py",
-		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/5yr_5x3/reconstructed_20161127_215508/ReconstructionAnalysis_20161127_215508_stack_recon.txt",
-		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/10yr_5x3/reconstructed_20161126_030209/ReconstructionAnalysis_20161126_030209_stack_recon.txt",
-		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/5yr_5x3/reconstructed_20161126_030209/ReconstructionAnalysis_20161126_030209_stack_recon.txt",
-		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/10yr_5x3/reconstructed_20161127_215508/ReconstructionAnalysis_20161127_215508_stack_recon.txt",
-		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/5yr_5x3/reconstructed_20161127_215508/ReconstructionAnalysis_20161127_215508_stack_scaled-only.txt",
-		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/5yr_5x3/reconstructed_20161127_215508/ReconstructionAnalysis_20161127_215508_stack_motion-corrected.txt",
-		"/Volumes/UCLMEBNER1TB/data_for_michael_recons/5yr_5x3/reconstructed_20161127_215508/ReconstructionAnalysis_20161127_215508_stack_motion-corrected-ic.txt"
+		"/Users/mebner/UCL/UCL/Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/Assessment/showComparison.py"
 	],
 	"find":
 	{
@@ -1014,6 +1019,85 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"NiftyView",
+			"niftymi",
+			"Nifty",
+			"write",
+			"foo",
+			"change of",
+			"boundary_x",
+			"get_increased_sitk_image",
+			"z",
+			"stack_coppred_sitk",
+			"get_increased_sitk_image",
+			"self._get_increased_stack",
+			",",
+			"_voxel",
+			"_y",
+			"_x",
+			"_y",
+			"(",
+			"_x",
+			"e_y",
+			"_x",
+			"x",
+			"stack_coppred_sitk",
+			"offset",
+			"offset_x",
+			"spacing[",
+			"boundary",
+			"reference_stack",
+			"HR_volume",
+			"scan_number",
+			"filenames_stacks",
+			"filenames_references.append",
+			"filenames_stacks",
+			"##",
+			"Number03VolunteerSRRUpperGI",
+			"##",
+			"abstractmethod",
+			"=",
+			"standard=1, oblique=1, offset=1",
+			"enames_single_shot_t2_weighted",
+			"directory",
+			"upper_gi",
+			"_upper_gi",
+			"[i]",
+			"_get_filenames_single_shot_t2_weighted",
+			"@abstractmethod",
+			"get_filename_heavily_t2_weighted_volume",
+			"get_filename_balanced_fast_field_echo",
+			"get_filenames_single_shot_t2_weighted_oblique",
+			"oblique",
+			"standard",
+			"upper_gi",
+			"titles",
+			", se",
+			"_label_SST2W_standard",
+			"filenames = []",
+			"return filenames",
+			"standard",
+			"oblique",
+			"_get_filenames_single_shot_t2_weighted_upper_gi",
+			"get_filename_heavily_t2_weighted_volume",
+			"get_filename_heavily_t2_weighted_volume_upper_gi",
+			"get_filename_balanced_fast_field_echo_upper_gi",
+			"_g",
+			"_",
+			"get_filenames_single_shot_t2_weighted",
+			"t2_weighted",
+			"filenames_stacks",
+			"s_single_shot_t2_weighted_acquisitions",
+			"_get_filenames_single_shot_t2_weighted_acquisitions",
+			"abstractmethod",
+			"_subject01",
+			"abstract",
+			"filenames_stacks",
+			"2",
+			"1",
+			"filenames_stacks",
+			"1",
+			"Standard planes",
 			"tittles",
 			"(",
 			"append",
@@ -1062,86 +1146,7 @@
 			"sitkh",
 			"A",
 			"fnmatch",
-			"get_filenames_which_match_pattern",
-			"int(",
-			"+symbol+symbol",
-			"book",
-			".",
-			"ne",
-			"\\t",
-			"\"\\t",
-			"_bookmark_default_integer",
-			"':",
-			"ScanExtractor",
-			"sitkh",
-			"self._double_mode",
-			"self._bookmark_default_integer",
-			"_selection_window_dimension",
-			"_bookmark_default_integer",
-			"_selection_window_offset",
-			"_bookmark_default",
-			"bookmark",
-			"_offset",
-			"_bookmark_offset",
-			"filenames_cropped",
-			"crop_filename_extension",
-			"prefix",
-			"timepoint",
-			"prefix",
-			"get_separator_partitioned_filename",
-			"i_file",
-			"i",
-			"filenames",
-			"filenames_AB",
-			"filenames_complete",
-			"filename_timepoint",
-			"filename",
-			"mri_film_names",
-			"filenames_short",
-			"filenames",
-			"fnmatch",
-			"folder",
-			"FOLDER",
-			"folder",
-			"FOLDERS",
-			"SLICE_THICKNESS",
-			"spacing_estimate",
-			"get_separator_partitioned_filename",
-			"np",
-			"sitk",
-			"sitkh",
-			"patterns",
-			"sitkh",
-			"sl",
-			"psf",
-			"eliminate_duplicate_filenames",
-			"filenames_1yr",
-			"\",",
-			"prefix",
-			"extra_frame_target",
-			"_filter_gradient_transform",
-			"get_resampled_stack_from_slices",
-			"dir_output",
-			"##",
-			"a",
-			"_x",
-			"euler",
-			"= ",
-			"euler_x = ",
-			"get_composite_sitk_euler_transform",
-			"y",
-			"euler_x",
-			"x",
-			"e_",
-			"e",
-			"x",
-			"_values",
-			"show_stacks",
-			"recon",
-			"j",
-			"i",
-			"print",
-			"write_results"
+			"get_filenames_which_match_pattern"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1287,7 +1292,7 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
@@ -1303,8 +1308,8 @@
 						"selection":
 						[
 							[
-								3692,
-								3692
+								2598,
+								2598
 							]
 						],
 						"settings":
@@ -1316,90 +1321,104 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1605.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "src/py/utilities/PythonHelper.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 30482,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								5569,
-								5569
-							]
-						],
-						"settings":
-						{
-							"git_gutter_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 2307.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "studies/SRRUpperGIAnatomyStudy/showAcquisitions.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2353,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								607,
-								607
-							]
-						],
-						"settings":
-						{
-							"auto_complete": false,
-							"git_gutter_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 34.0,
+						"translation.y": 1471.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 4,
 					"type": "text"
 				},
 				{
-					"buffer": 3,
-					"file": "src/py/utilities/ScanExtractor.py",
-					"semi_transient": true,
+					"buffer": 1,
+					"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
+					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 10095,
+						"buffer_size": 7801,
+						"regions":
+						{
+							"bp-939797ce":
+							{
+								"flags": 16,
+								"icon": "circle",
+								"regions":
+								[
+									[
+										6021,
+										6082
+									]
+								],
+								"scope": "invalid"
+							}
+						},
+						"selection":
+						[
+							[
+								1404,
+								1404
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"git_gutter_enabled": true,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 519.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "src/py/reconstruction/solver/TikhonovSolver.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 13582,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								513,
-								513
+								7172,
+								7172
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"git_gutter_enabled": true,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1891.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "src/py/utilities/VolumeReconstruction.py",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 11600,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								531,
+								531
 							]
 						],
 						"settings":
@@ -1413,31 +1432,33 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 6,
+					"stack_index": 7,
 					"type": "text"
 				},
 				{
 					"buffer": 4,
-					"file": "studies/SRRUpperGIAnatomyStudy/results/subject00/data/showComparison.py",
+					"file": "src/py/studies/SRRUpperGI/VolunteerSRRUpperGI.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 717,
+						"buffer_size": 6950,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								717,
-								717
+								578,
+								578
 							]
 						],
 						"settings":
 						{
 							"auto_complete": false,
 							"git_gutter_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax"
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -1452,15 +1473,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 31195,
+						"buffer_size": 34679,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1492,
-								1492
+								20145,
+								20145
 							]
 						],
 						"settings":
@@ -1472,124 +1493,112 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 169.0,
+						"translation.y": 6884.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "src/py/preprocessing/DataPreprocessing.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 25340,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								21426,
+								21426
+							]
+						],
+						"settings":
+						{
+							"git_gutter_enabled": true,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 6883.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
 					"type": "text"
 				}
 			]
 		},
 		{
-			"selected": 1,
+			"selected": 0,
 			"sheets":
 			[
 				{
-					"buffer": 6,
-					"file": "studies/SRRUpperGIAnatomyStudy/reconstructVolume.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 9383,
-						"regions":
-						{
-							"bp-939797ce":
-							{
-								"flags": 16,
-								"icon": "circle",
-								"regions":
-								[
-									[
-										7603,
-										7664
-									]
-								],
-								"scope": "invalid"
-							}
-						},
-						"selection":
-						[
-							[
-								2384,
-								2384
-							]
-						],
-						"settings":
-						{
-							"auto_complete": false,
-							"git_gutter_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 7,
-					"type": "text"
-				},
-				{
 					"buffer": 7,
-					"file": "src/py/utilities/StacksVisualizer.py",
+					"file": "src/py/studies/SRRUpperGI/Number03VolunteerSRRUpperGI.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4800,
+						"buffer_size": 7017,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4099,
-								4099
+								5665,
+								5665
 							]
 						],
 						"settings":
 						{
 							"auto_complete": false,
 							"git_gutter_enabled": true,
+							"history_list_is_closing": true,
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 283.0,
+						"translation.y": 1695.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 0,
 					"type": "text"
 				},
 				{
 					"buffer": 8,
-					"file": "src/py/registration/SliceToVolumeRegistration.py",
-					"semi_transient": true,
+					"file": "src/py/utilities/StacksVisualizer.py",
+					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 23877,
+						"buffer_size": 4826,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								9363,
-								9363
+								2416,
+								2416
 							]
 						],
 						"settings":
 						{
+							"auto_complete": false,
 							"git_gutter_enabled": true,
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2306.0,
+						"translation.y": 791.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 9,
 					"type": "text"
 				},
 				{
@@ -1598,29 +1607,30 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 43988,
+						"buffer_size": 46837,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								37440,
-								37455
+								11912,
+								11912
 							]
 						],
 						"settings":
 						{
+							"auto_complete": false,
 							"git_gutter_enabled": true,
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 9859.0,
+						"translation.y": 3661.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 9,
+					"stack_index": 3,
 					"type": "text"
 				}
 			]
@@ -1628,7 +1638,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 21.0
+		"height": 34.0
 	},
 	"input":
 	{
@@ -1670,7 +1680,7 @@
 	},
 	"output.find_results":
 	{
-		"height": 536.0
+		"height": 356.0
 	},
 	"output.latextools":
 	{
@@ -1690,12 +1700,24 @@
 		"selected_items":
 		[
 			[
-				"python",
-				"VolumetricReconstruction/src/py/utilities/PythonHelper.py"
+				"tikhon",
+				"VolumetricReconstruction/src/py/reconstruction/solver/TikhonovSolver.py"
+			],
+			[
+				"datapre",
+				"VolumetricReconstruction/src/py/preprocessing/DataPreprocessing.py"
 			],
 			[
 				"stack",
 				"VolumetricReconstruction/src/py/base/Stack.py"
+			],
+			[
+				"tikh",
+				"VolumetricReconstruction/src/py/reconstruction/solver/TikhonovSolver.py"
+			],
+			[
+				"python",
+				"VolumetricReconstruction/src/py/utilities/PythonHelper.py"
 			],
 			[
 				"simpleitkel",
@@ -1898,10 +1920,6 @@
 				"Volumetric Reconstruction/studies/30YearMSLongitudinalStudy/foo.py"
 			],
 			[
-				"tikhon",
-				"Volumetric Reconstruction/src/py/reconstruction/regularization_parameter_estimator/TikhonovRegularizationParameterEstimator.py"
-			],
-			[
 				"ana",
 				"Volumetric Reconstruction/src/py/reconstruction/regularization_parameter_estimator/AnalysisRegularizationParameterEstimator.py"
 			],
@@ -1992,10 +2010,6 @@
 			[
 				"regu",
 				"Volumetric Reconstruction/src/py/reconstruction/regularization_parameter_estimator/RegularizationParameterEstimator.py"
-			],
-			[
-				"tikh",
-				"Volumetric Reconstruction/src/py/reconstruction/solver/TikhonovSolver.py"
 			],
 			[
 				"register",
@@ -2196,10 +2210,6 @@
 			[
 				"sol",
 				"Volumetric Reconstruction/src/py/reconstruction/solver/Solver.py"
-			],
-			[
-				"slic",
-				"Volumetric Reconstruction/src/py/registration/SliceToVolumeRegistration.py"
 			]
 		],
 		"width": 0.0
@@ -2222,7 +2232,7 @@
 		],
 		"width": 631.0
 	},
-	"selected_group": 1,
+	"selected_group": 0,
 	"settings":
 	{
 	},

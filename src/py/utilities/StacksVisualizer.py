@@ -81,14 +81,15 @@ class StacksVisualizer(object):
     # \param      self    The object
     # \param      colors  The colors as list
     #
-    def show_slice_select_directions(self, colors=None, labels=None, fig_number=None):
+    def show_slice_select_directions(self, colors=None, labels=None, title=None, fig_number=None):
 
         if colors is None:
             # http://matplotlib.org/examples/color/colormaps_reference.html
             cmap = plt.get_cmap('Vega20')
             # cmap = plt.get_cmap('nipy_spectral')
             # cmap = plt.get_cmap('rainbow')
-            colors = [cmap(i) for i in np.linspace(0, 1, self._N_stacks)]
+            # colors = [cmap(i) for i in np.linspace(0, 1, self._N_stacks)]
+            colors = [cmap(i) for i in np.arange(0, self._N_stacks)]
 
             # colors = ['red'] * self._N_stacks
 
@@ -126,9 +127,9 @@ class StacksVisualizer(object):
             legend_objects[i] = arrow_3D
             legend_labels[i] = labels[i]
 
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
+        ax.set_xlabel('x [R -- L]')
+        ax.set_ylabel('y [A -- P]')
+        ax.set_zlabel('z [I -- S]')
         
         ax.set_xlim([-1,1])
         ax.set_ylim([-1,1])
@@ -143,8 +144,9 @@ class StacksVisualizer(object):
 
         # fig.tight_layout()
 
-        ax.legend(legend_objects, legend_labels, loc=8, bbox_to_anchor=(0.5,0.92), ncol=self._N_stacks/2)
+        ax.legend(legend_objects, legend_labels, loc=8, bbox_to_anchor=(0.5,0.96), ncol=self._N_stacks/2)
 
+        plt.title(title)
         
         plt.show(block=False)
 

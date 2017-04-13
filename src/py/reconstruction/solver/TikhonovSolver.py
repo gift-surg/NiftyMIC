@@ -169,7 +169,7 @@ class TikhonovSolver(Solver):
             print("\tell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %(self._residual_ell2))
             print("\tprior residual = %.3e" %(self._residual_prior))
         else:
-            print("Run 'compute_statistics' for data and prior residuals")
+            print("\tRun 'compute_statistics' for data and prior residuals")
 
 
     ##

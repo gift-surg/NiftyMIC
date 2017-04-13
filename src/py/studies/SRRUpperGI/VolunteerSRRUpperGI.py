@@ -27,8 +27,8 @@ class VolunteerSRRUpperGI(object):
         self._label_SST2W_standard_offset = "SST2W_stdoff"
 
         self._label_BFFE = "BFFE"
-        self._label_heavilyT2w = "HT2W3D"
-        self._label_T2w = "T2W3D"
+        self._label_heavilyT2w = "hT2W_3D"
+        self._label_T2w = "T2W_3D"
 
         self._label_transverse = "ax"
         self._label_sagittal = "sag"
@@ -75,49 +75,55 @@ class VolunteerSRRUpperGI(object):
         return self._directory[self._select_anatomy]
 
 
-    def get_filenames_all_acquisitions(self):
+    def get_filenames_all_acquisitions(self, sst2w_std=1, sst2w_ang=1, sst2w_stdoff=1, bffe=1, ht2w_3d=1, t2w_3d=1):
         
-        filenames, labels = self.get_filenames_single_shot_t2_weighted(standard=1, oblique=1, offset=1)
+        filenames, labels = self.get_filenames_single_shot_t2_weighted(sst2w_std=sst2w_std, sst2w_ang=sst2w_ang, sst2w_stdoff=sst2w_stdoff)
 
-        tmp = self._get_filename_balanced_fast_field_echo[self._select_anatomy]()
-        if tmp is not None:
-            filenames.append(tmp[0])
-            labels.append(tmp[1])
+        if bffe:
+            tmp = self._get_filename_balanced_fast_field_echo[self._select_anatomy]()
+            if tmp is not None:
+                filenames.append(tmp[0])
+                labels.append(tmp[1])
 
-        tmp = self._get_filename_heavily_t2_weighted_volume[self._select_anatomy]()
-        if tmp is not None:
-            filenames.append(tmp[0])
-            labels.append(tmp[1])
+        if ht2w_3d:
+            tmp = self._get_filename_heavily_t2_weighted_volume[self._select_anatomy]()
+            if tmp is not None:
+                filenames.append(tmp[0])
+                labels.append(tmp[1])
 
-        tmp = self._get_filename_t2_weighted_volume[self._select_anatomy]()
-        if tmp is not None:
-            filenames.append(tmp[0])
-            labels.append(tmp[1])
+        if t2w_3d:
+            tmp = self._get_filename_t2_weighted_volume[self._select_anatomy]()
+            if tmp is not None:
+                filenames.append(tmp[0])
+                labels.append(tmp[1])
+
+        if len(filenames) is 0:
+            raise ValueError("No acquisition fitting the criteria available")
 
         return filenames, labels
 
 
     ## Getter for single-shot T2-weighted filenames
-    def get_filenames_single_shot_t2_weighted(self, standard=1, oblique=1, offset=1):
+    def get_filenames_single_shot_t2_weighted(self, sst2w_std=1, sst2w_ang=1, sst2w_stdoff=1):
 
         filenames = []
         labels = []
 
-        if standard:
+        if sst2w_std:
             tmp = self._get_filenames_single_shot_t2_weighted_standard[self._select_anatomy]()
             if tmp is not None:
                 for i in range(0, len(tmp[0])):
                     filenames.append(tmp[0][i])
                     labels.append(tmp[1][i])
             
-        if oblique:
+        if sst2w_ang:
             tmp = self._get_filenames_single_shot_t2_weighted_oblique[self._select_anatomy]()
             if tmp is not None:
                 for i in range(0, len(tmp[0])):
                     filenames.append(tmp[0][i])
                     labels.append(tmp[1][i])
 
-        if offset:
+        if sst2w_stdoff:
             tmp = self._get_filenames_single_shot_t2_weighted_standard_offset[self._select_anatomy]()
 
             if tmp is not None:

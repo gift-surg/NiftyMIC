@@ -23,6 +23,9 @@
 		},
 		{
 			"path": "/Users/mebner/UCL/Data/SRR_UpperGIAnatomyStudy"
+		},
+		{
+			"path": "/Users/mebner/.dcm2nii"
 		}
 	],
 	"settings":
