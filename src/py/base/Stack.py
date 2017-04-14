@@ -268,17 +268,17 @@ class Stack:
 
     ## Display stack with external viewer (ITK-Snap)
     #  \param[in][in] show_segmentation display stack with or without associated segmentation (default=0)
-    def show(self, show_segmentation=0, title=None, viewer="itksnap", verbose=True):
+    def show(self, show_segmentation=0, label=None, viewer="itksnap", verbose=True):
 
-        if title is None:
-            title = self._filename
+        if label is None:
+            label = self._filename
 
         if show_segmentation:
             sitk_mask = self.sitk_mask
         else:
             sitk_mask = None
 
-        sitkh.show_sitk_image(self.sitk, title=title, segmentation=sitk_mask, viewer=viewer, verbose=verbose)
+        sitkh.show_sitk_image(self.sitk, label=label, segmentation=sitk_mask, viewer=viewer, verbose=verbose)
 
 
     def show_slices(self):

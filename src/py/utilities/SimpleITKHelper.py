@@ -943,149 +943,54 @@ def plot_slices(slices, cmap="Greys_r", title="slice"):
 #
 # \return     { description_of_the_return_value }
 #
-def call_viewer_itksnap(image_sitk, label="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False, verbose=True, interpolator="Linear"):
+def call_viewer_itksnap(filenames, filename_segmentation=None):
 
-    if type(image_sitk) is not list:
-        image_sitk = [image_sitk]
-
-    if type(label) is not list:
-        label = [label]
-
-    ## Ensure label and image_sitk have same length
-    if len(label) is not len(image_sitk):
-        tmp = label
-        label = [None]*len(image_sitk)
-        for i in range(0, len(image_sitk)):
-            label[i] = tmp[0] + str(i)
-
-    ## Write image
-    sitk.WriteImage(image_sitk[0], dir_output + label[0] + ".nii.gz")
-
-    cmd = "itksnap " \
-        + "-g " + dir_output + label[0] + ".nii.gz " \
+    cmd =  "itksnap "
+    cmd += "-g " + filenames[0] + " "
     
     ## Add overlays
-    if len(image_sitk)>1:
-        overlay_txt = ""
+    if len(filenames)>1:
+        cmd += "-o "
 
-        for i in range(1, len(image_sitk)):
-            
-            ## In case images are not in the same physical space, resample them
-            try:
-                image_sitk[i] - image_sitk[0]
-            except:
-                image_sitk[i] = sitk.Resample(image_sitk[i], image_sitk[0], sitk.Euler3DTransform(), eval("sitk.sitk" + interpolator))
-                label[i] += "_" + interpolator
-
-            filename = dir_output + label[i] + ".nii.gz"
-            sitk.WriteImage(image_sitk[i], filename)
-            overlay_txt += filename + " "
-                
-        cmd += "-o " + overlay_txt \
+        for i in range(1, len(filenames)):
+            cmd += filenames[i] + " "
 
     ## Add segmentation
-    if segmentation is not None:
-        sitk.WriteImage(segmentation, dir_output + label[0] + "_segmentation.nii.gz")
-        cmd += "-s " + dir_output + label[0] + "_segmentation.nii.gz " \
+    if filename_segmentation is not None:
+        cmd += "-s " + filename_segmentation + " "
 
-    ## Add termination and print command
+    ## Add termination
     cmd += "& "
 
-    ## Execute command
-    ph.execute_command(cmd, verbose)
-
-    ## Create python script for the command above
-    if show_comparison_file:
-        ## Build executable file containing the information
-        write_executable_file(cmd, dir_output=dir_output, filename="showComparison")
+    return cmd
 
 
-def call_viewer_fslview(image_sitk, label="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False, verbose=True, interpolator="Linear"):
-    
-    ## Convert to list objects
-    if type(image_sitk) is not list:
-        image_sitk = [image_sitk]
-    if type(label) is not list:
-        label = [label]
-
-    ## Ensure label and image_sitk have same length
-    if len(label) is not len(image_sitk):
-        tmp = label
-        label = [None]*len(image_sitk)
-        for i in range(0, len(image_sitk)):
-            label[i] = tmp[0] + str(i)
-
-    for i in range(1, len(image_sitk)):
-        ## In case images are not in the same physical space, resample them
-        try:
-            image_sitk[i] - image_sitk[0]
-        except:
-            image_sitk[i] = sitk.Resample(image_sitk[i], image_sitk[0], sitk.Euler3DTransform(), eval("sitk.sitk" + interpolator))
-            label[i] += "_" + interpolator
-
-    ## Write images to tmp-folder
-    for i in range(0, len(image_sitk)):
-        sitk.WriteImage(image_sitk[i], dir_output + label[i] + ".nii.gz")
-    if segmentation is not None:
-        sitk.WriteImage(segmentation, dir_output + label[0] + "_seg.nii.gz")
+def call_viewer_fslview(filenames, filename_segmentation=None):
             
-    ##
     cmd = "fslview "
-    for i in range(0, len(image_sitk)):
-        cmd += dir_output + label[i] + ".nii.gz "
-    if segmentation is not None:
-        cmd += dir_output + label[0] + "_seg.nii.gz -t 0.3 "
+    for i in range(0, len(filenames)):
+        cmd += filenames[i] + " "
+    
+    if filename_segmentation is not None:
+        cmd += filename_segmentation + " -t 0.3 "
+    
     cmd += "& "
 
-    ## Execute command
-    ph.execute_command(cmd, verbose)
-
-    ## Create python script for the command above
-    if show_comparison_file:
-        ## Build executable file containing the information
-        write_executable_file(cmd, dir_output=dir_output, filename="showComparison")
+    return cmd
 
 
-def call_viewer_niftyview(image_sitk, label="test", segmentation=None, dir_output="/tmp/", show_comparison_file=False, verbose=True, interpolator="Linear"):
-
-    if type(image_sitk) is not list:
-        image_sitk = [image_sitk]
-
-    if type(label) is not list:
-        label = [label]
-
-    ## Ensure label and image_sitk have same length
-    if len(label) is not len(image_sitk):
-        tmp = label
-        label = [None]*len(image_sitk)
-        for i in range(0, len(image_sitk)):
-            label[i] = tmp[0] + str(i)
-
+def call_viewer_niftyview(filenames, filename_segmentation=None):
 
     cmd = "NiftyView " 
+    for i in range(0, len(filenames)):
+        cmd += filenames[i] + " "
 
-    for i in range(0, len(image_sitk)):
-        
-        ## Write image
-        sitk.WriteImage(image_sitk[i], dir_output + label[i] + ".nii.gz")
+    if filename_segmentation is not None:
+        cmd += filename_segmentation + " "
 
-        ## Append command
-        cmd += dir_output + label[i] + ".nii.gz "
-
-    if segmentation is not None:
-        sitk.WriteImage(segmentation, dir_output + label[0] + "_seg.nii.gz")
-        cmd += dir_output + label[0] + "_seg.nii.gz "
-
-    ## Add termination and print command
     cmd += "& "
 
-    ## Execute command
-    ph.execute_command(cmd, verbose)
-
-    ## Create python script for the command above
-    if show_comparison_file:
-        ## Build executable file containing the information
-        write_executable_file(cmd, dir_output=dir_output, filename="showComparison")
+    return cmd
 
 
 def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
@@ -1153,15 +1058,55 @@ def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
 # \param[in]  label         filename or list of filenames
 # \param[in]  segmentation  sitk.Image used as segmentation
 #
-def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True):
+def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear"):
     
     dir_output = "/tmp/"
+    label_segmentation = label[0] + "_seg"
 
     if viewer not in ["itksnap", "fslview", "niftyview"]:
-        raise ValueError("Viewer not known")
+        raise ValueError("Viewer not known. Select between 'itksnap', 'fslview' and 'niftyview'")
 
+    ## Convert to list objects
+    image_sitk = list(image_sitk)
+    label = list(label)
 
-    eval("call_viewer_"+viewer+"(image_sitk, label, segmentation, dir_output, show_comparison_file, verbose)")
+    ## Ensure label and image_sitk have same length
+    if len(label) is not len(image_sitk):
+        tmp = label
+        label = [None]*len(image_sitk)
+        for i in range(0, len(image_sitk)):
+            label[i] = tmp[0] + str(i)
+
+    for i in range(1, len(image_sitk)):
+        ## In case images are not in the same physical space, resample them
+        try:
+            image_sitk[i] - image_sitk[0]
+        except:
+            image_sitk[i] = sitk.Resample(image_sitk[i], image_sitk[0], sitk.Euler3DTransform(), eval("sitk.sitk" + interpolator))
+            label[i] += "_" + interpolator
+
+    ## Write images to tmp-folder
+    filenames = [None] * len(image_sitk)
+    for i in range(0, len(image_sitk)):
+        filenames[i] = dir_output + label[i] + ".nii.gz"
+        sitk.WriteImage(image_sitk[i], filenames[i])
+    if segmentation is None:
+        filename_segmentation = None
+    else:
+        filename_segmentation = dir_output + label_segmentation + ".nii.gz"
+        sitk.WriteImage(segmentation, filename_segmentation)
+
+    ## Get command line to call viewer
+    cmd = eval("call_viewer_" + viewer + "(filenames, filename_segmentation)")
+
+    ## Execute command
+    ph.execute_command(cmd, verbose)
+
+    ## Create python script for the command above
+    if show_comparison_file:
+        
+        ## Build executable file containing the information
+        write_executable_file(cmd, dir_output=dir_output, filename="showComparison")
     
 
 ##
