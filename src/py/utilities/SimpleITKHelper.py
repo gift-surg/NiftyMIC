@@ -1067,7 +1067,13 @@ def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison
         raise ValueError("Viewer not known. Select between 'itksnap', 'fslview' and 'niftyview'")
 
     ## Convert to list objects
-    image_sitk = list(image_sitk)
+    if type(image_sitk) is not list:
+        image_sitk = [image_sitk]
+
+    if type(label) is not list:
+        label = [label]
+
+    ## Create a copy of the labels (string)
     label = list(label)
 
     ## Ensure label and image_sitk have same length
