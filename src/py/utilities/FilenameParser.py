@@ -65,7 +65,6 @@ class FilenameParser(object):
         return sorted(filenames_reduced)
 
 
-
     ##
     # Gets the dash partitioned filenames and eliminates possibly existing
     # duplicate filenames. Used for MS project.

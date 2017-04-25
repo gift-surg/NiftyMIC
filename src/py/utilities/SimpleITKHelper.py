@@ -993,7 +993,7 @@ def call_viewer_niftyview(filenames, filename_segmentation=None):
     return cmd
 
 
-def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
+def write_executable_file(cmds, dir_output="/tmp/", filename="showComparison"):
     now = datetime.datetime.now()
     date_time = str(now.year) + "-" + str(now.month).zfill(2) + "-"  + str(now.day).zfill(2) + " "
     date_time += str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2)
@@ -1001,10 +1001,13 @@ def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
     dir_output_file = "./"
 
     ## Substitute commands
-    cmd = re.sub(dir_output, '" + directory + "', cmd)
-    cmd = re.sub("itksnap", 'itksnap_exe + "', cmd)
-    cmd = re.sub("fslview", 'fslview_exe + "', cmd)
-    cmd = re.sub("NiftyView", 'niftyview_exe + "', cmd)
+    for i in range(0, len(cmds)):
+        cmd = cmds[i]
+        cmd = re.sub(dir_output, '" + directory + "', cmd)
+        cmd = re.sub("itksnap", 'itksnap_exe + "', cmd)
+        cmd = re.sub("fslview", 'fslview_exe + "', cmd)
+        cmd = re.sub("NiftyView", 'niftyview_exe + "', cmd)
+        cmds[i] = cmd
 
     call  = "#!/usr/bin/python\n"
     call += "\n"
@@ -1031,8 +1034,17 @@ def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
     call += "niftyview_exe = " + '"NiftyView"'
     call += "\n"
     call += "\n"
-    call += "cmd = " + cmd + '" '
-    call += "\n\n"
+
+    for i in range(0, len(cmds)):
+        cmd = cmds[i]
+        if i is 0:
+            ## Use first selected viewer
+            call += "cmd = " + cmd + '" '
+        else:
+            ## Comment the remaining viewers
+            call += "# cmd = " + cmd + '" '
+        call += "\n\n"
+
     call += "print(cmd)"
     call += "\n"
     call += "os.system(cmd)"
@@ -1058,10 +1070,12 @@ def write_executable_file(cmd, dir_output="/tmp/", filename="showComparison"):
 # \param[in]  label         filename or list of filenames
 # \param[in]  segmentation  sitk.Image used as segmentation
 #
-def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear"):
+def show_sitk_image(image_sitk, dir_output="/tmp/", label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear"):
     
-    dir_output = "/tmp/"
     label_segmentation = label[0] + "_seg"
+
+    os.system("mkdir -p " + dir_output)
+
 
     if viewer not in ["itksnap", "fslview", "niftyview"]:
         raise ValueError("Viewer not known. Select between 'itksnap', 'fslview' and 'niftyview'")
@@ -1111,8 +1125,14 @@ def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison
     ## Create python script for the command above
     if show_comparison_file:
         
+        cmds = [None]*3
+        ctr = 0;
+        cmds[ctr] = call_viewer_itksnap(filenames, filename_segmentation); ctr = ctr+1
+        cmds[ctr] = call_viewer_fslview(filenames, filename_segmentation); ctr = ctr+1
+        cmds[ctr] = call_viewer_niftyview(filenames, filename_segmentation); ctr = ctr+1
+
         ## Build executable file containing the information
-        write_executable_file(cmd, dir_output=dir_output, filename="showComparison")
+        write_executable_file(cmds, dir_output=dir_output, filename="showComparison")
     
 
 ##
