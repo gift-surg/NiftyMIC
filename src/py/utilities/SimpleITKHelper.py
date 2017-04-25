@@ -1070,10 +1070,8 @@ def write_executable_file(cmds, dir_output="/tmp/", filename="showComparison"):
 # \param[in]  label         filename or list of filenames
 # \param[in]  segmentation  sitk.Image used as segmentation
 #
-def show_sitk_image(image_sitk, dir_output="/tmp/", label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear"):
+def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear", dir_output="/tmp/"):
     
-    label_segmentation = label[0] + "_seg"
-
     os.system("mkdir -p " + dir_output)
 
 
@@ -1089,6 +1087,8 @@ def show_sitk_image(image_sitk, dir_output="/tmp/", label="test", segmentation=N
 
     ## Create a copy of the labels (string)
     label = list(label)
+
+    label_segmentation = label[0] + "_seg"
 
     ## Ensure label and image_sitk have same length
     if len(label) is not len(image_sitk):
@@ -1161,7 +1161,7 @@ def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=Fals
     else:
         segmentation_sitk = None
 
-    show_sitk_image(images_sitk, label, segmentation_sitk, show_comparison_file, viewer)
+    show_sitk_image(images_sitk, label=label, segmentation=segmentation_sitk, show_comparison_file=show_comparison_file, viewer=viewer)
 
 
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose
