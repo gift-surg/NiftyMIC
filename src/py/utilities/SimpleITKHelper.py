@@ -786,6 +786,7 @@ def get_itk_from_sitk_image(image_sitk):
         ## itk.MultiplyImageFilter[itk.UC, itk.D] does not work! (But
         ## which I need within InverseProblemSolver)
         image_type = itk.Image[itk.D, dimension]
+        nda = nda.astype(float)
         # image_type = itk.Image[itk.UI, dimension]
         # image_type = itk.Image[itk.UC, dimension]
 

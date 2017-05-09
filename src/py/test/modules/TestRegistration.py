@@ -15,8 +15,8 @@ import time
 from datetime import timedelta
 
 ## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
+# dir_src_root = "../src/"
+# sys.path.append( dir_src_root )
 
 ## Import modules
 import base.Stack as st
@@ -25,6 +25,9 @@ import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 import registration.RegistrationSimpleITK as regsitk
 import registration.RegistrationITK as regitk
+
+from definitions import dir_test
+
 
 ## Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
@@ -40,7 +43,7 @@ IMAGE_TYPE_CV183 = itk.Image.CVD183
 class TestRegistration(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/registration/"
+    dir_test_data =  dir_test + "registration/"
 
     accuracy = 2
 

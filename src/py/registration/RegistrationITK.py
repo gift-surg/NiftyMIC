@@ -10,6 +10,8 @@ import sys
 import SimpleITK as sitk
 import numpy as np
 
+from definitions import dir_build_cpp
+
 ## Import modules from src-folder
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
@@ -253,7 +255,8 @@ class RegistrationITK:
         sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
 
         ## Prepare command for execution
-        cmd =  "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/build/cpp/bin/itkReg "
+        # cmd =  "/Users/mebner/UCL/UCL/Software/Volumetric\ Reconstruction/build/cpp/bin/itkReg "
+        cmd =  dir_build_cpp + "/bin/itkReg "
         cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz "
         cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz "
         if self._use_fixed_mask:

@@ -26,6 +26,12 @@
 		},
 		{
 			"path": "/Users/mebner/.dcm2nii"
+		},
+		{
+			"path": "/Users/mebner/UCL/Data/Shefffield_JonathanTaylor/20170425/nifti/fistula1/SRR/visual_comparison"
+		},
+		{
+			"path": "/Users/mebner/UCL/UCL/Software/SemiAutomaticSliceExtractionTool"
 		}
 	],
 	"settings":
