@@ -14,16 +14,13 @@ import unittest
 import sys
 from scipy.ndimage import imread
 
-## Add directories to import modules
-dir_src_root = "../"
-sys.path.append( dir_src_root )
-
 ## Import modules
 import base.Stack as st
 import registration.IntraStackRegistration as inplanereg
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 
+from definitions import dir_test
 
 def get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D, scale=1, intensity_scale=1, intensity_bias=0, debug=0, random=False):
     
@@ -109,7 +106,7 @@ def get_inplane_corrupted_stack(stack, angle_z, center_2D, translation_2D, scale
 class TestIntraStackRegistration(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = dir_test
 
     accuracy = 6
 
@@ -117,7 +114,6 @@ class TestIntraStackRegistration(unittest.TestCase):
         pass
 
 
-    """
     ##
     #       Test whether the function
     #             _get_initial_transforms_and_parameters_geometry_moments
@@ -230,6 +226,7 @@ class TestIntraStackRegistration(unittest.TestCase):
 
 
         ## 2) Create affinely corrupted intensity stack
+        ## HINT: In case of individual slice correction is active!!
         nda_3D_corruped = np.zeros_like(nda_3D)
         for i in range(0, shape_z):
             nda_3D_corruped[i,:,:] = (nda_3D[i,:,:]-10*i)/(i+1.)
@@ -557,7 +554,8 @@ class TestIntraStackRegistration(unittest.TestCase):
         self.assertEqual(np.round(
             np.linalg.norm(stack_diff_nda)
         , decimals = 8), 0)
-
+    
+    
     
     def test_inplane_similarity_alignment_to_reference(self):
 
@@ -631,7 +629,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         stack_registered = inplane_registration.get_corrected_stack()
         parameters = inplane_registration.get_parameters()
 
-        sitkh.show_sitk_image([stack.sitk, stack_corrupted.get_resampled_stack_from_slices(interpolator="Linear", resampling_grid=stack.sitk).sitk, stack_registered.get_resampled_stack_from_slices(interpolator="Linear", resampling_grid=stack.sitk).sitk], title=["original", "corrupted", "recovered"])
+        sitkh.show_sitk_image([stack.sitk, stack_corrupted.get_resampled_stack_from_slices(interpolator="Linear", resampling_grid=stack.sitk).sitk, stack_registered.get_resampled_stack_from_slices(interpolator="Linear", resampling_grid=stack.sitk).sitk], label=["original", "corrupted", "recovered"])
 
         # self.assertEqual(np.round(
         #     np.linalg.norm(nda_diff)
@@ -653,7 +651,6 @@ class TestIntraStackRegistration(unittest.TestCase):
         , decimals = 8), 0)
 
     
-    """
     def test_inplane_rigid_alignment_to_reference_multimodal(self):
 
         filename_stack = "fetal_brain_0"
@@ -734,3 +731,4 @@ class TestIntraStackRegistration(unittest.TestCase):
         self.assertEqual(np.round(
             np.linalg.norm(stack_diff_nda)
         , decimals = 8), 0)
+    

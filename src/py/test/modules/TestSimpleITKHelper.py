@@ -12,13 +12,11 @@ import numpy as np
 import unittest
 import sys
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
-
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
 import base.Stack as st
+
+from definitions import dir_test
 
 def get_affine_registration_transform(fixed_sitk, moving_sitk, fixed_mask_sitk=None, moving_mask_sitk=None, print_info=False):
 
@@ -226,7 +224,7 @@ def get_rigid_registration_transform(fixed_sitk, moving_sitk, fixed_mask_sitk=No
 class TestSimpleITKHelper(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data =  "../../../test-data/"
+    dir_test_data =  dir_test
 
     accuracy = 6
 

@@ -11,15 +11,11 @@ import numpy as np
 import unittest
 import sys
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
-
-# sys.path.append("../src/")
-# sys.path.append("data/")
-
 ## Import modules
 import base.Stack as st
+
+from definitions import dir_test
+
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -27,7 +23,7 @@ import base.Stack as st
 class TestStack(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = dir_test
 
     accuracy = 7
 

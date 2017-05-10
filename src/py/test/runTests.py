@@ -19,7 +19,7 @@ import sys
 # sys.path.append( dir_src_root )
 
 ## Import modules for unit testing
-# from modules.TestFirstEstimateOfHRVolume import *
+# from modules.TestFirstEstimateOfHRVolume import * ## outdated
 # from modules.TestSimpleITKHelper import *
 # from modules.TestStack import *
 # from modules.TestSimulatorSliceAcqusition import *
@@ -27,7 +27,6 @@ import sys
 # from modules.TestDifferentialOperations import *
 from modules.TestRegistration import *
 # from modules.TestBrainStripping import *
-# from modules.TestInPlaneRegistrationSimpleITK import *
 # from modules.TestIntraStackRegistration import *
 # from modules.TestParameterNormalization import *
 # from modules.TestRegistrationITK import *

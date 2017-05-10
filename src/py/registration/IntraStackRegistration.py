@@ -1690,7 +1690,9 @@ class IntraStackRegistration(StackRegistrationBase):
         rigid_transform_3D = sitk.Euler3DTransform()
         rigid_transform_3D.SetRotation(0,0,angle_z)
         rigid_transform_3D.SetTranslation(translation_3D)
-        rigid_transform_3D.SetFixedParameters(center_3D)
+
+        ## Append zero for m_ComputeZYX = 0 (part of fixed params in SimpleITK 1.0.0)
+        rigid_transform_3D.SetFixedParameters(center_3D + (0.,))
         
         return rigid_transform_3D
 

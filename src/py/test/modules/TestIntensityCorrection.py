@@ -15,14 +15,12 @@ import unittest
 import sys
 from scipy.ndimage import imread
 
-## Add directories to import modules
-dir_src_root = "../"
-sys.path.append( dir_src_root )
-
 ## Import modules
 import base.Stack as st
 import utilities.IntensityCorrection as ic
 import utilities.SimpleITKHelper as sitkh
+
+from definitions import dir_test
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -30,9 +28,10 @@ import utilities.SimpleITKHelper as sitkh
 class TestIntensityCorrection(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = dir_test
 
     accuracy = 6
+    use_verbose = False
 
     def setUp(self):        
         pass
@@ -63,7 +62,7 @@ class TestIntensityCorrection(unittest.TestCase):
         for i in range(0, shape_z):
             ic_values[i,:] = (i+1.)
 
-        intensity_correction = ic.IntensityCorrection(stack=stack_corrupted, reference=stack,  use_individual_slice_correction=True, use_verbose=False)
+        intensity_correction = ic.IntensityCorrection(stack=stack_corrupted, reference=stack,  use_individual_slice_correction=True, use_verbose=self.use_verbose)
         intensity_correction.run_linear_intensity_correction()
         ic_values_est = intensity_correction.get_intensity_correction_coefficients()
 
@@ -98,7 +97,7 @@ class TestIntensityCorrection(unittest.TestCase):
         for i in range(0, shape_z):
             ic_values[i,:] = (i+1,10*i)
 
-        intensity_correction = ic.IntensityCorrection(stack=stack_corrupted, reference=stack,  use_individual_slice_correction=True, use_verbose=False)
+        intensity_correction = ic.IntensityCorrection(stack=stack_corrupted, reference=stack,  use_individual_slice_correction=True, use_verbose=self.use_verbose)
         intensity_correction.run_affine_intensity_correction()
         ic_values_est = intensity_correction.get_intensity_correction_coefficients()
 

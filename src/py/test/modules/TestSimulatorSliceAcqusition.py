@@ -12,15 +12,13 @@ import numpy as np
 import unittest
 import sys
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
-
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
 import base.Stack as st
 import simulation.SimulatorSliceAcqusition as sa
 import base.PSF as psf
+
+from definitions import dir_test
 
 
 ## Pixel type of used 3D ITK image
@@ -36,7 +34,7 @@ image_type = itk.Image[pixel_type, 3]
 class SliceAcqusition(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = dir_test
 
     accuracy = 7
 
@@ -200,7 +198,7 @@ class SliceAcqusition(unittest.TestCase):
             for j in range(0, N_slices):
                 # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
                 slice = slices[j]
-                # slice.update_rigid_motion_estimate(rigid_motion_transforms_ground_truth[i][j])
+                # slice.update_motion_correction(rigid_motion_transforms_ground_truth[i][j])
 
                 HR_volume_resampled_slice_sitk = sitk.Resample(
                     HR_volume.sitk, slice.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice.sitk.GetPixelIDValue()
@@ -243,7 +241,7 @@ class SliceAcqusition(unittest.TestCase):
             for j in range(0, N_slices):
                 # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
                 slice = slices[j]
-                slice.update_rigid_motion_estimate(rigid_motion_transforms_ground_truth[i][j])
+                slice.update_motion_correction(rigid_motion_transforms_ground_truth[i][j])
 
                 HR_volume_resampled_slice_sitk = sitk.Resample(
                     HR_volume.sitk, slice.sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0.0, slice.sitk.GetPixelIDValue()
@@ -304,7 +302,7 @@ class SliceAcqusition(unittest.TestCase):
             for j in range(0, N_slices):
                 # print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
                 slice = slices[j]
-                slice.update_rigid_motion_estimate(rigid_motion_transforms_ground_truth[i][j])
+                slice.update_motion_correction(rigid_motion_transforms_ground_truth[i][j])
 
                 ## Get covariance based on oblique PSF
                 Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(slice, HR_volume)

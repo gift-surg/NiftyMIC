@@ -19,6 +19,7 @@ import registration.Registration as myreg
 import registration.RegistrationSimpleITK as regsitk
 import registration.RegistrationITK as regitk
 
+from definitions import dir_test
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -26,7 +27,7 @@ import registration.RegistrationITK as regitk
 class TestRegistrationITK(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = dir_test
 
     accuracy = 1
 

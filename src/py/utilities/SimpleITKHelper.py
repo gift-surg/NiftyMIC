@@ -917,7 +917,7 @@ def plot_compare_sitk_2D_images(image0_2D_sitk, image1_2D_sitk, fig_number=1, fl
 #
 def plot_stack_of_slices(stack_sitk, cmap="Greys_r", title="slice"):
     nda = sitk.GetArrayFromImage(stack_sitk)
-    ph.show_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
+    ph.show_arrays(nda, cmap=cmap, title=title)
 
 
 def plot_slices(slices, cmap="Greys_r", title="slice"):
@@ -929,7 +929,7 @@ def plot_slices(slices, cmap="Greys_r", title="slice"):
     for i in range(1, N):
         nda[i,:,:] = sitk.GetArrayFromImage(slices[i].sitk)
 
-    ph.show_3D_array_slice_by_slice(nda, cmap=cmap, title=title)
+    ph.show_arrays(nda, cmap=cmap, title=title)
 
 
 ##

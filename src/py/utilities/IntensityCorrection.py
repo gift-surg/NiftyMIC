@@ -264,7 +264,7 @@ class IntensityCorrection(object):
         
         ## Create Stack instance with correct image header information
         if self._additional_stack is None:
-            return self._create_stack_from_corrected_intensity_array(nda, self._stack), correction_coefficients
+            return self._create_stack_from_corrected_intensity_array(nda, self._stack), correction_coefficients, None
         else:
             return self._create_stack_from_corrected_intensity_array(nda, self._stack), correction_coefficients, self._create_stack_from_corrected_intensity_array(nda_additional_stack, self._additional_stack)
 
@@ -303,7 +303,7 @@ class IntensityCorrection(object):
             print("(c1, c0) = (%.3f, %.3f)" %(c1, c0))
 
         if nda_additional_stack is None:
-            return nda*c1 + c0, np.array([c1,c0]), None
+            return nda*c1 + c0, np.array([c1,c0])
         else:
             return nda*c1 + c0, np.array([c1,c0]), nda_additional_stack*c1 + c0
 
@@ -337,7 +337,7 @@ class IntensityCorrection(object):
             print("c1 = %.3f" %(c1))
         
         if nda_additional_stack is None:
-            return nda*c1, c1, None
+            return nda*c1, c1
         else:
             return nda*c1, c1, nda_additional_stack*c1
 

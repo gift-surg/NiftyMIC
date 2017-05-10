@@ -11,13 +11,11 @@ import numpy as np
 import unittest
 import sys
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
-
 ## Import modules from src-folder
 import utilities.SimpleITKHelper as sitkh
 import preprocessing.BrainStripping as bs
+
+from definitions import dir_test
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -25,7 +23,7 @@ import preprocessing.BrainStripping as bs
 class TestBrainStripping(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = dir_test
 
     accuracy = 7
 
@@ -59,5 +57,5 @@ class TestBrainStripping(unittest.TestCase):
         self.assertEqual("Brain mask was not asked for. Set option '-m' and run again.", str(ve.exception) )
 
         with self.assertRaises(ValueError) as ve:
-            brain_stripping.get_skull_image_sitk()
+            brain_stripping.get_skull_mask_sitk()
         self.assertEqual("Skull mask was not asked for. Set option '-s' and run again.", str(ve.exception) )

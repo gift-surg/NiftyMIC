@@ -15,13 +15,16 @@ import sys
 import base.Stack as st
 import reconstruction.solver.DifferentialOperations as diffop
 
+from definitions import dir_test
+
+
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
 class TestDifferentialOperations(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = dir_test
 
     accuracy = 6
 

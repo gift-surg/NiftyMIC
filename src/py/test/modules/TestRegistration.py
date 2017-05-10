@@ -267,7 +267,7 @@ class TestRegistration(unittest.TestCase):
         time_end = time.time()
         # print("Rigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
-    
+
     def test_rigid_registration_of_stack(self):
         filename_prefix = "NoMotion_"
         parameters_gd = (0.1,0.1,0.2,-1,3,2)
@@ -284,6 +284,7 @@ class TestRegistration(unittest.TestCase):
         stack_sitk_mask = sitkh.get_transformed_sitk_image(stack_sim.sitk_mask, transform_sitk)
         stack_sim = st.Stack.from_sitk_image(stack_sitk, name=stack_sim.get_filename(), image_sitk_mask=stack_sitk_mask)
 
+        ## PSF-aware Registration algorithm
         time_start = time.time()
         registration = myreg.Registration(fixed=stack_sim, moving=HR_volume)
         # registration.use_fixed_mask(True)
@@ -324,12 +325,14 @@ class TestRegistration(unittest.TestCase):
         print("\t|parameters-parameters_gd| = %s" %(str(norm_diff)) )
         print("\tRigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
+        
         ## ITK registration for comparison
         print("ITK registration for comparison:")
         time_start = time.time()
         registration = regitk.RegistrationITK(fixed=stack_sim, moving=HR_volume)
         registration.use_verbose(use_verbose)
         registration.set_scales_estimator(scales_estimator)
+        registration.set_metric("MeanSquares")
         registration.run_registration()
         time_end = time.time()
 

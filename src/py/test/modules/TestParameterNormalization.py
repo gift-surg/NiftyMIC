@@ -20,6 +20,8 @@ import utilities.ParameterNormalization as pn
 import utilities.SimpleITKHelper as sitkh
 import registration.IntraStackRegistration as inplanereg
 
+from definitions import dir_test
+
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -27,7 +29,7 @@ import registration.IntraStackRegistration as inplanereg
 class TestParameterNormalization(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = dir_test
 
     accuracy = 6
 
@@ -51,8 +53,8 @@ class TestParameterNormalization(unittest.TestCase):
         # sitkh.show_stacks([stack, stack_corrupted])
 
         inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted, stack)
-        inplane_registration.set_initializer_type("moments")
-        inplane_registration.set_intensity_correction_type("affine")
+        inplane_registration.set_transform_initializer_type("moments")
+        inplane_registration.set_intensity_correction_type_slice_neighbour_fit("affine")
         inplane_registration.set_transform_type("rigid")
         inplane_registration._run_registration_pipeline_initialization()
         parameters = inplane_registration.get_parameters()

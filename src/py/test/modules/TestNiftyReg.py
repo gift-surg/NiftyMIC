@@ -11,14 +11,13 @@ import numpy as np
 import unittest
 import sys
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
-
 ## Import modules
 import registration.NiftyReg as nreg
 import base.Stack as st
 import utilities.SimpleITKHelper as sitkh
+
+from definitions import dir_test
+
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -26,7 +25,7 @@ import utilities.SimpleITKHelper as sitkh
 class TestNiftyReg(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = dir_test
 
     accuracy = 7
 
@@ -37,7 +36,7 @@ class TestNiftyReg(unittest.TestCase):
 
         ## Read data
         filename_fixed = "stack1_rotated_angle_z_is_pi_over_10"
-        filename_moving = "recon_fetal_neck_mass_brain_cycles0_SRR_TK0_itermax20_alpha0.1"
+        filename_moving = "FetalBrain_reconstruction_3stacks_myAlg"
 
         moving = st.Stack.from_filename(self.dir_test_data, filename_moving, "_mask")
         fixed = st.Stack.from_filename(self.dir_test_data, filename_fixed)
@@ -46,12 +45,15 @@ class TestNiftyReg(unittest.TestCase):
         nifty_reg = nreg.NiftyReg()
         nifty_reg.set_fixed(fixed)
         nifty_reg.set_moving(moving)
+        nifty_reg.set_registration_type("Rigid")
+        nifty_reg.use_verbose(False)
+
 
         ## Register via NiftyReg
-        nifty_reg.run_reg_aladin(options="-voff")
+        nifty_reg.run_registration()
 
         ## Get associated results
-        affine_transform_sitk = nifty_reg.get_affine_transform_sitk()
+        affine_transform_sitk = nifty_reg.get_registration_transform_sitk()
         moving_warped = nifty_reg.get_registered_image()
 
         ## Get SimpleITK result with "similar" interpolator (NiftyReg does not state what interpolator is used but it seems to be BSpline)

@@ -21,7 +21,7 @@ import base.Slice as sl
 
 class RegistrationITK:
 
-    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="NearestNeighbor", metric="Correlation", scales_estimator="Jacobian", ANTSradius=20, translation_scale=1, use_multiresolution_framework=False, dir_tmp="/tmp/RegistrationITK/", verbose=False):
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", scales_estimator="Jacobian", ANTSradius=20, translation_scale=1, use_multiresolution_framework=False, dir_tmp="/tmp/RegistrationITK/", verbose=False):
 
         self._fixed = fixed
         self._moving = moving
@@ -290,11 +290,16 @@ class RegistrationITK:
 
         if self._registration_type in ["Rigid"]:
             self._transform_sitk = sitk.Euler3DTransform()
+
+            ## Append zero for m_ComputeZYX = 0 (part of fixed params in SimpleITK 1.0.0)
+            fixed_parameters = np.append(self._parameters_fixed, [0])
+
         else:
             self._transform_sitk = sitk.AffineTransform(3)
+            fixed_parameters = self._parameters_fixed
 
         self._transform_sitk.SetParameters(self._parameters)
-        self._transform_sitk.SetFixedParameters(self._parameters_fixed)
+        self._transform_sitk.SetFixedParameters(fixed_parameters)
 
         ## Debug
         # moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
@@ -332,7 +337,7 @@ class RegistrationITK:
         sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
 
         ## Prepare command for execution
-        cmd =  "/Users/mebner/UCL/UCL/Volumetric\ Reconstruction/build/cpp/bin/itkInplaneSimilarity3DReg "
+        cmd =  dir_build_cpp + "/bin/itkInplaneSimilarity3DReg "
         cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz "
         cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz "
         if self._use_fixed_mask:
