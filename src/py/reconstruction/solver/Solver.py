@@ -837,7 +837,7 @@ class Solver(object):
         jac =  lambda x: A
         
         ## Run solver
-        HR_nda_vec = least_squares(fun=fun, x0=x0, jac=jac, jac_sparsity=jac, method='trf', tr_solver='lsmr', bounds=bounds, max_nfev=self._iter_max, verbose=2).x 
+        HR_nda_vec = least_squares(fun=fun, x0=x0, jac=jac, jac_sparsity=jac, method='trf', tr_solver='lsmr', bounds=bounds, loss="linear", max_nfev=self._iter_max, verbose=2).x 
 
         return HR_nda_vec
 

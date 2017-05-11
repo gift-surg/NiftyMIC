@@ -18,7 +18,7 @@ import base.Stack as st
 
 class NiftyReg:
 
-    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", registration_method="reg_aladin", options="", verbose=True):
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", registration_method="reg_aladin", options="", use_verbose=True):
         self._fixed = fixed
         self._moving = moving
 
@@ -41,7 +41,7 @@ class NiftyReg:
         self._registration_type = registration_type
 
         self._options = options + " "
-        self._verbose = verbose
+        self._verbose = use_verbose
 
 
     ## Set fixed/reference/target image

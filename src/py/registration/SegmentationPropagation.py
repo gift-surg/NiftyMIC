@@ -26,7 +26,7 @@ import registration.NiftyReg as regniftyreg
 class SegmentationPropagation(object):
 
     ## Constructor
-    def __init__(self, stack, template, registration_method=None, dilation_radius=0, dilation_kernel="Ball"):
+    def __init__(self, stack=None, template=None, registration_method=None, use_template_mask=True, dilation_radius=0, dilation_kernel="Ball"):
 
         self._stack = stack
         self._template = template
@@ -42,10 +42,16 @@ class SegmentationPropagation(object):
             "NiftyReg"      : regitk,
         }
 
-        self._stack_sitk = sitk.Image(stack.sitk)
+        self._stack_sitk = None
         self._stack_sitk_mask = None
-
         self._registration_transform_sitk = None
+        self._use_template_mask = use_template_mask
+
+    def set_stack(self, stack):
+        self._stack = stack
+
+    def set_template(self, template):
+        self._template = template
 
     def get_segmented_stack(self):
         
@@ -59,13 +65,19 @@ class SegmentationPropagation(object):
         return self._registration_transform_sitk
 
 
-    def run_segmentation_propagation(self, use_fixed_mask=True):
+    def run_segmentation_propagation(self):
+
+        if self._stack is None or self._template is None:
+            raise ValueError("Specify stack and template first")
+
+        self._stack_sitk = sitk.Image(self._stack.sitk)
+
 
         ## Register stack to template
         if self._registration_method is not None:
             self._registration_method.set_fixed(self._template)
             self._registration_method.set_moving(self._stack)
-            self._registration_method.use_fixed_mask(use_fixed_mask)
+            self._registration_method.use_fixed_mask(self._use_template_mask)
             self._registration_method.run_registration()
 
             self._registration_transform_sitk = self._registration_method.get_registration_transform_sitk()

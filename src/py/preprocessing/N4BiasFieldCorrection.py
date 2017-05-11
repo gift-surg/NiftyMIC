@@ -38,6 +38,9 @@ class N4BiasFieldCorrection(object):
         ph.create_directory(self._dir_tmp, delete_files=False)
 
 
+    def set_stack(self, stack):
+        self._stack = stack
+
     def get_bias_field_corrected_stack(self):
         return self._stack_corrected
 
@@ -66,15 +69,12 @@ class N4BiasFieldCorrection(object):
 
         stack_corrected_sitk = sitk.ReadImage(self._dir_tmp + filename_out + "_corrected.nii.gz", sitk.sitkFloat64)
 
-        ## Read in again: Otherwise there can occur problems. Hence, read in 
-        #  and force to be the same sitk.sitkFloat64 type!
-        # if self._use_mask:
-        #     stack_corrected_sitk_mask = sitk.ReadImage(self._dir_tmp + filename_out + "_mask.nii.gz", sitk.sitkUInt8)
-        stack_corrected_sitk_mask = self._stack.sitk_mask
+        ## Reading of image might lead to slight differences 
+        stack_corrected_sitk_mask = sitk.Resample(self._stack.sitk_mask, stack_corrected_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, self._stack.sitk_mask.GetPixelIDValue())
         
 
         # stack_corrected = st.Stack.from_sitk_image(stack_corrected_sitk, self._stack.get_filename(), self._stack.sitk_mask)
         self._stack_corrected = st.Stack.from_sitk_image(stack_corrected_sitk, self._stack.get_filename(), stack_corrected_sitk_mask)
 
         ## Debug
-        sitkh.show_stacks([self._stack, self._stack_corrected], label=["orig", "corr"])
+        # sitkh.show_stacks([self._stack, self._stack_corrected], label=["orig", "corr"])

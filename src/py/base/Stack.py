@@ -832,7 +832,7 @@ class Stack:
         return image_cropped_sitk
 
 
-    def get_cropped_stack_based_on_mask(self, boundary_x=0, boundary_y=0, boundary_z=0, unit="mm"):
+    def get_cropped_stack_based_on_mask(self, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
 
         ## Get rectangular region surrounding the masked voxels
         [x_range, y_range, z_range] = self._get_rectangular_masked_region(self.sitk_mask)
@@ -842,8 +842,8 @@ class Stack:
         mask_crop_sitk = self._crop_image_to_region(self.sitk_mask, x_range, y_range, z_range)
 
         ## Increase stack dimensions
-        stack_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(stack_crop_sitk, boundary_x, boundary_y, boundary_z, unit=unit)
-        mask_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(mask_crop_sitk, boundary_x, boundary_y, boundary_z, unit=unit)
+        stack_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(stack_crop_sitk, boundary_i, boundary_j, boundary_k, unit=unit)
+        mask_crop_sitk = sitk.Resample(mask_crop_sitk, stack_crop_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, mask_crop_sitk.GetPixelIDValue())
 
         stack = self.from_sitk_image(stack_crop_sitk, self._filename, mask_crop_sitk)
 

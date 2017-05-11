@@ -13,32 +13,26 @@ import numpy as np
 
 
 ## Import modules from src-folder
+import base.Stack as st
 import utilities.PythonHelper as ph
 import utilities.SimpleITKHelper as sitkh
-import registration.RegistrationSimpleITK as regsitk
-import registration.RegistrationITK as regitk
-import registration.NiftyReg as regniftyreg
-import base.Stack as st
+import preprocessing.N4BiasFieldCorrection as n4bfc
 
 
 ## Class implementing data preprocessing steps
 class DataPreprocessing:
 
     ## Constructor
-    def __init__(self):
+    def __init__(self, use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_crop_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
 
-        ## Define dictionary for possible types of data preprocessing
-        self._run_preprocessing = {
-            "AllMasksProvided"      : self._run_preprocessing_all_masks_provided,
-            "NoMaskProvided"        : self._run_preprocessing_no_mask_provided,
-            "NotAllMasksProvided"   : self._run_preprocessing_not_all_masks_provided
-        }        
-        self._preprocessing_approach = "NoMaskProvided" # default
-
-        self._filename_prefix = None
-
-        self._use_N4BiasFieldCorrector = False
-        self._dilation_radius = 2
+        self._use_N4BiasFieldCorrector = use_N4BiasFieldCorrector
+        self._segmentation_propagator = segmentation_propagator
+        self._target_stack_index = target_stack_index
+        self._use_crop_to_mask = use_crop_to_mask
+        self._boundary_i = boundary_i
+        self._boundary_j = boundary_j
+        self._boundary_k = boundary_k
+        self._unit = unit
 
 
     ## Initialize data preprocessing class based on filenames, i.e. data used
@@ -47,46 +41,20 @@ class DataPreprocessing:
     #  \param[in] filenames list of filenames referring to the data in dir_input to be processed (without .nii.gz)
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     @classmethod
-    def from_filenames(cls, dir_input, filenames, suffix_mask="_mask"):
+    def from_filenames(cls, dir_input, filenames, suffix_mask="_mask", use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_crop_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
 
-        self = cls()
+        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector, segmentation_propagator=segmentation_propagator, target_stack_index=target_stack_index, use_crop_to_mask=use_crop_to_mask, boundary_i=boundary_i, boundary_j=boundary_j, boundary_k=boundary_k, unit=unit)
 
         ## Number of stacks to be read
         self._N_stacks = len(filenames)
 
         ## Read stacks and their masks (if no mask is found a binary image is created automatically)
-        self._stacks = [None]*self._N_stacks
-
-        for i in range(0, self._N_stacks):
-            self._stacks[i] = st.Stack.from_filename(dir_input, filenames[i], suffix_mask)
-
-        print("%s stacks were read for data preprocessing." %(self._N_stacks))
-
-        ## Prepare list for preprocessed stacks
         self._stacks_preprocessed = [None]*self._N_stacks
 
-        ## Number of masked stacks provided
-        filenames_masks = self._get_mask_filenames_in_directory(dir_input, filenames, suffix_mask)
-        number_of_masks = len(filenames_masks)
+        for i in range(0, self._N_stacks):
+            self._stacks_preprocessed[i] = st.Stack.from_filename(dir_input, filenames[i], suffix_mask)
 
-        ## Each stack is provided a mask
-        if number_of_masks is self._N_stacks:
-            self._preprocessing_approach = "AllMasksProvided"
-
-        ## No stack is provided a mask. Hence, mask entire region of stack
-        elif number_of_masks is 0:
-            self._preprocessing_approach = "NoMaskProvided"
-
-        ## Not all stacks are provided a mask. Propagate target stack mask to other stacks
-        else:
-            self._preprocessing_approach = "NotAllMasksProvided"
-            self._filenames_masks = filenames_masks
-            self._filenames = filenames
-            self._mask_template_number = 0
-
-        self._boundary = 0
-        self._boundary_y = None
-        self._boundary_z = None
+        print("%s stacks were read for data preprocessing." %(self._N_stacks))
 
         return self
 
@@ -97,29 +65,19 @@ class DataPreprocessing:
     #  \param[in] filenames list of filenames referring to the data in dir_input to be processed
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     @classmethod
-    def from_stacks(cls, stacks):
+    def from_stacks(cls, stacks, use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_crop_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
 
-        self = cls()
+        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector, segmentation_propagator=segmentation_propagator, target_stack_index=target_stack_index, use_crop_to_mask=use_crop_to_mask, boundary_i=boundary_i, boundary_j=boundary_j, boundary_k=boundary_k, unit=unit)
 
         ## Number of stacks
         self._N_stacks = len(stacks)
 
         ## Use stacks provided
-        self._stacks = [None]*self._N_stacks
+        self._stacks_preprocessed = [None]*self._N_stacks
         for i in range(0, self._N_stacks):
-            self._stacks[i] = st.Stack.from_stack(stacks[i])
+            self._stacks_preprocessed[i] = st.Stack.from_stack(stacks[i])
 
         print("%s stacks were loaded for data preprocessing." %(self._N_stacks))
-
-        ## Prepare list for preprocessed stacks
-        self._stacks_preprocessed = [None]*self._N_stacks
-
-        ## All masks are used as given in the stack objects
-        self._preprocessing_approach = "AllMasksProvided"
-
-        self._boundary = 0
-        self._boundary_y = None
-        self._boundary_z = None
 
         return self
 
@@ -136,41 +94,61 @@ class DataPreprocessing:
         self._filename_prefix = prefix
 
 
-    ## Dilation radius used in case mask propagation is applied.
-    #  \param[in] dilation_radius radius in voxels
-    def set_dilation_radius(self, dilation_radius):
-        self._dilation_radius = dilation_radius
-
-
-    ## Get dilation radius applied after mask is propagated
-    #  \return dilation radius in voxels
-    def get_dilation_radius(self):
-        return self._dilation_radius
-
-
     ## Perform data preprocessing step by reading images from files
     #  \param[in] mask_template_number relevant in case not all masks are given (optional). Indicates stack for mask propagation.
     #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
-    def run_preprocessing(self, mask_template_number=0, boundary=0, boundary_y=None, boundary_z=None):
+    def run_preprocessing(self):
 
-        # self._dir_input = dir_input
-        self._mask_template_number = mask_template_number
-        self._boundary = boundary
-        self._boundary_y = boundary_y
-        self._boundary_z = boundary_z
 
-        self._run_preprocessing[self._preprocessing_approach]()
+        ## Segmentation propagation
+        if self._segmentation_propagator is not None:
+            ph.print_subtitle("Segmentation propagation")
+            
+            stacks_to_propagate_indices = list(set(range(0,self._N_stacks)) - set([self._target_stack_index]))
+            
+            target = self._stacks_preprocessed[self._target_stack_index]
+            self._stacks_preprocessed[self._target_stack_index] = st.Stack.from_stack(target)
 
+            self._segmentation_propagator.set_template(target)
+
+            for i in stacks_to_propagate_indices:
+                self._segmentation_propagator.set_stack(self._stacks_preprocessed[i])
+                self._segmentation_propagator.run_segmentation_propagation()
+                self._stacks_preprocessed[i] = self._segmentation_propagator.get_segmented_stack()
+
+        ## Crop to mask
+        if self._use_crop_to_mask:
+            ph.print_subtitle("Crop stack to mask")
+
+            for i in range(0, self._N_stacks):
+                self._stacks_preprocessed[i] = self._stacks_preprocessed[i].get_cropped_stack_based_on_mask(boundary_i=self._boundary_i, boundary_j=self._boundary_j, boundary_k=self._boundary_k, unit=self._unit)
+
+        ## N4 Bias Field Correction
+        if self._use_N4BiasFieldCorrector:
+            ph.print_subtitle("N4 Bias Field Correction")
+            bias_field_corrector = n4bfc.N4BiasFieldCorrection()
+
+            for i in range(0, self._N_stacks):
+                bias_field_corrector.set_stack(self._stacks_preprocessed[i])
+                bias_field_corrector.run_bias_field_correction()
+                self._stacks_preprocessed[i] = bias_field_corrector.get_bias_field_corrected_stack()
+        
 
     ## Get preprocessed stacks
     #  \return preprocessed stacks as list of Stack objects
     def get_preprocessed_stacks(self):
 
         ## Return a copy of preprocessed stacks
-        stacks_copy = [None]*len(self._stacks)
-        for i in range(0, len(self._stacks)):
-            stacks_copy[i] = st.Stack.from_stack(self._stacks_preprocessed[i])
+        stacks_copy = [None]*self._N_stacks
 
+        ## Move target stack to first position
+        stacks_copy[0] = st.Stack.from_stack(self._stacks_preprocessed[self._target_stack_index])
+        remaining_indices = list(set(range(0,self._N_stacks)) - set([self._target_stack_index]))
+
+        i_ctr = 1
+        for i in remaining_indices:
+            stacks_copy[i_ctr] = st.Stack.from_stack(self._stacks_preprocessed[i])
+            i_ctr = i_ctr +  1
         return stacks_copy
 
 
@@ -184,28 +162,6 @@ class DataPreprocessing:
         for i in range(0, self._N_stacks):
             slices = self._stacks_preprocessed[i].write(directory=dir_output, write_mask=True, write_slices=False)
 
-
-    ## Get filenames of stacks with provided masks in input directory
-    #  \param[in] dir_input directory where data is stored for preprocessing
-    #  \param[in] filenames list of filenames referring to the data in dir_input to be processed (without .nii.gz)
-    #  \param[in] suffix_mask extension of stack filename which indicates associated mask
-    #  \return filenames as list of strings
-    def _get_mask_filenames_in_directory(self, dir_input, filenames, suffix_mask):
-
-        filenames_with_mask = []
-
-        ## List of all files in directory
-        all_files = os.listdir(dir_input)
-
-        ## Count number of files labelled as masks
-        for file in all_files:
-
-            if file.endswith(suffix_mask + ".nii.gz") and file.replace(suffix_mask + ".nii.gz","") in filenames:
-
-                filename_with_mask = file.replace(suffix_mask + ".nii.gz","")
-                filenames_with_mask.append(filename_with_mask)
-
-        return filenames_with_mask
 
 
     """

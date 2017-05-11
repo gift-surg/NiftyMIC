@@ -23,7 +23,7 @@ import base.PSF as psf
 
 class RegistrationSimpleITK:
 
-    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", metric_params=None, optimizer="RegularStepGradientDescent", optimizer_params="{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 200, 'gradientMagnitudeTolerance': 1e-6}", scales_estimator="PhysicalShift", initializer_type="MOMENTS", use_oriented_psf=False, use_multiresolution_framework=False, use_centered_transform_initializer=False, verbose=False):
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", metric_params=None, optimizer="RegularStepGradientDescent", optimizer_params="{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 200, 'gradientMagnitudeTolerance': 1e-6}", scales_estimator="PhysicalShift", initializer_type="MOMENTS", use_oriented_psf=False, use_multiresolution_framework=False, use_centered_transform_initializer=False, use_verbose=False):
 
         self._fixed = fixed
         self._moving = moving
@@ -49,7 +49,7 @@ class RegistrationSimpleITK:
         self._use_oriented_psf = use_oriented_psf
         self._use_multiresolution_framework = use_multiresolution_framework
 
-        self._use_verbose = verbose
+        self._use_verbose = use_verbose
 
 
     ## Set fixed/reference/target image

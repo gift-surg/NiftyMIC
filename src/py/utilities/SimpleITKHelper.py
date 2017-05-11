@@ -264,15 +264,15 @@ def get_inverse_of_sitk_rigid_registration_transform(rigid_registration_transfor
 # \date       2017-04-08 22:20:40+0100
 #
 # \param      image_sitk  The image sitk
-# \param      boundary_x  added value to first coordinate (can also be negative)
-# \param      boundary_y  added value to second coordinate (can also be negative)
-# \param      boundary_z  added value to third coordinate (can also be negative)
+# \param      boundary_i  added value to first coordinate (can also be negative)
+# \param      boundary_j  added value to second coordinate (can also be negative)
+# \param      boundary_k  added value to third coordinate (can also be negative)
 # \param      unit        Unit can either be "mm" or "voxel"
 #
 # \return     sitk.Image with altered field of view, i.e. with 
 #             shape_new[i] = shape[i] + 2*boundary_voxel[i]
 #
-def get_altered_field_of_view_sitk_image(image_sitk, boundary_x=0, boundary_y=0, boundary_z=0, unit="mm"):
+def get_altered_field_of_view_sitk_image(image_sitk, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
 
     size = np.array(image_sitk.GetSize()).astype("int")
     origin = np.array(image_sitk.GetOrigin())
@@ -290,31 +290,31 @@ def get_altered_field_of_view_sitk_image(image_sitk, boundary_x=0, boundary_y=0,
 
     ## Dimension is given in mm
     if unit in ["mm"]:
-        boundary_x_voxel = np.round(boundary_x / spacing[0])
-        boundary_y_voxel = np.round(boundary_y / spacing[1])
+        boundary_i_voxel = np.round(boundary_i / spacing[0])
+        boundary_j_voxel = np.round(boundary_j / spacing[1])
 
         ## compute new shape of image
-        size[0] += 2*boundary_x_voxel
-        size[1] += 2*boundary_y_voxel
+        size[0] += 2*boundary_i_voxel
+        size[1] += 2*boundary_j_voxel
         
         if dimension is 3:
-            boundary_z_voxel = np.round(boundary_z / spacing[2])
+            boundary_k_voxel = np.round(boundary_k / spacing[2])
             
-            size[2] += 2*boundary_z_voxel
+            size[2] += 2*boundary_k_voxel
 
     ## Dimension is given in voxels
     else:
         ## compute new shape of image
-        size[0] += 2*boundary_x
-        size[1] += 2*boundary_y
+        size[0] += 2*boundary_i
+        size[1] += 2*boundary_j
 
         ## express change in mm
-        boundary_x *= spacing[0]
-        boundary_y *= spacing[1]
+        boundary_i *= spacing[0]
+        boundary_j *= spacing[1]
         
         if dimension is 3:
-            size[2] += 2*boundary_z
-            boundary_z *= spacing[2]
+            size[2] += 2*boundary_k
+            boundary_k *= spacing[2]
 
 
     ## Compute new origin so that image intensity information is not altered
@@ -322,12 +322,12 @@ def get_altered_field_of_view_sitk_image(image_sitk, boundary_x=0, boundary_y=0,
     a_x = image_sitk.TransformIndexToPhysicalPoint(e_x) - origin
     a_y = image_sitk.TransformIndexToPhysicalPoint(e_y) - origin
 
-    translation = a_x/np.linalg.norm(a_x) * boundary_x
-    translation += a_y/np.linalg.norm(a_y) * boundary_y
+    translation = a_x/np.linalg.norm(a_x) * boundary_i
+    translation += a_y/np.linalg.norm(a_y) * boundary_j
     
     if dimension is 3:
         a_z = image_sitk.TransformIndexToPhysicalPoint(e_z) - origin
-        translation += a_z/np.linalg.norm(a_z) * boundary_z
+        translation += a_z/np.linalg.norm(a_z) * boundary_k
 
     origin = origin - translation
 
