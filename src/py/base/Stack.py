@@ -33,7 +33,7 @@ class Stack:
     #  \param[in] suffix_mask extension of stack filename which indicates associated mask
     #  \return Stack object including its slices with corresponding masks
     @classmethod
-    def from_filename(cls, dir_input, filename, suffix_mask=None):
+    def from_filename(cls, dir_input, filename, suffix_mask=None, extract_slices=True):
 
         stack = cls()
         # stack = []
@@ -59,8 +59,12 @@ class Stack:
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
         ## Extract all slices and their masks from the stack and store them 
-        stack._N_slices = stack.sitk.GetSize()[-1]
-        stack._slices = stack._extract_slices()
+        if extract_slices:
+            stack._N_slices = stack.sitk.GetSize()[-1]
+            stack._slices = stack._extract_slices()
+        else:
+            stack._N_slices = 0
+            stack._slices = None
 
         return stack
 
@@ -152,7 +156,7 @@ class Stack:
     #  \param[in] image_sitk_mask associated mask of stack, sitk.Image object (optional)
     #  \return Stack object without slice information
     @classmethod
-    def from_sitk_image(cls, image_sitk, name=None, image_sitk_mask=None):
+    def from_sitk_image(cls, image_sitk, name=None, image_sitk_mask=None, extract_slices=True):
         stack = cls()
         
         stack.sitk = sitk.Image(image_sitk)
@@ -173,8 +177,12 @@ class Stack:
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
         ## Extract all slices and their masks from the stack and store them 
-        stack._N_slices = stack.sitk.GetSize()[-1]
-        stack._slices = stack._extract_slices()
+        if extract_slices:
+            stack._N_slices = stack.sitk.GetSize()[-1]
+            stack._slices = stack._extract_slices()
+        else:
+            stack._N_slices = 0
+            stack._slices = None
 
         return stack
 

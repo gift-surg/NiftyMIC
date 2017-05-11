@@ -191,8 +191,8 @@ class RegistrationITK:
 
     ## Get registered image
     #  \return registered image as Stack object
-    def get_registered_image(self):
-        return self._registered_image
+    # def get_registered_image(self):
+        # return self._registered_image
 
 
     ##
