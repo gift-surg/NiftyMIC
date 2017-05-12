@@ -504,7 +504,7 @@ class RegistrationITK:
         stack_inplaneSimilar_sitk_mask  = sitkh.get_transformed_sitk_image(self._fixed.sitk_mask, rigid_sitk)
         stack_inplaneSimilar_sitk.SetSpacing(spacing_scaled)
         stack_inplaneSimilar_sitk_mask.SetSpacing(spacing_scaled)
-        stack_inplaneSimilar = st.Stack.from_sitk_image(stack_inplaneSimilar_sitk, name=stack.get_filename(), image_sitk_mask=stack_inplaneSimilar_sitk_mask)
+        stack_inplaneSimilar = st.Stack.from_sitk_image(stack_inplaneSimilar_sitk, get_separator_partitioned_filenamesstack.get_filename(), image_sitk_mask=stack_inplaneSimilar_sitk_mask)
 
         ## Update all its slices based on the obtained (in-plane) similarity transform
         slices_stack_inplaneSimilar = stack_inplaneSimilar.get_slices()

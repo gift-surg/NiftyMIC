@@ -282,7 +282,7 @@ class TestRegistration(unittest.TestCase):
         transform_sitk.SetParameters(parameters_gd)
         stack_sitk = sitkh.get_transformed_sitk_image(stack_sim.sitk, transform_sitk)
         stack_sitk_mask = sitkh.get_transformed_sitk_image(stack_sim.sitk_mask, transform_sitk)
-        stack_sim = st.Stack.from_sitk_image(stack_sitk, name=stack_sim.get_filename(), image_sitk_mask=stack_sitk_mask)
+        stack_sim = st.Stack.from_sitk_image(stack_sitk, get_separator_partitioned_filenamesstack_sim.get_filename(), image_sitk_mask=stack_sitk_mask)
 
         ## PSF-aware Registration algorithm
         time_start = time.time()

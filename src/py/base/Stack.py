@@ -156,16 +156,16 @@ class Stack:
     #  \param[in] image_sitk_mask associated mask of stack, sitk.Image object (optional)
     #  \return Stack object without slice information
     @classmethod
-    def from_sitk_image(cls, image_sitk, name=None, image_sitk_mask=None, extract_slices=True):
+    def from_sitk_image(cls, image_sitk, filename=None, image_sitk_mask=None, extract_slices=True):
         stack = cls()
         
         stack.sitk = sitk.Image(image_sitk)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
-        if name is None:
+        if filename is None:
             stack._filename = "unknown"
         else:
-            stack._filename = name
+            stack._filename = filename
         stack._dir = None
 
         ## Append masks (if provided)
@@ -837,15 +837,17 @@ class Stack:
         ## Get rectangular region surrounding the masked voxels
         [x_range, y_range, z_range] = self._get_rectangular_masked_region(self.sitk_mask)
 
-        ## Crop stack and mask to defined image region
+        ## Crop to image region defined by rectangular mask
         stack_crop_sitk = self._crop_image_to_region(self.sitk, x_range, y_range, z_range)
-        mask_crop_sitk = self._crop_image_to_region(self.sitk_mask, x_range, y_range, z_range)
 
-        ## Increase stack dimensions
+        ## Increase image region
         stack_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(stack_crop_sitk, boundary_i, boundary_j, boundary_k, unit=unit)
-        mask_crop_sitk = sitk.Resample(mask_crop_sitk, stack_crop_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, mask_crop_sitk.GetPixelIDValue())
 
-        stack = self.from_sitk_image(stack_crop_sitk, self._filename, mask_crop_sitk)
+        ## Resample original image and mask to specified image region
+        image_crop_sitk = sitk.Resample(self.sitk, stack_crop_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, self.sitk.GetPixelIDValue())
+        mask_crop_sitk = sitk.Resample(self.sitk_mask, stack_crop_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, self.sitk_mask.GetPixelIDValue())
+
+        stack = self.from_sitk_image(image_crop_sitk, self._filename, mask_crop_sitk)
 
         return stack
 

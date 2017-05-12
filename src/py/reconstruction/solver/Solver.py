@@ -776,7 +776,7 @@ class Solver(object):
         return HR_nda_vec
 
 
-    ##-
+    ##
     # \brief      Gets the approximate solution via L-BFGS-B solver
     #             (non-linear with bounds).
     # \date       2016-08-05 11:48:20+0100
@@ -810,11 +810,13 @@ class Solver(object):
         return HR_nda_vec
         
 
-    ##-
+    ##
     # \brief      Gets the approximate solution via least_squares solver
     #             (non-linear minimization with bounds).
     # \date       2016-08-05 11:48:20+0100
-    # \remark     Does not go ahead in its computation
+    # \remark     Very slow, also for "smaller" problems such as trachea
+    #             reconstructions. Use of no bounds makes it (a bit) faster but
+    #             results in insufficient quality of the results
     #
     # \param      self  The object
     # \param      A_fw  Forward operator, function handle
@@ -837,12 +839,25 @@ class Solver(object):
         jac =  lambda x: A
         
         ## Run solver
-        HR_nda_vec = least_squares(fun=fun, x0=x0, jac=jac, jac_sparsity=jac, method='trf', tr_solver='lsmr', bounds=bounds, loss="linear", max_nfev=self._iter_max, verbose=2).x 
+        HR_nda_vec = least_squares(
+            fun=fun,
+            x0=x0,
+            jac=jac,
+            jac_sparsity=jac,
+            method='trf',
+            tr_solver='lsmr',
+            bounds=bounds,
+            loss="linear",
+            # loss="huber", #throws error "operands could not be broadcast together with shapes (315837,) (315837,2)" after applied to trachea example!?
+            # loss="soft_l1", #throws error "operands could not be broadcast together with shapes (315837,) (315837,2)" after applied to trachea example!?
+            max_nfev=self._iter_max,
+            verbose=2
+            ).x 
 
         return HR_nda_vec
 
     
-    ##-
+    ##
     # \brief      Gets the approximate solution via lsq_linear solver
     #             (linear least-squares with bounds).
     # \date       2016-08-05 11:48:20+0100
@@ -867,7 +882,7 @@ class Solver(object):
         return HR_nda_vec
 
 
-    ##-
+    ##
     # \brief      Gets the approximate solution via nnls solver
     #             (non-negative linear least-squares).
     # \date       2016-08-05 11:48:20+0100
