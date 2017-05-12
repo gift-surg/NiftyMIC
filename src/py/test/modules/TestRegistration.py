@@ -71,24 +71,25 @@ class TestRegistration(unittest.TestCase):
         # sitkh.print_itk_array(parameters_itk)
 
         ##---------------------------------------------------------------------
-        time_start = ph.start_timing()
         filter_gradient_transform = itk.GradientEuler3DTransformImageFilter[IMAGE_TYPE, PIXEL_TYPE, PIXEL_TYPE].New()
         filter_gradient_transform.SetInput(HR_volume.itk)
         filter_gradient_transform.SetTransform(transform_itk)
+        time_start = ph.start_timing() # Above is required only once in Registration
+        
         filter_gradient_transform.Update()
         gradient_transform_itk = filter_gradient_transform.GetOutput()
         ## Get data array of Jacobian of transform w.r.t. parameters  and 
         ## reshape to N_HR_volume_voxels x DIMENSION x DOF
         nda_gradient_transform_1 = itk2np_CVD183.GetArrayFromImage(gradient_transform_itk).reshape(-1,3,DOF_transform)
         
-        print ph.stop_timing(time_start)
+        print("GradientEuler3DTransformImageFilter: " + str(ph.stop_timing(time_start)))
         
         ##---------------------------------------------------------------------
         time_start = ph.start_timing()
 
         nda_gradient_transform_2 = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(transform_itk, HR_volume.sitk)
 
-        print ph.stop_timing(time_start)
+        print("get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image: " + str(ph.stop_timing(time_start)))
 
         ##---------------------------------------------------------------------
         self.assertEqual(np.round(
@@ -205,7 +206,7 @@ class TestRegistration(unittest.TestCase):
         slices_sim = stack_sim.get_slices()
         N_slices = len(slices_sim)
 
-        time_start = time.time()
+        time_start = ph.start_timing()
 
         for j in range(0, N_slices):
             rigid_transform_groundtruth_sitk = sitk.ReadTransform(self.dir_test_data + filename_transforms_prefix + str(j) + ".tfm")
@@ -226,8 +227,7 @@ class TestRegistration(unittest.TestCase):
                 , decimals = self.accuracy), 0)
         
         ## Set elapsed time
-        time_end = time.time()
-        # print("Translation only registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
+        print("Translation: " + str(ph.stop_timing(time_start)))
 
     
     def test_rigid_registration_of_slices(self):
@@ -267,7 +267,7 @@ class TestRegistration(unittest.TestCase):
         time_end = time.time()
         # print("Rigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
-
+    
     def test_rigid_registration_of_stack(self):
         filename_prefix = "NoMotion_"
         parameters_gd = (0.1,0.1,0.2,-1,3,2)
@@ -343,7 +343,6 @@ class TestRegistration(unittest.TestCase):
         print("\tRigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
     
 
-    """
     def test_inplane_similarity_registration(self):
         filename = "HRVolume"
         scale = 0.9
@@ -491,4 +490,4 @@ class TestRegistration(unittest.TestCase):
         #                     # print euler_sitk.GetParameters()
         #                 # print(diff)
         #             print("Minimum = %s at index = %s" %(foo, foo_index))
-    """
+    

@@ -547,6 +547,7 @@ def update_itk_parameters(parameters_itk, array):
 # \return     The numpy from itk array.
 #
 def get_numpy_from_itk_array(array_itk):
+    # time_start = ph.start_timing()
     cols = array_itk.cols()
     rows = array_itk.rows()
     nda = np.zeros((rows, cols))
@@ -556,8 +557,14 @@ def get_numpy_from_itk_array(array_itk):
         for j in range(0, cols):
             nda[i,j] = array_itk(i,j)
 
-    return nda
+    # print ph.stop_timing(time_start)
 
+    ## Even slower ...
+    # time_start = ph.start_timing()
+    # itk.GetArrayFromVnlMatrix(array_itk)
+    # print ph.stop_timing(time_start)
+
+    return nda
 
 ##
 # Gets the indices array to flattened sitk image data array.

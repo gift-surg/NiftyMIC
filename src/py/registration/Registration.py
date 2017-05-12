@@ -103,11 +103,11 @@ class Registration(object):
         self._filter_oriented_Gaussian.SetUseJacobian(False)
         self._filter_oriented_Gaussian.SetUseImageDirection(True)
 
-        ## Allocate and initialize Adjoint Oriented Gaussian Interpolate Image Filter
-        self._filter_adjoint_oriented_Gaussian = itk.AdjointOrientedGaussianInterpolateImageFilter[IMAGE_TYPE, IMAGE_TYPE].New()
-        self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue(0.0)
-        self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
-        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(self._moving.itk)
+        # ## Allocate and initialize Adjoint Oriented Gaussian Interpolate Image Filter
+        # self._filter_adjoint_oriented_Gaussian = itk.AdjointOrientedGaussianInterpolateImageFilter[IMAGE_TYPE, IMAGE_TYPE].New()
+        # self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue(0.0)
+        # self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
+        # self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(self._moving.itk)
 
         ## Allocate and initialize Gradient Euler3DTransform Image Filter
         self._filter_gradient_transform = itk.GradientEuler3DTransformImageFilter[IMAGE_TYPE, PIXEL_TYPE, PIXEL_TYPE].New()
