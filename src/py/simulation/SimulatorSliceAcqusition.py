@@ -361,7 +361,7 @@ class SliceAcqusition:
         slice_range = self._get_rectangular_masked_region(stack_simulated_sitk_mask)[2]
 
         ## Create Stack object
-        stack = st.Stack.from_sitk_image(stack_simulated_sitk[:,:,slice_range[0]:slice_range[1]], get_separator_partitioned_filenamestitle, image_sitk_mask=stack_simulated_sitk_mask[:,:,slice_range[0]:slice_range[1]])
+        stack = st.Stack.from_sitk_image(stack_simulated_sitk[:,:,slice_range[0]:slice_range[1]], filename=title, image_sitk_mask=stack_simulated_sitk_mask[:,:,slice_range[0]:slice_range[1]])
         
         ## Append results
         self._stacks_simulated.append(stack)

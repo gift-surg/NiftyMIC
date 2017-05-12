@@ -282,7 +282,7 @@ class TestRegistration(unittest.TestCase):
         transform_sitk.SetParameters(parameters_gd)
         stack_sitk = sitkh.get_transformed_sitk_image(stack_sim.sitk, transform_sitk)
         stack_sitk_mask = sitkh.get_transformed_sitk_image(stack_sim.sitk_mask, transform_sitk)
-        stack_sim = st.Stack.from_sitk_image(stack_sitk, get_separator_partitioned_filenamesstack_sim.get_filename(), image_sitk_mask=stack_sitk_mask)
+        stack_sim = st.Stack.from_sitk_image(stack_sitk, filename=stack_sim.get_filename(), image_sitk_mask=stack_sitk_mask)
 
         ## PSF-aware Registration algorithm
         time_start = time.time()
@@ -341,6 +341,7 @@ class TestRegistration(unittest.TestCase):
         print("\tparameters = " + str(parameters))
         print("\t|parameters-parameters_gd| = %s" %(str(norm_diff)) )
         print("\tRigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
+    
 
     """
     def test_inplane_similarity_registration(self):
