@@ -36,6 +36,7 @@ PIXEL_TYPE = itk.D
 IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 IMAGE_TYPE_CV33 = itk.Image.CVD33
 IMAGE_TYPE_CV183 = itk.Image.CVD183
+IMAGE_TYPE_CV363 = itk.Image.CVD363
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -84,6 +85,52 @@ class TestRegistration(unittest.TestCase):
         
         print("GradientEuler3DTransformImageFilter: " + str(ph.stop_timing(time_start)))
         
+        ##---------------------------------------------------------------------
+        time_start = ph.start_timing()
+
+        nda_gradient_transform_2 = sitkh.get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image(transform_itk, HR_volume.sitk)
+
+        print("get_numpy_array_of_jacobian_itk_transform_applied_on_sitk_image: " + str(ph.stop_timing(time_start)))
+
+        ##---------------------------------------------------------------------
+        self.assertEqual(np.round(
+            np.linalg.norm(nda_gradient_transform_2-nda_gradient_transform_1)
+        , decimals = 6), 0)
+
+
+    def test_GradientAffine3DTransformImageFilter(self):
+
+        filename_HRVolume = "HRVolume"
+        HR_volume = st.Stack.from_filename(self.dir_test_data, filename_HRVolume)
+
+        DOF_transform = 12
+        parameters = np.random.rand(DOF_transform)*10
+
+        itk2np = itk.PyBuffer[IMAGE_TYPE]
+        itk2np_CVD33 = itk.PyBuffer[IMAGE_TYPE_CV33]
+        itk2np_CVD363 = itk.PyBuffer[IMAGE_TYPE_CV363]
+
+        ## Create Euler3DTransform and update with random parameters        
+        transform_itk = itk.AffineTransform[PIXEL_TYPE,3].New()
+        parameters_itk = transform_itk.GetParameters()
+        sitkh.update_itk_parameters(parameters_itk, parameters)
+        transform_itk.SetParameters(parameters_itk)
+        # sitkh.print_itk_array(parameters_itk)
+
+        ##---------------------------------------------------------------------
+        filter_gradient_transform = itk.GradientAffine3DTransformImageFilter[IMAGE_TYPE, PIXEL_TYPE, PIXEL_TYPE].New()
+        filter_gradient_transform.SetInput(HR_volume.itk)
+        filter_gradient_transform.SetTransform(transform_itk)
+        time_start = ph.start_timing() # Above is required only once in Registration
+
+        filter_gradient_transform.Update()
+        gradient_transform_itk = filter_gradient_transform.GetOutput()
+        ## Get data array of Jacobian of transform w.r.t. parameters  and 
+        ## reshape to N_HR_volume_voxels x DIMENSION x DOF
+        nda_gradient_transform_1 = itk2np_CVD363.GetArrayFromImage(gradient_transform_itk).reshape(-1,3,DOF_transform)
+
+        print("GradientAffine3DTransformImageFilter: " + str(ph.stop_timing(time_start)))
+
         ##---------------------------------------------------------------------
         time_start = ph.start_timing()
 
