@@ -43,13 +43,12 @@ set( PROJ_SOURCES_5
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test/bin) 
 
-
-find_package(ITK REQUIRED)
-include(${ITK_USE_FILE})
-if (ITKVtkGlue_LOADED)
-  find_package(VTK REQUIRED)
-  include(${VTK_USE_FILE})
-endif()
+# find_package(ITK REQUIRED)
+# include(${ITK_USE_FILE})
+# if (ITKVtkGlue_LOADED)
+#   find_package(VTK REQUIRED)
+#   include(${VTK_USE_FILE})
+# endif()
 
 add_executable( ${EXEC_NAME} ${PROJ_SOURCES} )
 target_link_libraries( ${EXEC_NAME} ${ITK_LIBRARIES} )
