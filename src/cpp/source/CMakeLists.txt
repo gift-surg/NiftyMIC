@@ -32,14 +32,6 @@ set ( MY_MAIN_FILE_SOURCES_3
     "ExceptionCommandLine.cpp"
     )
 
-# set ( MY_MAIN_FILE_2 "itkRigidReg.cpp" )
-# set ( MY_EXEC_FILE_2 "itkRigidReg" )
-# set ( MY_MAIN_FILE_SOURCES_2 
-#     "MyITKImageHelper.cpp" 
-#     "MyException.cpp"
-#     )
-
-
 project( ${MY_PROJ_NAME} )
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) 

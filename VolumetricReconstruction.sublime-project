@@ -29,6 +29,9 @@
 		},
 		{
 			"path": "/Users/mebner/UCL/UCL/Software/SemiAutomaticSliceExtractionTool"
+		},
+		{
+			"path": "/Users/mebner/development/Python_virtualenv/lib/python2.7/site-packages/scipy"
 		}
 	],
 	"settings":

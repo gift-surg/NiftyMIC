@@ -16,6 +16,7 @@ import SimpleITK as sitk
 import numpy as np
 import time
 from datetime import timedelta
+from scipy.optimize import minimize
 
 ## Add directories to import modules
 dir_src_root = "../src/"
@@ -87,10 +88,10 @@ class TikhonovSolver(Solver):
     #                                    Indicates whether full 3D or only
     #                                    in-plane deconvolution is considered
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D", loss="linear", predefined_covariance=None):
 
         ## Run constructor of superclass
-        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, minimizer, deconvolution_mode, predefined_covariance)
+        Solver.__init__(self, stacks=stacks, HR_volume=HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max, minimizer=minimizer, deconvolution_mode=deconvolution_mode, loss=loss, predefined_covariance=predefined_covariance)
         
         ## Settings for optimizer
         self._reg_type = reg_type
@@ -108,6 +109,10 @@ class TikhonovSolver(Solver):
         self._get_residual_prior = {
             "TK0"   : self._get_residual_prior_TK0,
             "TK1"   : self._get_residual_prior_TK1
+        }
+        self._get_gradient_residual_prior = {
+            "TK0"   : self._get_gradient_residual_prior_TK0,
+            "TK1"   : self._get_gradient_residual_prior_TK1
         }
 
         ## Residual values after optimization
@@ -214,16 +219,10 @@ class TikhonovSolver(Solver):
     def run_reconstruction(self):
 
         ## Compute number of voxels to be stored for augmented linear system
-        if self._reg_type in ["TK0"]:
-            ## G = Identity:
-            N_voxels = self._N_total_slice_voxels + self._N_voxels_HR_volume
-            
-            print("Chosen regularization type: zero-order Tikhonov")
+        if self._reg_type in ["TK0"]:            
+            print("Chosen regularization type: zeroth-order Tikhonov")
 
         else:
-            ## G = [Dx, Dy, Dz]^T, i.e. gradient computation:
-            N_voxels = self._N_total_slice_voxels + 3*self._N_voxels_HR_volume
-
             print("Chosen regularization type: first-order Tikhonov")
 
         if self._deconvolution_mode in ["only_in_plane"]:
@@ -239,30 +238,99 @@ class TikhonovSolver(Solver):
 
         time_start = time.time()
 
-        ## Construct (sparse) linear operator A
-        A_fw = lambda x: self._A[self._reg_type](x, self._alpha)
-        A_bw = lambda x: self._A_adj[self._reg_type](x, self._alpha)
-
-        ## Construct right-hand side b
-        b = self._get_b(N_voxels)
-
-        ## Run solver
-        HR_nda_vec = self._get_approximate_solution[self._minimizer](A_fw, A_bw, b)
+        ## Non-linear loss function requires use of L-BFGS-B
+        ## Remark: L-BFGS-B is faster with direct computation as done in
+        # _run_reconstruction_nonlinear. Thus, preferred in this case too.
+        if self._loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
+            if self._loss not in ["linear"] and self._minimizer not in ["L-BFGS-B"]:
+                print("Note, selected minimizer '%s' cannot be used. Non-linear loss function requires L-BFGS-B." %(self._minimizer))
+            HR_nda_vec = self._run_reconstruction_nonlinear()
+        else:
+            HR_nda_vec = self._run_reconstruction_linear()
 
         ## Set elapsed time
-        time_end = time.time()
-        self._elapsed_time_sec = time_end-time_start
+        self._elapsed_time_sec = time.time()-time_start
 
         ## After reconstruction: Update member attribute
         self._HR_volume.itk = self._get_itk_image_from_array_vec( HR_nda_vec, self._HR_volume.itk )
         self._HR_volume.sitk = sitkh.get_sitk_from_itk_image( self._HR_volume.itk )
 
 
+    def _run_reconstruction_linear(self):
+
+        ## Construct (sparse) linear operator A
+        A_fw = lambda x: self._A[self._reg_type](x, self._alpha)
+        A_bw = lambda x: self._A_adj[self._reg_type](x, self._alpha)
+
+        ## Construct right-hand side b
+        b = self._get_b()
+
+        ## Run solver
+        HR_nda_vec = self._get_approximate_solution[self._minimizer](A_fw, A_bw, b)
+
+        return HR_nda_vec
+
+
+    def _run_reconstruction_nonlinear(self, x0=None):
+
+        print("Loss function: %s" %(self._loss))
+
+        ## Set initial value and bounds
+        if x0 is None:
+            # x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
+            x0 = np.zeros(np.array(self._HR_volume.sitk.GetSize())[::-1])
+        else:
+            ## In case initial value is given, the non-masked voxels will
+            ## smoothly vary but will not be zero! Hence, prefer zero-init
+            x0 = np.clip(x0, 0, np.inf)
+        bounds = [[0,None]]*x0.size
+
+        ## Construct right-hand side b
+        b = self._get_M_y()
+
+        ## Set cost function and its jacobian
+        fun = lambda x: self._get_fun_nonlinear(x, b, self._alpha)
+        jac = lambda x: self._get_jac_nonlinear(x, b, self._alpha)
+
+        ## Run solver
+        HR_nda_vec = minimize(method='L-BFGS-B', fun=fun, x0=x0, options={'maxiter': self._iter_max, 'disp': True}, jac=jac, bounds=bounds).x
+
+        return HR_nda_vec
+
+
+    def _get_fun_nonlinear(self, x, b, alpha):
+
+        residual = self._MA(x) - b
+
+        data_term = 0.5*np.sum( self._get_loss[self._loss](residual**2) )
+
+        regularizer_term = 0.5*alpha*self._get_residual_prior[self._reg_type](x)
+
+        return data_term + regularizer_term
+
+    def _get_jac_nonlinear(self, x, b, alpha):
+
+        residual = self._MA(x) - b
+
+        grad_data_term = self._A_adj_M(self._get_gradient_loss[self._loss](residual**2) * residual)
+        grad_regularizer_term = alpha * self._get_gradient_residual_prior[self._reg_type](x)
+
+        return grad_data_term + grad_regularizer_term
+
     ## Compute
     #  \f$ b := \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K \vec{y}_K \\ \vec{0}\end{pmatrix} \f$ 
     #  \param[in] N_voxels number of voxels (only two possibilities depending on G), integer
     #  \return vector b as 1D array
-    def _get_b(self, N_voxels):
+    def _get_b(self):
+
+        ## Compute number of voxels to be stored for augmented linear system
+        if self._reg_type in ["TK0"]:
+            ## G = Identity:
+            N_voxels = self._N_total_slice_voxels + self._N_voxels_HR_volume
+            
+        else:
+            ## G = [Dx, Dy, Dz]^T, i.e. gradient computation:
+            N_voxels = self._N_total_slice_voxels + 3*self._N_voxels_HR_volume
 
         ## Allocate memory
         b = np.zeros(N_voxels)
@@ -325,6 +393,19 @@ class TikhonovSolver(Solver):
         return np.sum( HR_nda_vec**2 )
 
 
+    ##
+    # Gets the gradient of TK0-prior.
+    # \date       2017-05-15 19:43:32+0100
+    #
+    # \param      self        The object
+    # \param      HR_nda_vec  The hr nda vector
+    #
+    # \return     The gradient residual prior tk 0.
+    #
+    def _get_gradient_residual_prior_TK0(self, HR_nda_vec):
+        return HR_nda_vec
+
+
     ## Compute residual for TK1-regularization prior, i.e. 
     #  || Dx ||^2 with D = [D_x; D_y; D_z]
     #  \param[in] HR_nda_vec HR data as 1D array
@@ -338,4 +419,18 @@ class TikhonovSolver(Solver):
 
         ## Compute norm || Dx ||^2 with D = [D_x; D_y; D_z]
         return np.sum( Dx**2 ) + np.sum( Dy**2 ) + np.sum( Dz**2 )
-            
+
+    
+    ##
+    # Gets the gradient of TK1-prior.
+    # \date       2017-05-15 19:43:52+0100
+    #
+    # \param      self        The object
+    # \param      HR_nda_vec  The hr nda vector
+    #
+    # \return     The gradient residual prior tk 1.
+    #
+    def _get_gradient_residual_prior_TK1(self, HR_nda_vec):
+        return self._D_adj(self._D(HR_nda_vec)).flatten()       
+
+

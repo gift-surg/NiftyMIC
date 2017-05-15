@@ -28,6 +28,7 @@ from scipy.optimize import nnls
 
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
+import utilities.lossFunctions as lossfun
 import reconstruction.solver.DifferentialOperations as diffop
 import base.PSF as psf
 
@@ -67,7 +68,7 @@ class Solver(object):
     #                                       (sigma_x2, sigma_y2, sigma_z2) or
     #                                       as full 3x3 numpy array
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", loss="linear", predefined_covariance=None):
 
         ## Initialize variables
         self._stacks = stacks
@@ -99,6 +100,18 @@ class Solver(object):
             ## non-linear solver with bounds
             "L-BFGS-B"      : self._get_approximate_solution_LBFGSB,
             "least_squares" : self._get_approximate_solution_least_squares,
+        }
+
+        self._loss = loss
+        self._get_loss = {
+            "linear"    :   lossfun.linear,
+            "soft_l1"   :   lossfun.soft_l1,
+            "huber"     :   lossfun.huber,
+        }
+        self._get_gradient_loss = {
+            "linear"    :   lossfun.gradient_linear,
+            "soft_l1"   :   lossfun.gradient_soft_l1,
+            "huber"     :   lossfun.gradient_huber,
         }
 
         ## In case only diagonal entries are given, create diagonal matrix
@@ -203,6 +216,21 @@ class Solver(object):
 
     def get_minimizer(self):
         return self._minimizer
+
+
+    ##
+    # Sets the loss (only incorporated when using L-BFGS-B solver so far)
+    # \date       2017-05-15 11:30:25+0100
+    #
+    # \param      self  The object
+    # \param      loss  The loss
+    #
+    def set_loss(self, loss):
+        if loss not in ['linear', 'huber']:
+            raise ValueError("Loss function must be either 'linear' or 'huber'.")
+        # if loss not in ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']:
+            # raise ValueError("Loss function must be either 'linear', 'soft_l1', 'huber', 'cauchy' or 'arctan'.")
+        self._loss = loss
 
 
     ## Get current estimate of HR volume
@@ -436,12 +464,11 @@ class Solver(object):
 
         ## Get helpers to index correct elements
         N_vol = self._N_voxels_HR_volume
-        N0 = self._N_total_slice_voxels
 
         ## Extract respective x, y and z groups within compound stacked_slices_nda_vec
-        slice_x_nda_vec = stacked_slices_nda_vec[N0:N0+N_vol]
-        slice_y_nda_vec = stacked_slices_nda_vec[N0+N_vol:N0+2*N_vol]
-        slice_z_nda_vec = stacked_slices_nda_vec[N0+2*N_vol:N0+3*N_vol]
+        slice_x_nda_vec = stacked_slices_nda_vec[0:N_vol]
+        slice_y_nda_vec = stacked_slices_nda_vec[N_vol:2*N_vol]
+        slice_z_nda_vec = stacked_slices_nda_vec[2*N_vol:3*N_vol]
 
         ## Reshape in order to apply differentiation
         slice_x_nda = slice_x_nda_vec.reshape(self._HR_shape_nda)
@@ -667,7 +694,8 @@ class Solver(object):
         A_adj_y = self._A_adj_M(stacked_slices_nda_vec)
 
         ## Add D' y[lower]
-        A_adj_y = A_adj_y + self._D_adj(stacked_slices_nda_vec).flatten()*np.sqrt(alpha)
+        y_lower = stacked_slices_nda_vec[self._N_total_slice_voxels:]
+        A_adj_y = A_adj_y + self._D_adj(y_lower).flatten()*np.sqrt(alpha)
 
         return A_adj_y
 

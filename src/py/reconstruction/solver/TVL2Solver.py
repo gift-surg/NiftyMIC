@@ -77,7 +77,7 @@ class TVL2Solver(Solver):
     def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TVL2"):
 
         ## Run constructor of superclass
-        Solver.__init__(self, stacks, HR_volume, alpha_cut, alpha, iter_max, minimizer, deconvolution_mode, predefined_covariance)               
+        Solver.__init__(self, stacks=stacks, HR_volume=HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max, minimizer=minimizer, deconvolution_mode=deconvolution_mode, predefined_covariance=predefined_covariance)               
         
         ## Settings for optimizer
         self._rho = rho

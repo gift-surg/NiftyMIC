@@ -49,7 +49,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 # Find ITK.
 ##############################################################################
 # set (CMAKE_PREFIX_PATH "~/development/ITK/ITK-build_dev-4.11/")
-set (ITK_DIR "~/development/ITK/ITK-build_dev_4.11/")
+# set (ITK_DIR "~/development/ITK/ITK-build_dev_4.11/")
 # set (ITK_DIR "~/development/ITK/ITK-build_dev/" CACHE STRING "Choose the type of build." FORCE)
 
 # message (STATUS "Use ITK-directory " ${ITK_DIR})
