@@ -88,10 +88,10 @@ class TikhonovSolver(Solver):
     #                                    Indicates whether full 3D or only
     #                                    in-plane deconvolution is considered
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D", loss="linear", predefined_covariance=None):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D", loss="linear", huber_gamma=1.345, predefined_covariance=None):
 
         ## Run constructor of superclass
-        Solver.__init__(self, stacks=stacks, HR_volume=HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max, minimizer=minimizer, deconvolution_mode=deconvolution_mode, loss=loss, predefined_covariance=predefined_covariance)
+        Solver.__init__(self, stacks=stacks, HR_volume=HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max, minimizer=minimizer, deconvolution_mode=deconvolution_mode, loss=loss, huber_gamma=huber_gamma, predefined_covariance=predefined_covariance)
         
         ## Settings for optimizer
         self._reg_type = reg_type
@@ -288,6 +288,10 @@ class TikhonovSolver(Solver):
         ## Construct right-hand side b
         b = self._get_M_y()
 
+        # if self._loss in ["huber"]:
+        #     self._get_loss[self._loss] = lambda x : self._get_loss[self._loss](x, self._huber_gamma)
+        #     self._get_gradient_loss[self._loss] = lambda x : self._get_gradient_loss[self._loss](x, self._huber_gamma)
+
         ## Set cost function and its jacobian
         fun = lambda x: self._get_fun_nonlinear(x, b, self._alpha)
         jac = lambda x: self._get_jac_nonlinear(x, b, self._alpha)
@@ -308,6 +312,7 @@ class TikhonovSolver(Solver):
 
         return data_term + regularizer_term
 
+
     def _get_jac_nonlinear(self, x, b, alpha):
 
         residual = self._MA(x) - b
@@ -316,6 +321,7 @@ class TikhonovSolver(Solver):
         grad_regularizer_term = alpha * self._get_gradient_residual_prior[self._reg_type](x)
 
         return grad_data_term + grad_regularizer_term
+
 
     ## Compute
     #  \f$ b := \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K \vec{y}_K \\ \vec{0}\end{pmatrix} \f$ 

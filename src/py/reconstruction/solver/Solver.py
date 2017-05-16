@@ -68,7 +68,7 @@ class Solver(object):
     #                                       (sigma_x2, sigma_y2, sigma_z2) or
     #                                       as full 3x3 numpy array
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", loss="linear", predefined_covariance=None):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", loss="linear", huber_gamma=1.345, predefined_covariance=None):
 
         ## Initialize variables
         self._stacks = stacks
@@ -103,15 +103,17 @@ class Solver(object):
         }
 
         self._loss = loss
+        self._huber_gamma = huber_gamma
+
         self._get_loss = {
             "linear"    :   lossfun.linear,
             "soft_l1"   :   lossfun.soft_l1,
-            "huber"     :   lossfun.huber,
+            "huber"     :   lambda x : lossfun.huber(x, self._huber_gamma),
         }
         self._get_gradient_loss = {
             "linear"    :   lossfun.gradient_linear,
             "soft_l1"   :   lossfun.gradient_soft_l1,
-            "huber"     :   lossfun.gradient_huber,
+            "huber"     :   lambda x : lossfun.gradient_huber(x, self._huber_gamma),
         }
 
         ## In case only diagonal entries are given, create diagonal matrix
@@ -231,6 +233,13 @@ class Solver(object):
         # if loss not in ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']:
             # raise ValueError("Loss function must be either 'linear', 'soft_l1', 'huber', 'cauchy' or 'arctan'.")
         self._loss = loss
+
+
+    def set_huber_gamma(self, huber_gamma):
+        self._huber_gamma = huber_gamma
+
+    def get_huber_gamma(self):
+        return self._huber_gamma
 
 
     ## Get current estimate of HR volume

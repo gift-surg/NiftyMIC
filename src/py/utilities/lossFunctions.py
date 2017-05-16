@@ -20,8 +20,12 @@ def soft_l1(e):
 def gradient_soft_l1(e):
     return 1. / np.sqrt(1.+e)
 
-def huber(e):
-    return np.where(e>1., 2.*np.sqrt(e)-1., e)
+def huber(e, gamma=1.345):
+    gamma = float(gamma)
+    gamma2 = gamma * gamma
+    return np.where(e<gamma2, e, 2.*gamma*np.sqrt(e)-gamma2)
 
-def gradient_huber(e):
-    return np.where(e>1., 1./np.sqrt(e), 1.)
+def gradient_huber(e, gamma=1.345):
+    gamma = float(gamma)
+    gamma2 = gamma * gamma
+    return np.where(e<gamma2, 1., gamma/np.sqrt(e))

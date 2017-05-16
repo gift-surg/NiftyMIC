@@ -206,7 +206,8 @@ def flip(items, ncol):
 #
 def show_curves(y, x=None, xlabel="", ylabel="", title="", xlim=None, ylim=None, y_axis_style="plot", labels=None, label_location="upper right", color=None, markers=None, markevery=10, linestyle=None, label_shadow=False, label_frameon=True, label_fontsize=None, label_boundingboxtoanchor=None, label_ncol=1, linewidth=1, markerfacecolors=None, markersize=10, fontfamily="serif", fontname="Arial", use_tex=False, fontsize=12, backgroundcolor="None", aspect_ratio="auto", save_figure=False, directory="/tmp/", filename="figure.pdf", fig_number=None, show_compact=0, subplots_left=0.08, subplots_bottom=0.11, subplots_right=0.99, subplots_top=0.83, subplots_wspace=0, subplots_hspace=0, figuresize=None):
 
-    y = list(y)
+    if type(y) is not list:
+        y = [y]
     N_curves = len(y)
 
     ## Change font
@@ -222,7 +223,9 @@ def show_curves(y, x=None, xlabel="", ylabel="", title="", xlim=None, ylim=None,
         x = [None]*N_curves
         for i in range(N_curves):
             x[i] = np.arange(y[i].size)+1
-    
+    elif type(x) is not list:
+        x = [x] * N_curves
+
     if type(linewidth) is not list and not isinstance(linewidth, np.ndarray):
         linewidth = [linewidth]*N_curves
 
@@ -237,13 +240,14 @@ def show_curves(y, x=None, xlabel="", ylabel="", title="", xlim=None, ylim=None,
     
     if show_compact:
         plt.subplots_adjust(wspace=subplots_wspace, hspace=subplots_hspace, left=subplots_left, right=subplots_right, bottom=subplots_bottom, top=subplots_top)
-    fig.clf()
+    fig.clf()   
 
     ax = fig.add_subplot(111)
-    for i in range(N_curves):
+    for i in range(0,N_curves):
 
         ## Print line with preferred y axis style
         lines = eval("plt." + y_axis_style + "(x[i], y[i], label=labels[i])")
+        # lines = plt.plot(x[i], y[i], label=labels[i])
         
         ## Extract line object to adjust line settings
         line = lines[0]
