@@ -15,7 +15,6 @@ import itk
 import SimpleITK as sitk
 import numpy as np
 import time
-from datetime import timedelta
 from scipy.optimize import minimize
 
 ## Add directories to import modules
@@ -169,7 +168,7 @@ class TikhonovSolver(Solver):
         # if self._elapsed_time_sec < 0:
         #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
         # else:
-        print("\tElapsed time: %s" %(timedelta(seconds=self._elapsed_time_sec)))
+        print("\tElapsed time: %s" %(self.get_computational_time()))
         if self._residual_ell2 is not None:
             print("\tell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %(self._residual_ell2))
             print("\tprior residual = %.3e" %(self._residual_prior))
@@ -195,6 +194,10 @@ class TikhonovSolver(Solver):
         if self._alpha > 0:
             filename += "_" + self._reg_type
         filename += "_" + self._minimizer
+        if self._loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
+            filename += "_" + self._loss
+            if self._loss in ["huber"]:
+                filename += str(self._huber_gamma)
         filename += "_alpha" + str(self._alpha)
         filename += "_itermax" + str(self._iter_max)
 
@@ -273,7 +276,9 @@ class TikhonovSolver(Solver):
 
     def _run_reconstruction_nonlinear(self, x0=None):
 
-        print("Loss function: %s" %(self._loss))
+        sys.stdout.write("Loss function: %s" %(self._loss))
+        if self._loss in ["huber"]:
+            print(" (gamma = %g)" %(self._huber_gamma))
 
         ## Set initial value and bounds
         if x0 is None:

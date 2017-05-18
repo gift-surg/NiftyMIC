@@ -17,6 +17,7 @@ import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
+from datetime import timedelta
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import lsqr
 from scipy.sparse.linalg import lsmr
@@ -269,7 +270,7 @@ class Solver(object):
     def get_computational_time(self):
         if self._elapsed_time_sec < 0:
             raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
-        return self._elapsed_time_sec
+        return timedelta(seconds=self._elapsed_time_sec)
 
 
     ## Get \f$\ell^2\f$-residual for performed reconstruction

@@ -23,6 +23,9 @@ import time
 import base.Stack as st
 import utilities.PythonHelper as ph
 import utilities.SimpleITKHelper as sitkh
+import utilities.StackMaskMorphologicalOperations as stmorph
+import preprocessing.DataPreprocessing as dp
+import registration.SegmentationPropagation as segprop
 
 from definitions import dir_test
 
@@ -32,12 +35,36 @@ Main Function
 """
 if __name__ == '__main__':
 
-    # image_original_sitk = sitk.ReadImage("/Users/mebner/A0480244-B6254806-1yr-0.dcm")
-    # image_sitk = sitkh.get_downsampled_sitk_image(image_original_sitk,(10,10,1))
+    dir_input = "/Users/mebner/UCL/UCL/Software/VolumetricReconstruction/studies/FetalBrain/input_data/"
 
-    trafo_sitk = sitk.Euler3DTransform()
-    trafo_sitk.SetRotation(0,0,-np.pi/2)
-    matrix_sitk = trafo_sitk.GetMatrix()
+    segmentation_propagator = segprop.SegmentationPropagation(
+        # registration_method=regniftyreg.NiftyReg(use_verbose=False),
+        # registration_method=regsitk.RegistrationSimpleITK(use_verbose=False),
+        # registration_method=regitk.RegistrationITK(use_verbose=False),
+        dilation_radius=3,
+        dilation_kernel="Ball",
+        )
 
-    image_sitk.SetDirection(matrix_sitk)
-    sitkh.show_sitk_image(image_sitk)
+    data_preprocessing = dp.DataPreprocessing.from_directory(
+        dir_input=dir_input, 
+        suffix_mask="_mask",
+        segmentation_propagator=segmentation_propagator,
+        )
+    data_preprocessing.run_preprocessing()
+    stacks = data_preprocessing.get_preprocessed_stacks()
+
+    stacks[1].show(1)
+    # stack_mask_morpher = stmorph.StackMaskMorphologicalOperations.from_sitk_mask(
+    #     mask_sitk=stack.sitk_mask,
+    #     dilation_radius=3,
+    #     dilation_kernel="Ball",
+    #     use_dilation_in_plane_only=True,
+    #     )
+
+    # stack_mask_morpher.run_dilation()
+
+    # # tmp = stack_mask_morpher.get_processed_stack()
+    # mask_sitk = stack_mask_morpher.get_processed_mask_sitk()
+    # sitkh.show_sitk_image(stack.sitk, segmentation=mask_sitk, label="proc")
+    # stack.show(1)
+    # # tmp.show(1, label="proc")

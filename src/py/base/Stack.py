@@ -19,6 +19,7 @@ import copy
 ## Import modules from src-folder
 import base.Slice as sl
 import utilities.SimpleITKHelper as sitkh
+import utilities.PythonHelper as ph
 import utilities.FilenameParser as fp
 
 ## In addition to the nifti-image (stored as sitk.Image object) this class 
@@ -38,6 +39,9 @@ class Stack:
         stack = cls()
         # stack = []
 
+        if dir_input[-1] is not "/":
+            dir_input += "/"
+
         stack._dir = dir_input
         stack._filename = filename
 
@@ -51,9 +55,11 @@ class Stack:
         else:    
             if os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
                 stack.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
+                stack._is_unity_mask = False
             else:
-                print("Mask file for " + dir_input + filename + ".nii.gz" +  " not found. Binary mask created." )
+                ph.print_debug_info("Mask file for " + dir_input + filename + ".nii.gz" +  " not found. Binary mask created." )
                 stack.sitk_mask = stack._generate_binary_mask()
+                stack._is_unity_mask = True
         
         ## Append itk object
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
@@ -91,9 +97,11 @@ class Stack:
         if suffix_mask is not None and os.path.isfile(dir_input + prefix_stack + suffix_mask + ".nii.gz"):
             stack.sitk_mask = sitk.ReadImage(dir_input + prefix_stack + suffix_mask + ".nii.gz", sitk.sitkUInt8)
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
+            stack._is_unity_mask = False
         else:
             stack.sitk_mask = stack._generate_binary_mask()
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
+            stack._is_unity_mask = True
 
         ## Get slices
         stack._N_slices = stack.sitk.GetDepth()
@@ -140,9 +148,11 @@ class Stack:
         if mask_sitk is not None:
             stack.sitk_mask = mask_sitk
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
+            stack._is_unity_mask = False
         else:
             stack.sitk_mask = stack._generate_binary_mask()
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
+            stack._is_unity_mask = True
 
         return stack
 
@@ -172,9 +182,11 @@ class Stack:
         if image_sitk_mask is not None:
             stack.sitk_mask = image_sitk_mask
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
+            stack._is_unity_mask = False
         else:
             stack.sitk_mask = stack._generate_binary_mask()
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
+            stack._is_unity_mask = True
 
         ## Extract all slices and their masks from the stack and store them 
         if extract_slices:
@@ -201,6 +213,7 @@ class Stack:
 
         stack.sitk_mask = sitk.Image(stack_to_copy.sitk_mask)
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
+        stack._is_unity_mask = stack_to_copy._is_unity_mask
 
         if filename is None:
             stack._filename = stack_to_copy.get_filename()
@@ -273,6 +286,9 @@ class Stack:
     def get_number_of_slices(self):
         return self._N_slices
 
+    def is_unity_mask(self):
+        return self._is_unity_mask
+
 
     ## Display stack with external viewer (ITK-Snap)
     #  \param[in][in] show_segmentation display stack with or without associated segmentation (default=0)
@@ -312,17 +328,21 @@ class Stack:
         full_file_name = os.path.join(directory, filename)
 
         ## Write file to specified location
+        ph.print_debug_info("Write image to %s.nii.gz ... " %(full_file_name), newline=False)
         sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
+        print("done")
 
         ## Write mask to specified location if given
         if self.sitk_mask is not None:
-            nda = sitk.GetArrayFromImage(self.sitk_mask)
+            # nda = sitk.GetArrayFromImage(self.sitk_mask)
 
             ## Write mask if it does not consist of only ones
-            if not np.all(nda) and write_mask:
+            if not self._is_unity_mask and write_mask:
+                ph.print_debug_info("Write image mask to %s_mask.nii.gz ... " %(full_file_name), newline=False)
                 sitk.WriteImage(self.sitk_mask, full_file_name + "_mask.nii.gz")
+                print("done")
 
-        print("Stack was successfully written to %s.nii.gz" %(full_file_name))
+        # print("Stack was successfully written to %s.nii.gz" %(full_file_name))
 
         ## Write each separate Slice of stack (if they exist)
         if write_slices:

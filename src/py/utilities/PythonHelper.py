@@ -764,9 +764,13 @@ def printoptions(*args, **kwargs):
     np.set_printoptions(**original)
 
 
-def print_debug_info(text):
+def print_debug_info(text, newline=True, prefix="--- "):
+    
     # print("---- Debug info: ----")
-    print("--- " + text)
+    if newline:
+        print(prefix + text)
+    else:
+        sys.stdout.write(prefix + text)
     # print("---------------------------")
 
 

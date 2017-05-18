@@ -15,6 +15,7 @@ import numpy as np
 import base.Stack as st
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
+import utilities.StackMaskMorphologicalOperations as stmorph
 import registration.RegistrationSimpleITK as regsitk
 import registration.RegistrationITK as regitk
 import registration.NiftyReg as regniftyreg
@@ -26,7 +27,7 @@ import registration.NiftyReg as regniftyreg
 class SegmentationPropagation(object):
 
     ## Constructor
-    def __init__(self, stack=None, template=None, registration_method=None, use_template_mask=True, dilation_radius=0, dilation_kernel="Ball"):
+    def __init__(self, stack=None, template=None, registration_method=None, use_template_mask=True, dilation_radius=0, dilation_kernel="Ball", use_dilation_in_plane_only=True):
 
         self._stack = stack
         self._template = template
@@ -35,6 +36,7 @@ class SegmentationPropagation(object):
 
         self._dilation_radius = dilation_radius
         self._dilation_kernel = dilation_kernel
+        self._use_dilation_in_plane_only = use_dilation_in_plane_only
 
         self._get_registration_method = {
             "SimpleITK"     : regsitk,
@@ -50,8 +52,28 @@ class SegmentationPropagation(object):
     def set_stack(self, stack):
         self._stack = stack
 
+    def get_stack(self):
+        return self._stack
+
     def set_template(self, template):
         self._template = template
+
+    def get_template(self):
+        return self._template
+
+    def set_dilation_radius(self, dilation_radius):
+        self._dilation_radius = dilation_radius
+
+    def get_dilation_radius(self):
+        return self._dilation_radius
+
+    def set_dilation_kernel(self, dilation_kernel):
+        if dilation_kernel not in ['Ball', 'Box', 'Annulus', 'Cross']:
+            raise ValueError("Dilation kernel must be 'Ball', 'Box', 'Annulus' or 'Cross'.")
+        self._dilation_kernel = dilation_kernel
+
+    def get_dilation_kernel(self):
+        return self._dilation_kernel
 
     def get_segmented_stack(self):
         
@@ -72,7 +94,6 @@ class SegmentationPropagation(object):
 
         self._stack_sitk = sitk.Image(self._stack.sitk)
 
-
         ## Register stack to template
         if self._registration_method is not None:
             self._registration_method.set_fixed(self._template)
@@ -90,8 +111,15 @@ class SegmentationPropagation(object):
 
         ## Dilate mask
         if self._dilation_radius > 0:
-            dilater = sitk.BinaryDilateImageFilter()
-            dilater.SetKernelType(eval("sitk.sitk" + self._dilation_kernel))
-            dilater.SetKernelRadius(self._dilation_radius)
-            self._stack_sitk_mask = dilater.Execute(self._stack_sitk_mask)
+
+            stack_mask_morpher = stmorph.StackMaskMorphologicalOperations.from_sitk_mask(
+                mask_sitk=self._stack_sitk_mask,
+                dilation_radius=self._dilation_radius,
+                dilation_kernel=self._dilation_kernel,
+                use_dilation_in_plane_only=self._use_dilation_in_plane_only,
+            )
+            stack_mask_morpher.run_dilation()
+            self._stack_sitk_mask = stack_mask_morpher.get_processed_mask_sitk()
+
+            # sitkh.show_sitk_image(self._stack_sitk_mask)
 

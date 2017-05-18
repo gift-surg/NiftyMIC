@@ -1,4 +1,4 @@
-## \file SegmentationPropagation.py
+## \file N4BiasFieldCorrection.py
 #  \brief N4 bias field correction according to the file
 #  runN4BiasFieldCorrectionImageFilter.cpp in src/cpp/source
 #

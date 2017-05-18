@@ -33,7 +33,7 @@ class DataPreprocessing:
     # \param      target_stack_index        Index of template stack. Template
     #                                       stack will be put on first position
     #                                       of Stack list after preprocessing
-    # \param      use_crop_to_mask          The use crop to mask
+    # \param      use_cropping_to_mask          The use crop to mask
     # \param      boundary_i                added value to first coordinate
     #                                       (can also be negative)
     # \param      boundary_j                added value to second coordinate
@@ -42,12 +42,12 @@ class DataPreprocessing:
     #                                       (can also be negative)
     # \param      unit                      Unit can either be "mm" or "voxel"
     #
-    def __init__(self, use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_crop_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
+    def __init__(self, use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_cropping_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
 
         self._use_N4BiasFieldCorrector = use_N4BiasFieldCorrector
         self._segmentation_propagator = segmentation_propagator
         self._target_stack_index = target_stack_index
-        self._use_crop_to_mask = use_crop_to_mask
+        self._use_cropping_to_mask = use_cropping_to_mask
         self._boundary_i = boundary_i
         self._boundary_j = boundary_j
         self._boundary_k = boundary_k
@@ -70,7 +70,7 @@ class DataPreprocessing:
     # \param      target_stack_index        Index of template stack. Template
     #                                       stack will be put on first position
     #                                       of Stack list after preprocessing
-    # \param      use_crop_to_mask          The use crop to mask
+    # \param      use_cropping_to_mask          The use crop to mask
     # \param      boundary_i                added value to first coordinate
     #                                       (can also be negative)
     # \param      boundary_j                added value to second coordinate
@@ -80,9 +80,9 @@ class DataPreprocessing:
     # \param      unit                      Unit can either be "mm" or "voxel"
     #
     @classmethod
-    def from_filenames(cls, dir_input, filenames, suffix_mask="_mask", use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_crop_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
+    def from_filenames(cls, dir_input, filenames, suffix_mask="_mask", use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_cropping_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
 
-        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector, segmentation_propagator=segmentation_propagator, target_stack_index=target_stack_index, use_crop_to_mask=use_crop_to_mask, boundary_i=boundary_i, boundary_j=boundary_j, boundary_k=boundary_k, unit=unit)
+        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector, segmentation_propagator=segmentation_propagator, target_stack_index=target_stack_index, use_cropping_to_mask=use_cropping_to_mask, boundary_i=boundary_i, boundary_j=boundary_j, boundary_k=boundary_k, unit=unit)
 
         ## Number of stacks to be read
         self._N_stacks = len(filenames)
@@ -92,8 +92,61 @@ class DataPreprocessing:
 
         for i in range(0, self._N_stacks):
             self._stacks_preprocessed[i] = st.Stack.from_filename(dir_input, filenames[i], suffix_mask)
+            ph.print_debug_info("Image '%s' read for further processing." %(filenames[i]))
 
-        print("%s stacks were read for data preprocessing." %(self._N_stacks))
+        # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))
+
+        return self
+
+
+    ##
+    # Initialize data preprocessing class based on all nifti files in directory
+    # \date       2017-05-18 16:34:22+0100
+    #
+    # \param      cls                       The cls
+    # \param      dir_input                 Input directory
+    # \param      suffix_mask               extension of stack filename which
+    #                                       indicates associated mask
+    # \param      use_N4BiasFieldCorrector  Use N4 bias field corrector, bool
+    # \param      segmentation_propagator   None or SegmentationPropagation
+    #                                       instance
+    # \param      target_stack_index        Index of template stack. Template
+    #                                       stack will be put on first position
+    #                                       of Stack list after preprocessing
+    # \param      use_cropping_to_mask          The use crop to mask
+    # \param      boundary_i                added value to first coordinate
+    #                                       (can also be negative)
+    # \param      boundary_j                added value to second coordinate
+    #                                       (can also be negative)
+    # \param      boundary_k                added value to third coordinate
+    #                                       (can also be negative)
+    # \param      unit                      Unit can either be "mm" or "voxel"
+    #
+    @classmethod
+    def from_directory(cls, dir_input, suffix_mask="_mask", use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_cropping_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
+
+        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector, segmentation_propagator=segmentation_propagator, target_stack_index=target_stack_index, use_cropping_to_mask=use_cropping_to_mask, boundary_i=boundary_i, boundary_j=boundary_j, boundary_k=boundary_k, unit=unit)
+
+        ## Get data filenames without filename extension
+        filenames_tmp = []
+
+        for file in os.listdir(dir_input):
+            for filename_extension in [".nii.gz", ".nii"]:
+                if file.endswith(filename_extension) and not file.endswith(suffix_mask + filename_extension):
+                    filenames_tmp.append(file)
+        filenames = [f.split(".")[0] for f in sorted(filenames_tmp)]
+
+        ## Number of stacks to be read
+        self._N_stacks = len(filenames)
+
+        ## Read stacks and their masks (if no mask is found a binary image is created automatically)
+        self._stacks_preprocessed = [None]*self._N_stacks
+
+        for i in range(0, self._N_stacks):
+            self._stacks_preprocessed[i] = st.Stack.from_filename(dir_input, filenames[i], suffix_mask)
+            ph.print_debug_info("Image '%s' was read for further processing." %(filenames[i]))
+
+        # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))
 
         return self
 
@@ -110,7 +163,7 @@ class DataPreprocessing:
     # \param      target_stack_index        Index of template stack. Template
     #                                       stack will be put on first position
     #                                       of Stack list after preprocessing
-    # \param      use_crop_to_mask          The use crop to mask
+    # \param      use_cropping_to_mask          The use crop to mask
     # \param      boundary_i                added value to first coordinate
     #                                       (can also be negative)
     # \param      boundary_j                added value to second coordinate
@@ -120,9 +173,9 @@ class DataPreprocessing:
     # \param      unit                      Unit can either be "mm" or "voxel"
     #
     @classmethod
-    def from_stacks(cls, stacks, use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_crop_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
+    def from_stacks(cls, stacks, use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_cropping_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
 
-        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector, segmentation_propagator=segmentation_propagator, target_stack_index=target_stack_index, use_crop_to_mask=use_crop_to_mask, boundary_i=boundary_i, boundary_j=boundary_j, boundary_k=boundary_k, unit=unit)
+        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector, segmentation_propagator=segmentation_propagator, target_stack_index=target_stack_index, use_cropping_to_mask=use_cropping_to_mask, boundary_i=boundary_i, boundary_j=boundary_j, boundary_k=boundary_k, unit=unit)
 
         ## Number of stacks
         self._N_stacks = len(stacks)
@@ -132,7 +185,7 @@ class DataPreprocessing:
         for i in range(0, self._N_stacks):
             self._stacks_preprocessed[i] = st.Stack.from_stack(stacks[i])
 
-        print("%s stacks were loaded for data preprocessing." %(self._N_stacks))
+        ph.print_debug_info("%s stacks were loaded for data preprocessing." %(self._N_stacks))
 
         return self
 
@@ -154,10 +207,10 @@ class DataPreprocessing:
     #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
     def run_preprocessing(self):
 
+        time_start = ph.start_timing()
 
         ## Segmentation propagation
         if self._segmentation_propagator is not None:
-            ph.print_subtitle("Segmentation propagation")
             
             stacks_to_propagate_indices = list(set(range(0,self._N_stacks)) - set([self._target_stack_index]))
             
@@ -165,29 +218,37 @@ class DataPreprocessing:
             self._stacks_preprocessed[self._target_stack_index] = st.Stack.from_stack(target)
 
             self._segmentation_propagator.set_template(target)
-
             for i in stacks_to_propagate_indices:
-                self._segmentation_propagator.set_stack(self._stacks_preprocessed[i])
-                self._segmentation_propagator.run_segmentation_propagation()
-                self._stacks_preprocessed[i] = self._segmentation_propagator.get_segmented_stack()
+
+                ## Do not propagate mask of template in case it consists of only ones
+                if not target.is_unity_mask():
+                    ph.print_debug_info("Propagate mask from stack '%s' to '%s'" %(target.get_filename(), self._stacks_preprocessed[i].get_filename()))
+                    self._segmentation_propagator.set_stack(self._stacks_preprocessed[i])
+                    self._segmentation_propagator.run_segmentation_propagation()
+                    self._stacks_preprocessed[i] = self._segmentation_propagator.get_segmented_stack()
+            
+                # self._stacks_preprocessed[i].show(1)
 
         ## Crop to mask
-        if self._use_crop_to_mask:
-            ph.print_subtitle("Crop stack to mask")
+        if self._use_cropping_to_mask:
+            ph.print_debug_info("Crop stacks to their masks")
 
             for i in range(0, self._N_stacks):
                 self._stacks_preprocessed[i] = self._stacks_preprocessed[i].get_cropped_stack_based_on_mask(boundary_i=self._boundary_i, boundary_j=self._boundary_j, boundary_k=self._boundary_k, unit=self._unit)
 
         ## N4 Bias Field Correction
         if self._use_N4BiasFieldCorrector:
-            ph.print_subtitle("N4 Bias Field Correction")
+            ph.print_debug_info("Perform N4 Bias Field Correction for all stacks ... ")
             bias_field_corrector = n4bfc.N4BiasFieldCorrection()
 
             for i in range(0, self._N_stacks):
                 bias_field_corrector.set_stack(self._stacks_preprocessed[i])
                 bias_field_corrector.run_bias_field_correction()
                 self._stacks_preprocessed[i] = bias_field_corrector.get_bias_field_corrected_stack()
-        
+            
+            print("done")
+    
+        self._computational_time = ph.stop_timing(time_start)
 
     ## Get preprocessed stacks
     #  \return preprocessed stacks as list of Stack objects
@@ -205,6 +266,10 @@ class DataPreprocessing:
             stacks_copy[i_ctr] = st.Stack.from_stack(self._stacks_preprocessed[i])
             i_ctr = i_ctr +  1
         return stacks_copy
+
+
+    def get_computational_time(self):
+        return self._computational_time
 
 
     ## Write preprocessed data to specified output directory
