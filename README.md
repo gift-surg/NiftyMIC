@@ -1,14 +1,12 @@
 # Volumetric MRI Reconstruction from Motion Corrupted 2D Slices
 
-This toolkit is a research-focussed tool to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration techniques for motion correction and reconstruction-based Super-Resolution (SR) techniques for volumetric reconstruction. It was developed within the [GIFT-Surg](http://www.gift-surg.ac.uk/) project.
-
-The entire reconstruction pipeline is programmed in Python by using a mix 
-of SimpleITK, WrapITK and standard C++ITK. Several functions are added to the
-standard ITK package and wrapped so that they are available within Python.
+This toolkit is a research-focussed tool developed within the [GIFT-Surg](http://www.gift-surg.ac.uk/) project to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
+The entire reconstruction pipeline is programmed in Python by using a mix of SimpleITK, WrapITK and standard C++ITK. Several functions are added to the
+standard ITK package and wrapped so that they are available in Python.
 
 This toolkit is still under development and has NOT been publicly released yet. In case you have access to this code, please do not share it without approval.
 
-If you have any questions (or find bugs), please drop an email to @mebner (`michael.ebner.14@ucl.ac.uk`).
+If you have any questions or comments (or find bugs), please drop an email to @mebner (`michael.ebner.14@ucl.ac.uk`).
 
 # Installation
 Clone the Volumetric MRI Reconstruction Toolkit by
@@ -43,7 +41,7 @@ In case you want to use the classes
 * `make -j`
 
 ### NiftyReg
-The class `NiftyReg` provides a basic Python wrapper for [NiftyReg](http://cmictig.cs.ucl.ac.uk/wiki/index.php/NiftyReg). Installation instructions can be found on the website. The class `NiftyReg` makes both `reg_aladin` and `reg_f3d` accessible to Python.
+The class `NiftyReg` provides a basic wrapper for [NiftyReg](http://cmictig.cs.ucl.ac.uk/wiki/index.php/NiftyReg) and makes both `reg_aladin` and `reg_f3d` accessible to Python. Installation instructions for NiftyReg can be found on the website.
 
 ### Visualisation
 The Volumetric MRI Reconstruction Toolkit uses [ITK-SNAP](http://www.itksnap.org/pmwiki/pmwiki.php) for the visualization of images. In case you want to make use of it, make sure ITK-SNAP is installed and can be accessed via `itksnap` from the command line.
