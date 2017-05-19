@@ -5,4 +5,5 @@ doc/py/latex/
 src/test-data/
 test-data/
 .*
+*.nii.gz
 *iterate.dat
