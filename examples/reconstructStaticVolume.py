@@ -5,18 +5,19 @@
 #  multiple stacks of low-resolution 2D slices. Motion-correction is NOT
 #  performed in this file.
 #
+#  \example python reconstructStaticVolume.py --dir_input=path-to-data
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date May 2017
 
 ## Import libraries 
 import SimpleITK as sitk
 import argparse
-
 import numpy as np
 import sys
 import os
 
 ## Import modules
+sys.path.insert(1, os.path.abspath(os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 import preprocessing.DataPreprocessing as dp
@@ -100,7 +101,7 @@ if __name__ == '__main__':
         target_stack_index=0,
         regularization="TK1",
         alpha=0.02,
-        iter_max=10,
+        iter_max=5,
         verbose=1,
         comparison_script=1,
         )
@@ -169,10 +170,10 @@ if __name__ == '__main__':
     stacks_visualization = []
     stacks_visualization.append(HR_volume)
     for i in range(0, len(stacks)):
-        stacks_visualization.append(stacks[i])stacks
+        stacks_visualization.append(stacks[i])
     
     sitkh.show_stacks(stacks_visualization, 
-        show_comparison_file=comparison_script,
+        show_comparison_file=args.comparison_script,
         dir_output=args.dir_output,
         )
 

@@ -1,11 +1,9 @@
 import os
 import sys
 
-# dir_root = os.path.abspath(sys.environ['VolRec_DIR'])
-dir_root = os.path.abspath(os.path.dirname(__file__))
-dir_src = os.path.join(dir_root, 'src/')
-dir_test = os.path.join(dir_root, '../../test-data/')
-dir_build_cpp = os.path.join(dir_root, '../../build/cpp/')
+dir_root = os.path.abspath(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'])
+dir_test = os.path.join(dir_root, 'test-data/')
+dir_build_cpp = os.path.join(dir_root, 'build' , 'cpp')
 
 info = {
         "name": "Volumetric MRI Reconstruction from 2D Slices in the Presence of Motion",
@@ -14,7 +12,7 @@ info = {
         "web_info": "",
         "repository": {
                        "type": "",
-                       "url": ""
+                       "url": "https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction"
                         },
         "authors": "Michael Ebner",
         "dependencies": {

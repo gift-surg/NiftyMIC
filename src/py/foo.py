@@ -6,9 +6,14 @@
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date March 2016
 
+
 ## Import libraries 
 import SimpleITK as sitk
 import itk
+import os 
+import sys
+
+sys.path.insert(1, os.path.abspath(os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
 
 import numpy as np
 from scipy.optimize import minimize
@@ -16,7 +21,6 @@ from scipy.optimize import leastsq
 from scipy import ndimage
 import unittest
 import matplotlib.pyplot as plt
-import sys
 import time
 
 ## Import modules
@@ -27,7 +31,7 @@ import utilities.StackMaskMorphologicalOperations as stmorph
 import preprocessing.DataPreprocessing as dp
 import registration.SegmentationPropagation as segprop
 
-from definitions import dir_test
+# from definitions import dir_test
 
 
 """
@@ -40,7 +44,7 @@ if __name__ == '__main__':
     segmentation_propagator = segprop.SegmentationPropagation(
         # registration_method=regniftyreg.NiftyReg(use_verbose=False),
         # registration_method=regsitk.RegistrationSimpleITK(use_verbose=False),
-        # registration_method=regitk.RegistrationITK(use_verbose=False),
+        registration_method=regitk.RegistrationITK(use_verbose=False),
         dilation_radius=3,
         dilation_kernel="Ball",
         )

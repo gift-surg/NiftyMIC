@@ -25,7 +25,7 @@ import sys
 # from modules.TestSimulatorSliceAcqusition import *
 # from modules.TestNiftyReg import *
 # from modules.TestDifferentialOperations import *
-# from modules.TestRegistration import *
+from modules.TestRegistration import *
 # from modules.TestBrainStripping import *
 # from modules.TestIntraStackRegistration import *
 # from modules.TestParameterNormalization import *
@@ -33,7 +33,7 @@ import sys
 # from modules.TestLinearImageQualityTransfer import *
 # from modules.TestIntensityCorrection import *
 # from modules.TestSegmentationPropagation import *
-from modules.TestLossFunctions import *
+# from modules.TestLossFunctions import *
 
 """ ###########################################################################
 Main Function
