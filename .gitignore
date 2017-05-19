@@ -2,9 +2,5 @@ backups/
 build/
 doc/py/html/
 doc/py/latex/
-results/
 .*
-*.nii.gz
-*.nii
-*.tfm
 *iterate.dat

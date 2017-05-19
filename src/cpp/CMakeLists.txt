@@ -91,7 +91,7 @@ add_subdirectory(test)
 ##############################################################################
 # Copy test data into build folder.
 ##############################################################################
-set (DIR_TEST_DATA "../../test-data")
+set (DIR_TEST_DATA "../test-data")
 
 ## Set directory where test data is located
 file(GLOB MY_COPY_FILES
