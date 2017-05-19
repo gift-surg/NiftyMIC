@@ -59,8 +59,7 @@ A documentation for the Python source-files can be generated in case [Doxygen](h
 
 # Example usage
 A simple example (without motion correction) can be found in `examples/reconstructStaticVolume`. With the test data from [here](https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=0) the reconstruction can be run by
-* `cd src/py`
-* `python reconstructStaticVolume.py --dir_input=path-to-fetal-data --dir_output=path-to-output-dir --target_stack_index=1`
+* `python examples/reconstructStaticVolume.py --dir_input=path-to-fetal-data --dir_output=path-to-output-dir --target_stack_index=1`
 
 
 # References
