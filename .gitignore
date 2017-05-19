@@ -2,5 +2,7 @@ backups/
 build/
 doc/py/html/
 doc/py/latex/
+src/test-data/
+test-data/
 .*
 *iterate.dat
