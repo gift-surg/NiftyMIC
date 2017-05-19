@@ -1080,7 +1080,7 @@ def write_executable_file(cmds, dir_output="/tmp/", filename="showComparison"):
 #
 def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear", dir_output="/tmp/"):
     
-    os.system("mkdir -p " + dir_output)
+    dir_output = ph.create_directory(dir_output)
 
 
     if viewer not in ["itksnap", "fslview", "niftyview"]:
@@ -1150,7 +1150,7 @@ def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison
 # \param      stacks        List of stack objects
 # \param      segmentation  Stack containing the desired segmentation.
 #
-def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=False, viewer="itksnap"):
+def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=False, viewer="itksnap", dir_output="/tmp/"):
 
     N_stacks = len(stacks)
     images_sitk = [None]*N_stacks
@@ -1169,7 +1169,7 @@ def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=Fals
     else:
         segmentation_sitk = None
 
-    show_sitk_image(images_sitk, label=label, segmentation=segmentation_sitk, show_comparison_file=show_comparison_file, viewer=viewer)
+    show_sitk_image(images_sitk, label=label, segmentation=segmentation_sitk, show_comparison_file=show_comparison_file, viewer=viewer, dir_output=dir_output)
 
 
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose

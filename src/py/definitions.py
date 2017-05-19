@@ -1,12 +1,11 @@
 import os
+import sys
 
+# dir_root = os.path.abspath(sys.environ['VolRec_DIR'])
 dir_root = os.path.abspath(os.path.dirname(__file__))
 dir_src = os.path.join(dir_root, 'src/')
 dir_test = os.path.join(dir_root, '../../test-data/')
 dir_build_cpp = os.path.join(dir_root, '../../build/cpp/')
-
-# dir_input_root = "/Volumes/UCLMEBNER1TB/data_for_michael_recons/"
-
 
 info = {
         "name": "Volumetric MRI Reconstruction from 2D Slices in the Presence of Motion",

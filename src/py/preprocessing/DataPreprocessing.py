@@ -210,22 +210,27 @@ class DataPreprocessing:
         time_start = ph.start_timing()
 
         ## Segmentation propagation
+        all_masks_provided = 0
+
         if self._segmentation_propagator is not None:
             
-            stacks_to_propagate_indices = list(set(range(0,self._N_stacks)) - set([self._target_stack_index]))
-            
-            target = self._stacks_preprocessed[self._target_stack_index]
-            self._stacks_preprocessed[self._target_stack_index] = st.Stack.from_stack(target)
+            stacks_to_propagate_indices = []
+            for i in range(0,self._N_stacks):
+                if self._stacks_preprocessed[i].is_unity_mask():
+                    stacks_to_propagate_indices.append(i)
 
+            stacks_to_propagate_indices = list(set(stacks_to_propagate_indices) - set([self._target_stack_index]))
+            
+            ## Set target mask
+            target = self._stacks_preprocessed[self._target_stack_index]
+
+            ## Propagate masks
             self._segmentation_propagator.set_template(target)
             for i in stacks_to_propagate_indices:
-
-                ## Do not propagate mask of template in case it consists of only ones
-                if not target.is_unity_mask():
-                    ph.print_debug_info("Propagate mask from stack '%s' to '%s'" %(target.get_filename(), self._stacks_preprocessed[i].get_filename()))
-                    self._segmentation_propagator.set_stack(self._stacks_preprocessed[i])
-                    self._segmentation_propagator.run_segmentation_propagation()
-                    self._stacks_preprocessed[i] = self._segmentation_propagator.get_segmented_stack()
+                ph.print_debug_info("Propagate mask from stack '%s' to '%s'" %(target.get_filename(), self._stacks_preprocessed[i].get_filename()))
+                self._segmentation_propagator.set_stack(self._stacks_preprocessed[i])
+                self._segmentation_propagator.run_segmentation_propagation()
+                self._stacks_preprocessed[i] = self._segmentation_propagator.get_segmented_stack()
             
                 # self._stacks_preprocessed[i].show(1)
 
