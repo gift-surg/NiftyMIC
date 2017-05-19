@@ -8,16 +8,20 @@ This toolkit is still under development and has NOT been publicly released yet. 
 
 If you have any questions or comments (or find bugs), please drop an email to @mebner (`michael.ebner.14@ucl.ac.uk`).
 
+
 # Installation
 Clone the Volumetric MRI Reconstruction Toolkit by
 * `git clone git@cmiclab.cs.ucl.ac.uk:mebner/VolumetricReconstruction.git`
 
-enter the root directory (`VolumetricReconstruction`) and change to the `dev` branch, i.e.
+and add this path to the environment variable `VOLUMETRIC_RECONSTRUCTION_DIR` 
+by adding the line
+* `export VOLUMETRIC_RECONSTRUCTION_DIR="path-to-VolumetricReconstrucion/"`
 
-* `cd VolumetricReconstruction`
-* `git checkout dev`
+in your `.bashrc` file (or whatever you use for your terminal). Then the 
+Volumetric Reconstruction Toolkit modules 
+can be included in Python via `sys.path.insert(1, os.path.abspath(os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))` later on.
 
-## Installation of Python packages
+## Installation of additional Python packages
 The required Python packages are stated in the file `src/py/requirements.txt`. They can be installed manually or by running
 * `pip install -r src/py/requirements.txt`
 
@@ -52,10 +56,12 @@ A documentation for the Python source-files can be generated in case [Doxygen](h
 * `doxygen doxyfile`
 * `open html/index.html`
 
+
 # Example usage
-A simple example (without motion correction) can be found in `src/py/reconstructStaticVolume`. With the test data from [here](https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=0) the reconstruction can be run by
+A simple example (without motion correction) can be found in `examples/reconstructStaticVolume`. With the test data from [here](https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=0) the reconstruction can be run by
 * `cd src/py`
 * `python reconstructStaticVolume.py --dir_input=path-to-fetal-data --dir_output=path-to-output-dir --target_stack_index=1`
+
 
 # References
 Associated publications are 

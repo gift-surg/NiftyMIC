@@ -1,13 +1,24 @@
 #!/usr/bin/python
 
-## \file reconstructStaticVolume.py
-#  \brief  Script to reconstruct an isotropic, high-resolution volume from 
-#  multiple stacks of low-resolution 2D slices. Motion-correction is NOT
-#  performed in this file.
+##
+# \file reconstructStaticVolume.py
+# \brief      Script to reconstruct an isotropic, high-resolution volume from
+#             multiple stacks of low-resolution 2D slices without 
+#             motion-correction.
 #
-#  \example python reconstructStaticVolume.py --dir_input=path-to-data
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date May 2017
+# Example data can be downloaded from
+# https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=0 
+#
+# A volumetric reconstruction (without motion correction) can be obtained by
+# running
+# 
+# python reconstructStaticVolume.py --dir_input=path-to-fetal-data
+# --target_stack_index=1
+#
+# \example    python reconstructStaticVolume.py --dir_input=path-to-data
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       May 2017
+#
 
 ## Import libraries 
 import SimpleITK as sitk
@@ -17,7 +28,8 @@ import sys
 import os
 
 ## Import modules
-sys.path.insert(1, os.path.abspath(os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
+sys.path.insert(1, os.path.abspath(\
+    os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 import preprocessing.DataPreprocessing as dp
@@ -107,7 +119,7 @@ if __name__ == '__main__':
         )
 
     ##-------------------------------------------------------------------------
-    ## Data Preprocessing from data on HDD
+    ## Data Preprocessing
     ph.print_title("Data Preprocessing")
     segmentation_propagator = segprop.SegmentationPropagation(
         dilation_radius=3,
@@ -132,7 +144,7 @@ if __name__ == '__main__':
     # sitkh.show_stacks(stacks)
 
     ##-------------------------------------------------------------------------
-    ## SRR
+    ## Super-Resolution Reconstruction (SRR)
     ph.print_title("Super-Resolution Reconstruction")
     
     ## Initial value specifying the physical space for the HR reconstruction.
