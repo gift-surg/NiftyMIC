@@ -1021,14 +1021,24 @@ def write_executable_file(cmds, dir_output="/tmp/", filename="showComparison"):
     call += "\n"
     call += "##\n"
     call += "#  \\file\t" + "showComparison.py\n"
+    call += "#  \\brief\t" + "Execute './showComparison.py' for a visual comparison of all images.\n"
+    call += "#\n"
+    call += "#  \t\t\tThree different viewers can be selected:\n"
+    call += "#  \t\t\t- ITK-SNAP (default): http://www.itksnap.org/\n"
+    call += "#  \t\t\t- FSLView: https://fsl.fmrib.ox.ac.uk/\n"
+    call += "#  \t\t\t- NiftyView: http://cmictig.cs.ucl.ac.uk/research/software/software-nifty\n"
+    call += "#\n"
     call += "#  \\author\t" + "Michael Ebner (michael.ebner.14@ucl.ac.uk)\n"
     call += "#  \\date\t" + date_time + "\n"
     call += "\n"
     call += "import os" 
     call += "\n"
     call += "\n"
+    call += "## Path to image data directory relative to this file:\n"
     call += "directory = " + '"' + dir_output_file + '"'
     call += "\n\n"
+    call += "## Define executables:"
+    call += "\n"
     call += "#itksnap_exe = " + '"/Applications/ITK-SNAP.app/Contents/MacOS/ITK-SNAP"'
     call += "\n"
     call += "itksnap_exe = " + '"itksnap"'
@@ -1043,6 +1053,8 @@ def write_executable_file(cmds, dir_output="/tmp/", filename="showComparison"):
     call += "\n"
     call += "\n"
 
+    call += "## Define commands for respective viewers:"
+    call += "\n"
     for i in range(0, len(cmds)):
         cmd = cmds[i]
         if i is 0:
@@ -1053,6 +1065,8 @@ def write_executable_file(cmds, dir_output="/tmp/", filename="showComparison"):
             call += "# cmd = " + cmd + '" '
         call += "\n\n"
 
+    call += "## Execute command to open selected viewer:"
+    call += "\n"
     call += "print(cmd)"
     call += "\n"
     call += "os.system(cmd)"

@@ -22,8 +22,17 @@ Volumetric Reconstruction Toolkit modules
 can be included in Python via `sys.path.insert(1, os.path.abspath(os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))` later on.
 
 ## Installation of additional Python packages
-The required Python packages are stated in the file `src/py/requirements.txt`. They can be installed manually or by running
-* `pip install -r src/py/requirements.txt`
+The required Python packages (and tested versions) are stated in the file `requirements.txt`. These are 
+* `numpy`
+* `scipy`
+* `matplotlib`
+* `SimpleITK`
+* `nibabel`
+* `Pillow`
+
+and can be installed with `pip` (version >= 9.0) by running the command
+* `pip install -r requirements.txt`
+
 
 ## Installation of (Wrap)ITK
 Installation of ITK and its wrapping to Python is the most time-consuming process. The documentation on how-to can be found [here](https://cmiclab.cs.ucl.ac.uk/mebner/ITK/wikis/home).
@@ -58,9 +67,12 @@ A documentation for the Python source-files can be generated in case [Doxygen](h
 
 
 # Example usage
-A simple example (without motion correction) can be found in `examples/reconstructStaticVolume`. With the test data from [here](https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=0) the reconstruction can be run by
-* `python examples/reconstructStaticVolume.py --dir_input=path-to-fetal-data --dir_output=path-to-output-dir --target_stack_index=1`
+A simple example (without motion correction) can be found in `examples/reconstructStaticVolume`. Test data including three orthogonal acquisitions of the fetal brain can be downloaded by either using this [link](https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=0) or executing
+* `curl -L https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=1 > fetal_brain.zip`
+* `unzip fetal_brain.zip -d fetal_brain`
 
+The Super-Resolution reconstruction algorithm can be run by
+* `python examples/reconstructStaticVolume.py --dir_input=fetal_brain --dir_output=results --target_stack_index=1`
 
 # References
 Associated publications are 

@@ -186,11 +186,11 @@ class TikhonovSolver(Solver):
     #
     # \return     The setting specific filename as string.
     #
-    def get_setting_specific_filename(self, prefix="recon"):
+    def get_setting_specific_filename(self, prefix="SRR_"):
         
         ## Build filename
         filename = prefix
-        filename += "_stacks" + str(len(self._stacks))
+        filename += "stacks" + str(len(self._stacks))
         if self._alpha > 0:
             filename += "_" + self._reg_type
         filename += "_" + self._minimizer

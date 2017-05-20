@@ -9,13 +9,18 @@
 # Example data can be downloaded from
 # https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=0 
 #
+# or within the shell by running 
+# `curl -L https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=1 > fetal_brain.zip`
+#
 # A volumetric reconstruction (without motion correction) can be obtained by
 # running
 # 
-# python reconstructStaticVolume.py --dir_input=path-to-fetal-data
-# --target_stack_index=1
+# `python reconstructStaticVolume.py --dir_input=fetal_brain --dir_output=results
+# --target_stack_index=1`
 #
-# \example    python reconstructStaticVolume.py --dir_input=path-to-data
+# Example usage:
+#       - `python reconstructStaticVolume.py --help`
+#       - `python reconstructStaticVolume.py --dir_input=path-to-data`
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       May 2017
 #
@@ -63,7 +68,7 @@ def get_parsed_input_line(
     alpha,
     iter_max,
     verbose,
-    comparison_script,
+    provide_comparison,
     ):
 
     parser = argparse.ArgumentParser(description=
@@ -83,13 +88,13 @@ def get_parsed_input_line(
     parser.add_argument('--alpha', type=float, help="Regularization parameter alpha to solve reconstruction problem sum_k ||y_k - A_k x|| + alpha R(x). [default: %g]" %(alpha), default=alpha)
     parser.add_argument('--iter_max', type=int, help="Number of maximum iterations for numerical solver", default=iter_max)
     parser.add_argument('--verbose', type=bool, help="Turn on verbose. [default: %s]" %(verbose), default=verbose)
-    parser.add_argument('--comparison_script', type=bool, help="Generate a comparison script to provide comparison of SRR with (linearly resampled) original data. [default: %s]" %(comparison_script), default=comparison_script)
+    parser.add_argument('--provide_comparison', type=bool, help="Create a folder 'comparison' in output directory containing the obtained SRR along with the linearly resampled original data. An additional script 'show_comparison.py' can be run for visualization. [default: %s]" %(provide_comparison), default=provide_comparison)
 
     args = parser.parse_args()
 
     if args.verbose:
         ph.print_title("Given Input")
-        print("Set Parameters:")
+        print("Chosen Parameters:")
         for arg in sorted(vars(args)):
             ph.print_debug_info("%s: " %(arg), newline=False)
             print(getattr(args, arg))
@@ -108,14 +113,14 @@ if __name__ == '__main__':
     ## Read input
     args = get_parsed_input_line(
         dir_output="/tmp/",
-        prefix_output="SRR",
+        prefix_output="SRR_",
         suffix_mask="_mask",
         target_stack_index=0,
         regularization="TK1",
         alpha=0.02,
-        iter_max=5,
+        iter_max=10,
         verbose=1,
-        comparison_script=1,
+        provide_comparison=0,
         )
 
     ##-------------------------------------------------------------------------
@@ -147,8 +152,10 @@ if __name__ == '__main__':
     ## Super-Resolution Reconstruction (SRR)
     ph.print_title("Super-Resolution Reconstruction")
     
-    ## Initial value specifying the physical space for the HR reconstruction.
-    ## In-plane spacing of chosen template stack defines isotropic voxel size.
+    ##
+    # Initial, isotropic volume to define the physical space for the HR SRR
+    # reconstruction. In-plane spacing of chosen template stack defines
+    # the isotropic voxel size.
     HR_volume_init = stacks[0].get_isotropically_resampled_stack()
     HR_volume_init.set_filename("HR_volume_0")
 
@@ -179,15 +186,16 @@ if __name__ == '__main__':
 
     ## Show SRR together with linearly resampled input data.
     ## Additionally, a script is generated to open files
-    stacks_visualization = []
-    stacks_visualization.append(HR_volume)
-    for i in range(0, len(stacks)):
-        stacks_visualization.append(stacks[i])
+    if args.provide_comparison:
+        stacks_visualization = []
+        stacks_visualization.append(HR_volume)
+        for i in range(0, len(stacks)):
+            stacks_visualization.append(stacks[i])
     
-    sitkh.show_stacks(stacks_visualization, 
-        show_comparison_file=args.comparison_script,
-        dir_output=args.dir_output,
-        )
+        sitkh.show_stacks(stacks_visualization, 
+            show_comparison_file=args.provide_comparison,
+            dir_output=os.path.join(args.dir_output, "comparison"),
+            )
 
     ##-------------------------------------------------------------------------
     ## Summary
