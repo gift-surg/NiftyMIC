@@ -18,7 +18,7 @@
 # `python reconstructStaticVolume.py --dir_input=fetal_brain --dir_output=results
 # --target_stack_index=1`
 #
-# Example usage:
+# Example usage (tested with Python 2.7):
 #       - `python reconstructStaticVolume.py --help`
 #       - `python reconstructStaticVolume.py --dir_input=path-to-data`
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
@@ -72,23 +72,22 @@ def get_parsed_input_line(
     ):
 
     parser = argparse.ArgumentParser(description=
-        "Volumetric reconstruction framework to reconstruct an isotropic, high-resolution 3D volume from multiple stacks of 2D slices. The final resolution is given by the in-plane resolution of the selected target stack. "
-        "In case a mask is provided for the selected target stack, it will be propagated to the remaining stacks. This will specify the field-of-view and accelerate the computational time.",
-        version="0.1",
-        usage="python reconstructStaticVolume.py --dir_input=path-to-input-directory --dir_output=path-to-output-directory --iter_max=10 --alpha=0.02 --suffix_mask=_mask",
-        epilog="Author: Michael Ebner (michael.ebner.14@ucl.ac.uk)"
+        "Volumetric MRI reconstruction framework to reconstruct an isotropic, high-resolution 3D volume from multiple stacks of 2D slices. The resolution of the computed Super-Resolution Reconstruction (SRR) is given by the in-plane spacing of the selected target stack. "
+        "A region of interest can be specified by providing a mask for the selected target stack. Only this region will then be reconstructed by the SRR algorithm which can substantially reduce the computational time.",
+        prog="python reconstructStaticVolume.py",
+        epilog="Author: Michael Ebner (michael.ebner.14@ucl.ac.uk)",
         )
 
     parser.add_argument('--dir_input', type=str, help="Input directory with NIfTI files (.nii or .nii.gz).", required=True)
     parser.add_argument('--dir_output', type=str, help="Output directory. [default: %s]" %(dir_output), default=dir_output)
-    parser.add_argument('--suffix_mask', type=str, help="Suffix used to specify the mask. E.g. image.nii.gz with associated mask image_mask.nii.gz. [default: %s]" %(suffix_mask), default=suffix_mask)
-    parser.add_argument('--prefix_output', type=str, help="Prefix for SRR output. [default: %s]" %(prefix_output), default=prefix_output)
+    parser.add_argument('--suffix_mask', type=str, help="Suffix used to associate a mask with an image. E.g. suffix_mask='_mask' means an existing image_i_mask.nii.gz represents the mask to image_i.nii.gz for all images image_i in the input directory. [default: %s]" %(suffix_mask), default=suffix_mask)
+    parser.add_argument('--prefix_output', type=str, help="Prefix for SRR output file name. [default: %s]" %(prefix_output), default=prefix_output)
     parser.add_argument('--target_stack_index', type=int, help="Index of stack (image) in input directory (alphabetical order) which defines physical space for SRR. First index is 0. [default: %s]" %(target_stack_index), default=target_stack_index)
     parser.add_argument('--regularization', type=str, help="Type of regularization for SR algorithm. Either 'TK0' or 'TK1' for zeroth or first order Tikhonov regularization. [default: %s]" %(regularization), default=regularization)
-    parser.add_argument('--alpha', type=float, help="Regularization parameter alpha to solve reconstruction problem sum_k ||y_k - A_k x|| + alpha R(x). [default: %g]" %(alpha), default=alpha)
-    parser.add_argument('--iter_max', type=int, help="Number of maximum iterations for numerical solver", default=iter_max)
-    parser.add_argument('--verbose', type=bool, help="Turn on verbose. [default: %s]" %(verbose), default=verbose)
-    parser.add_argument('--provide_comparison', type=bool, help="Create a folder 'comparison' in output directory containing the obtained SRR along with the linearly resampled original data. An additional script 'show_comparison.py' can be run for visualization. [default: %s]" %(provide_comparison), default=provide_comparison)
+    parser.add_argument('--alpha', type=float, help="Regularization parameter alpha to solve reconstruction problem sum_k ||y_k - A_k x||^2 + alpha R(x). [default: %g]" %(alpha), default=alpha)
+    parser.add_argument('--iter_max', type=int, help="Number of maximum iterations for the numerical solver. [default: %s]" %(iter_max), default=iter_max)
+    parser.add_argument('--verbose', type=bool, help="Turn on/off verbose output. [default: %s]" %(verbose), default=verbose)
+    parser.add_argument('--provide_comparison', type=bool, help="Turn on/off functionality to create files allowing for a visual comparison between original data and the obtained SRR. A folder 'comparison' will be created in the output directory containing the obtained SRR along with the linearly resampled original data. An additional script 'show_comparison.py' will be provided whose execution will open all images in ITK-Snap (http://www.itksnap.org/). [default: %s]" %(provide_comparison), default=provide_comparison)
 
     args = parser.parse_args()
 
@@ -112,7 +111,7 @@ if __name__ == '__main__':
     ##-------------------------------------------------------------------------
     ## Read input
     args = get_parsed_input_line(
-        dir_output="/tmp/",
+        dir_output="./",
         prefix_output="SRR_",
         suffix_mask="_mask",
         target_stack_index=0,

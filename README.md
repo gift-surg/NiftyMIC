@@ -57,7 +57,7 @@ In case you want to use the classes
 ### NiftyReg
 The class `NiftyReg` provides a basic wrapper for [NiftyReg](http://cmictig.cs.ucl.ac.uk/wiki/index.php/NiftyReg) and makes both `reg_aladin` and `reg_f3d` accessible to Python. Installation instructions for NiftyReg can be found on the website.
 
-### Visualisation
+### Visualization
 The Volumetric MRI Reconstruction Toolkit uses [ITK-SNAP](http://www.itksnap.org/pmwiki/pmwiki.php) for the visualization of images. In case you want to make use of it, make sure ITK-SNAP is installed and can be accessed via `itksnap` from the command line.
 
 ## Code Documentation
@@ -72,7 +72,7 @@ A simple example (without motion correction) can be found in `examples/reconstru
 * `curl -L https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=1 > fetal_brain.zip`
 * `unzip fetal_brain.zip -d fetal_brain`
 
-The Super-Resolution reconstruction algorithm can be run by
+in the terminal. The Super-Resolution reconstruction algorithm can be run by
 * `python examples/reconstructStaticVolume.py --dir_input=fetal_brain --dir_output=results --target_stack_index=1`
 
 # References

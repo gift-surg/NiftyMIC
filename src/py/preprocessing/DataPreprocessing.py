@@ -92,7 +92,11 @@ class DataPreprocessing:
 
         for i in range(0, self._N_stacks):
             self._stacks_preprocessed[i] = st.Stack.from_filename(dir_input, filenames[i], suffix_mask)
-            ph.print_debug_info("Image '%s' read for further processing." %(filenames[i]))
+            txt = "Image '%s' was read for further processing." %(filenames[i])
+            if i is self._target_stack_index:
+                ph.print_debug_info(txt + " [Selected target stack]")
+            else:
+                ph.print_debug_info(txt)
 
         # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))
 
@@ -144,7 +148,11 @@ class DataPreprocessing:
 
         for i in range(0, self._N_stacks):
             self._stacks_preprocessed[i] = st.Stack.from_filename(dir_input, filenames[i], suffix_mask)
-            ph.print_debug_info("Image '%s' was read for further processing." %(filenames[i]))
+            txt = "Image '%s' was read for further processing." %(filenames[i])
+            if i is self._target_stack_index:
+                ph.print_debug_info(txt + " [Selected target stack]")
+            else:
+                ph.print_debug_info(txt)
 
         # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))
 
