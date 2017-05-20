@@ -84,7 +84,7 @@ class FilenameParser(object):
 
         for i in range(0,len(filenames)):
             parts = filenames[i].split(separator)
-            # print parts
+            # print(parts)
 
             ## Build filename "abc-xyz"
             if order in ["first"]:

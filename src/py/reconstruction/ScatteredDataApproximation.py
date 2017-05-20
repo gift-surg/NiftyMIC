@@ -395,8 +395,8 @@ class ScatteredDataApproximation:
         # ## HACK for denominator
         # nda = sitk.GetArrayFromImage(HR_volume_update_D)
         # ind_min = np.unravel_index(np.argmin(nda), nda.shape)
-        # # print nda[nda<0]
-        # # print nda[ind_min]
+        # # print(nda[nda<0])
+        # # print(nda[ind_min])
 
         # eps = 1e-8
         # # nda[nda<=eps]=1
@@ -410,7 +410,7 @@ class ScatteredDataApproximation:
         # nda = sitk.GetArrayFromImage(HR_volume_update_N)
         # ind_min = np.unravel_index(np.argmin(nda), nda.shape)
         # # nda[nda<=eps]=0
-        # # print nda[nda<0]
+        # # print(nda[nda<0])
         # print("numerator min = %s" % np.min(nda))
         # """
         # HACK end

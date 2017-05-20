@@ -326,6 +326,6 @@ class SliceAcqusition(unittest.TestCase):
                 # except:
                 #     print("Stack %s: Slice %s/%s" %(i,j,N_slices-1))
 
-                #     print norm_diff
+                #     print(norm_diff)
 
 

@@ -498,7 +498,7 @@ def print_itk_direction(direction_itk):
         for j in range(0, n_rows):
             m_np[i,j] = m_vnl(i,j)
 
-    print m_np
+    print(m_np)
 
 
 ##
@@ -528,7 +528,7 @@ def print_itk_array(array_itk):
             nda[i] = array_itk.GetElement(i)
 
     ## Print array
-    print nda
+    print(nda)
         
 
 def update_itk_parameters(parameters_itk, array):
@@ -557,12 +557,12 @@ def get_numpy_from_itk_array(array_itk):
         for j in range(0, cols):
             nda[i,j] = array_itk(i,j)
 
-    # print ph.stop_timing(time_start)
+    # print(ph.stop_timing(time_start))
 
     ## Even slower ...
     # time_start = ph.start_timing()
     # itk.GetArrayFromVnlMatrix(array_itk)
-    # print ph.stop_timing(time_start)
+    # print(ph.stop_timing(time_start))
 
     return nda
 

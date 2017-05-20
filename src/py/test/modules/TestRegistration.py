@@ -534,7 +534,7 @@ class TestRegistration(unittest.TestCase):
         #                 if diff < foo_min:
         #                     foo = diff;
         #                     foo_index = l
-        #                     # print euler_sitk.GetParameters()
+        #                     # print(euler_sitk.GetParameters())
         #                 # print(diff)
         #             print("Minimum = %s at index = %s" %(foo, foo_index))
     

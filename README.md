@@ -22,7 +22,8 @@ Volumetric Reconstruction Toolkit modules
 can be included in Python via `sys.path.insert(1, os.path.abspath(os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))` later on.
 
 ## Installation of additional Python packages
-The required Python packages (and tested versions) are stated in the file `requirements.txt`. These are 
+This toolkit was developed and tested with Python 2 and relies on additional Python packages.
+The required packages (and their tested versions) are stated in the file `requirements.txt`. These are 
 * `numpy`
 * `scipy`
 * `matplotlib`

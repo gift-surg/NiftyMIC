@@ -80,7 +80,7 @@ class IntensityNormalization:
         if use_intercept:
             c = np.polyfit(x, y, 1)
             p = np.poly1d(c)
-            print c
+            print(c)
 
             A = np.ones((x.size,2))
             A[:,1] = x

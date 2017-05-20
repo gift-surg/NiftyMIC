@@ -231,7 +231,7 @@ class NiftyReg:
             sys.stdout.write("Affine registration (NiftyReg reg_aladin) ... ")
         sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
         os.system(cmd)
-        print "done"
+        print("done")
 
         ## Read trafo and invert such that format fits within SimpleITK structure
         matrix = np.loadtxt(self._dir_tmp + res_affine_matrix_str + ".txt")

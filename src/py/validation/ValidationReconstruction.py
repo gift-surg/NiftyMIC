@@ -233,7 +233,7 @@ class ValidationReconstruction:
     #         N_slices_total += len(rigid_motion_transforms[i])
     #         N_begin_new_stack[i] = N_slices_total - len(rigid_motion_transforms[i])
                 
-    #     print N_begin_new_stack
+    #     print(N_begin_new_stack)
     #     ## 6 Parameters for rigid registration
     #     N_params = 6
     #     parameters_est = np.zeros((N_slices_total, N_params, N_cycles))

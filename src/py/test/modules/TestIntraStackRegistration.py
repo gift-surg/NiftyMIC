@@ -174,8 +174,8 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         parameters_est = inplane_registration.get_parameters()
         nda_diff = parameters - parameters_est
-        # print nda_diff
-        # print parameters
+        # print(nda_diff)
+        # print(parameters)
         self.assertEqual(np.round(
                 np.linalg.norm(nda_diff)
             , decimals = self.accuracy), 0)
@@ -395,7 +395,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         
         sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(interpolator="Linear", resampling_grid=stack.sitk)])
 
-        print parameters
+        print(parameters)
         
         # self.assertEqual(np.round(
         #     np.linalg.norm(nda_diff)
@@ -465,7 +465,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(resampling_grid=None, interpolator="Linear")])
 
         print("Final parameters:")
-        print parameters
+        print(parameters)
         
         self.assertEqual(np.round(
             np.linalg.norm(parameters[:,-1] - intensity_scale)
@@ -711,7 +711,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         sitkh.show_stacks([stack, stack_corrupted, stack_registered.get_resampled_stack_from_slices(resampling_grid=None, interpolator="Linear")])
 
         # print("Final parameters:")
-        # print parameters
+        # print(parameters)
         
         # self.assertEqual(np.round(
         #     np.linalg.norm(parameters[:,-1] - intensity_scale)

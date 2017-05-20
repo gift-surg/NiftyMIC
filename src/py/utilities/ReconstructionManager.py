@@ -83,7 +83,7 @@ class ReconstructionManager:
             ## 1) Copy images:
             cmd = "cp " + dir_input_to_copy + filenames_to_copy[i] + ".nii.gz " \
                         + self._dir_results_input_data + filenames[i] + ".nii.gz"
-            print cmd
+            print(cmd)
             os.system(cmd)
 
             ## 2) Copy masks:

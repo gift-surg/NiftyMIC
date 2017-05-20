@@ -177,7 +177,7 @@ class HierarchicalSliceAlignment:
         i_max = ind[-1]+1
         interleave = ind[1]-ind[0]
 
-        # print np.arange(i_min, i_max, interleave)
+        # print(np.arange(i_min, i_max, interleave))
 
         ## Create image stack and mask based on group
         group_sitk = stack.sitk[:,:,i_min:i_max:interleave]

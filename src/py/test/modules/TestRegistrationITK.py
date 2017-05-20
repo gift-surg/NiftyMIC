@@ -32,7 +32,7 @@ class TestRegistrationITK(unittest.TestCase):
     accuracy = 1
 
     def setUp(self):
-        # print os.listdir(self.dir_test_data)
+        # print(os.listdir(self.dir_test_data))
         pass
 
     def test_inplane3Dsimilarity_registration(self):

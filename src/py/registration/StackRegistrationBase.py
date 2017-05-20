@@ -459,7 +459,7 @@ class StackRegistrationBase(object):
             ph.print_numpy_array(self._parameters, precision=print_precisicion, suppress=print_suppress)
         # if self._use_verbose:
         #     print("Final values = ")
-        #     print self._parameters
+        #     print(self._parameters)
 
         ## Apply motion correction and compute slice transforms
         self._apply_motion_correction()
