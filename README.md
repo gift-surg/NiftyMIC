@@ -4,8 +4,6 @@ This toolkit is a research-focussed tool developed within the [GIFT-Surg](http:/
 The entire reconstruction pipeline is programmed in Python by using a mix of SimpleITK, WrapITK and standard C++ITK. Several functions are added to the
 standard ITK package and wrapped so that they are available in Python.
 
-This toolkit is still under development and has NOT been publicly released yet. In case you have access to this code, please do not share it without approval.
-
 If you have any questions or comments (or find bugs), please drop an email to @mebner (`michael.ebner.14@ucl.ac.uk`).
 
 
@@ -78,3 +76,7 @@ in the terminal. The Super-Resolution reconstruction algorithm can be run by
 # References
 Associated publications are 
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., and Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
+
+# License
+This toolkit is still under development and has NOT been publicly released yet.
+See LICENSE file for details.
