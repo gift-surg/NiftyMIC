@@ -1,8 +1,7 @@
 # Volumetric MRI Reconstruction from Motion Corrupted 2D Slices
 
 This is a research-focused toolkit developed within the [GIFT-Surg](http://www.gift-surg.ac.uk/) project to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
-The entire reconstruction pipeline is programmed in Python by using a mix of SimpleITK, WrapITK and standard C++ITK. Several functions are added to the
-standard ITK package and wrapped so that they are available in Python.
+The entire reconstruction pipeline is programmed in Python by using a mix of SimpleITK, WrapITK and standard C++ITK. 
 
 If you have any questions or comments (or find bugs), please drop an email to @mebner (`michael.ebner.14@ucl.ac.uk`).
 
@@ -34,7 +33,7 @@ and can be installed with `pip` (version >= 9.0) by running the command
 
 
 ## Installation of (Wrap)ITK
-Installation of ITK and its wrapping to Python is the most time-consuming process. The documentation on how-to can be found [here](https://cmiclab.cs.ucl.ac.uk/mebner/ITK/wikis/home).
+This tool builds on ITK 4.11 and relies on an extended version specifically developed for the Volumetric MRI Reconstruction toolkit. By following the instructions [here](https://cmiclab.cs.ucl.ac.uk/mebner/ITK/wikis/home) an extended ITK package will be installed and made accessible to Python. This installation is certainly the most time-consuming process and may take a couple of hours.
 
 ## Optional Packages
 
@@ -46,7 +45,7 @@ In case you want to use the classes
 * `SIENA`
 * `BrainStripping`
 
-(and possibly others) you will need to compile the code in `src/cpp`. For doing so, compile the source code by linking it with the built ITK libraries, via
+(and possibly others) you will need to compile the code in `src/cpp`. Being in the root directory, compile the source code by linking it with the built ITK libraries, via
 * `mkdir -p build/cpp/`
 * `cd build/cpp/`
 * `cmake -D ITK_DIR=path-to-ITK-build_dev ../../src/cpp/`
