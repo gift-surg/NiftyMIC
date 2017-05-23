@@ -18,7 +18,7 @@
 # `python reconstructStaticVolume.py --dir_input=fetal_brain --dir_output=results
 # --target_stack_index=1`
 #
-# Example usage (tested with Python 2.7):
+# Example usage:
 #       - `python reconstructStaticVolume.py --help`
 #       - `python reconstructStaticVolume.py --dir_input=path-to-data`
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
@@ -101,9 +101,9 @@ def get_parsed_input_line(
     return args
 
 
-"""
-Main Function
-"""
+##
+# Main Function
+#
 if __name__ == '__main__':
 
     time_start = ph.start_timing()

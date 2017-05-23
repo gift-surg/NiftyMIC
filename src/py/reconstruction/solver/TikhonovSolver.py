@@ -234,19 +234,27 @@ class TikhonovSolver(Solver):
         elif self._deconvolution_mode in ["predefined_covariance"]:
             print("(Predefined covariance used: cov = diag(%s))" % (np.diag(self._predefined_covariance)))
 
-        print("Minimizer: " + self._minimizer)
+        sys.stdout.write("Loss function: %s" %(self._loss))
+        if self._loss in ["huber"]:
+            print(" (gamma = %g)" %(self._huber_gamma))
+
         print("Regularization parameter: " + str(self._alpha))
+
+        ## Non-linear loss function requires use of L-BFGS-B
+        if self._loss not in ["linear"] and self._minimizer not in ["L-BFGS-B"]:
+            print("Note, selected minimizer '%s' cannot be used. Non-linear loss function requires L-BFGS-B." %(self._minimizer))
+            self._minimizer = "L-BFGS-B"
+
+        print("Minimizer: " + self._minimizer)
         print("Maximum number of iterations: " + str(self._iter_max))
         # print("Tolerance: %.0e" %(self._tolerance))
 
         time_start = time.time()
 
-        ## Non-linear loss function requires use of L-BFGS-B
         ## Remark: L-BFGS-B is faster with direct computation as done in
-        # _run_reconstruction_nonlinear. Thus, preferred in this case too.
+        # _run_reconstruction_nonlinear. Thus, _run_reconstruction_nonlinear
+        # preferred in linear case for L-BFGS-B too.
         if self._loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
-            if self._loss not in ["linear"] and self._minimizer not in ["L-BFGS-B"]:
-                print("Note, selected minimizer '%s' cannot be used. Non-linear loss function requires L-BFGS-B." %(self._minimizer))
             HR_nda_vec = self._run_reconstruction_nonlinear()
         else:
             HR_nda_vec = self._run_reconstruction_linear()
@@ -275,10 +283,6 @@ class TikhonovSolver(Solver):
 
 
     def _run_reconstruction_nonlinear(self, x0=None):
-
-        sys.stdout.write("Loss function: %s" %(self._loss))
-        if self._loss in ["huber"]:
-            print(" (gamma = %g)" %(self._huber_gamma))
 
         ## Set initial value and bounds
         if x0 is None:
