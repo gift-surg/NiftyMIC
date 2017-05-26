@@ -136,7 +136,7 @@ class ScatteredDataApproximation:
 
         ## Define helpers to obtain averaged stack
         shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
-        array_mask = np.zeros(shape)
+        array_mask = np.zeros(shape, dtype=np.uint8)
 
         ## Average over domain specified by the joint mask ("union mask")
         for i in range(0,self._N_stacks):
@@ -194,7 +194,7 @@ class ScatteredDataApproximation:
                 sitk.Euler3DTransform(), 
                 sitk.sitkNearestNeighbor, 
                 0,
-                self._stacks[i].sitk_mask.GetPixelIDValue())
+                self._HR_volume.sitk_mask.GetPixelIDValue())
 
             ## Get arrays of resampled warped stack and mask
             array_mask_tmp = sitk.GetArrayFromImage(stack_sitk_mask)

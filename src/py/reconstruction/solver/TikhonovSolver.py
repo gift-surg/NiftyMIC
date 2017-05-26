@@ -234,9 +234,11 @@ class TikhonovSolver(Solver):
         elif self._deconvolution_mode in ["predefined_covariance"]:
             print("(Predefined covariance used: cov = diag(%s))" % (np.diag(self._predefined_covariance)))
 
-        sys.stdout.write("Loss function: %s" %(self._loss))
         if self._loss in ["huber"]:
-            print(" (gamma = %g)" %(self._huber_gamma))
+            print("Loss function: %s (gamma = %g)" %(self._loss, self._huber_gamma))
+        else:
+            print("Loss function: %s" %(self._loss))
+
 
         print("Regularization parameter: " + str(self._alpha))
 

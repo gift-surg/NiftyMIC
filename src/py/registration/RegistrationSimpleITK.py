@@ -23,7 +23,26 @@ import base.PSF as psf
 
 class RegistrationSimpleITK:
 
-    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", metric_params=None, optimizer="RegularStepGradientDescent", optimizer_params="{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 200, 'gradientMagnitudeTolerance': 1e-6}", scales_estimator="PhysicalShift", initializer_type="MOMENTS", use_oriented_psf=False, use_multiresolution_framework=False, use_centered_transform_initializer=False, use_verbose=False):
+    def __init__(self,
+        fixed=None,
+        moving=None,
+        use_fixed_mask=False,
+        use_moving_mask=False,
+        registration_type="Rigid",
+        interpolator="Linear",
+        metric="Correlation",
+        metric_params=None,
+        optimizer="ConjugateGradientLineSearch",
+        optimizer_params="{'learningRate': 1, 'numberOfIterations': 100}",
+        # optimizer="RegularStepGradientDescent",
+        # optimizer_params="{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 200, 'gradientMagnitudeTolerance': 1e-6}",
+        scales_estimator="PhysicalShift",
+        initializer_type="MOMENTS",
+        use_oriented_psf=False,
+        use_multiresolution_framework=False,
+        use_centered_transform_initializer=False,
+        use_verbose=False,
+        ):
 
         self._fixed = fixed
         self._moving = moving
@@ -380,6 +399,17 @@ class RegistrationSimpleITK:
         # print('  Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
         # print("\n")
 
+        if self._use_verbose:
+            ph.print_debug_info("Registration: SimpleITK")
+            ph.print_debug_info("Transform Model: %s" %(self._registration_type))
+            ph.print_debug_info("Interpolator: %s" %(self._interpolator))
+            ph.print_debug_info("Metric: %s" %(self._metric))
+            ph.print_debug_info("CenteredTransformInitializer: %s" %(self._initializer_type))
+            ph.print_debug_info("Optimizer: %s" %(self._optimizer))
+            ph.print_debug_info("Use Multiresolution Framework: %s" %(self._use_multiresolution_framework))
+            ph.print_debug_info("Use Fixed Mask: %s" %(self._use_fixed_mask))
+            ph.print_debug_info("Use Moving Mask: %s" %(self._use_moving_mask))
+
         ## Execute 3D registration
         registration_transform_sitk = registration_method.Execute(fixed.sitk, moving_sitk)
 
@@ -391,9 +421,9 @@ class RegistrationSimpleITK:
             registration_transform_sitk = sitk.AffineTransform(registration_transform_sitk)
 
         if self._use_verbose:
-            print("\t\tSimpleITK Image Registration Method:")
-            print('\t\t\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
-            print('\t\t\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+            ph.print_debug_info("SimpleITK Image Registration Method:")
+            ph.print_debug_info('\tFinal metric value: {0}'.format(registration_method.GetMetricValue()))
+            ph.print_debug_info('\tOptimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
             sitkh.print_sitk_transform(registration_transform_sitk)
 

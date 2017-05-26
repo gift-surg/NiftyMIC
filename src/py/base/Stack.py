@@ -569,6 +569,27 @@ class Stack:
 
         return stack
 
+    ##
+    # Gets the stack multiplied with its mask. Rationale behind is to obtain
+    # "cleaner" looking HR images after the SRR step where motion-correction
+    # might have dispersed some slices
+    # \date       2017-05-26 13:50:39+0100
+    #
+    # \param      self      The object
+    # \param      filename  The filename
+    #
+    # \return     The stack multiplied with its mask.
+    #
+    def get_stack_multiplied_with_its_mask(self, filename=None):
+
+        ## Multiply stack with its mask
+        image_sitk = self.sitk * sitk.Cast(self.sitk_mask, self.sitk.GetPixelIDValue())
+
+        if filename is None:
+            filename = self.get_filename()
+
+        return Stack.from_sitk_image(image_sitk, filename=filename, image_sitk_mask=self.sitk_mask)
+
 
     ## Get stack resampled on isotropic grid based on the actual position of
     #  its slices
@@ -791,6 +812,27 @@ class Stack:
 
         return stack
 
+
+    def get_cropped_stack_based_on_mask(self, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
+
+        ## Get rectangular region surrounding the masked voxels
+        [x_range, y_range, z_range] = self._get_rectangular_masked_region(self.sitk_mask)
+
+        ## Crop to image region defined by rectangular mask
+        stack_crop_sitk = self._crop_image_to_region(self.sitk, x_range, y_range, z_range)
+
+        ## Increase image region
+        stack_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(stack_crop_sitk, boundary_i, boundary_j, boundary_k, unit=unit)
+
+        ## Resample original image and mask to specified image region
+        image_crop_sitk = sitk.Resample(self.sitk, stack_crop_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, self.sitk.GetPixelIDValue())
+        mask_crop_sitk = sitk.Resample(self.sitk_mask, stack_crop_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, self.sitk_mask.GetPixelIDValue())
+
+        stack = self.from_sitk_image(image_crop_sitk, self._filename, mask_crop_sitk)
+
+        return stack
+
+
     ## Return rectangular region surrounding masked region. 
     #  \param[in] mask_sitk sitk.Image representing the mask
     #  \return range_x pair defining x interval of mask in voxel space 
@@ -851,25 +893,6 @@ class Stack:
 
         return image_cropped_sitk
 
-
-    def get_cropped_stack_based_on_mask(self, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
-
-        ## Get rectangular region surrounding the masked voxels
-        [x_range, y_range, z_range] = self._get_rectangular_masked_region(self.sitk_mask)
-
-        ## Crop to image region defined by rectangular mask
-        stack_crop_sitk = self._crop_image_to_region(self.sitk, x_range, y_range, z_range)
-
-        ## Increase image region
-        stack_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(stack_crop_sitk, boundary_i, boundary_j, boundary_k, unit=unit)
-
-        ## Resample original image and mask to specified image region
-        image_crop_sitk = sitk.Resample(self.sitk, stack_crop_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, self.sitk.GetPixelIDValue())
-        mask_crop_sitk = sitk.Resample(self.sitk_mask, stack_crop_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, self.sitk_mask.GetPixelIDValue())
-
-        stack = self.from_sitk_image(image_crop_sitk, self._filename, mask_crop_sitk)
-
-        return stack
 
     ## Burst the stack into its slices and return all slices of the stack
     #  return list of Slice objects
