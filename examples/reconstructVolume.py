@@ -214,9 +214,6 @@ if __name__ == '__main__':
 
     if args.two_step_cycles > 0:
 
-        # List to store SRR iterations
-        HR_volume_iterations = []
-
         # Global rigid registration to target stack
         ph.print_title("Global Rigid Registration")
 
@@ -261,6 +258,10 @@ if __name__ == '__main__':
     if args.verbose:
         HR_volume.show(1)
 
+
+    # List to store SRR iterations
+    HR_volume_iterations = []
+    
     # Add initial volume and rigidly aligned, original data for
     # visualization
     HR_volume_iterations.append(
