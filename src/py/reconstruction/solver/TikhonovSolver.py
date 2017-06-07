@@ -17,10 +17,6 @@ import numpy as np
 import time
 from scipy.optimize import minimize
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
-
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
 from reconstruction.solver.Solver import Solver

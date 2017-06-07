@@ -56,7 +56,7 @@ On the cluster I encountered an issue with that compilation line. Adding `-DBoos
 Therefore, example lines for compilations read
 * `cmake -D ITK_DIR="~/development/ITK/ITK-build_dev" -D BOOST_ROOT="/opt/local/include" ../../src/cpp` (Mac OS X Yosemite 10.10)
 * `cmake -D ITK_DIR="~/development/ITK/ITK-build_dev" -D BOOST_ROOT="/usr/include" ../../src/cpp` (Ubuntu 14.04)
-* `/share/apps/cmake-3.6.2/bin/cmake -D ITK_DIR=~/development/ITK/ITK-build_dev -DBoost_NO_BOOST_CMAKE=ON ../../src/cpp/evelopment/ITK/ITK-build_dev -DBoost_NO_BOOST_CMAKE=ON ../../` (Cluster 'wise')
+* `/share/apps/cmake-3.6.2/bin/cmake -D ITK_DIR=~/development/ITK/ITK-build_dev -DBoost_NO_BOOST_CMAKE=ON ../../src/cpp/evelopment/ITK/ITK-build_dev -DBoost_NO_BOOST_CMAKE=ON ../../src/cpp` (Cluster 'wise')
 
 
 ### NiftyReg

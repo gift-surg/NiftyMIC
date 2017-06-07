@@ -23,13 +23,8 @@ from scipy.optimize import nnls
 import time
 from datetime import timedelta
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
-
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
-
 import reconstruction.solver.TikhonovSolver as tk
 from reconstruction.solver.Solver import Solver
 
