@@ -37,13 +37,10 @@ project( ${MY_PROJ_NAME} )
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) 
 
 add_executable( ${MY_EXEC_FILE} ${MY_MAIN_FILE} ${MY_MAIN_FILE_SOURCES} )  
-target_link_libraries( ${MY_EXEC_FILE} ${ITK_LIBRARIES} )
-target_link_libraries( ${MY_EXEC_FILE} ${Boost_LIBRARIES} )
+target_link_libraries( ${MY_EXEC_FILE} ${ITK_LIBRARIES} ${Boost_LIBRARIES} )
 
 add_executable( ${MY_EXEC_FILE_2} ${MY_MAIN_FILE_2} ${MY_MAIN_FILE_SOURCES_2} )  
-target_link_libraries( ${MY_EXEC_FILE_2} ${ITK_LIBRARIES} )
-target_link_libraries( ${MY_EXEC_FILE_2} ${Boost_LIBRARIES} )
+target_link_libraries( ${MY_EXEC_FILE_2} ${ITK_LIBRARIES} ${Boost_LIBRARIES} )
 
 add_executable( ${MY_EXEC_FILE_3} ${MY_MAIN_FILE_3} ${MY_MAIN_FILE_SOURCES_3} )  
-target_link_libraries( ${MY_EXEC_FILE_3} ${ITK_LIBRARIES} )
-target_link_libraries( ${MY_EXEC_FILE_3} ${Boost_LIBRARIES} )
+target_link_libraries( ${MY_EXEC_FILE_3} ${ITK_LIBRARIES} ${Boost_LIBRARIES} )

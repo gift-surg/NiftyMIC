@@ -25,41 +25,20 @@ endif()
 ##############################################################################
 # Find Boost.
 ##############################################################################
-set(Boost_NO_SYSTEM_PATHS ON)
-if (Boost_NO_SYSTEM_PATHS)
-  if(APPLE)
-    set(BOOST_ROOT "/opt/local/include/")   #Mac
-    message(STATUS "Mac OS X: Set BOOS_ROOT=${BOOST_ROOT}")
-  elseif(UNIX)
-    set(BOOST_ROOT "/usr/include/")       #Ubuntu
-    message(STATUS "Linux: Set BOOS_ROOT=${BOOST_ROOT}")
-  endif()
-endif (Boost_NO_SYSTEM_PATHS)
-if(BUILD_SHARED_LIBS)
-  set(Boost_USE_STATIC_LIBS OFF)
-else()
-  set(Boost_USE_STATIC_LIBS ON)
-endif()
-find_package( Boost COMPONENTS filesystem system date_time regex thread 
-  iostreams program_options REQUIRED)
+find_package(Boost COMPONENTS program_options REQUIRED)
+
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 ##############################################################################
 # Find ITK.
 ##############################################################################
-# set (CMAKE_PREFIX_PATH "~/development/ITK/ITK-build_dev-4.11/")
-# set (ITK_DIR "~/development/ITK/ITK-build_dev_4.11/")
-# set (ITK_DIR "~/development/ITK/ITK-build_dev/" CACHE STRING "Choose the type of build." FORCE)
-
-# message (STATUS "Use ITK-directory " ${ITK_DIR})
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
 if (ITKVtkGlue_LOADED)
   find_package(VTK REQUIRED)
   include(${VTK_USE_FILE})
 endif()
-# message (STATUS "Use ITK-directory " ${ITK_DIR})
 
 ##############################################################################
 # Actual project.
@@ -91,7 +70,7 @@ add_subdirectory(test)
 ##############################################################################
 # Copy test data into build folder.
 ##############################################################################
-set (DIR_TEST_DATA "../test-data")
+set (DIR_TEST_DATA "../../test-data")
 
 ## Set directory where test data is located
 file(GLOB MY_COPY_FILES
@@ -100,6 +79,6 @@ file(GLOB MY_COPY_FILES
 file(COPY ${MY_COPY_FILES} DESTINATION ${CMAKE_BINARY_DIR}/test/test-data)
 
 ##############################################################################
-# ITK-DIR info
+# Compilation info
 ##############################################################################
 message(STATUS "ITK_DIR='${ITK_DIR}'")

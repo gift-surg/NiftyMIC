@@ -1,24 +1,24 @@
 #!/usr/bin/python
 
-## \file runTests.py
-#  \brief main-file incorporating all the other files 
-# 
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date September 2015
+##
+# \file runTests.py
+# \brief      main-file to run specified unit tests
+#
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       September 2015
+#
 
 
-
-## Import libraries 
+# Import libraries
 import unittest
 import sys
+import os
 
-# sys.modules.clear()
+# Add directories to import modules
+sys.path.insert(1, os.path.abspath(os.path.join(
+    os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
 
-## Add directories to import modules
-# dir_src_root = "../"
-# sys.path.append( dir_src_root )
-
-## Import modules for unit testing
+# Import modules for unit testing
 # from modules.TestFirstEstimateOfHRVolume import * ## outdated
 # from modules.TestSimpleITKHelper import *
 # from modules.TestStack import *
@@ -29,36 +29,15 @@ import sys
 # from modules.TestBrainStripping import *
 # from modules.TestIntraStackRegistration import *
 # from modules.TestParameterNormalization import *
-# from modules.TestRegistrationITK import *
+from modules.TestRegistrationITK import *
 # from modules.TestLinearImageQualityTransfer import *
 # from modules.TestIntensityCorrection import *
 # from modules.TestSegmentationPropagation import *
-from modules.TestLossFunctions import *
+# from modules.TestLossFunctions import *
 
 """ ###########################################################################
 Main Function
 """
 if __name__ == '__main__':
-    """
-    Choose variables
-    """
-    ## Directory to save obtained results
-    # dir_output = "results/"
-
-    ## Choose decimal place accuracy for unit tests:
-    # accuracy = 6
-
-    """
-    Unit tests:
-    """
-    ## Prepare output directory
-    # reconstruction_manager = rm.ReconstructionManager(dir_output)
-
-    # ## Read input data
-    # dir_input, filenames = read_input_data(input_stacks_type)
-
-    # reconstruction_manager.read_input_data(dir_input, filenames)
-
-    
     print("\nUnit tests:\n--------------")
     unittest.main()

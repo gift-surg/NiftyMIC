@@ -48,11 +48,17 @@ class TestSegmentationPropagation(unittest.TestCase):
 
         stack_sitk = sitkh.get_transformed_sitk_image(template.sitk, transform_sitk_gd)
 
-        stack = st.Stack.from_sitk_image(stack_sitk, name="stack")
+        stack = st.Stack.from_sitk_image(stack_sitk, filename="stack")
 
         # sitkh.show_sitk_image([template.sitk, stack_sitk])
 
-        registration = regsitk.RegistrationSimpleITK(initializer_type="MOMENTS", verbose=True, metric="MeanSquares", optimizer_params="{'learningRate': 1, 'minStep': 1e-6,  'numberOfIterations': 300}")
+        optimizer = "RegularStepGradientDescent"
+        optimizer_params = "{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 300}"
+
+        # optimizer="ConjugateGradientLineSearch"
+        # optimizer_params="{'learningRate': 1, 'numberOfIterations': 100}"
+
+        registration = regsitk.RegistrationSimpleITK(initializer_type="MOMENTS", use_verbose=True, metric="MeanSquares", optimizer=optimizer, optimizer_params=optimizer_params)
         # registration = regitk.RegistrationITK()
         # registration = regniftyreg.NiftyReg()
 
