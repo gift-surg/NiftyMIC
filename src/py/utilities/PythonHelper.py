@@ -706,13 +706,26 @@ def close_all_figures():
 
 
 ##
-#       Returns start time of execution
+# Returns start time of execution
 # \date       2016-11-06 17:15:00+0000
 #
 # \return     Start time of execution
 #
 def start_timing():
     return time.time()
+
+
+##
+# Adds times obtained by start and stop timing
+# \date       2017-06-08 15:38:27+0100
+#
+# \param      time_1  time obtained by stop_timing
+# \param      time_2  The time 2
+#
+# \return     added time
+#
+def add_times(time_1, time_2):
+    return time_1 + time_2
 
 
 ##

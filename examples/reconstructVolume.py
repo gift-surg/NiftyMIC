@@ -98,43 +98,42 @@ def get_parsed_input_line(
     parser.add_argument('--alpha',
                         type=float,
                         help="Regularization parameter alpha to solve the SR reconstruction problem:  SRR = argmin_x [0.5 * sum_k ||y_k - A_k x||^2 + alpha * R(x)]. [default: %g]" % (alpha), default=alpha)
+    parser.add_argument('--alpha-final',
+                        type=float,
+                        help="Regularization parameter like 'alpha' but used for the final SRR step. [default: %s]" % (alpha_final), default=alpha_final)
     parser.add_argument('--regularization',
                         type=str,
                         help="Type of regularization for SR algorithm. Either 'TK0' or 'TK1' for zeroth or first order Tikhonov regularization, respectively. I.e. R(x) = ||x||^2 for 'TK0' or R(x) = ||Dx||^2 for 'TK1'. [default: %s]" % (regularization), default=regularization)
     parser.add_argument('--iter-max',
                         type=int,
                         help="Number of maximum iterations for the numerical solver. [default: %s]" % (iter_max), default=iter_max)
-    parser.add_argument('--verbose',
-                        type=bool,
-                        help="Turn on/off verbose output. [default: %s]" % (verbose), default=verbose)
+    parser.add_argument('--iter-max-final',
+                        type=int,
+                        help="Number of maximum iterations for the numerical solver like 'iter-max' but used for the final SRR step  [default: %s]" % (iter_max_final), default=iter_max_final)
+    parser.add_argument('--minimizer',
+                        type=str,
+                        help="Choice of minimizer used for the inverse problem associated to the SRR. Possible choices are 'lsmr' or 'L-BFGS-B'. [default: %s]" % (minimizer), default=minimizer)
+    parser.add_argument('--two-step-cycles',
+                        type=int,
+                        help="Number of two-step-cycles, i.e. number of Slice-to-Volume Registration and Super-Resolution Reconstruction cycles. [default: %s]" % (two_step_cycles), default=two_step_cycles)
+    parser.add_argument('--loss',
+                        type=str,
+                        help="Loss function rho used for data term, i.e. rho((y_k - A_k x)^2). Possible choices are 'linear', 'soft_l1' or 'huber'. [default: %s]" % (loss), default=loss)
     parser.add_argument('--provide-comparison',
                         type=bool,
                         help="Turn on/off functionality to create files allowing for a visual comparison between original data and the obtained SRR. A folder 'comparison' will be created in the output directory containing the obtained SRR along with the linearly resampled original data. An additional script 'show_comparison.py' will be provided whose execution will open all images in ITK-Snap (http://www.itksnap.org/). [default: %s]" % (provide_comparison), default=provide_comparison)
-    parser.add_argument('--two-step-cycles',
-                        type=int,
-                        help=" [default: %s]" % (two_step_cycles), default=two_step_cycles)
-    parser.add_argument('--minimizer',
-                        type=str,
-                        help=" [default: %s]" % (minimizer), default=minimizer)
     parser.add_argument('--dilation-radius',
                         type=int,
-                        help=" [default: %s]" % (dilation_radius), default=dilation_radius)
+                        help="Dilation radius in number of voxels used for segmentation propagation. [default: %s]" % (dilation_radius), default=dilation_radius)
     parser.add_argument('--extra-frame-target',
                         type=float,
-                        help=" [default: %s]" % (extra_frame_target), default=extra_frame_target)
+                        help="Extra frame added to the increase the target space for the SRR. [default: %s]" % (extra_frame_target), default=extra_frame_target)
     parser.add_argument('--bias-field-correction',
                         type=bool,
-                        help=" [default: %s]" % (bias_field_correction), default=bias_field_correction)
-    parser.add_argument('--alpha-final',
-                        type=float,
-                        help=" [default: %s]" % (alpha_final), default=alpha_final)
-    parser.add_argument('--iter-max-final',
-                        type=int,
-                        help=" [default: %s]" % (iter_max_final), default=iter_max_final)
-    parser.add_argument('--loss',
-                        type=str,
-                        help=" [default: %s]" % (loss), default=loss)
-
+                        help="Turn on/off bias field correction during data preprocessing. [default: %s]" % (bias_field_correction), default=bias_field_correction)
+    parser.add_argument('--verbose',
+                        type=bool,
+                        help="Turn on/off verbose output. [default: %s]" % (verbose), default=verbose)
     args = parser.parse_args()
 
     ph.print_title("Given Input")
@@ -164,7 +163,7 @@ if __name__ == '__main__':
         regularization="TK1",
         alpha=0.1,
         iter_max=5,
-        verbose=0,
+        verbose=False,
         provide_comparison=0,
         two_step_cycles=3,
         minimizer="lsmr",
@@ -207,12 +206,14 @@ if __name__ == '__main__':
 
     if args.verbose:
         for i in range(0, len(stacks)):
-            stacks[i].write(directory=args.dir_output + "01_preprocessed_data/",
+            stacks[i].write(directory=os.path.join(args.dir_output, "01_preprocessed_data"),
                             write_mask=True)
 
     # sitkh.show_stacks(stacks)
 
     if args.two_step_cycles > 0:
+
+        time_registration = ph.start_timing()
 
         # Global rigid registration to target stack
         ph.print_title("Global Rigid Registration")
@@ -233,11 +234,16 @@ if __name__ == '__main__':
                 "sitk." + transform_sitk.GetName() + "(transform_sitk.GetInverse())")
             stacks[i].update_motion_correction(transform_sitk)
 
+        time_registration = ph.stop_timing(time_registration)
         # sitkh.show_stacks(stacks, segmentation=stacks[0])
         if args.verbose:
             for i in range(0, len(stacks)):
-                stacks[i].write(directory=args.dir_output+"02_rigidly_aligned_data/",
+                stacks[i].write(directory=os.path.join(args.dir_output, "02_rigidly_aligned_data"),
                                 write_mask=True)
+    else:
+        time_registration = 0
+
+    time_reconstruction = ph.start_timing()
 
     # Isotropic resampling to define HR target space
     ph.print_title("Isotropic Resampling")
@@ -255,20 +261,20 @@ if __name__ == '__main__':
     HR_volume = SDA.get_reconstruction()
     HR_volume.set_filename("HRvolume_SDA")
 
+    time_reconstruction = ph.stop_timing(time_reconstruction)
+
     if args.verbose:
         HR_volume.show(1)
 
-
     # List to store SRR iterations
     HR_volume_iterations = []
-    
+
     # Add initial volume and rigidly aligned, original data for
     # visualization
     HR_volume_iterations.append(
         st.Stack.from_stack(HR_volume, "HRvolume_iter0"))
     for i in range(0, len(stacks)):
         HR_volume_iterations.append(stacks[i])
-
 
     if args.regularization in ["TK0", "TK1"]:
         SRR = tk.TikhonovSolver(
@@ -294,6 +300,9 @@ if __name__ == '__main__':
 
     if args.two_step_cycles > 0:
 
+        alpha_delta = (args.alpha_final - args.alpha) / \
+            float(args.two_step_cycles)
+
         # Two-step Slice-to-Volume Registration Reconstruction
         ph.print_title("Two-step Slice-to-Volume Registration Reconstruction")
 
@@ -317,22 +326,42 @@ if __name__ == '__main__':
         )
 
         for i_cycle in range(0, args.two_step_cycles):
+            time_elapsed_tmp = ph.start_timing()
             for i_stack in range(0, len(stacks)):
                 stack = stacks[i_stack]
 
                 # Slice-to-volume registration
                 for i_slice in range(0, stack.get_number_of_slices()):
-                    ph.print_subtitle("Cycle %d/%d -- Stack %d/%d -- Slice %2d/%d" % (
-                        i_cycle+1, args.two_step_cycles, i_stack+1, len(stacks), i_slice+1, stack.get_number_of_slices()))
+                    ph.print_subtitle(
+                        "Cycle %d/%d -- Stack %d/%d -- Slice %2d/%d: "
+                        "Slice-to-Volume Registration" % (
+                            i_cycle+1, args.two_step_cycles, i_stack+1,
+                            len(stacks), i_slice+1,
+                            stack.get_number_of_slices()))
                     slice = stack.get_slice(i_slice)
                     registration.set_fixed(slice)
                     registration.run_registration()
                     transform_sitk = registration.get_registration_transform_sitk()
                     slice.update_motion_correction(transform_sitk)
+            time_elapsed_tmp = ph.stop_timing(time_elapsed_tmp)
+            time_registration = ph.add_times(
+                time_registration, time_elapsed_tmp)
+            print("\nElapsed time for all Slice-to-Volume registrations: %s" %
+                  (time_elapsed_tmp))
 
             # Super-resolution reconstruction
+            time_elapsed_tmp = ph.start_timing()
+            ph.print_subtitle("Cycle %d/%d: Super-Resolution Reconstruction" % (
+                i_cycle+1, args.two_step_cycles))
+
+            SRR.set_alpha(args.alpha + i_cycle*alpha_delta)
             SRR.run_reconstruction()
+
+            time_elapsed_tmp = ph.stop_timing(time_elapsed_tmp)
             SRR.print_statistics()
+            time_reconstruction = ph.add_times(
+                time_reconstruction, time_elapsed_tmp)
+
             HR_volume_tmp = HR_volume.get_stack_multiplied_with_its_mask(
                 filename="HRvolume_iter"+str(i_cycle+1))
             HR_volume_iterations.insert(0, HR_volume_tmp)
@@ -341,17 +370,21 @@ if __name__ == '__main__':
 
     SRR.set_alpha(args.alpha_final)
     SRR.set_iter_max(args.iter_max_final)
+    ph.print_subtitle("Final Super-Resolution Reconstruction")
+    time_elapsed_tmp = ph.start_timing()
     SRR.run_reconstruction()
+    time_elapsed_tmp = ph.stop_timing(time_elapsed_tmp)
+    time_reconstruction = ph.add_times(time_reconstruction, time_elapsed_tmp)
     SRR.print_statistics()
-    
-    elapsed_time = ph.stop_timing(time_start)
+
+    elapsed_time_total = ph.stop_timing(time_start)
 
     HR_volume_final = SRR.get_reconstruction().get_stack_multiplied_with_its_mask()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
     HR_volume_final.write(args.dir_output)
-    
+
     HR_volume_iterations.insert(0, HR_volume_final)
-    if args.verbose:
+    if args.verbose and not args.provide_comparison:
         sitkh.show_stacks(HR_volume_iterations)
     # HR_volume_final.show()
 
@@ -368,5 +401,11 @@ if __name__ == '__main__':
     ph.print_title("Summary")
     print("Computational Time for Data Preprocessing: %s" %
           (time_data_preprocessing))
+    print("Computational Time for Registrations: %s" %
+          (time_registration))
+    print("Computational Time for Reconstructions: %s" %
+          (time_reconstruction))
     print("Computational Time for Entire Reconstruction Pipeline: %s" %
-          (elapsed_time))
+          (elapsed_time_total))
+
+    ph.print_line_separator()
