@@ -19,13 +19,12 @@ import re
 ## Import modules
 import utilities.PythonHelper as ph
 
-## Import modules from src-folder
-# import utilities.SimpleITKHelper as sitkh
+from definitions import dir_tmp
 
 ## Use ITK-SNAP instead of imageJ to view images
 # os.environ['SITK_SHOW_COMMAND'] = "/Applications/ITK-SNAP.app/Contents/MacOS/ITK-SNAP"
-os.environ['SITK_SHOW_COMMAND'] = "/usr/local/bin/itksnap"
-# os.environ['SITK_SHOW_COMMAND'] = "itksnap"
+# os.environ['SITK_SHOW_COMMAND'] = "/usr/local/bin/itksnap"
+os.environ['SITK_SHOW_COMMAND'] = "itksnap"
 
 # np.set_printoptions(precision=3)
 
@@ -1001,7 +1000,7 @@ def call_viewer_niftyview(filenames, filename_segmentation=None):
     return cmd
 
 
-def write_executable_file(cmds, dir_output="/tmp/", filename="showComparison"):
+def write_executable_file(cmds, dir_output=dir_tmp, filename="showComparison"):
     now = datetime.datetime.now()
     date_time = str(now.year) + "-" + str(now.month).zfill(2) + "-"  + str(now.day).zfill(2) + " "
     date_time += str(now.hour).zfill(2) + ":" + str(now.minute).zfill(2) + ":" + str(now.second).zfill(2)
@@ -1092,7 +1091,7 @@ def write_executable_file(cmds, dir_output="/tmp/", filename="showComparison"):
 # \param[in]  label         filename or list of filenames
 # \param[in]  segmentation  sitk.Image used as segmentation
 #
-def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear", dir_output="/tmp/"):
+def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear", dir_output=dir_tmp):
     
     dir_output = ph.create_directory(dir_output)
 
@@ -1164,7 +1163,7 @@ def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison
 # \param      stacks        List of stack objects
 # \param      segmentation  Stack containing the desired segmentation.
 #
-def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=False, viewer="itksnap", dir_output="/tmp/"):
+def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=False, viewer="itksnap", dir_output=dir_tmp):
 
     N_stacks = len(stacks)
     images_sitk = [None]*N_stacks
@@ -1191,9 +1190,8 @@ def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=Fals
 #  \param[in] segmentation as itk.image object
 #  \param[in] overlay image which shall be overlayed onto image_itk (optional)
 #  \param[in] label filename for file written to /tmp/ (optional)
-def show_itk_image(image_itk, segmentation=None, overlay=None, label="test"):
+def show_itk_image(image_itk, segmentation=None, overlay=None, label="test", dir_output=dir_tmp):
     
-    dir_output = "/tmp/"
     # cmd = "fslview " + dir_output + label + ".nii.gz & "
 
     if overlay is not None and segmentation is None:

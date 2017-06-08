@@ -17,6 +17,9 @@ import numpy as np
 
 ## Import modules
 import utilities.SimpleITKHelper as sitkh
+import utilities.PythonHelper as ph
+
+from definitions import dir_tmp
 
 ## This class implements the interface to the Brain Extraction Tool (BET)
 #  TODO
@@ -34,7 +37,7 @@ class BrainStripping(object):
     # \param      dir_tmp              Directory where temporary results are
     #                                  written to, string
     #
-    def __init__(self, compute_brain_image=False, compute_brain_mask=True, compute_skull_image=False, dir_tmp = "/tmp/BrainExtractionTool/", bet_options=""):
+    def __init__(self, compute_brain_image=False, compute_brain_mask=True, compute_skull_image=False, dir_tmp=os.path.join(dir_tmp, "BrainExtractionTool"), bet_options=""):
 
         self._compute_brain_image = compute_brain_image
         self._compute_brain_mask = compute_brain_mask
@@ -63,7 +66,7 @@ class BrainStripping(object):
     #                                  written to, string
     #
     @classmethod
-    def from_filename(cls, dir_input, filename, compute_brain_image=False, compute_brain_mask=True, compute_skull_image=False, dir_tmp = "/tmp/BrainExtractionTool/"):
+    def from_filename(cls, dir_input, filename, compute_brain_image=False, compute_brain_mask=True, compute_skull_image=False, dir_tmp=os.path.join(dir_tmp, "BrainExtractionTool")):
 
         self = cls(compute_brain_image=compute_brain_image, compute_brain_mask=compute_brain_mask, compute_skull_image=compute_skull_image, dir_tmp=dir_tmp)
         self._sitk = sitk.ReadImage(dir_input + filename + ".nii.gz", sitk.sitkFloat64)
@@ -88,7 +91,7 @@ class BrainStripping(object):
     # \return     { description_of_the_return_value }
     #
     @classmethod
-    def from_sitk_image(cls, sitk_image, compute_brain_image=False, compute_brain_mask=True, compute_skull_image=False, dir_tmp = "/tmp/BrainExtractionTool/"):
+    def from_sitk_image(cls, sitk_image, compute_brain_image=False, compute_brain_mask=True, compute_skull_image=False, dir_tmp=os.path.join(dir_tmp, "BrainExtractionTool")):
 
         self = cls(compute_brain_image=compute_brain_image, compute_brain_mask=compute_brain_mask, compute_skull_image=compute_skull_image, dir_tmp=dir_tmp)
         self._sitk = sitk.Image(sitk_image)
@@ -332,8 +335,7 @@ class BrainStripping(object):
 
         filename_out = "image"
 
-        os.system("mkdir -p " + self._dir_tmp)
-        os.system("rm -rf " + self._dir_tmp + "*")
+        self._dir_tmp = ph.create_directory(self._dir_tmp, delete_files=True) 
 
         sitk.WriteImage(self._sitk, self._dir_tmp + filename_out + ".nii.gz")
 

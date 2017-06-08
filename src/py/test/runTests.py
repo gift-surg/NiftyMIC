@@ -19,7 +19,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(
     os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
 
 # Import modules for unit testing
-from modules.TestFirstEstimateOfHRVolume import * ## outdated
+# from modules.TestFirstEstimateOfHRVolume import * ## outdated
 from modules.TestSimpleITKHelper import *
 from modules.TestStack import *
 from modules.TestSimulatorSliceAcqusition import *

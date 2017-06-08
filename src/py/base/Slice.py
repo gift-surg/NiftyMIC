@@ -14,6 +14,8 @@ import numpy as np
 ## Import modules from src-folder
 import utilities.SimpleITKHelper as sitkh
 
+from definitions import dir_tmp
+
 ## In addition to the nifti-image as being stored as sitk.Image for a single
 #  3D slice \f$ \in R^3 \times R^3 \times 1\f$ the class Slice
 #  also contains additional variables helpful to work with the data
@@ -231,8 +233,7 @@ class Slice:
 
     ## Display slice with external viewer (ITK-Snap)
     #  \param[in] show_segmentation display slice with or without associated segmentation (default=0)
-    def show(self, show_segmentation=0):
-        dir_output = "/tmp/"
+    def show(self, show_segmentation=0, dir_output=dir_tmp):
 
         filename_out = self._filename + "_" + str(self._slice_number)
         if show_segmentation:
@@ -260,7 +261,7 @@ class Slice:
     #  - affine transformation describing physical space position of slice
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifyig the filename. If not given, filename of parent stack is used
-    def write(self, directory="/tmp/", filename=None, write_transform=False):
+    def write(self, directory=dir_tmp, filename=None, write_transform=False):
         
         ## Create directory if not existing
         os.system("mkdir -p " + directory)

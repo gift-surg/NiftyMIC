@@ -20,8 +20,7 @@ from PIL import Image
 # from datetime import timedelta
 import itertools
 
-## Import modules
-# import utilities.SimpleITKHelper as sitkh
+from definitions import dir_tmp
 
 ## 
 COLORS = [
@@ -204,7 +203,7 @@ def flip(items, ncol):
 #
 # \return     figure
 #
-def show_curves(y, x=None, xlabel="", ylabel="", title="", xlim=None, ylim=None, y_axis_style="plot", labels=None, label_location="upper right", color=None, markers=None, markevery=10, linestyle=None, label_shadow=False, label_frameon=True, label_fontsize=None, label_boundingboxtoanchor=None, label_ncol=1, linewidth=1, markerfacecolors=None, markersize=10, fontfamily="serif", fontname="Arial", use_tex=False, fontsize=12, backgroundcolor="None", aspect_ratio="auto", save_figure=False, directory="/tmp/", filename="figure.pdf", fig_number=None, show_compact=0, subplots_left=0.08, subplots_bottom=0.11, subplots_right=0.99, subplots_top=0.83, subplots_wspace=0, subplots_hspace=0, figuresize=None):
+def show_curves(y, x=None, xlabel="", ylabel="", title="", xlim=None, ylim=None, y_axis_style="plot", labels=None, label_location="upper right", color=None, markers=None, markevery=10, linestyle=None, label_shadow=False, label_frameon=True, label_fontsize=None, label_boundingboxtoanchor=None, label_ncol=1, linewidth=1, markerfacecolors=None, markersize=10, fontfamily="serif", fontname="Arial", use_tex=False, fontsize=12, backgroundcolor="None", aspect_ratio="auto", save_figure=False, directory=dir_tmp, filename="figure.pdf", fig_number=None, show_compact=0, subplots_left=0.08, subplots_bottom=0.11, subplots_right=0.99, subplots_top=0.83, subplots_wspace=0, subplots_hspace=0, figuresize=None):
 
     if type(y) is not list:
         y = [y]
@@ -327,7 +326,7 @@ def show_curves(y, x=None, xlabel="", ylabel="", title="", xlim=None, ylim=None,
 #
 # \return     figure
 #
-def show_images(images, titles=None, cmap="Greys_r", use_colorbar=False, fontfamily="serif", fontname="Arial", use_tex=False, fontsize=12, backgroundcolor="None", aspect_ratio="auto", save_figure=False, directory="/tmp/", filename="figure.pdf", fig_number=None, use_same_scaling=False, show_compact=False, subplots_wspace=0, subplots_hspace=0, subplots_left=0, subplots_right=1, subplots_bottom=0, subplots_top=0.85, grid_shape=None, figuresize=None):
+def show_images(images, titles=None, cmap="Greys_r", use_colorbar=False, fontfamily="serif", fontname="Arial", use_tex=False, fontsize=12, backgroundcolor="None", aspect_ratio="auto", save_figure=False, directory=dir_tmp, filename="figure.pdf", fig_number=None, use_same_scaling=False, show_compact=False, subplots_wspace=0, subplots_hspace=0, subplots_left=0, subplots_right=1, subplots_bottom=0, subplots_top=0.85, grid_shape=None, figuresize=None):
 
     images = list(images)
     N_images = len(images)
@@ -888,8 +887,16 @@ def create_directory(directory, delete_files=False):
 # \param      directory  The directory
 #
 def clear_directory(directory):
+
+    if directory[-1] not in ["/"]:
+        directory += "/"
+
     os.system("rm -rf " + directory + "*")
     print_debug_info("All files in " + directory + " are removed.")
+
+def delete_directory(directory):
+    os.system("rm -rf " + directory)
+    print_debug_info("Directory " + directory + " deleted.")
 
 
 def get_current_date_and_time_strings():

@@ -22,6 +22,9 @@ import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 import utilities.FilenameParser as fp
 
+from definitions import dir_tmp
+
+
 ## In addition to the nifti-image (stored as sitk.Image object) this class 
 ## Stack also contains additional variables helpful to work with the data.
 class Stack:
@@ -316,7 +319,7 @@ class Stack:
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifying the filename. If not given the assigned one within Stack will be chosen.
     #  \param[in] write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
-    def write(self, directory="/tmp/", filename=None, write_mask=False, write_slices=False, write_transforms=False):
+    def write(self, directory=dir_tmp, filename=None, write_mask=False, write_slices=False, write_transforms=False):
 
         ## Create directory if not existing
         os.system("mkdir -p " + directory)

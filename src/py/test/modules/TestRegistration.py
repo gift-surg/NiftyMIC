@@ -10,6 +10,7 @@ import SimpleITK as sitk
 import itk
 import numpy as np
 import unittest
+import os
 import sys
 import time
 from datetime import timedelta
@@ -44,7 +45,7 @@ IMAGE_TYPE_CV363 = itk.Image.CVD363
 class TestRegistration(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data =  dir_test + "registration/"
+    dir_test_data =  os.path.join(dir_test, "registration")
 
     accuracy = 2
 

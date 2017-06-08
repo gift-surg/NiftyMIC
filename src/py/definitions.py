@@ -4,6 +4,8 @@ import sys
 dir_root = os.path.abspath(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'])
 dir_test = os.path.join(dir_root, 'test-data/')
 dir_build_cpp = os.path.join(dir_root, 'build' , 'cpp')
+# dir_tmp = os.path.join(dir_root, 'tmp')
+dir_tmp = "/tmp/"
 
 info = {
         "name": "Volumetric MRI Reconstruction from 2D Slices in the Presence of Motion",

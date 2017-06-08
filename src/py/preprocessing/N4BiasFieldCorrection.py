@@ -7,6 +7,7 @@
 
 
 ## Import libraries
+import os
 import sys
 import itk
 import SimpleITK as sitk
@@ -18,6 +19,7 @@ import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 
 from definitions import dir_build_cpp
+from definitions import dir_tmp
 
 ##
 # Class implementing the segmentation propagation from one image to another
@@ -25,17 +27,16 @@ from definitions import dir_build_cpp
 #
 class N4BiasFieldCorrection(object):
 
-    def __init__(self, stack=None, dir_tmp="/tmp/N4BiasFieldCorrection/", use_mask=True, use_verbose=False):
+    def __init__(self, stack=None, dir_tmp=os.path.join(dir_tmp, "N4BiasFieldCorrection"), use_mask=True, use_verbose=False):
 
         self._stack = stack
-        self._dir_tmp = dir_tmp
         self._use_mask = use_mask
         self._use_verbose = use_verbose
 
         self._stack_corrected = None
 
         ## Directory where temporary files are written
-        ph.create_directory(self._dir_tmp, delete_files=False)
+        self._dir_tmp = ph.create_directory(dir_tmp, delete_files=False)
 
 
     def set_stack(self, stack):

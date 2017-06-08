@@ -19,9 +19,12 @@ import base.PSF as psf
 import base.Stack as st
 import base.Slice as sl
 
+from definitions import dir_tmp
+
+
 class RegistrationITK:
 
-    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", scales_estimator="Jacobian", ANTSradius=20, translation_scale=1, use_multiresolution_framework=False, dir_tmp="/tmp/RegistrationITK/", use_verbose=False):
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", scales_estimator="Jacobian", ANTSradius=20, translation_scale=1, use_multiresolution_framework=False, dir_tmp=os.path.join(dir_tmp, "RegistrationITK"), use_verbose=False):
 
         self._fixed = fixed
         self._moving = moving
@@ -41,8 +44,7 @@ class RegistrationITK:
         self._use_verbose = use_verbose
 
         ## Temporary output where files are written in order to use ITK from the commandline
-        self._dir_tmp = dir_tmp
-        ph.create_directory(self._dir_tmp, delete_files=False)
+        self._dir_tmp = ph.create_directory(dir_tmp, delete_files=False)
 
         self._run_registration = {
             "Rigid"             : self._run_registration_rigid_affine,

@@ -30,7 +30,7 @@ class NiftyReg:
         self._registered_image = None
 
         ## Temporary output where files are written in order to use NiftyReg
-        self._dir_tmp = "/tmp/NiftyReg/"
+        self._dir_tmp = ".tmp/NiftyReg/"
         ph.create_directory(self._dir_tmp, delete_files=False)
 
         self._run_registration = {
