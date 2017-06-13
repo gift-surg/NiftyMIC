@@ -6,21 +6,10 @@
 #             multiple stacks of low-resolution 2D slices without
 #             motion-correction.
 #
-# Example data can be downloaded from
-# https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=0
-#
-# or within the shell by running
-# `curl -L https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=1 > fetal_brain.zip`
-#
-# A volumetric reconstruction (without motion correction) can be obtained by
-# running
-#
-# `python reconstructStaticVolume.py --dir_input=fetal_brain --dir_output=results
-# --target_stack_index=1`
-#
 # Example usage:
 #       - `python reconstructStaticVolume.py --help`
 #       - `python reconstructStaticVolume.py --dir_input=path-to-data`
+#       
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       May 2017
 #
@@ -104,20 +93,19 @@ def get_parsed_input_line(
                         type=int,
                         help="Number of maximum iterations for the numerical solver. [default: %s]" % (iter_max), default=iter_max)
     parser.add_argument('--verbose',
-                        type=bool,
+                        type=int,
                         help="Turn on/off verbose output. [default: %s]" % (verbose), default=verbose)
     parser.add_argument('--provide-comparison',
-                        type=bool,
+                        type=int,
                         help="Turn on/off functionality to create files allowing for a visual comparison between original data and the obtained SRR. A folder 'comparison' will be created in the output directory containing the obtained SRR along with the linearly resampled original data. An additional script 'show_comparison.py' will be provided whose execution will open all images in ITK-Snap (http://www.itksnap.org/). [default: %s]" % (provide_comparison), default=provide_comparison)
 
     args = parser.parse_args()
 
-    if args.verbose:
-        ph.print_title("Given Input")
-        print("Chosen Parameters:")
-        for arg in sorted(vars(args)):
-            ph.print_debug_info("%s: " % (arg), newline=False)
-            print(getattr(args, arg))
+    ph.print_title("Given Input")
+    print("Chosen Parameters:")
+    for arg in sorted(vars(args)):
+        ph.print_debug_info("%s: " % (arg), newline=False)
+        print(getattr(args, arg))
 
     return args
 
@@ -134,14 +122,14 @@ if __name__ == '__main__':
 
     # Read input
     args = get_parsed_input_line(
-        dir_output="./",
+        dir_output="results/",
         prefix_output="SRR_",
         suffix_mask="_mask",
         target_stack_index=0,
         regularization="TK1",
         alpha=0.02,
         iter_max=10,
-        verbose=1,
+        verbose=0,
         provide_comparison=0,
     )
 
@@ -169,9 +157,9 @@ if __name__ == '__main__':
     # Get preprocessed stacks with index 0 holding the selected target stack
     stacks = data_preprocessing.get_preprocessed_stacks()
 
-    # sitkh.show_stacks(stacks)
+    if args.verbose:
+        sitkh.show_stacks(stacks, segmentation=stacks[0])
 
-    # -------------------------------------------------------------------------
     # Super-Resolution Reconstruction (SRR)
     ph.print_title("Super-Resolution Reconstruction")
 
@@ -201,14 +189,16 @@ if __name__ == '__main__':
     # Update filename
     filename = SRR.get_setting_specific_filename(prefix=args.prefix_output)
     HR_volume.set_filename(filename)
-    # HR_volume.show()
+    
+    if args.verbose:
+        HR_volume.show()
 
     # Write SRR to output
     HR_volume.write(directory=args.dir_output)
 
     # Show SRR together with linearly resampled input data.
     # Additionally, a script is generated to open files
-    if args.provide_comparison:
+    if args.provide_comparison or args.verbose:
         stacks_visualization = []
         stacks_visualization.append(HR_volume)
         for i in range(0, len(stacks)):

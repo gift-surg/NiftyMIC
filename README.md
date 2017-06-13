@@ -75,12 +75,8 @@ A documentation for the Python source-files can be generated in case [Doxygen](h
 
 
 # Example usage
-A simple example (without motion correction) can be found in `examples/reconstructStaticVolume`. Test data including three orthogonal acquisitions of the fetal brain can be downloaded by either using this [link](https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=0) or executing
-* `curl -L https://www.dropbox.com/sh/je6luff8y8d692e/AABx798T_PyaIXXsh0pq7rVca?dl=1 > fetal_brain.zip`
-* `unzip fetal_brain.zip -d fetal_brain`
-
-in the terminal. The Super-Resolution reconstruction algorithm can be run by
-* `python examples/reconstructStaticVolume.py --dir-input=fetal_brain --dir-output=results --target-stack-index=1`
+A simple example (without motion correction) can be found in `examples/reconstructStaticVolume`. Given a set of multi-planar stack of slice data the Super-Resolution reconstruction algorithm can be run by
+* `python examples/reconstructStaticVolume.py --dir-input=path-to-data`
 
 
 # References
