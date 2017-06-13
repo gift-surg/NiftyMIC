@@ -17,7 +17,7 @@ from scipy.ndimage import imread
 
 ## Import modules
 import base.Stack as st
-import utilities.IntensityCorrection as ic
+import preprocessing.IntensityCorrection as ic
 import utilities.SimpleITKHelper as sitkh
 
 from definitions import dir_test

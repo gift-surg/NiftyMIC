@@ -42,8 +42,15 @@ class Stack:
         stack = cls()
         # stack = []
 
+        ## Directory
+        # dir_input = "/".join(filename.split("/")[0:-1]) + "/"
+
+        ## Filename without extension
+        # filename = filename.split("/")[-1:][0].split(".")[0]
+
         if dir_input[-1] is not "/":
             dir_input += "/"
+
 
         stack._dir = dir_input
         stack._filename = filename
@@ -583,15 +590,18 @@ class Stack:
     #
     # \return     The stack multiplied with its mask.
     #
-    def get_stack_multiplied_with_its_mask(self, filename=None):
+    def get_stack_multiplied_with_mask(self, filename=None, mask_sitk=None):
+
+        if mask_sitk is None:
+            mask_sitk = self.sitk_mask
 
         ## Multiply stack with its mask
-        image_sitk = self.sitk * sitk.Cast(self.sitk_mask, self.sitk.GetPixelIDValue())
+        image_sitk = self.sitk * sitk.Cast(mask_sitk, self.sitk.GetPixelIDValue())
 
         if filename is None:
             filename = self.get_filename()
 
-        return Stack.from_sitk_image(image_sitk, filename=filename, image_sitk_mask=self.sitk_mask)
+        return Stack.from_sitk_image(image_sitk, filename=filename, image_sitk_mask=mask_sitk)
 
 
     ## Get stack resampled on isotropic grid based on the actual position of

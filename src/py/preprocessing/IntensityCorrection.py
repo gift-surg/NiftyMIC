@@ -53,7 +53,7 @@ class IntensityCorrection(object):
         if stack is not None:
             self._stack = st.Stack.from_stack(stack)
         else:
-            self._stack is None
+            self._stack = None
 
         ## Additional stack to correct alongside given stack
         if additional_stack is not None:
@@ -126,6 +126,9 @@ class IntensityCorrection(object):
     def use_verbose(self, verbose):
         self._use_verbose = verbose
 
+
+    def use_reference_mask(self, use_reference_mask):
+        self._use_reference_mask = use_reference_mask
 
     ##
     # Sets the use individual slice correction.

@@ -27,7 +27,7 @@ import registration.NiftyReg as regniftyreg
 class SegmentationPropagation(object):
 
     ## Constructor
-    def __init__(self, stack=None, template=None, registration_method=None, use_template_mask=True, dilation_radius=0, dilation_kernel="Ball", use_dilation_in_plane_only=True):
+    def __init__(self, stack=None, template=None, registration_method=None, use_template_mask=True, dilation_radius=0, dilation_kernel="Ball", use_dilation_in_plane_only=True, interpolator="NearestNeighbor"):
 
         self._stack = stack
         self._template = template
@@ -37,6 +37,7 @@ class SegmentationPropagation(object):
         self._dilation_radius = dilation_radius
         self._dilation_kernel = dilation_kernel
         self._use_dilation_in_plane_only = use_dilation_in_plane_only
+        self._interpolator = interpolator
 
         self._get_registration_method = {
             "SimpleITK"     : regsitk,
@@ -92,6 +93,13 @@ class SegmentationPropagation(object):
         if self._stack is None or self._template is None:
             raise ValueError("Specify stack and template first")
 
+        ## Choose interpolator
+        try:
+            interpolator_str = self._interpolator
+            interpolator = eval("sitk.sitk" + interpolator_str)
+        except:
+            raise ValueError("Error: interpolator is not known")
+
         self._stack_sitk = sitk.Image(self._stack.sitk)
 
         ## Register stack to template
@@ -107,7 +115,7 @@ class SegmentationPropagation(object):
             self._stack_sitk = sitkh.get_transformed_sitk_image(self._stack_sitk, self._registration_transform_sitk)
 
         ## Propagate mask
-        self._stack_sitk_mask = sitk.Resample(self._template.sitk_mask, self._stack_sitk, sitk.Euler3DTransform(), sitk.sitkNearestNeighbor, 0, self._template.sitk_mask.GetPixelIDValue())
+        self._stack_sitk_mask = sitk.Resample(self._template.sitk_mask, self._stack_sitk, sitk.Euler3DTransform(), interpolator, 0, self._template.sitk_mask.GetPixelIDValue())
 
         ## Dilate mask
         if self._dilation_radius > 0:

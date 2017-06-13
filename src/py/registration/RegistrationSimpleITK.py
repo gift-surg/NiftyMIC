@@ -37,7 +37,7 @@ class RegistrationSimpleITK:
         # optimizer="RegularStepGradientDescent",
         # optimizer_params="{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 200, 'gradientMagnitudeTolerance': 1e-6}",
         scales_estimator="PhysicalShift",
-        initializer_type="MOMENTS",
+        initializer_type=None,
         use_oriented_psf=False,
         use_multiresolution_framework=False,
         use_centered_transform_initializer=False,

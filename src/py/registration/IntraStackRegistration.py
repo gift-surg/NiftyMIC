@@ -25,7 +25,7 @@ from datetime import timedelta
 import base.Slice as sl
 import base.Stack as st
 import utilities.SimpleITKHelper as sitkh
-import utilities.IntensityCorrection as ic
+import preprocessing.IntensityCorrection as ic
 import utilities.PythonHelper as ph
 import utilities.ParameterNormalization as pn
 from registration.StackRegistrationBase import StackRegistrationBase

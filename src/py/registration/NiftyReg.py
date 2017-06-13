@@ -16,6 +16,8 @@ import utilities.SimpleITKHelper as sitkh
 import base.PSF as psf
 import base.Stack as st
 
+from definitions import dir_tmp
+
 class NiftyReg:
 
     def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", registration_method="reg_aladin", options="", use_verbose=True):
@@ -30,8 +32,7 @@ class NiftyReg:
         self._registered_image = None
 
         ## Temporary output where files are written in order to use NiftyReg
-        self._dir_tmp = ".tmp/NiftyReg/"
-        ph.create_directory(self._dir_tmp, delete_files=False)
+        self._dir_tmp = ph.create_directory(os.path.join(dir_tmp, "NiftyReg"), delete_files=False)
 
         self._run_registration = {
             "reg_aladin"    :   self._run_reg_aladin,

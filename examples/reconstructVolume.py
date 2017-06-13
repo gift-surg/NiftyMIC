@@ -56,22 +56,25 @@ import utilities.SimpleITKHelper as sitkh
 #
 def get_parsed_input_line(
     dir_output,
+    filenames,
     prefix_output,
     suffix_mask,
     target_stack_index,
-    regularization,
-    alpha,
-    iter_max,
-    verbose,
-    provide_comparison,
     two_step_cycles,
+    sigma,
+    regularization,
+    loss,
+    alpha,
+    alpha_final,
+    iter_max,
+    iter_max_final,
     minimizer,
     dilation_radius,
     extra_frame_target,
     bias_field_correction,
-    alpha_final,
-    iter_max_final,
-    loss,
+    intensity_correction,
+    provide_comparison,
+    verbose,
 ):
 
     parser = argparse.ArgumentParser(
@@ -81,8 +84,12 @@ def get_parsed_input_line(
     )
 
     parser.add_argument('--dir-input',
+                        required=True,
                         type=str,
-                        help="Input directory with NIfTI files (.nii or .nii.gz).", required=True)
+                        help="Input directory with NIfTI files (.nii or .nii.gz).")
+    parser.add_argument('--filenames',
+                        nargs="+",
+                        help="Filenames. [default: %s]" % (filenames), default=filenames)
     parser.add_argument('--dir-output',
                         type=str,
                         help="Output directory. [default: %s]" % (dir_output), default=dir_output)
@@ -95,6 +102,9 @@ def get_parsed_input_line(
     parser.add_argument('--target-stack-index',
                         type=int,
                         help="Index of stack (image) in input directory (alphabetical order) which defines physical space for SRR. First index is 0. [default: %s]" % (target_stack_index), default=target_stack_index)
+    parser.add_argument('--sigma',
+                        type=float,
+                        help="Standard deviation for Scattered Data Approximation approach to reconstruct first estimate of HR volume from all 3D input stacks. [default: %g]" % (sigma), default=sigma)
     parser.add_argument('--alpha',
                         type=float,
                         help="Regularization parameter alpha to solve the SR reconstruction problem:  SRR = argmin_x [0.5 * sum_k ||y_k - A_k x||^2 + alpha * R(x)]. [default: %g]" % (alpha), default=alpha)
@@ -120,7 +130,7 @@ def get_parsed_input_line(
                         type=str,
                         help="Loss function rho used for data term, i.e. rho((y_k - A_k x)^2). Possible choices are 'linear', 'soft_l1' or 'huber'. [default: %s]" % (loss), default=loss)
     parser.add_argument('--provide-comparison',
-                        type=bool,
+                        type=int,
                         help="Turn on/off functionality to create files allowing for a visual comparison between original data and the obtained SRR. A folder 'comparison' will be created in the output directory containing the obtained SRR along with the linearly resampled original data. An additional script 'show_comparison.py' will be provided whose execution will open all images in ITK-Snap (http://www.itksnap.org/). [default: %s]" % (provide_comparison), default=provide_comparison)
     parser.add_argument('--dilation-radius',
                         type=int,
@@ -129,10 +139,13 @@ def get_parsed_input_line(
                         type=float,
                         help="Extra frame added to the increase the target space for the SRR. [default: %s]" % (extra_frame_target), default=extra_frame_target)
     parser.add_argument('--bias-field-correction',
-                        type=bool,
+                        type=int,
                         help="Turn on/off bias field correction during data preprocessing. [default: %s]" % (bias_field_correction), default=bias_field_correction)
+    parser.add_argument('--intensity-correction',
+                        type=int,
+                        help="Turn on/off linear intensity correction during data preprocessing. [default: %s]" % (intensity_correction), default=intensity_correction)
     parser.add_argument('--verbose',
-                        type=bool,
+                        type=int,
                         help="Turn on/off verbose output. [default: %s]" % (verbose), default=verbose)
     args = parser.parse_args()
 
@@ -141,6 +154,11 @@ def get_parsed_input_line(
     for arg in sorted(vars(args)):
         ph.print_debug_info("%s: " % (arg), newline=False)
         print(getattr(args, arg))
+
+    # directory = "/".join(args.filenames[0].split("/")[0:-1])
+    # filename = args.filenames[0].split("/")[-1:][0].split(".")[0]
+    # print directory
+    # print filename
 
     return args
 
@@ -156,32 +174,36 @@ if __name__ == '__main__':
 
     # Read input
     args = get_parsed_input_line(
-        dir_output="./",
+        dir_output="results/",
+        filenames=[],
         prefix_output="SRR_",
         suffix_mask="_mask",
         target_stack_index=0,
-        regularization="TK1",
-        alpha=0.1,
-        iter_max=5,
-        verbose=False,
-        provide_comparison=0,
         two_step_cycles=3,
+        sigma=0.8,
+        regularization="TK1",
+        loss="linear",
+        alpha=0.1,
+        alpha_final=0.03,
+        iter_max=5,
+        iter_max_final=10,
         minimizer="lsmr",
         dilation_radius=3,
         extra_frame_target=10,
-        bias_field_correction=False,
-        alpha_final=0.03,
-        iter_max_final=10,
-        loss="linear",
+        bias_field_correction=0,
+        intensity_correction=0,
+        provide_comparison=0,
+        verbose=0,
     )
 
     # Data Preprocessing from data on HDD
     ph.print_title("Data Preprocessing")
 
+
     segmentation_propagator = segprop.SegmentationPropagation(
-        registration_method=regniftyreg.NiftyReg(use_verbose=False),
-        # registration_method=regsitk.RegistrationSimpleITK(use_verbose=False),
-        # registration_method=regitk.RegistrationITK(use_verbose=False),
+        # registration_method=regniftyreg.NiftyReg(use_verbose=args.verbose),
+        # registration_method=regsitk.RegistrationSimpleITK(use_verbose=args.verbose),
+        # registration_method=regitk.RegistrationITK(use_verbose=args.verbose),
         dilation_radius=args.dilation_radius,
         dilation_kernel="Ball",
     )
@@ -192,12 +214,26 @@ if __name__ == '__main__':
         segmentation_propagator=segmentation_propagator,
         use_cropping_to_mask=True,
         use_N4BiasFieldCorrector=args.bias_field_correction,
+        use_intensity_correction=args.intensity_correction,
         target_stack_index=args.target_stack_index,
         boundary_i=0,
         boundary_j=0,
         boundary_k=0,
         unit="mm",
     )
+    # data_preprocessing = dp.DataPreprocessing.from_filenames(
+    #     dir_input=args.dir_input,
+    #     filenames=args.filenames,
+    #     suffix_mask=args.suffix_mask,
+    #     segmentation_propagator=segmentation_propagator,
+    #     use_cropping_to_mask=True,
+    #     use_N4BiasFieldCorrector=args.bias_field_correction,
+    #     target_stack_index=args.target_stack_index,
+    #     boundary_i=0,
+    #     boundary_j=0,
+    #     boundary_k=0,
+    #     unit="mm",
+    # )
     data_preprocessing.run_preprocessing()
     time_data_preprocessing = data_preprocessing.get_computational_time()
 
@@ -209,7 +245,21 @@ if __name__ == '__main__':
             stacks[i].write(directory=os.path.join(args.dir_output, "01_preprocessed_data"),
                             write_mask=True)
 
-    # sitkh.show_stacks(stacks)
+    #------------------ Begin HACK for Imperial College data ------------------
+    # Split stack acquired as overlapping slices into two
+    stacks_foo = []
+    for i in range(0,len(stacks)):
+        for j in range(0,2):
+            stack_sitk = stacks[i].sitk[:,:,j::2]
+            stack_sitk_mask = stacks[i].sitk_mask[:,:,j::2]
+            stacks_foo.append(st.Stack.from_sitk_image(stack_sitk,
+                image_sitk_mask=stack_sitk_mask,
+                filename=stacks[i].get_filename()+"_"+str(j+1)))
+    stacks = stacks_foo
+    #------------------- End HACK for Imperial College data -------------------
+
+    if args.verbose:
+        sitkh.show_stacks(stacks, segmentation=stacks[0])
 
     if args.two_step_cycles > 0:
 
@@ -254,7 +304,7 @@ if __name__ == '__main__':
     # Scattered Data Approximation to get first estimate of HR volume
     ph.print_title("Scattered Data Approximation")
     SDA = sda.ScatteredDataApproximation(
-        sm.StackManager.from_stacks(stacks), HR_volume, sigma=0.8)
+        sm.StackManager.from_stacks(stacks), HR_volume, sigma=args.sigma)
     SDA.run_reconstruction()
     SDA.generate_mask_from_stack_mask_unions(
         mask_dilation_radius=2, mask_dilation_kernel="Ball")
@@ -316,10 +366,10 @@ if __name__ == '__main__':
             metric="Correlation",
             # metric="MattesMutualInformation", #Might cause error messages like
             # "Too many samples map outside moving image buffer."
-            use_multiresolution_framework=False,
+            use_multiresolution_framework=True,
             initializer_type=None,
             # optimizer="RegularStepGradientDescent",
-            # optimizer_params="{'learningRate': 1, 'minStep': 1e-6,
+            # optimizer_params="{'learningRate': 1, 'minStep': 1e-6,\
             # 'numberOfIterations': 600, 'gradientMagnitudeTolerance': 1e-6}",
             optimizer="ConjugateGradientLineSearch",
             optimizer_params="{'learningRate': 50, 'numberOfIterations': 100}",
@@ -362,7 +412,7 @@ if __name__ == '__main__':
             time_reconstruction = ph.add_times(
                 time_reconstruction, time_elapsed_tmp)
 
-            HR_volume_tmp = HR_volume.get_stack_multiplied_with_its_mask(
+            HR_volume_tmp = HR_volume.get_stack_multiplied_with_mask(
                 filename="HRvolume_iter"+str(i_cycle+1))
             HR_volume_iterations.insert(0, HR_volume_tmp)
             if args.verbose:
@@ -379,7 +429,7 @@ if __name__ == '__main__':
 
     elapsed_time_total = ph.stop_timing(time_start)
 
-    HR_volume_final = SRR.get_reconstruction().get_stack_multiplied_with_its_mask()
+    HR_volume_final = SRR.get_reconstruction().get_stack_multiplied_with_mask()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
     HR_volume_final.write(args.dir_output)
 

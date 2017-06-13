@@ -32,6 +32,12 @@ class Slice:
 
         slice = cls()
 
+        ## Directory
+        # dir_input = "/".join(filename.split("/")[0:-1]) + "/"
+
+        ## Filename without extension
+        # filename = filename.split("/")[-1:][0].split(".")[0]
+
         slice._dir_input = dir_input
         slice._filename = filename
         slice._slice_number = slice_number
