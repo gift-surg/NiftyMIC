@@ -4,13 +4,11 @@
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date May 2017
 
-
 # Import libraries
 import os                       # used to execute terminal commands in python
 import sys
 import SimpleITK as sitk
 import numpy as np
-
 
 # Import modules from src-folder
 import base.Stack as st
@@ -18,9 +16,12 @@ import utilities.PythonHelper as ph
 import utilities.SimpleITKHelper as sitkh
 import preprocessing.IntensityCorrection as ic
 import preprocessing.N4BiasFieldCorrection as n4bfc
+import utilities.Exceptions as Exceptions
 
 
+##
 # Class implementing data preprocessing steps
+#
 class DataPreprocessing:
 
     ##
@@ -104,7 +105,6 @@ class DataPreprocessing:
                        boundary_k=0,
                        unit="mm",
                        ):
-
         self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector,
                    use_intensity_correction=use_intensity_correction,
                    segmentation_propagator=segmentation_propagator,
@@ -115,24 +115,8 @@ class DataPreprocessing:
                    boundary_k=boundary_k,
                    unit=unit)
 
-        # Number of stacks to be read
-        self._N_stacks = len(filenames)
-
-        # Read stacks and their masks (if no mask is found a binary image is
-        # created automatically)
-        self._stacks_preprocessed = [None]*self._N_stacks
-
-        for i in range(0, self._N_stacks):
-            self._stacks_preprocessed[i] = st.Stack.from_filename(
-                dir_input, filenames[i], suffix_mask)
-            txt = "Image '%s' was read for further processing." % (filenames[
-                                                                   i])
-            if i is self._target_stack_index:
-                ph.print_debug_info(txt + " [Selected target stack]")
-            else:
-                ph.print_debug_info(txt)
-
-        # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))
+        # Read input data
+        self._read_input_data(dir_input, filenames, suffix_mask)
 
         return self
 
@@ -192,24 +176,27 @@ class DataPreprocessing:
                     filenames_tmp.append(file)
         filenames = [f.split(".")[0] for f in sorted(filenames_tmp)]
 
-        # Number of stacks to be read
-        self._N_stacks = len(filenames)
+        # Read input data
+        self._read_input_data(dir_input, filenames, suffix_mask)
 
-        # Read stacks and their masks (if no mask is found a binary image is
-        # created automatically)
-        self._stacks_preprocessed = [None]*self._N_stacks
+        # # Number of stacks to be read
+        # self._N_stacks = len(filenames)
 
-        for i in range(0, self._N_stacks):
-            self._stacks_preprocessed[i] = st.Stack.from_filename(
-                dir_input, filenames[i], suffix_mask)
-            txt = "Image '%s' was read for further processing." % (filenames[
-                                                                   i])
-            if i is self._target_stack_index:
-                ph.print_debug_info(txt + " [Selected target stack]")
-            else:
-                ph.print_debug_info(txt)
+        # # Read stacks and their masks (if no mask is found a binary image is
+        # # created automatically)
+        # self._stacks_preprocessed = [None]*self._N_stacks
 
-        # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))
+        # for i in range(0, self._N_stacks):
+        #     self._stacks_preprocessed[i] = st.Stack.from_filename(
+        #         dir_input, filenames[i], suffix_mask)
+        #     txt = "Image '%s' was read for further processing." % (filenames[
+        #                                                            i])
+        #     if i is self._target_stack_index:
+        #         ph.print_debug_info(txt + " [Selected target stack]")
+        #     else:
+        #         ph.print_debug_info(txt)
+
+        # # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))
 
         return self
 
@@ -339,9 +326,9 @@ class DataPreprocessing:
                     target.get_resampled_stack(resampling_grid=stack.sitk))
                 # intensity_corrector.run_affine_intensity_correction()
                 intensity_corrector.run_linear_intensity_correction()
-                self._stacks_preprocessed[i] = intensity_corrector.get_intensity_corrected_stack()
+                self._stacks_preprocessed[
+                    i] = intensity_corrector.get_intensity_corrected_stack()
         self._computational_time = ph.stop_timing(time_start)
-
 
     # Get preprocessed stacks
     #  \return preprocessed stacks as list of Stack objects
@@ -370,9 +357,44 @@ class DataPreprocessing:
     #  \param[in] dir_output output directory
     def write_preprocessed_data(self, dir_output):
         if all(x is None for x in self._stacks_preprocessed):
-            raise ValueError("Error: Run preprocessing first")
+            raise Exceptions.ObjectNotCreated("run_preprocessing")
 
         # Write all slices
         for i in range(0, self._N_stacks):
             slices = self._stacks_preprocessed[i].write(
                 directory=dir_output, write_mask=True, write_slices=False)
+
+    ##
+    # Reads an input data.
+    # \date       2017-06-14 11:03:57+0100
+    #
+    # \param      self         The object
+    # \param      dir_input    The dir input
+    # \param      filenames    The filenames
+    # \param      suffix_mask  The suffix mask
+    #
+    # \post       updated _N_stacks and _stacks_preprocessed
+    #
+    def _read_input_data(self, dir_input, filenames, suffix_mask):
+
+        # Number of stacks to be read
+        self._N_stacks = len(filenames)
+
+        if self._N_stacks == 0:
+            raise Exceptions.InputFilesNotValid(dir_input)
+
+        # Read stacks and their masks (if no mask is found a binary image is
+        # created automatically)
+        self._stacks_preprocessed = [None]*self._N_stacks
+
+        for i in range(0, self._N_stacks):
+            self._stacks_preprocessed[i] = st.Stack.from_filename(
+                dir_input, filenames[i], suffix_mask)
+            txt = "Image '%s' was read for further processing." % (filenames[
+                                                                   i])
+            if i is self._target_stack_index:
+                ph.print_debug_info(txt + " [Selected target stack]")
+            else:
+                ph.print_debug_info(txt)
+
+        # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))

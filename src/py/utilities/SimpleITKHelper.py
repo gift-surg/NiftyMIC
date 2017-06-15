@@ -1082,16 +1082,26 @@ def write_executable_file(cmds, dir_output=dir_tmp, filename="showComparison"):
 
 
 ##
-#       Show image with ITK-Snap. Image is saved to /tmp/ for that
-#             purpose.
+# Show image with ITK-Snap. Image is saved to /tmp/ for that purpose.
 # \date       2016-09-19 16:47:18+0100
 #
-# \param[in]  image_sitk    either single sitk.Image or list of sitk.Images to
-#                           overlay
-# \param[in]  label         filename or list of filenames
-# \param[in]  segmentation  sitk.Image used as segmentation
+# \param      image_sitk            either single sitk.Image or list of
+#                                   sitk.Images to overlay
+# \param      label                 filename or list of filenames
+# \param      segmentation          sitk.Image used as segmentation
+# \param      show_comparison_file  choose whether comparison file shall be
+#                                   produced to reproduce visualization at a
+#                                   later stage
+# \param      viewer                Can be "itksnap", "fslview", "niftyview"
+# \param      verbose               Show line for execution
+# \param      interpolator          Interpolator used for resampling
+# \param      dir_output            Output directory for writing files in order
+#                                   to open them
+# \param      default_pixel_value   default pixel value for interpolation,
+#                                   float. Can also be "min" in case the
+#                                   minimum data array value shall be used
 #
-def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear", dir_output=dir_tmp):
+def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison_file=False, viewer="itksnap", verbose=True, interpolator="Linear", dir_output=dir_tmp, default_pixel_value=0):
     
     dir_output = ph.create_directory(dir_output)
 
@@ -1123,7 +1133,14 @@ def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison
         try:
             image_sitk[i] - image_sitk[0]
         except:
-            image_sitk[i] = sitk.Resample(image_sitk[i], image_sitk[0], sitk.Euler3DTransform(), eval("sitk.sitk" + interpolator))
+            if default_pixel_value == "min":
+                default_pixel_value_sitk = float(np.min(sitk.GetArrayFromImage(image_sitk[i])))
+            else:
+                default_pixel_value_sitk = float(default_pixel_value)
+                
+            print default_pixel_value_sitk
+
+            image_sitk[i] = sitk.Resample(image_sitk[i], image_sitk[0], sitk.Euler3DTransform(), eval("sitk.sitk" + interpolator), default_pixel_value_sitk)
             label[i] += "_" + interpolator
 
     ## Write images to tmp-folder
@@ -1157,13 +1174,23 @@ def show_sitk_image(image_sitk, label="test", segmentation=None, show_comparison
     
 
 ##
-#       Visualize a list of Stack objects.
+# Visualize a list of Stack objects.
 # \date       2016-11-05 23:18:23+0000
 #
-# \param      stacks        List of stack objects
-# \param      segmentation  Stack containing the desired segmentation.
+# \param      stacks                List of stack objects
+# \param      label                 filename or list of filenames
+# \param      segmentation          sitk.Image used as segmentation
+# \param      show_comparison_file  choose whether comparison file shall be
+#                                   produced to reproduce visualization at a
+#                                   later stage
+# \param      viewer                Can be "itksnap", "fslview", "niftyview"
+# \param      dir_output            Output directory for writing files in order
+#                                   to open them
+# \param      default_pixel_value   default pixel value for interpolation,
+#                                   float. Can also be "min" in case the
+#                                   minimum data array value shall be used
 #
-def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=False, viewer="itksnap", dir_output=dir_tmp):
+def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=False, viewer="itksnap", dir_output=dir_tmp, default_pixel_value=0):
 
     N_stacks = len(stacks)
     images_sitk = [None]*N_stacks
@@ -1182,7 +1209,7 @@ def show_stacks(stacks, label=None, segmentation=None, show_comparison_file=Fals
     else:
         segmentation_sitk = None
 
-    show_sitk_image(images_sitk, label=label, segmentation=segmentation_sitk, show_comparison_file=show_comparison_file, viewer=viewer, dir_output=dir_output)
+    show_sitk_image(images_sitk, label=label, segmentation=segmentation_sitk, show_comparison_file=show_comparison_file, viewer=viewer, dir_output=dir_output, default_pixel_value=default_pixel_value)
 
 
 ## Show image with ITK-Snap. Image is saved to /tmp/ for that purpose

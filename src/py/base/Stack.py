@@ -62,6 +62,7 @@ class Stack:
         ## Append masks (either provided or binary mask)
         if suffix_mask is None:
             stack.sitk_mask = stack._generate_binary_mask()
+            stack._is_unity_mask = True
         else:    
             if os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
                 stack.sitk_mask = sitk.ReadImage(dir_input + filename + suffix_mask + ".nii.gz", sitk.sitkUInt8)
@@ -223,7 +224,7 @@ class Stack:
 
         stack.sitk_mask = sitk.Image(stack_to_copy.sitk_mask)
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
-        stack._is_unity_mask = stack_to_copy._is_unity_mask
+        stack._is_unity_mask = stack_to_copy.is_unity_mask()
 
         if filename is None:
             stack._filename = stack_to_copy.get_filename()
