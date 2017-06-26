@@ -13,6 +13,10 @@
 # Import libraries
 import SimpleITK as sitk
 import argparse
+import inspect
+from inspect import getframeinfo, stack
+
+import traceback
 import numpy as np
 import sys
 import os
@@ -74,6 +78,8 @@ def get_parsed_input_line(
     bias_field_correction,
     intensity_correction,
     provide_comparison,
+    isotropic_resolution,
+    log_function_call,
     verbose,
 ):
 
@@ -87,9 +93,9 @@ def get_parsed_input_line(
                         required=True,
                         type=str,
                         help="Input directory with NIfTI files (.nii or .nii.gz).")
-    parser.add_argument('--filenames',
-                        nargs="+",
-                        help="Filenames. [default: %s]" % (filenames), default=filenames)
+    # parser.add_argument('--filenames',
+    #                     nargs="+",
+    # help="Filenames. [default: %s]" % (filenames), default=filenames)
     parser.add_argument('--dir-output',
                         type=str,
                         help="Output directory. [default: %s]" % (dir_output), default=dir_output)
@@ -137,13 +143,19 @@ def get_parsed_input_line(
                         help="Dilation radius in number of voxels used for segmentation propagation. [default: %s]" % (dilation_radius), default=dilation_radius)
     parser.add_argument('--extra-frame-target',
                         type=float,
-                        help="Extra frame added to the increase the target space for the SRR. [default: %s]" % (extra_frame_target), default=extra_frame_target)
+                        help="Extra frame in mm added to the increase the target space for the SRR. [default: %s]" % (extra_frame_target), default=extra_frame_target)
     parser.add_argument('--bias-field-correction',
                         type=int,
                         help="Turn on/off bias field correction during data preprocessing. [default: %s]" % (bias_field_correction), default=bias_field_correction)
     parser.add_argument('--intensity-correction',
                         type=int,
                         help="Turn on/off linear intensity correction during data preprocessing. [default: %s]" % (intensity_correction), default=intensity_correction)
+    parser.add_argument('--isotropic-resolution',
+                        type=float,
+                        help="Specify isotropic resolution for obtained HR volume. [default: %s]" % (isotropic_resolution), default=isotropic_resolution)
+    parser.add_argument('--log-function-call',
+                        type=int,
+                        help="Turn on/off log for function call. [default: %s]" % (log_function_call), default=log_function_call)
     parser.add_argument('--verbose',
                         type=int,
                         help="Turn on/off verbose output. [default: %s]" % (verbose), default=verbose)
@@ -185,6 +197,7 @@ if __name__ == '__main__':
         loss="linear",
         alpha=0.1,
         alpha_final=0.03,
+        isotropic_resolution=None,
         iter_max=5,
         iter_max_final=10,
         minimizer="lsmr",
@@ -192,13 +205,20 @@ if __name__ == '__main__':
         extra_frame_target=10,
         bias_field_correction=0,
         intensity_correction=0,
-        provide_comparison=0,
+        provide_comparison=1,
+        log_function_call=1,
         verbose=0,
     )
 
+    # Write function call f
+    if args.log_function_call:
+        function_call = ph.get_function_call(os.path.basename(__file__), args)
+        ph.write_function_call_to_executable_file(
+            function_call,
+            os.path.join(args.dir_output, "log_function_call.sh"))
+
     # Data Preprocessing from data on HDD
     ph.print_title("Data Preprocessing")
-
 
     segmentation_propagator = segprop.SegmentationPropagation(
         # registration_method=regniftyreg.NiftyReg(use_verbose=args.verbose),
@@ -242,21 +262,25 @@ if __name__ == '__main__':
 
     if args.verbose:
         for i in range(0, len(stacks)):
-            stacks[i].write(directory=os.path.join(args.dir_output, "01_preprocessed_data"),
-                            write_mask=True)
+            stacks[i].write(
+                directory=os.path.join(
+                    args.dir_output, "01_preprocessed_data"),
+                write_mask=True)
 
-    #------------------ Begin HACK for Imperial College data ------------------
-    # Split stack acquired as overlapping slices into two
-    stacks_foo = []
-    for i in range(0,len(stacks)):
-        for j in range(0,2):
-            stack_sitk = stacks[i].sitk[:,:,j::2]
-            stack_sitk_mask = stacks[i].sitk_mask[:,:,j::2]
-            stacks_foo.append(st.Stack.from_sitk_image(stack_sitk,
-                image_sitk_mask=stack_sitk_mask,
-                filename=stacks[i].get_filename()+"_"+str(j+1)))
-    stacks = stacks_foo
-    #------------------- End HACK for Imperial College data -------------------
+    # # ----------------- Begin HACK for Imperial College data ----------------
+    # # Split stack acquired as overlapping slices into two
+    # stacks_foo = []
+    # for i in range(0, len(stacks)):
+    #     for j in range(0, 2):
+    #         stack_sitk = stacks[i].sitk[:, :, j::2]
+    #         stack_sitk_mask = stacks[i].sitk_mask[:, :, j::2]
+    #         stacks_foo.append(
+    #             st.Stack.from_sitk_image(stack_sitk,
+    #                                      image_sitk_mask=stack_sitk_mask,
+    #                                      filename=stacks[i].get_filename() +
+    #                                      "_" + str(j+1)))
+    # stacks = stacks_foo
+    # # ------------------ End HACK for Imperial College data -----------------
 
     if args.verbose:
         sitkh.show_stacks(stacks, segmentation=stacks[0])
@@ -268,6 +292,8 @@ if __name__ == '__main__':
         # Global rigid registration to target stack
         ph.print_title("Global Rigid Registration")
 
+        # registration = regsitk.RegistrationSimpleITK(
+        #     initializer_type="GEOMETRY", metric="MattesMutualInformation",
         registration = regniftyreg.NiftyReg(
             fixed=stacks[0],
             registration_type="Rigid",
@@ -281,15 +307,20 @@ if __name__ == '__main__':
             registration.run_registration()
             transform_sitk = registration.get_registration_transform_sitk()
             transform_sitk = eval(
-                "sitk." + transform_sitk.GetName() + "(transform_sitk.GetInverse())")
+                "sitk." + transform_sitk.GetName() +
+                "(transform_sitk.GetInverse())")
             stacks[i].update_motion_correction(transform_sitk)
 
         time_registration = ph.stop_timing(time_registration)
         # sitkh.show_stacks(stacks, segmentation=stacks[0])
+
         if args.verbose:
             for i in range(0, len(stacks)):
-                stacks[i].write(directory=os.path.join(args.dir_output, "02_rigidly_aligned_data"),
-                                write_mask=True)
+                stacks[i].write(
+                    directory=os.path.join(args.dir_output,
+                                           "02_rigidly_aligned_data"),
+                    write_mask=True)
+
     else:
         time_registration = 0
 
@@ -298,6 +329,7 @@ if __name__ == '__main__':
     # Isotropic resampling to define HR target space
     ph.print_title("Isotropic Resampling")
     HR_volume = stacks[0].get_isotropically_resampled_stack(
+        spacing_new_scalar=args.isotropic_resolution,
         extra_frame=args.extra_frame_target)
     HR_volume.set_filename(stacks[0].get_filename() + "_upsampled")
 
@@ -313,9 +345,6 @@ if __name__ == '__main__':
 
     time_reconstruction = ph.stop_timing(time_reconstruction)
 
-    if args.verbose:
-        HR_volume.show(1)
-
     # List to store SRR iterations
     HR_volume_iterations = []
 
@@ -325,6 +354,9 @@ if __name__ == '__main__':
         st.Stack.from_stack(HR_volume, "HRvolume_iter0"))
     for i in range(0, len(stacks)):
         HR_volume_iterations.append(stacks[i])
+
+    if args.verbose:
+        sitkh.show_stacks(HR_volume_iterations)
 
     if args.regularization in ["TK0", "TK1"]:
         SRR = tk.TikhonovSolver(
@@ -363,16 +395,16 @@ if __name__ == '__main__':
             use_moving_mask=False,
             use_verbose=True,
             interpolator="Linear",
-            metric="Correlation",
-            # metric="MattesMutualInformation", #Might cause error messages like
-            # "Too many samples map outside moving image buffer."
-            use_multiresolution_framework=True,
+            # metric="Correlation",
+            metric="MattesMutualInformation",  # Might cause error messages
+            # like "Too many samples map outside moving image buffer."
+            # use_multiresolution_framework=True,
             initializer_type=None,
             # optimizer="RegularStepGradientDescent",
             # optimizer_params="{'learningRate': 1, 'minStep': 1e-6,\
             # 'numberOfIterations': 600, 'gradientMagnitudeTolerance': 1e-6}",
             optimizer="ConjugateGradientLineSearch",
-            optimizer_params="{'learningRate': 50, 'numberOfIterations': 100}",
+            optimizer_params="{'learningRate': 1, 'numberOfIterations': 100}",
         )
 
         for i_cycle in range(0, args.two_step_cycles):
@@ -391,18 +423,19 @@ if __name__ == '__main__':
                     slice = stack.get_slice(i_slice)
                     registration.set_fixed(slice)
                     registration.run_registration()
-                    transform_sitk = registration.get_registration_transform_sitk()
+                    transform_sitk = \
+                        registration.get_registration_transform_sitk()
                     slice.update_motion_correction(transform_sitk)
             time_elapsed_tmp = ph.stop_timing(time_elapsed_tmp)
             time_registration = ph.add_times(
                 time_registration, time_elapsed_tmp)
-            print("\nElapsed time for all Slice-to-Volume registrations: %s" %
-                  (time_elapsed_tmp))
+            print("\nElapsed time for all Slice-to-Volume registrations: %s"
+                  % (time_elapsed_tmp))
 
             # Super-resolution reconstruction
             time_elapsed_tmp = ph.start_timing()
-            ph.print_subtitle("Cycle %d/%d: Super-Resolution Reconstruction" % (
-                i_cycle+1, args.two_step_cycles))
+            ph.print_subtitle("Cycle %d/%d: Super-Resolution Reconstruction"
+                              % (i_cycle+1, args.two_step_cycles))
 
             SRR.set_alpha(args.alpha + i_cycle*alpha_delta)
             SRR.run_reconstruction()

@@ -380,6 +380,9 @@ class DataPreprocessing:
         # Number of stacks to be read
         self._N_stacks = len(filenames)
 
+        ph.print_debug_info(
+            "%d stacks are going to be read ..." % (self._N_stacks))
+
         if self._N_stacks == 0:
             raise Exceptions.InputFilesNotValid(dir_input)
 

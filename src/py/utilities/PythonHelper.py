@@ -34,44 +34,44 @@ COLORS = [
     "w",        # white
 ]
 MARKERS = [
-    "s",        #square
-    "o",        #circle
-    "v",        #triangle_down
-    "x",        #x
-    "p",        #pentagon
-    "X",        #x (filled)
-    "*",        #star
-    "P",        #plus (filled)
-    "^",        #triangle_up
-    "<",        #triangle_left
-    ">",        #triangle_right
-    ".",        #point
-    "+",        #plus
-    "1",        #tri_down
-    "2",        #tri_up
-    "3",        #tri_left
-    "4",        #tri_right
-    "8",        #octagon
-    ",",        #pixel
-    "h",        #hexagon1
-    "H",        #hexagon2
-    "D",        #diamond
-    "d",        #thin_diamond
-    "|",        #vline
-    "_",        #hline
-    "None",     #nothing
-    " ",        #nothing
-    "",         #nothing 
-    '$...$',    #render the string using mathtext
+    "s",        # square
+    "o",        # circle
+    "v",        # triangle_down
+    "x",        # x
+    "p",        # pentagon
+    "X",        # x (filled)
+    "*",        # star
+    "P",        # plus (filled)
+    "^",        # triangle_up
+    "<",        # triangle_left
+    ">",        # triangle_right
+    ".",        # point
+    "+",        # plus
+    "1",        # tri_down
+    "2",        # tri_up
+    "3",        # tri_left
+    "4",        # tri_right
+    "8",        # octagon
+    ",",        # pixel
+    "h",        # hexagon1
+    "H",        # hexagon2
+    "D",        # diamond
+    "d",        # thin_diamond
+    "|",        # vline
+    "_",        # hline
+    "None",     # nothing
+    " ",        # nothing
+    "",         # nothing
+    '$...$',    # render the string using mathtext
 ]
 LINESTYLES = [
-    "-",        #solid line
-    "--",       #dashed line
-    "-.",       #dash-dotted line
-    ":",        #dotted line
-    "None",     #draw nothing
-    " ",        #draw nothing
-    "",         #draw nothing
+    "-",        # solid line
+    "--",       # dashed line
+    "-.",       # dash-dotted line
+    ":",        # dotted line
+    "None",     # draw nothing
+    " ",        # draw nothing
+    "",         # draw nothing
 ]
 
 ##
@@ -122,6 +122,26 @@ def read_variables(directory, filename, filetype=".pckl"):
     return variables
 
 
+def get_function_call(function_name, args):
+    cmd = "python " + function_name + " \\\n"
+
+    for arg in sorted(vars(args)):
+        argument = ("%s=" % (arg)).replace("_","-")
+        cmd += "\t--" + argument + "%s" % (getattr(args, arg)) + " \\\n"
+
+    return cmd
+
+def write_function_call_to_executable_file(function_call, filename):
+    
+    call = "#!/bin/sh\n\n" + function_call
+
+    text_file = open(filename, "w")
+    text_file.write("%s" % call)
+    text_file.close()
+    print_debug_info("File " + filename + " generated.")
+
+    # Make file executable
+    os.system("chmod +x " + filename)
 
 ##
 #       Wait for <ENTER> to proceed the execution
