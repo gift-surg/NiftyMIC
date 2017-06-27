@@ -334,7 +334,7 @@ def get_altered_field_of_view_sitk_image(image_sitk,
         e_z = np.array([0, 0, 1])
 
     # Dimension is given in mm
-    if unit in ["mm"]:
+    if unit == "mm":
         boundary_i_voxel = np.round(boundary_i / spacing[0])
         boundary_j_voxel = np.round(boundary_j / spacing[1])
 
@@ -348,7 +348,7 @@ def get_altered_field_of_view_sitk_image(image_sitk,
             size[2] += 2*boundary_k_voxel
 
     # Dimension is given in voxels
-    else:
+    elif unit == "voxel":
         # compute new shape of image
         size[0] += 2*boundary_i
         size[1] += 2*boundary_j
@@ -360,6 +360,9 @@ def get_altered_field_of_view_sitk_image(image_sitk,
         if dimension is 3:
             size[2] += 2*boundary_k
             boundary_k *= spacing[2]
+
+    else:
+        raise ValueError("Unit can either be 'mm' or 'voxel'.")
 
     # Compute new origin so that image intensity information is not altered
     # in the physical space
@@ -1521,63 +1524,3 @@ def get_downsampled_sitk_image(image_sitk,
         image_sitk.GetPixelIDValue())
 
     return image_sitk_resampled
-
-
-##
-# Gets the enlarged sitk image.
-# \date       2016-11-27 15:46:44+0000
-#
-# \param      image_sitk  The image sitk
-# \param      frame       Extra frame (in voxels) in each direction (or only in
-#                         i-direction if the others are specified)
-# \param      frame_j     Extra frame (in voxels) in j-direction
-# \param      frame_k     Extra frame (in voxels) in j-direction
-#
-# \return     The enlarged sitk image.
-#
-def get_enlarged_sitk_image(image_sitk, frame=0, frame_j=None, frame_k=None):
-
-    size = np.array(image_sitk.GetSize())
-    origin = np.array(image_sitk.GetOrigin())
-    spacing = np.array(image_sitk.GetSpacing())
-    dimension = image_sitk.GetDimension()
-
-    if frame_j is None:
-        frame_j = frame
-    if frame_k is None:
-        frame_k = frame
-
-    # Compute new size of enlarged stack
-    size[0] += 2*frame
-    size[1] += 2*frame_j
-    if dimension is 3:
-        size[2] += 2*frame_k
-
-    # Compute translation of enlarged stack by considering additional
-    # extra_frame
-    a_x = image_sitk.TransformIndexToPhysicalPoint((1, 0, 0)) - origin
-    a_y = image_sitk.TransformIndexToPhysicalPoint((0, 1, 0)) - origin
-    e_x = a_x/np.linalg.norm(a_x)
-    e_y = a_y/np.linalg.norm(a_y)
-    translation = e_x*frame*spacing[0] + e_y*frame_j*spacing[1]
-
-    if dimension is 3:
-        a_z = image_sitk.TransformIndexToPhysicalPoint((0, 0, 1)) - origin
-        e_z = a_z/np.linalg.norm(a_z)
-        translation += e_z*frame_k*spacing[2]
-
-    origin -= translation
-
-    # Resample
-    image_enlarged_sitk = sitk.Resample(
-        image_sitk,
-        size,
-        eval("sitk.Euler" + str(dimension) + "DTransform()"),
-        sitk.sitkNearestNeighbor,
-        origin,
-        spacing,
-        image_sitk.GetDirection(),
-        0.0,
-        image_sitk.GetPixelIDValue())
-
-    return image_enlarged_sitk

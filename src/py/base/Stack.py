@@ -115,6 +115,9 @@ class Stack:
 
         stack = cls()
 
+        if dir_input[-1] is not "/":
+            dir_input += "/"
+
         stack._dir = dir_input
         stack._filename = prefix_stack
 
