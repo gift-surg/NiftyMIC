@@ -20,6 +20,7 @@ import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 
 from definitions import dir_tmp
+from definitions import bet_exe
 
 ## This class implements the interface to the Brain Extraction Tool (BET)
 #  TODO
@@ -339,7 +340,7 @@ class BrainStripping(object):
 
         sitk.WriteImage(self._sitk, self._dir_tmp + filename_out + ".nii.gz")
 
-        cmd  = "bet "
+        cmd  = bet_exe + " "
         cmd += self._dir_tmp + filename_out + ".nii.gz "
         cmd += self._dir_tmp + filename_out + "_bet.nii.gz "
 
@@ -354,8 +355,7 @@ class BrainStripping(object):
 
         cmd += self._bet_options + " "
 
-        print(cmd)
-        os.system(cmd)
+        ph.execute_command(cmd)
 
         if self._compute_brain_image:
             self._sitk_brain_image = sitk.ReadImage(self._dir_tmp + filename_out + "_bet.nii.gz", sitk.sitkFloat64)

@@ -4,3 +4,4 @@ matplotlib==2.0.2
 SimpleITK==1.0.0
 nibabel==2.1.0
 Pillow==4.1.1
+natsort==5.0.3

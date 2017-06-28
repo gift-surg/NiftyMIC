@@ -7,6 +7,14 @@ dir_build_cpp = os.path.join(dir_root, 'build' , 'cpp')
 # dir_tmp = os.path.join(dir_root, 'tmp')
 dir_tmp = "/tmp/"
 
+# Linked executables
+itksnap_exe = "itksnap"
+fslview_exe = "fslview"
+niftyview_exe = "NiftyView"
+bet_exe = "bet"
+reg_aladin_exe = "reg_aladin"
+reg_f3d_exe = "reg_f3d"
+
 info = {
         "name": "Volumetric MRI Reconstruction from 2D Slices in the Presence of Motion",
         "version": "0.1.0",

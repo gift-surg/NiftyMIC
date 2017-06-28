@@ -22,11 +22,12 @@ import re
 import utilities.PythonHelper as ph
 
 from definitions import dir_tmp
+from definitions import itksnap_exe
+from definitions import fslview_exe
+from definitions import niftyview_exe
 
 # Use ITK-SNAP instead of imageJ to view images
-# os.environ['SITK_SHOW_COMMAND'] = "/Applications/ITK-SNAP.app/Contents/MacOS/ITK-SNAP"
-# os.environ['SITK_SHOW_COMMAND'] = "/usr/local/bin/itksnap"
-os.environ['SITK_SHOW_COMMAND'] = "itksnap"
+os.environ['SITK_SHOW_COMMAND'] = itksnap_exe
 
 # np.set_printoptions(precision=3)
 
@@ -1103,66 +1104,6 @@ def plot_slices(slices, cmap="Greys_r", title="slice"):
     ph.show_arrays(nda, cmap=cmap, title=title)
 
 
-##
-# Open provided files for visualization
-# \date       2016-11-28 17:00:24+0000
-#
-# \param      image_sitk            The image sitk
-# \param      label                 The label
-# \param      segmentation          The segmentation
-# \param      dir_output            The dir output
-# \param      show_comparison_file  The show comparison file
-#
-# \return     { description_of_the_return_value }
-#
-def call_viewer_itksnap(filenames, filename_segmentation=None):
-
-    cmd = "itksnap "
-    cmd += "-g " + filenames[0] + " "
-
-    # Add overlays
-    if len(filenames) > 1:
-        cmd += "-o "
-
-        for i in range(1, len(filenames)):
-            cmd += filenames[i] + " "
-
-    # Add segmentation
-    if filename_segmentation is not None:
-        cmd += "-s " + filename_segmentation + " "
-
-    # Add termination
-    cmd += "& "
-
-    return cmd
-
-
-def call_viewer_fslview(filenames, filename_segmentation=None):
-
-    cmd = "fslview "
-    for i in range(0, len(filenames)):
-        cmd += filenames[i] + " "
-
-    if filename_segmentation is not None:
-        cmd += filename_segmentation + " -t 0.3 "
-
-    cmd += "& "
-
-    return cmd
-
-
-def call_viewer_niftyview(filenames, filename_segmentation=None):
-
-    cmd = "NiftyView "
-    for i in range(0, len(filenames)):
-        cmd += filenames[i] + " "
-
-    if filename_segmentation is not None:
-        cmd += filename_segmentation + " "
-
-    cmd += "& "
-
-    return cmd
 
 
 def write_executable_file(cmds, dir_output=dir_tmp, filename="showComparison"):
@@ -1178,9 +1119,9 @@ def write_executable_file(cmds, dir_output=dir_tmp, filename="showComparison"):
     for i in range(0, len(cmds)):
         cmd = cmds[i]
         cmd = re.sub(dir_output, '" + directory + "', cmd)
-        cmd = re.sub("itksnap", 'itksnap_exe + "', cmd)
-        cmd = re.sub("fslview", 'fslview_exe + "', cmd)
-        cmd = re.sub("NiftyView", 'niftyview_exe + "', cmd)
+        cmd = re.sub(itksnap_exe, 'itksnap_exe + "', cmd)
+        cmd = re.sub(fslview_exe, 'fslview_exe + "', cmd)
+        cmd = re.sub(niftyview_exe, 'niftyview_exe + "', cmd)
         cmds[i] = cmd
 
     call = "#!/usr/bin/python\n"
@@ -1329,6 +1270,7 @@ def show_sitk_image(image_sitk,
     for i in range(0, len(image_sitk)):
         filenames[i] = dir_output + label[i] + ".nii.gz"
         sitk.WriteImage(image_sitk[i], filenames[i])
+        
     if segmentation is None:
         filename_segmentation = None
     else:
@@ -1336,7 +1278,7 @@ def show_sitk_image(image_sitk,
         sitk.WriteImage(segmentation, filename_segmentation)
 
     # Get command line to call viewer
-    cmd = eval("call_viewer_" + viewer + "(filenames, filename_segmentation)")
+    cmd = eval("ph.get_function_call_" + viewer + "(filenames, filename_segmentation)")
 
     # Execute command
     ph.execute_command(cmd, verbose)
@@ -1346,11 +1288,11 @@ def show_sitk_image(image_sitk,
 
         cmds = [None]*3
         ctr = 0
-        cmds[ctr] = call_viewer_itksnap(filenames, filename_segmentation)
+        cmds[ctr] = ph.get_function_call_itksnap(filenames, filename_segmentation)
         ctr = ctr+1
-        cmds[ctr] = call_viewer_fslview(filenames, filename_segmentation)
+        cmds[ctr] = ph.get_function_call_fslview(filenames, filename_segmentation)
         ctr = ctr+1
-        cmds[ctr] = call_viewer_niftyview(filenames, filename_segmentation)
+        cmds[ctr] = ph.get_function_call_niftyview(filenames, filename_segmentation)
         ctr = ctr+1
 
         # Build executable file containing the information
@@ -1432,7 +1374,7 @@ def show_itk_image(image_itk,
         write_itk_image(image_itk, dir_output + label + ".nii.gz")
         write_itk_image(overlay, dir_output + label + "_overlay.nii.gz")
 
-        cmd = "itksnap " \
+        cmd = itksnap_exe + " " \
             + "-g " + dir_output + label + ".nii.gz " \
             + "-o " + dir_output + label + "_overlay.nii.gz " \
             "& "
@@ -1442,7 +1384,7 @@ def show_itk_image(image_itk,
         write_itk_image(segmentation, dir_output +
                         label + "_segmentation.nii.gz")
 
-        cmd = "itksnap " \
+        cmd = itksnap_exe + " " \
             + "-g " + dir_output + label + ".nii.gz " \
             + "-s " + dir_output + label + "_segmentation.nii.gz " \
             + "& "
@@ -1453,7 +1395,7 @@ def show_itk_image(image_itk,
                         label + "_segmentation.nii.gz")
         write_itk_image(overlay, dir_output + label + "_overlay.nii.gz")
 
-        cmd = "itksnap " \
+        cmd = itksnap_exe + " " \
             + "-g " + dir_output + label + ".nii.gz " \
             + "-s " + dir_output + label + "_segmentation.nii.gz " \
             + "-o " + dir_output + label + "_overlay.nii.gz " \
@@ -1462,7 +1404,7 @@ def show_itk_image(image_itk,
     else:
         write_itk_image(image_itk, dir_output + label + ".nii.gz")
 
-        cmd = "itksnap " \
+        cmd = itksnap_exe + " " \
             + "-g " + dir_output + label + ".nii.gz " \
             "& "
 

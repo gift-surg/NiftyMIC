@@ -21,6 +21,7 @@ from PIL import Image
 import itertools
 
 from definitions import dir_tmp
+from definitions import itksnap_exe
 
 ##
 COLORS = [
@@ -189,6 +190,103 @@ def exit():
 
 def killall_itksnap():
     os.system("killall ITK-SNAP")
+
+
+def itksnap(path_to_filename):
+    show_nifti(path_to_filename, viewer="itksnap")
+
+
+def fslview(path_to_filename):
+    show_nifti(path_to_filename, viewer="fslview")
+
+
+def niftyview(path_to_filename):
+    show_nifti(path_to_filename, viewer="niftyview")
+
+
+def show_nifti(path_to_filename, viewer="itksnap"):
+    cmd = eval("get_function_call_" + viewer + "(['" + path_to_filename + "'])")
+    execute_command(cmd)
+
+
+##
+# Gets the function call for ITK-SNAP.
+# \date       2017-06-28 17:55:35+0100
+#
+# \param      filenames              list of filenames. If more than one image,
+#                                    the remaining ones are overlaid
+# \param      filename_segmentation  filename of segmentation to be overlaid
+#
+# \return     string to be executed.
+#
+def get_function_call_itksnap(filenames, filename_segmentation=None):
+
+    cmd = itksnap_exe + " "
+    cmd += "-g " + filenames[0] + " "
+
+    # Add overlays
+    if len(filenames) > 1:
+        cmd += "-o "
+
+        for i in range(1, len(filenames)):
+            cmd += filenames[i] + " "
+
+    # Add segmentation
+    if filename_segmentation is not None:
+        cmd += "-s " + filename_segmentation + " "
+
+    # Add termination
+    cmd += "& "
+
+    return cmd
+
+
+##
+# Gets the function call for FSL viewer.
+# \date       2017-06-28 17:55:35+0100
+#
+# \param      filenames              list of filenames. If more than one image,
+#                                    the remaining ones are overlaid
+# \param      filename_segmentation  filename of segmentation to be overlaid
+#
+# \return     string to be executed.
+#
+def get_function_call_fslview(filenames, filename_segmentation=None):
+
+    cmd = fslview_exe + " "
+    for i in range(0, len(filenames)):
+        cmd += filenames[i] + " "
+
+    if filename_segmentation is not None:
+        cmd += filename_segmentation + " -t 0.3 "
+
+    cmd += "& "
+
+    return cmd
+
+
+##
+# Gets the function call for NiftyView.
+# \date       2017-06-28 17:55:35+0100
+#
+# \param      filenames              list of filenames. If more than one image,
+#                                    the remaining ones are overlaid
+# \param      filename_segmentation  filename of segmentation to be overlaid
+#
+# \return     string to be executed.
+#
+def get_function_call_niftyview(filenames, filename_segmentation=None):
+
+    cmd = niftyview_exe + " "
+    for i in range(0, len(filenames)):
+        cmd += filenames[i] + " "
+
+    if filename_segmentation is not None:
+        cmd += filename_segmentation + " "
+
+    cmd += "& "
+
+    return cmd
 
 
 ##

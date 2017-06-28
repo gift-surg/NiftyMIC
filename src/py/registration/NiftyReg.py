@@ -17,6 +17,8 @@ import base.PSF as psf
 import base.Stack as st
 
 from definitions import dir_tmp
+from definitions import reg_aladin_exe
+from definitions import reg_f3d_exe
 
 class NiftyReg:
 
@@ -126,6 +128,14 @@ class NiftyReg:
         return self._affine_transform_sitk
 
 
+    # Get registered image
+    #  \return registered image as Stack object
+    def get_corrected_stack(self):
+        corrected_stack = st.Stack.from_stack(self._fixed)
+        corrected_stack.update_motion_correction(self._affine_transform_sitk)
+        return corrected_stack
+
+
     ## Get registered image
     #  \return registered image as Stack object
     def get_registered_image(self):
@@ -215,7 +225,7 @@ class NiftyReg:
     #  \param[out] res_affine_image_str name of resulting registered image being stored in self._dir_tmp, string
     def _reg_aladin(self, fixed_str, moving_str, fixed_mask_str, moving_mask_str, options, res_affine_matrix_str, res_affine_image_str):
 
-        cmd =  "reg_aladin " + options + " "
+        cmd =  reg_aladin_exe + " " + options + " "
         cmd += "-ref " + self._dir_tmp + fixed_str + ".nii.gz "
         cmd += "-flo " + self._dir_tmp + moving_str + ".nii.gz "
         if self._use_fixed_mask:
@@ -270,7 +280,7 @@ class NiftyReg:
             res_affine_image_str = moving_str + "_warped_affine_NiftyReg"
             self._reg_aladin(fixed_str, moving_str, fixed_mask_str, moving_mask_str, options, affine_matrix_str, res_affine_image_str)
 
-        cmd =  "reg_f3d " + options + " "
+        cmd =  reg_f3d_exe + " " + options + " "
         cmd += "-ref " + self._dir_tmp + fixed_str + ".nii.gz "
         cmd += "-flo " + self._dir_tmp + moving_str + ".nii.gz "
         if self._use_fixed_mask:
