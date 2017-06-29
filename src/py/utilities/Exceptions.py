@@ -41,11 +41,53 @@ class ObjectNotCreated(Exception):
     #
     # \param      self           The object
     # \param      function_call  function call missing to create the object
-    # 
+    #
     def __init__(self, function_call):
         self.function_call = function_call
 
     def __str__(self):
         error = "Object has not been created yet. Run '%s' first." % (
             self.function_call)
+        return error
+
+
+##
+# Error handling in case specified file does not exist
+#
+class FileNotExistent(Exception):
+
+    ##
+    # Store information on the missing file
+    # \date       2017-06-29 12:49:18+0100
+    #
+    # \param      self          The object
+    # \param      missing_file  string of missing file
+    #
+    def __init__(self, missing_file):
+        self.missing_file = missing_file
+
+    def __str__(self):
+        error = "File '%s' does not exist" % (self.missing_file)
+        return error
+
+
+##
+# Error handling in case multiple filenames exist
+# (e.g. same filename but two different extensions)
+# \date       2017-06-29 14:09:27+0100
+#
+class FilenameAmbiguous(Exception):
+
+    ##
+    # Store information on the ambiguous file
+    # \date       2017-06-29 14:10:34+0100
+    #
+    # \param      self                The object
+    # \param      ambiguous_filename  string of ambiguous file
+    #
+    def __init__(self, ambiguous_filename):
+        self.ambiguous_filename = ambiguous_filename
+
+    def __str__(self):
+        error = "Filename '%s' ambiguous" % (self.ambiguous_filename)
         return error

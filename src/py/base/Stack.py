@@ -14,6 +14,7 @@ import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
+import re
 import copy
 
 # Import modules from src-folder
@@ -21,14 +22,18 @@ import base.Slice as sl
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 import utilities.FilenameParser as fp
+import utilities.Exceptions as Exceptions
 
 from definitions import dir_tmp
-
+from definitions import REGEX_FILENAMES
+from definitions import REGEX_FILENAME_EXTENSIONS
 
 ##
 # In addition to the nifti-image (stored as sitk.Image object) this class Stack
 # also contains additional variables helpful to work with the data.
 #
+
+
 class Stack:
 
     ##
@@ -49,23 +54,26 @@ class Stack:
                       extract_slices=True):
 
         stack = cls()
-        # stack = []
-
-        # Directory
-        # dir_input = "/".join(filename.split("/")[0:-1]) + "/"
-
-        # Filename without extension
-        # filename = filename.split("/")[-1:][0].split(".")[0]
-
-        if dir_input[-1] is not "/":
-            dir_input += "/"
-
         stack._dir = dir_input
         stack._filename = filename
 
+        # Get data filenames of images without filename extension
+        pattern = filename + "[.]" + REGEX_FILENAME_EXTENSIONS
+        p = re.compile(pattern)
+        filename_list = [p.match(f).group(0)
+                         for f in os.listdir(stack._dir) if p.match(f)]
+
+        if len(filename_list) == 0:
+            raise Exceptions.FileNotExistent(
+                os.path.join(stack._dir, filename))
+        elif len(filename_list) > 1:
+            raise Exceptions.FilenameAmbiguous(
+                os.path.join(stack._dir, filename))
+
         # Append stacks as SimpleITK and ITK Image objects
         stack.sitk = sitk.ReadImage(
-            dir_input + filename + ".nii.gz", sitk.sitkFloat64)
+            os.path.join(dir_input, filename_list[0]),
+            sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         # Append masks (either provided or binary mask)
@@ -73,17 +81,27 @@ class Stack:
             stack.sitk_mask = stack._generate_binary_mask()
             stack._is_unity_mask = True
         else:
-            if os.path.isfile(dir_input + filename + suffix_mask + ".nii.gz"):
-                stack.sitk_mask = sitk.ReadImage(
-                    dir_input + filename + suffix_mask + ".nii.gz",
-                    sitk.sitkUInt8)
-                stack._is_unity_mask = False
-            else:
+            pattern = filename + suffix_mask + \
+                "[.]" + REGEX_FILENAME_EXTENSIONS
+            p = re.compile(pattern)
+            filename_list_mask = [p.match(f).group(0)
+                                  for f in os.listdir(stack._dir)
+                                  if p.match(f)]
+
+            if len(filename_list_mask) == 0:
                 ph.print_debug_info("Mask file for " + dir_input + filename +
                                     ".nii.gz" +
                                     " not found. Binary mask created.")
                 stack.sitk_mask = stack._generate_binary_mask()
                 stack._is_unity_mask = True
+            elif len(filename_list_mask) == 1:
+                stack.sitk_mask = sitk.ReadImage(
+                    os.path.join(dir_input, filename_list_mask[0]),
+                    sitk.sitkUInt8)
+                stack._is_unity_mask = False
+            else:
+                raise Exceptions.FilenameAmbiguous(
+                    os.path.join(stack._dir, filename + suffix_mask))
 
         # Append itk object
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)

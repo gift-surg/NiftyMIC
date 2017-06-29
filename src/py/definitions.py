@@ -15,6 +15,10 @@ bet_exe = "bet"
 reg_aladin_exe = "reg_aladin"
 reg_f3d_exe = "reg_f3d"
 
+ALLOWED_EXTENSIONS = ["nii.gz", "nii"]
+REGEX_FILENAMES = "[A-Za-z0-9+-_]+"
+REGEX_FILENAME_EXTENSIONS = "(" + "|".join(ALLOWED_EXTENSIONS) + ")"
+
 info = {
         "name": "Volumetric MRI Reconstruction from 2D Slices in the Presence of Motion",
         "version": "0.1.0",

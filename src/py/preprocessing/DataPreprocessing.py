@@ -9,6 +9,8 @@ import os                       # used to execute terminal commands in python
 import sys
 import SimpleITK as sitk
 import numpy as np
+import re
+import natsort
 
 # Import modules from src-folder
 import base.Stack as st
@@ -19,9 +21,14 @@ import preprocessing.N4BiasFieldCorrection as n4bfc
 import utilities.Exceptions as Exceptions
 
 
+from definitions import REGEX_FILENAMES
+from definitions import REGEX_FILENAME_EXTENSIONS
+
 ##
 # Class implementing data preprocessing steps
 #
+
+
 class DataPreprocessing:
 
     ##
@@ -53,7 +60,7 @@ class DataPreprocessing:
                  boundary_i=0,
                  boundary_j=0,
                  boundary_k=0,
-                 unit="mm"
+                 unit="mm",
                  ):
 
         self._use_N4BiasFieldCorrector = use_N4BiasFieldCorrector
@@ -155,7 +162,8 @@ class DataPreprocessing:
                        boundary_i=0,
                        boundary_j=0,
                        boundary_k=0,
-                       unit="mm"):
+                       unit="mm",
+                       ):
 
         self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector,
                    use_intensity_correction=use_intensity_correction,
@@ -167,36 +175,22 @@ class DataPreprocessing:
                    boundary_k=boundary_k,
                    unit=unit)
 
-        # Get data filenames without filename extension
-        filenames_tmp = []
+        # Get data filenames of images without filename extension
+        pattern = "(" + REGEX_FILENAMES + ")[.]" + \
+            REGEX_FILENAME_EXTENSIONS
+        pattern_mask = "(" + REGEX_FILENAMES + ")" + suffix_mask + "[.]" + \
+            REGEX_FILENAME_EXTENSIONS
+        p = re.compile(pattern)
+        p_mask = re.compile(pattern_mask)
 
-        for file in os.listdir(dir_input):
-            for filename_extension in [".nii.gz", ".nii"]:
-                if file.endswith(filename_extension) and not file.endswith(suffix_mask + filename_extension):
-                    filenames_tmp.append(file)
-        filenames = [f.split(".")[0] for f in sorted(filenames_tmp)]
+        # Exclude potential mask filenames
+        filenames = [p.match(f).group(1)
+                     for f in os.listdir(dir_input)
+                     if p.match(f) and not p_mask.match(f)]
+        filenames = natsort.natsorted(filenames, key=lambda y: y.lower())
 
         # Read input data
         self._read_input_data(dir_input, filenames, suffix_mask)
-
-        # # Number of stacks to be read
-        # self._N_stacks = len(filenames)
-
-        # # Read stacks and their masks (if no mask is found a binary image is
-        # # created automatically)
-        # self._stacks_preprocessed = [None]*self._N_stacks
-
-        # for i in range(0, self._N_stacks):
-        #     self._stacks_preprocessed[i] = st.Stack.from_filename(
-        #         dir_input, filenames[i], suffix_mask)
-        #     txt = "Image '%s' was read for further processing." % (filenames[
-        #                                                            i])
-        #     if i is self._target_stack_index:
-        #         ph.print_debug_info(txt + " [Selected target stack]")
-        #     else:
-        #         ph.print_debug_info(txt)
-
-        # # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))
 
         return self
 
