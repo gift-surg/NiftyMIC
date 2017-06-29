@@ -46,12 +46,15 @@ class IntraStackRegistration(StackRegistrationBase):
                  alpha_reference=1,
                  alpha_parameter=0,
                  transform_type="rigid",
+                 optimizer_nfev_max=20,
+                 optimizer_loss="soft_l1",
+                 optimizer_method="trf",
                  intensity_correction_type_slice_neighbour_fit=None,
                  intensity_correction_initializer_type=None,
                  prior_scale=1.0,
-                 prior_intensity_correction_coefficients=np.array([1,
-                                                                   0]),
-                 image_transform_reference_fit_term="identity"):
+                 prior_intensity_correction_coefficients=np.array([1, 0]),
+                 image_transform_reference_fit_term="identity",
+                 ):
 
         # Run constructor of superclass
         StackRegistrationBase.__init__(
@@ -62,10 +65,14 @@ class IntraStackRegistration(StackRegistrationBase):
             use_reference_mask=use_reference_mask,
             use_verbose=use_verbose,
             transform_initializer_type=transform_initializer_type,
+            optimizer_nfev_max=optimizer_nfev_max,
+            optimizer_loss=optimizer_loss,
+            optimizer_method=optimizer_method,
             interpolator=interpolator,
             alpha_neighbour=alpha_neighbour,
             alpha_reference=alpha_reference,
-            alpha_parameter=alpha_parameter)
+            alpha_parameter=alpha_parameter,
+        )
 
         # Chosen transform type
         self._transform_type = transform_type
@@ -1484,7 +1491,8 @@ class IntraStackRegistration(StackRegistrationBase):
                 fixed_sitk = slice_im1_sitk
                 moving_sitk = sitk.Image(self._slices_2D[i].sitk)
                 if self._use_stack_mask_neighbour_fit_term:
-                    moving_sitk *= self._slices_2D[i].sitk_mask
+                    moving_sitk *= sitk.Cast(self._slices_2D[i].sitk_mask,
+                        moving_sitk.GetPixelIDValue())
                 initial_transform_sitk = self._new_transform_sitk[
                     self._transform_type]()
                 operation_mode_sitk = eval(
@@ -1521,16 +1529,23 @@ class IntraStackRegistration(StackRegistrationBase):
 
         # Initialize transform to match each slice with the reference
         else:
+
+            # print self._use_reference_mask
+            # print self._use_stack_mask_reference_fit_term
             for i in range(0, self._N_slices):
 
                 # Use sitk.CenteredTransformInitializerFilter to get initial
                 # transform
                 fixed_sitk = self._init_slices_2D_reference[i].sitk
-                # if self._use_reference_mask:
-                #     fixed_sitk = sitk.Cast(self._init_slices_2D_reference[i].sitk_mask, fixed_sitk.GetPixelIDValue())
+                if self._use_reference_mask:
+                    fixed_sitk *= sitk.Cast(
+                        self._init_slices_2D_reference[i].sitk_mask,
+                        fixed_sitk.GetPixelIDValue())
                 moving_sitk = self._init_slices_2D_stack_reference_term[i].sitk
-                # if self._use_stack_mask_reference_fit_term:
-                #     moving_sitk *= sitk.Cast(self._init_slices_2D_stack_reference_term[i].sitk_mask, moving_sitk.GetPixelIDValue())
+                if self._use_stack_mask_reference_fit_term:
+                    moving_sitk *= sitk.Cast(
+                        self._init_slices_2D_stack_reference_term[i].sitk_mask,
+                        moving_sitk.GetPixelIDValue())
                 initial_transform_sitk = self._new_transform_sitk[
                     self._transform_type]()
                 operation_mode_sitk = eval(

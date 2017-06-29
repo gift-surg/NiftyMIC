@@ -1122,7 +1122,7 @@ def create_image_with_slope(shape, slope=1, value_bg=0, value_fg=1, offset=0):
 #
 # \return     { description_of_the_return_value }
 #
-def create_image_pyramid(length, slope=1, value_bg=0, value_fg=1, offset=(0, 0)):
+def create_image_pyramid(length, slope=1, value_bg=0, value_fg=500, offset=(0, 0)):
 
     shape = np.array([length, length])
 
@@ -1163,3 +1163,4 @@ def write_image(nda, filename):
     nda = np.round(np.array(nda))
     im = Image.fromarray(nda)
     im.save(filename)
+    print_debug_info("Data array successfully to %s." % (filename) )

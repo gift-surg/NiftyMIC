@@ -486,7 +486,7 @@ class Stack:
     # \return     resampled stack based on current position of slices as Stack
     #             object
     #
-    def get_resampled_stack_from_slices(self, resampling_grid=None, interpolator="NearestNeighbor", default_pixel_value=0.0):
+    def get_resampled_stack_from_slices(self, resampling_grid=None, interpolator="NearestNeighbor", default_pixel_value=0.0, filename=None):
 
         # Choose interpolator
         try:
@@ -579,8 +579,11 @@ class Stack:
         # Get valid binary mask
         stack_resampled_slice_sitk_mask /= stack_resampled_slice_sitk_mask
 
+        if filename is None:
+            filename = self._filename + "_" + interpolator_str
+
         stack = self.from_sitk_image(
-            stack_resampled_sitk, self._filename + "_" + interpolator_str, stack_resampled_sitk_mask)
+            stack_resampled_sitk, filename, stack_resampled_sitk_mask)
 
         return stack
 
