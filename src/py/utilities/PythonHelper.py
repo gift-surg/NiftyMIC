@@ -22,6 +22,8 @@ import itertools
 
 from definitions import dir_tmp
 from definitions import itksnap_exe
+from definitions import fslview_exe
+from definitions import niftyview_exe
 
 ##
 COLORS = [
@@ -205,7 +207,8 @@ def niftyview(path_to_filename):
 
 
 def show_nifti(path_to_filename, viewer="itksnap"):
-    cmd = eval("get_function_call_" + viewer + "(['" + path_to_filename + "'])")
+    cmd = eval("get_function_call_" + viewer +
+               "(['" + path_to_filename + "'])")
     execute_command(cmd)
 
 
@@ -577,13 +580,26 @@ def show_arrays(nda, title=None, cmap="Greys_r", use_colorbar=False, directory=N
 
     # Show list of 2D arrays slice by slice
     if type(nda) is list:
-        fig = _show_2D_array_list_array_by_array(nda, title=title, cmap=cmap, colorbar=use_colorbar,
-                                                 fig_number=fig_number, directory=directory, use_same_scaling=use_same_scaling)
+        fig = _show_2D_array_list_array_by_array(
+            nda,
+            title=title,
+            cmap=cmap,
+            colorbar=use_colorbar,
+            fig_number=fig_number,
+            directory=directory,
+            use_same_scaling=use_same_scaling,
+        )
 
     # Show single 2D/3D array
     else:
-        fig = show_array(nda, title=title, cmap=cmap, colorbar=use_colorbar,
-                         directory=directory, fig_number=fig_number)
+        fig = show_array(
+            nda,
+            title=title,
+            cmap=cmap,
+            colorbar=use_colorbar,
+            directory=directory,
+            fig_number=fig_number,
+        )
 
     return fig
 
@@ -605,13 +621,25 @@ def show_array(nda, title="data", cmap="Greys_r", colorbar=False, directory=None
 
     # Show single 2D array
     if len(nda.shape) is 2:
-        fig = _show_2D_array(nda, title=title, cmap=cmap, colorbar=colorbar,
-                             directory=directory, save_type=save_type, fig_number=fig_number)
+        fig = _show_2D_array(
+            nda,
+            title=title,
+            cmap=cmap,
+            colorbar=colorbar,
+            directory=directory,
+            save_type=save_type,
+            fig_number=fig_number)
 
     # Show single 3D array
     elif len(nda.shape) is 3:
         fig = _show_3D_array_slice_by_slice(
-            nda, title=title, cmap=cmap, colorbar=colorbar, directory=directory, save_type=save_type, fig_number=fig_number)
+            nda,
+            title=title,
+            cmap=cmap,
+            colorbar=colorbar,
+            directory=directory,
+            save_type=save_type,
+            fig_number=fig_number)
 
     return fig
 
@@ -714,7 +742,15 @@ def _show_3D_array_slice_by_slice(nda3D_zyx, title="data", cmap="Greys_r", color
 #
 # \return     { description_of_the_return_value }
 #
-def _show_2D_array_list_array_by_array(nda2D_list, title=None, cmap="Greys_r", colorbar=False, fig_number=None, directory=None, axis_aspect='equal', use_same_scaling=False):
+def _show_2D_array_list_array_by_array(nda2D_list,
+                                       title=None,
+                                       cmap="Greys_r",
+                                       colorbar=False,
+                                       fig_number=None,
+                                       directory=None,
+                                       axis_aspect='equal',
+                                       use_same_scaling=False,
+                                       ):
 
     # my_fontname = "Arial"
     my_fontname = "Times New Roman"
@@ -1163,4 +1199,38 @@ def write_image(nda, filename):
     nda = np.round(np.array(nda))
     im = Image.fromarray(nda)
     im.save(filename)
-    print_debug_info("Data array successfully to %s." % (filename) )
+    print_debug_info("Data array successfully to %s." % (filename))
+
+
+##
+# Write to file.
+# \date       2017-06-30 13:51:39+0100
+#
+# \param      filename  Path to filename with extension. e.g. "txt"
+# \param      text      The text
+# \param      type      "w" for write, "a" for append
+#
+def write_to_file(filename, text, wtype="w"):
+    file_handle = open(filename, wtype)
+    file_handle.write(text)
+    file_handle.close()
+    if wtype == "w":
+        print_debug_info("File '%s' written successfully" % (filename))
+    elif wtype == "a":
+        print_debug_info("File '%s' updated successfully" % (filename))
+
+
+##
+# Writes a numpy array to file.
+# \date       2017-06-30 13:53:23+0100
+#
+# \param           The object
+# \param      filename  Path to filename with extension. e.g. "txt"
+# \param      array      Numpy array
+# \param      format     The format
+# \param      delimiter  The delimiter
+#
+def write_array_to_file(filename, array, format="%.10e", delimiter="\t", wtype="a"):
+    file_handle = open(filename, wtype)
+    np.savetxt(file_handle, array, fmt=format, delimiter=delimiter)
+    file_handle.close()
