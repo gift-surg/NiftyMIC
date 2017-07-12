@@ -10,6 +10,7 @@ import SimpleITK as sitk
 import numpy as np
 import unittest
 import sys
+import os
 
 ## Import modules from src-folder
 import base.Stack as st
@@ -41,7 +42,10 @@ class TestSegmentationPropagation(unittest.TestCase):
 
         parameters_gd = (0.1, 0.2, -0.3, 0, -4, 10)
 
-        template = st.Stack.from_filename(self.dir_test_data, filename=filename, suffix_mask="_mask", extract_slices=False)
+        template = st.Stack.from_filename(
+            os.path.join(self.dir_test_data, filename + ".nii.gz"),
+            os.path.join(self.dir_test_data, filename + "_mask.nii.gz"),
+            extract_slices=False)
 
         transform_sitk_gd = sitk.Euler3DTransform()
         transform_sitk_gd.SetParameters(parameters_gd)

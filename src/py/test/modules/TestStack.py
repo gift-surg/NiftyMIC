@@ -26,6 +26,7 @@ class TestStack(unittest.TestCase):
 
     # Specify input data
     dir_test_data = dir_test
+    dir_test_data_io = os.path.join(dir_test, "IO")
 
     accuracy = 7
 
@@ -36,7 +37,10 @@ class TestStack(unittest.TestCase):
 
         filename = "stack0"
 
-        stack = st.Stack.from_filename(self.dir_test_data, filename, "_mask")
+        stack = st.Stack.from_filename(
+            os.path.join(self.dir_test_data, filename + ".nii.gz"),
+            os.path.join(self.dir_test_data, filename + "_mask.nii.gz")
+        )
 
         nda_stack = sitk.GetArrayFromImage(stack.sitk)
         nda_stack_mask = sitk.GetArrayFromImage(stack.sitk_mask)
@@ -56,33 +60,39 @@ class TestStack(unittest.TestCase):
         self.assertEqual(np.round(
             np.linalg.norm(nda_stack_mask - nda_stack_resampled_mask), decimals=self.accuracy), 0)
 
-    def test_io_image_data_ambiguous(self):
+    # Being handled (or should be in class DataReader)
+    # def test_io_image_data_ambiguous(self):
 
-        # fetal_brain_0.nii and fetal_brain_0.nii.gz exist (ambiguous)
-        filename = "fetal_brain_0"
-        self.assertRaises(Exceptions.FilenameAmbiguous, lambda:
-                          st.Stack.from_filename(
-                              os.path.join(self.dir_test_data, "IO"), filename,
-                              suffix_mask=None)
-                          )
+    #     # fetal_brain_0.nii and fetal_brain_0.nii.gz exist (ambiguous)
+    #     filename = "fetal_brain_0"
+    #     self.assertRaises(Exceptions.FilenameAmbiguous, lambda:
+    #                       st.Stack.from_filename(
+    #                           os.path.join(self.dir_test_data, "IO",
+    #                                        filename + ".nii.gz"))
+    #                       )
 
-    def test_io_image_mask_data_ambiguous(self):
-        # fetal_brain_1_mask.nii and fetal_brain_1_mask.nii.gz exist
-        # (ambiguous)
-        filename = "fetal_brain_1"
-        self.assertRaises(Exceptions.FilenameAmbiguous, lambda:
-                          st.Stack.from_filename(
-                              os.path.join(self.dir_test_data, "IO"), filename,
-                              suffix_mask="_mask")
-                          )
+    # def test_io_image_mask_data_ambiguous(self):
+    #     # fetal_brain_1_mask.nii and fetal_brain_1_mask.nii.gz exist
+    #     # (ambiguous)
+    #     filename = "fetal_brain_1"
+    #     self.assertRaises(Exceptions.FilenameAmbiguous, lambda:
+    #                       st.Stack.from_filename(
+    #                           os.path.join(self.dir_test_data, "IO",
+    #                                        filename + ".nii.gz"))
+    #                       )
 
     def test_io_image_not_existent(self):
         # Neither fetal_brain_2.nii.gz nor fetal_brain_2.nii exists
         filename = "fetal_brain_2"
         self.assertRaises(Exceptions.FileNotExistent, lambda:
                           st.Stack.from_filename(
-                              os.path.join(self.dir_test_data, "IO"), filename,
-                              suffix_mask="_mask")
+                              os.path.join(self.dir_test_data_io,
+                                           filename + ".nii.gz"))
+                          )
+        self.assertRaises(Exceptions.FileNotExistent, lambda:
+                          st.Stack.from_filename(
+                              os.path.join(self.dir_test_data_io,
+                                           filename + ".nii"))
                           )
 
     def test_io_image_and_mask_1(self):
@@ -90,10 +100,12 @@ class TestStack(unittest.TestCase):
 
         filename = "fetal_brain_3"
         stack = st.Stack.from_filename(
-            os.path.join(self.dir_test_data, "IO"), filename,
-            suffix_mask="_mask")
+            os.path.join(self.dir_test_data_io, filename + ".nii"),
+            os.path.join(self.dir_test_data_io, filename + "_mask.nii")
+        )
 
-        # If everything was correctly read the mask will have zero and ones
+        # If everything was correctly read the mask will have zeros and ones
+        # in mask
         nda_mask = sitk.GetArrayFromImage(stack.sitk_mask)
         self.assertEqual(nda_mask.prod(), 0)
 
@@ -102,8 +114,9 @@ class TestStack(unittest.TestCase):
 
         filename = "fetal_brain_4"
         stack = st.Stack.from_filename(
-            os.path.join(self.dir_test_data, "IO"), filename,
-            suffix_mask="_mask")
+            os.path.join(self.dir_test_data_io, filename + ".nii"),
+            os.path.join(self.dir_test_data_io, filename + "_mask.nii.gz")
+        )
 
         # If everything was correctly read the mask will have zero and ones
         nda_mask = sitk.GetArrayFromImage(stack.sitk_mask)
@@ -114,8 +127,9 @@ class TestStack(unittest.TestCase):
 
         filename = "fetal_brain_5"
         stack = st.Stack.from_filename(
-            os.path.join(self.dir_test_data, "IO"), filename,
-            suffix_mask="_mask")
+            os.path.join(self.dir_test_data_io, filename + ".nii.gz"),
+            os.path.join(self.dir_test_data_io, filename + "_mask.nii")
+        )
 
         # If everything was correctly read the mask will have zero and ones
         nda_mask = sitk.GetArrayFromImage(stack.sitk_mask)
@@ -126,8 +140,9 @@ class TestStack(unittest.TestCase):
 
         filename = "fetal_brain_6"
         stack = st.Stack.from_filename(
-            os.path.join(self.dir_test_data, "IO"), filename,
-            suffix_mask="_mask")
+            os.path.join(self.dir_test_data_io, filename + ".nii.gz"),
+            os.path.join(self.dir_test_data_io, filename + "_mask.nii.gz")
+        )
 
         # If everything was correctly read the mask will have zero and ones
         nda_mask = sitk.GetArrayFromImage(stack.sitk_mask)

@@ -72,6 +72,27 @@ class FileNotExistent(Exception):
 
 
 ##
+# Error handling in case specified directory does not exist
+# \date       2017-07-11 17:02:12+0100
+#
+class DirectoryNotExistent(Exception):
+
+    ##
+    # Store information on the missing directory
+    # \date       2017-07-11 17:02:46+0100
+    #
+    # \param      self            The object
+    # \param      missing_directory  string of missing directory
+    #
+    def __init__(self, missing_directory):
+        self.missing_directory = missing_directory
+
+    def __str__(self):
+        error = "Directory '%s' does not exist" % (self.missing_directory)
+        return error
+
+
+##
 # Error handling in case multiple filenames exist
 # (e.g. same filename but two different extensions)
 # \date       2017-06-29 14:09:27+0100
@@ -91,3 +112,22 @@ class FilenameAmbiguous(Exception):
     def __str__(self):
         error = "Filename '%s' ambiguous" % (self.ambiguous_filename)
         return error
+
+##
+# Error handling in case IO is not correct
+# \date       2017-07-11 20:21:19+0100
+#
+class IOError(Exception):
+
+    ##
+    # Store information on the IO error
+    # \date       2017-07-11 20:21:38+0100
+    #
+    # \param      self   The object
+    # \param      error  The error
+    #
+    def __init__(self, error):
+        self.error = error
+
+    def __str__(self):
+        return self.error

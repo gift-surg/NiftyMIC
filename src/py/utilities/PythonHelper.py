@@ -15,6 +15,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import time
+import errno
 import datetime
 from PIL import Image
 # from datetime import timedelta
@@ -113,10 +114,9 @@ def directory_exists(directory_path):
 #
 def write_variables(variables, directory, filename, filetype=".pckl"):
 
-    directory = create_directory(directory)
     filename_out = directory + filename + filetype
 
-    f = open(filename_out, 'wb')
+    f = safe_open(filename_out, 'wb')
     pickle.dump(variables, f, protocol=-1)  # protocol=-1 for large files
     flag = f.close()
 
@@ -151,8 +151,48 @@ def read_variables(directory, filename, filetype=".pckl"):
     return variables
 
 
-def get_function_call(function_name, args):
-    cmd = "python " + function_name + " \\\n"
+##
+# Open "path" for writing, creating any parent directories if needed
+# \date       2017-07-12 11:15:47+0100
+#
+# \param      path  The path
+#
+# \return     file open handle
+#
+def safe_open(path, access_mode='w'):
+    mkdir_p(os.path.dirname(path))
+    return open(path, access_mode)
+
+
+##
+# Get "mkdir -p" functionality in python
+#
+# See https://stackoverflow.com/a/600612/119527 for further information.
+# \date       2017-07-12 11:17:21+0100
+#
+# \param      path  string specifying command "mkdir -p path"
+#
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
+##
+# Gets the executed call of script including all its options.
+# \date       2017-07-12 11:46:39+0100
+#
+# \param      script_name  The name of current script, e.g. "my_script.py"
+# \param      args         The arguments as given by \p parse_args of argparse
+#
+# \return     The performed script execution call as string.
+#
+def get_performed_script_execution(script_name, args):
+    cmd = "python " + script_name + " \\\n"
 
     for arg in sorted(vars(args)):
         argument = ("%s=" % (arg)).replace("_", "-")
@@ -161,11 +201,20 @@ def get_function_call(function_name, args):
     return cmd
 
 
-def write_function_call_to_executable_file(function_call, filename):
+##
+# Writes a function call to executable file.
+# \date       2017-07-12 11:45:45+0100
+#
+# \param      performed_script  The function call
+# \param      filename       The filename
+#
+# \return     { description_of_the_return_value }
+#
+def write_performed_script_execution_to_executable_file(function_call, filename):
 
     call = "#!/bin/sh\n\n" + function_call
 
-    text_file = open(filename, "w")
+    text_file = safe_open(filename, "w")
     text_file.write("%s" % call)
     text_file.close()
     print_debug_info("File " + filename + " generated.")
@@ -194,21 +243,58 @@ def killall_itksnap():
     os.system("killall ITK-SNAP")
 
 
+##
+# Open ITK-SNAP for given filename
+# \date       2017-07-06 12:34:12+0100
+#
+# \param      path_to_filename  The path to filename as string
+#
 def itksnap(path_to_filename):
     show_nifti(path_to_filename, viewer="itksnap")
 
 
+##
+# Open FSLView for given filename
+# \date       2017-07-06 12:34:12+0100
+#
+# \param      path_to_filename  The path to filename as string
+#
 def fslview(path_to_filename):
     show_nifti(path_to_filename, viewer="fslview")
 
 
+##
+# Open NiftyView for given filename
+# \date       2017-07-06 12:34:12+0100
+#
+# \param      path_to_filename  The path to filename as string
+#
 def niftyview(path_to_filename):
     show_nifti(path_to_filename, viewer="niftyview")
 
 
+##
+# Open viewer for given filename
+# \date       2017-07-06 12:34:12+0100
+#
+# \param      path_to_filename  The path to filename as string;
+# \param      viewer            The viewer; either "fslview", "itksnap" or
+#                               "niftyview"
+#
 def show_nifti(path_to_filename, viewer="itksnap"):
-    cmd = eval("get_function_call_" + viewer +
-               "(['" + path_to_filename + "'])")
+    show_niftis([path_to_filename], viewer=viewer)
+
+
+##
+# Open viewer for given filenames.
+# \date       2017-07-06 12:36:05+0100
+#
+# \param      paths_to_filenames  List of strings containing paths to filenames
+# \param      viewer            The viewer; either "fslview", "itksnap" or
+#                               "niftyview"
+#
+def show_niftis(paths_to_filenames, viewer="itksnap"):
+    cmd = globals()["get_function_call_" + viewer](paths_to_filenames)
     execute_command(cmd)
 
 
@@ -1001,7 +1087,8 @@ def print_line_separator(add_newline=True, symbol="*", length=99):
 # \param      filename_extension  The filename extension
 #
 def create_file(directory, filename, filename_extension="txt", header=""):
-    file_handle = open(directory + filename + "." + filename_extension, "w")
+    file_handle = safe_open(directory + filename +
+                            "." + filename_extension, "w")
     file_handle.write(header)
     file_handle.close()
     print_debug_info("File " + str(directory + filename +
@@ -1020,7 +1107,8 @@ def create_file(directory, filename, filename_extension="txt", header=""):
 # \param      filename_extension  The filename extension
 #
 def append_array_to_file(directory, filename, array, filename_extension="txt", format="%.10e", delimiter="\t"):
-    file_handle = open(directory + filename + "." + filename_extension, "a")
+    file_handle = safe_open(directory + filename +
+                            "." + filename_extension, "a")
     np.savetxt(file_handle, array, fmt=format, delimiter=delimiter)
     file_handle.close()
     print_debug_info("Array was appended to file " +
@@ -1210,13 +1298,13 @@ def write_image(nda, filename):
 # \param      text      The text
 # \param      type      "w" for write, "a" for append
 #
-def write_to_file(filename, text, wtype="w"):
-    file_handle = open(filename, wtype)
+def write_to_file(filename, text, access_mode="w"):
+    file_handle = safe_open(filename, access_mode)
     file_handle.write(text)
     file_handle.close()
-    if wtype == "w":
+    if access_mode == "w":
         print_debug_info("File '%s' written successfully" % (filename))
-    elif wtype == "a":
+    elif access_mode == "a":
         print_debug_info("File '%s' updated successfully" % (filename))
 
 
@@ -1230,7 +1318,7 @@ def write_to_file(filename, text, wtype="w"):
 # \param      format     The format
 # \param      delimiter  The delimiter
 #
-def write_array_to_file(filename, array, format="%.10e", delimiter="\t", wtype="a"):
-    file_handle = open(filename, wtype)
+def write_array_to_file(filename, array, format="%.10e", delimiter="\t", access_mode="a"):
+    file_handle = safe_open(filename, access_mode)
     np.savetxt(file_handle, array, fmt=format, delimiter=delimiter)
     file_handle.close()

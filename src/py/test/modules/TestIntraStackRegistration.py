@@ -367,7 +367,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         nda_3D_corrupted = np.zeros_like(nda_3D)
         nda_3D_corrupted[0, :, :] = nda_3D[0, :, :]
         nda_3D_corrupted_mask = np.zeros_like(nda_3D_mask)
-        nda_3D_corrupted_mask[0,:,:] = nda_3D_mask[0,:,:]
+        nda_3D_corrupted_mask[0, :, :] = nda_3D_mask[0, :, :]
         for i in range(1, shape_z):
             # Get random translation
             [tx, ty] = np.random.randint(0, 50, 2)
@@ -401,9 +401,10 @@ class TestIntraStackRegistration(unittest.TestCase):
         #     parameters[i, 2] = tx
 
         stack_corrupted_sitk = sitk.GetImageFromArray(nda_3D_corrupted)
-        stack_corrupted_sitk_mask = sitk.GetImageFromArray(nda_3D_corrupted_mask)
+        stack_corrupted_sitk_mask = sitk.GetImageFromArray(
+            nda_3D_corrupted_mask)
         stack_corrupted = st.Stack.from_sitk_image(
-            stack_corrupted_sitk, "stack_corrupted",stack_corrupted_sitk_mask)
+            stack_corrupted_sitk, "stack_corrupted", stack_corrupted_sitk_mask)
         # stack_corrupted.show(1)
         # stack_corrupted.show_slices()
         # sitkh.show_stacks([stack, stack_corrupted],
@@ -413,7 +414,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         inplane_registration = inplanereg.IntraStackRegistration(
             stack_corrupted,
             use_stack_mask=True,
-            )
+        )
         inplane_registration.set_transform_initializer_type("moments")
         # inplane_registration.set_transform_initializer_type("identity")
         # inplane_registration.set_transform_initializer_type("geometry")
@@ -457,7 +458,6 @@ class TestIntraStackRegistration(unittest.TestCase):
         self.assertEqual(np.round(
             np.linalg.norm(nda_diff), decimals=self.accuracy), 0)
 
-    """
     ##
     #       Test that initial intensity coefficients are computed
     #             correctly
@@ -561,7 +561,9 @@ class TestIntraStackRegistration(unittest.TestCase):
         # stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
 
         stack = st.Stack.from_filename(
-            self.dir_test_data, filename_stack, "_mask")
+            os.path.join(self.dir_test_data, filename_stack + ".nii.gz"),
+            os.path.join(self.dir_test_data, filename_stack + "_mask.nii.gz")
+        )
 
         nda = sitk.GetArrayFromImage(stack.sitk)
         nda_mask = sitk.GetArrayFromImage(stack.sitk_mask)
@@ -649,7 +651,9 @@ class TestIntraStackRegistration(unittest.TestCase):
         # stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
 
         stack = st.Stack.from_filename(
-            self.dir_test_data, filename_stack, "_mask")
+            os.path.join(self.dir_test_data, filename_stack + ".nii.gz"),
+            os.path.join(self.dir_test_data, filename_stack + "_mask.nii.gz")
+        )
 
         # Create in-plane motion corruption
         angle_z = 0.1
@@ -720,8 +724,6 @@ class TestIntraStackRegistration(unittest.TestCase):
         recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
         stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
 
-        # stack = st.Stack.from_filename(self.dir_test_data, filename)
-
         # Create in-plane motion corruption
         angle_z = 0.05
         center_2D = (0, 0)
@@ -784,6 +786,13 @@ class TestIntraStackRegistration(unittest.TestCase):
         self.assertEqual(np.round(
             np.linalg.norm(stack_diff_nda), decimals=8), 0)
 
+    ##
+    # \bug There is some issue with slice based and uniform intensity correction.
+    # Unit test needs to be fixed at some point
+    # \date       2017-07-12 12:40:01+0100
+    #
+    # \param      self  The object
+    #
     def test_inplane_rigid_alignment_to_reference_with_intensity_correction_affine(self):
 
         filename_stack = "fetal_brain_0"
@@ -796,8 +805,6 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
         stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
-
-        # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
         # Create in-plane motion corruption
         angle_z = 0.01
@@ -864,7 +871,9 @@ class TestIntraStackRegistration(unittest.TestCase):
         # filename_stack = "3D_SheppLoganPhantom_64"
 
         stack = st.Stack.from_filename(
-            self.dir_test_data, filename_stack, "_mask")
+            os.path.join(self.dir_test_data, filename_stack + ".nii.gz"),
+            os.path.join(self.dir_test_data, filename_stack + "_mask.nii.gz")
+        )
         # stack.show(1)
 
         nda = sitk.GetArrayFromImage(stack.sitk)
@@ -965,8 +974,13 @@ class TestIntraStackRegistration(unittest.TestCase):
         filename_recon = "FetalBrain_reconstruction_3stacks_myAlg"
 
         stack_tmp = st.Stack.from_filename(
-            self.dir_test_data, filename_stack, "_mask")
-        recon = st.Stack.from_filename(self.dir_test_data, filename_recon)
+            os.path.join(self.dir_test_data, filename_stack + ".nii.gz"),
+            os.path.join(self.dir_test_data, filename_stack + "_mask.nii.gz")
+        )
+
+        recon = st.Stack.from_filename(
+            os.path.join(self.dir_test_data, filename_recon)
+        )
 
         recon_sitk = recon.get_resampled_stack_from_slices(
             resampling_grid=stack_tmp.sitk, interpolator="Linear").sitk
@@ -976,8 +990,6 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         # recon_resampled_sitk = sitk.Resample(recon_sitk, stack_sitk)
         # stack = st.Stack.from_sitk_image(recon_resampled_sitk, "original")
-
-        # stack = st.Stack.from_filename(self.dir_test_data, filename)
 
         # Create in-plane motion corruption
         scale = 1.05
@@ -1047,4 +1059,3 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         self.assertEqual(np.round(
             np.linalg.norm(stack_diff_nda), decimals=8), 0)
-    """

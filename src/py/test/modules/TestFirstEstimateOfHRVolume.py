@@ -41,7 +41,10 @@ class TestFirstEstimateOfHRVolume(unittest.TestCase):
     def test_01_get_zero_framed_stack(self):
 
         ## Read stack
-        stack = st.Stack.from_filename(self.dir_test_data, filename="fetal_brain_0", suffix_mask="_mask")
+        stack = st.Stack.from_filename(
+            os.path.join(self.dir_test_data, "fetal_brain_0.nii.gz"),
+            os.path.join(self.dir_test_data, "fetal_brain_0_mask.nii.gz")
+            )
 
         ## Isotropically resample stack (simulate HR volume for FirstEstimateOfHRVolume)
         #  Idea: Don't "merge" more stacks but only use one isotropic stack where ground

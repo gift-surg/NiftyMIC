@@ -9,7 +9,7 @@
 # Example usage:
 #       - `python reconstructStaticVolume.py --help`
 #       - `python reconstructStaticVolume.py --dir_input=path-to-data`
-#       
+#
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       May 2017
 #
@@ -24,10 +24,11 @@ import os
 # Import modules
 sys.path.insert(1, os.path.abspath(
     os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
+import base.Stack as st
+import base.DataReader as dr
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 import preprocessing.DataPreprocessing as dp
-import base.Stack as st
 import registration.SegmentationPropagation as segprop
 import reconstruction.solver.TikhonovSolver as tk
 
@@ -50,6 +51,7 @@ import reconstruction.solver.TikhonovSolver as tk
 #
 def get_parsed_input_line(
     dir_output,
+    filenames,
     prefix_output,
     suffix_mask,
     target_stack_index,
@@ -58,46 +60,98 @@ def get_parsed_input_line(
     iter_max,
     verbose,
     provide_comparison,
+    log_script_execution,
 ):
 
     parser = argparse.ArgumentParser(
-        description="Volumetric MRI reconstruction framework to reconstruct an isotropic, high-resolution 3D volume from multiple stacks of 2D slices WITHOUT motion correction. The resolution of the computed Super-Resolution Reconstruction (SRR) is given by the in-plane spacing of the selected target stack. "
-        "A region of interest can be specified by providing a mask for the selected target stack. Only this region will then be reconstructed by the SRR algorithm which can substantially reduce the computational time.",
+        description="Volumetric MRI reconstruction framework to reconstruct "
+        "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
+        "slices WITHOUT motion correction. The resolution of the computed "
+        "Super-Resolution Reconstruction (SRR) is given by the in-plane "
+        "spacing of the selected target stack. A region of interest can be "
+        "specified by providing a mask for the selected target stack. Only "
+        "this region will then be reconstructed by the SRR algorithm which "
+        "can substantially reduce the computational time.",
         prog="python reconstructStaticVolume.py",
         epilog="Author: Michael Ebner (michael.ebner.14@ucl.ac.uk)",
     )
+
     parser.add_argument('--dir-input',
                         type=str,
-                        help="Input directory with NIfTI files (.nii or .nii.gz).", required=True)
+                        help="Input directory with NIfTI files "
+                        "(.nii or .nii.gz).",
+                        default="")
+    parser.add_argument('--filenames',
+                        nargs="+",
+                        help="Filenames. [default: %s]" % (filenames),
+                        default=filenames)
     parser.add_argument('--dir-output',
                         type=str,
-                        help="Output directory. [default: %s]" % (dir_output), default=dir_output)
+                        help="Output directory. [default: %s]" % (dir_output),
+                        default=dir_output)
     parser.add_argument('--suffix-mask',
                         type=str,
-                        help="Suffix used to associate a mask with an image. E.g. suffix_mask='_mask' means an existing image_i_mask.nii.gz represents the mask to image_i.nii.gz for all images image_i in the input directory. [default: %s]" % (
-                            suffix_mask),
+                        help="Suffix used to associate a mask with an image. "
+                        "E.g. suffix_mask='_mask' means an existing "
+                        "image_i_mask.nii.gz represents the mask to "
+                        "image_i.nii.gz for all images image_i in the input "
+                        "directory. [default: %s]" % (suffix_mask),
                         default=suffix_mask)
     parser.add_argument('--prefix-output',
                         type=str,
-                        help="Prefix for SRR output file name. [default: %s]" % (prefix_output), default=prefix_output)
+                        help="Prefix for SRR output file name. [default: %s]"
+                        % (prefix_output),
+                        default=prefix_output)
     parser.add_argument('--target-stack-index',
                         type=int,
-                        help="Index of stack (image) in input directory (alphabetical order) which defines physical space for SRR. First index is 0. [default: %s]" % (target_stack_index), default=target_stack_index)
+                        help="Index of stack (image) in input directory "
+                        "(alphabetical order) which defines physical space "
+                        "for SRR. First index is 0. [default: %s]"
+                        % (target_stack_index),
+                        default=target_stack_index)
     parser.add_argument('--alpha',
                         type=float,
-                        help="Regularization parameter alpha to solve the SR reconstruction problem:  SRR = argmin_x [0.5 * sum_k ||y_k - A_k x||^2 + alpha * R(x)]. [default: %g]" % (alpha), default=alpha)
+                        help="Regularization parameter alpha to solve the SR "
+                        "reconstruction problem: SRR = argmin_x "
+                        "[0.5 * sum_k ||y_k - A_k x||^2 + alpha * R(x)]. "
+                        "[default: %g]" % (alpha),
+                        default=alpha)
     parser.add_argument('--regularization',
                         type=str,
-                        help="Type of regularization for SR algorithm. Either 'TK0' or 'TK1' for zeroth or first order Tikhonov regularization, respectively. I.e. R(x) = ||x||^2 for 'TK0' or R(x) = ||Dx||^2 for 'TK1'. [default: %s]" % (regularization), default=regularization)
+                        help="Type of regularization for SR algorithm. Either "
+                        "'TK0' or 'TK1' for zeroth or first order Tikhonov "
+                        "regularization, respectively. I.e. R(x) = ||x||^2 "
+                        "for 'TK0' or R(x) = ||Dx||^2 for 'TK1'. [default: %s]"
+                        % (regularization),
+                        default=regularization)
     parser.add_argument('--iter-max',
                         type=int,
-                        help="Number of maximum iterations for the numerical solver. [default: %s]" % (iter_max), default=iter_max)
+                        help="Number of maximum iterations for the numerical "
+                        "solver. [default: %s]" % (iter_max),
+                        default=iter_max)
+    parser.add_argument('--log-script-execution',
+                        type=int,
+                        help="Turn on/off log for execution of current "
+                        "script. [default: %s]" % (log_script_execution),
+                        default=log_script_execution)
     parser.add_argument('--verbose',
                         type=int,
-                        help="Turn on/off verbose output. [default: %s]" % (verbose), default=verbose)
+                        help="Turn on/off verbose output. [default: %s]"
+                        % (verbose),
+                        default=verbose)
     parser.add_argument('--provide-comparison',
                         type=int,
-                        help="Turn on/off functionality to create files allowing for a visual comparison between original data and the obtained SRR. A folder 'comparison' will be created in the output directory containing the obtained SRR along with the linearly resampled original data. An additional script 'show_comparison.py' will be provided whose execution will open all images in ITK-Snap (http://www.itksnap.org/). [default: %s]" % (provide_comparison), default=provide_comparison)
+                        help="Turn on/off functionality to create files "
+                        "allowing for a visual comparison between original "
+                        "data and the obtained SRR. A folder 'comparison' "
+                        "will be created in the output directory containing "
+                        "the obtained SRR along with the linearly resampled "
+                        "original data. An additional script "
+                        "'show_comparison.py' will be provided whose "
+                        "execution will open all images in ITK-Snap "
+                        "(http://www.itksnap.org/). [default: %s]"
+                        % (provide_comparison),
+                        default=provide_comparison)
 
     args = parser.parse_args()
 
@@ -123,15 +177,47 @@ if __name__ == '__main__':
     # Read input
     args = get_parsed_input_line(
         dir_output="results/",
+        filenames="",
         prefix_output="SRR_",
         suffix_mask="_mask",
         target_stack_index=0,
         regularization="TK1",
         alpha=0.02,
         iter_max=10,
-        verbose=0,
         provide_comparison=0,
+        log_script_execution=1,
+        verbose=0,
     )
+
+    # Write script execution call
+    if args.log_script_execution:
+        performed_script_execution = ph.get_performed_script_execution(
+            os.path.basename(__file__), args)
+        ph.write_performed_script_execution_to_executable_file(
+            performed_script_execution,
+            os.path.join(args.dir_output, "log_script_execution.sh"))
+
+    # Read Data:
+    ph.print_title("Read Data")
+
+    # Neither '--dir-input' nor '--filenames' was specified
+    if args.filenames != "" and args.dir_input != "":
+        raise Exceptions.IOError(
+            "Provide input by either '--dir-input' or '--filenames' "
+            "but not both together")
+
+    # '--dir-input' specified
+    elif args.dir_input != "":
+        data_reader = dr.DirectoryReader(
+            args.dir_input, suffix_mask=args.suffix_mask)
+
+    # '--filenames' specified
+    else:
+        data_reader = dr.MultipleImagesReader(
+            args.filenames[0], suffix_mask=args.suffix_mask)
+
+    data_reader.read_data()
+    stacks = data_reader.get_stacks()
 
     # Data Preprocessing
     ph.print_title("Data Preprocessing")
@@ -140,9 +226,8 @@ if __name__ == '__main__':
         dilation_kernel="Ball",
     )
 
-    data_preprocessing = dp.DataPreprocessing.from_directory(
-        dir_input=args.dir_input,
-        suffix_mask=args.suffix_mask,
+    data_preprocessing = dp.DataPreprocessing(
+        stacks=stacks,
         segmentation_propagator=segmentation_propagator,
         use_cropping_to_mask=True,
         target_stack_index=args.target_stack_index,
@@ -189,7 +274,7 @@ if __name__ == '__main__':
     # Update filename
     filename = SRR.get_setting_specific_filename(prefix=args.prefix_output)
     HR_volume.set_filename(filename)
-    
+
     if args.verbose:
         HR_volume.show()
 

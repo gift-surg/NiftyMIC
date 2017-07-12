@@ -36,6 +36,9 @@ from definitions import REGEX_FILENAME_EXTENSIONS
 
 class Stack:
 
+    def __init__(self):
+        self._is_unity_mask = True
+
     ##
     # Create Stack instance from file and add corresponding mask. Mask is
     # either provided in the directory or created as binary mask consisting of
@@ -48,61 +51,46 @@ class Stack:
     #
     @classmethod
     def from_filename(cls,
-                      dir_input,
-                      filename,
-                      suffix_mask=None,
+                      file_path,
+                      file_path_mask=None,
                       extract_slices=True):
 
         stack = cls()
-        stack._dir = dir_input
-        stack._filename = filename
 
-        # Get data filenames of images without filename extension
-        pattern = filename + "[.]" + REGEX_FILENAME_EXTENSIONS
-        p = re.compile(pattern)
-        filename_list = [p.match(f).group(0)
-                         for f in os.listdir(stack._dir) if p.match(f)]
+        if not ph.file_exists(file_path):
+            raise Exceptions.FileNotExistent(file_path)
 
-        if len(filename_list) == 0:
-            raise Exceptions.FileNotExistent(
-                os.path.join(stack._dir, filename))
-        elif len(filename_list) > 1:
-            raise Exceptions.FilenameAmbiguous(
-                os.path.join(stack._dir, filename))
+        stack._dir = "/".join(file_path.split("/")[0:-1])
+        stack._filename = file_path.split("/")[-1:][0].split(".")[0]
+
+        # # Get data filenames of images without filename extension
+        # pattern = filename + "[.]" + REGEX_FILENAME_EXTENSIONS
+        # p = re.compile(pattern)
+        # filename_list = [p.match(f).group(0)
+        #                  for f in os.listdir(stack._dir) if p.match(f)]
+
+        # if len(filename_list) == 0:
+        #     raise Exceptions.FileNotExistent(
+        #         os.path.join(stack._dir, filename))
+        # elif len(filename_list) > 1:
+        #     raise Exceptions.FilenameAmbiguous(
+        #         os.path.join(stack._dir, filename))
 
         # Append stacks as SimpleITK and ITK Image objects
-        stack.sitk = sitk.ReadImage(
-            os.path.join(dir_input, filename_list[0]),
-            sitk.sitkFloat64)
+        stack.sitk = sitk.ReadImage(file_path, sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         # Append masks (either provided or binary mask)
-        if suffix_mask is None:
-            stack.sitk_mask = stack._generate_binary_mask()
+        if file_path_mask is None:
+            stack.sitk_mask = stack._generate_identity_mask()
+            ph.print_debug_info("Identity mask created for '%s'." % (file_path))
+
+        else:           
+            if not ph.file_exists(file_path_mask):
+                raise Exceptions.FileNotExistent(file_path_mask)
+            stack.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
             stack._is_unity_mask = True
-        else:
-            pattern = filename + suffix_mask + \
-                "[.]" + REGEX_FILENAME_EXTENSIONS
-            p = re.compile(pattern)
-            filename_list_mask = [p.match(f).group(0)
-                                  for f in os.listdir(stack._dir)
-                                  if p.match(f)]
-
-            if len(filename_list_mask) == 0:
-                ph.print_debug_info("Mask file for " + dir_input + filename +
-                                    ".nii.gz" +
-                                    " not found. Binary mask created.")
-                stack.sitk_mask = stack._generate_binary_mask()
-                stack._is_unity_mask = True
-            elif len(filename_list_mask) == 1:
-                stack.sitk_mask = sitk.ReadImage(
-                    os.path.join(dir_input, filename_list_mask[0]),
-                    sitk.sitkUInt8)
-                stack._is_unity_mask = False
-            else:
-                raise Exceptions.FilenameAmbiguous(
-                    os.path.join(stack._dir, filename + suffix_mask))
-
+        
         # Append itk object
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
@@ -114,6 +102,7 @@ class Stack:
             stack._N_slices = 0
             stack._slices = None
 
+        ph.print_debug_info("Stack (image + mask) associated to '%s' successfully read." %(file_path))
         return stack
 
     ##
@@ -154,7 +143,7 @@ class Stack:
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
             stack._is_unity_mask = False
         else:
-            stack.sitk_mask = stack._generate_binary_mask()
+            stack.sitk_mask = stack._generate_identity_mask()
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
             stack._is_unity_mask = True
 
@@ -205,7 +194,7 @@ class Stack:
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
             stack._is_unity_mask = False
         else:
-            stack.sitk_mask = stack._generate_binary_mask()
+            stack.sitk_mask = stack._generate_identity_mask()
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
             stack._is_unity_mask = True
 
@@ -238,7 +227,7 @@ class Stack:
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
             stack._is_unity_mask = False
         else:
-            stack.sitk_mask = stack._generate_binary_mask()
+            stack.sitk_mask = stack._generate_identity_mask()
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
             stack._is_unity_mask = True
 
@@ -983,7 +972,7 @@ class Stack:
 
     # Create a binary mask consisting of ones
     #  \return binary_mask as sitk.Image object consisting of ones
-    def _generate_binary_mask(self):
+    def _generate_identity_mask(self):
         shape = sitk.GetArrayFromImage(self.sitk).shape
         nda = np.ones(shape, dtype=np.uint8)
 

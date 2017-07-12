@@ -24,19 +24,23 @@ class ScatteredDataApproximation:
 
     ##
     # Constructor
-    # \param[in]  stack_manager  instance of StackManager containing all stacks
-    #                            and additional information
-    # \param[in]  HR_volume      Stack object containing the current estimate
-    #                            of the HR volume (required for defining HR
-    #                            space)
-    # \post       HR_volume is updated with current volumetric estimate
+    # \date          2017-07-12 15:48:33+0100
     #
-    def __init__(self, stack_manager, HR_volume, sigma=1, sigma_array=None):
+    # \param         self         The object
+    # \param         stacks       list of Stack objects containing all stacks
+    #                             used for the reconstruction
+    # \param[in,out] HR_volume    Stack object containing the current estimate
+    #                             of the HR volume (required for defining HR
+    #                             space)
+    # \param         sigma        The sigma
+    # \param         sigma_array  The sigma array
+    # \post          HR_volume is updated with current volumetric estimate
+    #
+    def __init__(self, stacks, HR_volume, sigma=1, sigma_array=None):
 
         ## Initialize variables
-        self._stack_manager = stack_manager
-        self._stacks = stack_manager.get_stacks()
-        self._N_stacks = stack_manager.get_number_of_stacks()
+        self._stacks = stacks
+        self._N_stacks = len(stacks)
         self._HR_volume = HR_volume
 
         ## Define sigma for recursive smoothing filter

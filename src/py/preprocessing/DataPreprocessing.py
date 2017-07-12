@@ -24,25 +24,26 @@ import utilities.Exceptions as Exceptions
 from definitions import REGEX_FILENAMES
 from definitions import REGEX_FILENAME_EXTENSIONS
 
+
 ##
 # Class implementing data preprocessing steps
 #
-
-
 class DataPreprocessing:
 
     ##
-    # Constructor
-    # \date       2017-05-12 00:48:43+0100
+    # Initialize data preprocessing class based on list of Stacks
+    # \date       2017-05-12 00:49:43+0100
     #
     # \param      self                      The object
+    # \param      stacks                    List of Stack instances
     # \param      use_N4BiasFieldCorrector  Use N4 bias field corrector, bool
+    # \param      use_intensity_correction  Use linear intensity correction
     # \param      segmentation_propagator   None or SegmentationPropagation
     #                                       instance
     # \param      target_stack_index        Index of template stack. Template
     #                                       stack will be put on first position
     #                                       of Stack list after preprocessing
-    # \param      use_cropping_to_mask          The use crop to mask
+    # \param      use_cropping_to_mask      The use crop to mask
     # \param      boundary_i                added value to first coordinate
     #                                       (can also be negative)
     # \param      boundary_j                added value to second coordinate
@@ -50,8 +51,10 @@ class DataPreprocessing:
     # \param      boundary_k                added value to third coordinate
     #                                       (can also be negative)
     # \param      unit                      Unit can either be "mm" or "voxel"
+    # \param      cls   The cls
     #
     def __init__(self,
+                 stacks,
                  use_N4BiasFieldCorrector=False,
                  use_intensity_correction=False,
                  segmentation_propagator=None,
@@ -73,154 +76,6 @@ class DataPreprocessing:
         self._boundary_k = boundary_k
         self._unit = unit
 
-    ##
-    # Initialize data preprocessing class based on filenames and directory
-    # \date       2017-05-12 00:44:27+0100
-    #
-    # \param      cls                       The cls
-    # \param      dir_input                 Input directory
-    # \param      filenames                 List of stack filenames to read
-    #                                       (without ".nii.gz")
-    # \param      suffix_mask               extension of stack filename which
-    #                                       indicates associated mask
-    # \param      use_N4BiasFieldCorrector  Use N4 bias field corrector, bool
-    # \param      segmentation_propagator   None or SegmentationPropagation
-    #                                       instance
-    # \param      target_stack_index        Index of template stack. Template
-    #                                       stack will be put on first position
-    #                                       of Stack list after preprocessing
-    # \param      use_cropping_to_mask          The use crop to mask
-    # \param      boundary_i                added value to first coordinate
-    #                                       (can also be negative)
-    # \param      boundary_j                added value to second coordinate
-    #                                       (can also be negative)
-    # \param      boundary_k                added value to third coordinate
-    #                                       (can also be negative)
-    # \param      unit                      Unit can either be "mm" or "voxel"
-    #
-    @classmethod
-    def from_filenames(cls,
-                       filenames,
-                       suffix_mask="_mask",
-                       use_N4BiasFieldCorrector=False,
-                       use_intensity_correction=False,
-                       segmentation_propagator=None,
-                       target_stack_index=0,
-                       use_cropping_to_mask=True,
-                       boundary_i=0,
-                       boundary_j=0,
-                       boundary_k=0,
-                       unit="mm",
-                       ):
-        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector,
-                   use_intensity_correction=use_intensity_correction,
-                   segmentation_propagator=segmentation_propagator,
-                   target_stack_index=target_stack_index,
-                   use_cropping_to_mask=use_cropping_to_mask,
-                   boundary_i=boundary_i,
-                   boundary_j=boundary_j,
-                   boundary_k=boundary_k,
-                   unit=unit)
-
-        # Read input data
-        self._read_input_data(dir_input, filenames, suffix_mask)
-
-        return self
-
-    ##
-    # Initialize data preprocessing class based on all nifti files in directory
-    # \date       2017-05-18 16:34:22+0100
-    #
-    # \param      cls                       The cls
-    # \param      dir_input                 Input directory
-    # \param      suffix_mask               extension of stack filename which
-    #                                       indicates associated mask
-    # \param      use_N4BiasFieldCorrector  Use N4 bias field corrector, bool
-    # \param      segmentation_propagator   None or SegmentationPropagation
-    #                                       instance
-    # \param      target_stack_index        Index of template stack. Template
-    #                                       stack will be put on first position
-    #                                       of Stack list after preprocessing
-    # \param      use_cropping_to_mask          The use crop to mask
-    # \param      boundary_i                added value to first coordinate
-    #                                       (can also be negative)
-    # \param      boundary_j                added value to second coordinate
-    #                                       (can also be negative)
-    # \param      boundary_k                added value to third coordinate
-    #                                       (can also be negative)
-    # \param      unit                      Unit can either be "mm" or "voxel"
-    #
-    @classmethod
-    def from_directory(cls,
-                       dir_input,
-                       suffix_mask="_mask",
-                       use_N4BiasFieldCorrector=False,
-                       use_intensity_correction=False,
-                       segmentation_propagator=None,
-                       target_stack_index=0,
-                       use_cropping_to_mask=True,
-                       boundary_i=0,
-                       boundary_j=0,
-                       boundary_k=0,
-                       unit="mm",
-                       ):
-
-        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector,
-                   use_intensity_correction=use_intensity_correction,
-                   segmentation_propagator=segmentation_propagator,
-                   target_stack_index=target_stack_index,
-                   use_cropping_to_mask=use_cropping_to_mask,
-                   boundary_i=boundary_i,
-                   boundary_j=boundary_j,
-                   boundary_k=boundary_k,
-                   unit=unit)
-
-        # Get data filenames of images without filename extension
-        pattern = "(" + REGEX_FILENAMES + ")[.]" + \
-            REGEX_FILENAME_EXTENSIONS
-        pattern_mask = "(" + REGEX_FILENAMES + ")" + suffix_mask + "[.]" + \
-            REGEX_FILENAME_EXTENSIONS
-        p = re.compile(pattern)
-        p_mask = re.compile(pattern_mask)
-
-        # Exclude potential mask filenames
-        filenames = [p.match(f).group(1)
-                     for f in os.listdir(dir_input)
-                     if p.match(f) and not p_mask.match(f)]
-        filenames = natsort.natsorted(filenames, key=lambda y: y.lower())
-
-        # Read input data
-        self._read_input_data(dir_input, filenames, suffix_mask)
-
-        return self
-
-    ##
-    # Initialize data preprocessing class based on list of Stacks
-    # \date       2017-05-12 00:49:43+0100
-    #
-    # \param      cls                       The cls
-    # \param      stacks                    List of Stack instances
-    # \param      use_N4BiasFieldCorrector  Use N4 bias field corrector, bool
-    # \param      segmentation_propagator   None or SegmentationPropagation
-    #                                       instance
-    # \param      target_stack_index        Index of template stack. Template
-    #                                       stack will be put on first position
-    #                                       of Stack list after preprocessing
-    # \param      use_cropping_to_mask          The use crop to mask
-    # \param      boundary_i                added value to first coordinate
-    #                                       (can also be negative)
-    # \param      boundary_j                added value to second coordinate
-    #                                       (can also be negative)
-    # \param      boundary_k                added value to third coordinate
-    #                                       (can also be negative)
-    # \param      unit                      Unit can either be "mm" or "voxel"
-    #
-    @classmethod
-    def from_stacks(cls, stacks, use_N4BiasFieldCorrector=False, segmentation_propagator=None, target_stack_index=0, use_cropping_to_mask=True, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"):
-
-        self = cls(use_N4BiasFieldCorrector=use_N4BiasFieldCorrector, segmentation_propagator=segmentation_propagator, target_stack_index=target_stack_index,
-                   use_cropping_to_mask=use_cropping_to_mask, boundary_i=boundary_i, boundary_j=boundary_j, boundary_k=boundary_k, unit=unit)
-
         # Number of stacks
         self._N_stacks = len(stacks)
 
@@ -231,8 +86,6 @@ class DataPreprocessing:
 
         ph.print_debug_info(
             "%s stacks were loaded for data preprocessing." % (self._N_stacks))
-
-        return self
 
     # Specify whether bias field correction based on N4 Bias Field Correction
     #  Filter shall be used
@@ -357,41 +210,3 @@ class DataPreprocessing:
         for i in range(0, self._N_stacks):
             slices = self._stacks_preprocessed[i].write(
                 directory=dir_output, write_mask=True, write_slices=False)
-
-    ##
-    # Reads an input data.
-    # \date       2017-06-14 11:03:57+0100
-    #
-    # \param      self         The object
-    # \param      dir_input    The dir input
-    # \param      filenames    The filenames
-    # \param      suffix_mask  The suffix mask
-    #
-    # \post       updated _N_stacks and _stacks_preprocessed
-    #
-    def _read_input_data(self, dir_input, filenames, suffix_mask):
-
-        # Number of stacks to be read
-        self._N_stacks = len(filenames)
-
-        ph.print_debug_info(
-            "%d stacks are going to be read ..." % (self._N_stacks))
-
-        if self._N_stacks == 0:
-            raise Exceptions.InputFilesNotValid(dir_input)
-
-        # Read stacks and their masks (if no mask is found a binary image is
-        # created automatically)
-        self._stacks_preprocessed = [None]*self._N_stacks
-
-        for i in range(0, self._N_stacks):
-            self._stacks_preprocessed[i] = st.Stack.from_filename(
-                dir_input, filenames[i], suffix_mask)
-            txt = "Image '%s' was read for further processing." % (filenames[
-                                                                   i])
-            if i is self._target_stack_index:
-                ph.print_debug_info(txt + " [Selected target stack]")
-            else:
-                ph.print_debug_info(txt)
-
-        # ph.print_debug_info("%s stacks were read for data preprocessing." %(self._N_stacks))

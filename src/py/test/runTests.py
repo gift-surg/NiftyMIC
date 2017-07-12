@@ -20,6 +20,8 @@ sys.path.insert(1, os.path.abspath(os.path.join(
 
 # Import modules for unit testing
 # from modules.TestFirstEstimateOfHRVolume import * ## outdated
+# from modules.TestHierarchicalSliceAlignment import * ## outdated
+# from modules.TestInPlaneRegistrationSimpleITK import * ## outdated
 from modules.TestSimpleITKHelper import *
 from modules.TestStack import *
 from modules.TestSimulatorSliceAcqusition import *

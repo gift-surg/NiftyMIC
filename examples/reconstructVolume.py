@@ -26,6 +26,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(
     os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
 
 # Import modules
+import base.DataReader as dr
 import base.Stack as st
 import preprocessing.DataPreprocessing as dp
 import preprocessing.N4BiasFieldCorrection as n4bfc
@@ -35,11 +36,10 @@ import registration.NiftyReg as regniftyreg
 import registration.SegmentationPropagation as segprop
 import reconstruction.ScatteredDataApproximation as sda
 import reconstruction.solver.TikhonovSolver as tk
-import reconstruction.solver.NonnegativeTikhonovSolver as nntk
 import reconstruction.solver.TVL2Solver as tvl2
-import utilities.StackManager as sm
 import utilities.PythonHelper as ph
 import utilities.SimpleITKHelper as sitkh
+import utilities.Exceptions as Exceptions
 
 
 ##
@@ -79,86 +79,166 @@ def get_parsed_input_line(
     intensity_correction,
     provide_comparison,
     isotropic_resolution,
-    log_function_call,
+    log_script_execution,
     verbose,
 ):
 
     parser = argparse.ArgumentParser(
-        description="Volumetric MRI reconstruction framework to reconstruct an isotropic, high-resolution 3D volume from multiple stacks of 2D slices WITH motion correction. The resolution of the computed Super-Resolution Reconstruction (SRR) is given by the in-plane spacing of the selected target stack. A region of interest can be specified by providing a mask for the selected target stack. Only this region will then be reconstructed by the SRR algorithm which can substantially reduce the computational time.",
+        description="Volumetric MRI reconstruction framework to reconstruct "
+        "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
+        "slices WITH motion correction. The resolution of the computed "
+        "Super-Resolution Reconstruction (SRR) is given by the in-plane "
+        "spacing of the selected target stack. A region of interest can be "
+        "specified by providing a mask for the selected target stack. Only "
+        "this region will then be reconstructed by the SRR algorithm which "
+        "can substantially reduce the computational time.",
         prog="python reconstructVolume.py",
         epilog="Author: Michael Ebner (michael.ebner.14@ucl.ac.uk)",
     )
 
     parser.add_argument('--dir-input',
-                        required=True,
                         type=str,
-                        help="Input directory with NIfTI files (.nii or .nii.gz).")
-    # parser.add_argument('--filenames',
-    #                     nargs="+",
-    # help="Filenames. [default: %s]" % (filenames), default=filenames)
+                        help="Input directory with NIfTI files "
+                        "(.nii or .nii.gz).",
+                        default="")
+    parser.add_argument('--filenames',
+                        nargs="+",
+                        help="Filenames. [default: %s]" % (filenames),
+                        default=filenames)
     parser.add_argument('--dir-output',
                         type=str,
-                        help="Output directory. [default: %s]" % (dir_output), default=dir_output)
+                        help="Output directory. [default: %s]" % (dir_output),
+                        default=dir_output)
     parser.add_argument('--suffix-mask',
                         type=str,
-                        help="Suffix used to associate a mask with an image. E.g. suffix_mask='_mask' means an existing image_i_mask.nii.gz represents the mask to image_i.nii.gz for all images image_i in the input directory. [default: %s]" % (suffix_mask), default=suffix_mask)
+                        help="Suffix used to associate a mask with an image. "
+                        "E.g. suffix_mask='_mask' means an existing "
+                        "image_i_mask.nii.gz represents the mask to "
+                        "image_i.nii.gz for all images image_i in the input "
+                        "directory. [default: %s]" % (suffix_mask),
+                        default=suffix_mask)
     parser.add_argument('--prefix-output',
                         type=str,
-                        help="Prefix for SRR output file name. [default: %s]" % (prefix_output), default=prefix_output)
+                        help="Prefix for SRR output file name. [default: %s]"
+                        % (prefix_output),
+                        default=prefix_output)
     parser.add_argument('--target-stack-index',
                         type=int,
-                        help="Index of stack (image) in input directory (alphabetical order) which defines physical space for SRR. First index is 0. [default: %s]" % (target_stack_index), default=target_stack_index)
+                        help="Index of stack (image) in input directory "
+                        "(alphabetical order) which defines physical space "
+                        "for SRR. First index is 0. [default: %s]"
+                        % (target_stack_index),
+                        default=target_stack_index)
     parser.add_argument('--sigma',
                         type=float,
-                        help="Standard deviation for Scattered Data Approximation approach to reconstruct first estimate of HR volume from all 3D input stacks. [default: %g]" % (sigma), default=sigma)
+                        help="Standard deviation for Scattered Data "
+                        "Approximation approach to reconstruct first estimate "
+                        "of HR volume from all 3D input stacks. [default: %g]"
+                        % (sigma),
+                        default=sigma)
     parser.add_argument('--alpha',
                         type=float,
-                        help="Regularization parameter alpha to solve the SR reconstruction problem:  SRR = argmin_x [0.5 * sum_k ||y_k - A_k x||^2 + alpha * R(x)]. [default: %g]" % (alpha), default=alpha)
+                        help="Regularization parameter alpha to solve the SR "
+                        "reconstruction problem: SRR = argmin_x "
+                        "[0.5 * sum_k ||y_k - A_k x||^2 + alpha * R(x)]. "
+                        "[default: %g]" % (alpha),
+                        default=alpha)
     parser.add_argument('--alpha-final',
                         type=float,
-                        help="Regularization parameter like 'alpha' but used for the final SRR step. [default: %s]" % (alpha_final), default=alpha_final)
+                        help="Regularization parameter like 'alpha' but used "
+                        "for the final SRR step. [default: %s]"
+                        % (alpha_final),
+                        default=alpha_final)
     parser.add_argument('--regularization',
                         type=str,
-                        help="Type of regularization for SR algorithm. Either 'TK0' or 'TK1' for zeroth or first order Tikhonov regularization, respectively. I.e. R(x) = ||x||^2 for 'TK0' or R(x) = ||Dx||^2 for 'TK1'. [default: %s]" % (regularization), default=regularization)
+                        help="Type of regularization for SR algorithm. Either "
+                        "'TK0' or 'TK1' for zeroth or first order Tikhonov "
+                        "regularization, respectively. I.e. R(x) = ||x||^2 "
+                        "for 'TK0' or R(x) = ||Dx||^2 for 'TK1'. [default: %s]"
+                        % (regularization),
+                        default=regularization)
     parser.add_argument('--iter-max',
                         type=int,
-                        help="Number of maximum iterations for the numerical solver. [default: %s]" % (iter_max), default=iter_max)
+                        help="Number of maximum iterations for the numerical "
+                        "solver. [default: %s]" % (iter_max),
+                        default=iter_max)
     parser.add_argument('--iter-max-final',
                         type=int,
-                        help="Number of maximum iterations for the numerical solver like 'iter-max' but used for the final SRR step  [default: %s]" % (iter_max_final), default=iter_max_final)
+                        help="Number of maximum iterations for the numerical "
+                        "solver like 'iter-max' but used for the final SRR "
+                        "step [default: %s]" % (iter_max_final),
+                        default=iter_max_final)
     parser.add_argument('--minimizer',
                         type=str,
-                        help="Choice of minimizer used for the inverse problem associated to the SRR. Possible choices are 'lsmr' or 'L-BFGS-B'. [default: %s]" % (minimizer), default=minimizer)
+                        help="Choice of minimizer used for the inverse "
+                        "problem associated to the SRR. Possible choices are "
+                        "'lsmr' or 'L-BFGS-B'. [default: %s]" % (minimizer),
+                        default=minimizer)
     parser.add_argument('--two-step-cycles',
                         type=int,
-                        help="Number of two-step-cycles, i.e. number of Slice-to-Volume Registration and Super-Resolution Reconstruction cycles. [default: %s]" % (two_step_cycles), default=two_step_cycles)
+                        help="Number of two-step-cycles, i.e. number of "
+                        "Slice-to-Volume Registration and Super-Resolution "
+                        "Reconstruction cycles. [default: %s]"
+                        % (two_step_cycles),
+                        default=two_step_cycles)
     parser.add_argument('--loss',
                         type=str,
-                        help="Loss function rho used for data term, i.e. rho((y_k - A_k x)^2). Possible choices are 'linear', 'soft_l1' or 'huber'. [default: %s]" % (loss), default=loss)
-    parser.add_argument('--provide-comparison',
-                        type=int,
-                        help="Turn on/off functionality to create files allowing for a visual comparison between original data and the obtained SRR. A folder 'comparison' will be created in the output directory containing the obtained SRR along with the linearly resampled original data. An additional script 'show_comparison.py' will be provided whose execution will open all images in ITK-Snap (http://www.itksnap.org/). [default: %s]" % (provide_comparison), default=provide_comparison)
+                        help="Loss function rho used for data term, i.e. "
+                        "rho((y_k - A_k x)^2). Possible choices are 'linear', "
+                        "'soft_l1' or 'huber'. [default: %s]" % (loss),
+                        default=loss)
     parser.add_argument('--dilation-radius',
                         type=int,
-                        help="Dilation radius in number of voxels used for segmentation propagation. [default: %s]" % (dilation_radius), default=dilation_radius)
+                        help="Dilation radius in number of voxels used for "
+                        "segmentation propagation. [default: %s]"
+                        % (dilation_radius),
+                        default=dilation_radius)
     parser.add_argument('--extra-frame-target',
                         type=float,
-                        help="Extra frame in mm added to the increase the target space for the SRR. [default: %s]" % (extra_frame_target), default=extra_frame_target)
+                        help="Extra frame in mm added to the increase the "
+                        "target space for the SRR. [default: %s]"
+                        % (extra_frame_target),
+                        default=extra_frame_target)
     parser.add_argument('--bias-field-correction',
                         type=int,
-                        help="Turn on/off bias field correction during data preprocessing. [default: %s]" % (bias_field_correction), default=bias_field_correction)
+                        help="Turn on/off bias field correction during data "
+                        "preprocessing. [default: %s]"
+                        % (bias_field_correction),
+                        default=bias_field_correction)
     parser.add_argument('--intensity-correction',
                         type=int,
-                        help="Turn on/off linear intensity correction during data preprocessing. [default: %s]" % (intensity_correction), default=intensity_correction)
+                        help="Turn on/off linear intensity correction during "
+                        "data preprocessing. [default: %s]"
+                        % (intensity_correction),
+                        default=intensity_correction)
     parser.add_argument('--isotropic-resolution',
                         type=float,
-                        help="Specify isotropic resolution for obtained HR volume. [default: %s]" % (isotropic_resolution), default=isotropic_resolution)
-    parser.add_argument('--log-function-call',
+                        help="Specify isotropic resolution for obtained HR "
+                        "volume. [default: %s]" % (isotropic_resolution),
+                        default=isotropic_resolution)
+    parser.add_argument('--log-script-execution',
                         type=int,
-                        help="Turn on/off log for function call. [default: %s]" % (log_function_call), default=log_function_call)
+                        help="Turn on/off log for execution of current "
+                        "script. [default: %s]" % (log_script_execution),
+                        default=log_script_execution)
+    parser.add_argument('--provide-comparison',
+                        type=int,
+                        help="Turn on/off functionality to create files "
+                        "allowing for a visual comparison between original "
+                        "data and the obtained SRR. A folder 'comparison' "
+                        "will be created in the output directory containing "
+                        "the obtained SRR along with the linearly resampled "
+                        "original data. An additional script "
+                        "'show_comparison.py' will be provided whose "
+                        "execution will open all images in ITK-Snap "
+                        "(http://www.itksnap.org/). [default: %s]"
+                        % (provide_comparison),
+                        default=provide_comparison)
     parser.add_argument('--verbose',
                         type=int,
-                        help="Turn on/off verbose output. [default: %s]" % (verbose), default=verbose)
+                        help="Turn on/off verbose output. [default: %s]"
+                        % (verbose),
+                        default=verbose)
     args = parser.parse_args()
 
     ph.print_title("Given Input")
@@ -166,11 +246,6 @@ def get_parsed_input_line(
     for arg in sorted(vars(args)):
         ph.print_debug_info("%s: " % (arg), newline=False)
         print(getattr(args, arg))
-
-    # directory = "/".join(args.filenames[0].split("/")[0:-1])
-    # filename = args.filenames[0].split("/")[-1:][0].split(".")[0]
-    # print directory
-    # print filename
 
     return args
 
@@ -187,7 +262,7 @@ if __name__ == '__main__':
     # Read input
     args = get_parsed_input_line(
         dir_output="results/",
-        filenames=[],
+        filenames="",
         prefix_output="SRR_",
         suffix_mask="_mask",
         target_stack_index=0,
@@ -206,16 +281,39 @@ if __name__ == '__main__':
         bias_field_correction=0,
         intensity_correction=0,
         provide_comparison=1,
-        log_function_call=1,
+        log_script_execution=1,
         verbose=0,
     )
 
-    # Write function call f
-    if args.log_function_call:
-        function_call = ph.get_function_call(os.path.basename(__file__), args)
-        ph.write_function_call_to_executable_file(
-            function_call,
-            os.path.join(args.dir_output, "log_function_call.sh"))
+    # Write script execution call
+    if args.log_script_execution:
+        performed_script_execution = ph.get_performed_script_execution(
+            os.path.basename(__file__), args)
+        ph.write_performed_script_execution_to_executable_file(
+            performed_script_execution,
+            os.path.join(args.dir_output, "log_script_execution.sh"))
+
+    # Read Data:
+    ph.print_title("Read Data")
+
+    # Neither '--dir-input' nor '--filenames' was specified
+    if args.filenames != "" and args.dir_input != "":
+        raise Exceptions.IOError(
+            "Provide input by either '--dir-input' or '--filenames' "
+            "but not both together")
+
+    # '--dir-input' specified
+    elif args.dir_input != "":
+        data_reader = dr.DirectoryReader(
+            args.dir_input, suffix_mask=args.suffix_mask)
+
+    # '--filenames' specified
+    else:
+        data_reader = dr.MultipleImagesReader(
+            args.filenames[0], suffix_mask=args.suffix_mask)
+
+    data_reader.read_data()
+    stacks = data_reader.get_stacks()
 
     # Data Preprocessing from data on HDD
     ph.print_title("Data Preprocessing")
@@ -228,9 +326,8 @@ if __name__ == '__main__':
         dilation_kernel="Ball",
     )
 
-    data_preprocessing = dp.DataPreprocessing.from_directory(
-        dir_input=args.dir_input,
-        suffix_mask=args.suffix_mask,
+    data_preprocessing = dp.DataPreprocessing(
+        stacks=stacks,
         segmentation_propagator=segmentation_propagator,
         use_cropping_to_mask=True,
         use_N4BiasFieldCorrector=args.bias_field_correction,
@@ -241,19 +338,6 @@ if __name__ == '__main__':
         boundary_k=0,
         unit="mm",
     )
-    # data_preprocessing = dp.DataPreprocessing.from_filenames(
-    #     dir_input=args.dir_input,
-    #     filenames=args.filenames,
-    #     suffix_mask=args.suffix_mask,
-    #     segmentation_propagator=segmentation_propagator,
-    #     use_cropping_to_mask=True,
-    #     use_N4BiasFieldCorrector=args.bias_field_correction,
-    #     target_stack_index=args.target_stack_index,
-    #     boundary_i=0,
-    #     boundary_j=0,
-    #     boundary_k=0,
-    #     unit="mm",
-    # )
     data_preprocessing.run_preprocessing()
     time_data_preprocessing = data_preprocessing.get_computational_time()
 
@@ -335,8 +419,7 @@ if __name__ == '__main__':
 
     # Scattered Data Approximation to get first estimate of HR volume
     ph.print_title("Scattered Data Approximation")
-    SDA = sda.ScatteredDataApproximation(
-        sm.StackManager.from_stacks(stacks), HR_volume, sigma=args.sigma)
+    SDA = sda.ScatteredDataApproximation(stacks, HR_volume, sigma=args.sigma)
     SDA.run_reconstruction()
     SDA.generate_mask_from_stack_mask_unions(
         mask_dilation_radius=2, mask_dilation_kernel="Ball")
