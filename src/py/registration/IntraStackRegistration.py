@@ -34,6 +34,104 @@ from registration.StackRegistrationBase import StackRegistrationBase
 
 class IntraStackRegistration(StackRegistrationBase):
 
+    ##
+    # { constructor_description }
+    # \date       2017-07-14 14:24:00+0100
+    #
+    # \param      self                                           The object
+    # \param      stack                                          The stack to
+    #                                                            be aligned as
+    #                                                            Stack object
+    # \param      reference                                      The reference
+    #                                                            used for
+    #                                                            alignment as
+    #                                                            Stack object
+    # \param      use_stack_mask                                 Use stack mask
+    #                                                            for
+    #                                                            registration,
+    #                                                            bool
+    # \param      use_reference_mask                             Use reference
+    #                                                            mask for
+    #                                                            registration,
+    #                                                            bool
+    # \param      use_verbose                                    Verbose
+    #                                                            output, bool
+    # \param      transform_initializer_type                     The transform
+    #                                                            initializer
+    #                                                            type, e.g.
+    #                                                            "identity",
+    #                                                            "moments" or
+    #                                                            "geometry"
+    # \param      interpolator                                   The interpolator
+    # \param      alpha_neighbour                                Weight >= 0
+    #                                                            for neighbour
+    #                                                            term
+    # \param      alpha_reference                                Weight >= 0
+    #                                                            for reference
+    #                                                            term
+    # \param      alpha_parameter                                Weight >= 0
+    #                                                            for prior term
+    # \param      transform_type                                 The transform
+    #                                                            type, "rigid",
+    #                                                            "similarity",
+    #                                                            "affine"
+    # \param      optimizer                                      Either
+    #                                                            "least_squares"
+    #                                                            to use
+    #                                                            scipy.optimize.least_squares
+    #                                                            or any method
+    #                                                            used in
+    #                                                            "scipy.optimize.minimize",
+    #                                                            e.g.
+    #                                                            "L-BFGS-B".
+    # \param      optimizer_iter_max                             Maximum number
+    #                                                            of
+    #                                                            iterations/function
+    #                                                            evaluations
+    # \param      optimizer_loss                                 Loss function,
+    #                                                            e.g. "linear",
+    #                                                            "soft_l1" or
+    #                                                            "huber".
+    # \param      optimizer_method                               The optimizer
+    #                                                            method used
+    #                                                            for
+    #                                                            "least_squares"
+    #                                                            algorithm.
+    #                                                            E.g. "trf"
+    # \param      use_parameter_normalization                    Use parameter
+    #                                                            normalization
+    #                                                            for optimizer,
+    #                                                            bool
+    # \param      intensity_correction_initializer_type          The intensity
+    #                                                            correction
+    #                                                            initializer
+    #                                                            type; None,
+    #                                                            "linear" or
+    #                                                            "affine"
+    # \param      intensity_correction_type_slice_neighbour_fit  The intensity
+    #                                                            correction
+    #                                                            type used for
+    #                                                            slice
+    #                                                            neighbour
+    #                                                            term, None,
+    #                                                            "linear" or
+    #                                                            "affine"
+    # \param      prior_intensity_correction_coefficients        Prior used for
+    #                                                            intensity
+    #                                                            correction
+    #                                                            coefficients
+    # \param      prior_scale                                    Prior used for
+    #                                                            scaling; only
+    #                                                            valid for
+    #                                                            "similarity"
+    # \param      image_transform_reference_fit_term             The image
+    #                                                            transform
+    #                                                            reference fit
+    #                                                            term; Either
+    #                                                            "identity",
+    #                                                            "gradient_magnitude",
+    #                                                            "partial_derivative"
+    #
     def __init__(self,
                  stack=None,
                  reference=None,
@@ -46,13 +144,16 @@ class IntraStackRegistration(StackRegistrationBase):
                  alpha_reference=1,
                  alpha_parameter=0,
                  transform_type="rigid",
-                 optimizer_nfev_max=20,
+                 # optimizer="L-BFGS-B",
+                 optimizer="least_squares",
+                 optimizer_iter_max=20,
                  optimizer_loss="soft_l1",
                  optimizer_method="trf",
-                 intensity_correction_type_slice_neighbour_fit=None,
+                 use_parameter_normalization=False,
                  intensity_correction_initializer_type=None,
-                 prior_scale=1.0,
+                 intensity_correction_type_slice_neighbour_fit=None,
                  prior_intensity_correction_coefficients=np.array([1, 0]),
+                 prior_scale=1.0,
                  image_transform_reference_fit_term="identity",
                  ):
 
@@ -65,7 +166,9 @@ class IntraStackRegistration(StackRegistrationBase):
             use_reference_mask=use_reference_mask,
             use_verbose=use_verbose,
             transform_initializer_type=transform_initializer_type,
-            optimizer_nfev_max=optimizer_nfev_max,
+            use_parameter_normalization=use_parameter_normalization,
+            optimizer=optimizer,
+            optimizer_iter_max=optimizer_iter_max,
             optimizer_loss=optimizer_loss,
             optimizer_method=optimizer_method,
             interpolator=interpolator,
@@ -80,19 +183,23 @@ class IntraStackRegistration(StackRegistrationBase):
         # Dictionaries to create new transform depending on the chosen
         # transform type
         self._new_transform_sitk = {
-            "rigid":   self._new_rigid_transform_sitk,
-            "similarity":   self._new_similarity_transform_sitk,
-            "affine":   self._new_affine_transform_sitk
+            "rigid": self._new_rigid_transform_sitk,
+            "similarity": self._new_similarity_transform_sitk,
+            "uniform_scale_similarity": self._new_similarity_transform_sitk,
+            "affine": self._new_affine_transform_sitk
         }
         self._new_transform_itk = {
-            "rigid":   self._new_rigid_transform_itk,
-            "similarity":   self._new_similarity_transform_itk,
-            "affine":   self._new_affine_transform_itk
+            "rigid": self._new_rigid_transform_itk,
+            "similarity": self._new_similarity_transform_itk,
+            "uniform_scale_similarity": self._new_similarity_transform_itk,
+            "affine": self._new_affine_transform_itk
         }
 
         # Chosen intensity correction type
-        self._intensity_correction_type_slice_neighbour_fit = intensity_correction_type_slice_neighbour_fit
-        self._intensity_correction_type_reference_fit = intensity_correction_type_slice_neighbour_fit
+        self._intensity_correction_type_slice_neighbour_fit = \
+            intensity_correction_type_slice_neighbour_fit
+        self._intensity_correction_type_reference_fit = \
+            intensity_correction_type_slice_neighbour_fit
 
         # Define image type for reference cost
         self._image_transform_reference_fit_term = image_transform_reference_fit_term
@@ -144,22 +251,9 @@ class IntraStackRegistration(StackRegistrationBase):
         self._apply_motion_correction_and_compute_slice_transforms = {
             "rigid":  self._apply_rigid_motion_correction_and_compute_slice_transforms,
             "similarity":  self._apply_similarity_motion_correction_and_compute_slice_transforms,
+            "uniform_scale_similarity": self._apply_similarity_motion_correction_and_compute_slice_transforms,
             "affine":  self._apply_affine_motion_correction_and_compute_slice_transforms
         }
-
-        # self._parameters_prior_transform = {
-        #     "rigid"     :   np.array([0, 0, 0]),
-        #     "similarity":   np.array([self._prior_scale, 0, 0, 0])
-        # }
-        # self._parameters_prior_intensity_correction = {
-        #     None        :  None,
-        #     "linear"    :  np.array(1),
-        #     "affine"    :  np.array([1, 0])
-        # }
-
-        # Derivative Image Filter
-        # self._derivative_imge_filter_sitk = sitk.DerivativeImageFilter()
-        # self._derivative_imge_filter_sitk.SetUseImageSpacing(True)
 
         # Gradient Magnitude Filter
         self._gradient_magnitude_filter_sitk = sitk.GradientMagnitudeImageFilter()
@@ -358,7 +452,7 @@ class IntraStackRegistration(StackRegistrationBase):
         filename += "_maskStack" + str(int(self._use_stack_mask))
         if self._reference is not None:
             filename += "_maskRef" + str(int(self._use_reference_mask))
-        filename += "_Nfevmax" + str(self._optimizer_nfev_max)
+        filename += "_Nfevmax" + str(self._optimizer_iter_max)
         filename += "_alphaR" + "%.g" % (self._alpha_reference)
         filename += "_alphaN" + "%.g" % (self._alpha_neighbour)
         filename += "_alphaP" + "%.g" % (self._alpha_parameter)
@@ -368,8 +462,22 @@ class IntraStackRegistration(StackRegistrationBase):
 
         return filename
 
-    def _print_info_text(self):
-        print("Minimization via least_squares solver")
+    def _print_info_text_least_squares(self):
+        print("Minimization via least_squares solver (scipy.optimize.least_squares)")
+        print("\tMethod: " + self._optimizer_method)
+        print("\tLoss: " + self._optimizer_loss)
+        print("\tMaximum number of function evaluations: " +
+              str(self._optimizer_iter_max))
+        self._print_into_text_common()
+
+    def _print_info_text_minimize(self):
+        print("Minimization via %s solver (scipy.optimize.minimize)" % (self._optimizer))
+        print("\tLoss: " + self._optimizer_loss)
+        print("\tMaximum number of iterations: " +
+              str(self._optimizer_iter_max))
+        self._print_into_text_common()
+
+    def _print_into_text_common(self):
         print("\tTransform type: " + self._transform_type +
               " (Initialization: " + str(self._transform_initializer_type) + ")")
         if self._alpha_neighbour > self._ZERO:
@@ -395,10 +503,6 @@ class IntraStackRegistration(StackRegistrationBase):
             self._alpha_reference,
             self._alpha_neighbour,
             self._alpha_parameter))
-        print("\tMethod: " + self._optimizer_method)
-        print("\tLoss: " + self._optimizer_loss)
-        print("\tMaximum number of function evaluations: " +
-              str(self._optimizer_nfev_max))
 
     ##
     # { function_description }
@@ -586,7 +690,7 @@ class IntraStackRegistration(StackRegistrationBase):
         # ---------------------------------------------------------------------
         # 1) Defines the prior term on the parameters
         if alpha_parameter > self._ZERO:
-            if self._transform_type in ["similarity"]:
+            if self._transform_type in ["similarity", "uniform_scale_similarity"]:
                 self._get_residual_parameters = lambda x: np.concatenate((
                     self._get_residual_scale(x),
                     self._get_residual_intensity_coefficients[
@@ -618,7 +722,10 @@ class IntraStackRegistration(StackRegistrationBase):
             if self._image_transform_reference_fit_term in ["identity"]:
                 self._get_residual_reference_fit_total = lambda x: \
                     self._get_residual_reference_fit(
-                        self._slices_2D, self._reference_nda, "identity", x)
+                        self._slices_2D,
+                        self._reference_nda,
+                        "identity",
+                        x)
 
             if self._image_transform_reference_fit_term in ["gradient_magnitude"]:
                 self._get_residual_reference_fit_total = \
@@ -696,14 +803,19 @@ class IntraStackRegistration(StackRegistrationBase):
         # 1) Define Jacobian of the prior term on the parameters
         if alpha_parameter > self._ZERO:
             if self._transform_type in ["similarity"]:
-                # if self._intensity_correction_type_slice_neighbour_fit in
-                # ["affine"]:
                 self._get_jacobian_residual_parameters = \
                     lambda x: np.concatenate((
                         self._get_jacobian_residual_scale(x),
                         self._get_jacobian_residual_intensity_coefficients[
                             self._intensity_correction_type_slice_neighbour_fit](x)
                     ))
+            # elif self._transform_type in ["uniform_scale_similarity"]:
+            #     self._get_jacobian_residual_parameters = \
+            #         lambda x: np.concatenate((
+            #             self._get_jacobian_residual_uniform_scale(x),
+            #             self._get_jacobian_residual_intensity_coefficients[
+            #                 self._intensity_correction_type_slice_neighbour_fit](x)
+            #         ))
             else:
                 self._get_jacobian_residual_parameters = \
                     lambda x: self._get_jacobian_residual_intensity_coefficients[
@@ -1492,7 +1604,7 @@ class IntraStackRegistration(StackRegistrationBase):
                 moving_sitk = sitk.Image(self._slices_2D[i].sitk)
                 if self._use_stack_mask_neighbour_fit_term:
                     moving_sitk *= sitk.Cast(self._slices_2D[i].sitk_mask,
-                        moving_sitk.GetPixelIDValue())
+                                             moving_sitk.GetPixelIDValue())
                 initial_transform_sitk = self._new_transform_sitk[
                     self._transform_type]()
                 operation_mode_sitk = eval(

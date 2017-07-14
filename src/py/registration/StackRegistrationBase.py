@@ -21,12 +21,14 @@ import numpy as np
 import time
 from datetime import timedelta
 from scipy.optimize import least_squares
+from scipy.optimize import minimize
 
 # Import modules
 import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 import base.Stack as st
 import utilities.ParameterNormalization as pn
+import utilities.lossFunctions as lf
 
 
 ##
@@ -38,16 +40,45 @@ class StackRegistrationBase(object):
     __metaclass__ = ABCMeta
 
     ##
-    #       Constructor
+    # Constructor
     # \date       2016-11-06 16:58:43+0000
     #
-    # \param      self                The object
-    # \param      stack               The stack to be aligned as Stack object
-    # \param      reference           The reference used for alignment as Stack
-    #                                 object
-    # \param      use_stack_mask      Use stack mask for registration, bool
-    # \param      use_reference_mask  Use reference mask for registration, bool
-    # \param      use_verbose         Verbose output, bool
+    # \param      self                              The object
+    # \param      stack                             The stack to be aligned as
+    #                                               Stack object
+    # \param      reference                         The reference used for
+    #                                               alignment as Stack object
+    # \param      use_stack_mask                    Use stack mask for
+    #                                               registration, bool
+    # \param      use_reference_mask                Use reference mask for
+    #                                               registration, bool
+    # \param      use_verbose                       Verbose output, bool
+    # \param      transform_initializer_type        The transform initializer
+    #                                               type, e.g. "identity",
+    #                                               "moments" or "geometry"
+    # \param      interpolator                      The interpolator
+    # \param      alpha_neighbour                   Weight >= 0 for neighbour
+    #                                               term
+    # \param      alpha_reference                   Weight >= 0 for reference
+    #                                               term
+    # \param      alpha_parameter                   Weight >= 0 for prior term
+    # \param      use_parameter_normalization       Use parameter
+    #                                               normalization for optimizer, bool
+    # \param      optimizer                         Either "least_squares" to
+    #                                               use
+    #                                               scipy.optimize.least_squares
+    #                                               or any method used in
+    #                                               "scipy.optimize.minimize",
+    #                                               e.g. "L-BFGS-B".
+    # \param      optimizer_iter_max                Maximum number of
+    #                                               iterations/function
+    #                                               evaluations
+    # \param      optimizer_loss                    Loss function, e.g.
+    #                                               "linear", "soft_l1" or
+    #                                               "huber".
+    # \param      optimizer_method                  The optimizer method used
+    #                                               for "least_squares"
+    #                                               algorithm. E.g. "trf"
     #
     def __init__(self,
                  stack=None,
@@ -61,9 +92,11 @@ class StackRegistrationBase(object):
                  alpha_reference=1,
                  alpha_parameter=1,
                  use_parameter_normalization=False,
-                 optimizer_nfev_max=20,
+                 optimizer="L-BFGS-B",
+                 optimizer_iter_max=20,
                  optimizer_loss="soft_l1",
-                 optimizer_method="trf"):
+                 optimizer_method="trf",  # Only counts for least_squares
+                 ):
 
         # Set Fixed and reference stacks
         if stack is not None:
@@ -82,7 +115,8 @@ class StackRegistrationBase(object):
         self._use_reference_mask = use_reference_mask
 
         # Parameters for solver
-        self._optimizer_nfev_max = optimizer_nfev_max
+        self._optimizer = optimizer
+        self._optimizer_iter_max = optimizer_iter_max
         self._optimizer_loss = optimizer_loss
         self._optimizer_method = optimizer_method
 
@@ -262,21 +296,29 @@ class StackRegistrationBase(object):
     def get_alpha_parameter(self):
         return self._alpha_parameter
 
+    def set_optimizer(self, optimizer):
+        self._optimizer = optimizer
+
+    def get_optimizer(self):
+        return self._optimizer
+
     ##
-    #       Set maximum number of function evaluations for least_squares
-    #             optimizer
+    # Set maximum number of iterations for optimizer.
+    #
+    # least_squares: Corresponds to maximum number of function evaluations
+    # L-BFGS-B: Corresponds to maximum number of iterations
     # \date       2016-11-10 19:24:35+0000
     #
-    # \param      self      The object
-    # \param      optimizer_nfev_max  The nfev maximum
+    # \param      self                The object
+    # \param      optimizer_iter_max  The nfev maximum
     #
     # \see        https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html#scipy.optimize.least_squares
     #
-    def set_optimizer_nfev_max(self, optimizer_nfev_max):
-        self._optimizer_nfev_max = optimizer_nfev_max
+    def set_optimizer_iter_max(self, optimizer_iter_max):
+        self._optimizer_iter_max = optimizer_iter_max
 
-    def get_optimizer_nfev_max(self):
-        return self._optimizer_nfev_max
+    def get_optimizer_iter_max(self):
+        return self._optimizer_iter_max
 
     ##
     #       Sets the optimizer_loss function for least_squares optimizer
@@ -445,19 +487,37 @@ class StackRegistrationBase(object):
         # Get cost function and its Jacobian w.r.t. the parameters
         fun = self._get_residual_call()
         jac = self._get_jacobian_residual_call()
+        x0 = self._parameters0_vec.flatten()
 
-        # Non-linear least-squares optimizer_method:
-        self._print_info_text()
         time_start = ph.start_timing()
-        # res = least_squares(fun=fun, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max, verbose=verbose, x_scale=x_scale)
-        res = least_squares(fun=fun, jac=jac, x0=self._parameters0_vec.flatten(), method=self._optimizer_method, loss=self._optimizer_loss, max_nfev=self._optimizer_nfev_max,
-                            verbose=verbose, x_scale=x_scale)  # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
-        # res = least_squares(fun=fun, x0=parameters0, optimizer_method='lm', optimizer_loss='linear', verbose=1)
-        # res = least_squares(fun=fun, x0=parameters0, optimizer_method='dogbox', optimizer_loss='linear', verbose=2)
+
+        if self._optimizer == "least_squares":
+            self._print_info_text_least_squares()
+            res = self._run_optimizer_least_squares(
+                fun=fun,
+                jac=jac,
+                x0=x0,
+                method=self._optimizer_method,
+                loss=self._optimizer_loss,
+                iter_max=self._optimizer_iter_max,
+                verbose=verbose,
+                x_scale=x_scale)
+        else:
+            self._print_info_text_minimize()
+            res = self._run_optimizer_minimize(
+                fun=fun,
+                jac=jac,
+                x0=x0,
+                method=self._optimizer,
+                loss=self._optimizer_loss,
+                iter_max=self._optimizer_iter_max,
+                verbose=verbose,
+                x_scale=x_scale)
+
         self._elapsed_time = ph.stop_timing(time_start)
 
         # Get and reshape final transform parameters for each slice
-        self._parameters = res.x.reshape(self._parameters.shape)
+        self._parameters = res.reshape(self._parameters.shape)
 
         # Denormalize parameters
         # self._parameters = self._parameter_normalizer.denormalize_parameters(self._parameters)
@@ -473,8 +533,52 @@ class StackRegistrationBase(object):
         # Apply motion correction and compute slice transforms
         self._apply_motion_correction()
 
+    ##
+    # Use scipy.opimize.least_squares solver
+    #
+    def _run_optimizer_least_squares(self, fun, jac, x0, method, loss, iter_max, verbose, x_scale):
+        # Non-linear least-squares optimizer_method:
+        res = least_squares(
+            fun=fun,
+            jac=jac,
+            x0=x0,
+            method=method,
+            loss=loss,
+            max_nfev=iter_max,
+            verbose=verbose,
+            x_scale=x_scale)
+        return res.x
+
+    ##
+    # Use scipy.opimize.minimize solver
+    #
+    def _run_optimizer_minimize(self, fun, jac, x0, method, loss, iter_max, verbose, x_scale):
+
+        # Convert to cost and gradient of cost function.
+        fun_ = lambda x: lf.get_cost_from_residual(
+            fun(x),
+            loss=loss)
+        jac_ = lambda x: lf.get_gradient_cost_from_residual(
+            fun(x),
+            jac(x),
+            loss=loss)
+
+        # Use scipy.optimize.minimize method
+        res = minimize(
+            method=method,
+            fun=fun_,
+            jac=jac_,
+            x0=x0,
+            options={'maxiter': iter_max, 'disp': verbose},
+        )
+        return res.x
+
     @abstractmethod
-    def _print_info_text(self):
+    def _print_info_text_least_squares(self):
+        pass
+
+    @abstractmethod
+    def _print_info_text_minimize(self):
         pass
 
     ##

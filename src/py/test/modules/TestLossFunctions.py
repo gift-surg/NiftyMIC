@@ -1,29 +1,31 @@
-## \file TestLossFunctions.py
+# \file TestLossFunctions.py
 #  \brief  Class containing unit tests for module Stack
-# 
+#
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date May 2016
 
 
-## Import libraries 
+# Import libraries
 import numpy as np
 import unittest
 import sys
 import matplotlib.pyplot as plt
 
-## Import modules
+# Import modules
 import utilities.lossFunctions as lf
 # import utilities.SimpleITKHelper as sitkh
 import utilities.PythonHelper as ph
 
 from definitions import dir_test
 
-## Concept of unit testing for python used in here is based on
+# Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
 #  Retrieved: Aug 6, 2015
+
+
 class TestNiftyReg(unittest.TestCase):
 
-    ## Specify input data
+    # Specify input data
     dir_test_data = dir_test
 
     accuracy = 7
@@ -40,57 +42,49 @@ class TestNiftyReg(unittest.TestCase):
         diff = lf.linear(b) - b
 
         self.assertEqual(np.around(
-            np.linalg.norm(diff)
-            , decimals = self.accuracy), 0 )
+            np.linalg.norm(diff), decimals=self.accuracy), 0)
 
         diff = lf.gradient_linear(b) - 1
         self.assertEqual(np.around(
-            np.linalg.norm(diff)
-            , decimals = self.accuracy), 0 )
+            np.linalg.norm(diff), decimals=self.accuracy), 0)
 
     def test_least_squares_linear(self):
 
-        A = np.random.rand(self.m,self.n)
+        A = np.random.rand(self.m, self.n)
         x = np.random.rand(self.n)
         b = np.random.rand(self.m)
 
         ell2 = 0.5*np.sum((A.dot(x) - b)**2)
         diff = 0.5*np.sum(lf.linear((A.dot(x) - b)**2)) - ell2
         self.assertEqual(np.around(
-            np.linalg.norm(diff)
-            , decimals = self.accuracy), 0 )
+            np.linalg.norm(diff), decimals=self.accuracy), 0)
 
         tmp = A.dot(x) - b
         grad_ell2 = A.transpose().dot(tmp)
-        diff = A.transpose().dot( lf.gradient_linear(tmp**2) * tmp) - grad_ell2
+        diff = A.transpose().dot(lf.gradient_linear(tmp**2) * tmp) - grad_ell2
         self.assertEqual(np.around(
-            np.linalg.norm(diff)
-            , decimals = self.accuracy), 0 )
-
+            np.linalg.norm(diff), decimals=self.accuracy), 0)
 
     def test_soft_l1(self):
 
         b = np.random.rand(self.m)
 
-        diff = np.zeros_like(b)
-        diff_grad = np.zeros_like(b)
+        softl1 = np.zeros_like(b)
+        softl1_grad = np.zeros_like(b)
 
         for i in xrange(0, self.m):
             e = b[i]
-            diff[i] = 2*(np.sqrt(1+e)-1)
-            diff_grad[i] = 1./np.sqrt(1+e)
+            softl1[i] = 2*(np.sqrt(1+e)-1)
+            softl1_grad[i] = 1./np.sqrt(1+e)
 
-        diff = lf.soft_l1(b) - diff
+        diff = lf.soft_l1(b) - softl1
 
         self.assertEqual(np.around(
-            np.linalg.norm(diff)
-            , decimals = self.accuracy), 0 )
+            np.linalg.norm(diff), decimals=self.accuracy), 0)
 
-        diff_grad = lf.gradient_soft_l1(b) - diff_grad
+        diff_grad = lf.gradient_soft_l1(b) - softl1_grad
         self.assertEqual(np.around(
-            np.linalg.norm(diff_grad)
-            , decimals = self.accuracy), 0 )
-
+            np.linalg.norm(diff_grad), decimals=self.accuracy), 0)
 
     def test_huber(self):
 
@@ -114,14 +108,11 @@ class TestNiftyReg(unittest.TestCase):
         diff = lf.huber(b, gamma=gamma) - huber
 
         self.assertEqual(np.around(
-            np.linalg.norm(diff)
-            , decimals = self.accuracy), 0 )
+            np.linalg.norm(diff), decimals=self.accuracy), 0)
 
         diff_grad = lf.gradient_huber(b, gamma=gamma) - grad_huber
         self.assertEqual(np.around(
-            np.linalg.norm(diff_grad)
-            , decimals = self.accuracy), 0 )
-
+            np.linalg.norm(diff_grad), decimals=self.accuracy), 0)
 
     def test_show_curves(self):
 
@@ -136,7 +127,7 @@ class TestNiftyReg(unittest.TestCase):
         grad_loss = []
         jac = []
         labels = []
-        
+
         loss.append(lf.linear(residual2))
         grad_loss.append(lf.gradient_linear(residual2))
         jac.append(lf.gradient_linear(residual2)*residual)
@@ -147,13 +138,56 @@ class TestNiftyReg(unittest.TestCase):
         jac.append(lf.gradient_soft_l1(residual2)*residual)
         labels.append("soft_l1")
 
-        for gamma in (1,1.345,5,10,15):
+        for gamma in (1, 1.345, 5, 10, 15):
             loss.append(lf.huber(residual2, gamma=gamma))
             grad_loss.append(lf.gradient_huber(residual2, gamma=gamma))
             jac.append(lf.gradient_huber(residual2, gamma=gamma)*residual)
             labels.append("huber(" + str(gamma) + ")")
 
-        ph.show_curves(loss, x=residual, labels=labels, title="losses rho(x^2)")
-        ph.show_curves(grad_loss, x=residual, labels=labels, title="gradient losses rho'(x^2)")
-        ph.show_curves(jac, x=residual, labels=labels, title="jacobian rho'(x^2)*x")
+        ph.show_curves(loss, x=residual, labels=labels,
+                       title="losses rho(x^2)")
+        ph.show_curves(grad_loss, x=residual, labels=labels,
+                       title="gradient losses rho'(x^2)")
+        ph.show_curves(jac, x=residual, labels=labels,
+                       title="jacobian rho'(x^2)*x")
 
+    def test_cost_from_residual_linear(self):
+
+        loss = "linear"
+
+        def f(x):
+            nda = np.zeros(3)
+            nda[0] = x[0]**2 - 3*x[1]**3 + 5
+            nda[1] = 2*x[0] + x[1]**2 - 1
+            nda[2] = x[0] + x[1]
+            return nda
+
+        def df(x):
+            nda = np.zeros((3, 2))
+            nda[0, 0] = 2*x[0]
+            nda[1, 0] = 2
+            nda[2, 0] = 1
+
+            nda[0, 1] = -9*x[1]**2
+            nda[1, 1] = 2*x[1]
+            nda[2, 1] = 1
+            return nda
+
+        X0, X1 = np.meshgrid(np.arange(-5, 5, 0.1), np.arange(0, 10, 0.2))
+        points = np.array([X1.flatten(), X0.flatten()])
+
+        cost_gd = lambda x: 0.5 * np.sum(f(x)**2)
+        grad_cost_gd = lambda x: np.sum(f(x)[:, np.newaxis]*df(x), 0)
+
+        for i in range(points.shape[1]):
+            point = points[:, i]
+            diff_cost = cost_gd(point) - \
+                lf.get_cost_from_residual(f(point), loss=loss)
+            diff_grad = grad_cost_gd(point) - \
+                lf.get_gradient_cost_from_residual(
+                    f(point), df(point), loss=loss)
+
+            self.assertEqual(np.around(
+                np.linalg.norm(diff_cost), decimals=self.accuracy), 0)
+            self.assertEqual(np.around(
+                np.linalg.norm(diff_grad), decimals=self.accuracy), 0)
