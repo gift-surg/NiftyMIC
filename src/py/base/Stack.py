@@ -83,14 +83,15 @@ class Stack:
         # Append masks (either provided or binary mask)
         if file_path_mask is None:
             stack.sitk_mask = stack._generate_identity_mask()
-            ph.print_debug_info("Identity mask created for '%s'." % (file_path))
+            ph.print_debug_info(
+                "Identity mask created for '%s'." % (file_path))
 
-        else:           
+        else:
             if not ph.file_exists(file_path_mask):
                 raise Exceptions.FileNotExistent(file_path_mask)
             stack.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
             stack._is_unity_mask = True
-        
+
         # Append itk object
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
@@ -102,7 +103,8 @@ class Stack:
             stack._N_slices = 0
             stack._slices = None
 
-        ph.print_debug_info("Stack (image + mask) associated to '%s' successfully read." %(file_path))
+        ph.print_debug_info(
+            "Stack (image + mask) associated to '%s' successfully read." % (file_path))
         return stack
 
     ##
@@ -263,16 +265,18 @@ class Stack:
             stack._filename = filename
         stack._dir = stack_to_copy.get_directory()
 
-        stack._N_slices = stack_to_copy.sitk.GetSize()[-1]
-        stack._slices = [None]*stack._N_slices
-
         # Extract all slices and their masks from the stack and store them if
         # given
-        if not all(x is None for x in stack_to_copy.get_slices()):
+        if stack_to_copy.get_slices() is not None:
+            stack._N_slices = stack_to_copy.sitk.GetSize()[-1]
+            stack._slices = [None]*stack._N_slices
             slices_to_copy = stack_to_copy.get_slices()
 
             for i in range(0, stack._N_slices):
                 stack._slices[i] = sl.Slice.from_slice(slices_to_copy[i])
+        else:
+            stack._N_slices = 0
+            stack._slices = None
 
         return stack
 

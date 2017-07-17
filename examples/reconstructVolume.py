@@ -267,7 +267,7 @@ if __name__ == '__main__':
         suffix_mask="_mask",
         target_stack_index=0,
         two_step_cycles=3,
-        sigma=0.8,
+        sigma=0.7,
         regularization="TK1",
         loss="linear",
         alpha=0.1,
@@ -478,8 +478,8 @@ if __name__ == '__main__':
             use_moving_mask=False,
             use_verbose=True,
             interpolator="Linear",
-            # metric="Correlation",
-            metric="MattesMutualInformation",  # Might cause error messages
+            metric="Correlation",
+            # metric="MattesMutualInformation",  # Might cause error messages
             # like "Too many samples map outside moving image buffer."
             # use_multiresolution_framework=True,
             initializer_type=None,
@@ -548,6 +548,14 @@ if __name__ == '__main__':
     HR_volume_final = SRR.get_reconstruction().get_stack_multiplied_with_mask()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
     HR_volume_final.write(args.dir_output)
+
+    for stack in stacks:
+        stack.write(
+            os.path.join(args.dir_output,"motion_correction"),
+            write_mask=True,
+            write_slices=True,
+            write_transforms=True,
+            )
 
     HR_volume_iterations.insert(0, HR_volume_final)
     if args.verbose and not args.provide_comparison:

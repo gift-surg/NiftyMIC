@@ -26,6 +26,8 @@ from definitions import REGEX_FILENAME_EXTENSIONS
 # DataReader is an abstract class to read 3D images.
 # \date       2017-07-12 11:38:07+0100
 #
+
+
 class DataReader(object):
     __metaclass__ = ABCMeta
 
@@ -66,7 +68,7 @@ class DirectoryReader(DataReader):
     #
     # \param      self               The object
     # \param      path_to_directory  String to specify the path to input
-    #                                directory
+    #                                directory.
     # \param      suffix_mask        extension of stack filename as string
     #                                indicating associated mask, e.g. "_mask"
     #                                for "A_mask.nii".
@@ -205,3 +207,60 @@ class MultipleImagesReader(DataReader):
                 file_path,
                 abs_path_mask,
                 extract_slices=self._extract_slices)
+
+
+##
+# ImageSlicesDirectoryReader reads multiple stacks and their associated
+# individual slices from a directory.
+# Rationale: Read individual slices after performed slice-to-volume
+# registration steps.
+# \date       2017-07-17 22:32:11+0100
+#
+class ImageSlicesDirectoryReader(DataReader):
+
+    ##
+    # Store relevant information to images, slices and their potential masks
+    # from a specified directory
+    # \date       2017-07-17 22:32:01+0100
+    #
+    # \param      self               The object
+    # \param      path_to_directory  String to specify the path to input
+    #                                directory where images and associated
+    #                                slices are stored.
+    # \param      suffix_mask        extension of stack filename as string
+    #                                indicating associated mask, e.g. "_mask"
+    #                                for "A_mask.nii".
+    #
+    def __init__(self, path_to_directory, suffix_mask="_mask"):
+
+        super(self.__class__, self).__init__()
+
+        self._path_to_directory = path_to_directory
+        self._suffix_mask = suffix_mask
+
+    def read_data(self):
+
+        if not ph.directory_exists(self._path_to_directory):
+            raise Exceptions.DirectoryNotExistent(self._path_to_directory)
+
+        abs_path_to_directory = os.path.abspath(self._path_to_directory)
+
+        # Get data filenames of images by finding the prefixes associated
+        # to the slices which are build as filename_[0-9]+.nii.gz
+        pattern = "(" + REGEX_FILENAMES + ")_[0-9]+[.]" + \
+            REGEX_FILENAME_EXTENSIONS
+        p = re.compile(pattern)
+
+        dic_filenames = {
+            p.match(f).group(1): p.match(f).group(0)
+            for f in os.listdir(abs_path_to_directory) if p.match(f)
+        }
+
+        # Filenames without filename ending as sorted list
+        filenames = natsort.natsorted(
+            dic_filenames.keys(), key=lambda y: y.lower())
+
+        self._stacks = [None] * len(filenames)
+        for i, filename in enumerate(filenames):
+            self._stacks[i] = st.Stack.from_slice_filenames(
+                self._path_to_directory, filename, self._suffix_mask)

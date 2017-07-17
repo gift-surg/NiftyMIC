@@ -128,7 +128,7 @@ class Solver(object):
 
         # Idea: Set through-plane spacing artificially very small so that the
         # corresponding becomes negligibly small in through-plane direction.
-        # Hence, only in-plane deconvolution is approximated.
+        # Hence, only in-plane deconvolution is approximated, i.e. 2D case
         self._deconvolution_only_in_plane_through_plane_spacing = 1e-6
 
         # Cut-off distance for Gaussian blurring filter
@@ -180,7 +180,7 @@ class Solver(object):
         self._N_voxels_HR_volume = np.array(
             self._HR_volume.sitk.GetSize()).prod()
 
-        # Allocate variables conataining information about statistics of
+        # Allocate variables containing information about statistics of
         # reconstruction
         self._elapsed_time_sec = None
         self._residual_ell2 = None
@@ -232,11 +232,9 @@ class Solver(object):
     # \param      loss  The loss
     #
     def set_loss(self, loss):
-        if loss not in ['linear', 'huber']:
-            raise ValueError(
-                "Loss function must be either 'linear' or 'huber'.")
-        # if loss not in ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']:
-            # raise ValueError("Loss function must be either 'linear', 'soft_l1', 'huber', 'cauchy' or 'arctan'.")
+        if loss not in ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']:
+            raise ValueError("Loss function must be either 'linear', "
+                             "'soft_l1', 'huber', 'cauchy' or 'arctan'.")
         self._loss = loss
 
     def set_huber_gamma(self, huber_gamma):

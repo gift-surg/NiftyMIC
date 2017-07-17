@@ -43,7 +43,6 @@ class RegistrationSimpleITK:
                  initializer_type=None,
                  use_oriented_psf=False,
                  use_multiresolution_framework=False,
-                 use_centered_transform_initializer=False,
                  use_verbose=False,
                  ):
 
@@ -65,8 +64,6 @@ class RegistrationSimpleITK:
         self._scales_estimator = scales_estimator
 
         self._initializer_type = initializer_type
-
-        self._use_centered_transform_initializer = use_centered_transform_initializer
 
         self._use_oriented_psf = use_oriented_psf
         self._use_multiresolution_framework = use_multiresolution_framework
@@ -124,13 +121,8 @@ class RegistrationSimpleITK:
         if initializer_type not in [None, "MOMENTS", "GEOMETRY"]:
             raise ValueError(
                 "Error: centered transform initializer type can only be 'None', MOMENTS' or 'GEOMETRY'")
-
-        if initializer_type is None:
-            self._use_centered_transform_initializer = False
-
         else:
             self._initializer_type = initializer_type
-            self._use_centered_transform_initializer = True
 
     # Get type of centered transform initializer
     def get_centered_transform_initializer(self):
@@ -333,11 +325,10 @@ class RegistrationSimpleITK:
         elif self._registration_type in ["Affine"]:
             initial_transform = sitk.AffineTransform(dim)
 
-        if self._use_centered_transform_initializer:
+        if self._initializer_type is not None:
             initial_transform = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, initial_transform, eval(
                 "sitk.CenteredTransformInitializerFilter." + self._initializer_type))
-
-        registration_method.SetInitialTransform(initial_transform)
+        registration_method.SetInitialTransform(initial_transform, inPlace=True)
 
         # Set an image masks in order to restrict the sampled points for the
         # metric

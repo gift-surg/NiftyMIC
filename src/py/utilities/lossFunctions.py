@@ -53,7 +53,7 @@ def get_gradient_cost_from_residual(f, jac_f, loss="linear"):
     grad = np.sum((get_gradient_loss[loss](f**2) * f)[:, np.newaxis] * jac_f,
                   axis=0)
     return grad
-    
+
 
 def linear(f):
     return f
