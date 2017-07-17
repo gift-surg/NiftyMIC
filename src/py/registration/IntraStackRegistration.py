@@ -185,13 +185,11 @@ class IntraStackRegistration(StackRegistrationBase):
         self._new_transform_sitk = {
             "rigid": self._new_rigid_transform_sitk,
             "similarity": self._new_similarity_transform_sitk,
-            "uniform_scale_similarity": self._new_similarity_transform_sitk,
             "affine": self._new_affine_transform_sitk
         }
         self._new_transform_itk = {
             "rigid": self._new_rigid_transform_itk,
             "similarity": self._new_similarity_transform_itk,
-            "uniform_scale_similarity": self._new_similarity_transform_itk,
             "affine": self._new_affine_transform_itk
         }
 
@@ -251,7 +249,6 @@ class IntraStackRegistration(StackRegistrationBase):
         self._apply_motion_correction_and_compute_slice_transforms = {
             "rigid":  self._apply_rigid_motion_correction_and_compute_slice_transforms,
             "similarity":  self._apply_similarity_motion_correction_and_compute_slice_transforms,
-            "uniform_scale_similarity": self._apply_similarity_motion_correction_and_compute_slice_transforms,
             "affine":  self._apply_affine_motion_correction_and_compute_slice_transforms
         }
 
@@ -690,7 +687,7 @@ class IntraStackRegistration(StackRegistrationBase):
         # ---------------------------------------------------------------------
         # 1) Defines the prior term on the parameters
         if alpha_parameter > self._ZERO:
-            if self._transform_type in ["similarity", "uniform_scale_similarity"]:
+            if self._transform_type in ["similarity"]:
                 self._get_residual_parameters = lambda x: np.concatenate((
                     self._get_residual_scale(x),
                     self._get_residual_intensity_coefficients[
@@ -809,13 +806,6 @@ class IntraStackRegistration(StackRegistrationBase):
                         self._get_jacobian_residual_intensity_coefficients[
                             self._intensity_correction_type_slice_neighbour_fit](x)
                     ))
-            # elif self._transform_type in ["uniform_scale_similarity"]:
-            #     self._get_jacobian_residual_parameters = \
-            #         lambda x: np.concatenate((
-            #             self._get_jacobian_residual_uniform_scale(x),
-            #             self._get_jacobian_residual_intensity_coefficients[
-            #                 self._intensity_correction_type_slice_neighbour_fit](x)
-            #         ))
             else:
                 self._get_jacobian_residual_parameters = \
                     lambda x: self._get_jacobian_residual_intensity_coefficients[
@@ -905,9 +895,13 @@ class IntraStackRegistration(StackRegistrationBase):
     # all slices i.
     #
     # \param      self            The object
+    # \param      slices_2D       The slices 2d
+    # \param      reference_nda   The reference nda
+    # \param      trafo           The trafo
     # \param      parameters_vec  The parameters vector
     #
-    # \return     The residual reference fit.
+    # \return     The residual reference fit as (N_slices * N_slice_voxels)
+    #             numpy array
     #
     def _get_residual_reference_fit(self,
                                     slices_2D,
@@ -974,9 +968,13 @@ class IntraStackRegistration(StackRegistrationBase):
     # \date       2016-11-21 20:09:36+0000
     #
     # \param      self            The object
+    # \param      slices_2D       The slices 2d
+    # \param      trafo           The trafo
     # \param      parameters_vec  The parameters vector
     #
-    # \return     The jacobian residual reference fit.
+    # \return     The jacobian residual reference fit as [N_slices *
+    #             N_slice_voxels] x [transform_type_dofs * N_slices] numpy
+    #             array
     #
     def _get_jacobian_residual_reference_fit(self,
                                              slices_2D,
@@ -1081,12 +1079,13 @@ class IntraStackRegistration(StackRegistrationBase):
     # \date       2016-11-21 20:07:41+0000
     #
     # It returns the stacked residual of slice_i(T(theta_i, x)) -
-    # slice_{i+1}(T(theta_{i+1}, x)) for all slices i.
+    # slice_{i+1}(T(theta_{i+1}, x)) for all voxels x of all slices i.
     #
     # \param      self            The object
     # \param      parameters_vec  The parameters vector
     #
-    # \return     The residual slice neighbours fit.
+    # \return     The residual slice neighbours fit as
+    #             (N_slices-1) * N_slice_voxels numpy array
     #
     def _get_residual_slice_neighbours_fit(self, parameters_vec):
 
@@ -1177,7 +1176,9 @@ class IntraStackRegistration(StackRegistrationBase):
     # \param      self            The object
     # \param      parameters_vec  The parameters vector
     #
-    # \return     The jacobian residual slice neighbours fit.
+    # \return     The Jacobian residual slice neighbours fit as [(N_slices-1) *
+    #             N_slice_voxels] x [transform_type_dofs * N_slices] numpy
+    #             array
     #
     def _get_jacobian_residual_slice_neighbours_fit(self, parameters_vec):
 
@@ -1293,6 +1294,19 @@ class IntraStackRegistration(StackRegistrationBase):
 
         return jacobian_slice_nda
 
+    ##
+    # Gets the gradient with respect to transform parameters of all voxels
+    # within a slice.
+    # \date       2017-07-15 23:03:10+0100
+    #
+    # \param      self           The object
+    # \param      dslice_nda     The dslice nda
+    # \param      transform_itk  The transform itk
+    # \param      slice_sitk     The slice sitk
+    #
+    # \return     The gradient with respect to transform parameters;
+    #             (N_slice_voxels x transform_type_dofs) numpy array
+    #
     def _get_gradient_with_respect_to_transform_parameters(self,
                                                            dslice_nda,
                                                            transform_itk,

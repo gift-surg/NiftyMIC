@@ -19,12 +19,6 @@
 
 import numpy as np
 
-# get_cost_from_residual = {
-#     "linear": get_cost_from_residual_linear,
-#     # "soft_l1": get_cost_from_residual_soft_l1,
-#     # "huber": get_cost_from_residual_huber,
-# }
-
 
 ##
 # Gets the cost \f$C(\vec{x})\f$ from the residual \f$\vec{f}(\vec{x})\f$.
@@ -33,7 +27,7 @@ import numpy as np
 # \param      f      residual f, m-dimensional numpy array
 # \param      loss   Choice for loss function rho
 #
-# \return     The cost from residual.
+# \return     The cost from residual as scalar value >= 0
 #
 def get_cost_from_residual(f, loss="linear"):
     cost = 0.5 * np.sum(get_loss[loss](f**2))
@@ -52,13 +46,14 @@ def get_cost_from_residual(f, loss="linear"):
 # \param      jac_f  Jacobian of residual f, (m x n)-dimensional numpy array
 # \param      loss   Choice for loss function rho
 #
-# \return     The cost from residual.
+# \return     The gradient of the cost from residual as n-dimensional numpy
+#             array
 #
 def get_gradient_cost_from_residual(f, jac_f, loss="linear"):
     grad = np.sum((get_gradient_loss[loss](f**2) * f)[:, np.newaxis] * jac_f,
                   axis=0)
     return grad
-
+    
 
 def linear(f):
     return f
@@ -88,13 +83,33 @@ def gradient_huber(f, gamma=1.345):
     return np.where(f < gamma2, 1., gamma/np.sqrt(f))
 
 
+def cauchy(f):
+    return np.log1p(f)
+
+
+def gradient_cauchy(f):
+    return 1. / (1. + f)
+
+
+def arctan(f):
+    return np.arctan(f)
+
+
+def gradient_arctan(f):
+    return 1. / (1. + f**2)
+
+
 get_loss = {
     "linear": linear,
     "soft_l1": soft_l1,
     "huber": huber,
+    "cauchy": cauchy,
+    "arctan": arctan,
 }
 get_gradient_loss = {
     "linear": gradient_linear,
     "soft_l1": gradient_soft_l1,
     "huber": gradient_huber,
+    "cauchy": gradient_cauchy,
+    "arctan": gradient_arctan,
 }

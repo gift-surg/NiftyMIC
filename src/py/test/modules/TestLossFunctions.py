@@ -1,3 +1,4 @@
+##
 # \file TestLossFunctions.py
 #  \brief  Class containing unit tests for module Stack
 #
@@ -69,20 +70,20 @@ class TestNiftyReg(unittest.TestCase):
 
         b = np.random.rand(self.m)
 
-        softl1 = np.zeros_like(b)
-        softl1_grad = np.zeros_like(b)
+        soft_l1 = np.zeros_like(b)
+        soft_l1_grad = np.zeros_like(b)
 
         for i in xrange(0, self.m):
             e = b[i]
-            softl1[i] = 2*(np.sqrt(1+e)-1)
-            softl1_grad[i] = 1./np.sqrt(1+e)
+            soft_l1[i] = 2*(np.sqrt(1+e)-1)
+            soft_l1_grad[i] = 1./np.sqrt(1+e)
 
-        diff = lf.soft_l1(b) - softl1
+        diff = lf.soft_l1(b) - soft_l1
 
         self.assertEqual(np.around(
             np.linalg.norm(diff), decimals=self.accuracy), 0)
 
-        diff_grad = lf.gradient_soft_l1(b) - softl1_grad
+        diff_grad = lf.gradient_soft_l1(b) - soft_l1_grad
         self.assertEqual(np.around(
             np.linalg.norm(diff_grad), decimals=self.accuracy), 0)
 
@@ -111,6 +112,48 @@ class TestNiftyReg(unittest.TestCase):
             np.linalg.norm(diff), decimals=self.accuracy), 0)
 
         diff_grad = lf.gradient_huber(b, gamma=gamma) - grad_huber
+        self.assertEqual(np.around(
+            np.linalg.norm(diff_grad), decimals=self.accuracy), 0)
+
+    def test_cauchy(self):
+
+        b = np.random.rand(self.m)
+
+        cauchy = np.zeros_like(b)
+        cauchy_grad = np.zeros_like(b)
+
+        for i in xrange(0, self.m):
+            e = b[i]
+            cauchy[i] = np.log(1+e)
+            cauchy_grad[i] = 1./(1+e)
+
+        diff = lf.cauchy(b) - cauchy
+
+        self.assertEqual(np.around(
+            np.linalg.norm(diff), decimals=self.accuracy), 0)
+
+        diff_grad = lf.gradient_cauchy(b) - cauchy_grad
+        self.assertEqual(np.around(
+            np.linalg.norm(diff_grad), decimals=self.accuracy), 0)
+
+    def test_arctan(self):
+
+        b = np.random.rand(self.m)
+
+        arctan = np.zeros_like(b)
+        arctan_grad = np.zeros_like(b)
+
+        for i in xrange(0, self.m):
+            e = b[i]
+            arctan[i] = np.arctan(e)
+            arctan_grad[i] = 1. / (1 + e*e)
+
+        diff = lf.arctan(b) - arctan
+
+        self.assertEqual(np.around(
+            np.linalg.norm(diff), decimals=self.accuracy), 0)
+
+        diff_grad = lf.gradient_arctan(b) - arctan_grad
         self.assertEqual(np.around(
             np.linalg.norm(diff_grad), decimals=self.accuracy), 0)
 

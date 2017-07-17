@@ -1079,7 +1079,7 @@ class TestIntraStackRegistration(unittest.TestCase):
         nda_slice = np.array(nda[i, :, :])
         nda_mask_slice = np.array(nda_mask[i, :, :])
 
-        for i in range(0, nda.shape[0]):
+        for i in range(0, nda.shape[0]): #23 slices
             nda[i, :, :] = nda_slice
             nda_mask[i, :, :] = nda_mask_slice
 
@@ -1092,14 +1092,15 @@ class TestIntraStackRegistration(unittest.TestCase):
             stack_sitk, stack.get_filename(), stack_sitk_mask)
 
         # Create in-plane motion corruption
-        scale = 1.2
+        # scale = 1.2
+        scale = 1
         angle_z = 0.05
         center_2D = (0, 0)
         # translation_2D = np.array([0,0])
         translation_2D = np.array([1, -1])
 
-        intensity_scale = 10
-        intensity_bias = 50
+        intensity_scale = 1
+        intensity_bias = 0
 
         # Get corrupted stack and corresponding motions
         stack_corrupted, motion_sitk, motion_2_sitk = get_inplane_corrupted_stack(
@@ -1110,35 +1111,42 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         # Perform in-plane rigid registrations
         inplane_registration = inplanereg.IntraStackRegistration(
-            stack=stack_corrupted, reference=stack)
+            stack=stack_corrupted,
+            reference=stack,
+            use_stack_mask=True,
+            use_reference_mask=True,
+            interpolator="Linear",
+            use_verbose=True,
+            )
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         inplane_registration.set_transform_initializer_type("geometry")
         # inplane_registration.set_transform_initializer_type("identity")
         inplane_registration.set_intensity_correction_initializer_type(
             "affine")
-        inplane_registration.set_transform_type("similarity")
-        inplane_registration.set_interpolator("Linear")
+        # inplane_registration.set_transform_type("similarity")
+        inplane_registration.set_transform_type("rigid")
         # inplane_registration.set_optimizer("least_squares")
-        # inplane_registration.set_optimizer("L-BFGS-B")
         # inplane_registration.set_optimizer("BFGS")
-        inplane_registration.set_optimizer("CG")
+        # inplane_registration.set_optimizer("L-BFGS-B")
+        inplane_registration.set_optimizer("TNC")
+        # inplane_registration.set_optimizer("Powell")
+        # inplane_registration.set_optimizer("CG")
+        # inplane_registration.set_optimizer("Newton-CG")
         inplane_registration.set_optimizer_loss("linear")
-        # inplane_registration.use_reference_mask(True)
-        inplane_registration.use_stack_mask(True)
-        inplane_registration.use_parameter_normalization(True)
+        # inplane_registration.set_optimizer_loss("soft_l1")
+        # inplane_registration.set_optimizer_loss("arctan")
+        # inplane_registration.use_parameter_normalization(True)
         inplane_registration.set_prior_scale(1/scale)
         inplane_registration.set_prior_intensity_coefficients(
             (intensity_scale, intensity_bias))
-        inplane_registration.set_intensity_correction_type_slice_neighbour_fit(
-            "affine")
-        inplane_registration.set_intensity_correction_type_reference_fit(
-            "affine")
-        inplane_registration.use_verbose(True)
+        # inplane_registration.set_intensity_correction_type_slice_neighbour_fit(
+            # "affine")
+        # inplane_registration.set_intensity_correction_type_reference_fit(
+            # "affine")
         inplane_registration.set_alpha_reference(1)
         inplane_registration.set_alpha_neighbour(0)
-        inplane_registration.set_alpha_parameter(1e10)
-        inplane_registration.set_optimizer_iter_max(2)
-        inplane_registration.use_verbose(True)
+        inplane_registration.set_alpha_parameter(0)
+        inplane_registration.set_optimizer_iter_max(30)
         inplane_registration.run_registration()
         inplane_registration.print_statistics()
 

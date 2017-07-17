@@ -702,8 +702,6 @@ def get_indices_array_to_flattened_sitk_image_data_array(image_sitk):
 #                                                 (Dimension x N_voxel)-array.
 # \param[in,out] jacobian_transform_on_image_nda  (N_voxel x transform_DOF)-
 #                                                 array.
-# \param[in]  stack  Image as Stack object
-#
 # \return        The (N_voxel x transform_DOF)-numpy array of the Jacobian of
 #                the transform applied on the stack
 #
