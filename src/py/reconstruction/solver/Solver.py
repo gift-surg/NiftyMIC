@@ -69,7 +69,17 @@ class Solver(object):
     #                                       (sigma_x2, sigma_y2, sigma_z2) or
     #                                       as full 3x3 numpy array
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.02, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", loss="linear", huber_gamma=1.345, predefined_covariance=None):
+    def __init__(self,
+                 stacks,
+                 HR_volume,
+                 alpha_cut=3,
+                 alpha=0.02,
+                 iter_max=10,
+                 minimizer="lsmr",
+                 deconvolution_mode="full_3D",
+                 loss="linear",
+                 huber_gamma=1.345,
+                 predefined_covariance=None):
 
         # Initialize variables
         self._stacks = stacks
@@ -818,12 +828,12 @@ class Solver(object):
         # --- Initial value end ----------------------------------------------
 
         # Linear least-squares methods:
-        HR_nda_vec = lsqr(A, b, maxiter=self._iter_max, show=True)[0]
+        x = lsqr(A, b, iter_lim=self._iter_max, show=True)[0]
 
         # Chop off negative values
         x = np.clip(x, 0, np.inf)
 
-        return HR_nda_vec
+        return x
 
     ##
     # \brief      Gets the approximate solution via L-BFGS-B solver

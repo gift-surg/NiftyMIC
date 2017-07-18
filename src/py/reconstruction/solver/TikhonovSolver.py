@@ -60,34 +60,61 @@ from reconstruction.solver.Solver import Solver
 class TikhonovSolver(Solver):
 
     ##
-    #          Constructor
+    # Constructor
     # \date          2016-08-01 23:00:04+0100
     #
-    # \param         self                The object
-    # \param[in]     stacks              list of Stack objects containing all
-    #                                    stacks used for the reconstruction
-    # \param[in,out] HR_volume           Stack object containing the current
-    #                                    estimate of the HR volume (used as
-    #                                    initial value + space definition)
-    # \param[in]     alpha_cut           Cut-off distance for Gaussian blurring
-    #                                    filter
-    # \param[in]     alpha               regularization parameter, scalar
-    # \param[in]     iter_max            number of maximum iterations, scalar
-    # \param[in]     reg_type            Type of Tikhonov regualrization, i.e.
-    #                                    TK0 or TK1 for either zeroth- or first
-    #                                    order Tikhonov
-    # \param[in]     minimizer           Type of minimizer used to solve
-    #                                    minimization problem, possible types:
-    #                                    'lsmr', 'lsqr', 'L-BFGS-B' #
-    # \param[in]     deconvolution_mode  Either "full_3D" or "only_in_plane".
-    #                                    Indicates whether full 3D or only
-    #                                    in-plane deconvolution is considered
+    # \param         self                   The object
+    # \param[in]     stacks                 list of Stack objects containing
+    #                                       all stacks used for the
+    #                                       reconstruction
+    # \param[in,out] HR_volume              Stack object containing the current
+    #                                       estimate of the HR volume (used as
+    #                                       initial value + space definition)
+    # \param[in]     alpha_cut              Cut-off distance for Gaussian
+    #                                       blurring filter
+    # \param[in]     alpha                  regularization parameter, scalar
+    # \param[in]     iter_max               number of maximum iterations,
+    #                                       scalar
+    # \param[in]     reg_type               Type of Tikhonov regualrization,
+    #                                       i.e. TK0 or TK1 for either zeroth-
+    #                                       or first order Tikhonov
+    # \param[in]     minimizer              Type of minimizer used to solve
+    #                                       minimization problem, possible
+    #                                       types: 'lsmr', 'lsqr', 'L-BFGS-B' #
+    # \param[in]     deconvolution_mode     Either "full_3D" or
+    #                                       "only_in_plane". Indicates whether
+    #                                       full 3D or only in-plane
+    #                                       deconvolution is considered
+    # \param         loss                   The loss
+    # \param         huber_gamma            The huber gamma
+    # \param         predefined_covariance  The predefined covariance
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", minimizer="lsmr", deconvolution_mode="full_3D", loss="linear", huber_gamma=1.345, predefined_covariance=None):
+    def __init__(self,
+                 stacks,
+                 HR_volume,
+                 alpha_cut=3,
+                 alpha=0.03,
+                 iter_max=10,
+                 reg_type="TK1",
+                 minimizer="lsmr",
+                 deconvolution_mode="full_3D",
+                 loss="linear",
+                 huber_gamma=1.345,
+                 predefined_covariance=None,
+                 ):
 
         # Run constructor of superclass
-        Solver.__init__(self, stacks=stacks, HR_volume=HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max, minimizer=minimizer,
-                        deconvolution_mode=deconvolution_mode, loss=loss, huber_gamma=huber_gamma, predefined_covariance=predefined_covariance)
+        Solver.__init__(self,
+                        stacks=stacks,
+                        HR_volume=HR_volume,
+                        alpha_cut=alpha_cut,
+                        alpha=alpha,
+                        iter_max=iter_max,
+                        minimizer=minimizer,
+                        deconvolution_mode=deconvolution_mode,
+                        loss=loss,
+                        huber_gamma=huber_gamma,
+                        predefined_covariance=predefined_covariance)
 
         # Settings for optimizer
         self._reg_type = reg_type
@@ -282,8 +309,8 @@ class TikhonovSolver(Solver):
         b = self._get_b[self._reg_type]()
 
         # Run solver
-        HR_nda_vec = self._get_approximate_solution[
-            self._minimizer](A_fw, A_bw, b)
+        HR_nda_vec = self._get_approximate_solution[self._minimizer](
+            A_fw, A_bw, b)
 
         return HR_nda_vec
 

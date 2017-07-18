@@ -15,11 +15,6 @@ import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
-from scipy.sparse.linalg import LinearOperator
-from scipy.sparse.linalg import lsqr
-from scipy.sparse.linalg import lsmr
-from scipy.optimize import lsq_linear
-from scipy.optimize import nnls
 import time
 from datetime import timedelta
 
@@ -69,11 +64,30 @@ class TVL2Solver(Solver):
     # \param[in]     ADMM_iterations_output_dir              The ADMM iterations output dir
     # \param[in]     ADMM_iterations_output_filename_prefix  The ADMM iterations output filename prefix
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None, rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TVL2"):
+    def __init__(self,
+                 stacks,
+                 HR_volume,
+                 alpha_cut=3,
+                 alpha=0.03,
+                 iter_max=10,
+                 minimizer="lsmr",
+                 deconvolution_mode="full_3D",
+                 predefined_covariance=None,
+                 rho=0.5,
+                 ADMM_iterations=10,
+                 ADMM_iterations_output_dir=None,
+                 ADMM_iterations_output_filename_prefix="TVL2"):
 
         # Run constructor of superclass
-        Solver.__init__(self, stacks=stacks, HR_volume=HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max,
-                        minimizer=minimizer, deconvolution_mode=deconvolution_mode, predefined_covariance=predefined_covariance)
+        Solver.__init__(self,
+                        stacks=stacks,
+                        HR_volume=HR_volume,
+                        alpha_cut=alpha_cut,
+                        alpha=alpha,
+                        iter_max=iter_max,
+                        minimizer=minimizer,
+                        deconvolution_mode=deconvolution_mode,
+                        predefined_covariance=predefined_covariance)
 
         # Settings for optimizer
         self._rho = rho
@@ -140,15 +154,19 @@ class TVL2Solver(Solver):
 
     # Print statistics associated to performed reconstruction
     def print_statistics(self):
-        print("\nStatistics for performed reconstruction with TV-L2-regularization:")
+        print("\nStatistics for performed reconstruction with TVL2-regularization:")
         # if self._elapsed_time_sec < 0:
         #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
         # else:
         print("\tElapsed time: %s" %
               (timedelta(seconds=self._elapsed_time_sec)))
-        print("\tell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %
-              (self._residual_ell2))
-        print("\tprior residual = %.3e" % (self._residual_prior))
+        if self._residual_ell2 is not None:
+            print("\tell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %
+                  (self._residual_ell2))
+            print("\tprior residual = %.3e" % (self._residual_prior))
+        else:
+            print("\tRun 'compute_statistics' for data and prior residuals")
+
 
     ##
     #       Gets the setting specific filename indicating the information
@@ -190,7 +208,7 @@ class TVL2Solver(Solver):
     #                                     first-order Tikhonov reconstruction
     #                                     step prior the ADMM algorithm
     #
-    def run_reconstruction(self, estimate_initial_value=True):
+    def run_reconstruction(self):
 
         print("Chosen regularization type: TV-L2")
         print("Regularization parameter alpha: " + str(self._alpha))
@@ -204,14 +222,6 @@ class TVL2Solver(Solver):
         # print("Tolerance: %.0e" %(self._tolerance))
 
         time_start = time.time()
-
-        # Estimate initial value based on TK1 regularization
-        if estimate_initial_value:
-            print(
-                "\n***********************************************************************************")
-            print("Initial volume for ADMM is estimated by prior TK1 reconstruction step")
-            self._compute_initial_value_based_on_TK1(alpha_cut=3, alpha=0.02, iter_max=10, minimizer="lsmr",
-                                                     deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
 
         # Get data array of current volume estimate
         HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
@@ -266,17 +276,17 @@ class TVL2Solver(Solver):
 
             # DEBUG:
             # Show reconstruction
-            # sitkh.show_itk_image(self._get_itk_image_from_array_vec(HR_nda.flatten(), self._HR_volume.itk), title="HR_volume_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_itk_image_from_array_vec(HR_nda.flatten(), self._HR_volume.itk), label="HR_volume_iteration_"+str(iter+1))
 
             # Show auxiliary v = Dx
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vx_nda.flatten()), title="vx_iteration_"+str(iter+1))
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vy_nda.flatten()), title="vy_iteration_"+str(iter+1))
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vz_nda.flatten()), title="vz_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vx_nda.flatten()), label="vx_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vy_nda.flatten()), label="vy_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vz_nda.flatten()), label="vz_iteration_"+str(iter+1))
 
             # Show scaled dual variable w
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wx_nda.flatten()), title="wx_iteration_"+str(iter+1))
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wy_nda.flatten()), title="wy_iteration_"+str(iter+1))
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wz_nda.flatten()), title="wz_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wx_nda.flatten()), label="wx_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wy_nda.flatten()), label="wy_iteration_"+str(iter+1))
+            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wz_nda.flatten()), label="wz_iteration_"+str(iter+1))
 
         # Set elapsed time
         time_end = time.time()
@@ -288,20 +298,6 @@ class TVL2Solver(Solver):
         self._HR_volume.sitk = sitkh.get_sitk_from_itk_image(
             self._HR_volume.itk)
 
-    ##
-    #       Calculates the initial value based on first-order Tikhonov.
-    # \post       self._HR_volume is updated
-    # \date       2016-08-01 22:51:41+0100
-    #
-    # \param      self       The object
-    # \param[in]  alpha_cut  Cut-off distance for Gaussian blurring filter
-    # \param[in]  alpha      The alpha
-    # \param[in]  iter_max   The iterator maximum
-    #
-    def _compute_initial_value_based_on_TK1(self, alpha_cut, alpha, iter_max, minimizer, deconvolution_mode, predefined_covariance):
-        SRR = tk.TikhonovSolver(self._stacks, self._HR_volume, alpha_cut=alpha_cut, alpha=alpha, iter_max=iter_max, reg_type="TK1",
-                                minimizer=minimizer, deconvolution_mode=deconvolution_mode, predefined_covariance=predefined_covariance)
-        SRR.run_reconstruction()
 
     # Perform single ADMM iteration
     #  \param[in] HR_nda initial value of HR volume data array, numpy array
