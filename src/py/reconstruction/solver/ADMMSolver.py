@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# \file TVL2Solver.py
+# \file ADMMSolver.py
 #  \brief Implementation to get an approximate solution of the inverse problem
 #  \f$ y_k = A_k x \f$ for each slice \f$ y_k,\,k=1,\dots,K \f$
 #  by using TV-L2-regularization.
@@ -28,7 +28,7 @@ from reconstruction.solver.Solver import Solver
 #  \f$ \vec{y}_k = A_k \vec{x} \f$ for every slice \f$ \vec{y}_k,\,k=1,\dots,K \f$
 #  via TV-L2-regularization via an augmented least-square approach
 #  TODO
-class TVL2Solver(Solver):
+class ADMMSolver(Solver):
 
     ##
     #          Constructor
@@ -76,7 +76,7 @@ class TVL2Solver(Solver):
                  rho=0.5,
                  ADMM_iterations=10,
                  ADMM_iterations_output_dir=None,
-                 ADMM_iterations_output_filename_prefix="TVL2"):
+                 ADMM_iterations_output_filename_prefix="TV"):
 
         # Run constructor of superclass
         Solver.__init__(self,
@@ -154,7 +154,7 @@ class TVL2Solver(Solver):
 
     # Print statistics associated to performed reconstruction
     def print_statistics(self):
-        print("\nStatistics for performed reconstruction with TVL2-regularization:")
+        print("\nStatistics for performed reconstruction with TV-regularization:")
         # if self._elapsed_time_sec < 0:
         #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
         # else:
@@ -166,7 +166,6 @@ class TVL2Solver(Solver):
             print("\tprior residual = %.3e" % (self._residual_prior))
         else:
             print("\tRun 'compute_statistics' for data and prior residuals")
-
 
     ##
     #       Gets the setting specific filename indicating the information
@@ -184,7 +183,7 @@ class TVL2Solver(Solver):
         filename = prefix
         filename += "stacks" + str(len(self._stacks))
         if self._alpha > 0:
-            filename += "_TVL2"
+            filename += "_TV_ADMM"
         filename += "_" + self._minimizer
         filename += "_alpha" + str(self._alpha)
         filename += "_itermax" + str(self._iter_max)
@@ -297,7 +296,6 @@ class TVL2Solver(Solver):
             HR_nda.flatten(), self._HR_volume.itk)
         self._HR_volume.sitk = sitkh.get_sitk_from_itk_image(
             self._HR_volume.itk)
-
 
     # Perform single ADMM iteration
     #  \param[in] HR_nda initial value of HR volume data array, numpy array

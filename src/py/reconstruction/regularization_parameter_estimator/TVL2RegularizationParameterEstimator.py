@@ -22,7 +22,7 @@ sys.path.append(dir_src_root)
 
 ## Import modules
 from reconstruction.regularization_parameter_estimator.RegularizationParameterEstimator import RegularizationParameterEstimator
-import reconstruction.solver.TVL2Solver as tvl2
+import reconstruction.solver.ADMMSolver as admm
 import base.Stack as st
 
 
@@ -124,7 +124,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
 
                 ## Initialize solver
                 HR_volume_init = st.Stack.from_stack(self._HR_volume)
-                solver = tvl2.TVL2Solver(self._stacks, HR_volume_init, alpha_cut=self._alpha_cut, alpha=alpha, iter_max=self._iter_max, rho=rho, ADMM_iterations=self._ADMM_iterations, ADMM_iterations_output_dir=self._ADMM_iterations_output_dir, ADMM_iterations_output_filename_prefix=self._ADMM_iterations_output_filename_prefix, minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
+                solver = admm.ADMMSolver(self._stacks, HR_volume_init, alpha_cut=self._alpha_cut, alpha=alpha, iter_max=self._iter_max, rho=rho, ADMM_iterations=self._ADMM_iterations, ADMM_iterations_output_dir=self._ADMM_iterations_output_dir, ADMM_iterations_output_filename_prefix=self._ADMM_iterations_output_filename_prefix, minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
 
                 ## Reconstruct volume for given alpha
                 solver.run_reconstruction(estimate_initial_value=estimate_initial_value)
@@ -201,7 +201,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
 
         ## Build filename
         filename_image =  self._filename_results_prefix
-        filename_image += "TVL2"
+        filename_image += "TV"
         filename_image += "_stacks" + str(self._N_stacks)
         filename_image += "_" + self._minimizer
         filename_image += "_rho" + rho_str

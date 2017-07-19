@@ -36,7 +36,7 @@ import registration.NiftyReg as regniftyreg
 import registration.SegmentationPropagation as segprop
 import reconstruction.ScatteredDataApproximation as sda
 import reconstruction.solver.TikhonovSolver as tk
-import reconstruction.solver.TVL2Solver as tvl2
+import reconstruction.solver.ADMMSolver as admm
 import utilities.PythonHelper as ph
 import utilities.SimpleITKHelper as sitkh
 import utilities.Exceptions as Exceptions
@@ -451,8 +451,8 @@ if __name__ == '__main__':
             minimizer=args.minimizer,
             loss=args.loss,
         )
-    elif args.regularization == "TVL2":
-        SRR = tvl2.TVL2Solver(
+    elif args.regularization == "TV":
+        SRR = admm.ADMMSolver(
             stacks=stacks,
             HR_volume=HR_volume,
             alpha=args.alpha,

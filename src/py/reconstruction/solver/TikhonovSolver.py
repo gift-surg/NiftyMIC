@@ -367,7 +367,7 @@ class TikhonovSolver(Solver):
 
     ##
     # Compute right hand-side for TK0 regularization
-    # \f$ b := \b egin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K
+    # \f$ b := \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K
     # \vec{y}_K \\ \vec{0}\end{pmatrix}
     # \f$
     #
@@ -391,13 +391,15 @@ class TikhonovSolver(Solver):
 
     ##
     # Compute right hand-side for TK1 regularization
-    # \f$ b := \b egin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K
+    # \f$ b := \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K
     # \vec{y}_K \\ \vec{0}\end{pmatrix}
     # \f$
+    # \date       2017-07-18 21:32:16+0100
     #
     # \param      self  The object
     #
-    # \return     vector b as (N_total_slice_voxels + 3 N_voxels_HR_volume) array
+    # \return     vector b as (N_total_slice_voxels + 3 N_voxels_HR_volume)
+    #             array
     #
     def _get_b_TK1(self):
         # Compute number of voxels to be stored for augmented linear system

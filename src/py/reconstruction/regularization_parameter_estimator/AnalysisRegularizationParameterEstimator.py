@@ -297,7 +297,7 @@ class AnalysisRegularizationParameterEstimator(object):
     #
     def _run_reconstructions_TVL2(self):
         print("\n***************************************************************************************************")
-        print("*** Run Analysis of Regularization Parameter: TVL2 ***")
+        print("*** Run Analysis of Regularization Parameter: TV ***")
 
         ## Estimate inital value based on TK1-regularization step prior ADMM algorithm
         ## \post self._HR_volume_init is updated

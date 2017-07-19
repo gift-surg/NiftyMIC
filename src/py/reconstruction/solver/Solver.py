@@ -636,12 +636,19 @@ class Solver(object):
 
         return MA_x
 
+    ##
     # Evaluate
-    #  \f$ A^* M \vec{y}
-    #     = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots && A_K^* M_K \end{bmatrix} \vec{y}
-    #  \f$
-    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \return evaluated A'My as part of augmented adjoint linear operator as 1D array
+    # \f$ A^* M \vec{y} = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots &&
+    # A_K^* M_K \end{bmatrix} \vec{y}
+    # \f$
+    # \date       2017-07-18 22:21:53+0100
+    #
+    # \param      self                    The object
+    # \param[in]  stacked_slices_nda_vec  stacked slice data as 1D array
+    #
+    # \return     evaluated A'My as part of augmented adjoint linear operator
+    #             as 1D array
+    #
     def _A_adj_M(self, stacked_slices_nda_vec):
 
         # Allocate memory
