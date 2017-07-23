@@ -97,35 +97,35 @@ class Solver(object):
         }
 
         self._minimizer = minimizer
-        self._get_approximate_solution = {
-            # linear least-squares
-            "lsmr": self._get_approximate_solution_lsmr,
-            "lsqr": self._get_approximate_solution_lsqr,
+        # self._get_approximate_solution = {
+        #     # linear least-squares
+        #     "lsmr": self._get_approximate_solution_lsmr,
+        #     "lsqr": self._get_approximate_solution_lsqr,
 
-            # non-negative linear least-squares
-            "nnls": self._get_approximate_solution_nnls,
+        #     # non-negative linear least-squares
+        #     "nnls": self._get_approximate_solution_nnls,
 
-            # linear least-squares solver with bounds
-            "lsq_linear": self._get_approximate_solution_lsq_linear,
+        #     # linear least-squares solver with bounds
+        #     "lsq_linear": self._get_approximate_solution_lsq_linear,
 
-            # non-linear solver with bounds
-            "L-BFGS-B": self._get_approximate_solution_LBFGSB,
-            "least_squares": self._get_approximate_solution_least_squares,
-        }
+        #     # non-linear solver with bounds
+        #     "L-BFGS-B": self._get_approximate_solution_LBFGSB,
+        #     "least_squares": self._get_approximate_solution_least_squares,
+        # }
 
         self._loss = loss
         self._huber_gamma = huber_gamma
 
-        self._get_loss = {
-            "linear": lossfun.linear,
-            "soft_l1": lossfun.soft_l1,
-            "huber": lambda x: lossfun.huber(x, self._huber_gamma),
-        }
-        self._get_gradient_loss = {
-            "linear": lossfun.gradient_linear,
-            "soft_l1": lossfun.gradient_soft_l1,
-            "huber": lambda x: lossfun.gradient_huber(x, self._huber_gamma),
-        }
+        # self._get_loss = {
+        #     "linear": lossfun.linear,
+        #     "soft_l1": lossfun.soft_l1,
+        #     "huber": lambda x: lossfun.huber(x, self._huber_gamma),
+        # }
+        # self._get_gradient_loss = {
+        #     "linear": lossfun.gradient_linear,
+        #     "soft_l1": lossfun.gradient_soft_l1,
+        #     "huber": lambda x: lossfun.gradient_huber(x, self._huber_gamma),
+        # }
 
         # In case only diagonal entries are given, create diagonal matrix
         if predefined_covariance is not None:
@@ -297,6 +297,15 @@ class Solver(object):
                 "Error: Residual has not been computed yet. Run 'compute_statistics' first.")
 
         return self._residual_prior
+
+    def get_A(self):
+        return lambda x: self._MA(x.reshape(*self._HR_shape_nda)).flatten()
+
+    def get_A_adj(self):
+        return lambda x: self._MA(x.reshape(*self._HR_shape_nda)).flatten()
+
+    def get_x0(self):
+        return sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
 
     ##
     #       Gets the setting specific filename indicating the information

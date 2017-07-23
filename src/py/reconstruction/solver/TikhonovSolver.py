@@ -17,6 +17,9 @@ import numpy as np
 import time
 from scipy.optimize import minimize
 
+import numericalsolver.TikhonovLinearSolver as tk
+import numericalsolver.LinearOperators as linop
+
 # Import modules
 import pythonhelper.SimpleITKHelper as sitkh
 from reconstruction.solver.Solver import Solver
@@ -119,29 +122,29 @@ class TikhonovSolver(Solver):
         # Settings for optimizer
         self._reg_type = reg_type
 
-        self._A = {
-            "TK0": self._A_TK0,
-            "TK1": self._A_TK1
-        }
+        # self._A = {
+        #     "TK0": self._A_TK0,
+        #     "TK1": self._A_TK1
+        # }
 
-        self._A_adj = {
-            "TK0": self._A_adj_TK0,
-            "TK1": self._A_adj_TK1
-        }
+        # self._A_adj = {
+        #     "TK0": self._A_adj_TK0,
+        #     "TK1": self._A_adj_TK1
+        # }
 
-        self._get_residual_prior = {
-            "TK0": self._get_residual_prior_TK0,
-            "TK1": self._get_residual_prior_TK1
-        }
-        self._get_gradient_residual_prior = {
-            "TK0": self._get_gradient_residual_prior_TK0,
-            "TK1": self._get_gradient_residual_prior_TK1
-        }
+        # self._get_residual_prior = {
+        #     "TK0": self._get_residual_prior_TK0,
+        #     "TK1": self._get_residual_prior_TK1
+        # }
+        # self._get_gradient_residual_prior = {
+        #     "TK0": self._get_gradient_residual_prior_TK0,
+        #     "TK1": self._get_gradient_residual_prior_TK1
+        # }
 
-        self._get_b = {
-            "TK0": self._get_b_TK0,
-            "TK1": self._get_b_TK1,
-        }
+        # self._get_b = {
+        #     "TK0": self._get_b_TK0,
+        #     "TK1": self._get_b_TK1,
+        # }
 
         # Residual values after optimization
         self._residual_prior = None
@@ -280,18 +283,53 @@ class TikhonovSolver(Solver):
         print("Maximum number of iterations: " + str(self._iter_max))
         # print("Tolerance: %.0e" %(self._tolerance))
 
-        time_start = time.time()
 
-        # Remark: L-BFGS-B is faster with direct computation as done in
-        # _run_reconstruction_nonlinear. Thus, _run_reconstruction_nonlinear
-        # preferred in linear case for L-BFGS-B too.
-        if self._loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
-            HR_nda_vec = self._run_reconstruction_nonlinear()
-        else:
-            HR_nda_vec = self._run_reconstruction_linear()
+        A = lambda x: self._MA(x)
+        A_adj = lambda y: self._A_adj_M(y)
+        b = self._get_M_y()
+        
+        HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
+
+        x0 = HR_nda.flatten()
+        b_1D = b.flatten()
+        
+        A_1D = lambda x: A(x)
+        A_adj_1D = lambda x: A_adj(x)
+        
+        if self._reg_type == "TK0":
+            B_1D = lambda x: x
+            B_adj_1D = lambda x: x
+
+        elif self._reg_type == "TK1":
+            spacing = np.array(self._HR_volume.sitk.GetSpacing())
+            linear_operators = linop.LinearOperators3D(spacing=spacing)
+            grad, grad_adj = linear_operators.get_gradient_operators()
+            
+            X_shape = HR_nda.shape
+            Z_shape = grad(HR_nda).shape
+            
+            B_1D = lambda x: grad(x.reshape(*X_shape)).flatten()
+            B_adj_1D = lambda x: grad_adj(x.reshape(*Z_shape)).flatten()
+
+        tikhonov = tk.TikhonovLinearSolver(A=A_1D, A_adj=A_adj_1D, B=B_1D, B_adj=B_adj_1D, b=b_1D, x0=x0, alpha=self._alpha, verbose=1)
+        
+        time_start = time.time()
+        tikhonov.run()
 
         # Set elapsed time
         self._elapsed_time_sec = time.time()-time_start
+
+        HR_nda_vec = tikhonov.get_x()
+
+
+        # # Remark: L-BFGS-B is faster with direct computation as done in
+        # # _run_reconstruction_nonlinear. Thus, _run_reconstruction_nonlinear
+        # # preferred in linear case for L-BFGS-B too.
+        # if self._loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
+        #     HR_nda_vec = self._run_reconstruction_nonlinear()
+        # else:
+        #     HR_nda_vec = self._run_reconstruction_linear()
+
 
         # After reconstruction: Update member attribute
         self._HR_volume.itk = self._get_itk_image_from_array_vec(
