@@ -22,7 +22,7 @@ import time
 from datetime import timedelta
 
 ## Import modules
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import base.Stack as st
 
 

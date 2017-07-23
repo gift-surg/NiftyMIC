@@ -28,7 +28,7 @@ from scipy.optimize import nnls
 
 
 # Import modules
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import utilities.lossFunctions as lossfun
 import reconstruction.solver.DifferentialOperations as diffop
 import base.PSF as psf

@@ -15,9 +15,9 @@ import os
 # Import modules
 import registration.NiftyReg as nreg
 import base.Stack as st
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 
 # Concept of unit testing for python used in here is based on
@@ -26,7 +26,7 @@ from definitions import dir_test
 class TestNiftyReg(unittest.TestCase):
 
     # Specify input data
-    dir_test_data = dir_test
+    dir_test_data = DIR_TEST
 
     accuracy = 7
 

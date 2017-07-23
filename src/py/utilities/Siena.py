@@ -16,8 +16,8 @@ import re
 from skimage.measure import compare_ssim as ssim
 
 ## Import modules
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import base.Stack as st
 
 

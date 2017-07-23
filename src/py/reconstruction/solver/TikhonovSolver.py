@@ -18,7 +18,7 @@ import time
 from scipy.optimize import minimize
 
 # Import modules
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 from reconstruction.solver.Solver import Solver
 
 

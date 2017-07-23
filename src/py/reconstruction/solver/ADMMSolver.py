@@ -19,7 +19,8 @@ import time
 from datetime import timedelta
 
 # Import modules
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import reconstruction.solver.TikhonovSolver as tk
 from reconstruction.solver.Solver import Solver
 
@@ -207,7 +208,7 @@ class ADMMSolver(Solver):
     #                                     first-order Tikhonov reconstruction
     #                                     step prior the ADMM algorithm
     #
-    def run_reconstruction(self):
+    def run_reconstruction(self, verbose=0):
 
         print("Chosen regularization type: TV-L2")
         print("Regularization parameter alpha: " + str(self._alpha))
@@ -239,6 +240,12 @@ class ADMMSolver(Solver):
         b = np.zeros(self._N_total_slice_voxels + 3*self._N_voxels_HR_volume)
         b[0:self._N_total_slice_voxels] = self._get_M_y()
 
+        if verbose:
+            recons = []
+            labels = []
+            recons.insert(0, self._HR_volume.sitk)
+            labels.insert(0, "Init")
+
         # Perform ADMM_iterations
         for iter in range(0, self._ADMM_iterations):
             print(
@@ -246,8 +253,12 @@ class ADMMSolver(Solver):
             print("ADMM iteration %s/%s:" % (iter+1, self._ADMM_iterations))
 
             # Perform ADMM step
-            HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = self._perform_ADMM_iteration(
-                HR_nda, b, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, self._alpha, self._rho)
+            HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = \
+                self._perform_ADMM_iteration(
+                    HR_nda, b,
+                    vx_nda, vy_nda, vz_nda,
+                    wx_nda, wy_nda, wz_nda,
+                    self._alpha, self._rho)
 
             if self._ADMM_iterations_output_dir is not None:
 
@@ -273,19 +284,46 @@ class ADMMSolver(Solver):
                 sitkh.write_itk_image(
                     HR_volume_itk, self._ADMM_iterations_output_dir+name+".nii.gz")
 
-            # DEBUG:
-            # Show reconstruction
-            # sitkh.show_itk_image(self._get_itk_image_from_array_vec(HR_nda.flatten(), self._HR_volume.itk), label="HR_volume_iteration_"+str(iter+1))
+            if verbose:
+                ph.killall_itksnap()
 
-            # Show auxiliary v = Dx
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vx_nda.flatten()), label="vx_iteration_"+str(iter+1))
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vy_nda.flatten()), label="vy_iteration_"+str(iter+1))
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(vz_nda.flatten()), label="vz_iteration_"+str(iter+1))
+                # Show reconstruction
+                tmp_sitk = sitk.GetImageFromArray(HR_nda)
+                tmp_sitk.CopyInformation(self._HR_volume.sitk)
+                recons.insert(0, tmp_sitk)
+                labels.insert(0, "ADMM_iter" + str(iter+1))
 
-            # Show scaled dual variable w
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wx_nda.flatten()), label="wx_iteration_"+str(iter+1))
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wy_nda.flatten()), label="wy_iteration_"+str(iter+1))
-            # sitkh.show_itk_image(self._get_HR_image_from_array_vec(wz_nda.flatten()), label="wz_iteration_"+str(iter+1))
+                sitkh.show_sitk_image(recons, label=labels)
+
+                # Show auxiliary v = Dx
+                tmp_vx_sitk = sitk.GetImageFromArray(vx_nda)
+                tmp_vx_sitk.CopyInformation(self._HR_volume.sitk)
+
+                tmp_vy_sitk = sitk.GetImageFromArray(vy_nda)
+                tmp_vy_sitk.CopyInformation(self._HR_volume.sitk)
+
+                tmp_vz_sitk = sitk.GetImageFromArray(vz_nda)
+                tmp_vz_sitk.CopyInformation(self._HR_volume.sitk)
+
+                sitkh.show_sitk_image(
+                    [tmp_vx_sitk, tmp_vy_sitk, tmp_vz_sitk],
+                    label=[ell + str(iter+1)
+                           for ell in ["vx_iter", "vy_iter", "vz_iter"]])
+
+                # Show scaled dual variable w
+                tmp_wx_sitk = sitk.GetImageFromArray(wx_nda)
+                tmp_wx_sitk.CopyInformation(self._HR_volume.sitk)
+
+                tmp_wy_sitk = sitk.GetImageFromArray(wy_nda)
+                tmp_wy_sitk.CopyInformation(self._HR_volume.sitk)
+
+                tmp_wz_sitk = sitk.GetImageFromArray(wz_nda)
+                tmp_wz_sitk.CopyInformation(self._HR_volume.sitk)
+
+                sitkh.show_sitk_image(
+                    [tmp_wx_sitk, tmp_wy_sitk, tmp_wz_sitk],
+                    label=[ell + str(iter+1)
+                           for ell in ["wx_iter", "wy_iter", "wz_iter"]])
 
         # Set elapsed time
         time_end = time.time()
@@ -327,7 +365,7 @@ class ADMMSolver(Solver):
         Dz_nda = self._differential_operations.Dz(HR_nda)
 
         # 2) Solve for v^{k+1}
-        vx_nda, vy_nda, vz_nda = self._perform_ADMM_step_2_auxiliary_variable_v(
+        vx_nda, vy_nda, vz_nda = self._perform_ADMM_step_2_auxiliary_variable(
             Dx_nda, Dy_nda, Dz_nda, wx_nda, wy_nda, wz_nda, alpha/rho)
 
         # 3) Solve for w^{k+1}, i.e. scaled dual variable
@@ -413,7 +451,7 @@ class ADMMSolver(Solver):
     #  \param[in] wz_nda initial value for scaled dual variable in z-direction
     #  \param[in] ell scaled regularization variable, i.e. alpha/rho, used for threshold
     #  \return Updates of auxiliary variable v in x-, y- and z-direction
-    def _perform_ADMM_step_2_auxiliary_variable_v(self, Dx_nda, Dy_nda, Dz_nda, wx_nda, wy_nda, wz_nda, ell):
+    def _perform_ADMM_step_2_auxiliary_variable(self, Dx_nda, Dy_nda, Dz_nda, wx_nda, wy_nda, wz_nda, ell):
 
         # Compute t = Dx + w
         tx_nda = Dx_nda + wx_nda

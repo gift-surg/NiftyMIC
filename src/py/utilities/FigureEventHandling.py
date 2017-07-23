@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
 ## Import modules
-import utilities.PythonHelper as ph
+import pythonhelper.PythonHelper as ph
 
 ##
 #       Class used to semi-automatically extract position and geometry of

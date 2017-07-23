@@ -14,7 +14,7 @@ import numpy as np
 import time                     
 
 ## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import base.Stack as st
 
 

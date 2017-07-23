@@ -18,7 +18,7 @@ from scipy import ndimage
 import matplotlib.pyplot as plt
 
 ## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import base.PSF as psf
 
 

@@ -24,8 +24,8 @@ from scipy.optimize import least_squares
 from scipy.optimize import minimize
 
 # Import modules
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import base.Stack as st
 import utilities.ParameterNormalization as pn
 import utilities.lossFunctions as lf

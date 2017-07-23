@@ -25,8 +25,8 @@ import time
 from datetime import timedelta
 
 # Import modules
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import reconstruction.solver.TikhonovSolver as tk
 from reconstruction.solver.Solver import Solver
 
@@ -210,16 +210,19 @@ class PrimalDualSolver(Solver):
         # Get data array of current volume estimate
         HR_nda_vec = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
         x_mean = np.array(HR_nda_vec)
-        p_n = self._get_update_dual_variable[
-            self._reg_type](p_n=0, sigma_n=sigma_n, x_mean=x_mean)
-
-        if verbose:
-            recons = []
-            recons.insert(0, self._HR_volume.sitk)
+        p_n = np.zeros_like(self._D(x_mean.reshape(self._HR_shape_nda)))
+        # p_n = self._get_update_dual_variable[
+        #     self._reg_type](p_n=0, sigma_n=sigma_n, x_mean=x_mean)
 
         # Pre-compute static part of right hand-side
         b = np.zeros(self._N_total_slice_voxels + self._N_voxels_HR_volume)
         b[0:self._N_total_slice_voxels] = self._get_M_y()
+
+        if verbose:
+            recons = []
+            labels = []
+            recons.insert(0, self._HR_volume.sitk)
+            labels.insert(0, "Init")
 
         for iter in range(0, self._primal_dual_iterations):
             ph.print_subtitle("Primal-Dual Iteration %d/%d:" %
@@ -249,9 +252,10 @@ class PrimalDualSolver(Solver):
                     HR_nda_vec_n.reshape(self._HR_shape_nda))
                 HR_volume_sitk.CopyInformation(self._HR_volume.sitk)
                 recons.insert(0, HR_volume_sitk)
+                labels.insert(0, "PrimalDual_iter" + str(iter+1))
 
                 ph.killall_itksnap()
-                sitkh.show_sitk_image(recons)
+                sitkh.show_sitk_image(recons, label=labels)
 
             # Prepare for next iteration
             HR_nda_vec = HR_nda_vec_n

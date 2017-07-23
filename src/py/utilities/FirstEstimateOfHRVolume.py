@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import utilities.StackManager as sm
 import base.Stack as st
 import reconstruction.ScatteredDataApproximation as sda

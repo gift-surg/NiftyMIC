@@ -13,7 +13,7 @@ import itk
 import numpy as np
 
 ## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import utilities.StackManager as sm
 import reconstruction.ScatteredDataApproximation as sda
 import reconstruction.StackAverage as sa

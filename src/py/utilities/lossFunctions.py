@@ -29,7 +29,7 @@ import numpy as np
 #
 # \return     The cost from residual as scalar value >= 0
 #
-def get_cost_from_residual(f, loss="linear"):
+def get_ell2_cost_from_residual(f, loss="linear"):
     cost = 0.5 * np.sum(get_loss[loss](f**2))
     return cost
 
@@ -49,7 +49,7 @@ def get_cost_from_residual(f, loss="linear"):
 # \return     The gradient of the cost from residual as n-dimensional numpy
 #             array
 #
-def get_gradient_cost_from_residual(f, jac_f, loss="linear"):
+def get_gradient_ell2_cost_from_residual(f, jac_f, loss="linear"):
     grad = np.sum((get_gradient_loss[loss](f**2) * f)[:, np.newaxis] * jac_f,
                   axis=0)
     return grad

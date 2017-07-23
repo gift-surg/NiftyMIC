@@ -11,14 +11,14 @@ import SimpleITK as sitk
 import numpy as np
 
 # Import modules from src-folder
-import utilities.PythonHelper as ph
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
 import base.PSF as psf
 import base.Stack as st
 
-from definitions import dir_tmp
-from definitions import reg_aladin_exe
-from definitions import reg_f3d_exe
+from definitions import DIR_TMP
+from definitions import REG_ALADIN_EXE
+from definitions import REG_F3D_EXE
 
 
 class NiftyReg:
@@ -35,7 +35,7 @@ class NiftyReg:
         self._registered_image = None
 
         # Temporary output where files are written in order to use NiftyReg
-        self._dir_tmp = ph.create_directory(os.path.join(dir_tmp, "NiftyReg"),
+        self._dir_tmp = ph.create_directory(os.path.join(DIR_TMP, "NiftyReg"),
                                             delete_files=False)
 
         self._run_registration = {
@@ -226,7 +226,7 @@ class NiftyReg:
     #  \param[out] res_affine_image_str name of resulting registered image being stored in self._dir_tmp, string
     def _reg_aladin(self, fixed_str, moving_str, fixed_mask_str, moving_mask_str, options, res_affine_matrix_str, res_affine_image_str):
 
-        cmd = reg_aladin_exe + " " + options + " "
+        cmd = REG_ALADIN_EXE + " " + options + " "
         cmd += "-ref " + self._dir_tmp + fixed_str + ".nii.gz "
         cmd += "-flo " + self._dir_tmp + moving_str + ".nii.gz "
         if self._use_fixed_mask:
@@ -286,7 +286,7 @@ class NiftyReg:
             self._reg_aladin(fixed_str, moving_str, fixed_mask_str,
                              moving_mask_str, options, affine_matrix_str, res_affine_image_str)
 
-        cmd = reg_f3d_exe + " " + options + " "
+        cmd = REG_F3D_EXE + " " + options + " "
         cmd += "-ref " + self._dir_tmp + fixed_str + ".nii.gz "
         cmd += "-flo " + self._dir_tmp + moving_str + ".nii.gz "
         if self._use_fixed_mask:

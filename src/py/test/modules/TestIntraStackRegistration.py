@@ -18,10 +18,10 @@ from scipy.ndimage import imread
 # Import modules
 import base.Stack as st
 import registration.IntraStackRegistration as inplanereg
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 
 def get_inplane_corrupted_stack(stack,
@@ -142,7 +142,7 @@ def get_inplane_corrupted_stack(stack,
 class TestIntraStackRegistration(unittest.TestCase):
 
     # Specify input data
-    dir_test_data = dir_test
+    dir_test_data = DIR_TEST
 
     accuracy = 6
 
@@ -236,7 +236,7 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         length = 50
         nda_2D = ph.read_image(os.path.join(
-            dir_test, "2D_Pyramid_Midpoint_" + str(length) + ".png"))
+            DIR_TEST, "2D_Pyramid_Midpoint_" + str(length) + ".png"))
 
         # Original stack
         nda_3D = np.zeros((shape_z, shape_xy, shape_xy))
@@ -339,7 +339,7 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         length = 50
         nda_2D = ph.read_image(os.path.join(
-            dir_test, "2D_Pyramid_Midpoint_" + str(length) + ".png"))
+            DIR_TEST, "2D_Pyramid_Midpoint_" + str(length) + ".png"))
 
         # Original stack
         nda_3D = np.zeros((shape_z, shape_xy, shape_xy))

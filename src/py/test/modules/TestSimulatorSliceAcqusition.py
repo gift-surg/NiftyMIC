@@ -14,12 +14,12 @@ import sys
 import os
 
 # Import modules
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import base.Stack as st
 import simulation.SimulatorSliceAcqusition as sa
 import base.PSF as psf
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 
 # Pixel type of used 3D ITK image
@@ -35,7 +35,7 @@ image_type = itk.Image[pixel_type, 3]
 class SliceAcqusition(unittest.TestCase):
 
     # Specify input data
-    dir_test_data = dir_test
+    dir_test_data = DIR_TEST
 
     accuracy = 7
 

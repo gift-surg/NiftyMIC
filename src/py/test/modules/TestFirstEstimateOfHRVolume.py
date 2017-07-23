@@ -17,7 +17,7 @@ sys.path.append( dir_src_root )
 
 ## Import modules from src-folder
 import utilities.FirstEstimateOfHRVolume as efhrv
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import utilities.StackManager as sm
 import base.Slice as sl
 import base.Stack as st

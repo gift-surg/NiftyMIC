@@ -22,12 +22,12 @@ from datetime import timedelta
 # Import modules
 import base.Stack as st
 import registration.Registration as myreg
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import registration.RegistrationSimpleITK as regsitk
 import registration.RegistrationITK as regitk
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 
 # Pixel type of used 3D ITK image
@@ -47,7 +47,7 @@ IMAGE_TYPE_CV363 = itk.Image.CVD363
 class TestRegistration(unittest.TestCase):
 
     # Specify input data
-    dir_test_data = os.path.join(dir_test, "registration/")
+    dir_test_data = os.path.join(DIR_TEST, "registration/")
 
     accuracy = 2
 

@@ -17,7 +17,7 @@ import registration.SliceToVolumeRegistration as s2vr
 import utilities.VolumeReconstruction as vr
 import preprocessing.DataPreprocessing as dp
 import registration.HierarchicalSliceAlignment as hsa
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import base.PSF as psf
 
 

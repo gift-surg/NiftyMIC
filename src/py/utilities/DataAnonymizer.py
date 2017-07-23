@@ -17,7 +17,7 @@ import os
 import re               #regular expression
 
 ## Import modules
-import utilities.PythonHelper as ph
+import pythonhelper.PythonHelper as ph
 
 ##
 #

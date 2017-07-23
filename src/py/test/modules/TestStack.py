@@ -16,7 +16,7 @@ import os
 import base.Stack as st
 import utilities.Exceptions as Exceptions
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 
 # Concept of unit testing for python used in here is based on
@@ -25,8 +25,8 @@ from definitions import dir_test
 class TestStack(unittest.TestCase):
 
     # Specify input data
-    dir_test_data = dir_test
-    dir_test_data_io = os.path.join(dir_test, "IO")
+    dir_test_data = DIR_TEST
+    dir_test_data_io = os.path.join(DIR_TEST, "IO")
 
     accuracy = 7
 

@@ -26,8 +26,8 @@ sys.path.insert(1, os.path.abspath(
     os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
 import base.Stack as st
 import base.DataReader as dr
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import preprocessing.DataPreprocessing as dp
 import registration.SegmentationPropagation as segprop
 import reconstruction.solver.TikhonovSolver as tk

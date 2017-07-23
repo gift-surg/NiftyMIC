@@ -15,11 +15,11 @@ import numpy as np
 
 ## Import modules
 import base.Stack as st
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 
-from definitions import dir_build_cpp
-from definitions import dir_tmp
+from definitions import DIR_BUILD_CPP
+from definitions import DIR_TMP
 
 ##
 # Class implementing the segmentation propagation from one image to another
@@ -27,7 +27,7 @@ from definitions import dir_tmp
 #
 class N4BiasFieldCorrection(object):
 
-    def __init__(self, stack=None, dir_tmp=os.path.join(dir_tmp, "N4BiasFieldCorrection"), use_mask=True, use_verbose=False):
+    def __init__(self, stack=None, dir_tmp=os.path.join(DIR_TMP, "N4BiasFieldCorrection"), use_mask=True, use_verbose=False):
 
         self._stack = stack
         self._use_mask = use_mask
@@ -59,7 +59,7 @@ class N4BiasFieldCorrection(object):
             sitk.WriteImage(self._stack.sitk_mask, self._dir_tmp + filename_out + "_mask.nii.gz")
 
 
-        cmd =  dir_build_cpp + "/bin/runN4BiasFieldCorrectionImageFilter "
+        cmd =  DIR_BUILD_CPP + "/bin/runN4BiasFieldCorrectionImageFilter "
         cmd += "--f " + self._dir_tmp + filename_out + " "
         if self._use_mask:
             cmd += "--fmask " + self._dir_tmp + filename_out + "_mask "

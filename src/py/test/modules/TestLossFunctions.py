@@ -14,10 +14,10 @@ import matplotlib.pyplot as plt
 
 # Import modules
 import utilities.lossFunctions as lf
-# import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+# import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 # Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -27,7 +27,7 @@ from definitions import dir_test
 class TestNiftyReg(unittest.TestCase):
 
     # Specify input data
-    dir_test_data = dir_test
+    dir_test_data = DIR_TEST
 
     accuracy = 7
     m = 500     # 4e5

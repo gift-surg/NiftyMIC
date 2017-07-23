@@ -14,14 +14,14 @@ import os
 
 ## Import modules from src-folder
 import base.Stack as st
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 
 import registration.RegistrationSimpleITK as regsitk
 import registration.RegistrationITK as regitk
 import registration.NiftyReg as regniftyreg
 import registration.SegmentationPropagation as segprop
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -29,7 +29,7 @@ from definitions import dir_test
 class TestSegmentationPropagation(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = dir_test
+    dir_test_data = DIR_TEST
 
     accuracy = 6
 

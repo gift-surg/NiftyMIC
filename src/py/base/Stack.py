@@ -19,12 +19,12 @@ import copy
 
 # Import modules from src-folder
 import base.Slice as sl
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import utilities.FilenameParser as fp
 import utilities.Exceptions as Exceptions
 
-from definitions import dir_tmp
+from definitions import DIR_TMP
 from definitions import REGEX_FILENAMES
 from definitions import REGEX_FILENAME_EXTENSIONS
 
@@ -356,7 +356,7 @@ class Stack:
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifying the filename. If not given the assigned one within Stack will be chosen.
     #  \param[in] write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
-    def write(self, directory=dir_tmp, filename=None, write_mask=False, write_slices=False, write_transforms=False):
+    def write(self, directory=DIR_TMP, filename=None, write_mask=False, write_slices=False, write_transforms=False):
 
         # Create directory if not existing
         os.system("mkdir -p " + directory)

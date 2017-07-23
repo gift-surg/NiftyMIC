@@ -16,18 +16,17 @@ import natsort
 
 # Import modules from src-folder
 import base.Stack as st
-import utilities.PythonHelper as ph
+import pythonhelper.PythonHelper as ph
 import utilities.Exceptions as Exceptions
 
 from definitions import REGEX_FILENAMES
 from definitions import REGEX_FILENAME_EXTENSIONS
 
+
 ##
 # DataReader is an abstract class to read 3D images.
 # \date       2017-07-12 11:38:07+0100
 #
-
-
 class DataReader(object):
     __metaclass__ = ABCMeta
 

@@ -17,7 +17,7 @@ import time
 from datetime import timedelta
 
 ## Import modules
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import base.PSF as psf
 import base.Slice as sl
 

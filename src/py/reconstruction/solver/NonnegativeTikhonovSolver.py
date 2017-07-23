@@ -24,7 +24,7 @@ import time
 from datetime import timedelta
 
 ## Import modules
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 from reconstruction.solver.TikhonovSolver import TikhonovSolver
 
 

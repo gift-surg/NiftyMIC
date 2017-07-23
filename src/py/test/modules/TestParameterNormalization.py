@@ -17,10 +17,10 @@ from scipy.ndimage import imread
 ## Import modules
 import base.Stack as st
 import utilities.ParameterNormalization as pn
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import registration.IntraStackRegistration as inplanereg
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 
 ## Concept of unit testing for python used in here is based on
@@ -29,7 +29,7 @@ from definitions import dir_test
 class TestParameterNormalization(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = dir_test
+    dir_test_data = DIR_TEST
 
     accuracy = 6
 

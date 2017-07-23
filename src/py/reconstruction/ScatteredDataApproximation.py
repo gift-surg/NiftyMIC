@@ -16,7 +16,7 @@ import time
 
 # Import modules from src-folder
 import base.Stack as st
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 
 
 # Class implementing Scattered Data Approximation

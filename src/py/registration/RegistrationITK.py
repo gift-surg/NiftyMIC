@@ -10,21 +10,21 @@ import sys
 import SimpleITK as sitk
 import numpy as np
 
-from definitions import dir_build_cpp
+from definitions import DIR_BUILD_CPP
 
 ## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import base.PSF as psf
 import base.Stack as st
 import base.Slice as sl
 
-from definitions import dir_tmp
+from definitions import DIR_TMP
 
 
 class RegistrationITK:
 
-    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", scales_estimator="Jacobian", ANTSradius=20, translation_scale=1, use_multiresolution_framework=False, dir_tmp=os.path.join(dir_tmp, "RegistrationITK"), use_verbose=False):
+    def __init__(self, fixed=None, moving=None, use_fixed_mask=False, use_moving_mask=False, registration_type="Rigid", interpolator="Linear", metric="Correlation", scales_estimator="Jacobian", ANTSradius=20, translation_scale=1, use_multiresolution_framework=False, dir_tmp=os.path.join(DIR_TMP, "RegistrationITK"), use_verbose=False):
 
         self._fixed = fixed
         self._moving = moving
@@ -258,7 +258,7 @@ class RegistrationITK:
 
         ## Prepare command for execution
         # cmd =  "/Users/mebner/UCL/UCL/Software/Volumetric\ Reconstruction/build/cpp/bin/itkReg "
-        cmd =  dir_build_cpp + "/bin/itkReg "
+        cmd =  DIR_BUILD_CPP + "/bin/itkReg "
         cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz "
         cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz "
         if self._use_fixed_mask:
@@ -339,7 +339,7 @@ class RegistrationITK:
         sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp + fixed_mask_str + ".nii.gz")
 
         ## Prepare command for execution
-        cmd =  dir_build_cpp + "/bin/itkInplaneSimilarity3DReg "
+        cmd =  DIR_BUILD_CPP + "/bin/itkInplaneSimilarity3DReg "
         cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz "
         cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz "
         if self._use_fixed_mask:

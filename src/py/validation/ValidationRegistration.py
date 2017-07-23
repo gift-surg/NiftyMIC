@@ -15,7 +15,7 @@ import sys
 sys.path.append("../src/")
 
 ## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import utilities.StackManager as sm
 import registration.SliceToVolumeRegistration as s2vr
 

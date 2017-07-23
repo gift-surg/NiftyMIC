@@ -13,8 +13,8 @@ import numpy as np
 
 ## Import modules
 import base.Stack as st
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import utilities.StackMaskMorphologicalOperations as stmorph
 import registration.RegistrationSimpleITK as regsitk
 import registration.RegistrationITK as regitk

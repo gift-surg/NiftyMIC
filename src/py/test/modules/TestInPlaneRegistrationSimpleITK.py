@@ -21,7 +21,7 @@ sys.path.append( dir_src_root )
 ## Import modules
 import base.Stack as st
 import registration.InPlaneRegistrationSimpleITK as inplaneregsitk
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 
 
 def get_inplane_corrupted_stack(stack, angle_z, center, translation, scale=1, debug=0):

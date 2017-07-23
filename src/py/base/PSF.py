@@ -13,7 +13,7 @@ import SimpleITK as sitk
 import numpy as np
 
 ## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 
 
 class PSF:

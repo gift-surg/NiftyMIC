@@ -14,8 +14,8 @@ import natsort
 
 # Import modules from src-folder
 import base.Stack as st
-import utilities.PythonHelper as ph
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
 import preprocessing.IntensityCorrection as ic
 import preprocessing.N4BiasFieldCorrection as n4bfc
 import utilities.Exceptions as Exceptions

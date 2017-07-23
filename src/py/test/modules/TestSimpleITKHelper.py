@@ -14,10 +14,10 @@ import os
 import sys
 
 # Import modules
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import base.Stack as st
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 
 def get_affine_registration_transform(fixed_sitk, moving_sitk, fixed_mask_sitk=None, moving_mask_sitk=None, print_info=False):
@@ -238,7 +238,7 @@ def get_rigid_registration_transform(fixed_sitk, moving_sitk, fixed_mask_sitk=No
 class TestSimpleITKHelper(unittest.TestCase):
 
     # Specify input data
-    dir_test_data = dir_test
+    dir_test_data = DIR_TEST
 
     accuracy = 6
 

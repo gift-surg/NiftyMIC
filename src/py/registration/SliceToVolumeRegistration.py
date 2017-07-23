@@ -14,7 +14,7 @@ import numpy as np
 
 
 ## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import base.PSF as psf
 import reconstruction.ScatteredDataApproximation as sda
 # import base.Stack as st

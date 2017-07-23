@@ -14,12 +14,12 @@ import os
 
 # Import modules
 import base.Stack as st
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.SimpleITKHelper as sitkh
 import registration.Registration as myreg
 import registration.RegistrationSimpleITK as regsitk
 import registration.RegistrationITK as regitk
 
-from definitions import dir_test
+from definitions import DIR_TEST
 
 # Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -29,7 +29,7 @@ from definitions import dir_test
 class TestRegistrationITK(unittest.TestCase):
 
     # Specify input data
-    dir_test_data = dir_test
+    dir_test_data = DIR_TEST
 
     accuracy = 1
 

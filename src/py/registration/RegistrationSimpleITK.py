@@ -16,8 +16,8 @@ import numpy as np
 from ast import literal_eval
 
 # Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
-import utilities.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 import base.Stack as st
 import base.PSF as psf
 

@@ -37,8 +37,8 @@ import registration.SegmentationPropagation as segprop
 import reconstruction.ScatteredDataApproximation as sda
 import reconstruction.solver.TikhonovSolver as tk
 import reconstruction.solver.ADMMSolver as admm
-import utilities.PythonHelper as ph
-import utilities.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
 import utilities.Exceptions as Exceptions
 
 
