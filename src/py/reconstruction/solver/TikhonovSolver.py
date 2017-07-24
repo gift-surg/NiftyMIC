@@ -19,9 +19,9 @@ from scipy.optimize import minimize
 
 import numericalsolver.TikhonovLinearSolver as tk
 import numericalsolver.LinearOperators as linop
+import pythonhelper.SimpleITKHelper as sitkh
 
 # Import modules
-import pythonhelper.SimpleITKHelper as sitkh
 from reconstruction.solver.Solver import Solver
 
 
@@ -101,9 +101,10 @@ class TikhonovSolver(Solver):
                  reg_type="TK1",
                  minimizer="lsmr",
                  deconvolution_mode="full_3D",
-                 loss="linear",
+                 data_loss="linear",
                  huber_gamma=1.345,
                  predefined_covariance=None,
+                 verbose=1,
                  ):
 
         # Run constructor of superclass
@@ -115,36 +116,13 @@ class TikhonovSolver(Solver):
                         iter_max=iter_max,
                         minimizer=minimizer,
                         deconvolution_mode=deconvolution_mode,
-                        loss=loss,
+                        data_loss=data_loss,
                         huber_gamma=huber_gamma,
-                        predefined_covariance=predefined_covariance)
+                        predefined_covariance=predefined_covariance,
+                        verbose=verbose)
 
         # Settings for optimizer
         self._reg_type = reg_type
-
-        # self._A = {
-        #     "TK0": self._A_TK0,
-        #     "TK1": self._A_TK1
-        # }
-
-        # self._A_adj = {
-        #     "TK0": self._A_adj_TK0,
-        #     "TK1": self._A_adj_TK1
-        # }
-
-        # self._get_residual_prior = {
-        #     "TK0": self._get_residual_prior_TK0,
-        #     "TK1": self._get_residual_prior_TK1
-        # }
-        # self._get_gradient_residual_prior = {
-        #     "TK0": self._get_gradient_residual_prior_TK0,
-        #     "TK1": self._get_gradient_residual_prior_TK1
-        # }
-
-        # self._get_b = {
-        #     "TK0": self._get_b_TK0,
-        #     "TK1": self._get_b_TK1,
-        # }
 
         # Residual values after optimization
         self._residual_prior = None
@@ -153,10 +131,6 @@ class TikhonovSolver(Solver):
     # Set type of regularization. It can be either 'TK0' or 'TK1'
     #  \param[in] reg_type Either 'TK0' or 'TK1', string
     def set_regularization_type(self, reg_type):
-        if reg_type not in ["TK0", "TK1"]:
-            raise ValueError(
-                "Error: regularization type can only be either 'TK0' or 'TK1'")
-
         self._reg_type = reg_type
 
     # Get chosen type of regularization.
@@ -225,9 +199,9 @@ class TikhonovSolver(Solver):
         if self._alpha > 0:
             filename += "_" + self._reg_type
         filename += "_" + self._minimizer
-        if self._loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
-            filename += "_" + self._loss
-            if self._loss in ["huber"]:
+        if self._data_loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
+            filename += "_" + self._data_loss
+            if self._data_loss in ["huber"]:
                 filename += str(self._huber_gamma)
         filename += "_alpha" + str(self._alpha)
         filename += "_itermax" + str(self._iter_max)
@@ -251,6 +225,10 @@ class TikhonovSolver(Solver):
     #
     def run_reconstruction(self):
 
+        if self._reg_type not in ["TK0", "TK1"]:
+            raise ValueError(
+                "Error: regularization type can only be either 'TK0' or 'TK1'")
+
         # Compute number of voxels to be stored for augmented linear system
         if self._reg_type in ["TK0"]:
             print("Chosen regularization type: zeroth-order Tikhonov")
@@ -265,16 +243,16 @@ class TikhonovSolver(Solver):
             print("(Predefined covariance used: cov = diag(%s))" %
                   (np.diag(self._predefined_covariance)))
 
-        if self._loss in ["huber"]:
+        if self._data_loss in ["huber"]:
             print("Loss function: %s (gamma = %g)" %
-                  (self._loss, self._huber_gamma))
+                  (self._data_loss, self._huber_gamma))
         else:
-            print("Loss function: %s" % (self._loss))
+            print("Loss function: %s" % (self._data_loss))
 
         print("Regularization parameter: " + str(self._alpha))
 
         # Non-linear loss function requires use of L-BFGS-B
-        if self._loss not in ["linear"] and self._minimizer not in ["L-BFGS-B"]:
+        if self._data_loss not in ["linear"] and self._minimizer not in ["L-BFGS-B"]:
             print("Note, selected minimizer '%s' cannot be used. Non-linear loss function requires L-BFGS-B." %
                   (self._minimizer))
             self._minimizer = "L-BFGS-B"
@@ -283,261 +261,45 @@ class TikhonovSolver(Solver):
         print("Maximum number of iterations: " + str(self._iter_max))
         # print("Tolerance: %.0e" %(self._tolerance))
 
+        # Get operators
+        A = self._get_A()
+        A_adj = self._get_A_adj()
+        b = self._get_b()
+        x0 = self._get_x0()
 
-        A = lambda x: self._MA(x)
-        A_adj = lambda y: self._A_adj_M(y)
-        b = self._get_M_y()
-        
-        HR_nda = sitk.GetArrayFromImage(self._HR_volume.sitk)
-
-        x0 = HR_nda.flatten()
-        b_1D = b.flatten()
-        
-        A_1D = lambda x: A(x)
-        A_adj_1D = lambda x: A_adj(x)
-        
         if self._reg_type == "TK0":
-            B_1D = lambda x: x
-            B_adj_1D = lambda x: x
+            B = lambda x: x.flatten()
+            B_adj = lambda x: x.flatten()
 
         elif self._reg_type == "TK1":
             spacing = np.array(self._HR_volume.sitk.GetSpacing())
             linear_operators = linop.LinearOperators3D(spacing=spacing)
             grad, grad_adj = linear_operators.get_gradient_operators()
-            
-            X_shape = HR_nda.shape
-            Z_shape = grad(HR_nda).shape
-            
-            B_1D = lambda x: grad(x.reshape(*X_shape)).flatten()
-            B_adj_1D = lambda x: grad_adj(x.reshape(*Z_shape)).flatten()
 
-        tikhonov = tk.TikhonovLinearSolver(A=A_1D, A_adj=A_adj_1D, B=B_1D, B_adj=B_adj_1D, b=b_1D, x0=x0, alpha=self._alpha, verbose=1)
-        
-        time_start = time.time()
-        tikhonov.run()
+            X_shape = self._HR_shape_nda
+            Z_shape = grad(x0.reshape(*X_shape)).shape
 
-        # Set elapsed time
-        self._elapsed_time_sec = time.time()-time_start
+            B = lambda x: grad(x.reshape(*X_shape)).flatten()
+            B_adj = lambda x: grad_adj(x.reshape(*Z_shape)).flatten()
 
-        HR_nda_vec = tikhonov.get_x()
+        # Run reconstruction
+        solver = tk.TikhonovLinearSolver(
+            A=A,
+            A_adj=A_adj,
+            B=B,
+            B_adj=B_adj,
+            b=b,
+            x0=x0,
+            alpha=self._alpha,
+            verbose=self._verbose,
+        )
+        solver.run()
 
-
-        # # Remark: L-BFGS-B is faster with direct computation as done in
-        # # _run_reconstruction_nonlinear. Thus, _run_reconstruction_nonlinear
-        # # preferred in linear case for L-BFGS-B too.
-        # if self._loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
-        #     HR_nda_vec = self._run_reconstruction_nonlinear()
-        # else:
-        #     HR_nda_vec = self._run_reconstruction_linear()
-
+        # Get computational time
+        self._computational_time = solver.get_computational_time()
 
         # After reconstruction: Update member attribute
         self._HR_volume.itk = self._get_itk_image_from_array_vec(
-            HR_nda_vec, self._HR_volume.itk)
+            solver.get_x(), self._HR_volume.itk)
         self._HR_volume.sitk = sitkh.get_sitk_from_itk_image(
             self._HR_volume.itk)
-
-    def _run_reconstruction_linear(self):
-
-        # Construct (sparse) linear operator A
-        A_fw = lambda x: self._A[self._reg_type](x, self._alpha)
-        A_bw = lambda x: self._A_adj[self._reg_type](x, self._alpha)
-
-        # Construct right-hand side b
-        b = self._get_b[self._reg_type]()
-
-        # Run solver
-        HR_nda_vec = self._get_approximate_solution[self._minimizer](
-            A_fw, A_bw, b)
-
-        return HR_nda_vec
-
-    def _run_reconstruction_nonlinear(self, x0=None):
-
-        # Set initial value and bounds
-        if x0 is None:
-            # x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
-            x0 = np.zeros(np.array(self._HR_volume.sitk.GetSize())[::-1])
-        else:
-            # In case initial value is given, the non-masked voxels will
-            # smoothly vary but will not be zero! Hence, prefer zero-init
-            x0 = np.clip(x0, 0, np.inf)
-        bounds = [[0, None]]*x0.size
-
-        # Construct right-hand side b
-        b = self._get_M_y()
-
-        # if self._loss in ["huber"]:
-        #     self._get_loss[self._loss] = lambda x : self._get_loss[self._loss](x, self._huber_gamma)
-        #     self._get_gradient_loss[self._loss] = lambda x : self._get_gradient_loss[self._loss](x, self._huber_gamma)
-
-        # Set cost function and its jacobian
-        fun = lambda x: self._get_fun_nonlinear(x, b, self._alpha)
-        jac = lambda x: self._get_jac_nonlinear(x, b, self._alpha)
-
-        # Run solver
-        HR_nda_vec = minimize(method='L-BFGS-B', fun=fun, x0=x0, options={
-                              'maxiter': self._iter_max, 'disp': True}, jac=jac, bounds=bounds).x
-
-        return HR_nda_vec
-
-    def _get_fun_nonlinear(self, x, b, alpha):
-
-        residual = self._MA(x) - b
-
-        data_term = 0.5*np.sum(self._get_loss[self._loss](residual**2))
-
-        regularizer_term = 0.5*alpha * \
-            self._get_residual_prior[self._reg_type](x)
-
-        return data_term + regularizer_term
-
-    def _get_jac_nonlinear(self, x, b, alpha):
-
-        residual = self._MA(x) - b
-
-        grad_data_term = self._A_adj_M(self._get_gradient_loss[
-                                       self._loss](residual**2) * residual)
-        grad_regularizer_term = alpha * \
-            self._get_gradient_residual_prior[self._reg_type](x)
-
-        return grad_data_term + grad_regularizer_term
-
-    ##
-    # Compute right hand-side for TK0 regularization
-    # \f$ b := \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K
-    # \vec{y}_K \\ \vec{0}\end{pmatrix}
-    # \f$
-    #
-    # \param      self  The object
-    #
-    # \return     vector b as (N_total_slice_voxels + N_voxels_HR_volume) array
-    #
-    def _get_b_TK0(self):
-
-        # Compute number of voxels to be stored for augmented linear system
-        # G = Identity:
-        N_voxels = self._N_total_slice_voxels + self._N_voxels_HR_volume
-
-        # Allocate memory
-        b = np.zeros(N_voxels)
-
-        # Compute M y, i.e. masked slices stacked to 1D vector
-        b[0:self._N_total_slice_voxels] = self._get_M_y()
-
-        return b
-
-    ##
-    # Compute right hand-side for TK1 regularization
-    # \f$ b := \begin{pmatrix} M_1 \vec{y}_1 \\ M_2 \vec{y}_2 \\ \vdots \\ M_K
-    # \vec{y}_K \\ \vec{0}\end{pmatrix}
-    # \f$
-    # \date       2017-07-18 21:32:16+0100
-    #
-    # \param      self  The object
-    #
-    # \return     vector b as (N_total_slice_voxels + 3 N_voxels_HR_volume)
-    #             array
-    #
-    def _get_b_TK1(self):
-        # Compute number of voxels to be stored for augmented linear system
-        # G = [Dx, Dy, Dz]^T, i.e. gradient computation:
-        N_voxels = self._N_total_slice_voxels + 3*self._N_voxels_HR_volume
-
-        # Allocate memory
-        b = np.zeros(N_voxels)
-
-        # Compute M y, i.e. masked slices stacked to 1D vector
-        b[0:self._N_total_slice_voxels] = self._get_M_y()
-
-        return b
-
-    ##
-    # Evaluate augmented linear operator for TK0-regularization, i.e.
-    #  \f$
-    #       \begin{pmatrix} MA \\ \sqrt{\alpha} G \end{pmatrix} \vec{x}
-    #     = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \\
-    #     \sqrt{\alpha} I \end{pmatrix} \vec{x}
-    #  \f$
-    #  for \f$ G = I\f$ identity matrix
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented linear operator as 1D array
-    def _A_TK0(self, HR_nda_vec, alpha):
-
-        # Allocate memory
-        A_x = np.zeros(self._N_total_slice_voxels+self._N_voxels_HR_volume)
-
-        # Compute MA x
-        A_x[0:-self._N_voxels_HR_volume] = self._MA(HR_nda_vec)
-
-        # Compute sqrt(alpha)*x
-        A_x[-self._N_voxels_HR_volume:] = np.sqrt(alpha)*HR_nda_vec
-
-        return A_x
-
-    # Evaluate the adjoint augmented linear operator for TK0-regularization, i.e.
-    #  \f$
-    #       \begin{bmatrix} A^* M && \sqrt{\alpha} G^* \end{bmatrix} \vec{y}
-    #     = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots && A_K^* M_K && \sqrt{\alpha} I \end{bmatrix} \vec{y}
-    #  \f$
-    #  for \f$ G = I\f$ identity matrix and \f$\vec{y}\in\mathbb{R}^{\sum_k N_k + N}\f$
-    #  representing a vector of stacked slices
-    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented adjoint linear operator as 1D array
-    def _A_adj_TK0(self, stacked_slices_nda_vec, alpha):
-
-        # Compute A'M y[upper]
-        A_adj_y = self._A_adj_M(stacked_slices_nda_vec)
-
-        # Add sqrt(alpha)*y[lower]
-        A_adj_y = A_adj_y + \
-            stacked_slices_nda_vec[-self._N_voxels_HR_volume:]*np.sqrt(alpha)
-
-        return A_adj_y
-
-    # Compute residual for TK1-regularization prior, i.e.
-    #  || x ||^2
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \return || x ||^2
-    def _get_residual_prior_TK0(self, HR_nda_vec):
-        return np.sum(HR_nda_vec**2)
-
-    ##
-    # Gets the gradient of TK0-prior.
-    # \date       2017-05-15 19:43:32+0100
-    #
-    # \param      self        The object
-    # \param      HR_nda_vec  The hr nda vector
-    #
-    # \return     The gradient residual prior tk 0.
-    #
-    def _get_gradient_residual_prior_TK0(self, HR_nda_vec):
-        return HR_nda_vec
-
-    # Compute residual for TK1-regularization prior, i.e.
-    #  || Dx ||^2 with D = [D_x; D_y; D_z]
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \return || Dx ||^2
-    def _get_residual_prior_TK1(self, HR_nda_vec):
-        HR_nda = HR_nda_vec.reshape(self._HR_shape_nda)
-
-        Dx = self._differential_operations.Dx(HR_nda)
-        Dy = self._differential_operations.Dy(HR_nda)
-        Dz = self._differential_operations.Dz(HR_nda)
-
-        # Compute norm || Dx ||^2 with D = [D_x; D_y; D_z]
-        return np.sum(Dx**2) + np.sum(Dy**2) + np.sum(Dz**2)
-
-    ##
-    # Gets the gradient of TK1-prior.
-    # \date       2017-05-15 19:43:52+0100
-    #
-    # \param      self        The object
-    # \param      HR_nda_vec  The hr nda vector
-    #
-    # \return     The gradient residual prior tk 1.
-    #
-    def _get_gradient_residual_prior_TK1(self, HR_nda_vec):
-        return self._D_adj(self._D(HR_nda_vec)).flatten()

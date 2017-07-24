@@ -17,14 +17,6 @@ import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
-from datetime import timedelta
-from scipy.sparse.linalg import LinearOperator
-from scipy.sparse.linalg import lsqr
-from scipy.sparse.linalg import lsmr
-from scipy.optimize import lsq_linear
-from scipy.optimize import minimize
-from scipy.optimize import least_squares
-from scipy.optimize import nnls
 
 
 # Import modules
@@ -77,9 +69,10 @@ class Solver(object):
                  iter_max=10,
                  minimizer="lsmr",
                  deconvolution_mode="full_3D",
-                 loss="linear",
+                 data_loss="linear",
                  huber_gamma=1.345,
-                 predefined_covariance=None):
+                 predefined_covariance=None,
+                 verbose=1):
 
         # Initialize variables
         self._stacks = stacks
@@ -91,41 +84,14 @@ class Solver(object):
 
         self._deconvolution_mode = deconvolution_mode
         self._update_oriented_adjoint_oriented_Gaussian_image_filters = {
-            "full_3D":                  self._update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D,
-            "only_in_plane":            self._update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane,
-            "predefined_covariance":    self._update_oriented_adjoint_oriented_Gaussian_image_filters_predefined_covariance
+            "full_3D": self._update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D,
+            "only_in_plane": self._update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane,
+            "predefined_covariance": self._update_oriented_adjoint_oriented_Gaussian_image_filters_predefined_covariance
         }
 
         self._minimizer = minimizer
-        # self._get_approximate_solution = {
-        #     # linear least-squares
-        #     "lsmr": self._get_approximate_solution_lsmr,
-        #     "lsqr": self._get_approximate_solution_lsqr,
-
-        #     # non-negative linear least-squares
-        #     "nnls": self._get_approximate_solution_nnls,
-
-        #     # linear least-squares solver with bounds
-        #     "lsq_linear": self._get_approximate_solution_lsq_linear,
-
-        #     # non-linear solver with bounds
-        #     "L-BFGS-B": self._get_approximate_solution_LBFGSB,
-        #     "least_squares": self._get_approximate_solution_least_squares,
-        # }
-
-        self._loss = loss
+        self._data_loss = data_loss
         self._huber_gamma = huber_gamma
-
-        # self._get_loss = {
-        #     "linear": lossfun.linear,
-        #     "soft_l1": lossfun.soft_l1,
-        #     "huber": lambda x: lossfun.huber(x, self._huber_gamma),
-        # }
-        # self._get_gradient_loss = {
-        #     "linear": lossfun.gradient_linear,
-        #     "soft_l1": lossfun.gradient_soft_l1,
-        #     "huber": lambda x: lossfun.gradient_huber(x, self._huber_gamma),
-        # }
 
         # In case only diagonal entries are given, create diagonal matrix
         if predefined_covariance is not None:
@@ -177,6 +143,8 @@ class Solver(object):
         self._differential_operations = diffop.DifferentialOperations(
             step_size=spacing)
 
+        self._verbose = verbose
+
         """
         Helpers
         """
@@ -192,7 +160,7 @@ class Solver(object):
 
         # Allocate variables containing information about statistics of
         # reconstruction
-        self._elapsed_time_sec = None
+        self._computational_time = None
         self._residual_ell2 = None
         self._residual_prior = None
 
@@ -235,17 +203,17 @@ class Solver(object):
         return self._minimizer
 
     ##
-    # Sets the loss (only incorporated when using L-BFGS-B solver so far)
+    # Sets the data loss rho in 1/2 ||rho(Ax-b)||^2
     # \date       2017-05-15 11:30:25+0100
     #
-    # \param      self  The object
-    # \param      loss  The loss
+    # \param      self       The object
+    # \param      data_loss  string
     #
-    def set_loss(self, loss):
-        if loss not in ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']:
+    def set_data_loss(self, data_loss):
+        if data_loss not in ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']:
             raise ValueError("Loss function must be either 'linear', "
                              "'soft_l1', 'huber', 'cauchy' or 'arctan'.")
-        self._loss = loss
+        self._data_loss = loss
 
     def set_huber_gamma(self, huber_gamma):
         self._huber_gamma = huber_gamma
@@ -275,10 +243,7 @@ class Solver(object):
     # Get computational time for reconstruction
     #  \return computational time in seconds
     def get_computational_time(self):
-        if self._elapsed_time_sec < 0:
-            raise ValueError(
-                "Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
-        return timedelta(seconds=self._elapsed_time_sec)
+        return self._computational_time
 
     # Get \f$\ell^2\f$-residual for performed reconstruction
     #  \return \f$\ell^2\f$-residual
@@ -298,13 +263,16 @@ class Solver(object):
 
         return self._residual_prior
 
-    def get_A(self):
-        return lambda x: self._MA(x.reshape(*self._HR_shape_nda)).flatten()
+    def _get_A(self):
+        return lambda x: self._MA(x)
 
-    def get_A_adj(self):
-        return lambda x: self._MA(x.reshape(*self._HR_shape_nda)).flatten()
+    def _get_A_adj(self):
+        return lambda x: self._A_adj_M(x)
 
-    def get_x0(self):
+    def _get_b(self):
+        return self._get_M_y()
+
+    def _get_x0(self):
         return sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
 
     ##
@@ -462,64 +430,6 @@ class Solver(object):
         HR_volume_itk.DisconnectPipeline()
 
         return HR_volume_itk
-
-    # Evaluate \f$ D \vec{x} \f$
-    #  \f$ = \begin{pmatrix} D_x \\ D_y \\ D_z \end{pmatrix} \vec{x}\f$
-    #  within the adjoint augmented linear operator for TK1-regularization.
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \return evaluated differential operator as part of
-    #       augmented linear operator as 1D array
-    def _D(self, HR_nda_vec):
-
-        # Number of voxels always given by 3 times HR voxels
-        N_voxels = self._N_voxels_HR_volume
-
-        # Allocate memory
-        D_x = np.zeros(3*N_voxels)
-
-        HR_nda = HR_nda_vec.reshape(self._HR_shape_nda)
-
-        # Differentiate w.r.t. x, y and z and fill corresponding indices
-        D_x[0:N_voxels] = self._differential_operations.Dx(HR_nda).flatten()
-        D_x[N_voxels:2 *
-            N_voxels] = self._differential_operations.Dy(HR_nda).flatten()
-        D_x[2*N_voxels:3 *
-            N_voxels] = self._differential_operations.Dz(HR_nda).flatten()
-
-        return D_x
-
-    # Evaluate \f$ D^* \vec{y} \f$
-    #  \f$ = \begin{pmatrix} D_x^* && D_y && D_z \end{pmatrix} \vec{y}\in\mathbb{R}^N\f$
-    #  within the adjoint augmented linear operator for TK1-regularization.
-    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \return evaluated adjoint differential operator as part of
-    #       augmented adjoint linear operator as 1D array
-    def _D_adj(self, stacked_slices_nda_vec):
-
-        # Get helpers to index correct elements
-        N_vol = self._N_voxels_HR_volume
-
-        # Extract respective x, y and z groups within compound
-        # stacked_slices_nda_vec
-        slice_x_nda_vec = stacked_slices_nda_vec[0:N_vol]
-        slice_y_nda_vec = stacked_slices_nda_vec[N_vol:2*N_vol]
-        slice_z_nda_vec = stacked_slices_nda_vec[2*N_vol:3*N_vol]
-
-        # Reshape in order to apply differentiation
-        slice_x_nda = slice_x_nda_vec.reshape(self._HR_shape_nda)
-        slice_y_nda = slice_y_nda_vec.reshape(self._HR_shape_nda)
-        slice_z_nda = slice_z_nda_vec.reshape(self._HR_shape_nda)
-
-        # Apply adjoint differentiation w.r.t. x, y and z
-        Dx_adj_vec = self._differential_operations.Dx_adj(
-            slice_x_nda).flatten()
-        Dy_adj_vec = self._differential_operations.Dy_adj(
-            slice_y_nda).flatten()
-        Dz_adj_vec = self._differential_operations.Dz_adj(
-            slice_z_nda).flatten()
-
-        # Return added contributions
-        return Dx_adj_vec + Dy_adj_vec + Dz_adj_vec
 
     # Masking operation M_k
     #  \param[in] slice_itk image in LR space as itk.Image object
@@ -701,53 +611,6 @@ class Solver(object):
 
         return A_adj_M_y
 
-    # Evaluate augmented linear operator for TK1-regularization, i.e.
-    #  \f$
-    #       \begin{pmatrix} MA \\ \sqrt{\alpha} G \end{pmatrix} \vec{x}
-    #     = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \\ \sqrt{\alpha} D \end{pmatrix} \vec{x}
-    #  \f$
-    #  for \f$ G = D\f$ representing the gradient.
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented linear operator as 1D array
-    def _A_TK1(self, HR_nda_vec, alpha):
-
-        # Get helpers to index correct elements
-        N_vol = self._N_voxels_HR_volume
-        N0 = self._N_total_slice_voxels
-
-        # Allocate memory
-        A_x = np.zeros(self._N_total_slice_voxels+3*self._N_voxels_HR_volume)
-
-        # Compute MAx
-        A_x[0:N0] = self._MA(HR_nda_vec)
-
-        # Compute sqrt(alpha)*Dx
-        A_x[N0:N0+3*N_vol] = np.sqrt(alpha)*self._D(HR_nda_vec)
-
-        return A_x
-
-    # Evaluate the adjoint augmented linear operator for TK1-regularization, i.e.
-    #  \f$
-    #       \begin{bmatrix} A^* M && \sqrt{\alpha} G^* \end{bmatrix} \vec{y}
-    #     = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots && A_K^* M_K && \sqrt{\alpha} D^* \end{bmatrix} \vec{y}
-    #  \f$
-    #  for \f$ G = D\f$ representing the gradient and \f$\vec{y}\in\mathbb{R}^{\sum_k N_k + 3N}\f$
-    #  representing a vector of stacked slices
-    #  \param[in] stacked_slices_nda_vec stacked slice data as 1D array
-    #  \param[in] alpha regularization parameter, scalar
-    #  \return evaluated augmented adjoint linear operator
-    def _A_adj_TK1(self, stacked_slices_nda_vec, alpha):
-
-        # Compute A'M y[upper]
-        A_adj_y = self._A_adj_M(stacked_slices_nda_vec)
-
-        # Add D' y[lower]
-        y_lower = stacked_slices_nda_vec[self._N_total_slice_voxels:]
-        A_adj_y = A_adj_y + self._D_adj(y_lower).flatten()*np.sqrt(alpha)
-
-        return A_adj_y
-
     # Convert numpy data array (vector format) back to itk.Image object
     #  \param[in] HR_nda_vec HR data as 1D array
     #  \return HR volume with intensities according to HR_nda_vec as itk.Image object
@@ -774,213 +637,3 @@ class Solver(object):
 
         # C
         return np.sum((MAx_nda_vec-My_nda_vec)**2)
-
-    ##
-    #       Gets the approximate solution via LSMR solver
-    #             (linear least-squares method)
-    # \date       2016-08-05 11:31:49+0100
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_lsmr(self, A_fw, A_bw, b, x0=None):
-
-        # Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume),
-                           matvec=A_fw, rmatvec=A_bw)
-
-        # Linear least-squares method:
-        # One (!) test showed that lsqr has lower residual than lsmr in the
-        # end. However, Fong2011 states that "although LSQR and LSMR ultimately
-        # converge to similar points, it is safer to use LSMR in situations
-        # where the solver must be terminated early" => Go for that
-        x = lsmr(A, b, maxiter=self._iter_max, show=True)[0]
-
-        # Chop off negative values
-        x = np.clip(x, 0, np.inf)
-
-        return x
-
-    ##
-    #       Gets the approximate solution via LSQR solver
-    #             (linear least-squares method)
-    # \date       2016-08-05 11:31:49+0100
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_lsqr(self, A_fw, A_bw, b, x0=None):
-
-        # Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume),
-                           matvec=A_fw, rmatvec=A_bw)
-
-        # --- Initial value begin --------------------------------------------
-        # Do not incorporate initial value! It seems to not help in case of
-        # TV-L2! Way faster regardless of all
-        ##
-        # Incorporate initial value for least-squares solver:
-        # HR_nda_vec = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
-        # HR_nda_vec = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
-        # b = b - A_fw(HR_nda_vec)
-
-        # Linear least-squares method:
-        # One (!) test showed that lsqr has lower residual than lsmr in the
-        # end. However, Fong2011 states that "although LSQR and LSMR ultimately
-        # converge to similar points, it is safer to use LSMR in situations
-        # where the solver must be terminated early" => Go for that
-        # delta_HR_nda_vec = lsqr(A, b, maxiter=self._iter_max, show=True)[0]
-
-        # Correct for shift
-        # HR_nda_vec += delta_HR_nda_vec
-        # --- Initial value end ----------------------------------------------
-
-        # Linear least-squares methods:
-        x = lsqr(A, b, iter_lim=self._iter_max, show=True)[0]
-
-        # Chop off negative values
-        x = np.clip(x, 0, np.inf)
-
-        return x
-
-    ##
-    # \brief      Gets the approximate solution via L-BFGS-B solver
-    #             (non-linear with bounds).
-    # \date       2016-08-05 11:48:20+0100
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_LBFGSB(self, A_fw, A_bw, b, x0=None):
-
-        # Set initial value and bounds
-        if x0 is None:
-            # x0 = np.clip(sitk.GetArrayFromImage(self._HR_volume.sitk).flatten(), 0, np.inf)
-            x0 = np.zeros(np.array(self._HR_volume.sitk.GetSize())[::-1])
-        else:
-            # In case initial value is given, the non-masked voxels will
-            # smoothly vary but will not be zero! Hence, prefer zero-init
-            x0 = np.clip(x0, 0, np.inf)
-        bounds = [[0, None]]*x0.size
-
-        # Set cost function and its jacobian
-        fun = lambda x: 0.5*np.sum((A_fw(x) - b)**2)
-        jac = lambda x: A_bw(A_fw(x)-b)
-
-        # Run solver
-        HR_nda_vec = minimize(method='L-BFGS-B', fun=fun, x0=x0, options={
-                              'maxiter': self._iter_max, 'disp': True}, jac=jac, bounds=bounds).x
-
-        return HR_nda_vec
-
-    ##
-    # \brief      Gets the approximate solution via least_squares solver
-    #             (non-linear minimization with bounds).
-    # \date       2016-08-05 11:48:20+0100
-    # \remark     Very slow, also for "smaller" problems such as trachea
-    #             reconstructions. Use of no bounds makes it (a bit) faster but
-    #             results in insufficient quality of the results
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_least_squares(self, A_fw, A_bw, b, x0=None):
-
-        # Set initial value and bounds
-        x0 = np.clip(sitk.GetArrayFromImage(
-            self._HR_volume.sitk).flatten(), 0, np.inf)
-        bounds = (0, np.inf)
-
-        # Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume),
-                           matvec=A_fw, rmatvec=A_bw)
-
-        # Set residual and its Jacobian
-        fun = lambda x: A*x - b
-        jac = lambda x: A
-
-        # Run solver
-        HR_nda_vec = least_squares(
-            fun=fun,
-            x0=x0,
-            jac=jac,
-            jac_sparsity=jac,
-            method='trf',
-            tr_solver='lsmr',
-            bounds=bounds,
-            loss="linear",
-            # loss="huber", #throws error "operands could not be broadcast together with shapes (315837,) (315837,2)" after applied to trachea example!?
-            # loss="soft_l1", #throws error "operands could not be broadcast
-            # together with shapes (315837,) (315837,2)" after applied to
-            # trachea example!?
-            max_nfev=self._iter_max,
-            verbose=2
-        ).x
-
-        return HR_nda_vec
-
-    ##
-    # \brief      Gets the approximate solution via lsq_linear solver
-    #             (linear least-squares with bounds).
-    # \date       2016-08-05 11:48:20+0100
-    # \remark     Does not show any output
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_lsq_linear(self, A_fw, A_bw, b, x0=None):
-
-        # Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume),
-                           matvec=A_fw, rmatvec=A_bw)
-
-        # Run solver
-        HR_nda_vec = lsq_linear(A, b, bounds=(
-            0, np.inf), max_iter=self._iter_max, lsq_solver='lsmr', lsmr_tol='auto', verbose=2).x
-        # HR_nda_vec = lsq_linear(A, b, max_iter=self._iter_max, lsq_solver=None, lsmr_tol='auto', verbose=2).x
-
-        return HR_nda_vec
-
-    ##
-    # \brief      Gets the approximate solution via nnls solver
-    #             (non-negative linear least-squares).
-    # \date       2016-08-05 11:48:20+0100
-    # \remark     Does not work with sparse linear operator
-    #
-    # \param      self  The object
-    # \param      A_fw  Forward operator, function handle
-    # \param      A_bw  Backward operator, function handle
-    # \param      b     Right-hand side of linear system, 1D array
-    #
-    # \return     The approximate solution.
-    #
-    def _get_approximate_solution_nnls(self, A_fw, A_bw, b, x0=None):
-
-        # Construct (sparse) linear operator A
-        A = LinearOperator((b.size, self._N_voxels_HR_volume),
-                           matvec=A_fw, rmatvec=A_bw)
-
-        # Run solver:
-        HR_nda_vec = nnls(A, b)
-
-        return HR_nda_vec
