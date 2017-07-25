@@ -121,7 +121,7 @@ class ADMMSolver(Solver):
             self._reconstruction.sitk).flatten()
 
         self._residual_ell2 = self._get_residual_ell2(reconstruction_nda_vec)
-        self._residual_prior = self._get_residual_prior(reconstruction_nda_vec)
+        # self._residual_prior = self._get_residual_prior(reconstruction_nda_vec)
 
     ##
     #       Gets the setting specific filename indicating the information
@@ -178,7 +178,7 @@ class ADMMSolver(Solver):
         linear_operators = linop.LinearOperators3D(spacing=spacing)
         grad, grad_adj = linear_operators.get_gradient_operators()
 
-        X_shape = self._reconstruction_shape_nda
+        X_shape = self._reconstruction_shape
         Z_shape = grad(x0.reshape(*X_shape)).shape
 
         B = lambda x: grad(x.reshape(*X_shape)).flatten()

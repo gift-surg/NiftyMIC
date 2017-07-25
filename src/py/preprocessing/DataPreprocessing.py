@@ -80,9 +80,9 @@ class DataPreprocessing:
         self._N_stacks = len(stacks)
 
         # Use stacks provided
-        self._stacks_preprocessed = [None]*self._N_stacks
+        self._stacks = [None] * self._N_stacks
         for i in range(0, self._N_stacks):
-            self._stacks_preprocessed[i] = st.Stack.from_stack(stacks[i])
+            self._stacks[i] = st.Stack.from_stack(stacks[i])
 
         ph.print_info(
             "%s stacks were loaded for data preprocessing." % (self._N_stacks))
@@ -93,14 +93,12 @@ class DataPreprocessing:
     def use_N4BiasFieldCorrector(self, flag):
         self._use_N4BiasFieldCorrector = flag
 
-    # Specify prefix which will be used for naming the stacks
-    #  param[in] prefix as string
-    def set_filename_prefix(self, prefix):
-        self._filename_prefix = prefix
-
-    # Perform data preprocessing step by reading images from files
-    #  \param[in] mask_template_number relevant in case not all masks are given (optional). Indicates stack for mask propagation.
-    #  \param[in] boundary additional boundary surrounding mask in mm (optional). Capped by image domain.
+    #
+    # Perform data preprocessing
+    # \date       2017-07-25 21:13:19+0100
+    #
+    # \param      self  The object
+    #
     def run_preprocessing(self):
 
         time_start = ph.start_timing()
@@ -112,35 +110,40 @@ class DataPreprocessing:
 
             stacks_to_propagate_indices = []
             for i in range(0, self._N_stacks):
-                if self._stacks_preprocessed[i].is_unity_mask():
+                if self._stacks[i].is_unity_mask():
                     stacks_to_propagate_indices.append(i)
 
-            stacks_to_propagate_indices = list(
-                set(stacks_to_propagate_indices) - set([self._target_stack_index]))
+            stacks_to_propagate_indices = \
+                list(set(stacks_to_propagate_indices) -
+                     set([self._target_stack_index]))
 
             # Set target mask
-            target = self._stacks_preprocessed[self._target_stack_index]
+            target = self._stacks[self._target_stack_index]
 
             # Propagate masks
             self._segmentation_propagator.set_template(target)
             for i in stacks_to_propagate_indices:
                 ph.print_info("Propagate mask from stack '%s' to '%s'" % (
-                    target.get_filename(), self._stacks_preprocessed[i].get_filename()))
+                    target.get_filename(),
+                    self._stacks[i].get_filename()))
                 self._segmentation_propagator.set_stack(
-                    self._stacks_preprocessed[i])
+                    self._stacks[i])
                 self._segmentation_propagator.run_segmentation_propagation()
-                self._stacks_preprocessed[
-                    i] = self._segmentation_propagator.get_segmented_stack()
+                self._stacks[i] = \
+                    self._segmentation_propagator.get_segmented_stack()
 
-                # self._stacks_preprocessed[i].show(1)
+                # self._stacks[i].show(1)
 
         # Crop to mask
         if self._use_cropping_to_mask:
             ph.print_info("Crop stacks to their masks")
 
             for i in range(0, self._N_stacks):
-                self._stacks_preprocessed[i] = self._stacks_preprocessed[i].get_cropped_stack_based_on_mask(
-                    boundary_i=self._boundary_i, boundary_j=self._boundary_j, boundary_k=self._boundary_k, unit=self._unit)
+                self._stacks[i] = self._stacks[i].get_cropped_stack_based_on_mask(
+                    boundary_i=self._boundary_i,
+                    boundary_j=self._boundary_j,
+                    boundary_k=self._boundary_k,
+                    unit=self._unit)
 
         # N4 Bias Field Correction
         if self._use_N4BiasFieldCorrector:
@@ -149,9 +152,9 @@ class DataPreprocessing:
             bias_field_corrector = n4bfc.N4BiasFieldCorrection()
 
             for i in range(0, self._N_stacks):
-                bias_field_corrector.set_stack(self._stacks_preprocessed[i])
+                bias_field_corrector.set_stack(self._stacks[i])
                 bias_field_corrector.run_bias_field_correction()
-                self._stacks_preprocessed[
+                self._stacks[
                     i] = bias_field_corrector.get_bias_field_corrected_stack()
 
             print("done")
@@ -167,13 +170,13 @@ class DataPreprocessing:
             intensity_corrector.use_verbose(True)
 
             for i in stacks_to_intensity_correct:
-                stack = self._stacks_preprocessed[i]
+                stack = self._stacks[i]
                 intensity_corrector.set_stack(stack)
                 intensity_corrector.set_reference(
                     target.get_resampled_stack(resampling_grid=stack.sitk))
                 # intensity_corrector.run_affine_intensity_correction()
                 intensity_corrector.run_linear_intensity_correction()
-                self._stacks_preprocessed[
+                self._stacks[
                     i] = intensity_corrector.get_intensity_corrected_stack()
         self._computational_time = ph.stop_timing(time_start)
 
@@ -186,14 +189,14 @@ class DataPreprocessing:
 
         # Move target stack to first position
         stacks_copy[0] = st.Stack.from_stack(
-            self._stacks_preprocessed[self._target_stack_index])
+            self._stacks[self._target_stack_index])
         remaining_indices = list(
             set(range(0, self._N_stacks)) - set([self._target_stack_index]))
 
         i_ctr = 1
         for i in remaining_indices:
             stacks_copy[i_ctr] = st.Stack.from_stack(
-                self._stacks_preprocessed[i])
+                self._stacks[i])
             i_ctr = i_ctr + 1
         return stacks_copy
 
@@ -203,10 +206,10 @@ class DataPreprocessing:
     # Write preprocessed data to specified output directory
     #  \param[in] dir_output output directory
     def write_preprocessed_data(self, dir_output):
-        if all(x is None for x in self._stacks_preprocessed):
+        if all(x is None for x in self._stacks):
             raise Exceptions.ObjectNotCreated("run_preprocessing")
 
         # Write all slices
         for i in range(0, self._N_stacks):
-            slices = self._stacks_preprocessed[i].write(
+            slices = self._stacks[i].write(
                 directory=dir_output, write_mask=True, write_slices=False)

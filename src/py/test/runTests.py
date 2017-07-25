@@ -28,7 +28,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(
 # from modules.TestSimulatorSliceAcqusition import *
 # from modules.TestNiftyReg import *
 # from modules.TestDifferentialOperations import *
-# from modules.TestRegistration import *
+from modules.TestRegistration import *
 # from modules.TestBrainStripping import *
 # from modules.TestIntraStackRegistration import *
 # from modules.TestParameterNormalization import *
@@ -36,7 +36,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(
 # from modules.TestLinearImageQualityTransfer import *
 # from modules.TestIntensityCorrection import *
 # from modules.TestSegmentationPropagation import *
-from modules.TestLossFunctions import *
+# from modules.TestLossFunctions import *
 
 """ ###########################################################################
 Main Function

@@ -1,27 +1,24 @@
-## \file PSF.py
+# \file PSF.py
 #  \brief Compute point spread function (PSF) based on orientation of slice to volume
 #
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date April 2016
 
 
-## Import libraries
+# Import libraries
 import os                       # used to execute terminal commands in python
 import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
 
-## Import modules from src-folder
+# Import modules from src-folder
 import pythonhelper.SimpleITKHelper as sitkh
 
 
 class PSF:
 
-    # def __init__(self):
-
-
-    ## Compute rotated covariance matrix which expresses the PSF of the slice
+    # Compute rotated covariance matrix which expresses the PSF of the slice
     #  in the coordinates of the HR volume
     #  \param[in] slice Slice object which is aimed to be simulated according to the slice acquisition model
     #  \param[in] reconstruction Stack object containing the HR volume
@@ -33,7 +30,6 @@ class PSF:
         direction_slice = np.array(slice.sitk.GetDirection())
 
         return self.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates_from_direction_and_spacing(direction_slice, spacing_slice, reconstruction)
-
 
     ##
     #       Gets the Gaussian PSF covariance matrix HR volume coordinates from covariance.
@@ -48,14 +44,16 @@ class PSF:
     #
     def get_gaussian_PSF_covariance_matrix_reconstruction_coordinates_from_covariances(self, slice, reconstruction, cov):
 
-        ## Compute rotation matrix to express the PSF in the coordinate system of the HR volume
-        U = self._get_relative_rotation_matrix(slice.sitk.GetDirection(), reconstruction.sitk.GetDirection())
+        # Compute rotation matrix to express the PSF in the coordinate system
+        # of the HR volume
+        U = self._get_relative_rotation_matrix(
+            slice.sitk.GetDirection(), reconstruction.sitk.GetDirection())
 
-        ## Return Gaussian blurring variance covariance matrix of slice in HR volume coordinates 
+        # Return Gaussian blurring variance covariance matrix of slice in HR
+        # volume coordinates
         return U.dot(cov).dot(U.transpose())
 
-
-    ## Compute rotated covariance marix which expresses the PSF of the slice,
+    # Compute rotated covariance marix which expresses the PSF of the slice,
     #  given by its directon and spacing, in the coordinates of the HR volume
     #  \param[in] direction_slice information obtained by GetDirection() from slice
     #  \param[in] spacing_slice voxel dimension of slice as np.array
@@ -63,33 +61,35 @@ class PSF:
     #          orthogonal trafo between slice and reconstruction
     def get_gaussian_PSF_covariance_matrix_reconstruction_coordinates_from_direction_and_spacing(self, direction_slice_sitk, spacing_slice, reconstruction):
 
-        ## Compute rotation matrix to express the PSF in the coordinate system of the HR volume
-        U = self._get_relative_rotation_matrix(direction_slice_sitk, reconstruction.sitk.GetDirection())
+        # Compute rotation matrix to express the PSF in the coordinate system
+        # of the HR volume
+        U = self._get_relative_rotation_matrix(
+            direction_slice_sitk, reconstruction.sitk.GetDirection())
 
-        ## Get axis algined PSF
-        cov = self.get_gaussian_PSF_covariance_matrix_from_spacing(spacing_slice)
+        # Get axis algined PSF
+        cov = self.get_gaussian_PSF_covariance_matrix_from_spacing(
+            spacing_slice)
 
-        ## Return Gaussian blurring variance covariance matrix of slice in HR volume coordinates 
+        # Return Gaussian blurring variance covariance matrix of slice in HR
+        # volume coordinates
         return U.dot(cov).dot(U.transpose())
 
-
-    ## Compute (axis aligned) covariance matrix from spacing
+    # Compute (axis aligned) covariance matrix from spacing
     #  The PSF is modelled as Gaussian with
     #       FWHM = 1.2*in-plane-resolution (in-plane)
     #       FWHM = slice thickness (through-plane)
     #  \param[in] spacing 3D array containing in-plane and through-plane dimensions
     #  \return (axis aligned) covariance matrix representing PSF modelled Gaussian as 3x3 np.array
     def get_gaussian_PSF_covariance_matrix_from_spacing(self, spacing):
-        
-        ## Compute Gaussian to approximate in-plane PSF:
+
+        # Compute Gaussian to approximate in-plane PSF:
         sigma_x2 = (1.2*spacing[0])**2/(8*np.log(2))
         sigma_y2 = (1.2*spacing[1])**2/(8*np.log(2))
 
-        ## Compute Gaussian to approximate through-plane PSF:
+        # Compute Gaussian to approximate through-plane PSF:
         sigma_z2 = spacing[2]**2/(8*np.log(2))
 
         return np.diag([sigma_x2, sigma_y2, sigma_z2])
-
 
     ##
     #       Gets the relative rotation matrix to express slice-axis
@@ -104,14 +104,15 @@ class PSF:
     #
     def _get_relative_rotation_matrix(self, direction_slice_sitk, direction_reconstruction_sitk):
 
-        ## Compute rotation matrix to express the PSF in the coordinate system of the HR volume
+        # Compute rotation matrix to express the PSF in the coordinate system
+        # of the HR volume
         dim = np.sqrt(len(direction_slice_sitk)).astype('int')
-        direction_matrix_reconstruction = np.array(direction_reconstruction_sitk).reshape(dim,dim)
-        direction_matrix_slice = np.array(direction_slice_sitk).reshape(dim,dim)
+        direction_matrix_reconstruction = np.array(
+            direction_reconstruction_sitk).reshape(dim, dim)
+        direction_matrix_slice = np.array(
+            direction_slice_sitk).reshape(dim, dim)
 
         U = direction_matrix_reconstruction.transpose().dot(direction_matrix_slice)
         # print("U = \n%s\ndet(U) = %s" % (U,np.linalg.det(U)))
 
         return U
-
-

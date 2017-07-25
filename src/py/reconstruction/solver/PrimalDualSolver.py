@@ -103,7 +103,7 @@ class PrimalDualSolver(Solver):
                 filename += str(self._huber_gamma)
         filename += "_alpha" + str(self._alpha)
         filename += "_itermax" + str(self._iter_max)
-        filename += "_PrimalDualIterations" + str(self._iterations)
+        filename += "_PDiterations" + str(self._iterations)
 
         # Replace dots by 'p'
         filename = filename.replace(".", "p")
@@ -112,9 +112,9 @@ class PrimalDualSolver(Solver):
 
     def run_reconstruction(self, verbose=0):
 
-        if self._reg_type not in ["TV", "Huber"]:
+        if self._reg_type not in ["TV", "huber"]:
             raise ValueError("Error: regularization type can only be either "
-                             "'TV' or 'Huber'")
+                             "'TV' or 'huber'")
 
         self._print_info_text()
 
@@ -133,7 +133,7 @@ class PrimalDualSolver(Solver):
         linear_operators = linop.LinearOperators3D(spacing=spacing)
         grad, grad_adj = linear_operators.get_gradient_operators()
 
-        X_shape = self._reconstruction_shape_nda
+        X_shape = self._reconstruction_shape
         Z_shape = grad(x0.reshape(*X_shape)).shape
 
         B = lambda x: grad(x.reshape(*X_shape)).flatten()
@@ -141,11 +141,12 @@ class PrimalDualSolver(Solver):
 
         prox_f = lambda x, tau: prox.prox_linear_least_squares(
             x=x, tau=tau,
-            A=A, A_adj=A_adj, b=b, x0=x0)
+            A=A, A_adj=A_adj, b=b, x0=x0,
+            verbose=self._verbose)
 
         if self._reg_type == "TV":
             prox_g_conj = prox.prox_tv_conj
-        elif self._reg_type == "Huber":
+        elif self._reg_type == "huber":
             prox_g_conj = lambda x, sigma: prox.prox_huber_conj(
                 x, sigma, self._reg_huber_gamma)
 

@@ -46,15 +46,31 @@ import utilities.Exceptions as Exceptions
 # Gets the parsed input line.
 # \date       2017-05-18 20:09:23+0100
 #
-# \param      dir_output          The dir output
-# \param      prefix_output       The prefix output
-# \param      suffix_mask         The suffix mask
-# \param      target_stack_index  The target stack index
-# \param      regularization      The regularization
-# \param      minimizer           The minimizer
-# \param      alpha               The alpha
-# \param      iter_max            The iterator maximum
-# \param      verbose             The verbose
+# \param      dir_output             The dir output
+# \param      filenames              The filenames
+# \param      prefix_output          The prefix output
+# \param      suffix_mask            The suffix mask
+# \param      target_stack_index     The target stack index
+# \param      two_step_cycles        The two step cycles
+# \param      sigma                  The sigma
+# \param      regularization         The regularization
+# \param      data_loss              The data_loss
+# \param      alpha                  The alpha
+# \param      alpha_final            The alpha final
+# \param      iter_max               The iterator maximum
+# \param      iter_max_final         The iterator maximum final
+# \param      minimizer              The minimizer
+# \param      rho                    The rho
+# \param      ADMM_iterations        The admm iterations
+# \param      dilation_radius        The dilation radius
+# \param      extra_frame_target     The extra frame target
+# \param      bias_field_correction  The bias field correction
+# \param      intensity_correction   The intensity correction
+# \param      provide_comparison     The provide comparison
+# \param      isotropic_resolution   The isotropic resolution
+# \param      log_script_execution   The log script execution
+# \param      log_motion_corretion   The log motion corretion
+# \param      verbose                The verbose
 #
 # \return     The parsed input line.
 #
@@ -67,12 +83,14 @@ def get_parsed_input_line(
     two_step_cycles,
     sigma,
     regularization,
-    loss,
+    data_loss,
     alpha,
     alpha_final,
     iter_max,
     iter_max_final,
     minimizer,
+    rho,
+    ADMM_iterations,
     dilation_radius,
     extra_frame_target,
     bias_field_correction,
@@ -80,6 +98,7 @@ def get_parsed_input_line(
     provide_comparison,
     isotropic_resolution,
     log_script_execution,
+    log_motion_corretion,
     verbose,
 ):
 
@@ -152,9 +171,14 @@ def get_parsed_input_line(
     parser.add_argument('--regularization',
                         type=str,
                         help="Type of regularization for SR algorithm. Either "
-                        "'TK0' or 'TK1' for zeroth or first order Tikhonov "
-                        "regularization, respectively. I.e. R(x) = ||x||^2 "
-                        "for 'TK0' or R(x) = ||Dx||^2 for 'TK1'. [default: %s]"
+                        "'TK0', 'TK1' or 'TV' for zeroth/first order Tikhonov "
+                        " or total variation regularization, respectively."
+                        "I.e. "
+                        "R(x) = ||x||_2^2 for 'TK0', "
+                        "R(x) = ||Dx||_2^2 for 'TK1', "
+                        "or "
+                        "R(x) = ||Dx||_1 for 'TV'. "
+                        "[default: %s]"
                         % (regularization),
                         default=regularization)
     parser.add_argument('--iter-max',
@@ -168,11 +192,26 @@ def get_parsed_input_line(
                         "solver like 'iter-max' but used for the final SRR "
                         "step [default: %s]" % (iter_max_final),
                         default=iter_max_final)
+    parser.add_argument('--rho',
+                        type=float,
+                        help="Regularization parameter for augmented "
+                        "Lagrangian term for ADMM to solve the SR "
+                        "reconstruction problem in case TV regularization is "
+                        "chosen. "
+                        "[default: %g]" % (rho),
+                        default=rho)
+    parser.add_argument('--ADMM-iterations',
+                        type=int,
+                        help="Number of ADMM iterations. "
+                        "[default: %g]" % (ADMM_iterations),
+                        default=ADMM_iterations)
     parser.add_argument('--minimizer',
                         type=str,
                         help="Choice of minimizer used for the inverse "
                         "problem associated to the SRR. Possible choices are "
-                        "'lsmr' or 'L-BFGS-B'. [default: %s]" % (minimizer),
+                        "'lsmr' or 'L-BFGS-B'. Note, in case of a chosen "
+                        "non-linear data loss only 'L-BFGS-B' is viable."
+                        " [default: %s]" % (minimizer),
                         default=minimizer)
     parser.add_argument('--two-step-cycles',
                         type=int,
@@ -181,12 +220,12 @@ def get_parsed_input_line(
                         "Reconstruction cycles. [default: %s]"
                         % (two_step_cycles),
                         default=two_step_cycles)
-    parser.add_argument('--loss',
+    parser.add_argument('--data-loss',
                         type=str,
                         help="Loss function rho used for data term, i.e. "
                         "rho((y_k - A_k x)^2). Possible choices are 'linear', "
-                        "'soft_l1' or 'huber'. [default: %s]" % (loss),
-                        default=loss)
+                        "'soft_l1' or 'huber'. [default: %s]" % (data_loss),
+                        default=data_loss)
     parser.add_argument('--dilation-radius',
                         type=int,
                         help="Dilation radius in number of voxels used for "
@@ -221,6 +260,17 @@ def get_parsed_input_line(
                         help="Turn on/off log for execution of current "
                         "script. [default: %s]" % (log_script_execution),
                         default=log_script_execution)
+    parser.add_argument('--log-motion-correction',
+                        type=int,
+                        help="Turn on/off functionality to log the "
+                        "final result for motion correction, i.e."
+                        "the rigidly aligned stacks with their respective "
+                        "motion corrected individual slices in addition to "
+                        "the resulting applied overall transform for each "
+                        "slice."
+                        " [default: %s]"
+                        % (log_motion_corretion),
+                        default=log_motion_corretion)
     parser.add_argument('--provide-comparison',
                         type=int,
                         help="Turn on/off functionality to create files "
@@ -269,12 +319,14 @@ if __name__ == '__main__':
         two_step_cycles=3,
         sigma=0.7,
         regularization="TK1",
-        loss="linear",
+        data_loss="linear",
         alpha=0.1,
         alpha_final=0.03,
         isotropic_resolution=None,
         iter_max=5,
         iter_max_final=10,
+        rho=0.5,
+        ADMM_iterations=10,
         minimizer="lsmr",
         dilation_radius=3,
         extra_frame_target=10,
@@ -282,6 +334,7 @@ if __name__ == '__main__':
         intensity_correction=0,
         provide_comparison=1,
         log_script_execution=1,
+        log_motion_corretion=1,
         verbose=0,
     )
 
@@ -398,12 +451,12 @@ if __name__ == '__main__':
         time_registration = ph.stop_timing(time_registration)
         # sitkh.show_stacks(stacks, segmentation=stacks[0])
 
-        if args.verbose:
-            for i in range(0, len(stacks)):
-                stacks[i].write(
-                    directory=os.path.join(args.dir_output,
-                                           "02_rigidly_aligned_data"),
-                    write_mask=True)
+        # if args.verbose:
+        #     for i in range(0, len(stacks)):
+        #         stacks[i].write(
+        #             directory=os.path.join(args.dir_output,
+        #                                    "02_rigidly_aligned_data"),
+        #             write_mask=True)
 
     else:
         time_registration = 0
@@ -424,7 +477,7 @@ if __name__ == '__main__':
     SDA.generate_mask_from_stack_mask_unions(
         mask_dilation_radius=2, mask_dilation_kernel="Ball")
     HR_volume = SDA.get_reconstruction()
-    HR_volume.set_filename("HRvolume_SDA")
+    HR_volume.set_filename(SDA.get_setting_specific_filename())
 
     time_reconstruction = ph.stop_timing(time_reconstruction)
 
@@ -434,7 +487,8 @@ if __name__ == '__main__':
     # Add initial volume and rigidly aligned, original data for
     # visualization
     HR_volume_iterations.append(
-        st.Stack.from_stack(HR_volume, "HRvolume_iter0"))
+        st.Stack.from_stack(HR_volume,
+                            "Iter0_" + SDA.get_setting_specific_filename()))
     for i in range(0, len(stacks)):
         HR_volume_iterations.append(stacks[i])
 
@@ -449,18 +503,19 @@ if __name__ == '__main__':
             iter_max=args.iter_max,
             reg_type=args.regularization,
             minimizer=args.minimizer,
-            loss=args.loss,
+            data_loss=args.data_loss,
+            verbose=args.verbose,
         )
     elif args.regularization == "TV":
         SRR = admm.ADMMSolver(
             stacks=stacks,
             reconstruction=HR_volume,
             alpha=args.alpha,
-            reg_type=args.regularization,
             minimizer=args.minimizer,
             iter_max=args.iter_max,
-            rho=rho,
-            iterations=iterations,
+            rho=args.rho,
+            iterations=args.ADMM_iterations,
+            verbose=args.verbose,
         )
 
     if args.two_step_cycles > 0:
@@ -476,7 +531,7 @@ if __name__ == '__main__':
             moving=HR_volume,
             use_fixed_mask=True,
             use_moving_mask=False,
-            use_verbose=True,
+            use_verbose=args.verbose,
             interpolator="Linear",
             metric="Correlation",
             # metric="MattesMutualInformation",  # Might cause error messages
@@ -528,8 +583,10 @@ if __name__ == '__main__':
             time_reconstruction = ph.add_times(
                 time_reconstruction, time_elapsed_tmp)
 
+            filename = "Iter" + str(i_cycle+1) + "_" + \
+                SRR.get_setting_specific_filename()
             HR_volume_tmp = HR_volume.get_stack_multiplied_with_mask(
-                filename="HRvolume_iter"+str(i_cycle+1))
+                filename=filename)
             HR_volume_iterations.insert(0, HR_volume_tmp)
             if args.verbose:
                 sitkh.show_stacks(HR_volume_iterations)
@@ -549,12 +606,13 @@ if __name__ == '__main__':
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
     HR_volume_final.write(args.dir_output)
 
-    for stack in stacks:
-        stack.write(
-            os.path.join(args.dir_output,"motion_correction"),
-            write_mask=True,
-            write_slices=True,
-            write_transforms=True,
+    if args.log_motion_correction:
+        for stack in stacks:
+            stack.write(
+                os.path.join(args.dir_output, "motion_correction"),
+                write_mask=True,
+                write_slices=True,
+                write_transforms=True,
             )
 
     HR_volume_iterations.insert(0, HR_volume_final)

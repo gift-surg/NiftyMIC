@@ -239,7 +239,7 @@ class TikhonovSolver(Solver):
             linear_operators = linop.LinearOperators3D(spacing=spacing)
             grad, grad_adj = linear_operators.get_gradient_operators()
 
-            X_shape = self._reconstruction_shape_nda
+            X_shape = self._reconstruction_shape
             Z_shape = grad(x0.reshape(*X_shape)).shape
 
             B = lambda x: grad(x.reshape(*X_shape)).flatten()
@@ -254,7 +254,11 @@ class TikhonovSolver(Solver):
             b=b,
             x0=x0,
             alpha=self._alpha,
+            data_loss=self._data_loss,
             verbose=self._verbose,
+            minimizer=self._minimizer,
+            iter_max=self._iter_max,
+            bounds=(0, np.inf),
         )
         solver.run()
 

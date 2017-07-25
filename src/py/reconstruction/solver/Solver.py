@@ -144,7 +144,7 @@ class Solver(object):
         self._itk2np = itk.PyBuffer[IMAGE_TYPE]
 
         # Extract information ready to use for itk image conversion operations
-        self._reconstruction_shape_nda = sitk.GetArrayFromImage(
+        self._reconstruction_shape = sitk.GetArrayFromImage(
             self._reconstruction.sitk).shape
 
         # Define differential operators
@@ -288,25 +288,58 @@ class Solver(object):
         return self._residual_prior
 
     ##
-    # Return function call A = lambda x: A(x) with A: R^n -> R^m
+    # Get function call A = lambda x: A(x) with A: R^n -> R^m
     # \date       2017-07-25 16:02:47+0100
     #
     # \param      self  The object
     #
-    # \return     The a.
+    # \return     Function call mapping from and to 1D numpy array.
     #
     def get_A(self):
         return lambda x: self._MA(x)
 
+    ##
+    # Gets function call A^* = lambda y: A^*(y) with A: R^m -> R^n
+    # \date       2017-07-25 16:18:52+0100
+    #
+    # \param      self  The object
+    #
+    # \return     Function call mapping from and to 1D numpy array.
+    #
     def get_A_adj(self):
         return lambda x: self._A_adj_M(x)
 
+    ##
+    # Gets the right hand-side vector b \in R^m
+    # \date       2017-07-25 16:19:30+0100
+    #
+    # \param      self  The object
+    #
+    # \return     1D numpy array
+    #
     def get_b(self):
         return self._get_M_y()
 
+    ##
+    # Gets the initial value given by the flattened reconstruction numpy data
+    # array in R^n.
+    # \date       2017-07-25 16:20:00+0100
+    #
+    # \param      self  The object
+    #
+    # \return     1D numpy array
+    #
     def get_x0(self):
         return sitk.GetArrayFromImage(self._reconstruction.sitk).flatten()
 
+    ##
+    # Prints the statistics of the performed reconstruction
+    # \date       2017-07-25 16:21:20+0100
+    #
+    # \param      self  The object
+    #
+    # \return     { description_of_the_return_value }
+    #
     def print_statistics(self):
         ph.print_subtitle("Statistics")
         ph.print_info("Elapsed time: %s" %
@@ -681,8 +714,8 @@ class Solver(object):
 
     ##
     # Evaluate
-    # \f$ A^* M \vec{y} = \b egin{bmatrix} A_1^* M_1 && A_2^* M_2 && \c dots &&
-    # A_K^* M_K \em nd{bmatrix} \vec{y}
+    # \f$ A^* M \vec{y} = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \c dots &&
+    # A_K^* M_K \end{bmatrix} \vec{y}
     # \f$
     # \date       2017-07-18 22:21:53+0100
     #

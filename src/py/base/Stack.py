@@ -53,7 +53,8 @@ class Stack:
     def from_filename(cls,
                       file_path,
                       file_path_mask=None,
-                      extract_slices=True):
+                      extract_slices=True,
+                      verbose=False):
 
         stack = cls()
 
@@ -83,14 +84,15 @@ class Stack:
         # Append masks (either provided or binary mask)
         if file_path_mask is None:
             stack.sitk_mask = stack._generate_identity_mask()
-            ph.print_info(
-                "Identity mask created for '%s'." % (file_path))
+            if verbose:
+                ph.print_info(
+                    "Identity mask created for '%s'." % (file_path))
 
         else:
             if not ph.file_exists(file_path_mask):
                 raise Exceptions.FileNotExistent(file_path_mask)
             stack.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
-            stack._is_unity_mask = True
+            stack._is_unity_mask = False
 
         # Append itk object
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
@@ -103,8 +105,11 @@ class Stack:
             stack._N_slices = 0
             stack._slices = None
 
-        ph.print_info(
-            "Stack (image + mask) associated to '%s' successfully read." % (file_path))
+        if verbose:
+            ph.print_info(
+                "Stack (image + mask) associated to '%s' successfully read." %
+                (file_path))
+
         return stack
 
     ##
@@ -211,16 +216,17 @@ class Stack:
     #  \param[in] image_sitk_mask associated mask of stack, sitk.Image object (optional)
     #  \return Stack object without slice information
     @classmethod
-    def from_sitk_image(cls, image_sitk, filename=None, image_sitk_mask=None, extract_slices=True):
+    def from_sitk_image(cls,
+                        image_sitk,
+                        filename="unknown",
+                        image_sitk_mask=None,
+                        extract_slices=True):
         stack = cls()
 
         stack.sitk = sitk.Image(image_sitk)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
-        if filename is None:
-            stack._filename = "unknown"
-        else:
-            stack._filename = filename
+        stack._filename = filename
         stack._dir = None
 
         # Append masks (if provided)
@@ -369,7 +375,7 @@ class Stack:
 
         # Write file to specified location
         ph.print_info("Write image to %s.nii.gz ... " %
-                            (full_file_name), newline=False)
+                      (full_file_name), newline=False)
         sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
         print("done")
 

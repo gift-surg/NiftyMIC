@@ -107,6 +107,20 @@ class ScatteredDataApproximation:
     def get_reconstruction(self):
         return self._HR_volume
 
+    def get_setting_specific_filename(self, prefix="SDA_"):
+
+        # Build filename
+        filename = prefix
+        filename += "stacks" + str(len(self._stacks))
+
+        # Only prints the first entry, i.e. assumes identical sigmas
+        filename += "_sigma" + str(self._sigma_array[0])
+
+        # Replace dots by 'p'
+        filename = filename.replace(".", "p")
+
+        return filename
+
     # Computed reconstructed volume based on current estimated positions of
     # slices
     def run_reconstruction(self):
