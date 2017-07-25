@@ -130,7 +130,7 @@ class DirectoryReader(DataReader):
                 abs_path_mask = os.path.join(abs_path_to_directory,
                                              dic_filenames_mask[filename])
             else:
-                ph.print_debug_info("No mask found for '%s'." %
+                ph.print_info("No mask found for '%s'." %
                                     (abs_path_image))
                 abs_path_mask = None
 

@@ -244,7 +244,7 @@ def get_parsed_input_line(
     ph.print_title("Given Input")
     print("Chosen Parameters:")
     for arg in sorted(vars(args)):
-        ph.print_debug_info("%s: " % (arg), newline=False)
+        ph.print_info("%s: " % (arg), newline=False)
         print(getattr(args, arg))
 
     return args
@@ -444,7 +444,7 @@ if __name__ == '__main__':
     if args.regularization in ["TK0", "TK1"]:
         SRR = tk.TikhonovSolver(
             stacks=stacks,
-            HR_volume=HR_volume,
+            reconstruction=HR_volume,
             alpha=args.alpha,
             iter_max=args.iter_max,
             reg_type=args.regularization,
@@ -454,13 +454,13 @@ if __name__ == '__main__':
     elif args.regularization == "TV":
         SRR = admm.ADMMSolver(
             stacks=stacks,
-            HR_volume=HR_volume,
+            reconstruction=HR_volume,
             alpha=args.alpha,
             reg_type=args.regularization,
             minimizer=args.minimizer,
             iter_max=args.iter_max,
             rho=rho,
-            ADMM_iterations=ADMM_iterations,
+            iterations=iterations,
         )
 
     if args.two_step_cycles > 0:

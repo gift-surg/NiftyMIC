@@ -61,8 +61,8 @@ class VolumeReconstruction:
         self._SRR_tolerance = 1e-8
 
         self._SRR_rho = 1            # Regularization parameter of augmented Lagrangian term (only for TV-L2)
-        self._ADMM_iterations = 5    # Number of performed ADMM iterations
-        self._SRR_ADMM_iterations_output_dir = None
+        self._iterations = 5    # Number of performed ADMM iterations
+        self._SRR_iterations_output_dir = None
 
         self._SRR.set_alpha(self._SRR_alpha)
         self._SRR.set_iter_max(self._SRR_iter_max)
@@ -71,8 +71,8 @@ class VolumeReconstruction:
         self._SRR.set_tolerance(self._SRR_tolerance)
 
         self._SRR.set_rho(self._SRR_rho)
-        self._SRR.set_ADMM_iterations(self._ADMM_iterations)
-        self._SRR.set_ADMM_iterations_output_dir(self._SRR_ADMM_iterations_output_dir)
+        self._SRR.set_iterations(self._iterations)
+        self._SRR.set_iterations_output_dir(self._SRR_iterations_output_dir)
 
         ## 2) SDA reconstruction settings:
         self._SDA = sda.ScatteredDataApproximation(self._stack_manager, self._HR_volume)
@@ -188,33 +188,33 @@ class VolumeReconstruction:
     #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
     #  \]$
     #  \param[in] iterations number of ADMM iterations, scalar
-    def set_SRR_ADMM_iterations(self, iterations):
-        self._SRR_ADMM_iterations = iterations
+    def set_SRR_iterations(self, iterations):
+        self._SRR_iterations = iterations
 
         ## Update regularization parameter for solver 
-        self._SRR.set_ADMM_iterations(self._SRR_ADMM_iterations)
+        self._SRR.set_iterations(self._SRR_iterations)
 
 
     ## Get chosen value of ADMM iterations to solve TV-L2 reconstruction problem
     #  \return number of ADMM iterations, scalar
-    def get_SRR_ADMM_iterations(self):
-        return self._SRR_ADMM_iterations
+    def get_SRR_iterations(self):
+        return self._SRR_iterations
 
 
     ## Set ouput directory to write TV results in case outputs of ADMM iterations are desired
     #  \param[in] dir_output directory to write TV results, string
-    def set_SRR_ADMM_iterations_output_dir(self, dir_output):
-        self._SRR_ADMM_iterations_output_dir = dir_output
+    def set_SRR_iterations_output_dir(self, dir_output):
+        self._SRR_iterations_output_dir = dir_output
 
         ## Update regularization parameter for solver 
-        self._SRR.set_ADMM_iterations_output_dir(self._SRR_ADMM_iterations_output_dir)
+        self._SRR.set_iterations_output_dir(self._SRR_iterations_output_dir)
 
 
-    def set_SRR_ADMM_iterations_output_filename_prefix(self, prefix):
-        self._SRR_ADMM_iterations_output_filename_prefix = prefix
+    def set_SRR_iterations_output_filename_prefix(self, prefix):
+        self._SRR_iterations_output_filename_prefix = prefix
 
         ## Update regularization parameter for solver 
-        self._SRR.set_ADMM_iterations_output_filename_prefix(self._SRR_ADMM_iterations_output_filename_prefix)
+        self._SRR.set_iterations_output_filename_prefix(self._SRR_iterations_output_filename_prefix)
 
 
     ## Set maximum number of iterations for minimizer used for Tikhonov regularization

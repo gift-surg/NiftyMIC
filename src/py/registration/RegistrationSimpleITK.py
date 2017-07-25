@@ -395,21 +395,21 @@ class RegistrationSimpleITK:
         # print("\n")
 
         if self._use_verbose:
-            ph.print_debug_info("Registration: SimpleITK")
-            ph.print_debug_info("Transform Model: %s"
+            ph.print_info("Registration: SimpleITK")
+            ph.print_info("Transform Model: %s"
                                 % (self._registration_type))
-            ph.print_debug_info("Interpolator: %s"
+            ph.print_info("Interpolator: %s"
                                 % (self._interpolator))
-            ph.print_debug_info("Metric: %s" % (self._metric))
-            ph.print_debug_info("CenteredTransformInitializer: %s"
+            ph.print_info("Metric: %s" % (self._metric))
+            ph.print_info("CenteredTransformInitializer: %s"
                                 % (self._initializer_type))
-            ph.print_debug_info("Optimizer: %s"
+            ph.print_info("Optimizer: %s"
                                 % (self._optimizer))
-            ph.print_debug_info("Use Multiresolution Framework: %s"
+            ph.print_info("Use Multiresolution Framework: %s"
                                 % (self._use_multiresolution_framework))
-            ph.print_debug_info("Use Fixed Mask: %s"
+            ph.print_info("Use Fixed Mask: %s"
                                 % (self._use_fixed_mask))
-            ph.print_debug_info("Use Moving Mask: %s"
+            ph.print_info("Use Moving Mask: %s"
                                 % (self._use_moving_mask))
 
         # Execute 3D registration
@@ -439,10 +439,10 @@ class RegistrationSimpleITK:
                 registration_transform_sitk)
 
         if self._use_verbose:
-            ph.print_debug_info("SimpleITK Image Registration Method:")
-            ph.print_debug_info('\tFinal metric value: {0}'.format(
+            ph.print_info("SimpleITK Image Registration Method:")
+            ph.print_info('\tFinal metric value: {0}'.format(
                 registration_method.GetMetricValue()))
-            ph.print_debug_info('\tOptimizer\'s stopping condition, {0}'.format(
+            ph.print_info('\tOptimizer\'s stopping condition, {0}'.format(
                 registration_method.GetOptimizerStopConditionDescription()))
 
             sitkh.print_sitk_transform(registration_transform_sitk)

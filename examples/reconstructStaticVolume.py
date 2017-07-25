@@ -158,7 +158,7 @@ def get_parsed_input_line(
     ph.print_title("Given Input")
     print("Chosen Parameters:")
     for arg in sorted(vars(args)):
-        ph.print_debug_info("%s: " % (arg), newline=False)
+        ph.print_info("%s: " % (arg), newline=False)
         print(getattr(args, arg))
 
     return args
@@ -259,7 +259,7 @@ if __name__ == '__main__':
     HR_volume = st.Stack.from_stack(HR_volume_init, filename="HR_volume")
     SRR = tk.TikhonovSolver(
         stacks=stacks,
-        HR_volume=HR_volume,
+        reconstruction=HR_volume,
         reg_type=args.regularization,
         minimizer="lsmr",
         iter_max=args.iter_max,

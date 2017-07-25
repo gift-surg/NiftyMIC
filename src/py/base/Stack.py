@@ -83,7 +83,7 @@ class Stack:
         # Append masks (either provided or binary mask)
         if file_path_mask is None:
             stack.sitk_mask = stack._generate_identity_mask()
-            ph.print_debug_info(
+            ph.print_info(
                 "Identity mask created for '%s'." % (file_path))
 
         else:
@@ -103,7 +103,7 @@ class Stack:
             stack._N_slices = 0
             stack._slices = None
 
-        ph.print_debug_info(
+        ph.print_info(
             "Stack (image + mask) associated to '%s' successfully read." % (file_path))
         return stack
 
@@ -368,7 +368,7 @@ class Stack:
         full_file_name = os.path.join(directory, filename)
 
         # Write file to specified location
-        ph.print_debug_info("Write image to %s.nii.gz ... " %
+        ph.print_info("Write image to %s.nii.gz ... " %
                             (full_file_name), newline=False)
         sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
         print("done")
@@ -379,7 +379,7 @@ class Stack:
 
             # Write mask if it does not consist of only ones
             if not self._is_unity_mask and write_mask:
-                ph.print_debug_info("Write image mask to %s_mask.nii.gz ... " % (
+                ph.print_info("Write image mask to %s_mask.nii.gz ... " % (
                     full_file_name), newline=False)
                 sitk.WriteImage(
                     self.sitk_mask, full_file_name + "_mask.nii.gz")

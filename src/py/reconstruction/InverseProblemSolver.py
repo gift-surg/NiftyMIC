@@ -98,9 +98,9 @@ class InverseProblemSolver:
         self._tolerance = 1e-8  # Tolerance for optimizer
         
         self._rho = 1               # Regularization parameter of augmented Lagrangian term (only for TV-L2)
-        self._ADMM_iterations = 5   # Number of performed ADMM iterations
-        self._ADMM_iterations_output_dir = None
-        self._ADMM_iterations_output_filename_prefix = "TV-L2"
+        self._iterations = 5   # Number of performed ADMM iterations
+        self._iterations_output_dir = None
+        self._iterations_output_filename_prefix = "TV-L2"
 
         ## Define dictionary to choose between two possible computations
         #  of the differential operator D'D
@@ -173,27 +173,27 @@ class InverseProblemSolver:
     #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
     #  \]$
     #  \param[in] iterations number of ADMM iterations, scalar
-    def set_ADMM_iterations(self, iterations):
-        self._ADMM_iterations = iterations
+    def set_iterations(self, iterations):
+        self._iterations = iterations
 
 
     ## Get chosen value of ADMM iterations to solve TV-L2 reconstruction problem
     #  \return number of ADMM iterations, scalar
-    def get_ADMM_iterations(self):
-        return self._ADMM_iterations
+    def get_iterations(self):
+        return self._iterations
 
 
     ## Set ouput directory to write TV results in case outputs of ADMM iterations are desired
     #  \param[in] dir_output directory to write TV results, string
-    def set_ADMM_iterations_output_dir(self, dir_output):
-        self._ADMM_iterations_output_dir = dir_output
+    def set_iterations_output_dir(self, dir_output):
+        self._iterations_output_dir = dir_output
 
 
     ## Set filename to write TV reconstructed volumes of ADMM iteration results 
-    #  \pre ADMM_iterations_output_dir was set
+    #  \pre iterations_output_dir was set
     #  \param[in] filename filename of volume, string
-    def set_ADMM_iterations_output_filename_prefix(self, filename):
-        self._ADMM_iterations_output_filename_prefix = filename
+    def set_iterations_output_filename_prefix(self, filename):
+        self._iterations_output_filename_prefix = filename
 
 
     ## Set maximum number of iterations for minimizer
@@ -349,7 +349,7 @@ class InverseProblemSolver:
             print("Chosen regularization type: TV-L2")
             print("Regularization parameter alpha: " + str(self._alpha))
             print("Regularization parameter of augmented Lagrangian term rho: " + str(self._rho))
-            print("Number of ADMM iterations: " + str(self._ADMM_iterations))
+            print("Number of ADMM iterations: " + str(self._iterations))
             print("Maximum number of TK1 solver iterations: " + str(self._iter_max))
             print("Tolerance: %.0e" %(self._tolerance))
 
@@ -392,7 +392,7 @@ class InverseProblemSolver:
             wz0_nda = np.zeros_like(vz0_nda)
 
             ## Compute approximate TV-L2 reconstruction via ADMM and update HR volume therein
-            self._run_TV_reconstruction(self._ADMM_iterations, HR_nda, sum_ATMy_itk, vx0_nda, vy0_nda, vz0_nda, wx0_nda, wy0_nda, wz0_nda, self._alpha, self._rho)
+            self._run_TV_reconstruction(self._iterations, HR_nda, sum_ATMy_itk, vx0_nda, vy0_nda, vz0_nda, wx0_nda, wy0_nda, wz0_nda, self._alpha, self._rho)
 
 
     ## Use scipy.optimize.minimize to get an approximate solution
@@ -1002,7 +1002,7 @@ class InverseProblemSolver:
     """
     ## Reconstruct volume using TV-L2 regularization via Alternating Direction
     #  Method of Multipliers (ADMM) method
-    #  \param[in] ADMM_iterations number of ADMM iterations, integer
+    #  \param[in] iterations number of ADMM iterations, integer
     #  \param[in] HR_nda initial value of HR volume data array, numpy array
     #  \param[in] sum_ATMy_itk output of _sum_ATMy, itk.Image object
     #  \param[in] vx_nda initial value for auxiliary variable for decoupled 
@@ -1018,23 +1018,23 @@ class InverseProblemSolver:
     #  \param[in] alpha regularization parameter for primal problem, scaler>0
     #  \param[in] rho regularization parameter for augmented Lagrangian term, scalar>0
     #  \post HR_volume is updated after each iteration
-    def _run_TV_reconstruction(self, ADMM_iterations, HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho):
+    def _run_TV_reconstruction(self, iterations, HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho):
         
-        for iter in range(0, ADMM_iterations):
-            print("\tADMM iteration %s/%s:" %(iter+1, ADMM_iterations))
+        for iter in range(0, iterations):
+            print("\tADMM iteration %s/%s:" %(iter+1, iterations))
 
             ## Perform ADMM step
             HR_nda, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda = self._perform_ADMM_iteration(HR_nda, sum_ATMy_itk, vx_nda, vy_nda, vz_nda, wx_nda, wy_nda, wz_nda, alpha, rho)
 
-            if self._ADMM_iterations_output_dir is not None:
-                name =  self._ADMM_iterations_output_filename_prefix
+            if self._iterations_output_dir is not None:
+                name =  self._iterations_output_filename_prefix
                 name += "_stacks" + str(self._N_stacks)
                 name += "_alpha" + str(self._alpha)
                 name += "_rho" + str(self._rho)
                 name += "_ADMM_iteration" + str(iter+1)
 
-                os.system("mkdir -p " + self._ADMM_iterations_output_dir)
-                self._HR_volume.write(directory=self._ADMM_iterations_output_dir, filename=name, write_mask=False)
+                os.system("mkdir -p " + self._iterations_output_dir)
+                self._HR_volume.write(directory=self._iterations_output_dir, filename=name, write_mask=False)
                 # self._HR_volume.show(title=name)
 
             ## Show auxiliary v = Dx

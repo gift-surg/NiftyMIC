@@ -43,7 +43,7 @@ class PrimalDualSolver(Solver):
 
     def __init__(self,
                  stacks,
-                 HR_volume,
+                 reconstruction,
                  alpha=0.03,
                  alpha_cut=3,
                  iter_max=10,
@@ -54,14 +54,14 @@ class PrimalDualSolver(Solver):
                  predefined_covariance=None,
                  reg_type="TV",
                  reg_huber_gamma=0.05,
-                 primal_dual_iterations=10,
+                 iterations=10,
                  alg_type="ALG2",
-                 verbose=1,
+                 verbose=0,
                  ):
 
         super(self.__class__, self).__init__(
             stacks=stacks,
-            HR_volume=HR_volume,
+            reconstruction=reconstruction,
             alpha=alpha,
             alpha_cut=alpha_cut,
             iter_max=iter_max,
@@ -77,7 +77,7 @@ class PrimalDualSolver(Solver):
         self._reg_type = reg_type
 
         # number of primal-dual iterations
-        self._primal_dual_iterations = primal_dual_iterations
+        self._iterations = iterations
 
         # parameter used for Huber regularizer
         self._reg_huber_gamma = reg_huber_gamma
@@ -91,10 +91,10 @@ class PrimalDualSolver(Solver):
         filename = prefix
         filename += "stacks" + str(len(self._stacks))
         if self._alpha > 0:
+            filename += "_PrimalDual"
             filename += "_" + self._reg_type
             if self._reg_type == "huber":
                 filename += "_gamma" + str(self._reg_huber_gamma)
-            filename += "_PrimalDual"
             # filename += "_" + self._alg_type
         filename += "_" + self._minimizer
         if self._data_loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
@@ -103,38 +103,37 @@ class PrimalDualSolver(Solver):
                 filename += str(self._huber_gamma)
         filename += "_alpha" + str(self._alpha)
         filename += "_itermax" + str(self._iter_max)
-        filename += "_PrimalDualIterations" + str(self._primal_dual_iterations)
+        filename += "_PrimalDualIterations" + str(self._iterations)
 
         # Replace dots by 'p'
         filename = filename.replace(".", "p")
 
         return filename
 
-    def print_statistics(self):
-        ph.print_subtitle("Statistics")
-        ph.print_debug_info("Elapsed time: %s" %
-                            (self.get_computational_time()))
-
     def run_reconstruction(self, verbose=0):
+
+        if self._reg_type not in ["TV", "Huber"]:
+            raise ValueError("Error: regularization type can only be either "
+                             "'TV' or 'Huber'")
 
         self._print_info_text()
 
         # L^2 = ||K||^2 = ||\nabla||^2 = ||div||^2 <= 16/h^2 in 3D
         # However, it seems that the smaller L2 the bigger the effect of TV
         # regularization. Try, e.g. L2 = 1.
-        L2 = 16. / self._HR_volume.sitk.GetSpacing()[0]**2
+        L2 = 16. / self._reconstruction.sitk.GetSpacing()[0]**2
 
         # Get operators
-        A = self._get_A()
-        A_adj = self._get_A_adj()
-        b = self._get_b()
-        x0 = self._get_x0()
+        A = self.get_A()
+        A_adj = self.get_A_adj()
+        b = self.get_b()
+        x0 = self.get_x0()
 
-        spacing = np.array(self._HR_volume.sitk.GetSpacing())
+        spacing = np.array(self._reconstruction.sitk.GetSpacing())
         linear_operators = linop.LinearOperators3D(spacing=spacing)
         grad, grad_adj = linear_operators.get_gradient_operators()
 
-        X_shape = self._HR_shape_nda
+        X_shape = self._reconstruction_shape_nda
         Z_shape = grad(x0.reshape(*X_shape)).shape
 
         B = lambda x: grad(x.reshape(*X_shape)).flatten()
@@ -158,7 +157,7 @@ class PrimalDualSolver(Solver):
             L2=L2,
             x0=x0,
             alpha=self._alpha,
-            iterations=self._primal_dual_iterations,
+            iterations=self._iterations,
             verbose=self._verbose,
             alg_type=self._alg_type,
         )
@@ -168,30 +167,30 @@ class PrimalDualSolver(Solver):
         self._computational_time = solver.get_computational_time()
 
         # Update volume
-        self._HR_volume.itk = self._get_itk_image_from_array_vec(
-            solver.get_x(), self._HR_volume.itk)
-        self._HR_volume.sitk = sitkh.get_sitk_from_itk_image(
-            self._HR_volume.itk)
+        self._reconstruction.itk = self._get_itk_image_from_array_vec(
+            solver.get_x(), self._reconstruction.itk)
+        self._reconstruction.sitk = sitkh.get_sitk_from_itk_image(
+            self._reconstruction.itk)
 
     def _print_info_text(self):
         ph.print_title("Primal-Dual Solver:")
-        ph.print_debug_info("Chosen regularization type: %s" %
-                            (self._reg_type), newline=False)
+        ph.print_info("Chosen regularization type: %s" %
+                      (self._reg_type), newline=False)
         if self._reg_type == "huber":
             print(" (gamma = %g)" % (self._reg_huber_gamma))
         else:
             print("")
-        ph.print_debug_info("Strategy for parameter update: %s"
-                            % (self._alg_type))
-        ph.print_debug_info(
+        ph.print_info("Strategy for parameter update: %s"
+                      % (self._alg_type))
+        ph.print_info(
             "Regularization parameter alpha: %g" % (self._alpha))
         if self._data_loss in ["huber"]:
-            ph.print_debug_info("Loss function: %s (gamma = %g)" %
-                                (self._data_loss, self._huber_gamma))
+            ph.print_info("Loss function: %s (gamma = %g)" %
+                          (self._data_loss, self._huber_gamma))
         else:
-            ph.print_debug_info("Loss function: %s" % (self._data_loss))
-        ph.print_debug_info("Number of Primal-Dual iterations: %d" %
-                            (self._primal_dual_iterations))
-        ph.print_debug_info("Minimizer: %s" % (self._minimizer))
-        ph.print_debug_info(
+            ph.print_info("Loss function: %s" % (self._data_loss))
+        ph.print_info("Number of Primal-Dual iterations: %d" %
+                      (self._iterations))
+        ph.print_info("Minimizer: %s" % (self._minimizer))
+        ph.print_info(
             "Maximum number of iterations: %d" % (self._iter_max))

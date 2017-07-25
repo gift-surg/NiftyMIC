@@ -63,12 +63,12 @@ class NonnegativeTikhonovSolver(TikhonovSolver):
     #                                                        augmented
     #                                                        Lagrangian term,
     #                                                        scalar
-    # \param[in]     ADMM_iterations                         number of ADMM
+    # \param[in]     iterations                         number of ADMM
     #                                                        iterations, scalar
-    # \param[in]     ADMM_iterations_output_dir              The ADMM iterations output dir
-    # \param[in]     ADMM_iterations_output_filename_prefix  The ADMM iterations output filename prefix
+    # \param[in]     iterations_output_dir              The ADMM iterations output dir
+    # \param[in]     iterations_output_filename_prefix  The ADMM iterations output filename prefix
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", rho=0.5, ADMM_iterations=10, ADMM_iterations_output_dir=None, ADMM_iterations_output_filename_prefix="TV-L2"):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, alpha=0.03, iter_max=10, reg_type="TK1", rho=0.5, iterations=10, iterations_output_dir=None, iterations_output_filename_prefix="TV-L2"):
 
         self._MINIMIZER = "lsmr"
         # self._MINIMIZER = "lsqr"
@@ -78,10 +78,10 @@ class NonnegativeTikhonovSolver(TikhonovSolver):
         
         ## Settings for optimizer
         self._rho = rho
-        self._ADMM_iterations = ADMM_iterations
+        self._iterations = iterations
 
-        self._ADMM_iterations_output_dir = ADMM_iterations_output_dir
-        self._ADMM_iterations_output_filename_prefix = ADMM_iterations_output_filename_prefix
+        self._iterations_output_dir = iterations_output_dir
+        self._iterations_output_filename_prefix = iterations_output_filename_prefix
 
 
     ## Set regularization parameter used for augmented Lagrangian in TV-L2 regularization
@@ -106,38 +106,38 @@ class NonnegativeTikhonovSolver(TikhonovSolver):
     #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
     #  \]$
     #  \param[in] iterations number of ADMM iterations, scalar
-    def set_ADMM_iterations(self, iterations):
-        self._ADMM_iterations = iterations
+    def set_iterations(self, iterations):
+        self._iterations = iterations
 
 
     ## Get chosen value of ADMM iterations to solve TV-L2 reconstruction problem
     #  \return number of ADMM iterations, scalar
-    def get_ADMM_iterations(self):
-        return self._ADMM_iterations
+    def get_iterations(self):
+        return self._iterations
 
 
     ## Set ouput directory to write TV results in case outputs of ADMM iterations are desired
     #  \param[in] dir_output directory to write TV results, string
-    def set_ADMM_iterations_output_dir(self, dir_output):
-        self._ADMM_iterations_output_dir = dir_output
+    def set_iterations_output_dir(self, dir_output):
+        self._iterations_output_dir = dir_output
 
 
     ## Get ouput directory to write TV results in case outputs of ADMM iterations are desired
-    def get_ADMM_iterations_output_dir(self):
-        return self._ADMM_iterations_output_dir
+    def get_iterations_output_dir(self):
+        return self._iterations_output_dir
 
 
     ## Set filename prefix to write TV reconstructed volumes of ADMM iteration results 
-    #  \pre ADMM_iterations_output_dir was set
+    #  \pre iterations_output_dir was set
     #  \param[in] filename filename prefix of ADMM output iteration volumes, string
-    def set_ADMM_iterations_output_filename_prefix(self, filename):
-        self._ADMM_iterations_output_filename_prefix = filename
+    def set_iterations_output_filename_prefix(self, filename):
+        self._iterations_output_filename_prefix = filename
 
 
     ## Get filename to write TV reconstructed volumes of ADMM iteration results 
-    #  \pre ADMM_iterations_output_dir was set
-    def get_ADMM_iterations_output_filename_prefix(self, filename):
-        return self._ADMM_iterations_output_filename_prefix
+    #  \pre iterations_output_dir was set
+    def get_iterations_output_filename_prefix(self, filename):
+        return self._iterations_output_filename_prefix
 
 
     ##
@@ -171,7 +171,7 @@ class NonnegativeTikhonovSolver(TikhonovSolver):
         print("Regularization parameter: " + str(self._alpha))
         print("Maximum number of TK solver iterations: " + str(self._iter_max))
         print("Regularization parameter of augmented Lagrangian term rho: " + str(self._rho))
-        print("Number of ADMM iterations: " + str(self._ADMM_iterations))
+        print("Number of ADMM iterations: " + str(self._iterations))
         # print("Tolerance: %.0e" %(self._tolerance))
 
         time_start = time.time()
@@ -191,7 +191,7 @@ class NonnegativeTikhonovSolver(TikhonovSolver):
         w = HR_nda_vec - v
         
 
-        for i_ADMM in range(0, self._ADMM_iterations):
+        for i_ADMM in range(0, self._iterations):
 
             ## Update RHS
             b[-self._N_voxels_HR_volume:] = np.sqrt(self._rho)*(v-w)

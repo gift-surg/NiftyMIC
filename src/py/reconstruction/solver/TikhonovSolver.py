@@ -20,6 +20,7 @@ from scipy.optimize import minimize
 import numericalsolver.TikhonovLinearSolver as tk
 import numericalsolver.LinearOperators as linop
 import pythonhelper.SimpleITKHelper as sitkh
+import pythonhelper.PythonHelper as ph
 
 # Import modules
 from reconstruction.solver.Solver import Solver
@@ -67,34 +68,36 @@ class TikhonovSolver(Solver):
     # \date          2016-08-01 23:00:04+0100
     #
     # \param         self                   The object
-    # \param[in]     stacks                 list of Stack objects containing
+    # \param         stacks                 list of Stack objects containing
     #                                       all stacks used for the
     #                                       reconstruction
-    # \param[in,out] HR_volume              Stack object containing the current
-    #                                       estimate of the HR volume (used as
-    #                                       initial value + space definition)
-    # \param[in]     alpha_cut              Cut-off distance for Gaussian
+    # \param[in,out] reconstruction         Stack object containing the current
+    #                                       estimate of the reconstruction
+    #                                       volume (used as initial value +
+    #                                       space definition)
+    # \param         alpha_cut              Cut-off distance for Gaussian
     #                                       blurring filter
-    # \param[in]     alpha                  regularization parameter, scalar
-    # \param[in]     iter_max               number of maximum iterations,
+    # \param         alpha                  regularization parameter, scalar
+    # \param         iter_max               number of maximum iterations,
     #                                       scalar
-    # \param[in]     reg_type               Type of Tikhonov regualrization,
+    # \param         reg_type               Type of Tikhonov regualrization,
     #                                       i.e. TK0 or TK1 for either zeroth-
     #                                       or first order Tikhonov
-    # \param[in]     minimizer              Type of minimizer used to solve
+    # \param         minimizer              Type of minimizer used to solve
     #                                       minimization problem, possible
     #                                       types: 'lsmr', 'lsqr', 'L-BFGS-B' #
-    # \param[in]     deconvolution_mode     Either "full_3D" or
+    # \param         deconvolution_mode     Either "full_3D" or
     #                                       "only_in_plane". Indicates whether
     #                                       full 3D or only in-plane
     #                                       deconvolution is considered
-    # \param         loss                   The loss
+    # \param         data_loss              The loss
     # \param         huber_gamma            The huber gamma
     # \param         predefined_covariance  The predefined covariance
+    # \param         verbose                The verbose
     #
     def __init__(self,
                  stacks,
-                 HR_volume,
+                 reconstruction,
                  alpha_cut=3,
                  alpha=0.03,
                  iter_max=10,
@@ -110,7 +113,7 @@ class TikhonovSolver(Solver):
         # Run constructor of superclass
         Solver.__init__(self,
                         stacks=stacks,
-                        HR_volume=HR_volume,
+                        reconstruction=reconstruction,
                         alpha_cut=alpha_cut,
                         alpha=alpha,
                         iter_max=iter_max,
@@ -128,8 +131,15 @@ class TikhonovSolver(Solver):
         self._residual_prior = None
         self._residual_ell2 = None
 
+    #
     # Set type of regularization. It can be either 'TK0' or 'TK1'
-    #  \param[in] reg_type Either 'TK0' or 'TK1', string
+    # \date       2017-07-25 15:19:17+0100
+    #
+    # \param      self      The object
+    # \param      reg_type  Either 'TK0' or 'TK1', string
+    #
+    # \return     { description_of_the_return_value }
+    #
     def set_regularization_type(self, reg_type):
         self._reg_type = reg_type
 
@@ -140,11 +150,12 @@ class TikhonovSolver(Solver):
 
     # Compute statistics associated to performed reconstruction
     def compute_statistics(self):
-        HR_nda_vec = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
+        recon_nda_vec = sitk.GetArrayFromImage(
+            self._reconstruction.sitk).flatten()
 
-        self._residual_ell2 = self._get_residual_ell2(HR_nda_vec)
+        self._residual_ell2 = self._get_residual_ell2(recon_nda_vec)
         self._residual_prior = self._get_residual_prior[
-            self._reg_type](HR_nda_vec)
+            self._reg_type](recon_nda_vec)
 
     ##
     # Gets the final cost after optimization
@@ -160,26 +171,6 @@ class TikhonovSolver(Solver):
             self.compute_statistics()
 
         return self._residual_ell2 + self._alpha*self._residual_prior
-
-    ##
-    #       Print statistics associated to performed reconstruction
-    # \date       2016-07-29 12:30:30+0100
-    #
-    # \param      self  The object
-    #
-    def print_statistics(self):
-        print("\nStatistics for performed reconstruction with %s-regularization:" %
-              (self._reg_type))
-        # if self._elapsed_time_sec < 0:
-        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
-        # else:
-        print("\tElapsed time: %s" % (self.get_computational_time()))
-        if self._residual_ell2 is not None:
-            print("\tell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %
-                  (self._residual_ell2))
-            print("\tprior residual = %.3e" % (self._residual_prior))
-        else:
-            print("\tRun 'compute_statistics' for data and prior residuals")
 
     ##
     #       Gets the setting specific filename indicating the information
@@ -199,7 +190,8 @@ class TikhonovSolver(Solver):
         if self._alpha > 0:
             filename += "_" + self._reg_type
         filename += "_" + self._minimizer
-        if self._data_loss not in ["linear"] or self._minimizer in ["L-BFGS-B"]:
+        if self._data_loss not in ["linear"] or \
+                self._minimizer in ["L-BFGS-B"]:
             filename += "_" + self._data_loss
             if self._data_loss in ["huber"]:
                 filename += str(self._huber_gamma)
@@ -212,16 +204,17 @@ class TikhonovSolver(Solver):
         return filename
 
     ##
-    #       Run the reconstruction algorithm based on Tikhonov
-    #             regularization
+    # Run the reconstruction algorithm based on Tikhonov regularization
     # \date       2016-07-29 12:35:01+0100
-    # \post       self._HR_volume is updated with new volume and can be fetched
-    #             by \p get_HR_volume
+    # \post       self._reconstruction is updated with new volume and can be
+    #             fetched by \p get_recon
     #
-    # \param      self                   The object
-    # \param[in]  provide_initial_value  Use HR volume during initialization as
-    #                                    initial value, boolean. Otherwise,
-    #                                    assume zero initial vale.
+    # \param      self  The object
+    # \param      provide_initial_value  Use reconstruction volume during
+    #                                    initialization as initial value, boolean.
+    #                                    Otherwise, assume zero initial vale.
+    #
+    # \return     { description_of_the_return_value }
     #
     def run_reconstruction(self):
 
@@ -229,54 +222,24 @@ class TikhonovSolver(Solver):
             raise ValueError(
                 "Error: regularization type can only be either 'TK0' or 'TK1'")
 
-        # Compute number of voxels to be stored for augmented linear system
-        if self._reg_type in ["TK0"]:
-            print("Chosen regularization type: zeroth-order Tikhonov")
-
-        else:
-            print("Chosen regularization type: first-order Tikhonov")
-
-        if self._deconvolution_mode in ["only_in_plane"]:
-            print("(Only in-plane deconvolution is performed)")
-
-        elif self._deconvolution_mode in ["predefined_covariance"]:
-            print("(Predefined covariance used: cov = diag(%s))" %
-                  (np.diag(self._predefined_covariance)))
-
-        if self._data_loss in ["huber"]:
-            print("Loss function: %s (gamma = %g)" %
-                  (self._data_loss, self._huber_gamma))
-        else:
-            print("Loss function: %s" % (self._data_loss))
-
-        print("Regularization parameter: " + str(self._alpha))
-
-        # Non-linear loss function requires use of L-BFGS-B
-        if self._data_loss not in ["linear"] and self._minimizer not in ["L-BFGS-B"]:
-            print("Note, selected minimizer '%s' cannot be used. Non-linear loss function requires L-BFGS-B." %
-                  (self._minimizer))
-            self._minimizer = "L-BFGS-B"
-
-        print("Minimizer: " + self._minimizer)
-        print("Maximum number of iterations: " + str(self._iter_max))
-        # print("Tolerance: %.0e" %(self._tolerance))
+        self._print_info_text()
 
         # Get operators
-        A = self._get_A()
-        A_adj = self._get_A_adj()
-        b = self._get_b()
-        x0 = self._get_x0()
+        A = self.get_A()
+        A_adj = self.get_A_adj()
+        b = self.get_b()
+        x0 = self.get_x0()
 
         if self._reg_type == "TK0":
             B = lambda x: x.flatten()
             B_adj = lambda x: x.flatten()
 
         elif self._reg_type == "TK1":
-            spacing = np.array(self._HR_volume.sitk.GetSpacing())
+            spacing = np.array(self._reconstruction.sitk.GetSpacing())
             linear_operators = linop.LinearOperators3D(spacing=spacing)
             grad, grad_adj = linear_operators.get_gradient_operators()
 
-            X_shape = self._HR_shape_nda
+            X_shape = self._reconstruction_shape_nda
             Z_shape = grad(x0.reshape(*X_shape)).shape
 
             B = lambda x: grad(x.reshape(*X_shape)).flatten()
@@ -299,7 +262,45 @@ class TikhonovSolver(Solver):
         self._computational_time = solver.get_computational_time()
 
         # After reconstruction: Update member attribute
-        self._HR_volume.itk = self._get_itk_image_from_array_vec(
-            solver.get_x(), self._HR_volume.itk)
-        self._HR_volume.sitk = sitkh.get_sitk_from_itk_image(
-            self._HR_volume.itk)
+        self._reconstruction.itk = self._get_itk_image_from_array_vec(
+            solver.get_x(), self._reconstruction.itk)
+        self._reconstruction.sitk = sitkh.get_sitk_from_itk_image(
+            self._reconstruction.itk)
+
+    def _print_info_text(self):
+
+        ph.print_title("Tikhonov Solver:")
+        ph.print_info("Chosen regularization type: ", newline=False)
+        if self._reg_type in ["TK0"]:
+            print("Zeroth-order Tikhonov")
+
+        else:
+            print("First-order Tikhonov")
+
+        if self._deconvolution_mode in ["only_in_plane"]:
+            ph.print_info("(Only in-plane deconvolution is performed)")
+
+        elif self._deconvolution_mode in ["predefined_covariance"]:
+            ph.print_info("(Predefined covariance used: cov = diag(%s))"
+                          % (np.diag(self._predefined_covariance)))
+
+        if self._data_loss in ["huber"]:
+            ph.print_info("Loss function: %s (gamma = %g)" %
+                          (self._data_loss, self._huber_gamma))
+        else:
+            ph.print_info("Loss function: %s" % (self._data_loss))
+
+        ph.print_info("Regularization parameter: " + str(self._alpha))
+
+        # Non-linear loss function requires use of L-BFGS-B
+        if self._data_loss not in ["linear"] and \
+                self._minimizer not in ["L-BFGS-B"]:
+            ph.print_info("Note, selected minimizer '%s' cannot be used."
+                          " Non-linear loss function requires L-BFGS-B."
+                          % (self._minimizer))
+            self._minimizer = "L-BFGS-B"
+
+        ph.print_info("Minimizer: " + self._minimizer)
+        ph.print_info(
+            "Maximum number of iterations: " + str(self._iter_max))
+        # ph.print_info("Tolerance: %.0e" %(self._tolerance))

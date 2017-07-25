@@ -59,27 +59,27 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
     # \param[in]  filename_results_prefix                 Prefix applied for
     #                                                     each filename written
     #                                                     to dir_results
-    # \param[in]  ADMM_iterations                         number of ADMM
+    # \param[in]  iterations                         number of ADMM
     #                                                     iterations, scalar
     # \param[in]  rho_array                               Array containing
     #                                                     regularization
     #                                                     parameter of
     #                                                     augmented Lagrangian
     #                                                     term, list
-    # \param[in]  ADMM_iterations_output_dir              The ADMM iterations
+    # \param[in]  iterations_output_dir              The ADMM iterations
     #                                                     output dir
-    # \param[in]  ADMM_iterations_output_filename_prefix  The ADMM iterations
+    # \param[in]  iterations_output_filename_prefix  The ADMM iterations
     #                                                     output filename
     #                                                     prefix
     #
-    def __init__(self, stacks, HR_volume, alpha_cut=3, iter_max=10, alpha_array=[None], dir_results="RegularizationParameterEstimation/", filename_results_prefix="", ADMM_iterations=5, rho_array=[None], ADMM_iterations_output_dir="TV-L2_ADMM_iterations/", ADMM_iterations_output_filename_prefix="TV-L2", minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
+    def __init__(self, stacks, HR_volume, alpha_cut=3, iter_max=10, alpha_array=[None], dir_results="RegularizationParameterEstimation/", filename_results_prefix="", iterations=5, rho_array=[None], iterations_output_dir="TV-L2_iterations/", iterations_output_filename_prefix="TV-L2", minimizer="lsmr", deconvolution_mode="full_3D", predefined_covariance=None):
 
         ## Run constructor of superclass
         RegularizationParameterEstimator.__init__(self, stacks, HR_volume, alpha_cut=alpha_cut, iter_max=iter_max, alpha_array=alpha_array, dir_results=dir_results, filename_results_prefix=filename_results_prefix)               
         self._rho_array = rho_array
-        self._ADMM_iterations = ADMM_iterations   # Number of performed ADMM iterations
-        self._ADMM_iterations_output_dir = self._dir_results + ADMM_iterations_output_dir
-        self._ADMM_iterations_output_filename_prefix = ADMM_iterations_output_filename_prefix
+        self._iterations = iterations   # Number of performed ADMM iterations
+        self._iterations_output_dir = self._dir_results + iterations_output_dir
+        self._iterations_output_filename_prefix = iterations_output_filename_prefix
 
         self._minimizer = minimizer
         self._deconvolution_mode = deconvolution_mode
@@ -124,7 +124,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
 
                 ## Initialize solver
                 HR_volume_init = st.Stack.from_stack(self._HR_volume)
-                solver = admm.ADMMSolver(self._stacks, HR_volume_init, alpha_cut=self._alpha_cut, alpha=alpha, iter_max=self._iter_max, rho=rho, ADMM_iterations=self._ADMM_iterations, ADMM_iterations_output_dir=self._ADMM_iterations_output_dir, ADMM_iterations_output_filename_prefix=self._ADMM_iterations_output_filename_prefix, minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
+                solver = admm.ADMMSolver(self._stacks, HR_volume_init, alpha_cut=self._alpha_cut, alpha=alpha, iter_max=self._iter_max, rho=rho, iterations=self._iterations, iterations_output_dir=self._iterations_output_dir, iterations_output_filename_prefix=self._iterations_output_filename_prefix, minimizer=self._minimizer, deconvolution_mode=self._deconvolution_mode, predefined_covariance=self._predefined_covariance)
 
                 ## Reconstruct volume for given alpha
                 solver.run_reconstruction(estimate_initial_value=estimate_initial_value)
@@ -166,13 +166,13 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
         filename += "_" + self._minimizer
         # filename += "_alpha" + str(alpha)
         # filename += "_rho" + str(rho)
-        filename += "_ADMMiterations" + str(self._ADMM_iterations)
+        filename += "_ADMMiterations" + str(self._iterations)
         filename += "_TK1itermax" + str(self._iter_max)
         filename += "_" + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2)
         filename += "_" + str(now.hour).zfill(2) + str(now.minute).zfill(2) + str(now.second).zfill(2)
 
         header = "## " + "TV-L2-Regularization"
-        header += " with " + str(self._ADMM_iterations) + " ADMM iterations."
+        header += " with " + str(self._iterations) + " ADMM iterations."
         header += " TK1-solver settings:" 
         header += " itermax = " + str(self._iter_max)
         # header += ", tolerance = " + str(SRR_tolerance)
@@ -207,7 +207,7 @@ class TVL2RegularizationParameterEstimator(RegularizationParameterEstimator):
         filename_image += "_rho" + rho_str
         filename_image += "_alpha" + alpha_str
         filename_image += "_TK1itermax" + str(self._iter_max)
-        filename_image += "_ADMMiterations" + str(self._ADMM_iterations)
+        filename_image += "_ADMMiterations" + str(self._iterations)
 
         ## Replace decimal point by 'p'
         filename_image = filename_image.replace(".", "p")

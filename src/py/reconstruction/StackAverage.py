@@ -25,7 +25,7 @@ class StackAverage:
     ## Constructor
     #  \param[in] stack_manager instance of StackManager containing all stacks and additional information
     #  \param[in] HR_volume Stack object containing the current estimate of the HR volume (required for defining HR space)
-    def __init__(self, stack_manager, HR_volume=None):
+    def __init__(self, stack_manager, reconstruction=None):
 
         ## Initialize variables
         self._stack_manager = stack_manager

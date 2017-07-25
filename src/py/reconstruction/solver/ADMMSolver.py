@@ -33,42 +33,32 @@ from reconstruction.solver.Solver import Solver
 class ADMMSolver(Solver):
 
     ##
-    #          Constructor
+    # Constructor
     # \date          2016-08-01 22:57:21+0100
     #
-    # \param         self                                    The object
-    # \param[in]     stacks                                  list of Stack
-    #                                                        objects containing
-    #                                                        all stacks used
-    #                                                        for the
-    #                                                        reconstruction
-    # \param[in,out] HR_volume                               Stack object
-    #                                                        containing the
-    #                                                        current estimate
-    #                                                        of the HR volume
-    #                                                        (used as initial
-    #                                                        value + space
-    #                                                        definition)
-    # \param[in]     alpha_cut                               Cut-off distance
-    #                                                        for Gaussian
-    #                                                        blurring filter
-    # \param[in]     alpha                                   regularization
-    #                                                        parameter, scalar
-    # \param[in]     iter_max                                number of maximum
-    #                                                        iterations, scalar
-    # \param[in]     rho                                     regularization
-    #                                                        parameter of
-    #                                                        augmented
-    #                                                        Lagrangian term,
-    #                                                        scalar
-    # \param[in]     ADMM_iterations                         number of ADMM
-    #                                                        iterations, scalar
-    # \param[in]     ADMM_iterations_output_dir              The ADMM iterations output dir
-    # \param[in]     ADMM_iterations_output_filename_prefix  The ADMM iterations output filename prefix
+    # \param         self                   The object
+    # \param[in]     stacks                 list of Stack objects containing
+    #                                       all stacks used for the
+    #                                       reconstruction
+    # \param[in,out] reconstruction                  Stack object containing the current
+    #                                       estimate of the reconstruction volume (used as
+    #                                       initial value + space definition)
+    # \param[in]     alpha_cut              Cut-off distance for Gaussian
+    #                                       blurring filter
+    # \param[in]     alpha                  regularization parameter, scalar
+    # \param[in]     iter_max               number of maximum iterations,
+    #                                       scalar
+    # \param         minimizer              The minimizer
+    # \param         deconvolution_mode     The deconvolution mode
+    # \param         predefined_covariance  The predefined covariance
+    # \param[in]     rho                    regularization parameter of
+    #                                       augmented Lagrangian term, scalar
+    # \param[in]     iterations        number of ADMM iterations, scalar
+    # \param         verbose                The verbose
     #
     def __init__(self,
                  stacks,
-                 HR_volume,
+                 reconstruction,
                  alpha_cut=3,
                  alpha=0.03,
                  iter_max=10,
@@ -76,14 +66,14 @@ class ADMMSolver(Solver):
                  deconvolution_mode="full_3D",
                  predefined_covariance=None,
                  rho=0.5,
-                 ADMM_iterations=10,
-                 verbose=1,
+                 iterations=10,
+                 verbose=0,
                  ):
 
         # Run constructor of superclass
         Solver.__init__(self,
                         stacks=stacks,
-                        HR_volume=HR_volume,
+                        reconstruction=reconstruction,
                         alpha_cut=alpha_cut,
                         alpha=alpha,
                         iter_max=iter_max,
@@ -95,7 +85,7 @@ class ADMMSolver(Solver):
 
         # Settings for optimizer
         self._rho = rho
-        self._ADMM_iterations = ADMM_iterations
+        self._iterations = iterations
 
     # Set regularization parameter used for augmented Lagrangian in TV-L2 regularization
     #  \[$
@@ -117,31 +107,21 @@ class ADMMSolver(Solver):
     #   + \mu \cdot (\nabla x - v) + \frac{\rho}{2} \Vert \nabla x - v \Vert_{\ell^2}^2
     #  \]$
     #  \param[in] iterations number of ADMM iterations, scalar
-    def set_ADMM_iterations(self, iterations):
-        self._ADMM_iterations = iterations
+    def set_iterations(self, iterations):
+        self._iterations = iterations
 
     # Get chosen value of ADMM iterations to solve TV-L2 reconstruction problem
     #  \return number of ADMM iterations, scalar
-    def get_ADMM_iterations(self):
-        return self._ADMM_iterations
+    def get_iterations(self):
+        return self._iterations
 
     # Compute statistics associated to performed reconstruction
     def compute_statistics(self):
-        HR_nda_vec = sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
+        reconstruction_nda_vec = sitk.GetArrayFromImage(
+            self._reconstruction.sitk).flatten()
 
-        self._residual_ell2 = self._get_residual_ell2(HR_nda_vec)
-        self._residual_prior = self._get_residual_prior(HR_nda_vec)
-
-    # Print statistics associated to performed reconstruction
-    def print_statistics(self):
-        print("\nStatistics for performed reconstruction with TV-regularization:")
-        print("\tElapsed time: %s" % (self.get_computational_time()))
-        if self._residual_ell2 is not None:
-            print("\tell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %
-                  (self._residual_ell2))
-            print("\tprior residual = %.3e" % (self._residual_prior))
-        else:
-            print("\tRun 'compute_statistics' for data and prior residuals")
+        self._residual_ell2 = self._get_residual_ell2(reconstruction_nda_vec)
+        self._residual_prior = self._get_residual_prior(reconstruction_nda_vec)
 
     ##
     #       Gets the setting specific filename indicating the information
@@ -159,12 +139,13 @@ class ADMMSolver(Solver):
         filename = prefix
         filename += "stacks" + str(len(self._stacks))
         if self._alpha > 0:
-            filename += "_TV_ADMM"
+            filename += "_ADMM"
+            filename += "_TV"
         filename += "_" + self._minimizer
         filename += "_alpha" + str(self._alpha)
         filename += "_itermax" + str(self._iter_max)
         filename += "_rho" + str(self._rho)
-        filename += "_ADMMiterations" + str(self._ADMM_iterations)
+        filename += "_ADMMiterations" + str(self._iterations)
 
         # Replace dots by 'p'
         filename = filename.replace(".", "p")
@@ -174,8 +155,8 @@ class ADMMSolver(Solver):
     ##
     #       Reconstruct volume using TV-L2 regularization via Alternating
     #             Direction Method of Multipliers (ADMM) method.
-    # \post       self._HR_volume is updated with new volume and can be fetched
-    #             via \p get_HR_volume
+    # \post       self._reconstruction is updated with new volume and can be fetched
+    #             via \p get_recon
     # \date       2016-08-01 23:22:50+0100
     #
     # \param      self                    The object
@@ -185,25 +166,19 @@ class ADMMSolver(Solver):
     #
     def run_reconstruction(self):
 
-        print("Chosen regularization type: TV-L2")
-        print("Regularization parameter alpha: " + str(self._alpha))
-        print(
-            "Regularization parameter of augmented Lagrangian term rho: " + str(self._rho))
-        print("Number of ADMM iterations: " + str(self._ADMM_iterations))
-        print("Maximum number of TK1 solver iterations: " + str(self._iter_max))
-        # print("Tolerance: %.0e" %(self._tolerance))
+        self._print_info_text()
 
         # Get operators
-        A = self._get_A()
-        A_adj = self._get_A_adj()
-        b = self._get_b()
-        x0 = self._get_x0()
+        A = self.get_A()
+        A_adj = self.get_A_adj()
+        b = self.get_b()
+        x0 = self.get_x0()
 
-        spacing = np.array(self._HR_volume.sitk.GetSpacing())
+        spacing = np.array(self._reconstruction.sitk.GetSpacing())
         linear_operators = linop.LinearOperators3D(spacing=spacing)
         grad, grad_adj = linear_operators.get_gradient_operators()
 
-        X_shape = self._HR_shape_nda
+        X_shape = self._reconstruction_shape_nda
         Z_shape = grad(x0.reshape(*X_shape)).shape
 
         B = lambda x: grad(x.reshape(*X_shape)).flatten()
@@ -221,7 +196,7 @@ class ADMMSolver(Solver):
             minimizer="lsmr",
             iter_max=self._iter_max,
             rho=self._rho,
-            ADMM_iterations=self._ADMM_iterations,
+            iterations=self._iterations,
             verbose=self._verbose,
         )
         solver.run()
@@ -230,7 +205,18 @@ class ADMMSolver(Solver):
         self._computational_time = solver.get_computational_time()
 
         # Update volume
-        self._HR_volume.itk = self._get_itk_image_from_array_vec(
-            solver.get_x(), self._HR_volume.itk)
-        self._HR_volume.sitk = sitkh.get_sitk_from_itk_image(
-            self._HR_volume.itk)
+        self._reconstruction.itk = self._get_itk_image_from_array_vec(
+            solver.get_x(), self._reconstruction.itk)
+        self._reconstruction.sitk = sitkh.get_sitk_from_itk_image(
+            self._reconstruction.itk)
+
+    def _print_info_text(self):
+        ph.print_title("ADMM Solver:")
+        ph.print_info("Chosen regularization type: TV")
+        ph.print_info("Regularization parameter alpha: " + str(self._alpha))
+        ph.print_info(
+            "Regularization parameter of augmented Lagrangian term rho: " + str(self._rho))
+        ph.print_info("Number of ADMM iterations: " + str(self._iterations))
+        ph.print_info(
+            "Maximum number of TK1 solver iterations: " + str(self._iter_max))
+        # ph.print_info("Tolerance: %.0e" %(self._tolerance))

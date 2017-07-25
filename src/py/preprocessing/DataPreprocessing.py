@@ -84,7 +84,7 @@ class DataPreprocessing:
         for i in range(0, self._N_stacks):
             self._stacks_preprocessed[i] = st.Stack.from_stack(stacks[i])
 
-        ph.print_debug_info(
+        ph.print_info(
             "%s stacks were loaded for data preprocessing." % (self._N_stacks))
 
     # Specify whether bias field correction based on N4 Bias Field Correction
@@ -124,7 +124,7 @@ class DataPreprocessing:
             # Propagate masks
             self._segmentation_propagator.set_template(target)
             for i in stacks_to_propagate_indices:
-                ph.print_debug_info("Propagate mask from stack '%s' to '%s'" % (
+                ph.print_info("Propagate mask from stack '%s' to '%s'" % (
                     target.get_filename(), self._stacks_preprocessed[i].get_filename()))
                 self._segmentation_propagator.set_stack(
                     self._stacks_preprocessed[i])
@@ -136,7 +136,7 @@ class DataPreprocessing:
 
         # Crop to mask
         if self._use_cropping_to_mask:
-            ph.print_debug_info("Crop stacks to their masks")
+            ph.print_info("Crop stacks to their masks")
 
             for i in range(0, self._N_stacks):
                 self._stacks_preprocessed[i] = self._stacks_preprocessed[i].get_cropped_stack_based_on_mask(
@@ -144,7 +144,7 @@ class DataPreprocessing:
 
         # N4 Bias Field Correction
         if self._use_N4BiasFieldCorrector:
-            ph.print_debug_info(
+            ph.print_info(
                 "Perform N4 Bias Field Correction for all stacks ... ")
             bias_field_corrector = n4bfc.N4BiasFieldCorrection()
 

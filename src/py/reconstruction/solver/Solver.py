@@ -18,9 +18,10 @@ import itk
 import SimpleITK as sitk
 import numpy as np
 
+import pythonhelper.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
 
 # Import modules
-import pythonhelper.SimpleITKHelper as sitkh
 import utilities.lossFunctions as lossfun
 import reconstruction.solver.DifferentialOperations as diffop
 import base.PSF as psf
@@ -31,39 +32,46 @@ PIXEL_TYPE = itk.D
 # ITK image type
 IMAGE_TYPE = itk.Image[PIXEL_TYPE, 3]
 
+# Allowed data loss functions
+DATA_LOSS = ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']
+
 
 class Solver(object):
-    __metaclass__ = ABCMeta
 
     """ This class contains the common functions/attributes of the solvers """
 
     ##
-    #          Constructor
+    # Constructor
     # \date          2016-08-01 22:53:37+0100
     #
     # \param         self                   The object
-    # \param[in]     stacks                 list of Stack objects containing
+    # \param         stacks                 list of Stack objects containing
     #                                       all stacks used for the
     #                                       reconstruction
-    # \param[in,out] HR_volume              Stack object containing the current
-    #                                       estimate of the HR volume (used as
-    #                                       initial value + space definition)
-    # \param[in]     alpha_cut              Cut-off distance for Gaussian
+    # \param[in,out] reconstruction         Stack object containing the current
+    #                                       estimate of the reconstruction
+    #                                       (used as initial value + space
+    #                                       definition)
+    # \param         alpha_cut              Cut-off distance for Gaussian
     #                                       blurring filter
-    # \param[in]     alpha                  regularization parameter, scalar
-    # \param[in]     iter_max               number of maximum iterations,
+    # \param         alpha                  regularization parameter, scalar
+    # \param         iter_max               number of maximum iterations,
     #                                       scalar
-    # \param[in]     deconvolution_mode     Either "full_3D" or
+    # \param         minimizer              The minimizer
+    # \param         deconvolution_mode     Either "full_3D" or
     #                                       "only_in_plane". Indicates whether
     #                                       full 3D or only in-plane
     #                                       deconvolution is considered
-    # \param[in]     predefined_covariance  Either only diagonal entries
+    # \param         data_loss              The data loss
+    # \param         huber_gamma            The huber gamma
+    # \param         predefined_covariance  Either only diagonal entries
     #                                       (sigma_x2, sigma_y2, sigma_z2) or
     #                                       as full 3x3 numpy array
+    # \param         verbose                The verbose
     #
     def __init__(self,
                  stacks,
-                 HR_volume,
+                 reconstruction,
                  alpha_cut=3,
                  alpha=0.02,
                  iter_max=10,
@@ -76,7 +84,7 @@ class Solver(object):
 
         # Initialize variables
         self._stacks = stacks
-        self._HR_volume = HR_volume
+        self._reconstruction = reconstruction
         self._N_stacks = len(stacks)
 
         # Used for PSF modelling
@@ -129,17 +137,18 @@ class Solver(object):
         self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue(0.0)
         self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
         self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(
-            self._HR_volume.itk)
+            self._reconstruction.itk)
 
         # Create PyBuffer object for conversion between NumPy arrays and ITK
         # images
         self._itk2np = itk.PyBuffer[IMAGE_TYPE]
 
         # Extract information ready to use for itk image conversion operations
-        self._HR_shape_nda = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
+        self._reconstruction_shape_nda = sitk.GetArrayFromImage(
+            self._reconstruction.sitk).shape
 
         # Define differential operators
-        spacing = self._HR_volume.sitk.GetSpacing()[0]
+        spacing = self._reconstruction.sitk.GetSpacing()[0]
         self._differential_operations = diffop.DifferentialOperations(
             step_size=spacing)
 
@@ -155,8 +164,8 @@ class Solver(object):
             self._N_total_slice_voxels += N_stack_voxels
 
         # Compute total amount of voxels of x:
-        self._N_voxels_HR_volume = np.array(
-            self._HR_volume.sitk.GetSize()).prod()
+        self._N_voxels_recon = np.array(
+            self._reconstruction.sitk.GetSize()).prod()
 
         # Allocate variables containing information about statistics of
         # reconstruction
@@ -164,8 +173,15 @@ class Solver(object):
         self._residual_ell2 = None
         self._residual_prior = None
 
+    #
     # Set regularization parameter for Tikhonov regularization
-    #  \param[in] alpha regularization parameter, scalar
+    # \date       2017-07-25 15:15:54+0100
+    #
+    # \param      self   The object
+    # \param      alpha  regularization parameter, scalar
+    #
+    # \return     { description_of_the_return_value }
+    #
     def set_alpha(self, alpha):
         self._alpha = alpha
 
@@ -175,11 +191,13 @@ class Solver(object):
         return self._alpha
 
     ##
-    #       Sets the maximum number of iterations for Tikhonov solver.
+    # Sets the maximum number of iterations for Tikhonov solver.
     # \date       2016-08-01 16:35:09+0100
     #
     # \param      self      The object
-    # \param[in]  iter_max  number of maximum iterations, scalar
+    # \param      iter_max  number of maximum iterations, scalar
+    #
+    # \return     { description_of_the_return_value }
     #
     def set_iter_max(self, iter_max):
         self._iter_max = iter_max
@@ -210,9 +228,8 @@ class Solver(object):
     # \param      data_loss  string
     #
     def set_data_loss(self, data_loss):
-        if data_loss not in ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']:
-            raise ValueError("Loss function must be either 'linear', "
-                             "'soft_l1', 'huber', 'cauchy' or 'arctan'.")
+        if data_loss not in DATA_LOSS:
+            raise ValueError("Loss function must be in " + str(DATA_LOSS))
         self._data_loss = loss
 
     def set_huber_gamma(self, huber_gamma):
@@ -221,13 +238,20 @@ class Solver(object):
     def get_huber_gamma(self):
         return self._huber_gamma
 
-    # Get current estimate of HR volume
-    #  \return current estimate of HR volume, instance of Stack
+    # Get current estimate of reconstruction
+    #  \return current estimate of reconstruction, instance of Stack
     def get_reconstruction(self):
-        return self._HR_volume
+        return self._reconstruction
 
+    #
     # Set cut-off distance
-    #  \param[in] alpha_cut scalar value
+    # \date       2017-07-25 15:15:54+0100
+    #
+    # \param      self       The object
+    # \param      alpha_cut  scalar value
+    #
+    # \return     { description_of_the_return_value }
+    #
     def set_alpha_cut(self, alpha_cut):
         self._alpha_cut = alpha_cut
 
@@ -263,17 +287,41 @@ class Solver(object):
 
         return self._residual_prior
 
-    def _get_A(self):
+    ##
+    # Return function call A = lambda x: A(x) with A: R^n -> R^m
+    # \date       2017-07-25 16:02:47+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The a.
+    #
+    def get_A(self):
         return lambda x: self._MA(x)
 
-    def _get_A_adj(self):
+    def get_A_adj(self):
         return lambda x: self._A_adj_M(x)
 
-    def _get_b(self):
+    def get_b(self):
         return self._get_M_y()
 
-    def _get_x0(self):
-        return sitk.GetArrayFromImage(self._HR_volume.sitk).flatten()
+    def get_x0(self):
+        return sitk.GetArrayFromImage(self._reconstruction.sitk).flatten()
+
+    def print_statistics(self):
+        ph.print_subtitle("Statistics")
+        ph.print_info("Elapsed time: %s" %
+                      (self.get_computational_time()))
+
+        # if self._elapsed_time_sec < 0:
+        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
+        # else:
+        # if self._residual_ell2 is not None:
+        #     ph.print_info("ell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %
+        #                   (self._residual_ell2))
+        #     ph.print_info("prior residual = %.3e" % (self._residual_prior))
+        # else:
+        #     ph.print_info(
+        #         "Run 'compute_statistics' for data and prior residuals")
 
     ##
     #       Gets the setting specific filename indicating the information
@@ -319,29 +367,44 @@ class Solver(object):
     def get_predefined_covariance(self):
         return self._predefined_covariance
 
+    #
     # Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
-    #  Filter parameters. Hence, update combined Downsample and Blur Operator
-    #  according to the relative position between slice and HR volume.
-    #  \param[in] slice Slice object
+    # Filter parameters. Hence, update combined Downsample and Blur Operator
+    # according to the relative position between slice and reconstruction.
+    # \date       2017-07-25 15:15:54+0100
+    #
+    # \param      self   The object
+    # \param      slice  Slice object
+    #
+    # \return     { description_of_the_return_value }
+    #
     def _update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D(self, slice):
-        # Get variance covariance matrix representing Gaussian blurring in HR
+        # Get variance covariance matrix representing Gaussian blurring in reconstruction
         # volume coordinates
-        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(
-            slice, self._HR_volume)
+        Cov_reconstruction_coord = self._psf.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+            slice, self._reconstruction)
 
         # Update parameters of forward operator A
-        self._filter_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetCovariance(
+            Cov_reconstruction_coord.flatten())
         self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
 
         # Update parameters of backward/adjoint operator A'
         self._filter_adjoint_oriented_Gaussian.SetCovariance(
-            Cov_HR_coord.flatten())
+            Cov_reconstruction_coord.flatten())
 
+    #
     # Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
-    #  Filter parameters. Hence, update combined Downsample and Blur Operator
-    #  according to the relative position between slice and HR volume.
-    #  BUT, only consider in-plane deconvolution (Was added for the MS project)
-    #  \param[in] slice Slice object
+    # Filter parameters. Hence, update combined Downsample and Blur Operator
+    # according to the relative position between slice and reconstruction. BUT,
+    # only consider in-plane deconvolution (Was added for the MS project)
+    # \date       2017-07-25 15:15:54+0100
+    #
+    # \param      self   The object
+    # \param      slice  Slice object
+    #
+    # \return     { description_of_the_return_value }
+    #
     def _update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane(self, slice):
 
         # Get spacing of slice and set it very small so that the corresponding
@@ -351,55 +414,74 @@ class Solver(object):
         spacing[2] = self._deconvolution_only_in_plane_through_plane_spacing
         direction = np.array(slice.sitk.GetDirection())
 
-        # Get variance covariance matrix representing Gaussian blurring in HR
+        # Get variance covariance matrix representing Gaussian blurring in reconstruction
         # volume coordinates
-        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_direction_and_spacing(
-            direction, spacing, self._HR_volume)
+        Cov_reconstruction_coord = self._psf.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates_from_direction_and_spacing(
+            direction, spacing, self._reconstruction)
 
         # Update parameters of forward operator A
-        self._filter_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetCovariance(
+            Cov_reconstruction_coord.flatten())
         self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
 
         # Update parameters of backward/adjoint operator A'
         self._filter_adjoint_oriented_Gaussian.SetCovariance(
-            Cov_HR_coord.flatten())
+            Cov_reconstruction_coord.flatten())
 
+    #
     # Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image
-    #  Filter parameters. Hence, update combined Downsample and Blur Operator
-    #  according to the relative position between slice and HR volume.
-    #  BUT, predefined covariance used (Was added for the MS project)
-    #  \param[in] slice Slice object
+    # Filter parameters. Hence, update combined Downsample and Blur Operator
+    # according to the relative position between slice and reconstruction. BUT,
+    # predefined covariance used (Was added for the MS project)
+    # \date       2017-07-25 15:15:54+0100
+    #
+    # \param      self   The object
+    # \param      slice  Slice object
+    #
+    # \return     { description_of_the_return_value }
+    #
     def _update_oriented_adjoint_oriented_Gaussian_image_filters_predefined_covariance(self, slice):
 
-        # Get variance covariance matrix representing Gaussian blurring in HR
+        # Get variance covariance matrix representing Gaussian blurring in reconstruction
         # volume coordinates
-        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates_from_covariances(
-            slice, self._HR_volume, self._predefined_covariance)
+        Cov_reconstruction_coord = self._psf.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates_from_covariances(
+            slice, self._reconstruction, self._predefined_covariance)
 
         # Update parameters of forward operator A
-        self._filter_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
+        self._filter_oriented_Gaussian.SetCovariance(
+            Cov_reconstruction_coord.flatten())
         self._filter_oriented_Gaussian.SetOutputParametersFromImage(slice.itk)
 
         # Update parameters of backward/adjoint operator A'
         self._filter_adjoint_oriented_Gaussian.SetCovariance(
-            Cov_HR_coord.flatten())
+            Cov_reconstruction_coord.flatten())
 
-    # Perform forward operation on HR image, i.e.
-    #  \f$y_k = D_k B_k x =: A_k x \f$ with \f$D_k\f$  and \f$ B_k \f$ being
-    #  the downsampling and blurring operator, respectively.
-    #  \param[in] HR_volume_itk HR image as itk.Image object
-    #  \param[in] slice_k Slice object which defines operator A_k
-    #  \return image in LR space as itk.Image object after performed forward operation
-    def _Ak(self, HR_volume_itk, slice_k):
+    #
+    # Perform forward operation on reconstruction image, i.e.
+    # \f$y_k = D_k B_k x =: A_k x
+    # \f$ with
+    # \f$D_k\f$  and
+    # \f$ B_k
+    # \f$ being the downsampling and blurring operator, respectively.
+    # \date       2017-07-25 15:15:54+0100
+    #
+    # \param      self       The object
+    # \param      reconstruction_itk  reconstruction image as itk.Image object
+    # \param      slice_k    Slice object which defines operator A_k
+    #
+    # \return     image in LR space as itk.Image object after performed forward
+    #             operation
+    #
+    def _Ak(self, reconstruction_itk, slice_k):
 
-        # Set up operator A_k based on relative position to HR volume and their
+        # Set up operator A_k based on relative position to reconstruction and their
         # dimensions
         self._update_oriented_adjoint_oriented_Gaussian_image_filters[
             self._deconvolution_mode](slice_k)
 
-        # Perform forward operation A_k on HR volume object
-        HR_volume_itk.Update()
-        self._filter_oriented_Gaussian.SetInput(HR_volume_itk)
+        # Perform forward operation A_k on reconstruction object
+        reconstruction_itk.Update()
+        self._filter_oriented_Gaussian.SetInput(reconstruction_itk)
         self._filter_oriented_Gaussian.UpdateLargestPossibleRegion()
         self._filter_oriented_Gaussian.Update()
 
@@ -408,15 +490,26 @@ class Solver(object):
 
         return slice_itk
 
+    #
     # Perform backward operation on LR image, i.e.
-    #  \f$z_k = B_k^*D_k^*y = A_k^y \f$ with \f$ D_k^* \f$ and \f$ B_k^* \f$ being
-    #  the adjoint downsampling and blurring operator, respectively.
-    #  \param[in] slice_itk LR image as itk.Image object
-    #  \param[in] slice_k Slice object which defines operator A_k^*
-    #  \return image in HR space as itk.Image object after performed backward operation
+    # \f$z_k = B_k^*D_k^*y = A_k^y
+    # \f$ with
+    # \f$ D_k^*
+    # \f$ and
+    # \f$ B_k^*
+    # \f$ being the adjoint downsampling and blurring operator, respectively.
+    # \date       2017-07-25 15:15:54+0100
+    #
+    # \param      self       The object
+    # \param      slice_itk  LR image as itk.Image object
+    # \param      slice_k    Slice object which defines operator A_k^*
+    #
+    # \return     image in reconstruction space as itk.Image object after performed
+    #             backward operation
+    #
     def _Ak_adj(self, slice_itk, slice_k):
 
-        # Set up operator A_k^* based on relative position to HR volume and
+        # Set up operator A_k^* based on relative position to reconstruction and
         # their dimensions
         self._update_oriented_adjoint_oriented_Gaussian_image_filters[
             self._deconvolution_mode](slice_k)
@@ -426,14 +519,21 @@ class Solver(object):
         self._filter_adjoint_oriented_Gaussian.UpdateLargestPossibleRegion()
         self._filter_adjoint_oriented_Gaussian.Update()
 
-        HR_volume_itk = self._filter_adjoint_oriented_Gaussian.GetOutput()
-        HR_volume_itk.DisconnectPipeline()
+        reconstruction_itk = self._filter_adjoint_oriented_Gaussian.GetOutput()
+        reconstruction_itk.DisconnectPipeline()
 
-        return HR_volume_itk
+        return reconstruction_itk
 
+    #
     # Masking operation M_k
-    #  \param[in] slice_itk image in LR space as itk.Image object
-    #  \param[in] slice_k Slice object which defines operator M_k
+    # \date       2017-07-25 15:15:54+0100
+    #
+    # \param      self       The object
+    # \param      slice_itk  image in LR space as itk.Image object
+    # \param      slice_k    Slice object which defines operator M_k
+    #
+    # \return     { description_of_the_return_value }
+    #
     def _Mk(self, slice_itk, slice_k):
 
         # Perform masking M_k based
@@ -489,21 +589,35 @@ class Solver(object):
 
         return My
 
+    #
     # Operation M_k A_k x
-    #  \param[in] HR_volume_itk HR image as itk.Image object
-    #  \param[in] slice_k Slice object which defines operator M_k and A_k
-    def _Mk_Ak(self, HR_volume_itk, slice_k):
+    # \date       2017-07-25 15:15:53+0100
+    #
+    # \param      self       The object
+    # \param      reconstruction_itk  reconstruction image as itk.Image object
+    # \param      slice_k    Slice object which defines operator M_k and A_k
+    #
+    # \return     { description_of_the_return_value }
+    #
+    def _Mk_Ak(self, reconstruction_itk, slice_k):
 
         # Compute A_k x
-        Ak_HR_volume_itk = self._Ak(HR_volume_itk, slice_k)
+        Ak_reconstruction_itk = self._Ak(reconstruction_itk, slice_k)
 
         # Compute M_k A_k x
-        return self._Mk(Ak_HR_volume_itk, slice_k)
+        return self._Mk(Ak_reconstruction_itk, slice_k)
 
+    #
     # Operation A_k^* M_k y_k
-    #  \param[in] slice_itk LR image as itk.Image object
-    #  \param[in] slice_k Slice object which defines operator A_k^*
-    #  \return image in HR space as itk.Image object after performed backward operation
+    # \date       2017-07-25 15:15:53+0100
+    #
+    # \param      self       The object
+    # \param      slice_itk  LR image as itk.Image object
+    # \param      slice_k    Slice object which defines operator A_k^*
+    #
+    # \return     image in reconstruction space as itk.Image object after performed
+    #             backward operation
+    #
     def _Ak_adj_Mk(self, slice_itk, slice_k):
 
         # Compute M_k y_k
@@ -512,16 +626,26 @@ class Solver(object):
         # Compute A_k^* M_k y_k
         return self._Ak_adj(Mk_slice_itk, slice_k)
 
+    #
     # Evaluate
-    #  \f$ MA \vec{x} \f$
-    #  \f$ = \begin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \end{pmatrix} \vec{x} \f$
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \return evaluated MAx as part of augmented linear operator as 1D array
-    def _MA(self, HR_nda_vec):
+    # \f$ MA \vec{x}
+    # \f$
+    # \f$ = \b egin{pmatrix} M_1 A_1 \\ M_2 A_2 \\ \vdots \\ M_K A_K \em
+    # nd{pmatrix} \vec{x}
+    # \f$
+    # \date       2017-07-25 15:15:53+0100
+    #
+    # \param      self           The object
+    # \param      reconstruction_nda_vec  reconstruction data as 1D array
+    #
+    # \return     evaluated MAx as part of augmented linear operator as 1D
+    #             array
+    #
+    def _MA(self, reconstruction_nda_vec):
 
-        # Convert HR data array back to itk.Image object
+        # Convert reconstruction data array back to itk.Image object
         x_itk = self._get_itk_image_from_array_vec(
-            HR_nda_vec, self._HR_volume.itk)
+            reconstruction_nda_vec, self._reconstruction.itk)
 
         # Allocate memory
         MA_x = np.zeros(self._N_total_slice_voxels)
@@ -557,13 +681,13 @@ class Solver(object):
 
     ##
     # Evaluate
-    # \f$ A^* M \vec{y} = \begin{bmatrix} A_1^* M_1 && A_2^* M_2 && \cdots &&
-    # A_K^* M_K \end{bmatrix} \vec{y}
+    # \f$ A^* M \vec{y} = \b egin{bmatrix} A_1^* M_1 && A_2^* M_2 && \c dots &&
+    # A_K^* M_K \em nd{bmatrix} \vec{y}
     # \f$
     # \date       2017-07-18 22:21:53+0100
     #
     # \param      self                    The object
-    # \param[in]  stacked_slices_nda_vec  stacked slice data as 1D array
+    # \param      stacked_slices_nda_vec  stacked slice data as 1D array
     #
     # \return     evaluated A'My as part of augmented adjoint linear operator
     #             as 1D array
@@ -571,7 +695,7 @@ class Solver(object):
     def _A_adj_M(self, stacked_slices_nda_vec):
 
         # Allocate memory
-        A_adj_M_y = np.zeros(self._N_voxels_HR_volume)
+        A_adj_M_y = np.zeros(self._N_voxels_recon)
 
         # Define index for first voxel of first slice within array
         i_min = 0
@@ -611,9 +735,17 @@ class Solver(object):
 
         return A_adj_M_y
 
+    #
     # Convert numpy data array (vector format) back to itk.Image object
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \return HR volume with intensities according to HR_nda_vec as itk.Image object
+    # \date       2017-07-25 15:15:53+0100
+    #
+    # \param      self           The object
+    # \param      nda_vec        reconstruction data as 1D array
+    # \param      image_itk_ref  The image itk reference
+    #
+    # \return     reconstruction with intensities according to reconstruction_nda_vec as
+    #             itk.Image object
+    #
     def _get_itk_image_from_array_vec(self, nda_vec, image_itk_ref):
 
         shape_nda = np.array(
@@ -626,14 +758,25 @@ class Solver(object):
 
         return image_itk
 
-    # Compute the residual \f$ \sum_{k=1}^K \Vert M_k (A_k \vec{x} - \vec{y}_k) \Vert \f$
-    #  for \f$ \Vert \cdot \Vert = \Vert \cdot \Vert_{\ell^2}^2 \f$
-    #  \param[in] HR_nda_vec HR data as 1D array
-    #  \return \f$\ell^2\f$-residual
-    def _get_residual_ell2(self, HR_nda_vec):
+    #
+    # Compute the residual
+    # \f$ \sum_{k=1}^K \Vert M_k (A_k \vec{x} - \vec{y}_k) \Vert
+    # \f$ for
+    # \f$ \Vert \c dot \Vert = \Vert \c dot \Vert_{\ell^2}^2
+    # \f$
+    # \date       2017-07-25 15:15:53+0100
+    #
+    # \param      self           The object
+    # \param      reconstruction_nda_vec  reconstruction data as 1D array
+    #
+    # \return     The residual ell 2.
+    # \f$
+    # \em ll^2\f$-residual
+    #
+    def _get_residual_ell2(self, reconstruction_nda_vec):
 
         My_nda_vec = self._get_M_y()
-        MAx_nda_vec = self._MA(HR_nda_vec)
+        MAx_nda_vec = self._MA(reconstruction_nda_vec)
 
         # C
         return np.sum((MAx_nda_vec-My_nda_vec)**2)

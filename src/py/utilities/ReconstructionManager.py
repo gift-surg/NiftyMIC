@@ -372,9 +372,9 @@ class ReconstructionManager:
             SRR_regularisation_alpha = 0.1      #0.1 yields visually good results
             SRR_DTD_computation_type = "FiniteDifference" #not used
             SRR_regularisation_rho = None
-            SRR_ADMM_iterations = None
-            SRR_ADMM_iterations_output_dir = None
-            SRR_ADMM_iterations_output_filename_prefix = None
+            SRR_iterations = None
+            SRR_iterations_output_dir = None
+            SRR_iterations_output_filename_prefix = None
 
         elif SRR_approach in ["TK1"]:
             SRR_tolerance = 1e-3
@@ -382,9 +382,9 @@ class ReconstructionManager:
             SRR_regularisation_alpha = 0.05     #0.05 yields visually good results
             SRR_DTD_computation_type = "FiniteDifference"
             SRR_regularisation_rho = None
-            SRR_ADMM_iterations = None
-            SRR_ADMM_iterations_output_dir = None
-            SRR_ADMM_iterations_output_filename_prefix = None
+            SRR_iterations = None
+            SRR_iterations_output_dir = None
+            SRR_iterations_output_filename_prefix = None
 
         elif SRR_approach in ["TV-L2"]:
             SRR_tolerance = 1e-3
@@ -392,9 +392,9 @@ class ReconstructionManager:
             SRR_regularisation_alpha = 0.1     #0.1 yields visually good results
             SRR_DTD_computation_type = "FiniteDifference"
             SRR_regularisation_rho = 0.5       #0.5 yields visually good results
-            SRR_ADMM_iterations = 5
-            SRR_ADMM_iterations_output_dir = self._dir_results + "TV-L2_ADMM_iterations/" #print output of ADMM iterations there
-            SRR_ADMM_iterations_output_filename_prefix = "TV-L2"
+            SRR_iterations = 5
+            SRR_iterations_output_dir = self._dir_results + "TV-L2_iterations/" #print output of ADMM iterations there
+            SRR_iterations_output_filename_prefix = "TV-L2"
             
         ## Set parameters
         volume_reconstruction.set_reconstruction_approach(recon_approach)
@@ -404,9 +404,9 @@ class ReconstructionManager:
         volume_reconstruction.set_SRR_alpha(SRR_regularisation_alpha)
         volume_reconstruction.set_SRR_DTD_computation_type(SRR_DTD_computation_type)
         volume_reconstruction.set_SRR_rho(SRR_regularisation_rho)
-        volume_reconstruction.set_SRR_ADMM_iterations(SRR_ADMM_iterations)
-        volume_reconstruction.set_SRR_ADMM_iterations_output_dir(SRR_ADMM_iterations_output_dir)
-        volume_reconstruction.set_SRR_ADMM_iterations_output_filename_prefix(SRR_ADMM_iterations_output_filename_prefix)
+        volume_reconstruction.set_SRR_iterations(SRR_iterations)
+        volume_reconstruction.set_SRR_iterations_output_dir(SRR_iterations_output_dir)
+        volume_reconstruction.set_SRR_iterations_output_filename_prefix(SRR_iterations_output_filename_prefix)
 
         ## Run reconstruction (self._HR_volume gets updated automatically)
         volume_reconstruction.run_reconstruction()
@@ -425,7 +425,7 @@ class ReconstructionManager:
             filename += "_" + SRR_approach
             filename += "_alpha" + str(SRR_regularisation_alpha)
             filename += "_rho" + str(SRR_regularisation_rho)
-            filename += "_ADMM_iterations" + str(SRR_ADMM_iterations)
+            filename += "_iterations" + str(SRR_iterations)
             filename += "_TK1itermax" + str(SRR_iter_max)
 
         ## Update filename of HR reconstruction based on chosen options
