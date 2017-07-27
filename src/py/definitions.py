@@ -9,11 +9,13 @@ DIR_TMP = "/tmp/"
 
 # Linked executables
 ITKSNAP_EXE = "itksnap"
-FSLVIEW_EXE = "fslview"
+FSLVIEW_EXE = "fsleyes"
+# FSLVIEW_EXE = "fslview_deprecated"
 NIFTYVIEW_EXE = "NiftyView"
 BET_EXE = "bet"
 REG_ALADIN_EXE = "reg_aladin"
 REG_F3D_EXE = "reg_f3d"
+FLIRT_EXE = "flirt"
 
 ALLOWED_EXTENSIONS = ["nii.gz", "nii"]
 REGEX_FILENAMES = "[A-Za-z0-9+-_]+"

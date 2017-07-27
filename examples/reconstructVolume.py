@@ -13,13 +13,15 @@
 # Import libraries
 import SimpleITK as sitk
 import argparse
-import inspect
-from inspect import getframeinfo, stack
+# import inspect
+# from inspect import getframeinfo, stack
 
-import traceback
 import numpy as np
 import sys
 import os
+
+import pythonhelper.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
 
 # Add directories to import modules
 sys.path.insert(1, os.path.abspath(os.path.join(
@@ -37,8 +39,6 @@ import registration.SegmentationPropagation as segprop
 import reconstruction.ScatteredDataApproximation as sda
 import reconstruction.solver.TikhonovSolver as tk
 import reconstruction.solver.ADMMSolver as admm
-import pythonhelper.PythonHelper as ph
-import pythonhelper.SimpleITKHelper as sitkh
 import utilities.Exceptions as Exceptions
 
 
@@ -344,7 +344,9 @@ if __name__ == '__main__':
             os.path.basename(__file__), args)
         ph.write_performed_script_execution_to_executable_file(
             performed_script_execution,
-            os.path.join(args.dir_output, "log_script_execution.sh"))
+            os.path.join(args.dir_output,
+                         "log_%s_script_execution.sh" % (
+                             os.path.basename(__file__).split(".")[0])))
 
     # Read Data:
     ph.print_title("Read Data")
@@ -397,12 +399,12 @@ if __name__ == '__main__':
     # Get preprocessed stacks with index 0 holding the selected target stack
     stacks = data_preprocessing.get_preprocessed_stacks()
 
-    if args.verbose:
-        for i in range(0, len(stacks)):
-            stacks[i].write(
-                directory=os.path.join(
-                    args.dir_output, "01_preprocessed_data"),
-                write_mask=True)
+    # if args.verbose:
+    #     for i in range(0, len(stacks)):
+    #         stacks[i].write(
+    #             directory=os.path.join(
+    #                 args.dir_output, "01_preprocessed_data"),
+    #             write_mask=True)
 
     # # ----------------- Begin HACK for Imperial College data ----------------
     # # Split stack acquired as overlapping slices into two
@@ -552,12 +554,15 @@ if __name__ == '__main__':
 
                 # Slice-to-volume registration
                 for i_slice in range(0, stack.get_number_of_slices()):
-                    ph.print_subtitle(
-                        "Cycle %d/%d -- Stack %d/%d -- Slice %2d/%d: "
+                    txt = "Cycle %d/%d -- Stack %d/%d -- Slice %2d/%d: " \
                         "Slice-to-Volume Registration" % (
                             i_cycle+1, args.two_step_cycles, i_stack+1,
                             len(stacks), i_slice+1,
-                            stack.get_number_of_slices()))
+                            stack.get_number_of_slices())
+                    if args.verbose:
+                        ph.print_subtitle(txt)
+                    else:
+                        ph.print_info(txt)
                     slice = stack.get_slice(i_slice)
                     registration.set_fixed(slice)
                     registration.run_registration()
@@ -613,6 +618,7 @@ if __name__ == '__main__':
                 write_mask=True,
                 write_slices=True,
                 write_transforms=True,
+                suffix_mask=args.suffix_mask,
             )
 
     HR_volume_iterations.insert(0, HR_volume_final)

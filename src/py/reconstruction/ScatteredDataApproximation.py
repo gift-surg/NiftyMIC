@@ -14,9 +14,11 @@ import SimpleITK as sitk
 import numpy as np
 import time
 
+import pythonhelper.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
+
 # Import modules from src-folder
 import base.Stack as st
-import pythonhelper.SimpleITKHelper as sitkh
 
 
 # Class implementing Scattered Data Approximation
@@ -242,8 +244,7 @@ class ScatteredDataApproximation:
         default_pixel_value = 0.0
 
         for i in range(0, self._N_stacks):
-            # for i in range(0, 1):
-            print("\tStack %s/%s" % (i, self._N_stacks-1))
+            ph.print_info("Stack %s/%s" % (i, self._N_stacks-1))
             stack = self._stacks[i]
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()

@@ -61,8 +61,10 @@ class Stack:
         if not ph.file_exists(file_path):
             raise Exceptions.FileNotExistent(file_path)
 
-        stack._dir = "/".join(file_path.split("/")[0:-1])
-        stack._filename = file_path.split("/")[-1:][0].split(".")[0]
+            path_to_directory = os.path.dirname(file_path)
+
+        stack._dir = os.path.dirname(file_path)
+        stack._filename = os.path.basename(file_path).split(".")[0]
 
         # # Get data filenames of images without filename extension
         # pattern = filename + "[.]" + REGEX_FILENAME_EXTENSIONS
@@ -122,10 +124,14 @@ class Stack:
     #                           associated mask
     # \return     Stack object including its slices with corresponding masks
     # \example    mask (suffix_mask) of slice j of stack i (prefix_stack)
-    # reads: i_j_mask.nii.gz
+    # reads: i_slicej_mask.nii.gz
     #
     @classmethod
-    def from_slice_filenames(cls, dir_input, prefix_stack, suffix_mask=None):
+    def from_slice_filenames(cls,
+                             dir_input,
+                             prefix_stack,
+                             suffix_mask=None,
+                             prefix_slice="_slice"):
 
         stack = cls()
 
@@ -158,17 +164,18 @@ class Stack:
         stack._N_slices = stack.sitk.GetDepth()
         stack._slices = [None] * stack._N_slices
 
-        # ## Get filenames of slices
-        # filename_parser = fp.FilenameParser()
-        # filenames_slices = filename_parser.get_filenames_which_match_pattern_in_directory(dir_input, patterns=[prefix_stack+"_", ".nii"])
-        # if suffix_mask is not None:
-        #     filenames_slices = filename_parser.exclude_filenames_which_match_pattern(filenames_slices, suffix_mask)
-
         # Append slices as Slice objects
         for i in range(0, stack._N_slices):
-            filename_slice = prefix_stack + "_" + str(i)
+            path_to_slice = os.path.join(
+                dir_input,
+                prefix_stack + prefix_slice + str(i) + ".nii.gz")
+            path_to_slice_mask = os.path.join(
+                dir_input,
+                prefix_stack + prefix_slice + str(i) + suffix_mask + ".nii.gz")
             stack._slices[i] = sl.Slice.from_filename(
-                dir_input, filename_slice, stack._filename, i, suffix_mask)
+                file_path=path_to_slice,
+                slice_number=i,
+                file_path_mask=path_to_slice_mask)
 
         return stack
 
@@ -362,7 +369,7 @@ class Stack:
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifying the filename. If not given the assigned one within Stack will be chosen.
     #  \param[in] write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
-    def write(self, directory=DIR_TMP, filename=None, write_mask=False, write_slices=False, write_transforms=False):
+    def write(self, directory, filename=None, write_mask=False, write_slices=False, write_transforms=False, suffix_mask="_mask"):
 
         # Create directory if not existing
         os.system("mkdir -p " + directory)
@@ -385,13 +392,15 @@ class Stack:
 
             # Write mask if it does not consist of only ones
             if not self._is_unity_mask and write_mask:
-                ph.print_info("Write image mask to %s_mask.nii.gz ... " % (
-                    full_file_name), newline=False)
+                ph.print_info("Write image mask to %s%s.nii.gz ... " % (
+                    full_file_name, suffix_mask), newline=False)
                 sitk.WriteImage(
-                    self.sitk_mask, full_file_name + "_mask.nii.gz")
+                    self.sitk_mask, full_file_name + "%s.nii.gz" % (
+                        suffix_mask))
                 print("done")
 
-        # print("Stack was successfully written to %s.nii.gz" %(full_file_name))
+        # print("Stack was successfully written to %s.nii.gz"
+        # %(full_file_name))
 
         # Write each separate Slice of stack (if they exist)
         if write_slices:
@@ -407,7 +416,10 @@ class Stack:
                 else:
                     for i in xrange(0, self._N_slices):
                         self._slices[i].write(
-                            directory=directory, filename=filename, write_transform=write_transforms)
+                            directory=directory,
+                            filename=filename,
+                            write_transform=write_transforms,
+                            suffix_mask=suffix_mask)
 
             except ValueError as err:
                 print(err.message)

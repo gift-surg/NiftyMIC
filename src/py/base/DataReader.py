@@ -131,7 +131,7 @@ class DirectoryReader(DataReader):
                                              dic_filenames_mask[filename])
             else:
                 ph.print_info("No mask found for '%s'." %
-                                    (abs_path_image))
+                              (abs_path_image))
                 abs_path_mask = None
 
             self._stacks[i] = st.Stack.from_filename(
@@ -230,12 +230,16 @@ class ImageSlicesDirectoryReader(DataReader):
     #                                indicating associated mask, e.g. "_mask"
     #                                for "A_mask.nii".
     #
-    def __init__(self, path_to_directory, suffix_mask="_mask"):
+    def __init__(self,
+                 path_to_directory, 
+                 suffix_mask="_mask",
+                 prefix_slice="_slice"):
 
         super(self.__class__, self).__init__()
 
         self._path_to_directory = path_to_directory
         self._suffix_mask = suffix_mask
+        self._prefix_slice = prefix_slice
 
     def read_data(self):
 
@@ -245,9 +249,10 @@ class ImageSlicesDirectoryReader(DataReader):
         abs_path_to_directory = os.path.abspath(self._path_to_directory)
 
         # Get data filenames of images by finding the prefixes associated
-        # to the slices which are build as filename_[0-9]+.nii.gz
-        pattern = "(" + REGEX_FILENAMES + ")_[0-9]+[.]" + \
-            REGEX_FILENAME_EXTENSIONS
+        # to the slices which are build as filename_slice[0-9]+.nii.gz
+        pattern = "(" + REGEX_FILENAMES + ")" + \
+            self._prefix_slice + "[0-9]+[.]" + REGEX_FILENAME_EXTENSIONS
+
         p = re.compile(pattern)
 
         dic_filenames = {

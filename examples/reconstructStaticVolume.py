@@ -42,7 +42,6 @@ import reconstruction.solver.TikhonovSolver as tk
 # \param      suffix_mask         The suffix mask
 # \param      target_stack_index  The target stack index
 # \param      regularization      The regularization
-# \param      minimizer           The minimizer
 # \param      alpha               The alpha
 # \param      iter_max            The iterator maximum
 # \param      verbose             The verbose

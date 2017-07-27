@@ -13,7 +13,6 @@ import numpy as np
 # Import modules from src-folder
 import pythonhelper.PythonHelper as ph
 import pythonhelper.SimpleITKHelper as sitkh
-import base.PSF as psf
 import base.Stack as st
 
 from definitions import DIR_TMP
