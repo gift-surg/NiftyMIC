@@ -1,11 +1,13 @@
 # \file FLIRT.py
-#  \brief This class makes FLIRT accessible via Python
+# \brief      This class makes FLIRT accessible via Python
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date May 2016
+# This class requires Convert3D Medical Image Processing Tool to be installed
+# (https://sourceforge.net/projects/c3d/files/c3d/Nightly/)
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       May 2016
 
 # Import libraries
-import os                       # used to execute terminal commands in python
+import os
 import sys
 import SimpleITK as sitk
 import numpy as np
@@ -18,6 +20,7 @@ import base.Stack as st
 
 from definitions import DIR_TMP
 from definitions import FLIRT_EXE
+from definitions import C3D_AFFINE_TOOL_EXE
 
 
 class FLIRT:
@@ -154,6 +157,8 @@ class FLIRT:
             self._fixed.get_filename() + "_" + self._moving.get_filename()
         res_affine_matrix_str = "FLIRT_WarpMatrix_" + \
             self._fixed.get_filename() + "_" + self._moving.get_filename()
+        res_affine_matrix_itk_str = "ITK_WarpMatrix_" + \
+            self._fixed.get_filename() + "_" + self._moving.get_filename()
 
         # Write images to HDD before they can be used for FLIRT
         if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
@@ -191,35 +196,19 @@ class FLIRT:
         os.system(cmd)
         print("done")
 
-        center_of_mass_index = scipy.ndimage.measurements.center_of_mass(
-            sitk.GetArrayFromImage(self._fixed.sitk))
-        c = self._fixed.sitk.TransformContinuousIndexToPhysicalPoint(
-            center_of_mass_index)
-        print c
+        # Convert FSL to ITK transform
+        # Source: https://sourceforge.net/p/advants/discussion/840261/thread/5f5e054f/
+        cmd = C3D_AFFINE_TOOL_EXE + " "
+        cmd += "-ref " + self._dir_tmp + fixed_str + ".nii.gz "
+        cmd += "-src " + self._dir_tmp + moving_str + ".nii.gz "
+        cmd += self._dir_tmp + res_affine_matrix_str + ".txt "
+        cmd += "-fsl2ras "
+        cmd += "-oitk " + self._dir_tmp + res_affine_matrix_itk_str + ".txt"
+        os.system(cmd)
 
-        # Read trafo and invert such that format fits within SimpleITK
-        # structure
-        matrix = np.loadtxt(self._dir_tmp + res_affine_matrix_str + ".txt")
-        A = matrix[0:-1, 0:-1]
-        t = matrix[0:-1, -1]
-
-        # Convert to SimpleITK physical coordinate system
-        R = np.array([
-            [1, 0, 0],
-            [0, -1, 0],
-            [0, 0, -1]])
-        A = R.dot(A).dot(R)
-        t = R.dot(t)
-        c = R.dot(c)
-
-        print A
-        print t
-
-        self._affine_transform_sitk = sitk.AffineTransform(A.flatten(), t)
-        self._affine_transform_sitk.SetCenter(c)
-        # print self._affine_transform_sitk
-        # self._affine_transform_sitk = sitk.AffineTransform(
-        #     self._affine_transform_sitk.GetInverse())
+        trafo_sitk = sitk.ReadTransform(self._dir_tmp + res_affine_matrix_itk_str + ".txt")
+        self._affine_transform_sitk = sitk.AffineTransform(3)
+        self._affine_transform_sitk.SetParameters(trafo_sitk.GetParameters())
 
         # Get registered image as Stack object
         self._registered_image = st.Stack.from_filename(

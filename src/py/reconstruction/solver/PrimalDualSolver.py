@@ -141,7 +141,9 @@ class PrimalDualSolver(Solver):
 
         prox_f = lambda x, tau: prox.prox_linear_least_squares(
             x=x, tau=tau,
-            A=A, A_adj=A_adj, b=b, x0=x0,
+            A=A, A_adj=A_adj,
+            b=b, x0=x0,
+            iter_max=self._iter_max,
             verbose=self._verbose)
 
         if self._reg_type == "TV":

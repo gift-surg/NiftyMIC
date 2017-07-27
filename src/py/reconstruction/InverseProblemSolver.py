@@ -7,7 +7,7 @@
 
 
 ## Import libraries
-import os                       # used to execute terminal commands in python
+import os
 import sys
 import itk
 import SimpleITK as sitk

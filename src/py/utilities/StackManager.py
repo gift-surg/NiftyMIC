@@ -6,7 +6,7 @@
 
 
 # Import libraries
-import os                       # used to execute terminal commands in python
+import os
 import SimpleITK as sitk
 import numpy as np
 

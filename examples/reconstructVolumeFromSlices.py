@@ -227,8 +227,8 @@ Main Function
 """
 if __name__ == '__main__':
 
-    run_ADMM = 1
-    run_PrimalDual = 0
+    run_ADMM = 0
+    run_PrimalDual = 1
 
     alpha_ADMM = 3
     iter_max_ADMM = 5
@@ -330,6 +330,7 @@ if __name__ == '__main__':
         SRR.print_statistics()
         recon = SRR.get_reconstruction()
         recon.set_filename(SRR.get_setting_specific_filename())
+        recon.write(args.dir_output)
         recons.insert(0, recon)
 
     if run_PrimalDual:
@@ -349,6 +350,7 @@ if __name__ == '__main__':
         SRR.run_reconstruction()
         SRR.print_statistics()
         recon = SRR.get_reconstruction()
+        recon.write(args.dir_output)
         recon.set_filename(SRR.get_setting_specific_filename())
         recons.insert(0, recon)
 

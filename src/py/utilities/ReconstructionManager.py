@@ -6,7 +6,7 @@
 
 
 ## Import libraries
-import os                       # used to execute terminal commands in python
+import os
 import numpy as np
 
 ## Import modules from src-folder

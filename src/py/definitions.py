@@ -13,9 +13,10 @@ FSLVIEW_EXE = "fsleyes"
 # FSLVIEW_EXE = "fslview_deprecated"
 NIFTYVIEW_EXE = "NiftyView"
 BET_EXE = "bet"
+FLIRT_EXE = "flirt"
 REG_ALADIN_EXE = "reg_aladin"
 REG_F3D_EXE = "reg_f3d"
-FLIRT_EXE = "flirt"
+C3D_AFFINE_TOOL_EXE = "c3d_affine_tool"  # for FLIRT parameter conversion
 
 ALLOWED_EXTENSIONS = ["nii.gz", "nii"]
 REGEX_FILENAMES = "[A-Za-z0-9+-_]+"

@@ -10,7 +10,7 @@ import itk
 import SimpleITK as sitk
 import numpy as np
 import matplotlib.pyplot as plt
-import os                       # used to execute terminal commands in python
+import os
 import sys
 sys.path.append("../src/")
 

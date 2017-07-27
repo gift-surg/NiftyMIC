@@ -7,7 +7,7 @@
 
 # Import libraries
 from abc import ABCMeta, abstractmethod
-import os                       # used to execute terminal commands in python
+import os
 import sys
 import SimpleITK as sitk
 import numpy as np
