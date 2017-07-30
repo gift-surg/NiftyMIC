@@ -43,6 +43,8 @@ class RegistrationSimpleITK:
                  initializer_type=None,
                  use_oriented_psf=False,
                  use_multiresolution_framework=False,
+                 shrink_factors=[4, 2, 1],
+                 smoothing_sigmas=[2, 1, 0],
                  use_verbose=False,
                  ):
 
@@ -66,7 +68,10 @@ class RegistrationSimpleITK:
         self._initializer_type = initializer_type
 
         self._use_oriented_psf = use_oriented_psf
+
         self._use_multiresolution_framework = use_multiresolution_framework
+        self._shrink_factors = shrink_factors
+        self._smoothing_sigmas = smoothing_sigmas
 
         self._use_verbose = use_verbose
 
@@ -328,7 +333,8 @@ class RegistrationSimpleITK:
         if self._initializer_type is not None:
             initial_transform = sitk.CenteredTransformInitializer(fixed.sitk, moving.sitk, initial_transform, eval(
                 "sitk.CenteredTransformInitializerFilter." + self._initializer_type))
-        registration_method.SetInitialTransform(initial_transform, inPlace=True)
+        registration_method.SetInitialTransform(
+            initial_transform, inPlace=True)
 
         # Set an image masks in order to restrict the sampled points for the
         # metric
@@ -373,11 +379,11 @@ class RegistrationSimpleITK:
             # Set the shrink factors for each level where each level has the
             # same shrink factor for each dimension
             registration_method.SetShrinkFactorsPerLevel(
-                shrinkFactors=[4, 2, 1])
+                shrinkFactors=self._shrink_factors)
 
             # Set the sigmas of Gaussian used for smoothing at each level
             registration_method.SetSmoothingSigmasPerLevel(
-                smoothingSigmas=[2, 1, 0])
+                smoothingSigmas=self._smoothing_sigmas)
 
             # Enable the smoothing sigmas for each level in physical units
             # (default) or in terms of voxels (then *UnitsOff instead)
@@ -397,20 +403,26 @@ class RegistrationSimpleITK:
         if self._use_verbose:
             ph.print_info("Registration: SimpleITK")
             ph.print_info("Transform Model: %s"
-                                % (self._registration_type))
+                          % (self._registration_type))
             ph.print_info("Interpolator: %s"
-                                % (self._interpolator))
+                          % (self._interpolator))
             ph.print_info("Metric: %s" % (self._metric))
             ph.print_info("CenteredTransformInitializer: %s"
-                                % (self._initializer_type))
+                          % (self._initializer_type))
             ph.print_info("Optimizer: %s"
-                                % (self._optimizer))
+                          % (self._optimizer))
             ph.print_info("Use Multiresolution Framework: %s"
-                                % (self._use_multiresolution_framework))
+                          % (self._use_multiresolution_framework) +
+                          " (" +
+                          "shrink factors = " + str(self._shrink_factors) +
+                          ", " +
+                          "smoothing sigmas = " + str(self._smoothing_sigmas) +
+                          ")"
+                          )
             ph.print_info("Use Fixed Mask: %s"
-                                % (self._use_fixed_mask))
+                          % (self._use_fixed_mask))
             ph.print_info("Use Moving Mask: %s"
-                                % (self._use_moving_mask))
+                          % (self._use_moving_mask))
 
         # Execute 3D registration
         try:
@@ -420,8 +432,7 @@ class RegistrationSimpleITK:
             print(err.message)
             # Debug:
             # sitkh.show_sitk_image(
-                # [fixed.sitk, moving_sitk], segmentation=fixed.sitk_mask)
-
+            # [fixed.sitk, moving_sitk], segmentation=fixed.sitk_mask)
 
             print("WARNING: SetMetricAsCorrelation")
             registration_method.SetMetricAsCorrelation()

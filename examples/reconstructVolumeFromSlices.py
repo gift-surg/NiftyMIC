@@ -227,7 +227,7 @@ Main Function
 """
 if __name__ == '__main__':
 
-    run_ADMM = 0
+    run_ADMM = 1
     run_PrimalDual = 1
 
     alpha_ADMM = 3
@@ -258,7 +258,7 @@ if __name__ == '__main__':
         ADMM_iterations=10,
         minimizer="lsmr",
         extra_frame_target=10,
-        provide_comparison=0,
+        provide_comparison=1,
         log_script_execution=1,
         verbose=0,
     )
@@ -294,65 +294,68 @@ if __name__ == '__main__':
         spacing_new_scalar=args.isotropic_resolution,
         extra_frame=args.extra_frame_target)
 
-    # SRR0 = tk.TikhonovSolver(
-    #     stacks=stacks,
-    #     reconstruction=recon0,
-    #     alpha=args.alpha,
-    #     iter_max=args.iter_max,
-    #     reg_type="TK1",
-    #     minimizer=args.minimizer,
-    #     data_loss=args.data_loss,
-    #     verbose=args.verbose,
-    # )
-    # SRR0.run_reconstruction()
-    # SRR0.print_statistics()
+    SRR0 = tk.TikhonovSolver(
+        stacks=stacks,
+        reconstruction=recon0,
+        alpha=args.alpha,
+        iter_max=args.iter_max,
+        reg_type="TK1",
+        minimizer=args.minimizer,
+        data_loss=args.data_loss,
+        verbose=args.verbose,
+    )
+    SRR0.run_reconstruction()
+    SRR0.print_statistics()
     recon = SRR0.get_reconstruction()
     recon.set_filename(SRR0.get_setting_specific_filename())
     recon.write(args.dir_output)
 
     recons.insert(0, recon)
 
-    if run_ADMM:
-        SRR = admm.ADMMSolver(
-            stacks=stacks,
-            reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
-            minimizer=args.minimizer,
-            alpha=alpha_ADMM,
-            iter_max=iter_max_ADMM,
-            # iter_max=args.iter_max,
-            rho=args.rho,
-            # data_loss=args.data_loss,
-            # iterations=args.ADMM_iterations,
-            iterations=args.iterations_ADMM,
-            verbose=args.verbose,
-        )
-        SRR.run_reconstruction()
-        SRR.print_statistics()
-        recon = SRR.get_reconstruction()
-        recon.set_filename(SRR.get_setting_specific_filename())
-        recon.write(args.dir_output)
-        recons.insert(0, recon)
+    for alpha in [0.5, 1, 2, 5, 10]:
+        if run_ADMM:
+            SRR = admm.ADMMSolver(
+                stacks=stacks,
+                reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+                minimizer=args.minimizer,
+                alpha=alpha,
+                iter_max=iter_max_ADMM,
+                # iter_max=args.iter_max,
+                rho=args.rho,
+                # data_loss=args.data_loss,
+                # iterations=args.ADMM_iterations,
+                iterations=iterations_ADMM,
+                verbose=args.verbose,
+            )
+            SRR.run_reconstruction()
+            SRR.print_statistics()
+            recon = SRR.get_reconstruction()
+            recon.set_filename(SRR.get_setting_specific_filename())
+            recons.insert(0, recon)
 
-    if run_PrimalDual:
-        SRR = pd.PrimalDualSolver(
-            stacks=stacks,
-            reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
-            minimizer=args.minimizer,
-            alpha=alpha_PD,
-            iter_max=iter_max_PD,
-            iterations=iterations_PD,
-            # alg_type="AHMOD",
-            # reg_type="TV",
-            # reg_type="huber",
-            data_loss=args.data_loss,
-            verbose=args.verbose,
-        )
-        SRR.run_reconstruction()
-        SRR.print_statistics()
-        recon = SRR.get_reconstruction()
-        recon.write(args.dir_output)
-        recon.set_filename(SRR.get_setting_specific_filename())
-        recons.insert(0, recon)
+            recon.write(args.dir_output)
+
+        if run_PrimalDual:
+            SRR = pd.PrimalDualSolver(
+                stacks=stacks,
+                reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+                minimizer=args.minimizer,
+                alpha=alpha,
+                iter_max=iter_max_PD,
+                iterations=iterations_PD,
+                # alg_type="AHMOD",
+                # reg_type="TV",
+                # reg_type="huber",
+                data_loss=args.data_loss,
+                verbose=args.verbose,
+            )
+            SRR.run_reconstruction()
+            SRR.print_statistics()
+            recon = SRR.get_reconstruction()
+            recon.set_filename(SRR.get_setting_specific_filename())
+            recons.insert(0, recon)
+
+            recon.write(args.dir_output)
 
     if args.verbose:
         sitkh.show_stacks(recons)

@@ -1,7 +1,8 @@
-numpy==1.13.0
+scikit_image==0.12.3
 scipy==0.19.1
-matplotlib==2.0.2
-SimpleITK==1.0.0
-nibabel==2.1.0
-Pillow==4.1.1
 natsort==5.0.3
+matplotlib==2.0.2
+numpy==1.13.1
+SimpleITK==1.0.0
+-e git+https://cmiclab.cs.ucl.ac.uk/mebner/PythonHelper.git#egg=PythonHelper
+-e git+https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver.git#egg=NumericalSolver

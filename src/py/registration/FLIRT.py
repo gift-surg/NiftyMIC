@@ -50,7 +50,7 @@ class FLIRT:
         self._registration_type = registration_type
 
         self._options = options
-        self._verbose = use_verbose
+        self._use_verbose = use_verbose
 
     # Set fixed/reference/target image
     #  \param[in] fixed fixed/reference/target image as Stack object
@@ -102,10 +102,10 @@ class FLIRT:
         return self._options
 
     def use_verbose(self, flag):
-        self._verbose = flag
+        self._use_verbose = flag
 
     def get_verbose(self):
-        return self._verbose
+        return self._use_verbose
 
     # Get affine transform in (Simple)ITK format after having run reg_aladin
     #  \return affine transform as SimpleITK object
@@ -134,7 +134,7 @@ class FLIRT:
     # Run FLIRT
     def _run_registration(self):
 
-        options = self._options
+        options = self._options + " "
 
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
@@ -145,8 +145,8 @@ class FLIRT:
         elif self._registration_type == "Affine":
             options += "-dof 12 \\\n"
 
-        if self._verbose:
-            options += "-verbose 1 \\\n"
+        # if self._use_verbose:
+        #     options += "-verbose 1 \\\n"
 
         moving_str = "FLIRT_moving_" + self._moving.get_filename()
         fixed_str = "FLIRT_fixed_" + self._fixed.get_filename()
@@ -197,7 +197,8 @@ class FLIRT:
         print("done")
 
         # Convert FSL to ITK transform
-        # Source: https://sourceforge.net/p/advants/discussion/840261/thread/5f5e054f/
+        # Source:
+        # https://sourceforge.net/p/advants/discussion/840261/thread/5f5e054f/
         cmd = C3D_AFFINE_TOOL_EXE + " "
         cmd += "-ref " + self._dir_tmp + fixed_str + ".nii.gz "
         cmd += "-src " + self._dir_tmp + moving_str + ".nii.gz "
@@ -206,11 +207,14 @@ class FLIRT:
         cmd += "-oitk " + self._dir_tmp + res_affine_matrix_itk_str + ".txt"
         os.system(cmd)
 
-        trafo_sitk = sitk.ReadTransform(self._dir_tmp + res_affine_matrix_itk_str + ".txt")
+        trafo_sitk = sitk.ReadTransform(
+            self._dir_tmp + res_affine_matrix_itk_str + ".txt")
         self._affine_transform_sitk = sitk.AffineTransform(3)
         self._affine_transform_sitk.SetParameters(trafo_sitk.GetParameters())
 
+        if self._use_verbose:
+            sitkh.print_sitk_transform(self._affine_transform_sitk)
+
         # Get registered image as Stack object
-        self._registered_image = st.Stack.from_filename(
-            os.path.join(self._dir_tmp, res_affine_image_str + ".nii.gz")
+        self._registered_image = st.Stack.from_filename(os.path.join(self._dir_tmp, res_affine_image_str + ".nii.gz")
         )

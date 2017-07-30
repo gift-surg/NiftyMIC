@@ -101,8 +101,13 @@ class Stack:
 
         # Extract all slices and their masks from the stack and store them
         if extract_slices:
-            stack._N_slices = stack.sitk.GetSize()[-1]
-            stack._slices = stack._extract_slices()
+            dimenson = stack.sitk.GetDimension()
+            if dimenson == 3:
+                stack._N_slices = stack.sitk.GetSize()[-1]
+                stack._slices = stack._extract_slices()
+            elif dimenson == 2:
+                stack._N_slices = 1
+                stack._slices = [stack.sitk[:, :]]
         else:
             stack._N_slices = 0
             stack._slices = None

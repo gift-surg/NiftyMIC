@@ -34,6 +34,7 @@ import preprocessing.DataPreprocessing as dp
 import preprocessing.N4BiasFieldCorrection as n4bfc
 import registration.RegistrationSimpleITK as regsitk
 import registration.RegistrationITK as regitk
+import registration.FLIRT as regflirt
 import registration.NiftyReg as regniftyreg
 import registration.SegmentationPropagation as segprop
 import reconstruction.ScatteredDataApproximation as sda
@@ -434,6 +435,7 @@ if __name__ == '__main__':
         # registration = regsitk.RegistrationSimpleITK(
         #     initializer_type="GEOMETRY", metric="MattesMutualInformation",
         registration = regniftyreg.NiftyReg(
+        # registration = regflirt.FLIRT(
             fixed=stacks[0],
             registration_type="Rigid",
             use_fixed_mask=True,
@@ -538,7 +540,9 @@ if __name__ == '__main__':
             metric="Correlation",
             # metric="MattesMutualInformation",  # Might cause error messages
             # like "Too many samples map outside moving image buffer."
-            # use_multiresolution_framework=True,
+            use_multiresolution_framework=True,
+            shrink_factors=[2, 1],
+            smoothing_sigmas=[1, 0],
             initializer_type=None,
             # optimizer="RegularStepGradientDescent",
             # optimizer_params="{'learningRate': 1, 'minStep': 1e-6,\
@@ -546,6 +550,14 @@ if __name__ == '__main__':
             optimizer="ConjugateGradientLineSearch",
             optimizer_params="{'learningRate': 1, 'numberOfIterations': 100}",
         )
+        # registration = regflirt.FLIRT(
+        #     moving=HR_volume,
+        #     registration_type="Rigid",
+        #     use_fixed_mask=True,
+        #     use_moving_mask=False,
+        #     use_verbose=args.verbose,
+        #     options="-cost normcorr -searchcost normcorr -nosearch",
+        # )
 
         for i_cycle in range(0, args.two_step_cycles):
             time_elapsed_tmp = ph.start_timing()
