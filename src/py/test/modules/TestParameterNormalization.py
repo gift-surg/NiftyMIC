@@ -15,12 +15,13 @@ import sys
 from scipy.ndimage import imread
 
 ## Import modules
-import base.Stack as st
-import utilities.ParameterNormalization as pn
 import pythonhelper.SimpleITKHelper as sitkh
-import registration.IntraStackRegistration as inplanereg
 
-from definitions import DIR_TEST
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.utilities.ParameterNormalization as pn
+import volumetricreconstruction.registration.IntraStackRegistration as inplanereg
+
+from volumetricreconstruction.definitions import DIR_TEST
 
 
 ## Concept of unit testing for python used in here is based on

@@ -21,16 +21,15 @@ import numpy as np
 import sys
 import os
 
-# Import modules
-sys.path.insert(1, os.path.abspath(
-    os.path.join(os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
-import base.Stack as st
-import base.DataReader as dr
 import pythonhelper.SimpleITKHelper as sitkh
 import pythonhelper.PythonHelper as ph
-import preprocessing.DataPreprocessing as dp
-import registration.SegmentationPropagation as segprop
-import reconstruction.solver.TikhonovSolver as tk
+
+# Import modules
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.base.DataReader as dr
+import volumetricreconstruction.preprocessing.DataPreprocessing as dp
+import volumetricreconstruction.registration.SegmentationPropagation as segprop
+import volumetricreconstruction.reconstruction.solver.TikhonovSolver as tk
 
 
 ##

@@ -11,16 +11,12 @@ import numpy as np
 import unittest
 import sys
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
-
-## Import modules from src-folder
-import utilities.FirstEstimateOfHRVolume as efhrv
 import pythonhelper.SimpleITKHelper as sitkh
-import utilities.StackManager as sm
-import base.Slice as sl
-import base.Stack as st
+
+import volumetricreconstruction.utilities.FirstEstimateOfHRVolume as efhrv
+import volumetricreconstruction.utilities.StackManager as sm
+import volumetricreconstruction.base.Slice as sl
+import volumetricreconstruction.base.Stack as st
 
 
 ## Concept of unit testing for python used in here is based on

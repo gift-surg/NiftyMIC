@@ -13,9 +13,9 @@ import sys
 from scipy import ndimage
 
 ## Import modules from src-folder
-import reconstruction.LinearImageQualityTransfer as liqt
+import volumetricreconstruction.reconstruction.LinearImageQualityTransfer as liqt
 
-from definitions import DIR_TEST
+from volumetricreconstruction.definitions import DIR_TEST
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/

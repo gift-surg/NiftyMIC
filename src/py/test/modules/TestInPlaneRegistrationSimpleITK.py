@@ -14,14 +14,13 @@ import sys
 import time
 from datetime import timedelta
 
-## Add directories to import modules
-dir_src_root = "../"
-sys.path.append( dir_src_root )
+import pythonhelper.SimpleITKHelper as sitkh
 
 ## Import modules
-import base.Stack as st
-import registration.InPlaneRegistrationSimpleITK as inplaneregsitk
-import pythonhelper.SimpleITKHelper as sitkh
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.registration.InPlaneRegistrationSimpleITK as inplaneregsitk
+
+from volumetricreconstruction.definitions import DIR_TEST
 
 
 def get_inplane_corrupted_stack(stack, angle_z, center, translation, scale=1, debug=0):
@@ -89,7 +88,7 @@ def get_inplane_corrupted_stack(stack, angle_z, center, translation, scale=1, de
 class TestInPlaneRegistrationSimpleITK(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = "../../../test-data/"
+    dir_test_data = DIR_TEST
 
     accuracy = 6
 

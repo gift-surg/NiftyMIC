@@ -15,12 +15,13 @@ import unittest
 import sys
 from scipy.ndimage import imread
 
-## Import modules
-import base.Stack as st
-import preprocessing.IntensityCorrection as ic
 import pythonhelper.SimpleITKHelper as sitkh
 
-from definitions import DIR_TEST
+## Import modules
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.preprocessing.IntensityCorrection as ic
+
+from volumetricreconstruction.definitions import DIR_TEST
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/

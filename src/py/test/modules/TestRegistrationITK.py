@@ -12,14 +12,15 @@ import numpy as np
 import sys
 import os
 
-# Import modules
-import base.Stack as st
 import pythonhelper.SimpleITKHelper as sitkh
-import registration.Registration as myreg
-import registration.RegistrationSimpleITK as regsitk
-import registration.RegistrationITK as regitk
 
-from definitions import DIR_TEST
+# Import modules
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.registration.Registration as myreg
+import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
+import volumetricreconstruction.registration.RegistrationITK as regitk
+
+from volumetricreconstruction.definitions import DIR_TEST
 
 # Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/

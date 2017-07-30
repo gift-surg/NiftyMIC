@@ -13,9 +13,6 @@
 # Import libraries
 import SimpleITK as sitk
 import argparse
-# import inspect
-# from inspect import getframeinfo, stack
-
 import numpy as np
 import sys
 import os
@@ -23,16 +20,12 @@ import os
 import pythonhelper.PythonHelper as ph
 import pythonhelper.SimpleITKHelper as sitkh
 
-# Add directories to import modules
-sys.path.insert(1, os.path.abspath(os.path.join(
-    os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
-
 # Import modules
-import base.DataReader as dr
-import base.Stack as st
-import reconstruction.solver.TikhonovSolver as tk
-import reconstruction.solver.ADMMSolver as admm
-import reconstruction.solver.PrimalDualSolver as pd
+import volumetricreconstruction.base.DataReader as dr
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.reconstruction.solver.TikhonovSolver as tk
+import volumetricreconstruction.reconstruction.solver.ADMMSolver as admm
+import volumetricreconstruction.reconstruction.solver.PrimalDualSolver as pd
 
 
 ##

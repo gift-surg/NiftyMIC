@@ -13,12 +13,12 @@ import os
 import sys
 
 # Import modules from src-folder
-import base.Stack as st
-import base.DataReader as dr
-import utilities.StackManager as sm
-import registration.HierarchicalSliceAlignment as hsa
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.base.DataReader as dr
+import volumetricreconstruction.utilities.StackManager as sm
+import volumetricreconstruction.registration.HierarchicalSliceAlignment as hsa
 
-from definitions import DIR_TEST
+from volumetricreconstruction.definitions import DIR_TEST
 
 # Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/

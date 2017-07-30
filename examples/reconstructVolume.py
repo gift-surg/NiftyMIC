@@ -13,9 +13,6 @@
 # Import libraries
 import SimpleITK as sitk
 import argparse
-# import inspect
-# from inspect import getframeinfo, stack
-
 import numpy as np
 import sys
 import os
@@ -23,24 +20,19 @@ import os
 import pythonhelper.PythonHelper as ph
 import pythonhelper.SimpleITKHelper as sitkh
 
-# Add directories to import modules
-sys.path.insert(1, os.path.abspath(os.path.join(
-    os.environ['VOLUMETRIC_RECONSTRUCTION_DIR'], 'src', 'py')))
-
-# Import modules
-import base.DataReader as dr
-import base.Stack as st
-import preprocessing.DataPreprocessing as dp
-import preprocessing.N4BiasFieldCorrection as n4bfc
-import registration.RegistrationSimpleITK as regsitk
-import registration.RegistrationITK as regitk
-import registration.FLIRT as regflirt
-import registration.NiftyReg as regniftyreg
-import registration.SegmentationPropagation as segprop
-import reconstruction.ScatteredDataApproximation as sda
-import reconstruction.solver.TikhonovSolver as tk
-import reconstruction.solver.ADMMSolver as admm
-import utilities.Exceptions as Exceptions
+import volumetricreconstruction.base.DataReader as dr
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.preprocessing.DataPreprocessing as dp
+import volumetricreconstruction.preprocessing.N4BiasFieldCorrection as n4bfc
+import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
+import volumetricreconstruction.registration.RegistrationITK as regitk
+import volumetricreconstruction.registration.FLIRT as regflirt
+import volumetricreconstruction.registration.NiftyReg as regniftyreg
+import volumetricreconstruction.registration.SegmentationPropagation as segprop
+import volumetricreconstruction.reconstruction.ScatteredDataApproximation as sda
+import volumetricreconstruction.reconstruction.solver.TikhonovSolver as tk
+import volumetricreconstruction.reconstruction.solver.ADMMSolver as admm
+import volumetricreconstruction.utilities.Exceptions as Exceptions
 
 
 ##

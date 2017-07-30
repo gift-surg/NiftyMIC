@@ -15,19 +15,16 @@ import sys
 import time
 from datetime import timedelta
 
-# Add directories to import modules
-# dir_src_root = "../src/"
-# sys.path.append( dir_src_root )
-
-# Import modules
-import base.Stack as st
-import registration.Registration as myreg
 import pythonhelper.SimpleITKHelper as sitkh
 import pythonhelper.PythonHelper as ph
-import registration.RegistrationSimpleITK as regsitk
-import registration.RegistrationITK as regitk
 
-from definitions import DIR_TEST
+# Import modules
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.registration.Registration as myreg
+import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
+import volumetricreconstruction.registration.RegistrationITK as regitk
+
+from volumetricreconstruction.definitions import DIR_TEST
 
 
 # Pixel type of used 3D ITK image

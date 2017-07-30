@@ -12,10 +12,10 @@ import unittest
 import sys
 
 ## Import modules from src-folder
-import base.Stack as st
-import reconstruction.solver.DifferentialOperations as diffop
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.reconstruction.solver.DifferentialOperations as diffop
 
-from definitions import DIR_TEST
+from volumetricreconstruction.definitions import DIR_TEST
 
 
 ## Concept of unit testing for python used in here is based on

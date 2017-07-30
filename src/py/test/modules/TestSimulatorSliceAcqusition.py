@@ -13,13 +13,14 @@ import unittest
 import sys
 import os
 
-# Import modules
 import pythonhelper.SimpleITKHelper as sitkh
-import base.Stack as st
-import simulation.SimulatorSliceAcqusition as sa
-import base.PSF as psf
 
-from definitions import DIR_TEST
+# Import modules
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.simulation.SimulatorSliceAcqusition as sa
+import volumetricreconstruction.base.PSF as psf
+
+from volumetricreconstruction.definitions import DIR_TEST
 
 
 # Pixel type of used 3D ITK image
@@ -165,7 +166,7 @@ class SliceAcqusition(unittest.TestCase):
             resampler.SetOutputParametersFromImage(stacks_simulated[i].itk)
 
             # Set covariance based on oblique PSF
-            Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(
+            Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
                 stacks_simulated[i], HR_volume)
             interpolator.SetCovariance(Cov_HR_coord.flatten())
 
@@ -334,7 +335,7 @@ class SliceAcqusition(unittest.TestCase):
                     rigid_motion_transforms_ground_truth[i][j])
 
                 # Get covariance based on oblique PSF
-                Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_HR_volume_coordinates(
+                Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
                     slice, HR_volume)
 
                 # Update resampler

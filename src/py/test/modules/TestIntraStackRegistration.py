@@ -15,13 +15,14 @@ import sys
 import os
 from scipy.ndimage import imread
 
-# Import modules
-import base.Stack as st
-import registration.IntraStackRegistration as inplanereg
 import pythonhelper.SimpleITKHelper as sitkh
 import pythonhelper.PythonHelper as ph
 
-from definitions import DIR_TEST
+# Import modules
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.registration.IntraStackRegistration as inplanereg
+
+from volumetricreconstruction.definitions import DIR_TEST
 
 
 def get_inplane_corrupted_stack(stack,
@@ -149,7 +150,6 @@ class TestIntraStackRegistration(unittest.TestCase):
     def setUp(self):
         pass
 
-    """
     ##
     #       Test whether the function
     #             _get_initial_transforms_and_parameters_geometry_moments
@@ -1060,7 +1060,6 @@ class TestIntraStackRegistration(unittest.TestCase):
 
         self.assertEqual(np.round(
             np.linalg.norm(stack_diff_nda), decimals=8), 0)
-    """
 
     def test_inplane_uniform_scale_similarity_alignment_to_reference(self):
 

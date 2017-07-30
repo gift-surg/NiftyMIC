@@ -13,11 +13,12 @@ import sys
 import os
 
 # Import modules
-import registration.NiftyReg as nreg
-import base.Stack as st
 import pythonhelper.SimpleITKHelper as sitkh
 
-from definitions import DIR_TEST
+import volumetricreconstruction.registration.NiftyReg as nreg
+import volumetricreconstruction.base.Stack as st
+
+from volumetricreconstruction.definitions import DIR_TEST
 
 
 # Concept of unit testing for python used in here is based on

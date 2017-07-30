@@ -13,10 +13,10 @@ import sys
 import os
 
 # Import modules
-import base.Stack as st
-import utilities.Exceptions as Exceptions
+import volumetricreconstruction.base.Stack as st
+import volumetricreconstruction.utilities.Exceptions as Exceptions
 
-from definitions import DIR_TEST
+from volumetricreconstruction.definitions import DIR_TEST
 
 
 # Concept of unit testing for python used in here is based on

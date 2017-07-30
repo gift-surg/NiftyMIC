@@ -13,9 +13,9 @@ import sys
 
 ## Import modules from src-folder
 import pythonhelper.SimpleITKHelper as sitkh
-import preprocessing.BrainStripping as bs
 
-from definitions import DIR_TEST
+import volumetricreconstruction.preprocessing.BrainStripping as bs
+from volumetricreconstruction.definitions import DIR_TEST
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
