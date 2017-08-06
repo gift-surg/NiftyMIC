@@ -237,11 +237,11 @@ if __name__ == '__main__':
     data_preprocessing.run_preprocessing()
     time_data_preprocessing = data_preprocessing.get_computational_time()
 
-    # Get preprocessed stacks with index 0 holding the selected target stack
+    # Get preprocessed stacks
     stacks = data_preprocessing.get_preprocessed_stacks()
 
     if args.verbose:
-        sitkh.show_stacks(stacks, segmentation=stacks[0])
+        sitkh.show_stacks(stacks, segmentation=stacks[args.target_stack_index])
 
     # Super-Resolution Reconstruction (SRR)
     ph.print_title("Super-Resolution Reconstruction")
@@ -250,7 +250,8 @@ if __name__ == '__main__':
     # Initial, isotropic volume to define the physical space for the HR SRR
     # reconstruction. In-plane spacing of chosen template stack defines
     # the isotropic voxel size.
-    HR_volume_init = stacks[0].get_isotropically_resampled_stack()
+    HR_volume_init = stacks[args.target_stack_index].\
+        get_isotropically_resampled_stack()
     HR_volume_init.set_filename("HR_volume_0")
 
     # SRR step

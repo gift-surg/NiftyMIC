@@ -40,9 +40,10 @@ class ADMMSolver(Solver):
     # \param[in]     stacks                 list of Stack objects containing
     #                                       all stacks used for the
     #                                       reconstruction
-    # \param[in,out] reconstruction                  Stack object containing the current
-    #                                       estimate of the reconstruction volume (used as
-    #                                       initial value + space definition)
+    # \param[in,out] reconstruction         Stack object containing the current
+    #                                       estimate of the reconstruction
+    #                                       volume (used as initial value +
+    #                                       space definition)
     # \param[in]     alpha_cut              Cut-off distance for Gaussian
     #                                       blurring filter
     # \param[in]     alpha                  regularization parameter, scalar
@@ -53,7 +54,7 @@ class ADMMSolver(Solver):
     # \param         predefined_covariance  The predefined covariance
     # \param[in]     rho                    regularization parameter of
     #                                       augmented Lagrangian term, scalar
-    # \param[in]     iterations        number of ADMM iterations, scalar
+    # \param[in]     iterations             number of ADMM iterations, scalar
     # \param         verbose                The verbose
     #
     def __init__(self,
@@ -164,7 +165,7 @@ class ADMMSolver(Solver):
     #                                     first-order Tikhonov reconstruction
     #                                     step prior the ADMM algorithm
     #
-    def run_reconstruction(self):
+    def _run_reconstruction(self):
 
         self._print_info_text()
 
@@ -173,6 +174,7 @@ class ADMMSolver(Solver):
         A_adj = self.get_A_adj()
         b = self.get_b()
         x0 = self.get_x0()
+        x_scale = x0.max()
 
         spacing = np.array(self._reconstruction.sitk.GetSpacing())
         linear_operators = linop.LinearOperators3D(spacing=spacing)
@@ -191,6 +193,7 @@ class ADMMSolver(Solver):
             B=B, B_adj=B_adj,
             b=b,
             x0=x0,
+            x_scale=x_scale,
             alpha=self._alpha,
             data_loss="linear",
             minimizer="lsmr",

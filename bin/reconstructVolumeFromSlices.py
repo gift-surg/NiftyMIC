@@ -223,13 +223,13 @@ if __name__ == '__main__':
     run_ADMM = 1
     run_PrimalDual = 1
 
-    alpha_ADMM = 3
+    alpha_ADMM = 0.1
     iter_max_ADMM = 5
-    iterations_ADMM = 10
+    iterations_ADMM = 20
 
-    alpha_PD = 3
+    alpha_PD = 0.1
     iter_max_PD = 5
-    iterations_PD = 10
+    iterations_PD = 20
 
     time_start = ph.start_timing()
 
@@ -244,7 +244,7 @@ if __name__ == '__main__':
         target_stack_index=0,
         regularization="TK1",
         data_loss="linear",
-        alpha=0.03,
+        alpha=0.01,
         isotropic_resolution=None,
         iter_max=10,
         rho=0.5,
@@ -253,7 +253,7 @@ if __name__ == '__main__':
         extra_frame_target=10,
         provide_comparison=1,
         log_script_execution=1,
-        verbose=0,
+        verbose=1,
     )
 
     # Write script execution call
@@ -278,11 +278,6 @@ if __name__ == '__main__':
     # if args.verbose:
     #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 
-    # List to store SRRs
-    recons = []
-    for i in range(0, len(stacks)):
-        recons.append(stacks[i])
-
     recon0 = stacks[args.target_stack_index].get_isotropically_resampled_stack(
         spacing_new_scalar=args.isotropic_resolution,
         extra_frame=args.extra_frame_target)
@@ -299,13 +294,22 @@ if __name__ == '__main__':
     )
     SRR0.run_reconstruction()
     SRR0.print_statistics()
+
     recon = SRR0.get_reconstruction()
     recon.set_filename(SRR0.get_setting_specific_filename())
     recon.write(args.dir_output)
 
+    # List to store SRRs
+    recons = []
+    for i in range(0, len(stacks)):
+        recons.append(stacks[i])
     recons.insert(0, recon)
 
-    for alpha in [0.5, 1, 2, 5, 10]:
+    if args.verbose:
+        sitkh.show_stacks(recons)
+
+    # for alpha in [0.5, 1, 2, 5, 10]:
+    for alpha in [0.01]:
         if run_ADMM:
             SRR = admm.ADMMSolver(
                 stacks=stacks,
@@ -327,6 +331,9 @@ if __name__ == '__main__':
             recons.insert(0, recon)
 
             recon.write(args.dir_output)
+
+            if args.verbose:
+                sitkh.show_stacks(recons)
 
         if run_PrimalDual:
             SRR = pd.PrimalDualSolver(
@@ -350,7 +357,10 @@ if __name__ == '__main__':
 
             recon.write(args.dir_output)
 
-    if args.verbose:
+            if args.verbose:
+                sitkh.show_stacks(recons)
+
+    if args.verbose and not args.provide_comparison:
         sitkh.show_stacks(recons)
 
     # Show SRR together with linearly resampled input data.

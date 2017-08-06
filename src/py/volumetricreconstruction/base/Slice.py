@@ -32,7 +32,7 @@ class Slice:
     #  \param[in] slice_number number of slice within parent stack, integer
     #  \param[in] slice_sitk_mask associated mask of slice, sitk.Image object (optional)
     @classmethod
-    def from_sitk_image(cls, slice_sitk, dir_input, filename, slice_number, slice_sitk_mask=None):
+    def from_sitk_image(cls, slice_sitk, slice_number, filename="unknown", slice_sitk_mask=None):
 
         slice = cls()
 
@@ -42,7 +42,7 @@ class Slice:
         # Filename without extension
         # filename = filename.split("/")[-1:][0].split(".")[0]
 
-        slice._dir_input = dir_input
+        slice._dir_input = None
         slice._filename = filename
         slice._slice_number = slice_number
 

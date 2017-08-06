@@ -1,11 +1,11 @@
-## \file SegmentationPropagation.py
-#  \brief 
+# \file SegmentationPropagation.py
+#  \brief
 #
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date May 2017
 
 
-## Import libraries
+# Import libraries
 import sys
 import itk
 import SimpleITK as sitk
@@ -14,7 +14,7 @@ import numpy as np
 import pythonhelper.SimpleITKHelper as sitkh
 import pythonhelper.PythonHelper as ph
 
-## Import modules
+# Import modules
 import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.utilities.StackMaskMorphologicalOperations as stmorph
 import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
@@ -25,10 +25,20 @@ import volumetricreconstruction.registration.NiftyReg as regniftyreg
 # Class implementing the segmentation propagation from one image to another
 # \date       2017-05-10 23:48:08+0100
 #
+
+
 class SegmentationPropagation(object):
 
-    ## Constructor
-    def __init__(self, stack=None, template=None, registration_method=None, use_template_mask=True, dilation_radius=0, dilation_kernel="Ball", use_dilation_in_plane_only=True, interpolator="NearestNeighbor"):
+    # Constructor
+    def __init__(self,
+                 stack=None,
+                 template=None,
+                 registration_method=None,
+                 use_template_mask=True,
+                 dilation_radius=0,
+                 dilation_kernel="Ball",
+                 use_dilation_in_plane_only=True,
+                 interpolator="NearestNeighbor"):
 
         self._stack = stack
         self._template = template
@@ -41,9 +51,9 @@ class SegmentationPropagation(object):
         self._interpolator = interpolator
 
         self._get_registration_method = {
-            "SimpleITK"     : regsitk,
-            "ITK"           : regitk,
-            "NiftyReg"      : regitk,
+            "SimpleITK": regsitk,
+            "ITK": regitk,
+            "NiftyReg": regitk,
         }
 
         self._stack_sitk = None
@@ -71,30 +81,30 @@ class SegmentationPropagation(object):
 
     def set_dilation_kernel(self, dilation_kernel):
         if dilation_kernel not in ['Ball', 'Box', 'Annulus', 'Cross']:
-            raise ValueError("Dilation kernel must be 'Ball', 'Box', 'Annulus' or 'Cross'.")
+            raise ValueError(
+                "Dilation kernel must be 'Ball', 'Box', 'Annulus' or 'Cross'.")
         self._dilation_kernel = dilation_kernel
 
     def get_dilation_kernel(self):
         return self._dilation_kernel
 
     def get_segmented_stack(self):
-        
-        ## Create new Stack instance
-        stack_aligned_masked = st.Stack.from_sitk_image(self._stack_sitk, self._stack.get_filename(), self._stack_sitk_mask)
+
+        # Create new Stack instance
+        stack_aligned_masked = st.Stack.from_sitk_image(
+            self._stack_sitk, self._stack.get_filename(), self._stack_sitk_mask)
 
         return stack_aligned_masked
 
-
     def get_registration_transform_sitk(self):
         return self._registration_transform_sitk
-
 
     def run_segmentation_propagation(self):
 
         if self._stack is None or self._template is None:
             raise ValueError("Specify stack and template first")
 
-        ## Choose interpolator
+        # Choose interpolator
         try:
             interpolator_str = self._interpolator
             interpolator = eval("sitk.sitk" + interpolator_str)
@@ -103,7 +113,7 @@ class SegmentationPropagation(object):
 
         self._stack_sitk = sitk.Image(self._stack.sitk)
 
-        ## Register stack to template
+        # Register stack to template
         if self._registration_method is not None:
             self._registration_method.set_fixed(self._template)
             self._registration_method.set_moving(self._stack)
@@ -111,14 +121,17 @@ class SegmentationPropagation(object):
             self._registration_method.run_registration()
 
             self._registration_transform_sitk = self._registration_method.get_registration_transform_sitk()
-            self._registration_transform_sitk = eval("sitk." + self._registration_transform_sitk.GetName() + "(self._registration_transform_sitk.GetInverse())")
+            self._registration_transform_sitk = eval(
+                "sitk." + self._registration_transform_sitk.GetName() + "(self._registration_transform_sitk.GetInverse())")
 
-            self._stack_sitk = sitkh.get_transformed_sitk_image(self._stack_sitk, self._registration_transform_sitk)
+            self._stack_sitk = sitkh.get_transformed_sitk_image(
+                self._stack_sitk, self._registration_transform_sitk)
 
-        ## Propagate mask
-        self._stack_sitk_mask = sitk.Resample(self._template.sitk_mask, self._stack_sitk, sitk.Euler3DTransform(), interpolator, 0, self._template.sitk_mask.GetPixelIDValue())
+        # Propagate mask
+        self._stack_sitk_mask = sitk.Resample(self._template.sitk_mask, self._stack_sitk, sitk.Euler3DTransform(
+        ), interpolator, 0, self._template.sitk_mask.GetPixelIDValue())
 
-        ## Dilate mask
+        # Dilate mask
         if self._dilation_radius > 0:
 
             stack_mask_morpher = stmorph.StackMaskMorphologicalOperations.from_sitk_mask(
@@ -131,4 +144,3 @@ class SegmentationPropagation(object):
             self._stack_sitk_mask = stack_mask_morpher.get_processed_mask_sitk()
 
             # sitkh.show_sitk_image(self._stack_sitk_mask)
-

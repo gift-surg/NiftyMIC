@@ -15,6 +15,7 @@ import re
 import natsort
 
 import pythonhelper.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
 
 import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.utilities.Exceptions as Exceptions
@@ -267,3 +268,42 @@ class ImageSlicesDirectoryReader(DataReader):
         for i, filename in enumerate(filenames):
             self._stacks[i] = st.Stack.from_slice_filenames(
                 self._path_to_directory, filename, self._suffix_mask)
+
+
+##
+# MultiComponentImageReader reads a single image which has multiple components
+# \date       2017-08-05 23:39:24+0100
+#
+class MultiComponentImageReader(DataReader):
+
+    def __init__(self, path_to_image, path_to_image_mask=None):
+
+        super(self.__class__, self).__init__()
+
+        self._path_to_image = path_to_image
+        self._path_to_image_mask = path_to_image_mask
+
+    def read_data(self):
+        vector_image_sitk = sitkh.read_sitk_vector_image(
+            self._path_to_image,
+            dtype=np.float64)
+        vector_image_sitk_mask = sitkh.read_sitk_vector_image(
+            self._path_to_image_mask,
+            dtype=np.uint8)
+
+        N_components = vector_image_sitk.GetNumberOfComponentsPerPixel()
+
+        self._stacks = [None] * N_components
+
+        filename_base = os.path.basename(self._path_to_image).split(".")[0]
+        for i in range(N_components):
+            image_sitk = sitk.VectorIndexSelectionCast(
+                vector_image_sitk, i)
+            image_sitk_mask = sitk.VectorIndexSelectionCast(
+                vector_image_sitk_mask, i)
+
+            filename = filename_base + "_" + str(i)
+            self._stacks[i] = st.Stack.from_sitk_image(
+                image_sitk=image_sitk,
+                filename=filename,
+                image_sitk_mask=image_sitk_mask)

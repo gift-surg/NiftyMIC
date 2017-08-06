@@ -26,7 +26,7 @@ from scipy.optimize import minimize
 # Import modules
 import pythonhelper.SimpleITKHelper as sitkh
 import pythonhelper.PythonHelper as ph
-import numericalsolver.lossFunctions as lf
+from numericalsolver.LossFunctions import LossFunctions as lf
 
 import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.utilities.ParameterNormalization as pn

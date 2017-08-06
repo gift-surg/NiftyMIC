@@ -18,7 +18,7 @@ from datetime import timedelta
 
 import pythonhelper.SimpleITKHelper as sitkh
 import pythonhelper.PythonHelper as ph
-import numericalsolver.lossFunctions as lf
+from numericalsolver.LossFunctions import LossFunctions as lf
 
 # Import modules
 import volumetricreconstruction.base.PSF as psf

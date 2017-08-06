@@ -990,7 +990,6 @@ class Stack:
         for i in range(0, self._N_slices):
             slices[i] = sl.Slice.from_sitk_image(
                 slice_sitk=self.sitk[:, :, i:i+1],
-                dir_input=self._dir,
                 filename=self._filename,
                 slice_number=i,
                 slice_sitk_mask=self.sitk_mask[:, :, i:i+1])

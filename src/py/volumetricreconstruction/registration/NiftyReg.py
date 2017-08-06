@@ -33,6 +33,7 @@ class NiftyReg:
         self._affine_transform_sitk = None
         self._control_point_grid_sitk = None
         self._registered_image = None
+        self._registered_image_sitk = None
 
         # Temporary output where files are written in order to use NiftyReg
         self._dir_tmp = ph.create_directory(os.path.join(DIR_TMP, "NiftyReg"),
@@ -130,6 +131,9 @@ class NiftyReg:
     def get_registered_image(self):
         return self._registered_image
 
+    def get_registered_image_sitk(self):
+        return self._registered_image_sitk
+
     def run_registration(self):
 
         # Clean output directory first
@@ -183,6 +187,9 @@ class NiftyReg:
     def _run_reg_f3d(self):
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
+
+        if not self._verbose:
+            self._options += "-voff "
 
         moving_str = "NiftyReg_moving_" + self._moving.get_filename()
         fixed_str = "NiftyReg_fixed_" + self._fixed.get_filename()
@@ -264,10 +271,12 @@ class NiftyReg:
 
         self._affine_transform_sitk = sitk.AffineTransform(A.flatten(), t)
 
+        self._registered_image_sitk = sitk.ReadImage(
+            os.path.join(self._dir_tmp, res_affine_image_str + ".nii.gz"))
+        
         # Get registered image as Stack object
-        self._registered_image = st.Stack.from_filename(
-            os.path.join(self._dir_tmp, res_affine_image_str + ".nii.gz")
-        )
+        self._registered_image = st.Stack.from_sitk_image(
+            self._registered_image_sitk)
         # self._registered_image.show()
 
     # Fast Free-Form Deformation algorithm for non-rigid registration.
@@ -308,10 +317,12 @@ class NiftyReg:
         os.system(cmd)
         print("done")
 
+        self._registered_image_sitk = sitk.ReadImage(
+            os.path.join(self._dir_tmp, res_f3d_image_str + ".nii.gz"))
+
         # Get registered image as Stack object
-        self._registered_image = st.Stack.from_filename(
-            os.path.join(self._dir_tmp, res_f3d_image_str + ".nii.gz")
-        )
+        self._registered_image = st.Stack.from_sitk_image(
+            self._registered_image_sitk)
         # self._registered_image.show()
 
         # Get Control Point Grid

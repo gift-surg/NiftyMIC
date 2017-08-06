@@ -74,44 +74,15 @@ class Solver(object):
                  alpha=0.02,
                  iter_max=10,
                  minimizer="lsmr",
-                 deconvolution_mode="full_3D",
                  data_loss="linear",
                  huber_gamma=1.345,
+                 deconvolution_mode="full_3D",
                  predefined_covariance=None,
                  verbose=1):
 
         # Initialize variables
         self._stacks = stacks
         self._reconstruction = reconstruction
-        self._N_stacks = len(stacks)
-
-        # Used for PSF modelling
-        self._psf = psf.PSF()
-
-        self._deconvolution_mode = deconvolution_mode
-        self._update_oriented_adjoint_oriented_Gaussian_image_filters = {
-            "full_3D": self._update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D,
-            "only_in_plane": self._update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane,
-            "predefined_covariance": self._update_oriented_adjoint_oriented_Gaussian_image_filters_predefined_covariance
-        }
-
-        self._minimizer = minimizer
-        self._data_loss = data_loss
-        self._huber_gamma = huber_gamma
-
-        # In case only diagonal entries are given, create diagonal matrix
-        if predefined_covariance is not None:
-            # Convert to numpy array if required
-            predefined_covariance = np.array(predefined_covariance)
-
-            if predefined_covariance.size is 3:
-                predefined_covariance = np.diag(predefined_covariance)
-        self._predefined_covariance = predefined_covariance
-
-        # Idea: Set through-plane spacing artificially very small so that the
-        # corresponding becomes negligibly small in through-plane direction.
-        # Hence, only in-plane deconvolution is approximated, i.e. 2D case
-        self._deconvolution_only_in_plane_through_plane_spacing = 1e-6
 
         # Cut-off distance for Gaussian blurring filter
         self._alpha_cut = alpha_cut
@@ -120,56 +91,37 @@ class Solver(object):
         self._alpha = alpha
         self._iter_max = iter_max
 
-        # Allocate and initialize Oriented Gaussian Interpolate Image Filter
-        self._filter_oriented_Gaussian = \
-            itk.OrientedGaussianInterpolateImageFilter[
-                IMAGE_TYPE, IMAGE_TYPE].New()
-        self._filter_oriented_Gaussian.SetDefaultPixelValue(0.0)
-        self._filter_oriented_Gaussian.SetAlpha(self._alpha_cut)
+        self._minimizer = minimizer
+        self._data_loss = data_loss
+        self._huber_gamma = huber_gamma
 
-        # Allocate and initialize Adjoint Oriented Gaussian Interpolate Image
-        # Filter
-        self._filter_adjoint_oriented_Gaussian = \
-            itk.AdjointOrientedGaussianInterpolateImageFilter[
-                IMAGE_TYPE, IMAGE_TYPE].New()
-        self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue(0.0)
-        self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
-        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(
-            self._reconstruction.itk)
-
-        # Create PyBuffer object for conversion between NumPy arrays and ITK
-        # images
-        self._itk2np = itk.PyBuffer[IMAGE_TYPE]
-
-        # Extract information ready to use for itk image conversion operations
-        self._reconstruction_shape = sitk.GetArrayFromImage(
-            self._reconstruction.sitk).shape
-
-        # Define differential operators
-        # spacing = self._reconstruction.sitk.GetSpacing()[0]
-        # self._differential_operations = diffop.DifferentialOperations(
-        #     step_size=spacing)
+        self._predefined_covariance = predefined_covariance
 
         self._verbose = verbose
 
-        """
-        Helpers
-        """
-        # Compute total amount of pixels for all slices
-        self._N_total_slice_voxels = 0
-        for i in range(0, self._N_stacks):
-            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
-            self._N_total_slice_voxels += N_stack_voxels
+        self._deconvolution_mode = deconvolution_mode
+        self._update_oriented_adjoint_oriented_Gaussian_image_filters = {
+            "full_3D": self._update_oriented_adjoint_oriented_Gaussian_image_filters_full_3D,
+            "only_in_plane": self._update_oriented_adjoint_oriented_Gaussian_image_filters_in_plane,
+            "predefined_covariance": self._update_oriented_adjoint_oriented_Gaussian_image_filters_predefined_covariance
+        }
 
-        # Compute total amount of voxels of x:
-        self._N_voxels_recon = np.array(
-            self._reconstruction.sitk.GetSize()).prod()
+        # Idea: Set through-plane spacing artificially very small so that the
+        # corresponding becomes negligibly small in through-plane direction.
+        # Hence, only in-plane deconvolution is approximated, i.e. 2D case
+        self._deconvolution_only_in_plane_through_plane_spacing = 1e-6
 
         # Allocate variables containing information about statistics of
         # reconstruction
         self._computational_time = None
         self._residual_ell2 = None
         self._residual_prior = None
+
+    def set_stacks(self, stacks):
+        self._stacks = stacks
+
+    def set_reconstruction(self, reconstruction):
+        self._reconstruction = reconstruction
 
     #
     # Set regularization parameter for Tikhonov regularization
@@ -235,6 +187,63 @@ class Solver(object):
 
     def get_huber_gamma(self):
         return self._huber_gamma
+
+    def run_reconstruction(self):
+
+        self._N_stacks = len(self._stacks)
+
+        # Allocate and initialize Oriented Gaussian Interpolate Image Filter
+        self._filter_oriented_Gaussian = \
+            itk.OrientedGaussianInterpolateImageFilter[
+                IMAGE_TYPE, IMAGE_TYPE].New()
+        self._filter_oriented_Gaussian.SetDefaultPixelValue(0.0)
+        self._filter_oriented_Gaussian.SetAlpha(self._alpha_cut)
+
+        # Allocate and initialize Adjoint Oriented Gaussian Interpolate Image
+        # Filter
+        self._filter_adjoint_oriented_Gaussian = \
+            itk.AdjointOrientedGaussianInterpolateImageFilter[
+                IMAGE_TYPE, IMAGE_TYPE].New()
+        self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue(0.0)
+        self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
+        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(
+            self._reconstruction.itk)
+
+        # Extract information ready to use for itk image conversion operations
+        self._reconstruction_shape = sitk.GetArrayFromImage(
+            self._reconstruction.sitk).shape
+
+        # In case only diagonal entries are given, create diagonal matrix
+        if self._predefined_covariance is not None:
+            # Convert to numpy array if required
+            self._predefined_covariance = np.array(self._predefined_covariance)
+
+            if self._predefined_covariance.size is 3:
+                self._predefined_covariance = np.diag(
+                    self._predefined_covariance)
+
+        """
+        Helpers
+        """
+        # Create PyBuffer object for conversion between NumPy arrays and ITK
+        # images
+        self._itk2np = itk.PyBuffer[IMAGE_TYPE]
+
+        # Used for PSF modelling
+        self._psf = psf.PSF()
+
+        # Compute total amount of pixels for all slices
+        self._N_total_slice_voxels = 0
+        for i in range(0, self._N_stacks):
+            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
+            self._N_total_slice_voxels += N_stack_voxels
+
+        # Compute total amount of voxels of x:
+        self._N_voxels_recon = np.array(
+            self._reconstruction.sitk.GetSize()).prod()
+
+        # Run solver specific reconstruction
+        self._run_reconstruction()
 
     # Get current estimate of reconstruction
     #  \return current estimate of reconstruction, instance of Stack

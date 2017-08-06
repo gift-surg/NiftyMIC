@@ -26,9 +26,9 @@ from datetime import timedelta
 
 import numericalsolver.PrimalDualSolver as pd
 import numericalsolver.LinearOperators as linop
-import numericalsolver.proximalOperators as prox
 import pythonhelper.SimpleITKHelper as sitkh
 import pythonhelper.PythonHelper as ph
+from numericalsolver.ProximalOperators import ProximalOperators as prox
 
 # Import modules
 import volumetricreconstruction.reconstruction.solver.TikhonovSolver as tk
@@ -110,7 +110,7 @@ class PrimalDualSolver(Solver):
 
         return filename
 
-    def run_reconstruction(self, verbose=0):
+    def _run_reconstruction(self, verbose=0):
 
         if self._reg_type not in ["TV", "huber"]:
             raise ValueError("Error: regularization type can only be either "
@@ -128,6 +128,7 @@ class PrimalDualSolver(Solver):
         A_adj = self.get_A_adj()
         b = self.get_b()
         x0 = self.get_x0()
+        x_scale = x0.max()
 
         spacing = np.array(self._reconstruction.sitk.GetSpacing())
         linear_operators = linop.LinearOperators3D(spacing=spacing)
@@ -142,7 +143,7 @@ class PrimalDualSolver(Solver):
         prox_f = lambda x, tau: prox.prox_linear_least_squares(
             x=x, tau=tau,
             A=A, A_adj=A_adj,
-            b=b, x0=x0,
+            b=b, x0=x0, x_scale=x_scale,
             iter_max=self._iter_max,
             verbose=self._verbose)
 
@@ -159,6 +160,7 @@ class PrimalDualSolver(Solver):
             B_conj=B_adj,
             L2=L2,
             x0=x0,
+            x_scale=x_scale,
             alpha=self._alpha,
             iterations=self._iterations,
             verbose=self._verbose,

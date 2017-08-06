@@ -104,7 +104,7 @@ def get_parsed_input_line(
         "specified by providing a mask for the selected target stack. Only "
         "this region will then be reconstructed by the SRR algorithm which "
         "can substantially reduce the computational time.",
-        prog="python reconstructVolume.py",
+        prog="python " + os.path.basename(__file__),
         epilog="Author: Michael Ebner (michael.ebner.14@ucl.ac.uk)",
     )
 
@@ -310,7 +310,7 @@ if __name__ == '__main__':
         suffix_mask="_mask",
         target_stack_index=0,
         two_step_cycles=3,
-        sigma=0.7,
+        sigma=0.9,
         regularization="TK1",
         data_loss="linear",
         alpha=0.1,
@@ -389,7 +389,7 @@ if __name__ == '__main__':
     data_preprocessing.run_preprocessing()
     time_data_preprocessing = data_preprocessing.get_computational_time()
 
-    # Get preprocessed stacks with index 0 holding the selected target stack
+    # Get preprocessed stacks
     stacks = data_preprocessing.get_preprocessed_stacks()
 
     # if args.verbose:
@@ -427,7 +427,7 @@ if __name__ == '__main__':
         # registration = regsitk.RegistrationSimpleITK(
         #     initializer_type="GEOMETRY", metric="MattesMutualInformation",
         registration = regniftyreg.NiftyReg(
-        # registration = regflirt.FLIRT(
+            # registration = regflirt.FLIRT(
             fixed=stacks[0],
             registration_type="Rigid",
             use_fixed_mask=True,
@@ -461,10 +461,12 @@ if __name__ == '__main__':
 
     # Isotropic resampling to define HR target space
     ph.print_title("Isotropic Resampling")
-    HR_volume = stacks[0].get_isotropically_resampled_stack(
+    HR_volume = stacks[args.target_stack_index].\
+        get_isotropically_resampled_stack(
         spacing_new_scalar=args.isotropic_resolution,
         extra_frame=args.extra_frame_target)
-    HR_volume.set_filename(stacks[0].get_filename() + "_upsampled")
+    HR_volume.set_filename(
+        stacks[args.target_stack_index].get_filename() + "_upsampled")
 
     # Scattered Data Approximation to get first estimate of HR volume
     ph.print_title("Scattered Data Approximation")

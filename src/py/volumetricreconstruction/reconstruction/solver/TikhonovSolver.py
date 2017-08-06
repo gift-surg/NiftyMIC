@@ -216,7 +216,7 @@ class TikhonovSolver(Solver):
     #
     # \return     { description_of_the_return_value }
     #
-    def run_reconstruction(self):
+    def _run_reconstruction(self):
 
         if self._reg_type not in ["TK0", "TK1"]:
             raise ValueError(
@@ -229,7 +229,7 @@ class TikhonovSolver(Solver):
         A_adj = self.get_A_adj()
         b = self.get_b()
         x0 = self.get_x0()
-
+        x_scale = x0.max()
         if self._reg_type == "TK0":
             B = lambda x: x.flatten()
             B_adj = lambda x: x.flatten()
@@ -253,6 +253,7 @@ class TikhonovSolver(Solver):
             B_adj=B_adj,
             b=b,
             x0=x0,
+            x_scale=x_scale,
             alpha=self._alpha,
             data_loss=self._data_loss,
             verbose=self._verbose,

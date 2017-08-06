@@ -184,20 +184,7 @@ class DataPreprocessing:
     def get_preprocessed_stacks(self):
 
         # Return a copy of preprocessed stacks
-        stacks_copy = [None]*self._N_stacks
-
-        # Move target stack to first position
-        stacks_copy[0] = st.Stack.from_stack(
-            self._stacks[self._target_stack_index])
-        remaining_indices = list(
-            set(range(0, self._N_stacks)) - set([self._target_stack_index]))
-
-        i_ctr = 1
-        for i in remaining_indices:
-            stacks_copy[i_ctr] = st.Stack.from_stack(
-                self._stacks[i])
-            i_ctr = i_ctr + 1
-        return stacks_copy
+        return [st.Stack.from_stack(stack) for stack in self._stacks]
 
     def get_computational_time(self):
         return self._computational_time
