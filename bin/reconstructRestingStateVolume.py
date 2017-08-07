@@ -135,21 +135,6 @@ if __name__ == '__main__':
     # Get preprocessed stacks
     stacks = data_preprocessing.get_preprocessed_stacks()
 
-    vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
-        image_components_sitk=[v.sitk for v in stacks])
-    filename = os.path.basename(args.filename).split(".")[0]
-    filename = os.path.join(args.dir_output, filename + "_biasfieldcorr.nii.gz")
-    sitkh.write_sitk_vector_image(vector_image_sitk, filename)
-
-    vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
-        image_components_sitk=[v.sitk_mask for v in stacks])
-    filename = os.path.basename(args.filename).split(".")[0]
-    filename = os.path.join(args.dir_output, filename + "_biasfieldcorr_mask.nii.gz")
-    sitkh.write_sitk_vector_image(vector_image_sitk, filename)    
-
-    import pdb; pdb.set_trace()  # breakpoint cbfe9c6c //
-
-
     # if args.verbose:
     #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 

@@ -146,17 +146,17 @@ class DataPreprocessing:
 
         # N4 Bias Field Correction
         if self._use_N4BiasFieldCorrector:
-            ph.print_info(
-                "Perform N4 Bias Field Correction for all stacks ... ")
             bias_field_corrector = n4bfc.N4BiasFieldCorrection()
 
             for i in range(0, self._N_stacks):
+                ph.print_info(
+                    "Perform N4 Bias Field Correction for stack %d ... "
+                    % (i+1), newline=False)
                 bias_field_corrector.set_stack(self._stacks[i])
                 bias_field_corrector.run_bias_field_correction()
-                self._stacks[
-                    i] = bias_field_corrector.get_bias_field_corrected_stack()
-
-            print("done")
+                self._stacks[i] = \
+                    bias_field_corrector.get_bias_field_corrected_stack()
+                print("done")
 
         # Linear Intensity Correction
         if self._use_intensity_correction:
