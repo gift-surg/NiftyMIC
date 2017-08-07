@@ -33,69 +33,18 @@ import volumetricreconstruction.reconstruction.ScatteredDataApproximation as sda
 import volumetricreconstruction.reconstruction.solver.TikhonovSolver as tk
 import volumetricreconstruction.reconstruction.solver.ADMMSolver as admm
 import volumetricreconstruction.utilities.Exceptions as Exceptions
+from volumetricreconstruction.utilities.InputArparser import InputArgparser
 
 
-##
-# Gets the parsed input line.
-# \date       2017-05-18 20:09:23+0100
-#
-# \param      dir_output             The dir output
-# \param      filenames              The filenames
-# \param      prefix_output          The prefix output
-# \param      suffix_mask            The suffix mask
-# \param      target_stack_index     The target stack index
-# \param      two_step_cycles        The two step cycles
-# \param      sigma                  The sigma
-# \param      regularization         The regularization
-# \param      data_loss              The data_loss
-# \param      alpha                  The alpha
-# \param      alpha_final            The alpha final
-# \param      iter_max               The iterator maximum
-# \param      iter_max_final         The iterator maximum final
-# \param      minimizer              The minimizer
-# \param      rho                    The rho
-# \param      ADMM_iterations        The admm iterations
-# \param      dilation_radius        The dilation radius
-# \param      extra_frame_target     The extra frame target
-# \param      bias_field_correction  The bias field correction
-# \param      intensity_correction   The intensity correction
-# \param      provide_comparison     The provide comparison
-# \param      isotropic_resolution   The isotropic resolution
-# \param      log_script_execution   The log script execution
-# \param      log_motion_corretion   The log motion corretion
-# \param      verbose                The verbose
-#
-# \return     The parsed input line.
-#
-def get_parsed_input_line(
-    dir_output,
-    filename_mask,
-    prefix_output,
-    target_stack_index,
-    stack_recon_range,
-    two_step_cycles,
-    sigma,
-    regularization,
-    data_loss,
-    alpha,
-    alpha_final,
-    iter_max,
-    iter_max_final,
-    minimizer,
-    rho,
-    ADMM_iterations,
-    dilation_radius,
-    extra_frame_target,
-    bias_field_correction,
-    intensity_correction,
-    provide_comparison,
-    isotropic_resolution,
-    log_script_execution,
-    log_motion_corretion,
-    verbose,
-):
+if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(
+    time_start = ph.start_timing()
+
+    # Set print options for numpy
+    np.set_printoptions(precision=3)
+
+    # Read input
+    input_parser = InputArgparser(
         description="Volumetric MRI reconstruction framework to reconstruct "
         "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
         "slices WITH motion correction. The resolution of the computed "
@@ -105,230 +54,36 @@ def get_parsed_input_line(
         "this region will then be reconstructed by the SRR algorithm which "
         "can substantially reduce the computational time.",
         prog="python " + os.path.basename(__file__),
-        epilog="Author: Michael Ebner (michael.ebner.14@ucl.ac.uk)",
     )
+    input_parser.add_filename()
+    input_parser.add_filename_mask()
+    input_parser.add_dir_output(default="results/")
+    input_parser.add_suffix_mask(default="_mask")
+    input_parser.add_prefix_output(default="_SRR")
+    input_parser.add_target_stack_index(default=0)
+    input_parser.add_sigma(default=0.9)
+    input_parser.add_alpha(default=0.03)
+    input_parser.add_alpha_first(default=0.1)
+    input_parser.add_reg_type(default="TK1")
+    input_parser.add_iter_max(default=10)
+    input_parser.add_iter_max_first(default=5)
+    input_parser.add_minimizer(default="lsmr")
+    input_parser.add_data_loss(default="linear")
+    input_parser.add_dilation_radius(default=3)
+    input_parser.add_extra_frame_target(default=10)
+    input_parser.add_bias_field_correction(default=0)
+    input_parser.add_intensity_correction(default=0)
+    input_parser.add_isotropic_resolution(default=1)
+    input_parser.add_log_script_execution(default=1)
+    input_parser.add_write_motion_correction(default=1)
+    input_parser.add_provide_comparison(default=1)
+    input_parser.add_verbose(default=1)
+    input_parser.add_two_step_cycles(default=3)
+    input_parser.add_rho(default=0.5)
+    input_parser.add_admm_iterations(default=10)
 
-    parser.add_argument('--filename',
-                        type=str,
-                        help="Path to NIfTI file"
-                        "(.nii or .nii.gz).",
-                        required=True)
-    parser.add_argument('--filename-mask',
-                        type=str,
-                        help="Path to NIfTI file"
-                        "(.nii or .nii.gz)."
-                        " [default: %s]" % (filename_mask),
-                        )
-    parser.add_argument('--dir-output',
-                        type=str,
-                        help="Output directory. [default: %s]" % (dir_output),
-                        default=dir_output)
-    parser.add_argument('--prefix-output',
-                        type=str,
-                        help="Prefix for SRR output file name. [default: %s]"
-                        % (prefix_output),
-                        default=prefix_output)
-    parser.add_argument('--target-stack-index',
-                        type=int,
-                        help="Index of stack (image) in input directory "
-                        "(alphabetical order) which defines physical space "
-                        "for SRR. First index is 0. [default: %s]"
-                        % (target_stack_index),
-                        default=target_stack_index)
-    parser.add_argument('--stack-recon-range',
-                        type=int,
-                        help="Number of components used for SRR."
-                        " [default: %s]" % (stack_recon_range),
-                        default=stack_recon_range)
-    parser.add_argument('--sigma',
-                        type=float,
-                        help="Standard deviation for Scattered Data "
-                        "Approximation approach to reconstruct first estimate "
-                        "of HR volume from all 3D input stacks. [default: %g]"
-                        % (sigma),
-                        default=sigma)
-    parser.add_argument('--alpha',
-                        type=float,
-                        help="Regularization parameter alpha to solve the SR "
-                        "reconstruction problem: SRR = argmin_x "
-                        "[0.5 * sum_k ||y_k - A_k x||^2 + alpha * R(x)]. "
-                        "[default: %g]" % (alpha),
-                        default=alpha)
-    parser.add_argument('--alpha-final',
-                        type=float,
-                        help="Regularization parameter like 'alpha' but used "
-                        "for the final SRR step. [default: %s]"
-                        % (alpha_final),
-                        default=alpha_final)
-    parser.add_argument('--regularization',
-                        type=str,
-                        help="Type of regularization for SR algorithm. Either "
-                        "'TK0', 'TK1' or 'TV' for zeroth/first order Tikhonov "
-                        " or total variation regularization, respectively."
-                        "I.e. "
-                        "R(x) = ||x||_2^2 for 'TK0', "
-                        "R(x) = ||Dx||_2^2 for 'TK1', "
-                        "or "
-                        "R(x) = ||Dx||_1 for 'TV'. "
-                        "[default: %s]"
-                        % (regularization),
-                        default=regularization)
-    parser.add_argument('--iter-max',
-                        type=int,
-                        help="Number of maximum iterations for the numerical "
-                        "solver. [default: %s]" % (iter_max),
-                        default=iter_max)
-    parser.add_argument('--iter-max-final',
-                        type=int,
-                        help="Number of maximum iterations for the numerical "
-                        "solver like 'iter-max' but used for the final SRR "
-                        "step [default: %s]" % (iter_max_final),
-                        default=iter_max_final)
-    parser.add_argument('--rho',
-                        type=float,
-                        help="Regularization parameter for augmented "
-                        "Lagrangian term for ADMM to solve the SR "
-                        "reconstruction problem in case TV regularization is "
-                        "chosen. "
-                        "[default: %g]" % (rho),
-                        default=rho)
-    parser.add_argument('--ADMM-iterations',
-                        type=int,
-                        help="Number of ADMM iterations. "
-                        "[default: %g]" % (ADMM_iterations),
-                        default=ADMM_iterations)
-    parser.add_argument('--minimizer',
-                        type=str,
-                        help="Choice of minimizer used for the inverse "
-                        "problem associated to the SRR. Possible choices are "
-                        "'lsmr' or 'L-BFGS-B'. Note, in case of a chosen "
-                        "non-linear data loss only 'L-BFGS-B' is viable."
-                        " [default: %s]" % (minimizer),
-                        default=minimizer)
-    parser.add_argument('--two-step-cycles',
-                        type=int,
-                        help="Number of two-step-cycles, i.e. number of "
-                        "Slice-to-Volume Registration and Super-Resolution "
-                        "Reconstruction cycles. [default: %s]"
-                        % (two_step_cycles),
-                        default=two_step_cycles)
-    parser.add_argument('--data-loss',
-                        type=str,
-                        help="Loss function rho used for data term, i.e. "
-                        "rho((y_k - A_k x)^2). Possible choices are 'linear', "
-                        "'soft_l1' or 'huber'. [default: %s]" % (data_loss),
-                        default=data_loss)
-    parser.add_argument('--dilation-radius',
-                        type=int,
-                        help="Dilation radius in number of voxels used for "
-                        "segmentation propagation. [default: %s]"
-                        % (dilation_radius),
-                        default=dilation_radius)
-    parser.add_argument('--extra-frame-target',
-                        type=float,
-                        help="Extra frame in mm added to the increase the "
-                        "target space for the SRR. [default: %s]"
-                        % (extra_frame_target),
-                        default=extra_frame_target)
-    parser.add_argument('--bias-field-correction',
-                        type=int,
-                        help="Turn on/off bias field correction during data "
-                        "preprocessing. [default: %s]"
-                        % (bias_field_correction),
-                        default=bias_field_correction)
-    parser.add_argument('--intensity-correction',
-                        type=int,
-                        help="Turn on/off linear intensity correction during "
-                        "data preprocessing. [default: %s]"
-                        % (intensity_correction),
-                        default=intensity_correction)
-    parser.add_argument('--isotropic-resolution',
-                        type=float,
-                        help="Specify isotropic resolution for obtained HR "
-                        "volume. [default: %s]" % (isotropic_resolution),
-                        default=isotropic_resolution)
-    parser.add_argument('--log-script-execution',
-                        type=int,
-                        help="Turn on/off log for execution of current "
-                        "script. [default: %s]" % (log_script_execution),
-                        default=log_script_execution)
-    parser.add_argument('--log-motion-correction',
-                        type=int,
-                        help="Turn on/off functionality to log the "
-                        "final result for motion correction, i.e."
-                        "the rigidly aligned stacks with their respective "
-                        "motion corrected individual slices in addition to "
-                        "the resulting applied overall transform for each "
-                        "slice."
-                        " [default: %s]"
-                        % (log_motion_corretion),
-                        default=log_motion_corretion)
-    parser.add_argument('--provide-comparison',
-                        type=int,
-                        help="Turn on/off functionality to create files "
-                        "allowing for a visual comparison between original "
-                        "data and the obtained SRR. A folder 'comparison' "
-                        "will be created in the output directory containing "
-                        "the obtained SRR along with the linearly resampled "
-                        "original data. An additional script "
-                        "'show_comparison.py' will be provided whose "
-                        "execution will open all images in ITK-Snap "
-                        "(http://www.itksnap.org/). [default: %s]"
-                        % (provide_comparison),
-                        default=provide_comparison)
-    parser.add_argument('--verbose',
-                        type=int,
-                        help="Turn on/off verbose output. [default: %s]"
-                        % (verbose),
-                        default=verbose)
-    args = parser.parse_args()
-
-    ph.print_title("Given Input")
-    print("Chosen Parameters:")
-    for arg in sorted(vars(args)):
-        ph.print_info("%s: " % (arg), newline=False)
-        print(getattr(args, arg))
-
-    return args
-
-"""
-Main Function
-"""
-if __name__ == '__main__':
-
-    time_start = ph.start_timing()
-
-    # Set print options for numpy
-    np.set_printoptions(precision=3)
-
-    # Read input
-    args = get_parsed_input_line(
-        filename_mask=None,
-        dir_output="results/",
-        prefix_output="SRR_",
-        target_stack_index=0,
-        stack_recon_range=3,
-        two_step_cycles=3,
-        sigma=0.9,
-        regularization="TK1",
-        data_loss="linear",
-        alpha=0.1,
-        alpha_final=0.03,
-        isotropic_resolution=None,
-        iter_max=5,
-        iter_max_final=10,
-        rho=0.5,
-        ADMM_iterations=10,
-        minimizer="lsmr",
-        dilation_radius=3,
-        extra_frame_target=0,
-        bias_field_correction=0,
-        intensity_correction=0,
-        provide_comparison=1,
-        log_script_execution=1,
-        log_motion_corretion=1,
-        verbose=0,
-    )
+    args = input_parser.parse_args()
+    input_parser.print_arguments(args)
 
     # Write script execution call
     if args.log_script_execution:
@@ -348,7 +103,7 @@ if __name__ == '__main__':
     stacks = data_reader.get_stacks()
 
     # ------------------------------DELETE LATER------------------------------
-    stacks = stacks[0:5]
+    # stacks = stacks[0:20]
     # ------------------------------DELETE LATER------------------------------
 
     # Data Preprocessing from data on HDD
@@ -379,6 +134,21 @@ if __name__ == '__main__':
 
     # Get preprocessed stacks
     stacks = data_preprocessing.get_preprocessed_stacks()
+
+    vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
+        image_components_sitk=[v.sitk for v in stacks])
+    filename = os.path.basename(args.filename).split(".")[0]
+    filename = os.path.join(args.dir_output, filename + "_biasfieldcorr.nii.gz")
+    sitkh.write_sitk_vector_image(vector_image_sitk, filename)
+
+    vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
+        image_components_sitk=[v.sitk_mask for v in stacks])
+    filename = os.path.basename(args.filename).split(".")[0]
+    filename = os.path.join(args.dir_output, filename + "_biasfieldcorr_mask.nii.gz")
+    sitkh.write_sitk_vector_image(vector_image_sitk, filename)    
+
+    import pdb; pdb.set_trace()  # breakpoint cbfe9c6c //
+
 
     # if args.verbose:
     #     sitkh.show_stacks(stacks, segmentation=stacks[0])
@@ -432,18 +202,19 @@ if __name__ == '__main__':
         spacing_new_scalar=args.isotropic_resolution,
         extra_frame=args.extra_frame_target)
     HR_volume.set_filename(
-        "Iter0_" + stacks[args.target_stack_index].get_filename() + "_upsampled")
+        "Iter0_" + stacks[args.target_stack_index].get_filename() +
+        "_upsampled")
 
     # Scattered Data Approximation to get first estimate of HR volume
-    # ph.print_title("Scattered Data Approximation")
-    # SDA = sda.ScatteredDataApproximation(
-    #     stacks[args.target_stack_index: args.stack_recon_range],
-    #     HR_volume, sigma=args.sigma)
-    # SDA.run_reconstruction()
-    # SDA.generate_mask_from_stack_mask_unions(
-    #     mask_dilation_radius=2, mask_dilation_kernel="Ball")
-    # HR_volume = SDA.get_reconstruction()
-    # HR_volume.set_filename("Iter0_" + SDA.get_setting_specific_filename())
+    ph.print_title("Scattered Data Approximation")
+    SDA = sda.ScatteredDataApproximation(
+        stacks[args.target_stack_index: args.stack_recon_range],
+        HR_volume, sigma=args.sigma)
+    SDA.run_reconstruction()
+    SDA.generate_mask_from_stack_mask_unions(
+        mask_dilation_radius=2, mask_dilation_kernel="Ball")
+    HR_volume = SDA.get_reconstruction()
+    HR_volume.set_filename("Iter0_" + SDA.get_setting_specific_filename())
 
     time_reconstruction = ph.stop_timing(time_reconstruction)
 
@@ -453,31 +224,32 @@ if __name__ == '__main__':
     # Add initial volume and rigidly aligned, original data for
     # visualization
     HR_volume_iterations.append(st.Stack.from_stack(HR_volume))
-    for i in range(args.target_stack_index,
-                   args.target_stack_index + args.stack_recon_range):
-        HR_volume_iterations.append(stacks[i])
+    # for i in range(args.target_stack_index,
+    #                args.target_stack_index + args.stack_recon_range):
+    #     HR_volume_iterations.append(stacks[i])
+    HR_volume.write(args.dir_output)
 
     if args.verbose:
         sitkh.show_stacks(HR_volume_iterations)
 
-    if args.regularization in ["TK0", "TK1"]:
+    if args.reg_type in ["TK0", "TK1"]:
         SRR = tk.TikhonovSolver(
             stacks=stacks[args.target_stack_index: args.stack_recon_range],
             reconstruction=HR_volume,
-            alpha=args.alpha,
-            iter_max=args.iter_max,
-            reg_type=args.regularization,
+            alpha=args.alpha_first,
+            iter_max=args.iter_max_first,
+            reg_type=args.reg_type,
             minimizer=args.minimizer,
             data_loss=args.data_loss,
             verbose=args.verbose,
         )
-    elif args.regularization == "TV":
+    elif args.reg_type == "TV":
         SRR = admm.ADMMSolver(
             stacks=stacks,
             reconstruction=HR_volume,
-            alpha=args.alpha,
+            alpha=args.alpha_first,
             minimizer=args.minimizer,
-            iter_max=args.iter_max,
+            iter_max=args.iter_max_first,
             rho=args.rho,
             iterations=args.ADMM_iterations,
             verbose=args.verbose,
@@ -485,7 +257,7 @@ if __name__ == '__main__':
 
     if args.two_step_cycles > 0:
 
-        alpha_delta = (args.alpha_final - args.alpha) / \
+        alpha_delta = (args.alpha - args.alpha_first) / \
             float(args.two_step_cycles)
 
         # Two-step Slice-to-Volume Registration Reconstruction
@@ -498,10 +270,10 @@ if __name__ == '__main__':
             use_moving_mask=False,
             use_verbose=args.verbose,
             interpolator="Linear",
-            metric="Correlation",
-            # metric="MattesMutualInformation",  # Might cause error messages
+            # metric="Correlation",
+            metric="MattesMutualInformation",  # Might cause error messages
             # like "Too many samples map outside moving image buffer."
-            use_multiresolution_framework=False,
+            # use_multiresolution_framework=True,
             shrink_factors=[2, 1],
             smoothing_sigmas=[1, 0],
             initializer_type=None,
@@ -569,9 +341,12 @@ if __name__ == '__main__':
             if args.verbose:
                 sitkh.show_stacks(HR_volume_iterations)
 
+            # Write to output
+            HR_volume_tmp.write(args.dir_output)
+
     ph.print_subtitle("Final Super-Resolution Reconstruction")
-    SRR.set_alpha(args.alpha_final)
-    SRR.set_iter_max(args.iter_max_final)
+    SRR.set_alpha(args.alpha)
+    SRR.set_iter_max(args.iter_max)
     stacks_recon = [None] * len(stacks)
     for i in range(0, len(stacks)):
         SRR.set_stacks([st.Stack.from_stack(stacks[i])])
@@ -585,29 +360,20 @@ if __name__ == '__main__':
         stacks_recon[i] = SRR.get_reconstruction()
         stacks_recon[i].set_filename(stacks[i].get_filename() + "_SRR")
 
-        if args.verbose:
-            sitkh.show_stacks([stacks[i], stacks_recon[i]])
+    # if args.verbose:
+    #     for i in range(0, len(stacks)):
+    #         sitkh.show_stacks([stacks[i], stacks_recon[i]])
+    #         ph.pause()
+    #         ph.killall_itksnap()
+
+    vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
+        image_components_sitk=[v.sitk for v in stacks_recon])
+
+    filename = os.path.basename(args.filename).split(".")[0]
+    filename = os.path.join(args.dir_output, filename + "_SRR.nii.gz")
+    sitkh.write_sitk_vector_image(vector_image_sitk, filename)
 
     elapsed_time_total = ph.stop_timing(time_start)
-
-    # HR_volume_final = SRR.get_reconstruction().get_stack_multiplied_with_mask()
-    # HR_volume_final.set_filename(SRR.get_setting_specific_filename())
-    # HR_volume_final.write(args.dir_output)
-
-    # if args.log_motion_correction:
-    #     for stack in stacks:
-    #         stack.write(
-    #             os.path.join(args.dir_output, "motion_correction"),
-    #             write_mask=True,
-    #             write_slices=True,
-    #             write_transforms=True,
-    #             suffix_mask=args.suffix_mask,
-    #         )
-
-    # HR_volume_iterations.insert(0, HR_volume_final)
-    # if args.verbose and not args.provide_comparison:
-    #     sitkh.show_stacks(HR_volume_iterations)
-    # HR_volume_final.show()
 
     # Show SRR together with linearly resampled input data.
     # Additionally, a script is generated to open files

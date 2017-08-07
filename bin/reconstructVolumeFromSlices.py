@@ -26,198 +26,9 @@ import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.reconstruction.solver.TikhonovSolver as tk
 import volumetricreconstruction.reconstruction.solver.ADMMSolver as admm
 import volumetricreconstruction.reconstruction.solver.PrimalDualSolver as pd
+from volumetricreconstruction.utilities.InputArparser import InputArgparser
 
 
-##
-# Gets the parsed input line.
-# \date       2017-05-18 20:09:23+0100
-#
-# \param      dir_output             The dir output
-# \param      filenames              The filenames
-# \param      prefix_output          The prefix output
-# \param      suffix_mask            The suffix mask
-# \param      target_stack_index     The target stack index
-# \param      two_step_cycles        The two step cycles
-# \param      sigma                  The sigma
-# \param      regularization         The regularization
-# \param      data_loss              The data_loss
-# \param      alpha                  The alpha
-# \param      alpha_final            The alpha final
-# \param      iter_max               The iterator maximum
-# \param      iter_max_final         The iterator maximum final
-# \param      minimizer              The minimizer
-# \param      rho                    The rho
-# \param      ADMM_iterations        The admm iterations
-# \param      dilation_radius        The dilation radius
-# \param      extra_frame_target     The extra frame target
-# \param      bias_field_correction  The bias field correction
-# \param      intensity_correction   The intensity correction
-# \param      provide_comparison     The provide comparison
-# \param      isotropic_resolution   The isotropic resolution
-# \param      log_script_execution   The log script execution
-# \param      log_motion_corretion   The log motion corretion
-# \param      verbose                The verbose
-#
-# \return     The parsed input line.
-#
-def get_parsed_input_line(
-    dir_output,
-    prefix_output,
-    suffix_mask,
-    target_stack_index,
-    regularization,
-    data_loss,
-    alpha,
-    iter_max,
-    minimizer,
-    rho,
-    ADMM_iterations,
-    extra_frame_target,
-    isotropic_resolution,
-    log_script_execution,
-    provide_comparison,
-    verbose,
-):
-
-    parser = argparse.ArgumentParser(
-        description="Volumetric MRI reconstruction framework to reconstruct "
-        "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
-        "slices WITH motion correction. The resolution of the computed "
-        "Super-Resolution Reconstruction (SRR) is given by the in-plane "
-        "spacing of the selected target stack. A region of interest can be "
-        "specified by providing a mask for the selected target stack. Only "
-        "this region will then be reconstructed by the SRR algorithm which "
-        "can substantially reduce the computational time.",
-        prog="python reconstructVolume.py",
-        epilog="Author: Michael Ebner (michael.ebner.14@ucl.ac.uk)",
-    )
-
-    parser.add_argument('--dir-input',
-                        type=str,
-                        help="Input directory with NIfTI files "
-                        "(.nii or .nii.gz).",
-                        required=True,
-                        default="")
-    parser.add_argument('--dir-output',
-                        type=str,
-                        help="Output directory. [default: %s]" % (dir_output),
-                        default=dir_output)
-    parser.add_argument('--suffix-mask',
-                        type=str,
-                        help="Suffix used to associate a mask with an image. "
-                        "E.g. suffix_mask='_mask' means an existing "
-                        "image_i_mask.nii.gz represents the mask to "
-                        "image_i.nii.gz for all images image_i in the input "
-                        "directory. [default: %s]" % (suffix_mask),
-                        default=suffix_mask)
-    parser.add_argument('--prefix-output',
-                        type=str,
-                        help="Prefix for SRR output file name. [default: %s]"
-                        % (prefix_output),
-                        default=prefix_output)
-    parser.add_argument('--target-stack-index',
-                        type=int,
-                        help="Index of stack (image) in input directory "
-                        "(alphabetical order) which defines physical space "
-                        "for SRR. First index is 0. [default: %s]"
-                        % (target_stack_index),
-                        default=target_stack_index)
-    parser.add_argument('--alpha',
-                        type=float,
-                        help="Regularization parameter alpha to solve the SR "
-                        "reconstruction problem: SRR = argmin_x "
-                        "[0.5 * sum_k ||y_k - A_k x||^2 + alpha * R(x)]. "
-                        "[default: %g]" % (alpha),
-                        default=alpha)
-    parser.add_argument('--regularization',
-                        type=str,
-                        help="Type of regularization for SR algorithm. Either "
-                        "'TK0', 'TK1' or 'TV' for zeroth/first order Tikhonov "
-                        " or total variation regularization, respectively."
-                        "I.e. "
-                        "R(x) = ||x||_2^2 for 'TK0', "
-                        "R(x) = ||Dx||_2^2 for 'TK1', "
-                        "or "
-                        "R(x) = ||Dx||_1 for 'TV'. "
-                        "[default: %s]"
-                        % (regularization),
-                        default=regularization)
-    parser.add_argument('--iter-max',
-                        type=int,
-                        help="Number of maximum iterations for the numerical "
-                        "solver. [default: %s]" % (iter_max),
-                        default=iter_max)
-    parser.add_argument('--rho',
-                        type=float,
-                        help="Regularization parameter for augmented "
-                        "Lagrangian term for ADMM to solve the SR "
-                        "reconstruction problem in case TV regularization is "
-                        "chosen. "
-                        "[default: %g]" % (rho),
-                        default=rho)
-    parser.add_argument('--ADMM-iterations',
-                        type=int,
-                        help="Number of ADMM iterations. "
-                        "[default: %g]" % (ADMM_iterations),
-                        default=ADMM_iterations)
-    parser.add_argument('--minimizer',
-                        type=str,
-                        help="Choice of minimizer used for the inverse "
-                        "problem associated to the SRR. Possible choices are "
-                        "'lsmr' or 'L-BFGS-B'. Note, in case of a chosen "
-                        "non-linear data loss only 'L-BFGS-B' is viable."
-                        " [default: %s]" % (minimizer),
-                        default=minimizer)
-    parser.add_argument('--data-loss',
-                        type=str,
-                        help="Loss function rho used for data term, i.e. "
-                        "rho((y_k - A_k x)^2). Possible choices are 'linear', "
-                        "'soft_l1' or 'huber'. [default: %s]" % (data_loss),
-                        default=data_loss)
-    parser.add_argument('--extra-frame-target',
-                        type=float,
-                        help="Extra frame in mm added to the increase the "
-                        "target space for the SRR. [default: %s]"
-                        % (extra_frame_target),
-                        default=extra_frame_target)
-    parser.add_argument('--isotropic-resolution',
-                        type=float,
-                        help="Specify isotropic resolution for obtained HR "
-                        "volume. [default: %s]" % (isotropic_resolution),
-                        default=isotropic_resolution)
-    parser.add_argument('--log-script-execution',
-                        type=int,
-                        help="Turn on/off log for execution of current "
-                        "script. [default: %s]" % (log_script_execution),
-                        default=log_script_execution)
-    parser.add_argument('--provide-comparison',
-                        type=int,
-                        help="Turn on/off functionality to create files "
-                        "allowing for a visual comparison of all obtained "
-                        "reconstructions. An additional script "
-                        "'show_comparison.py' will be provided whose "
-                        "execution will open all images in ITK-Snap "
-                        "(http://www.itksnap.org/). [default: %s]"
-                        % (provide_comparison),
-                        default=provide_comparison)
-    parser.add_argument('--verbose',
-                        type=int,
-                        help="Turn on/off verbose output. [default: %s]"
-                        % (verbose),
-                        default=verbose)
-    args = parser.parse_args()
-
-    ph.print_title("Given Input")
-    print("Chosen Parameters:")
-    for arg in sorted(vars(args)):
-        ph.print_info("%s: " % (arg), newline=False)
-        print(getattr(args, arg))
-
-    return args
-
-"""
-Main Function
-"""
 if __name__ == '__main__':
 
     run_ADMM = 1
@@ -237,24 +48,37 @@ if __name__ == '__main__':
     np.set_printoptions(precision=3)
 
     # Read input
-    args = get_parsed_input_line(
-        dir_output="results_recons/",
-        prefix_output="SRR_",
-        suffix_mask="_mask",
-        target_stack_index=0,
-        regularization="TK1",
-        data_loss="linear",
-        alpha=0.01,
-        isotropic_resolution=None,
-        iter_max=10,
-        rho=0.5,
-        ADMM_iterations=10,
-        minimizer="lsmr",
-        extra_frame_target=10,
-        provide_comparison=1,
-        log_script_execution=1,
-        verbose=1,
+    input_parser = InputArgparser(
+        description="Volumetric MRI reconstruction framework to reconstruct "
+        "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
+        "slices WITH motion correction. The resolution of the computed "
+        "Super-Resolution Reconstruction (SRR) is given by the in-plane "
+        "spacing of the selected target stack. A region of interest can be "
+        "specified by providing a mask for the selected target stack. Only "
+        "this region will then be reconstructed by the SRR algorithm which "
+        "can substantially reduce the computational time.",
+        prog="python " + os.path.basename(__file__),
     )
+    input_parser.add_dir_input()
+    input_parser.add_dir_output(default="results/")
+    input_parser.add_suffix_mask(default="_mask")
+    input_parser.add_prefix_output(default="_SRR")
+    input_parser.add_target_stack_index(default=0)
+    input_parser.add_reg_type(default="TK1")
+    input_parser.add_data_loss(default="linear")
+    input_parser.add_alpha(default=0.01)
+    input_parser.add_isotropic_resolution(default=1)
+    input_parser.add_iter_max(default=10)
+    input_parser.add_rho(default=0.5)
+    input_parser.add_admm_iterations(default=10)
+    input_parser.add_minimizer(default="lsmr")
+    input_parser.add_extra_frame_target(default=10)
+    input_parser.add_provide_comparison(default=1)
+    input_parser.add_log_script_execution(default=1)
+    input_parser.add_verbose(default=1)
+
+    args = input_parser.parse_args()
+    input_parser.print_arguments(args)
 
     # Write script execution call
     if args.log_script_execution:
