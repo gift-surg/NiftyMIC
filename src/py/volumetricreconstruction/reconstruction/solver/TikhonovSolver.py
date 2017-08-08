@@ -274,7 +274,7 @@ class TikhonovSolver(Solver):
 
     def _print_info_text(self):
 
-        ph.print_title("Tikhonov Solver:")
+        ph.print_subtitle("Tikhonov Solver:")
         ph.print_info("Chosen regularization type: ", newline=False)
         if self._reg_type in ["TK0"]:
             print("Zeroth-order Tikhonov")

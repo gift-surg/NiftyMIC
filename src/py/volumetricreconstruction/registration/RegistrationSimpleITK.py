@@ -341,7 +341,10 @@ class RegistrationSimpleITK:
         # Set an image masks in order to restrict the sampled points for the
         # metric
         if self._use_moving_mask:
-            registration_method.SetMetricMovingMask(moving.sitk_mask)
+            # Recasting avoids problems which can occur for some images
+            registration_method.SetMetricMovingMask(
+                sitk.Cast(moving.sitk_mask, fixed.sitk_mask.GetPixelIDValue())
+            )
 
         if self._use_fixed_mask:
             registration_method.SetMetricFixedMask(fixed.sitk_mask)

@@ -178,7 +178,7 @@ class PrimalDualSolver(Solver):
             self._reconstruction.itk)
 
     def _print_info_text(self):
-        ph.print_title("Primal-Dual Solver:")
+        ph.print_subtitle("Primal-Dual Solver:")
         ph.print_info("Chosen regularization type: %s" %
                       (self._reg_type), newline=False)
         if self._reg_type == "huber":

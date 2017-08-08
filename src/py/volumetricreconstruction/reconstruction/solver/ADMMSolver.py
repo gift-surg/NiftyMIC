@@ -214,7 +214,7 @@ class ADMMSolver(Solver):
             self._reconstruction.itk)
 
     def _print_info_text(self):
-        ph.print_title("ADMM Solver:")
+        ph.print_subtitle("ADMM Solver:")
         ph.print_info("Chosen regularization type: TV")
         ph.print_info("Regularization parameter alpha: " + str(self._alpha))
         ph.print_info(

@@ -75,11 +75,11 @@ if __name__ == '__main__':
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_bias_field_correction(default=0)
     input_parser.add_intensity_correction(default=0)
-    input_parser.add_isotropic_resolution(default=1)
+    input_parser.add_isotropic_resolution(default=None)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_write_motion_correction(default=1)
     input_parser.add_provide_comparison(default=1)
-    input_parser.add_verbose(default=1)
+    input_parser.add_verbose(default=0)
     input_parser.add_two_step_cycles(default=3)
     input_parser.add_rho(default=0.5)
     input_parser.add_admm_iterations(default=10)
@@ -237,14 +237,14 @@ if __name__ == '__main__':
     SRR.set_iter_max(args.iter_max_first)
     SRR.set_minimizer(args.minimizer)
     SRR.set_data_loss(args.data_loss)
-    SRR.set_verbose(args.verbose)
+    SRR.set_verbose(1)
 
     if args.two_step_cycles > 0:
 
         registration = regsitk.RegistrationSimpleITK(
             moving=HR_volume,
             use_fixed_mask=True,
-            use_moving_mask=False,
+            use_moving_mask=True,
             use_verbose=args.verbose,
             interpolator="Linear",
             metric="Correlation",
@@ -276,20 +276,16 @@ if __name__ == '__main__':
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
             two_step_s2v_reg_recon.get_iterative_reconstructions()
-        time_registration = ph.add_times(
-            time_registration,
-            two_step_s2v_reg_recon.get_computational_time_registration())
-        time_reconstruction = ph.add_times(
-            time_reconstruction,
-            two_step_s2v_reg_recon.get_computational_time_reconstruction())
+        time_registration += \
+            two_step_s2v_reg_recon.get_computational_time_registration()
+        time_reconstruction += \
+            two_step_s2v_reg_recon.get_computational_time_reconstruction()
 
-    ph.print_subtitle("Final Super-Resolution Reconstruction")
+    ph.print_title("Final Super-Resolution Reconstruction")
     SRR.set_alpha(args.alpha)
     SRR.set_iter_max(args.iter_max)
     SRR.run_reconstruction()
-    time_reconstruction = ph.add_times(time_reconstruction,
-                                       SRR.get_computational_time())
-    SRR.print_statistics()
+    time_reconstruction += SRR.get_computational_time()
 
     elapsed_time_total = ph.stop_timing(time_start)
 
@@ -313,13 +309,14 @@ if __name__ == '__main__':
         HR_volume_iterations.append(stack)
 
     if args.verbose and not args.provide_comparison:
-        sitkh.show_stacks(HR_volume_iterations)
+        sitkh.show_stacks(HR_volume_iterations, segmentation=HR_volume)
     # HR_volume_final.show()
 
     # Show SRR together with linearly resampled input data.
     # Additionally, a script is generated to open files
     if args.provide_comparison:
         sitkh.show_stacks(HR_volume_iterations,
+                          segmentation=HR_volume,
                           show_comparison_file=args.provide_comparison,
                           dir_output=os.path.join(
                               args.dir_output, "comparison"),

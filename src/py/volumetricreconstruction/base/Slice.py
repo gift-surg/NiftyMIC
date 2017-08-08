@@ -238,6 +238,17 @@ class Slice:
     def get_affine_transform(self):
         return self._affine_transform_sitk
 
+    ##
+    # Get applied motion correction transform to slice
+    # \date       2017-08-08 13:16:28+0100
+    #
+    # \param      self  The object
+    #
+    # \return     The motion correction transform.
+    #
+    def get_motion_correction_transform(self):
+        return self._history_motion_corrections[-1]
+
     # Get history history of affine transforms, i.e. encoded spatial
     #  position+orientation of slice, and rigid motion estimates of slice
     #  obtained in the course of the registration/reconstruction process
@@ -292,8 +303,10 @@ class Slice:
         # Write slice and affine transform
         sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
         if write_transform:
-            sitk.WriteTransform(self._affine_transform_sitk,
-                                full_file_name + ".tfm")
+            sitk.WriteTransform(
+                # self.get_affine_transform(),
+                self.get_motion_correction_transform(),
+                full_file_name + ".tfm")
 
         # Write mask to specified location if given
         if self.sitk_mask is not None:

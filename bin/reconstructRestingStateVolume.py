@@ -62,21 +62,21 @@ if __name__ == '__main__':
     input_parser.add_filename_mask()
     input_parser.add_dir_output(default="results/")
     input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_prefix_output(default="_SRR")
+    input_parser.add_prefix_output(default="SRR_")
     input_parser.add_target_stack_index(default=0)
     input_parser.add_sigma(default=0.8)
-    input_parser.add_alpha(default=0.03)
-    input_parser.add_alpha_first(default=0.1)
     input_parser.add_reg_type(default="TK1")
-    input_parser.add_iter_max(default=10)
+    input_parser.add_alpha_first(default=0.08)
+    input_parser.add_alpha(default=0.05)
     input_parser.add_iter_max_first(default=5)
+    input_parser.add_iter_max(default=10)
     input_parser.add_minimizer(default="lsmr")
     input_parser.add_data_loss(default="linear")
     input_parser.add_dilation_radius(default=3)
     input_parser.add_extra_frame_target(default=5)
     input_parser.add_bias_field_correction(default=0)
     input_parser.add_intensity_correction(default=0)
-    input_parser.add_isotropic_resolution(default=None)
+    input_parser.add_isotropic_resolution(default=1)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_write_motion_correction(default=1)
     input_parser.add_provide_comparison(default=1)
@@ -226,41 +226,30 @@ if __name__ == '__main__':
     HR_volume = SDA.get_reconstruction()
     HR_volume.set_filename(SDA.get_setting_specific_filename())
 
-    time_reconstruction = ph.add_times(
-        time_reconstruction, ph.stop_timing(time_tmp))
+    time_reconstruction += ph.stop_timing(time_tmp)
 
     # ----------------Two-step Slice-to-Volume Registration SRR----------------
     if args.two_step_cycles > 0:
 
         # Two-step registration reconstruction
-        # registration = regsitk.RegistrationSimpleITK(
-        #     moving=HR_volume,
-        #     use_fixed_mask=True,
-        #     use_moving_mask=True,
-        #     use_verbose=args.verbose,
-        #     interpolator="Linear",
-        #     metric="Correlation",
-        #     # metric="MattesMutualInformation",  # Might cause error messages
-        #     # like "Too many samples map outside moving image buffer."
-        #     use_multiresolution_framework=True,
-        #     shrink_factors=[2, 1],
-        #     smoothing_sigmas=[1, 0],
-        #     initializer_type=None,
-        #     # optimizer="RegularStepGradientDescent",
-        #     # optimizer_params="{'learningRate': 1, 'minStep': 1e-6,\
-        #     # 'numberOfIterations': 600, 'gradientMagnitudeTolerance': 1e-6}",
-        #     optimizer="ConjugateGradientLineSearch",
-        #     optimizer_params="{'learningRate': 1, 'numberOfIterations': 100}",
-        # )
-        registration = regitk.RegistrationITK(
+        registration = regsitk.RegistrationSimpleITK(
             moving=HR_volume,
             use_fixed_mask=True,
             use_moving_mask=True,
             use_verbose=args.verbose,
             interpolator="Linear",
-            # metric="Correlation",
-            metric="MattesMutualInformation",
+            metric="Correlation",
+            # metric="MattesMutualInformation",  # Might cause error messages
+            # like "Too many samples map outside moving image buffer."
             # use_multiresolution_framework=True,
+            shrink_factors=[2, 1],
+            smoothing_sigmas=[1, 0],
+            initializer_type=None,
+            # optimizer="RegularStepGradientDescent",
+            # optimizer_params="{'learningRate': 1, 'minStep': 1e-6,\
+            # 'numberOfIterations': 600, 'gradientMagnitudeTolerance': 1e-6}",
+            optimizer="ConjugateGradientLineSearch",
+            optimizer_params="{'learningRate': 1, 'numberOfIterations': 100}",
         )
 
         alphas = np.linspace(args.alpha_first, args.alpha,
@@ -284,12 +273,10 @@ if __name__ == '__main__':
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
             two_step_s2v_reg_recon.get_iterative_reconstructions()
-        time_registration = ph.add_times(
-            time_registration,
-            two_step_s2v_reg_recon.get_computational_time_registration())
-        time_reconstruction = ph.add_times(
-            time_reconstruction,
-            two_step_s2v_reg_recon.get_computational_time_reconstruction())
+        time_registration += \
+            two_step_s2v_reg_recon.get_computational_time_registration()
+        time_reconstruction += \
+            two_step_s2v_reg_recon.get_computational_time_reconstruction()
 
         if args.verbose:
             sitkh.show_stacks(HR_volume_iterations)
@@ -297,11 +284,23 @@ if __name__ == '__main__':
         # # Write to output
         # HR_volume_tmp.write(args.dir_output)
 
-    ph.print_subtitle("Final Super-Resolution Reconstruction")
-    reconstruction_method.set_reconstruction(st.Stack.from_stack(
-        stacks[args.target_stack_index]))
+    ph.print_title("Final Super-Resolution Reconstruction")
     reconstruction_method.set_alpha(args.alpha)
     reconstruction_method.set_iter_max(args.iter_max)
+    reconstruction_method.run_reconstruction()
+    time_reconstruction += reconstruction_method.get_computational_time()
+
+    HR_volume = reconstruction_method.get_reconstruction()
+    HR_volume.set_filename(
+        reconstruction_method.get_setting_specific_filename())
+    HR_volume_iterations.insert(0, HR_volume)
+
+    for stack in HR_volume_iterations:
+        stack.write(args.dir_output)
+
+    # -----------------------Build multi-component image-----------------------
+    reconstruction_method.set_reconstruction(st.Stack.from_stack(
+        stacks[args.target_stack_index]))
     multi_component_reconstruction.set_reconstruction_method(
         reconstruction_method)
     multi_component_reconstruction.set_suffix("_recon_s2v")
