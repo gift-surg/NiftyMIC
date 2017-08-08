@@ -296,17 +296,15 @@ class TwoStepSliceToVolumeRegistrationReconstruction(RegistrationPipeline):
             s2vreg.set_print_prefix("Cycle %d/%d: " % (cycle+1, self._cycles))
             s2vreg.run()
 
-            self._computational_time_registration = ph.add_times(
-                self._computational_time_registration,
-                s2vreg.get_computational_time())
+            self._computational_time_registration += \
+                s2vreg.get_computational_time()
 
             # SRR step
             self._reconstruction_method.set_alpha(self._alphas[cycle])
             self._reconstruction_method.run_reconstruction()
 
-            self._computational_time_reconstruction = ph.add_times(
-                self._computational_time_reconstruction,
-                self._reconstruction_method.get_computational_time())
+            self._computational_time_reconstruction += \
+                self._reconstruction_method.get_computational_time()
 
             reference = self._reconstruction_method.get_reconstruction()
 
