@@ -8,6 +8,7 @@
 #include <boost/type_traits.hpp>
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <limits.h>     /* PATH_MAX */
 #include <math.h>
@@ -256,25 +257,34 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const double dANTSrad = std::stod(input[20]);
     const double dTranslationScale = std::stod(input[21]);
 
+    // Helper to turn on/off verbose output
+    std::stringstream ss;
+    // const bool bDebug = bVerbose;
+    const bool bDebug = false;
+
     // Read images
     const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving);
     const ImageType3D::Pointer fixed = MyITKImageHelper::readImage<ImageType3D>(sFixed);
-    std::cout << "Fixed image  = " << sFixed << std::endl;
-    std::cout << "Moving image = " << sMoving << std::endl;
+    ss << "Fixed image  = " << sFixed;
+    MyITKImageHelper::printInfo(ss.str(), bDebug);
+    ss << "Moving image = " << sMoving;
+    MyITKImageHelper::printInfo(ss.str(), bDebug);
 
     // MyITKImageHelper::showImage(moving, "moving");
     // MyITKImageHelper::showImage(fixed, fixedMask, "fixed");
 
     // Read masks
     if(!sFixedMask.empty()){
-        std::cout << "Fixed mask image = " << sFixedMask << std::endl;
+        ss << "Fixed mask image = " << sFixedMask;
+        MyITKImageHelper::printInfo(ss.str(), bDebug);
         bUseFixedMask = true;
         fixedMask = MyITKImageHelper::readImage<MaskImageType3D>(sFixedMask);
         spatialObjectFixedMask->SetImage( fixedMask );
         metric->SetFixedImageMask( spatialObjectFixedMask );
     }
     if(!sMovingMask.empty()){
-        std::cout << "Moving mask image = " << sMovingMask << std::endl;
+        ss << "Moving mask image = " << sMovingMask;
+        MyITKImageHelper::printInfo(ss.str(), bDebug);
         bUseMovingMask = true;
         movingMask = MyITKImageHelper::readImage<MaskImageType3D>(sMovingMask);
         spatialObjectMovingMask->SetImage( movingMask );
@@ -283,13 +293,15 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
     // Info output transform
     if(!sTransformOut.empty()){
-        std::cout << "Output transform = " << sTransformOut << std::endl;
+        ss << "Output transform = " << sTransformOut;
+        MyITKImageHelper::printInfo(ss.str(), bDebug);
     }
     
     // Multi-resolution framework
     if(std::stoi(sUseMultiresolution)) {
         bUseMultiresolution = true;
-        std::cout << "Multiresolution framework used" << std::endl;
+        ss << "Multiresolution framework used";
+        MyITKImageHelper::printInfo(ss.str(), bDebug);
         
         shrinkFactorsPerLevel.SetSize( numberOfLevels );
         shrinkFactorsPerLevel[0] = 4;
@@ -321,7 +333,8 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         ANTSmetric->SetMovingTransform(TransformType::New());
         // initialization after parameters are set
         ANTSmetric->Initialize();
-        std::cout << "Radius for ANTSNeighborhoodCorrelation = " << dANTSrad << std::endl;
+        ss << "Radius for ANTSNeighborhoodCorrelation = " << dANTSrad;
+        MyITKImageHelper::printInfo(ss.str(), bDebug);
         // getting derivative and metric value
         // ANTSmetric->GetValueAndDerivative(valueReturn, derivativeReturn);
     }
@@ -331,8 +344,10 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     if ( orientedGaussianInterpolator.IsNotNull() ) {
         orientedGaussianInterpolator->SetCovariance( covariance );
         orientedGaussianInterpolator->SetAlpha( 3 );
-        // std::cout << "OrientedGaussianInterpolator updated " << std::endl;
-        std::cout << "covariance for oriented Gaussian = " << std::endl;
+        // ss << "OrientedGaussianInterpolator updated ";
+        MyITKImageHelper::printInfo(ss.str(), bDebug);
+        ss << "covariance for oriented Gaussian = ";
+        MyITKImageHelper::printInfo(ss.str(), bDebug);
         for (int i = 0; i < 3; ++i) {
             printf("\t%.3f\t%.3f\t%.3f\n", covariance[3*i], covariance[3*i+1], covariance[3*i+2]);
         }
@@ -371,7 +386,8 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     ScaledTranslationEulerTransformType::Pointer scaledTranslationTransform = dynamic_cast< ScaledTranslationEulerTransformType* >(registration->GetModifiableTransform());
     if ( scaledTranslationTransform.IsNotNull() ) {
         scaledTranslationTransform->SetTranslationScale( dTranslationScale );
-        std::cout << "TranslationScale = " << scaledTranslationTransform->GetTranslationScale() << std::endl;
+        ss << "TranslationScale = " << scaledTranslationTransform->GetTranslationScale();
+        MyITKImageHelper::printInfo(ss.str(), bDebug);
     }
 
     // Set metric
@@ -462,9 +478,10 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
       registration->Update();
 
       if (bVerbose) {
-          std::cout << "Optimizer stop condition: "
+          ss << "Optimizer stop condition: "
           << registration->GetOptimizer()->GetStopConditionDescription()
-          << std::endl;
+         ;
+         MyITKImageHelper::printInfo(ss.str(), bDebug);
       }
     }
     catch( itk::ExceptionObject & err ) {
@@ -494,7 +511,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
 
     //***Write result to file
     if ( !sTransformOut.empty() ) {
-        MyITKImageHelper::writeTransform(transform, sTransformOut, bVerbose);
+        MyITKImageHelper::writeTransform(transform, sTransformOut, bDebug);
     }
 
     //***Resample warped moving image
@@ -533,7 +550,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         // Remove extension from filename
         size_t lastindex = sTransformOut.find_last_of("."); 
         const std::string sTransformOutWithoutExtension = sTransformOut.substr(0, lastindex);
-        MyITKImageHelper::writeImage(movingWarped, sTransformOutWithoutExtension + "warpedMoving.nii.gz", bVerbose);
+        MyITKImageHelper::writeImage(movingWarped, sTransformOutWithoutExtension + "warpedMoving.nii.gz", bDebug);
         // MyITKImageHelper::writeImage(movingMaskWarped, sTransformOut + "warpedMoving_mask.nii.gz");
 
         // MyITKImageHelper::showImage(fixed, movingWarped, "fixed_moving");
@@ -568,38 +585,50 @@ int main(int argc, char** argv)
         // std::cout << sInterpolatorTest.compare("BSpline") << std::endl; // does not work
         // std::cout << (sInterpolatorTest == ("BSpline")) << std::endl;   // works
 
+        // Information on parametrization on/off
+        // const bool bDebug = std::stoi(input[19]);
+        const bool bDebug = false;
+        std::stringstream ss;
+
+
         // TODO: At the moment only rigid model is available
         switch ( std::stoi(sUseAffine) ){
             
             // Rigid registration
             case 0:
-                std::cout << "Chosen type of registration: Rigid" << std::endl;
+                ss << "Chosen type of registration: Rigid";
+                MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                 // Nearest Neighbor interpolator
                 if ( sInterpolator == ("NearestNeighbor") ) {
-                    std::cout << "Chosen type of interpolator: " << sInterpolator << std::endl;
+                    ss << "Chosen type of interpolator: " << sInterpolator;
+                    MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                     // Mean Squares metric
                     if ( sMetric == ("MeanSquares") ) { 
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
                         }
@@ -608,25 +637,29 @@ int main(int argc, char** argv)
 
                     // Normalized Cross Correlation Metric
                     else if ( sMetric == ("Correlation") ){
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
                         }
@@ -635,25 +668,29 @@ int main(int argc, char** argv)
 
                     // ANTS Neighborhood Correlation Metric
                     else if ( sMetric == ("ANTSNeighborhoodCorrelation") ){
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
@@ -662,25 +699,29 @@ int main(int argc, char** argv)
 
                     // Mattes Mutual Information Metric
                     else {
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, NearestNeighborInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
                         }
@@ -689,29 +730,34 @@ int main(int argc, char** argv)
 
                 // Linear interpolator
                 else if ( sInterpolator == ("Linear") ) {
-                    std::cout << "Chosen type of interpolator: " << sInterpolator << std::endl;
+                    ss << "Chosen type of interpolator: " << sInterpolator;
+                    MyITKImageHelper::printInfo(ss.str(), bDebug);
+
 
                     // Mean Squares metric
                     if ( sMetric == ("MeanSquares") ) { 
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
-
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
                         }
@@ -720,25 +766,29 @@ int main(int argc, char** argv)
 
                     // Normalized Cross Correlation Metric
                     else if ( sMetric == ("Correlation") ){
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
                         }
@@ -747,25 +797,29 @@ int main(int argc, char** argv)
 
                     // ANTS Neighborhood Correlation Metric
                     else if ( sMetric == ("ANTSNeighborhoodCorrelation") ){
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
@@ -774,25 +828,29 @@ int main(int argc, char** argv)
 
                     // Mattes Mutual Information Metric
                     else {
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, LinearInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
                         }
@@ -801,29 +859,34 @@ int main(int argc, char** argv)
 
                 // Oriented Gaussian interpolator
                 else if ( sInterpolator == ("OrientedGaussian") ) {
-                    std::cout << "Chosen type of interpolator: " << sInterpolator << std::endl;
+                    ss << "Chosen type of interpolator: " << sInterpolator;
+                    MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                     // Mean Squares metric
                     if ( sMetric == ("MeanSquares") ) { 
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
                         }
@@ -832,25 +895,29 @@ int main(int argc, char** argv)
 
                     // Normalized Cross Correlation Metric
                     else if ( sMetric == ("Correlation") ){
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
                         }
@@ -859,25 +926,29 @@ int main(int argc, char** argv)
 
                     // ANTS Neighborhood Correlation Metric
                     else if ( sMetric == ("ANTSNeighborhoodCorrelation") ){
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
@@ -886,25 +957,29 @@ int main(int argc, char** argv)
 
                     // Mattes Mutual Information Metric
                     else {
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, OrientedGaussianInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
                         }
@@ -913,29 +988,34 @@ int main(int argc, char** argv)
 
                 // BSpline interpolator
                 else {
-                    std::cout << "Chosen type of interpolator: BSpline" << std::endl;
+                    ss << "Chosen type of interpolator: BSpline";
+                    MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                     // Mean Squares metric
                     if ( sMetric == ("MeanSquares") ) { 
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MeanSquaresMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromIndexShift< MeanSquaresMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MeanSquaresMetricType, itk::RegistrationParameterScalesFromJacobian< MeanSquaresMetricType > >(input);
                         }
@@ -944,25 +1024,29 @@ int main(int argc, char** argv)
 
                     // Normalized Cross Correlation Metric
                     else if ( sMetric == ("Correlation") ){
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< CorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< CorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, CorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< CorrelationMetricType > >(input);
                         }
@@ -971,25 +1055,29 @@ int main(int argc, char** argv)
 
                     // ANTS Neighborhood Correlation Metric
                     else if ( sMetric == ("ANTSNeighborhoodCorrelation") ){
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< ANTSNeighborhoodCorrelationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromIndexShift< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, ANTSNeighborhoodCorrelationMetricType, itk::RegistrationParameterScalesFromJacobian< ANTSNeighborhoodCorrelationMetricType > >(input);
                         }
@@ -998,25 +1086,29 @@ int main(int argc, char** argv)
 
                     // Mattes Mutual Information Metric
                     else {
-                        std::cout << "Chosen type of metric: " << sMetric << std::endl;
+                        ss << "Chosen type of metric: " << sMetric;
+                        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                         // Physical Shift step estimator
                         if ( sScalesEstimator == ("PhysicalShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
                             
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromPhysicalShift< MattesMutualInformationMetricType > >(input);
 
                         }
                         // Index Shift step estimator
                         else if ( sScalesEstimator == ("IndexShift") ) {
-                            std::cout << "Chosen type of scales estimator: " << sScalesEstimator << std::endl;
+                            ss << "Chosen type of scales estimator: " << sScalesEstimator;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromIndexShift< MattesMutualInformationMetricType > >(input);
                         }
 
                         // Jacobian step estimator
                         else {
-                            std::cout << "Chosen type of scales estimator: Jacobian"  << std::endl;
+                            ss << "Chosen type of scales estimator: Jacobian" ;
+                            MyITKImageHelper::printInfo(ss.str(), bDebug);
 
                             RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
                         }
@@ -1029,7 +1121,8 @@ int main(int argc, char** argv)
             // TODO: Same as above but replace EulerTransformType by AffineTransformType.
             // However, write test cases first!!!
             // case 1:
-            //     std::cout << "Affine registration used" << std::endl;
+            //     ss << "Affine registration used";
+            //     MyITKImageHelper::printInfo(ss.str(), bDebug);
             //     RegistrationFunction<AffineTransformType, MeanSquaresMetricType >(input);
             //     break;
 
@@ -1040,10 +1133,14 @@ int main(int argc, char** argv)
                 // typedef itk::RegistrationParameterScalesFromIndexShift< MetricType > IndexShiftScalesEstimatorType;
                 // typedef itk::RegistrationParameterScalesFromJacobian< MetricType > JacobianScalesEstimatorType;
 
-                std::cout << "Chosen type of registration: Rigid" << std::endl;
-                std::cout << "Chosen type of interpolator: BSpline" << std::endl;
-                std::cout << "Chosen type of metric: Mattes Mutual Information" << std::endl;
-                std::cout << "Chosen type of scales Estimator: Jacobian" << std::endl;
+                ss << "Chosen type of registration: Rigid";
+                MyITKImageHelper::printInfo(ss.str(), bDebug);
+                ss << "Chosen type of interpolator: BSpline";
+                MyITKImageHelper::printInfo(ss.str(), bDebug);
+                ss << "Chosen type of metric: Mattes Mutual Information";
+                MyITKImageHelper::printInfo(ss.str(), bDebug);
+                ss << "Chosen type of scales Estimator: Jacobian";
+                MyITKImageHelper::printInfo(ss.str(), bDebug);
                 RegistrationFunction<EulerTransformType, BSplineInterpolatorType, MattesMutualInformationMetricType, itk::RegistrationParameterScalesFromJacobian< MattesMutualInformationMetricType > >(input);
                 break;            
 

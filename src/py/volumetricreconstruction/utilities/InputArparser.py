@@ -345,6 +345,15 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_stack_recon_range(
+        self,
+        option_string="--stack-recon-range",
+        type=int,
+        help="Number of components used for SRR.",
+        default=15,
+    ):
+        self._add_argument(dict(locals()))
+
     ##
     # Adds an argument to argument parser.
     #

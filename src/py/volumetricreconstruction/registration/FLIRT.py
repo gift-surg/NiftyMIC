@@ -128,7 +128,7 @@ class FLIRT:
     def run_registration(self):
 
         # Clean output directory first
-        ph.clear_directory(self._dir_tmp)
+        ph.clear_directory(self._dir_tmp, verbose=0)
 
         self._run_registration()
 

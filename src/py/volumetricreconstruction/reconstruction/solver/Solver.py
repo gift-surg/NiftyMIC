@@ -180,13 +180,19 @@ class Solver(object):
     def set_data_loss(self, data_loss):
         if data_loss not in DATA_LOSS:
             raise ValueError("Loss function must be in " + str(DATA_LOSS))
-        self._data_loss = loss
+        self._data_loss = data_loss
 
     def set_huber_gamma(self, huber_gamma):
         self._huber_gamma = huber_gamma
 
     def get_huber_gamma(self):
         return self._huber_gamma
+
+    def set_verbose(self, verbose):
+        self._verbose = verbose
+
+    def get_verbose(self):
+        return self._verbose
 
     def run_reconstruction(self):
 

@@ -289,7 +289,8 @@ class MultiComponentImageReader(DataReader):
             dtype=np.float64)
         vector_image_sitk_mask = sitkh.read_sitk_vector_image(
             self._path_to_image_mask,
-            dtype=np.uint8)
+            dtype=np.uint8,
+            )
 
         N_components = vector_image_sitk.GetNumberOfComponentsPerPixel()
 

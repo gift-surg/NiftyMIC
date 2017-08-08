@@ -23,12 +23,11 @@ import pythonhelper.PythonHelper as ph
 
 import volumetricreconstruction.base.Stack as st
 
+
 ##
 # Class implementing the segmentation propagation from one image to another
 # \date       2017-05-10 23:48:08+0100
 #
-
-
 class N4BiasFieldCorrection(object):
 
     def __init__(self,

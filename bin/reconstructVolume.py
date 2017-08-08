@@ -29,12 +29,14 @@ import volumetricreconstruction.registration.RegistrationITK as regitk
 import volumetricreconstruction.registration.FLIRT as regflirt
 import volumetricreconstruction.registration.NiftyReg as regniftyreg
 import volumetricreconstruction.registration.SegmentationPropagation as segprop
-import volumetricreconstruction.reconstruction.ScatteredDataApproximation as sda
+import volumetricreconstruction.reconstruction.ScatteredDataApproximation as \
+    sda
 import volumetricreconstruction.reconstruction.solver.TikhonovSolver as tk
 import volumetricreconstruction.reconstruction.solver.ADMMSolver as admm
 import volumetricreconstruction.utilities.Exceptions as Exceptions
+import volumetricreconstruction.utilities.VolumetricReconstructionPipeline as \
+    pipeline
 from volumetricreconstruction.utilities.InputArparser import InputArgparser
-
 
 if __name__ == '__main__':
 
@@ -56,8 +58,8 @@ if __name__ == '__main__':
         prog="python " + os.path.basename(__file__),
     )
     input_parser.add_dir_input()
-    input_parser.add_dir_output(default="results/")
     input_parser.add_filenames()
+    input_parser.add_dir_output(default="results/")
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_prefix_output(default="_SRR")
     input_parser.add_target_stack_index(default=0)
@@ -95,7 +97,7 @@ if __name__ == '__main__':
                          "log_%s_script_execution.sh" % (
                              os.path.basename(__file__).split(".")[0])))
 
-    # Read Data:
+    # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
 
     # Neither '--dir-input' nor '--filenames' was specified
@@ -117,7 +119,7 @@ if __name__ == '__main__':
     data_reader.read_data()
     stacks = data_reader.get_stacks()
 
-    # Data Preprocessing from data on HDD
+    # ---------------------------Data Preprocessing---------------------------
     ph.print_title("Data Preprocessing")
 
     segmentation_propagator = segprop.SegmentationPropagation(
@@ -146,13 +148,6 @@ if __name__ == '__main__':
     # Get preprocessed stacks
     stacks = data_preprocessing.get_preprocessed_stacks()
 
-    # if args.verbose:
-    #     for i in range(0, len(stacks)):
-    #         stacks[i].write(
-    #             directory=os.path.join(
-    #                 args.dir_output, "01_preprocessed_data"),
-    #             write_mask=True)
-
     # # ----------------- Begin HACK for Imperial College data ----------------
     # # Split stack acquired as overlapping slices into two
     # stacks_foo = []
@@ -171,47 +166,32 @@ if __name__ == '__main__':
     if args.verbose:
         sitkh.show_stacks(stacks, segmentation=stacks[0])
 
+    # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
-
-        time_registration = ph.start_timing()
-
-        # Global rigid registration to target stack
-        ph.print_title("Global Rigid Registration")
-
-        # registration = regsitk.RegistrationSimpleITK(
-        #     initializer_type="GEOMETRY", metric="MattesMutualInformation",
+        # registration = regflirt.FLIRT(
         registration = regniftyreg.NiftyReg(
-            # registration = regflirt.FLIRT(
-            fixed=stacks[0],
+            fixed=stacks[args.target_stack_index],
             registration_type="Rigid",
             use_fixed_mask=True,
             use_moving_mask=True,
             use_verbose=False,
         )
 
-        for i in range(1, len(stacks)):
-            registration.set_moving(stacks[i])
-            registration.run_registration()
-            transform_sitk = registration.get_registration_transform_sitk()
-            transform_sitk = eval(
-                "sitk." + transform_sitk.GetName() +
-                "(transform_sitk.GetInverse())")
-            stacks[i].update_motion_correction(transform_sitk)
-
-        time_registration = ph.stop_timing(time_registration)
-        # sitkh.show_stacks(stacks, segmentation=stacks[0])
-
-        # if args.verbose:
-        #     for i in range(0, len(stacks)):
-        #         stacks[i].write(
-        #             directory=os.path.join(args.dir_output,
-        #                                    "02_rigidly_aligned_data"),
-        #             write_mask=True)
+        v2vreg = pipeline.VolumeToVolumeRegistration(
+            stacks=stacks,
+            reference=stacks[args.target_stack_index],
+            registration_method=registration,
+            verbose=args.verbose,
+        )
+        v2vreg.run()
+        stacks = v2vreg.get_stacks()
+        time_registration = v2vreg.get_computational_time()
 
     else:
-        time_registration = 0
+        time_registration = ph.get_zero_time()
 
-    time_reconstruction = ph.start_timing()
+    # ---------------------------Create first volume---------------------------
+    time_tmp = ph.start_timing()
 
     # Isotropic resampling to define HR target space
     ph.print_title("Isotropic Resampling")
@@ -220,7 +200,7 @@ if __name__ == '__main__':
         spacing_new_scalar=args.isotropic_resolution,
         extra_frame=args.extra_frame_target)
     HR_volume.set_filename(
-        "Iter0_" + stacks[args.target_stack_index].get_filename() +
+        stacks[args.target_stack_index].get_filename() +
         "_upsampled")
 
     # Scattered Data Approximation to get first estimate of HR volume
@@ -231,54 +211,36 @@ if __name__ == '__main__':
         mask_dilation_radius=2, mask_dilation_kernel="Ball")
     HR_volume = SDA.get_reconstruction()
     HR_volume.set_filename(SDA.get_setting_specific_filename())
-    HR_volume.set_filename("Iter0_" + SDA.get_setting_specific_filename())
 
-    time_reconstruction = ph.stop_timing(time_reconstruction)
-
-    # List to store SRR iterations
-    HR_volume_iterations = []
-
-    # Add initial volume and rigidly aligned, original data for
-    # visualization
-    HR_volume_iterations.append(st.Stack.from_stack(HR_volume))
-    for i in range(0, len(stacks)):
-        HR_volume_iterations.append(stacks[i])
+    time_reconstruction = ph.stop_timing(time_tmp)
 
     if args.verbose:
-        sitkh.show_stacks(HR_volume_iterations)
+        tmp = list(stacks)
+        tmp.insert(0, HR_volume)
+        sitkh.show_stacks(tmp, segmentation=HR_volume)
 
+    # ----------------Two-step Slice-to-Volume Registration SRR----------------
     if args.reg_type in ["TK0", "TK1"]:
         SRR = tk.TikhonovSolver(
             stacks=stacks,
             reconstruction=HR_volume,
-            alpha=args.alpha_first,
-            iter_max=args.iter_max_first,
             reg_type=args.reg_type,
-            minimizer=args.minimizer,
-            data_loss=args.data_loss,
-            verbose=args.verbose,
         )
     elif args.reg_type == "TV":
         SRR = admm.ADMMSolver(
             stacks=stacks,
             reconstruction=HR_volume,
-            alpha=args.alpha_first,
-            minimizer=args.minimizer,
-            iter_max=args.iter_max_first,
             rho=args.rho,
             iterations=args.ADMM_iterations,
-            verbose=args.verbose,
         )
+    SRR.set_alpha(args.alpha_first)
+    SRR.set_iter_max(args.iter_max_first)
+    SRR.set_minimizer(args.minimizer)
+    SRR.set_data_loss(args.data_loss)
+    SRR.set_verbose(args.verbose)
 
     if args.two_step_cycles > 0:
 
-        alpha_delta = (args.alpha - args.alpha_first) / \
-            float(args.two_step_cycles)
-
-        # Two-step Slice-to-Volume Registration Reconstruction
-        ph.print_title("Two-step Slice-to-Volume Registration Reconstruction")
-
-        # Two-step registration reconstruction
         registration = regsitk.RegistrationSimpleITK(
             moving=HR_volume,
             use_fixed_mask=True,
@@ -288,7 +250,7 @@ if __name__ == '__main__':
             metric="Correlation",
             # metric="MattesMutualInformation",  # Might cause error messages
             # like "Too many samples map outside moving image buffer."
-            use_multiresolution_framework=True,
+            # use_multiresolution_framework=True,
             shrink_factors=[2, 1],
             smoothing_sigmas=[1, 0],
             initializer_type=None,
@@ -298,75 +260,40 @@ if __name__ == '__main__':
             optimizer="ConjugateGradientLineSearch",
             optimizer_params="{'learningRate': 1, 'numberOfIterations': 100}",
         )
-        # registration = regflirt.FLIRT(
-        #     moving=HR_volume,
-        #     registration_type="Rigid",
-        #     use_fixed_mask=True,
-        #     use_moving_mask=False,
-        #     use_verbose=args.verbose,
-        #     options="-cost normcorr -searchcost normcorr -nosearch",
-        # )
 
-        for i_cycle in range(0, args.two_step_cycles):
-            time_elapsed_tmp = ph.start_timing()
-            for i_stack in range(0, len(stacks)):
-                stack = stacks[i_stack]
+        alphas = np.linspace(args.alpha_first, args.alpha,
+                             args.two_step_cycles + 1)
+        two_step_s2v_reg_recon = \
+            pipeline.TwoStepSliceToVolumeRegistrationReconstruction(
+                stacks=stacks,
+                reference=HR_volume,
+                registration_method=registration,
+                reconstruction_method=SRR,
+                cycles=args.two_step_cycles,
+                alphas=alphas[0:args.two_step_cycles],
+                verbose=args.verbose,
+            )
+        two_step_s2v_reg_recon.run()
+        HR_volume_iterations = \
+            two_step_s2v_reg_recon.get_iterative_reconstructions()
+        time_registration = ph.add_times(
+            time_registration,
+            two_step_s2v_reg_recon.get_computational_time_registration())
+        time_reconstruction = ph.add_times(
+            time_reconstruction,
+            two_step_s2v_reg_recon.get_computational_time_reconstruction())
 
-                # Slice-to-volume registration
-                for i_slice in range(0, stack.get_number_of_slices()):
-                    txt = "Cycle %d/%d -- Stack %d/%d -- Slice %2d/%d: " \
-                        "Slice-to-Volume Registration" % (
-                            i_cycle+1, args.two_step_cycles, i_stack+1,
-                            len(stacks), i_slice+1,
-                            stack.get_number_of_slices())
-                    if args.verbose:
-                        ph.print_subtitle(txt)
-                    else:
-                        ph.print_info(txt)
-                    slice = stack.get_slice(i_slice)
-                    registration.set_fixed(slice)
-                    registration.run_registration()
-                    transform_sitk = \
-                        registration.get_registration_transform_sitk()
-                    slice.update_motion_correction(transform_sitk)
-            time_elapsed_tmp = ph.stop_timing(time_elapsed_tmp)
-            time_registration = ph.add_times(
-                time_registration, time_elapsed_tmp)
-            print("\nElapsed time for all Slice-to-Volume registrations: %s"
-                  % (time_elapsed_tmp))
-
-            # Super-resolution reconstruction
-            time_elapsed_tmp = ph.start_timing()
-            ph.print_subtitle("Cycle %d/%d: Super-Resolution Reconstruction"
-                              % (i_cycle+1, args.two_step_cycles))
-
-            SRR.set_alpha(args.alpha_first + i_cycle*alpha_delta)
-            SRR.run_reconstruction()
-
-            time_elapsed_tmp = ph.stop_timing(time_elapsed_tmp)
-            SRR.print_statistics()
-            time_reconstruction = ph.add_times(
-                time_reconstruction, time_elapsed_tmp)
-
-            filename = "Iter" + str(i_cycle+1) + "_" + \
-                SRR.get_setting_specific_filename()
-            HR_volume_tmp = HR_volume.get_stack_multiplied_with_mask(
-                filename=filename)
-            HR_volume_iterations.insert(0, HR_volume_tmp)
-            if args.verbose:
-                sitkh.show_stacks(HR_volume_iterations)
-
+    ph.print_subtitle("Final Super-Resolution Reconstruction")
     SRR.set_alpha(args.alpha)
     SRR.set_iter_max(args.iter_max)
-    ph.print_subtitle("Final Super-Resolution Reconstruction")
-    time_elapsed_tmp = ph.start_timing()
     SRR.run_reconstruction()
-    time_elapsed_tmp = ph.stop_timing(time_elapsed_tmp)
-    time_reconstruction = ph.add_times(time_reconstruction, time_elapsed_tmp)
+    time_reconstruction = ph.add_times(time_reconstruction,
+                                       SRR.get_computational_time())
     SRR.print_statistics()
 
     elapsed_time_total = ph.stop_timing(time_start)
 
+    # -------------------------------Cleaning up-------------------------------
     HR_volume_final = SRR.get_reconstruction().get_stack_multiplied_with_mask()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
     HR_volume_final.write(args.dir_output)
@@ -382,6 +309,9 @@ if __name__ == '__main__':
             )
 
     HR_volume_iterations.insert(0, HR_volume_final)
+    for stack in stacks:
+        HR_volume_iterations.append(stack)
+
     if args.verbose and not args.provide_comparison:
         sitkh.show_stacks(HR_volume_iterations)
     # HR_volume_final.show()

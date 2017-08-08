@@ -145,7 +145,10 @@ class ScatteredDataApproximation:
     # \param      mask_dilation_kernel  The kernel in "Ball", "Box", "Annulus"
     #                                   or "Cross"
     #
-    def generate_mask_from_stack_mask_unions(self, mask_dilation_radius=0, mask_dilation_kernel="Ball"):
+    def generate_mask_from_stack_mask_unions(self,
+                                             mask_dilation_radius=0,
+                                             mask_dilation_kernel="Ball",
+                                             ):
 
         # Define helpers to obtain averaged stack
         shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
@@ -164,7 +167,8 @@ class ScatteredDataApproximation:
                 self._HR_volume.sitk_mask.GetPixelIDValue())
 
             # Get arrays of resampled warped stack and mask
-            array_mask_tmp = sitk.GetArrayFromImage(stack_sitk_mask)
+            array_mask_tmp = sitk.GetArrayFromImage(
+                stack_sitk_mask).astype(np.uint8)
 
             # Sum intensities of stack and mask
             array_mask += array_mask_tmp
@@ -192,7 +196,10 @@ class ScatteredDataApproximation:
     # \param      mask_dilation_radius  The mask dilation radius
     # \param      mask_dilation_kernel  The kernel in "Ball", "Box", "Annulus"
     #                                   or "Cross"
-    def generate_mask_from_stack_mask_intersections(self, mask_dilation_radius=0, mask_dilation_kernel="Ball"):
+    def generate_mask_from_stack_mask_intersections(self,
+                                                    mask_dilation_radius=0,
+                                                    mask_dilation_kernel="Ball",
+                                                    ):
 
         # Define helpers to obtain averaged stack
         shape = sitk.GetArrayFromImage(self._HR_volume.sitk).shape
@@ -211,7 +218,8 @@ class ScatteredDataApproximation:
                 self._HR_volume.sitk_mask.GetPixelIDValue())
 
             # Get arrays of resampled warped stack and mask
-            array_mask_tmp = sitk.GetArrayFromImage(stack_sitk_mask)
+            array_mask_tmp = sitk.GetArrayFromImage(
+                stack_sitk_mask).astype(np.uint8)
 
             # Sum intensities of stack and mask
             array_mask *= array_mask_tmp

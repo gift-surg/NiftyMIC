@@ -106,6 +106,8 @@ public:
     static void writeTransform(itk::ScaledTranslationEuler3DTransform< PixelType >::ConstPointer transform, std::string outfile, const bool bVerbose = true);
     static void writeTransform(itk::InplaneSimilarity3DTransform< PixelType >::ConstPointer transform, std::string outfile, const bool bVerbose = true);
 
+    static void printInfo(const std::string &sInfo, const bool bVerbose = false);
+
 private:
 
     static void executeShellCommand(const std::string &cmd);
