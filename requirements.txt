@@ -6,3 +6,4 @@ numpy==1.13.1
 SimpleITK==1.0.0
 -e git+https://cmiclab.cs.ucl.ac.uk/mebner/PythonHelper.git#egg=PythonHelper
 -e git+https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver.git#egg=NumericalSolver
+-e git+https://cmiclab.cs.ucl.ac.uk/mebner/RegistrationTools.git#egg=RegistrationTools

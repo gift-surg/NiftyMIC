@@ -75,7 +75,7 @@ class TestSegmentationPropagation(unittest.TestCase):
             use_multiresolution_framework=True,
         )
         # registration = regitk.RegistrationITK()
-        # registration = regniftyreg.NiftyReg()
+        # registration = regniftyreg.RegAladin()
 
         segmentation_propagation = segprop.SegmentationPropagation(
             stack=stack,

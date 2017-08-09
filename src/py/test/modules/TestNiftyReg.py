@@ -49,7 +49,7 @@ class TestNiftyReg(unittest.TestCase):
         )
 
         # Set up NiftyReg
-        nifty_reg = nreg.NiftyReg()
+        nifty_reg = nreg.RegAladin()
         nifty_reg.set_fixed(fixed)
         nifty_reg.set_moving(moving)
         nifty_reg.set_registration_type("Rigid")
@@ -60,7 +60,7 @@ class TestNiftyReg(unittest.TestCase):
 
         # Get associated results
         affine_transform_sitk = nifty_reg.get_registration_transform_sitk()
-        moving_warped = nifty_reg.get_registered_image()
+        moving_warped = nifty_reg.get_transformed_fixed()
 
         # Get SimpleITK result with "similar" interpolator (NiftyReg does not
         # state what interpolator is used but it seems to be BSpline)

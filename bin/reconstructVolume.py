@@ -123,7 +123,7 @@ if __name__ == '__main__':
     ph.print_title("Data Preprocessing")
 
     segmentation_propagator = segprop.SegmentationPropagation(
-        # registration_method=regniftyreg.NiftyReg(use_verbose=args.verbose),
+        # registration_method=regniftyreg.RegAladin(use_verbose=args.verbose),
         # registration_method=regsitk.RegistrationSimpleITK(use_verbose=args.verbose),
         # registration_method=regitk.RegistrationITK(use_verbose=args.verbose),
         dilation_radius=args.dilation_radius,
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
         # registration = regflirt.FLIRT(
-        registration = regniftyreg.NiftyReg(
+        registration = regniftyreg.RegAladin(
             fixed=stacks[args.target_stack_index],
             registration_type="Rigid",
             use_fixed_mask=True,

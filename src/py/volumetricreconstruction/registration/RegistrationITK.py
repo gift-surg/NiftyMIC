@@ -190,7 +190,7 @@ class RegistrationITK:
 
     # Get registered image
     #  \return registered image as Stack object
-    # def get_registered_image(self):
+    # def get_transformed_fixed(self):
         # return self._registered_image
 
     ##

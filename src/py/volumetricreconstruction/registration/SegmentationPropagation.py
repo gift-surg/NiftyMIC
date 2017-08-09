@@ -50,12 +50,6 @@ class SegmentationPropagation(object):
         self._use_dilation_in_plane_only = use_dilation_in_plane_only
         self._interpolator = interpolator
 
-        self._get_registration_method = {
-            "SimpleITK": regsitk,
-            "ITK": regitk,
-            "NiftyReg": regitk,
-        }
-
         self._stack_sitk = None
         self._stack_sitk_mask = None
         self._registration_transform_sitk = None

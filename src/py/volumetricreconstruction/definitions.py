@@ -1,9 +1,8 @@
 import os
 import sys
 
-DIR_ROOT = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "..", "..", "..")
+DIR_ROOT = os.path.realpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 DIR_TEST = os.path.join(DIR_ROOT, "test-data/")
 DIR_BUILD_CPP = os.path.join(DIR_ROOT, "build", "cpp")
 # DIR_TMP = os.path.join(DIR_ROOT, 'tmp')
