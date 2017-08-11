@@ -79,7 +79,7 @@ class RegistrationPipeline(Pipeline):
     # \param      stacks               List of Stack objects
     # \param      reference            Reference as Stack object
     # \param      registration_method  Registration method, e.g.
-    #                                  RegistrationITK
+    #                                  RegistrationWrapITK
     #
     def __init__(self, verbose, stacks, reference, registration_method):
 
@@ -141,9 +141,6 @@ class VolumeToVolumeRegistration(RegistrationPipeline):
             transform_sitk = \
                 self._registration_method.\
                 get_registration_transform_sitk()
-            # transform_sitk = eval(
-            #     "sitk." + transform_sitk.GetName() +
-            #     "(transform_sitk.GetInverse())")
             self._stacks[i].update_motion_correction(transform_sitk)
 
 
@@ -161,7 +158,7 @@ class SliceToVolumeRegistration(RegistrationPipeline):
     # \param      stacks               The stacks
     # \param      reference            The reference
     # \param      registration_method  Registration method, e.g.
-    #                                  RegistrationITK
+    #                                  RegistrationWrapITK
     # \param      verbose              The verbose
     # \param      print_prefix         Print at each iteration at the
     #                                  beginning, string
@@ -227,7 +224,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(RegistrationPipeline):
     # \param      stacks                 The stacks
     # \param      reference              The reference
     # \param      registration_method    Registration method, e.g.
-    #                                    RegistrationITK
+    #                                    RegistrationWrapITK
     # \param      reconstruction_method  Reconstruction method, e.g. TK1
     # \param      alphas                 Specify regularization parameter used
     #                                    for each individual cycle, list or

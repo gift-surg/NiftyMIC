@@ -3,7 +3,7 @@ scipy==0.19.1
 natsort==5.0.3
 matplotlib==2.0.2
 numpy==1.13.1
-SimpleITK==1.0.0
+SimpleITK==1.0.1
 -e git+https://cmiclab.cs.ucl.ac.uk/mebner/PythonHelper.git#egg=PythonHelper
 -e git+https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver.git#egg=NumericalSolver
 -e git+https://cmiclab.cs.ucl.ac.uk/mebner/RegistrationTools.git#egg=RegistrationTools

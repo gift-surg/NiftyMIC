@@ -22,7 +22,7 @@ import pythonhelper.PythonHelper as ph
 import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.registration.Registration as myreg
 import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
-import volumetricreconstruction.registration.RegistrationITK as regitk
+import volumetricreconstruction.registration.RegistrationWrapITK as regitk
 
 from volumetricreconstruction.definitions import DIR_TEST
 
@@ -295,7 +295,7 @@ class TestRegistration(unittest.TestCase):
         moving = st.Stack.from_sitk_image(image_sitk, filename + "_corrupted")
 
         # Perform registration
-        registration = regitk.RegistrationITK(fixed=fixed, moving=moving)
+        registration = regitk.RegistrationWrapITK(fixed=fixed, moving=moving)
         registration.set_registration_type("InplaneSimilarity")
         registration.set_interpolator("NearestNeighbor")
         registration.set_metric("Correlation")
@@ -570,7 +570,7 @@ class TestRegistration(unittest.TestCase):
         # # ITK registration for comparison
         # print("ITK registration for comparison:")
         # time_start = time.time()
-        # registration = regitk.RegistrationITK(
+        # registration = regitk.RegistrationWrapITK(
         #     fixed=stack_sim, moving=HR_volume)
         # registration.use_verbose(use_verbose)
         # registration.set_scales_estimator(scales_estimator)

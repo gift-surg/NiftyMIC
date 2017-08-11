@@ -43,30 +43,10 @@ class FLIRT(AffineRegistrationMethod):
                                           registration_type=registration_type,
                                           )
 
+        # Allowed registration types for FLIRT
+        self._REGISTRATION_TYPES = ["Rigid", "Affine"]
+
         self._options = options
-
-    ##
-    # Sets the registration type.
-    # \date       2017-02-02 16:42:13+0000
-    #
-    # \param      self               The object
-    # \param      registration_type  The registration type
-    #
-    def set_registration_type(self, registration_type):
-        if registration_type not in ["Rigid", "Affine"]:
-            raise ValueError("Error: Registration type not possible")
-        self._registration_type = registration_type
-
-    ##
-    # Gets the registration type.
-    # \date       2017-08-08 19:58:30+0100
-    #
-    # \param      self  The object
-    #
-    # \return     The registration type as string.
-    #
-    def get_registration_type(self):
-        return self._registration_type
 
     ##
     # Sets the options used for FLIRT
@@ -102,10 +82,10 @@ class FLIRT(AffineRegistrationMethod):
             moving_sitk_mask = None
 
         options = self._options
-        if self._registration_type == "Rigid":
+        if self.get_registration_type() == "Rigid":
             options += " -dof 6"
 
-        elif self._registration_type == "Affine":
+        elif self.get_registration_type() == "Affine":
             options += " -dof 12"
 
         if self._use_verbose:
@@ -122,3 +102,6 @@ class FLIRT(AffineRegistrationMethod):
 
         self._registration_transform_sitk = \
             self._registration_method.get_registration_transform_sitk()
+
+    def _get_warped_moving_sitk(self):
+        return self._registration_method.get_warped_moving_sitk()

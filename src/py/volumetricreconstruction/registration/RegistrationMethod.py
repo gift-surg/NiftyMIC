@@ -145,7 +145,7 @@ class RegistrationMethod(object):
     # \return     The registration transform as sitk object.
     #
     def get_registration_transform_sitk(self):
-        return self._registration_method.get_registration_transform_sitk()
+        return self._registration_transform_sitk
 
     ##
     # Run the registration method
@@ -193,6 +193,10 @@ class RegistrationMethod(object):
         pass
 
 
+##
+# Abstract class for affine registration methods
+# \date       2017-08-09 11:22:51+0100
+#
 class AffineRegistrationMethod(RegistrationMethod):
     __metaclass__ = ABCMeta
 
@@ -234,8 +238,9 @@ class AffineRegistrationMethod(RegistrationMethod):
     # \param      registration_type  The registration type
     #
     def set_registration_type(self, registration_type):
-        if registration_type not in ["Rigid", "Affine"]:
-            raise ValueError("Error: Registration type not possible")
+        if registration_type not in self._REGISTRATION_TYPES:
+            raise ValueError("Possible registration types: " +
+                             str(self._REGISTRATION_TYPES))
         self._registration_type = registration_type
 
     ##
@@ -271,13 +276,13 @@ class AffineRegistrationMethod(RegistrationMethod):
 
         if isinstance(self._moving, st.Stack):
             warped_moving = st.Stack.from_sitk_image(
-                image_sitk=self._registration_method.get_warped_moving_sitk(),
+                image_sitk=self._get_warped_moving_sitk(),
                 filename=self._moving.get_filename(),
                 image_sitk_mask=warped_moving_sitk_mask
             )
         else:
             warped_moving = sl.Slice.from_sitk_image(
-                image_sitk=self._registration_method.get_warped_moving_sitk(),
+                image_sitk=self._get_warped_moving_sitk(),
                 filename=self._moving.get_filename(),
                 image_sitk_mask=warped_moving_sitk_mask
             )
@@ -298,3 +303,7 @@ class AffineRegistrationMethod(RegistrationMethod):
         fixed = st.Stack.from_stack(self._fixed)
         fixed.update_motion_correction(self.get_registration_transform_sitk())
         return fixed
+
+    @abstractmethod
+    def _get_warped_moving_sitk(self):
+        pass

@@ -18,7 +18,7 @@ import pythonhelper.PythonHelper as ph
 import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.utilities.StackMaskMorphologicalOperations as stmorph
 import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
-import volumetricreconstruction.registration.RegistrationITK as regitk
+import volumetricreconstruction.registration.RegistrationWrapITK as regitk
 import volumetricreconstruction.registration.NiftyReg as regniftyreg
 
 ##

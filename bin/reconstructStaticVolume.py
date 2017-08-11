@@ -55,7 +55,7 @@ if __name__ == '__main__':
         "can substantially reduce the computational time.",
         prog="python " + os.path.basename(__file__),
     )
-    input_parser.add_dir_input()
+    input_parser.add_dir_input(default="")
     input_parser.add_filenames()
     input_parser.add_dir_output(default="results/")
     input_parser.add_prefix_output(default="_SRR")
@@ -67,6 +67,9 @@ if __name__ == '__main__':
     input_parser.add_provide_comparison(default=0)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_verbose(default=0)
+
+    args = input_parser.parse_args()
+    input_parser.print_arguments(args)
 
     # Write script execution call
     if args.log_script_execution:
@@ -141,7 +144,6 @@ if __name__ == '__main__':
         stacks=stacks,
         reconstruction=HR_volume,
         reg_type=args.reg_type,
-        minimizer="lsmr",
         iter_max=args.iter_max,
         alpha=args.alpha,
     )

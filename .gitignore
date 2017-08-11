@@ -7,4 +7,5 @@ test-data/
 .*
 *.nii
 *.nii.gz
+*.pyc
 *iterate.dat

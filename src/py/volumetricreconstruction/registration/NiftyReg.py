@@ -41,6 +41,10 @@ class RegAladin(AffineRegistrationMethod):
                                           use_verbose=use_verbose,
                                           registration_type=registration_type,
                                           )
+
+        # Allowed registration types for NiftyReg
+        self._REGISTRATION_TYPES = ["Rigid", "Affine"]
+
         self._options = options
 
     ##
@@ -77,7 +81,7 @@ class RegAladin(AffineRegistrationMethod):
             moving_sitk_mask = None
 
         options = self._options
-        if self._registration_type == "Rigid":
+        if self.get_registration_type() == "Rigid":
             options += " -rigOnly"
 
         if not self._use_verbose:
@@ -94,6 +98,9 @@ class RegAladin(AffineRegistrationMethod):
 
         self._registration_transform_sitk = \
             self._registration_method.get_registration_transform_sitk()
+
+    def _get_warped_moving_sitk(self):
+        return self._registration_method.get_warped_moving_sitk()
 
 
 class RegF3D(RegistrationMethod):

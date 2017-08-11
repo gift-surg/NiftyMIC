@@ -27,7 +27,7 @@ from modules.TestRegistration import *
 from modules.TestBrainStripping import *
 from modules.TestIntraStackRegistration import *
 from modules.TestParameterNormalization import *
-from modules.TestRegistrationITK import *
+from modules.TestRegistrationWrapITK import *
 from modules.TestLinearImageQualityTransfer import *
 from modules.TestIntensityCorrection import *
 from modules.TestSegmentationPropagation import *

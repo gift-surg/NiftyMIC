@@ -17,7 +17,7 @@ import pythonhelper.SimpleITKHelper as sitkh
 
 import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
-import volumetricreconstruction.registration.RegistrationITK as regitk
+import volumetricreconstruction.registration.RegistrationWrapITK as regitk
 import volumetricreconstruction.registration.NiftyReg as regniftyreg
 import volumetricreconstruction.registration.SegmentationPropagation as segprop
 
@@ -74,7 +74,7 @@ class TestSegmentationPropagation(unittest.TestCase):
             optimizer_params=optimizer_params,
             use_multiresolution_framework=True,
         )
-        # registration = regitk.RegistrationITK()
+        # registration = regitk.RegistrationWrapITK()
         # registration = regniftyreg.RegAladin()
 
         segmentation_propagation = segprop.SegmentationPropagation(

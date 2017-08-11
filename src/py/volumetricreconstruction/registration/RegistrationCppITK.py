@@ -1,4 +1,4 @@
-# \file RegistrationITK.py
+# \file RegistrationCppITK.py
 #  \brief This class makes ITK registration accessible via Python
 #
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
@@ -23,7 +23,7 @@ from volumetricreconstruction.definitions import DIR_TMP
 from volumetricreconstruction.definitions import DIR_BUILD_CPP
 
 
-class RegistrationITK:
+class RegistrationCppITK(object):
 
     def __init__(self,
                  fixed=None,
