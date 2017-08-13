@@ -22,5 +22,7 @@ MyITKImageHelper::readImage(const std::string &filename){
   reader->SetFileName(filename);
   reader->Update();
 
-  return reader->GetOutput();
+  typename ImageType::Pointer image = reader->GetOutput();
+  image->DisconnectPipeline();
+  return image;
 }

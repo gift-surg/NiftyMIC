@@ -175,6 +175,8 @@ class RegistrationMethod(object):
             ph.print_info("Required computational time: %s" %
                           (self.get_computational_time()))
 
+        # ph.exit()
+
     @abstractmethod
     def _run_registration(self):
         pass

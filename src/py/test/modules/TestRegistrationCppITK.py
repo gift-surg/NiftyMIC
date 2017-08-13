@@ -1,5 +1,5 @@
-# \file TestRegistrationWrapITK.py
-#  \brief  Class containing unit tests for module RegistrationWrapITK
+# \file TestRegistrationCppITK.py
+#  \brief  Class containing unit tests for module RegistrationCppITK
 #
 #  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
 #  \date Nov 2016
@@ -18,7 +18,7 @@ import pythonhelper.SimpleITKHelper as sitkh
 import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.registration.Registration as myreg
 import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
-import volumetricreconstruction.registration.RegistrationWrapITK as regitk
+import volumetricreconstruction.registration.RegistrationCppITK as regitk
 
 from volumetricreconstruction.definitions import DIR_TEST
 
@@ -27,7 +27,7 @@ from volumetricreconstruction.definitions import DIR_TEST
 #  Retrieved: Aug 6, 2015
 
 
-class TestRegistrationWrapITK(unittest.TestCase):
+class TestRegistrationCppITK(unittest.TestCase):
 
     # Specify input data
     dir_test_data = DIR_TEST
@@ -77,7 +77,7 @@ class TestRegistrationWrapITK(unittest.TestCase):
             stack_corrupted_sitk, stack.get_filename()+"_corrupted", stack_corrupted_sitk_mask)
 
         # Perform in-plane 3D similarity registration
-        registration = regitk.RegistrationWrapITK(
+        registration = regitk.RegistrationCppITK(
             fixed=stack_corrupted, moving=reference)
         registration.set_registration_type("InplaneSimilarity")
         registration.set_interpolator("Linear")

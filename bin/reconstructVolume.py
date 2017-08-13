@@ -25,7 +25,8 @@ import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.preprocessing.DataPreprocessing as dp
 import volumetricreconstruction.preprocessing.N4BiasFieldCorrection as n4bfc
 import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
-import volumetricreconstruction.registration.RegistrationWrapITK as regitk
+import volumetricreconstruction.registration.RegistrationWrapITK as regwrapitk
+import volumetricreconstruction.registration.RegistrationCppITK as regcppitk
 import volumetricreconstruction.registration.FLIRT as regflirt
 import volumetricreconstruction.registration.NiftyReg as regniftyreg
 import volumetricreconstruction.registration.SegmentationPropagation as segprop
@@ -125,7 +126,7 @@ if __name__ == '__main__':
     segmentation_propagator = segprop.SegmentationPropagation(
         # registration_method=regniftyreg.RegAladin(use_verbose=args.verbose),
         # registration_method=regsitk.RegistrationSimpleITK(use_verbose=args.verbose),
-        # registration_method=regitk.RegistrationWrapITK(use_verbose=args.verbose),
+        # registration_method=regwrapitk.RegistrationWrapITK(use_verbose=args.verbose),
         dilation_radius=args.dilation_radius,
         dilation_kernel="Ball",
     )
@@ -168,26 +169,26 @@ if __name__ == '__main__':
 
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
-        # registration = regflirt.FLIRT(
-        registration = regniftyreg.RegAladin(
-            fixed=stacks[args.target_stack_index],
-            registration_type="Rigid",
-            use_fixed_mask=True,
-            use_moving_mask=True,
-            use_verbose=False,
-        )
+    #     # registration = regflirt.FLIRT(
+    #     registration = regniftyreg.RegAladin(
+    #         fixed=stacks[args.target_stack_index],
+    #         registration_type="Rigid",
+    #         use_fixed_mask=True,
+    #         use_moving_mask=True,
+    #         use_verbose=False,
+    #     )
 
-        v2vreg = pipeline.VolumeToVolumeRegistration(
-            stacks=stacks,
-            reference=stacks[args.target_stack_index],
-            registration_method=registration,
-            verbose=args.verbose,
-        )
-        v2vreg.run()
-        stacks = v2vreg.get_stacks()
-        time_registration = v2vreg.get_computational_time()
+    #     v2vreg = pipeline.VolumeToVolumeRegistration(
+    #         stacks=stacks,
+    #         reference=stacks[args.target_stack_index],
+    #         registration_method=registration,
+    #         verbose=args.verbose,
+    #     )
+    #     v2vreg.run()
+    #     stacks = v2vreg.get_stacks()
+    #     time_registration = v2vreg.get_computational_time()
 
-    else:
+    # else:
         time_registration = ph.get_zero_time()
 
     # ---------------------------Create first volume---------------------------
@@ -241,13 +242,13 @@ if __name__ == '__main__':
 
     if args.two_step_cycles > 0:
 
-        # registration = regsitk.RegistrationSimpleITK(
-        registration = regitk.RegistrationWrapITK(
+        registration = regsitk.RegistrationSimpleITK(
+        # registration = regwrapitk.RegistrationWrapITK(
             moving=HR_volume,
             use_fixed_mask=True,
-            use_moving_mask=True,
+            # use_moving_mask=True,
             use_verbose=args.verbose,
-            interpolator="Linear",
+            # interpolator="Linear",
             # metric="Correlation",
             # metric="MattesMutualInformation",  # Might cause error messages
             # like "Too many samples map outside moving image buffer."
@@ -255,7 +256,7 @@ if __name__ == '__main__':
             shrink_factors=[2, 1],
             smoothing_sigmas=[1, 0],
             initializer_type=None,
-            use_oriented_psf=True,
+            # use_oriented_psf=True,
             # optimizer="ConjugateGradientLineSearch",
             # optimizer_params={
             #     "learningRate": 1,
@@ -268,6 +269,16 @@ if __name__ == '__main__':
             #     "gradientMagnitudeTolerance": 1e-6,
             #     "learningRate": 1,
             # },
+        )
+
+        registration = regcppitk.RegistrationCppITK(
+            moving=HR_volume,
+            use_fixed_mask=True,
+            use_moving_mask=True,
+            use_verbose=args.verbose,
+            interpolator="Linear",
+            metric="Correlation",
+            # metric="MattesMutualInformation",  # Might cause error messages
         )
 
         alphas = np.linspace(args.alpha_first, args.alpha,

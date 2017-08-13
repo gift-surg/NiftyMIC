@@ -19,12 +19,33 @@ import volumetricreconstruction.base.PSF as psf
 import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.base.Slice as sl
 
+from volumetricreconstruction.registration.RegistrationSimpleITK \
+    import RegistrationSimpleITK
 from volumetricreconstruction.definitions import DIR_TMP
 from volumetricreconstruction.definitions import DIR_BUILD_CPP
 
 
-class RegistrationCppITK(object):
+class RegistrationCppITK(RegistrationSimpleITK):
 
+    ##
+    # { constructor_description }
+    # \date       2017-08-12 13:51:58+0100
+    #
+    # \param      self                           The object
+    # \param      fixed                          The fixed
+    # \param      moving                         The moving
+    # \param      use_fixed_mask                 The use fixed mask
+    # \param      use_moving_mask                The use moving mask
+    # \param      registration_type              The registration type
+    # \param      interpolator                   ["Linear", OrientedGaussian"]
+    # \param      metric                         The metric
+    # \param      scales_estimator               The scales estimator
+    # \param      use_multiresolution_framework  The use multiresolution framework
+    # \param      use_verbose                    The use verbose
+    # \param      ANTSradius                     The ant sradius
+    # \param      translation_scale              The translation scale
+    # \param      dir_tmp                        The dir temporary
+    #
     def __init__(self,
                  fixed=None,
                  moving=None,
@@ -33,27 +54,41 @@ class RegistrationCppITK(object):
                  registration_type="Rigid",
                  interpolator="Linear",
                  metric="Correlation",
-                 scales_estimator="Jacobian",
+                 scales_estimator="PhysicalShift",
+                 use_multiresolution_framework=False,
+                 use_verbose=False,
                  ANTSradius=20,
                  translation_scale=1,
-                 use_multiresolution_framework=False,
-                 dir_tmp=os.path.join(DIR_TMP, "RegistrationITK"),
-                 use_verbose=False):
+                 dir_tmp=os.path.join(DIR_TMP, "RegistrationCppITK"),
+                 ):
 
-        self._fixed = fixed
-        self._moving = moving
+        RegistrationSimpleITK.__init__(
+            self,
+            fixed=fixed,
+            moving=moving,
+            use_fixed_mask=use_fixed_mask,
+            use_moving_mask=use_moving_mask,
+            registration_type=registration_type,
+            interpolator=interpolator,
+            metric=metric,
+            metric_params=None,
+            optimizer=None,
+            optimizer_params=None,
+            scales_estimator=scales_estimator,
+            initializer_type=None,
+            use_oriented_psf=None,
+            use_multiresolution_framework=use_multiresolution_framework,
+            shrink_factors=None,
+            smoothing_sigmas=None,
+            use_verbose=use_verbose,
+        )
 
-        self._use_fixed_mask = use_fixed_mask
-        self._use_moving_mask = use_moving_mask
+        self._REGISTRATION_TYPES = ["Rigid", "Affine", "InplaneSimilarity"]
+        self._INITIALIZER_TYPES = [None]
+        self._SCALES_ESTIMATORS = ["IndexShift", "PhysicalShift", "Jacobian"]
 
-        self._registration_type = registration_type
-        self._metric = metric
-        self._interpolator = interpolator
-        self._scales_estimator = scales_estimator
         self._ANTSradius = ANTSradius
         self._translation_scale = translation_scale
-
-        self._use_multiresolution_framework = use_multiresolution_framework
 
         self._use_verbose = use_verbose
 
@@ -61,75 +96,11 @@ class RegistrationCppITK(object):
         # commandline
         self._dir_tmp = ph.create_directory(dir_tmp, delete_files=False)
 
-        self._run_registration = {
+        self._run_registration_ = {
             "Rigid": self._run_registration_rigid_affine,
             "Affine": self._run_registration_rigid_affine,
             "InplaneSimilarity": self._run_registration_inplane_similarity_3D
         }
-        # self._transform_sitk = transform_sitk
-        # self._control_point_grid_sitk = control_point_grid_sitk
-        # self._registered_image = registered_image
-
-    # Set fixed/reference/target image
-    #  \param[in] fixed fixed/reference/target image as Stack object
-    def set_fixed(self, fixed):
-        self._fixed = fixed
-
-    # Set moving/floating/source image
-    #  \param[in] moving moving/floating/source image as Stack object
-    def set_moving(self, moving):
-        self._moving = moving
-
-    # Specify whether mask shall be used for fixed image
-    #  \param[in] flag boolean
-    def use_fixed_mask(self, flag):
-        self._use_fixed_mask = flag
-
-    # Specify whether mask shall be used for moving image
-    #  \param[in] flag boolean
-    def use_moving_mask(self, flag):
-        self._use_moving_mask = flag
-
-    # Set type of registration used
-    #  \param[in] registration_type
-    def set_registration_type(self, registration_type):
-        if registration_type not in ["Rigid", "Affine", "InplaneSimilarity"]:
-            raise ValueError(
-                "Error: Registration type can only be either 'Rigid', 'Affine' or 'InplaneSimilarity'")
-
-        self._registration_type = registration_type
-
-    # Get chosen type of registration used
-    #  \return registration type as string
-    def get_registration_type(self):
-        return self._registration_type
-
-    # Set interpolator
-    #  \param[in] interpolator_type
-    def set_interpolator(self, interpolator_type):
-        if interpolator_type not in ["NearestNeighbor", "Linear", "BSpline", "OrientedGaussian"]:
-            raise ValueError(
-                "Error: Interpolator can only be either 'NearestNeighbor', 'Linear', 'BSpline' or 'OrientedGaussian'")
-
-        self._interpolator = interpolator_type
-
-    # Get interpolator
-    #  \return interpolator as string
-    def get_interpolator(self):
-        return self._interpolator
-
-    # Set metric
-    #  \param[in] metric
-    def set_metric(self, metric):
-        if metric not in ["MeanSquares", "MattesMutualInformation", "Correlation", "ANTSNeighborhoodCorrelation"]:
-            raise ValueError("Error: Metric cannot be deduced.")
-
-        self._metric = metric
-
-    # Get metric
-    #  \return metric
-    def get_metric(self):
-        return self._metric
 
     # Set/Get radius used for ANTSNeighborhoodCorrelation
     def set_ANTSradius(self, radius):
@@ -144,27 +115,6 @@ class RegistrationCppITK(object):
 
     def get_translation_scale(self):
         return self._translation_scale
-
-    # Decide whether multi-registration framework is used
-    #  \param[in] flag
-    def use_multiresolution_framework(self, flag):
-        self._use_multiresolution_framework = flag
-
-    # Set scales estimator for optimizer
-    #  \param[in] scales_estimator
-    def set_scales_estimator(self, scales_estimator):
-        if scales_estimator not in ["IndexShift", "PhysicalShift", "Jacobian"]:
-            raise ValueError("Error: Metric cannot be deduced.")
-        self._scales_estimator = scales_estimator
-
-    # Get scales estimator
-    def get_scales_estimator(self):
-        return self._scales_estimator
-
-    # Get affine transform in (Simple)ITK format after having run reg_aladin
-    #  \return affine transform as SimpleITK object
-    def get_registration_transform_sitk(self):
-        return self._transform_sitk
 
     ##
     #       Gets the parameters obtained by the registration.
@@ -193,34 +143,12 @@ class RegistrationCppITK(object):
     # def get_transformed_fixed(self):
         # return self._registered_image
 
-    ##
-    #       Sets the verbose to define whether or not output information
-    #             is produced
-    # \date       2016-09-20 18:49:19+0100
-    #
-    # \param      self     The object
-    # \param      verbose  The verbose
-    #
-    def use_verbose(self, flag):
-        self._use_verbose = flag
-
-    ##
-    #       Gets the verbose.
-    # \date       2016-09-20 18:49:54+0100
-    #
-    # \param      self  The object
-    #
-    # \return     The verbose.
-    #
-    def get_verbose(self):
-        return self._use_verbose
-
-    def run_registration(self, id=""):
+    def _run_registration(self, id=""):
 
         # Clean output directory first
         ph.clear_directory(self._dir_tmp, verbose=0)
 
-        self._run_registration[self._registration_type](id)
+        self._run_registration_[self._registration_type](id)
 
     def _run_registration_rigid_affine(self, id):
 
@@ -291,25 +219,27 @@ class RegistrationCppITK(object):
         params_all = np.loadtxt(
             self._dir_tmp + registration_transform_str + ".txt")
 
-        self._parameters_fixed = params_all[0:3]
-        self._parameters = params_all[3:]
-
         if self._registration_type in ["Rigid"]:
-            self._transform_sitk = sitk.Euler3DTransform()
+            self._parameters_fixed = params_all[1:4]
+            self._parameters = params_all[4:]
+            self._registration_transform_sitk = sitk.Euler3DTransform()
 
             # Append zero for m_ComputeZYX = 0 (part of fixed params in
             # SimpleITK 1.0.0)
             fixed_parameters = np.append(self._parameters_fixed, [0])
 
         else:
-            self._transform_sitk = sitk.AffineTransform(3)
+            self._parameters_fixed = params_all[0:3]
+            self._parameters = params_all[3:]
+            raise UserWarning("Parameters fixed etc not tested yet!!")
+            self._registration_transform_sitk = sitk.AffineTransform(3)
             fixed_parameters = self._parameters_fixed
 
-        self._transform_sitk.SetParameters(self._parameters)
-        self._transform_sitk.SetFixedParameters(fixed_parameters)
+        self._registration_transform_sitk.SetParameters(self._parameters)
+        self._registration_transform_sitk.SetFixedParameters(fixed_parameters)
 
         # Debug
-        # moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
+        # moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._registration_transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
         # sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
 
     def _run_registration_inplane_similarity_3D(self, id):
@@ -391,7 +321,7 @@ class RegistrationCppITK(object):
 
         # Get affine registration transform T(x) = R D Lambda D^{-1} (x-c) + t
         # + c
-        self._transform_sitk = self._get_affine_transform_from_similarity_registration()
+        self._registration_transform_sitk = self._get_affine_transform_from_similarity_registration()
 
         # ## Debug
         # scale = parameters[-1]
