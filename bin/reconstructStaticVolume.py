@@ -77,7 +77,9 @@ if __name__ == '__main__':
             os.path.basename(__file__), args)
         ph.write_performed_script_execution_to_executable_file(
             performed_script_execution,
-            os.path.join(args.dir_output, "log_script_execution.sh"))
+            os.path.join(args.dir_output,
+                         "log_%s_script_execution.sh" % (
+                             os.path.basename(__file__).split(".")[0])))
 
     # Read Data:
     ph.print_title("Read Data")

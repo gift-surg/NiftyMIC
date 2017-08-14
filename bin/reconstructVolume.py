@@ -169,26 +169,26 @@ if __name__ == '__main__':
 
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
-    #     # registration = regflirt.FLIRT(
-    #     registration = regniftyreg.RegAladin(
-    #         fixed=stacks[args.target_stack_index],
-    #         registration_type="Rigid",
-    #         use_fixed_mask=True,
-    #         use_moving_mask=True,
-    #         use_verbose=False,
-    #     )
+        # registration = regflirt.FLIRT(
+        registration = regniftyreg.RegAladin(
+            fixed=stacks[args.target_stack_index],
+            registration_type="Rigid",
+            use_fixed_mask=True,
+            use_moving_mask=True,
+            use_verbose=False,
+        )
 
-    #     v2vreg = pipeline.VolumeToVolumeRegistration(
-    #         stacks=stacks,
-    #         reference=stacks[args.target_stack_index],
-    #         registration_method=registration,
-    #         verbose=args.verbose,
-    #     )
-    #     v2vreg.run()
-    #     stacks = v2vreg.get_stacks()
-    #     time_registration = v2vreg.get_computational_time()
+        v2vreg = pipeline.VolumeToVolumeRegistration(
+            stacks=stacks,
+            reference=stacks[args.target_stack_index],
+            registration_method=registration,
+            verbose=args.verbose,
+        )
+        v2vreg.run()
+        stacks = v2vreg.get_stacks()
+        time_registration = v2vreg.get_computational_time()
 
-    # else:
+    else:
         time_registration = ph.get_zero_time()
 
     # ---------------------------Create first volume---------------------------
