@@ -351,7 +351,7 @@ class SliceToVolumeRegistration:
     #  \param display_registration_info display registration summary at the end of execution (default=0)
     #  \return Rigid registration as sitk.Euler3DTransform object
     def _get_rigid_registration_transform_itk(self, fixed_slice_3D, moving_HR_volume_3D, display_registration_info=0):
-        ## Look at http://www.itk.org/Doxygen/html/Examples_2RegistrationWrapITKv3_2ImageRegistration8_8cxx-example.html#_a10
+        ## Look at http://www.itk.org/Doxygen/html/Examples_2RegistrationITKv3_2ImageRegistration8_8cxx-example.html#_a10
 
         registration = itk.ImageRegistrationMethod[image_type, image_type].New()
 

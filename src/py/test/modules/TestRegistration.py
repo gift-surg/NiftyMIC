@@ -22,7 +22,7 @@ import pythonhelper.PythonHelper as ph
 import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.registration.Registration as myreg
 import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
-import volumetricreconstruction.registration.RegistrationWrapITK as regitk
+import volumetricreconstruction.registration.RegistrationCppITK as regitk
 
 from volumetricreconstruction.definitions import DIR_TEST
 
@@ -295,7 +295,7 @@ class TestRegistration(unittest.TestCase):
         moving = st.Stack.from_sitk_image(image_sitk, filename + "_corrupted")
 
         # Perform registration
-        registration = regitk.RegistrationWrapITK(fixed=fixed, moving=moving)
+        registration = regitk.RegistrationCppITK(fixed=fixed, moving=moving)
         registration.set_registration_type("InplaneSimilarity")
         registration.set_interpolator("NearestNeighbor")
         registration.set_metric("Correlation")
@@ -526,7 +526,7 @@ class TestRegistration(unittest.TestCase):
             # data_loss="huber",
             # minimizer="L-BFGS-B",
             # minimizer="Newton-CG",
-            )
+        )
         # registration.use_fixed_mask(True)
         registration.use_verbose(True)
         registration.run_registration()
@@ -543,45 +543,51 @@ class TestRegistration(unittest.TestCase):
         # Set elapsed time
         time_end = time.time()
         print("Rigid registration test: Elapsed time = %s" %
-              (timedelta(seconds=time_end-time_start)))
+              (registration.get_computational_time()))
 
-        # # Comparison with ITK registrations
-        # scales_estimator = "PhysicalShift"
-        # use_verbose = False
+        # Comparison with ITK registrations
+        scales_estimator = "PhysicalShift"
+        use_verbose = 1
 
-        # # SimpleITK registration for comparison
-        # print("SimpleITK registration for comparison:")
-        # time_start = time.time()
-        # registration = regsitk.RegistrationSimpleITK(
-        #     fixed=stack_sim, moving=HR_volume)
-        # registration.use_verbose(use_verbose)
-        # registration.set_scales_estimator(scales_estimator)
-        # registration.run_registration()
-        # time_end = time.time()
+        # ----------------SimpleITK registration for comparison----------------
+        ph.print_title("SimpleITK registration for comparison:")
+        registration = regsitk.RegistrationSimpleITK(
+            fixed=stack_sim,
+            moving=HR_volume,
+            optimizer="RegularStepGradientDescent",
+            optimizer_params={
+                "minStep": 1e-6,
+                "numberOfIterations": 500,
+                "gradientMagnitudeTolerance": 1e-6,
+                "learningRate": 1,
+            },
+        )
+        registration.set_metric("MeanSquares")
+        registration.use_verbose(use_verbose)
+        registration.set_scales_estimator(scales_estimator)
+        registration.run_registration()
 
-        # parameters = np.array(
-        #     registration.get_registration_transform_sitk().GetParameters())
-        # norm_diff = np.linalg.norm(parameters+parameters_gd)
-        # print("\tparameters = " + str(parameters))
-        # print("\t|parameters-parameters_gd| = %s" % (str(norm_diff)))
-        # print("\tRigid registration test: Elapsed time = %s" %
-        #       (timedelta(seconds=time_end-time_start)))
+        parameters = np.array(
+            registration.get_registration_transform_sitk().GetParameters())
+        norm_diff = np.linalg.norm(parameters+parameters_gd)
+        print("\tparameters = " + str(parameters))
+        print("\t|parameters-parameters_gd| = %s" % (str(norm_diff)))
+        print("\tRigid registration test: Elapsed time = %s" %
+              (registration.get_computational_time()))
 
-        # # ITK registration for comparison
-        # print("ITK registration for comparison:")
-        # time_start = time.time()
-        # registration = regitk.RegistrationWrapITK(
-        #     fixed=stack_sim, moving=HR_volume)
-        # registration.use_verbose(use_verbose)
-        # registration.set_scales_estimator(scales_estimator)
-        # registration.set_metric("MeanSquares")
-        # registration.run_registration()
-        # time_end = time.time()
+        # -------------------ITK registration for comparison-------------------
+        ph.print_title("ITK registration for comparison:")
+        registration = regitk.RegistrationCppITK(
+            fixed=stack_sim, moving=HR_volume)
+        registration.use_verbose(use_verbose)
+        registration.set_scales_estimator(scales_estimator)
+        registration.set_metric("MeanSquares")
+        registration.run_registration()
 
-        # parameters = np.array(
-        #     registration.get_registration_transform_sitk().GetParameters())
-        # norm_diff = np.linalg.norm(parameters+parameters_gd)
-        # print("\tparameters = " + str(parameters))
-        # print("\t|parameters-parameters_gd| = %s" % (str(norm_diff)))
-        # print("\tRigid registration test: Elapsed time = %s" %
-        #       (timedelta(seconds=time_end-time_start)))
+        parameters = np.array(
+            registration.get_registration_transform_sitk().GetParameters())
+        norm_diff = np.linalg.norm(parameters+parameters_gd)
+        print("\tparameters = " + str(parameters))
+        print("\t|parameters-parameters_gd| = %s" % (str(norm_diff)))
+        print("\tRigid registration test: Elapsed time = %s" %
+              (registration.get_computational_time()))

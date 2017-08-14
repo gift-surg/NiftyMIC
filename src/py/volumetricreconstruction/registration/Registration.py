@@ -23,6 +23,9 @@ from numericalsolver.LossFunctions import LossFunctions as lf
 # Import modules
 import volumetricreconstruction.base.PSF as psf
 import volumetricreconstruction.base.Slice as sl
+from volumetricreconstruction.registration.RegistrationMethod \
+    import AffineRegistrationMethod
+
 
 DIMENSION = 3
 
@@ -43,7 +46,7 @@ DATA_LOSS = ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']
 #
 
 
-class Registration(object):
+class Registration(AffineRegistrationMethod):
 
     ##
     # { constructor_description }
@@ -62,20 +65,27 @@ class Registration(object):
                  fixed=None,
                  moving=None,
                  use_fixed_mask=False,
-                 alpha_cut=3,
+                 use_moving_mask=False,
+                 registration_type="Rigid",
                  use_verbose=False,
+                 alpha_cut=3,
                  data_loss="linear",
                  minimizer="least_squares",
                  ):
 
-        self._fixed = fixed
-        self._moving = moving
+        AffineRegistrationMethod.__init__(self,
+                                          fixed=fixed,
+                                          moving=moving,
+                                          use_fixed_mask=use_fixed_mask,
+                                          use_moving_mask=use_moving_mask,
+                                          use_verbose=use_verbose,
+                                          registration_type=registration_type,
+                                          )
 
-        self._use_fixed_mask = use_fixed_mask
+        self._REGISTRATION_TYPES = ["Rigid"]
 
         self._minimizer = minimizer
         self._data_loss = data_loss
-
         self._alpha_cut = alpha_cut
 
         # Used for PSF modelling
@@ -92,9 +102,6 @@ class Registration(object):
         self._parameters_itk = self._rigid_transform_itk.GetParameters()
         self._dof_transform = self._rigid_transform_itk.GetNumberOfParameters()
         self._parameters = [None]*self._dof_transform
-
-        # Verbose computation
-        self._use_verbose = use_verbose
 
     ##
     # Initialize registration class
@@ -142,46 +149,6 @@ class Registration(object):
                 self._fixed.sitk_mask).flatten()
 
     #
-    # Set fixed/reference/target image
-    # \date       2017-07-25 16:38:08+0100
-    #
-    # \param      self   The object
-    # \param[in]  fixed  fixed/reference/target image as Stack object
-    #
-    def set_fixed(self, fixed):
-        self._fixed = fixed
-
-    #
-    # Set moving/floating/source image
-    # \date       2017-07-25 16:38:13+0100
-    #
-    # \param      self    The object
-    # \param[in]  moving  moving/floating/source image as Stack object
-    #
-    def set_moving(self, moving):
-        self._moving = moving
-
-    #
-    # Specify whether mask shall be used for fixed image
-    # \date       2017-07-25 16:38:18+0100
-    #
-    # \param      self  The object
-    # \param[in]  flag  boolean
-    #
-    def use_fixed_mask(self, flag):
-        self._use_fixed_mask = flag
-
-    ##
-    # Specify whether mask shall be used for moving image
-    # \date       2017-07-25 16:38:40+0100
-    #
-    # \param      self  The object
-    # \param[in]  flag  boolean
-    #
-    # def use_moving_mask(self, flag):
-    #     self._use_moving_mask = flag
-
-    #
     # Set cut-off distance
     # \date       2017-07-25 16:38:48+0100
     #
@@ -210,80 +177,29 @@ class Registration(object):
         return self._parameters
 
     ##
-    #       Returns the rigid registration transform
-    # \date       2016-09-21 12:09:41+0100
-    #
-    # \param      self  The object
-    #
-    # \return     The registration transform as sitk.Euler3DTransform object.
-    #
-    def get_registration_transform_sitk(self):
-        transform_sitk = sitk.Euler3DTransform()
-        transform_sitk.SetParameters(self._parameters)
-        return transform_sitk
-
-    ##
-    #       Sets the verbose to define whether or not output is produced
-    # \date       2016-09-20 18:49:19+0100
-    #
-    # \param      self     The object
-    # \param      verbose  The verbose
-    #
-    def use_verbose(self, flag):
-        self._use_verbose = flag
-
-    ##
-    #       Gets the verbose.
-    # \date       2016-09-20 18:49:54+0100
-    #
-    # \param      self  The object
-    #
-    # \return     The verbose.
-    #
-    def get_verbose(self):
-        return self._use_verbose
-
-    ##
-    # \date       2016-07-29 12:30:30+0100
-    # \brief      Print statistics associated to performed reconstruction
-    #
-    # \param[in]  self  The object
-    #
-    def print_statistics(self):
-        # print("\nStatistics for performed registration:" %(self._reg_type))
-        # if self._elapsed_time_sec < 0:
-        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
-        # else:
-        print("\tElapsed time: %s" %
-              (timedelta(seconds=self._elapsed_time_sec)))
-        # print("\tell^2-residual sum_k ||M_k(A_k x - y_k||_2^2 = %.3e" %(self._residual_ell2))
-        # print("\tprior residual = %.3e" %(self._residual_prior))
-
-    ##
     #       Run registration
     # \date       2016-08-03 00:11:51+0100
     # \post       self._paramters is updated
     #
     # \param[in]  self     The object
     #
-    def run_registration(self):
+    def _run_registration(self):
 
         if self._data_loss not in DATA_LOSS:
             raise ValueError("data_loss must be in " + str(DATA_LOSS))
 
         if self._use_verbose:
-            ph.print_title("Registration")
+            ph.print_subtitle("Registration")
             ph.print_info("Minimizer: %s" % (self._minimizer))
             ph.print_info("Data loss: %s" % (self._data_loss))
-
-        # Time optimization
-        time_start = time.time()
 
         ##
         self._initialize_class()
 
+        nda_fixed = sitk.GetArrayFromImage(self._fixed.sitk)
+
         # Define variables for least-squares optimization
-        residual = lambda x: self._get_residual_data_fit(x)
+        residual = lambda x: self._get_residual_data_fit(x, nda_fixed)
         jacobian_residual = lambda x: self._get_jacobian_residual_data_fit(x)
         x0 = np.zeros(self._dof_transform)
 
@@ -325,9 +241,19 @@ class Registration(object):
                     'disp': self._use_verbose},
             ).x
 
-        # Set elapsed time
-        time_end = time.time()
-        self._elapsed_time_sec = time_end-time_start
+        self._registration_transform_sitk = sitk.Euler3DTransform()
+        self._registration_transform_sitk.SetParameters(self._parameters)
+
+    def _get_warped_moving_sitk(self):
+        warped_moving_sitk = sitk.Resample(
+            self._moving.sitk,
+            self._fixed.sitk,
+            self.get_registration_transform_sitk(),
+            eval("sitk.sitk%s" % (self._interpolator)),
+            0.,
+            self._moving.sitk.GetPixelIDValue()
+        )
+        return warped_moving_sitk
 
     ##
     #       Compute residual y_k - A_k(theta)x based on parameters
@@ -340,12 +266,11 @@ class Registration(object):
     # \return     The residual data fit as Nk-array, i.e. the number of voxels
     #             of slice y_k.
     #
-    def _get_residual_data_fit(self, parameters):
+    def _get_residual_data_fit(self, parameters, nda_fixed):
 
         Ak_vol_itk = self._execute_oriented_gaussian_interpolate_image_filter(
             parameters, use_jacobian=False)
 
-        nda_fixed = sitk.GetArrayFromImage(self._fixed.sitk)
         nda_Ak_vol = self._itk2np.GetArrayFromImage(Ak_vol_itk)
         residual = (nda_fixed - nda_Ak_vol).flatten()
 
@@ -475,21 +400,3 @@ class Registration(object):
             jacobian_spatial_Ak_vol_itk.DisconnectPipeline()
 
             return jacobian_spatial_Ak_vol_itk
-
-    ##
-    # Compute squared ell^2 norm of residual, i.e. compute residual of data fit
-    # \f$ \Vert \vec{y}_k - A_k(\theta)\vec{x}
-    # \f$
-    # \date       2016-08-03 00:43:29+0100
-    #
-    # \param[in]  self        The object
-    # \param[in]  parameters  The parameters containing 6 DOF for rigid trafo
-    #
-    # \return     ell^2-residual of data fit.
-    #
-    def _get_residual_ell2(self, parameters):
-
-        # Get y_k - A_k(theta)x as 1D array
-        residual_data_fit = self._get_residual_data_fit(parameters)
-
-        return np.sum(residual_data_fit**2)

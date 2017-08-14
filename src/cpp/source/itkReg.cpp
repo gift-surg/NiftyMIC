@@ -62,7 +62,7 @@
 #include "itkOrientedGaussianInterpolateImageFunction.h"
 #include "readCommandLine.h"
 #include "MyException.h"
-#include "itkScaledTranslationEuler3DTransform.h"
+// #include "itkScaledTranslationEuler3DTransform.h"
 
 // Global variables
 const unsigned int Dimension = 3;
@@ -75,9 +75,9 @@ typedef itk::ImageMaskSpatialObject< Dimension > MaskType;
 
 // Transform Types
 typedef itk::AffineTransform< PixelType, Dimension > AffineTransformType;
-typedef itk::ScaledTranslationEuler3DTransform< PixelType > ScaledTranslationEulerTransformType;
-// typedef ScaledTranslationEulerTransformType EulerTransformType;
 typedef itk::Euler3DTransform< PixelType > EulerTransformType;
+// typedef itk::ScaledTranslationEuler3DTransform< PixelType > ScaledTranslationEulerTransformType;
+// typedef ScaledTranslationEulerTransformType EulerTransformType;
 
 // Optimizer Types
 typedef itk::RegularStepGradientDescentOptimizerv4< PixelType > RegularStepGradientDescentOptimizerType;
@@ -231,9 +231,19 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     MaskImageType3D::Pointer fixedMask;
     MaskImageType3D::Pointer movingMask;
 
-    const unsigned int numberOfLevels = 1;
+    const unsigned int numberOfLevels = 3;
     typename RegistrationType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
     typename RegistrationType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
+    shrinkFactorsPerLevel.SetSize( numberOfLevels );
+    shrinkFactorsPerLevel[0] = 4;
+    shrinkFactorsPerLevel[1] = 2;
+    shrinkFactorsPerLevel[2] = 1;
+
+    smoothingSigmasPerLevel.SetSize( numberOfLevels );
+    smoothingSigmasPerLevel[0] = 2;
+    smoothingSigmasPerLevel[1] = 1;
+    smoothingSigmasPerLevel[2] = 0;
+
 
     //***Read input data of command line
     const std::string sFixed = input[0];
@@ -260,7 +270,6 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const std::string sVerbose = input[19]; //TODO: change to bVerbose directly
     const bool bVerbose = std::stoi(sVerbose);
     const double dANTSrad = std::stod(input[20]);
-    const double dTranslationScale = std::stod(input[21]);
 
     // Helper to turn on/off verbose output
     std::stringstream ss;
@@ -312,13 +321,13 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     registration->InPlaceOn();
     // registration->GetInitialTransform()->Print(std::cout);
 
-    // Set scale for translation if itkScaledTranslationEuler3DTransform
-    ScaledTranslationEulerTransformType::Pointer scaledTranslationTransform = dynamic_cast< ScaledTranslationEulerTransformType* >(registration->GetModifiableTransform());
-    if ( scaledTranslationTransform.IsNotNull() ) {
-        scaledTranslationTransform->SetTranslationScale( dTranslationScale );
-        ss.str(""); ss << "TranslationScale: " << scaledTranslationTransform->GetTranslationScale();
-        MyITKImageHelper::printInfo(ss.str(), bDebug);
-    }
+    // // Set scale for translation if itkScaledTranslationEuler3DTransform
+    // ScaledTranslationEulerTransformType::Pointer scaledTranslationTransform = dynamic_cast< ScaledTranslationEulerTransformType* >(registration->GetModifiableTransform());
+    // if ( scaledTranslationTransform.IsNotNull() ) {
+    //     scaledTranslationTransform->SetTranslationScale( dTranslationScale );
+    //     ss.str(""); ss << "TranslationScale: " << scaledTranslationTransform->GetTranslationScale();
+    //     MyITKImageHelper::printInfo(ss.str(), bDebug);
+    // }
 
     // Read masks
     if(!sFixedMask.empty()){
@@ -347,29 +356,28 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // }
     
     // Multi-resolution framework
-    // if (std::stoi(sUseMultiresolution)) {
-    if (1) {
+    if (std::stoi(sUseMultiresolution)) {
         bUseMultiresolution = true;
         ss.str(""); ss << "Multiresolution framework used";
         MyITKImageHelper::printInfo(ss.str(), bDebug);
-        
-        shrinkFactorsPerLevel.SetSize( numberOfLevels );
-        shrinkFactorsPerLevel[0] = 1;
-        // shrinkFactorsPerLevel[0] = 4;
-        // shrinkFactorsPerLevel[1] = 2;
-        // shrinkFactorsPerLevel[2] = 1;
-
-        smoothingSigmasPerLevel.SetSize( numberOfLevels );
-        smoothingSigmasPerLevel[0] = 0;
-        // smoothingSigmasPerLevel[0] = 2;
-        // smoothingSigmasPerLevel[1] = 1;
-        // smoothingSigmasPerLevel[2] = 0;
 
         registration->SetNumberOfLevels ( numberOfLevels );
         registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
         registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
         registration->SetSmoothingSigmasAreSpecifiedInPhysicalUnits( true );
-    }   
+    }
+    // Multi-resolution framework is used by default! Update to not use it
+    else{
+        shrinkFactorsPerLevel.SetSize( 1 );
+        shrinkFactorsPerLevel[0] = 1;
+        smoothingSigmasPerLevel.SetSize( 1 );
+        smoothingSigmasPerLevel[0] = 0;
+
+        registration->SetNumberOfLevels ( 1 );
+        registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
+        registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
+        registration->SetSmoothingSigmasAreSpecifiedInPhysicalUnits( true );
+    }
 
 
     // typename MetricType::MeasureType valueReturn;
@@ -418,8 +426,8 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     // std::cout << sBar;
 
     // Set metric
-    metric->SetFixedInterpolator(  interpolator  );
-    // metric->SetMovingInterpolator(  interpolator->Clone()  );
+    metric->SetMovingInterpolator(  interpolator  );
+    // metric->SetFixedInterpolator(  interpolator->Clone()  );
     
     // std::cout<<"metric->GetUseMovingImageGradientFilter() = " << (metric->GetUseMovingImageGradientFilter()?"True":"False") <<std::endl;
     // std::cout<<"metric->GetMovingImageGradientFilter() = ";
@@ -444,14 +452,13 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     RegularStepGradientDescentOptimizerType::Pointer optimizerRegularStep = dynamic_cast<RegularStepGradientDescentOptimizerType* > (optimizer.GetPointer());
     if ( optimizerRegularStep.IsNotNull() ){
         optimizerRegularStep->SetScalesEstimator( scalesEstimator );
-        // optimizerRegularStep->SetMinimumStepLength( 1e-6 );
-        // optimizerRegularStep->SetGradientMagnitudeTolerance( 1e-4 );
-        // optimizerRegularStep->SetMaximumStepLength( 0.1 ); // If this is set too high, you will get a
-        // "itk::ERROR: MeanSquaresImageToImageMetric(0xa27ce70): Too many samples map outside moving image buffer: 1818 / 10000" error
+        optimizerRegularStep->SetLearningRate(1);
+        optimizerRegularStep->SetMinimumStepLength( 1e-6 );
         optimizerRegularStep->SetNumberOfIterations( 500 );
-        // optimizerRegularStep->SetMinimumConvergenceValue( 1e-6 );
-        optimizerRegularStep->SetDoEstimateLearningRateOnce( true );
-        // optimizerRegularStep->SetLearningRate(1);
+        optimizerRegularStep->SetRelaxationFactor( 0.5 );
+        optimizerRegularStep->SetGradientMagnitudeTolerance( 1e-6 );
+        optimizerRegularStep->SetDoEstimateLearningRateOnce( false );
+        optimizerRegularStep->SetMaximumStepSizeInPhysicalUnits( 0.0 );
         ss.str(""); ss << "Optimizer: RegularStepGradientDescentOptimizerv4";
         MyITKImageHelper::printInfo(ss.str(), bDebug);
 
@@ -527,7 +534,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         optimizer->AddObserver( itk::IterationEvent(), observer );
     }
 
-    // Debug:
+    // Debug
     // registration->Print(std::cout);
     // registration->GetOptimizer()->Print(std::cout);
     // registration->GetMetric()->Print(std::cout);
@@ -645,6 +652,8 @@ int main(int argc, char** argv)
         // const bool bDebug = false;
         std::stringstream ss;
 
+        ss.str(""); ss << "Registration: CppITK";
+        MyITKImageHelper::printInfo(ss.str(), bDebug);
 
         // TODO: At the moment only rigid model is available
         switch ( std::stoi(sUseAffine) ){
@@ -1175,11 +1184,12 @@ int main(int argc, char** argv)
 
             // TODO: Same as above but replace EulerTransformType by AffineTransformType.
             // However, write test cases first!!!
-            // case 1:
-            //     ss.str(""); ss << "Affine registration used";
-            //     MyITKImageHelper::printInfo(ss.str(), bDebug);
-            //     RegistrationFunction<AffineTransformType, MeanSquaresMetricType >(input);
-            //     break;
+            case 1:
+                // ss.str(""); ss << "Affine registration used";
+                // MyITKImageHelper::printInfo(ss.str(), bDebug);
+                std::cerr << "Error: Affine registration not implemented yet." << "\n";
+                return EXIT_FAILURE;
+                break;
 
             default:
 

@@ -243,13 +243,12 @@ if __name__ == '__main__':
     if args.two_step_cycles > 0:
 
         registration = regsitk.RegistrationSimpleITK(
-        # registration = regwrapitk.RegistrationWrapITK(
             moving=HR_volume,
             use_fixed_mask=True,
-            # use_moving_mask=True,
+            use_moving_mask=True,
             use_verbose=args.verbose,
-            # interpolator="Linear",
-            # metric="Correlation",
+            interpolator="Linear",
+            metric="Correlation",
             # metric="MattesMutualInformation",  # Might cause error messages
             # like "Too many samples map outside moving image buffer."
             # use_multiresolution_framework=True,
@@ -262,24 +261,24 @@ if __name__ == '__main__':
             #     "learningRate": 1,
             #     "numberOfIterations": 100,
             # },
-            # optimizer="RegularStepGradientDescent",
-            # optimizer_params={
-            #     "minStep": 1e-6,
-            #     "numberOfIterations": 200,
-            #     "gradientMagnitudeTolerance": 1e-6,
-            #     "learningRate": 1,
-            # },
+            optimizer="RegularStepGradientDescent",
+            optimizer_params={
+                "minStep": 1e-6,
+                "numberOfIterations": 500,
+                "gradientMagnitudeTolerance": 1e-6,
+                "learningRate": 1,
+            },
         )
 
-        registration = regcppitk.RegistrationCppITK(
-            moving=HR_volume,
-            use_fixed_mask=True,
-            use_moving_mask=True,
-            use_verbose=args.verbose,
-            interpolator="Linear",
-            metric="Correlation",
-            # metric="MattesMutualInformation",  # Might cause error messages
-        )
+        # registration = regcppitk.RegistrationCppITK(
+        #     moving=HR_volume,
+        #     use_fixed_mask=True,
+        #     use_moving_mask=True,
+        #     use_verbose=args.verbose,
+        #     interpolator="Linear",
+        #     metric="Correlation",
+        #     # metric="MattesMutualInformation",  # Might cause error messages
+        # )
 
         alphas = np.linspace(args.alpha_first, args.alpha,
                              args.two_step_cycles + 1)

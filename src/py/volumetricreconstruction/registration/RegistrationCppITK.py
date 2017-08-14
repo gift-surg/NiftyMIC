@@ -58,7 +58,6 @@ class RegistrationCppITK(RegistrationSimpleITK):
                  use_multiresolution_framework=False,
                  use_verbose=False,
                  ANTSradius=20,
-                 translation_scale=1,
                  dir_tmp=os.path.join(DIR_TMP, "RegistrationCppITK"),
                  ):
 
@@ -88,7 +87,6 @@ class RegistrationCppITK(RegistrationSimpleITK):
         self._SCALES_ESTIMATORS = ["IndexShift", "PhysicalShift", "Jacobian"]
 
         self._ANTSradius = ANTSradius
-        self._translation_scale = translation_scale
 
         self._use_verbose = use_verbose
 
@@ -108,13 +106,6 @@ class RegistrationCppITK(RegistrationSimpleITK):
 
     def get_ANTSradius(self):
         return self._ANTSradius
-
-    # Set/Get translation scale used for itkScaledTranslationEuler3DTransform
-    def set_translation_scale(self, translation_scale):
-        self._translation_scale = translation_scale
-
-    def get_translation_scale(self):
-        return self._translation_scale
 
     ##
     #       Gets the parameters obtained by the registration.
@@ -202,7 +193,6 @@ class RegistrationCppITK(RegistrationSimpleITK):
         cmd += "--scalesEst " + self._scales_estimator + " "
         cmd += "--interpolator " + self._interpolator + " "
         cmd += "--ANTSrad " + str(self._ANTSradius) + " "
-        cmd += "--translationScale " + str(self._translation_scale) + " "
         cmd += "--verbose " + verbose + " "
 
         # Compute oriented Gaussian PSF if desired
@@ -212,7 +202,6 @@ class RegistrationCppITK(RegistrationSimpleITK):
                 self._fixed, self._moving).flatten()
             cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
-        # if self._use_verbose:
         ph.execute_command(cmd, verbose=0)
 
         # Read transformation file
@@ -231,7 +220,6 @@ class RegistrationCppITK(RegistrationSimpleITK):
         else:
             self._parameters_fixed = params_all[0:3]
             self._parameters = params_all[3:]
-            raise UserWarning("Parameters fixed etc not tested yet!!")
             self._registration_transform_sitk = sitk.AffineTransform(3)
             fixed_parameters = self._parameters_fixed
 
@@ -296,7 +284,7 @@ class RegistrationCppITK(RegistrationSimpleITK):
         cmd += "--scalesEst " + self._scales_estimator + " "
         cmd += "--interpolator " + self._interpolator + " "
         cmd += "--ANTSrad " + str(self._ANTSradius) + " "
-        cmd += "--translationScale " + str(self._translation_scale) + " "
+        # cmd += "--translationScale " + str(self._translation_scale) + " "
         cmd += "--verbose " + verbose + " "
 
         # Compute oriented Gaussian PSF if desired
@@ -471,8 +459,11 @@ class RegistrationCppITK(RegistrationSimpleITK):
             slice_sitk.SetSpacing(spacing_scaled)
             slice_sitk_mask.SetSpacing(spacing_scaled)
 
-            slice = sl.Slice.from_sitk_image(slice_sitk, dir_input=slices_stack[i].get_directory(), filename=slices_stack[
-                                             i].get_filename(), slice_number=slices_stack[i].get_slice_number(), slice_sitk_mask=slice_sitk_mask)
+            slice = sl.Slice.from_sitk_image(
+                slice_sitk,
+                filename=slices_stack[i].get_filename(),
+                slice_number=slices_stack[i].get_slice_number(),
+                slice_sitk_mask=slice_sitk_mask)
             slice.update_motion_correction(rigid_sitk)
 
             slices_stack_inplaneSimilar[i] = slice

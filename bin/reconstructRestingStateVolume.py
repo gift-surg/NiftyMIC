@@ -25,7 +25,7 @@ import volumetricreconstruction.base.Stack as st
 import volumetricreconstruction.preprocessing.DataPreprocessing as dp
 import volumetricreconstruction.preprocessing.N4BiasFieldCorrection as n4bfc
 import volumetricreconstruction.registration.RegistrationSimpleITK as regsitk
-import volumetricreconstruction.registration.RegistrationWrapITK as regitk
+import volumetricreconstruction.registration.RegistrationCppITK as regitk
 import volumetricreconstruction.registration.FLIRT as regflirt
 import volumetricreconstruction.registration.NiftyReg as regniftyreg
 import volumetricreconstruction.registration.SegmentationPropagation as segprop
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     segmentation_propagator = segprop.SegmentationPropagation(
         # registration_method=regniftyreg.RegAladin(use_verbose=args.verbose),
         # registration_method=regsitk.RegistrationSimpleITK(use_verbose=args.verbose),
-        # registration_method=regitk.RegistrationWrapITK(use_verbose=args.verbose),
+        # registration_method=regitk.RegistrationCppITK(use_verbose=args.verbose),
         dilation_radius=args.dilation_radius,
         dilation_kernel="Ball",
     )

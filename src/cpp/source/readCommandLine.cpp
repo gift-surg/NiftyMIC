@@ -85,9 +85,6 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     ("ANTSrad", po::value< std::vector<std::string> >(), 
         "specify radius used for ANTSNeighborhoodCorrelation (default=20), \n"
         "e.g. \"--ANTSrad 30\"")
-    ("translationScale", po::value< std::vector<std::string> >(), 
-        "specify scale used for translation (default=1), \n"
-        "e.g. \"--translationScale 10\"")
     // ("optimizer", po::value< std::vector<std::string> >(), 
     //     "specify optimizer (default: RegularStepGradientDescent), \n"
     //     "e.g. \"--optimizer RegularStepGradientDescent\"")
@@ -285,19 +282,6 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
         sANTSrad = "20";
     }
 
-    if (vm.count("translationScale")) {
-        if ( bVerbose ) {
-            std::cout << "chosen scale for translation is " 
-                << vm["translationScale"].as< std::vector<std::string> >()[0] << std::endl;  
-        }
-        sTranslationScale = vm["translationScale"].as< std::vector<std::string> >()[0];
-    }
-    // radius by default
-    else {
-        sTranslationScale = "1";
-    }
-
-
     if ( bVerbose ) {
         std::cout << sBar;
     }
@@ -327,7 +311,6 @@ std::vector<std::string> readCommandLine(int argc, char** argv){
     sInput.push_back(sScalesEstimator);
     sInput.push_back(sVerbose);
     sInput.push_back(sANTSrad);
-    sInput.push_back(sTranslationScale);
 
 
     return sInput;

@@ -79,7 +79,7 @@ class RegistrationPipeline(Pipeline):
     # \param      stacks               List of Stack objects
     # \param      reference            Reference as Stack object
     # \param      registration_method  Registration method, e.g.
-    #                                  RegistrationWrapITK
+    #                                  RegistrationCppITK
     #
     def __init__(self, verbose, stacks, reference, registration_method):
 
@@ -158,7 +158,7 @@ class SliceToVolumeRegistration(RegistrationPipeline):
     # \param      stacks               The stacks
     # \param      reference            The reference
     # \param      registration_method  Registration method, e.g.
-    #                                  RegistrationWrapITK
+    #                                  RegistrationCppITK
     # \param      verbose              The verbose
     # \param      print_prefix         Print at each iteration at the
     #                                  beginning, string
@@ -224,7 +224,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(RegistrationPipeline):
     # \param      stacks                 The stacks
     # \param      reference              The reference
     # \param      registration_method    Registration method, e.g.
-    #                                    RegistrationWrapITK
+    #                                    RegistrationCppITK
     # \param      reconstruction_method  Reconstruction method, e.g. TK1
     # \param      alphas                 Specify regularization parameter used
     #                                    for each individual cycle, list or

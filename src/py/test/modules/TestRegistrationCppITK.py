@@ -32,7 +32,7 @@ class TestRegistrationCppITK(unittest.TestCase):
     # Specify input data
     dir_test_data = DIR_TEST
 
-    accuracy = 1
+    accuracy = 2
 
     def setUp(self):
         # print(os.listdir(self.dir_test_data))
@@ -41,7 +41,7 @@ class TestRegistrationCppITK(unittest.TestCase):
     def test_inplane3Dsimilarity_registration(self):
 
         # Define parameters to corrupt image
-        scale = 0.9
+        scale = 0.5
         angleX, angleY, angleZ = (0.1, -0.1, 0.05)
         translation = (1, -5, 4)
 
@@ -84,6 +84,7 @@ class TestRegistrationCppITK(unittest.TestCase):
         registration.set_metric("MeanSquares")
         registration.set_scales_estimator("PhysicalShift")
         registration.use_fixed_mask(True)
+        registration.use_multiresolution_framework(True)
         # registration.use_verbose(True)
         registration.run_registration()
 
