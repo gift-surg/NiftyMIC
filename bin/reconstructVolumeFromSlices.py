@@ -31,8 +31,8 @@ from volumetricreconstruction.utilities.InputArparser import InputArgparser
 
 if __name__ == '__main__':
 
-    run_ADMM = 1
-    run_PrimalDual = 1
+    run_ADMM = 0
+    run_PrimalDual = 0
 
     alpha_ADMM = 0.1
     iter_max_ADMM = 5
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     input_parser.add_reg_type(default="TK1")
     input_parser.add_data_loss(default="linear")
     input_parser.add_alpha(default=0.01)
-    input_parser.add_isotropic_resolution(default=1)
+    input_parser.add_isotropic_resolution(default=None)
     input_parser.add_iter_max(default=10)
     input_parser.add_rho(default=0.5)
     input_parser.add_admm_iterations(default=10)

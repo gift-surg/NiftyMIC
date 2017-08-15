@@ -254,7 +254,9 @@ class Slice:
     #  obtained in the course of the registration/reconstruction process
     #  \return list of sitk.AffineTransform and sitk.Euler3DTransform objects
     def get_registration_history(self):
-        return self._history_affine_transforms, self._history_motion_corrections
+        affine_transforms = list(self._history_affine_transforms)
+        motion_corrections = list(self._history_motion_corrections)
+        return affine_transforms, motion_corrections
 
     # Display slice with external viewer (ITK-Snap)
     #  \param[in] show_segmentation display slice with or without associated segmentation (default=0)

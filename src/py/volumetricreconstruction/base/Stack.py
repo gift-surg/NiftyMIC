@@ -136,6 +136,7 @@ class Stack:
                              dir_input,
                              prefix_stack,
                              suffix_mask=None,
+                             dic_slice_filenames=None,
                              prefix_slice="_slice"):
 
         stack = cls()
@@ -166,21 +167,38 @@ class Stack:
             stack._is_unity_mask = True
 
         # Get slices
-        stack._N_slices = stack.sitk.GetDepth()
-        stack._slices = [None] * stack._N_slices
+        if dic_slice_filenames is None:
+            stack._N_slices = stack.sitk.GetDepth()
+            stack._slices = [None] * stack._N_slices
 
-        # Append slices as Slice objects
-        for i in range(0, stack._N_slices):
-            path_to_slice = os.path.join(
-                dir_input,
-                prefix_stack + prefix_slice + str(i) + ".nii.gz")
-            path_to_slice_mask = os.path.join(
-                dir_input,
-                prefix_stack + prefix_slice + str(i) + suffix_mask + ".nii.gz")
-            stack._slices[i] = sl.Slice.from_filename(
-                file_path=path_to_slice,
-                slice_number=i,
-                file_path_mask=path_to_slice_mask)
+            # Append slices as Slice objects
+            for i in range(0, stack._N_slices):
+                path_to_slice = os.path.join(
+                    dir_input,
+                    prefix_stack + prefix_slice + str(i) + ".nii.gz")
+                path_to_slice_mask = os.path.join(
+                    dir_input,
+                    prefix_stack + prefix_slice + str(i) + suffix_mask + ".nii.gz")
+                stack._slices[i] = sl.Slice.from_filename(
+                    file_path=path_to_slice,
+                    slice_number=i,
+                    file_path_mask=path_to_slice_mask)
+        
+        else:
+            slice_numbers = sorted(dic_slice_filenames.keys())
+            stack._N_slices = len(slice_numbers)
+            stack._slices = [None] * stack._N_slices
+
+            for i, slice_number in enumerate(slice_numbers):
+                path_to_slice = os.path.join(
+                    dir_input,
+                    dic_slice_filenames[slice_number] + ".nii.gz")
+                path_to_slice_mask = os.path.join(
+                    dir_input, dic_slice_filenames[slice_number] + suffix_mask + ".nii.gz")
+                stack._slices[i] = sl.Slice.from_filename(
+                    file_path=path_to_slice,
+                    slice_number=slice_number,
+                    file_path_mask=path_to_slice_mask)
 
         return stack
 
@@ -286,7 +304,7 @@ class Stack:
         # Extract all slices and their masks from the stack and store them if
         # given
         if stack_to_copy.get_slices() is not None:
-            stack._N_slices = stack_to_copy.sitk.GetSize()[-1]
+            stack._N_slices = stack_to_copy.get_number_of_slices()
             stack._slices = [None]*stack._N_slices
             slices_to_copy = stack_to_copy.get_slices()
 
@@ -419,8 +437,8 @@ class Stack:
 
                 # Write slices
                 else:
-                    for i in xrange(0, self._N_slices):
-                        self._slices[i].write(
+                    for slice in self.get_slices():
+                        slice.write(
                             directory=directory,
                             filename=filename,
                             write_transform=write_transforms,
@@ -902,6 +920,9 @@ class Stack:
         [x_range, y_range, z_range] = self._get_rectangular_masked_region(
             self.sitk_mask)
 
+        if x_range is None:
+            return None
+
         # Crop to image region defined by rectangular mask
         stack_crop_sitk = self._crop_image_to_region(
             self.sitk, x_range, y_range, z_range)
@@ -921,6 +942,10 @@ class Stack:
 
         return stack
 
+    def eliminate_slice(self, index):
+        self._slices.pop(index)
+        self._N_slices -= 1
+
     # Return rectangular region surrounding masked region.
     #  \param[in] mask_sitk sitk.Image representing the mask
     #  \return range_x pair defining x interval of mask in voxel space
@@ -932,6 +957,10 @@ class Stack:
 
         # Get mask array
         nda = sitk.GetArrayFromImage(mask_sitk)
+
+        # Return in case no masked pixel available
+        if np.sum(abs(nda)) == 0:
+            return None, None, None
 
         # Get shape defining the dimension in each direction
         shape = nda.shape

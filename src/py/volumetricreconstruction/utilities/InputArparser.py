@@ -81,6 +81,35 @@ class InputArgparser(object):
         nargs="+",
         help="Filenames.",
         default="",
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_label(
+        self,
+        option_string="--label",
+        type=str,
+        help="Label for image given by filename.",
+        required=False,
+        default=None,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_labels(
+        self,
+        option_string="--labels",
+        nargs="+",
+        help="Labels for images given by filenames.",
+        default="",
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_reference(
+        self,
+        option_string="--reference",
+        type=str,
+        help="Path to reference image NIfTI file (.nii or .nii.gz).",
+        required=False,
     ):
         self._add_argument(dict(locals()))
 
@@ -342,6 +371,15 @@ class InputArgparser(object):
         type=int,
         help="Turn on/off verbose output.",
         default=1,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_psf_aware(
+        self,
+        option_string='--psf-aware',
+        type=int,
+        help="Turn on/off use of PSF-aware registration.",
+        default=0,
     ):
         self._add_argument(dict(locals()))
 

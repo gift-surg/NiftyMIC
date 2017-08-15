@@ -39,9 +39,7 @@ class DataPreprocessing:
     # \param      use_intensity_correction  Use linear intensity correction
     # \param      segmentation_propagator   None or SegmentationPropagation
     #                                       instance
-    # \param      target_stack_index        Index of template stack. Template
-    #                                       stack will be put on first position
-    #                                       of Stack list after preprocessing
+    # \param      target_stack_index        Index of template stack.
     # \param      use_cropping_to_mask      The use crop to mask
     # \param      boundary_i                added value to first coordinate
     #                                       (can also be negative)

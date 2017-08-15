@@ -266,8 +266,24 @@ class ImageSlicesDirectoryReader(DataReader):
 
         self._stacks = [None] * len(filenames)
         for i, filename in enumerate(filenames):
+
+            # Get slice names associated to stack
+            pattern = "(" + filenames[i] + self._prefix_slice + \
+                ")([0-9]+)[.]" + REGEX_FILENAME_EXTENSIONS
+            p = re.compile(pattern)
+
+            # Dictionary linking slice number with filename (without extension)
+            dic_slice_filenames = {
+                int(p.match(f).group(2)): p.match(f).group(1) + p.match(f).group(2)
+                for f in os.listdir(abs_path_to_directory) if p.match(f)
+            }
+
+            # Build stack from image and its found slices
             self._stacks[i] = st.Stack.from_slice_filenames(
-                self._path_to_directory, filename, self._suffix_mask)
+                dir_input=self._path_to_directory,
+                prefix_stack=filename,
+                suffix_mask=self._suffix_mask,
+                dic_slice_filenames=dic_slice_filenames)
 
 
 ##
@@ -290,7 +306,7 @@ class MultiComponentImageReader(DataReader):
         vector_image_sitk_mask = sitkh.read_sitk_vector_image(
             self._path_to_image_mask,
             dtype=np.uint8,
-            )
+        )
 
         N_components = vector_image_sitk.GetNumberOfComponentsPerPixel()
 

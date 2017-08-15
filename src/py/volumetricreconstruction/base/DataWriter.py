@@ -37,13 +37,15 @@ class MultipleStacksWriter(DataWriter):
                  directory,
                  write_mask=False,
                  write_slices=False,
-                 write_transforms=False):
+                 write_transforms=False,
+                 suffix_mask="_mask"):
 
         DataWriter.__init__(self, stacks=stacks)
         self._directory = directory
         self._write_mask = write_mask
         self._write_slices = write_slices
         self._write_transforms = write_transforms
+        self._suffix_mask = suffix_mask
 
     def set_directory(self, directory):
         self._directory = directory
@@ -53,7 +55,8 @@ class MultipleStacksWriter(DataWriter):
             stack.write(self._directory,
                         write_mask=self._write_mask,
                         write_slices=self._write_slices,
-                        write_transforms=self._write_transforms)
+                        write_transforms=self._write_transforms,
+                        suffix_mask=self._suffix_mask)
 
 
 class MultiComponentImageWriter(DataWriter):
