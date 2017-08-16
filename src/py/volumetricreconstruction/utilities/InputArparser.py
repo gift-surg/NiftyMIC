@@ -109,6 +109,16 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_image_selection(
+        self,
+        option_string="--image-selection",
+        nargs="+",
+        help="Specify image filenames without filename extension which will "
+        "be used only. ",
+        default=None,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_reference(
         self,
         option_string="--reference",
@@ -169,6 +179,17 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_two_step_cycles(
+        self,
+        option_string="--two-step-cycles",
+        type=int,
+        help="Number of two-step-cycles, i.e. number of "
+        "Slice-to-Volume Registration and Super-Resolution Reconstruction "
+        "cycles",
+        default=3,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_sigma(
         self,
         option_string="--sigma",
@@ -176,6 +197,19 @@ class InputArgparser(object):
         help="Standard deviation for Scattered Data Approximation approach "
         "to reconstruct first estimate of HR volume from all 3D input stacks.",
         default=0.9,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_minimizer(
+        self,
+        option_string="--minimizer",
+        type=str,
+        help="Coice of minimizer used for the inverse problem associated to "
+        "the SRR. Possible choices are 'lsmr' or any solver in "
+        "scipy.optimize.minimize like 'L-BFGS-B'. Note, in case of a chosen "
+        "non-linear data loss only non-linear solvers like 'L-BFGS-B' are "
+        "viable.",
+        default="lsmr",
     ):
         self._add_argument(dict(locals()))
 
@@ -239,43 +273,27 @@ class InputArgparser(object):
         self,
         option_string="--rho",
         type=float,
-        help="Regularization parameter for augmented Lagrangian term for ADMM "
-        "to solve the SR reconstruction problem in case TV regularization is "
-        "chosen.",
+        help="Regularization parameter for augmented Lagrangian term for "
+        "TV regularization by ADMM.",
         default=0.5,
     ):
         self._add_argument(dict(locals()))
 
-    def add_admm_iterations(
+    def add_iterations(
         self,
-        option_string="--admm-iterations",
+        option_string="--iterations",
         type=int,
-        help="Number of ADMM iterations.",
+        help="Number of ADMM/Primal Dual iterations.",
         default=10,
     ):
         self._add_argument(dict(locals()))
 
-    def add_minimizer(
+    def add_tv_solver(
         self,
-        option_string="--minimizer",
+        option_string="--tv-solver",
         type=str,
-        help="Coice of minimizer used for the inverse problem associated to "
-        "the SRR. Possible choices are 'lsmr' or any solver in "
-        "scipy.optimize.minimize like 'L-BFGS-B'. Note, in case of a chosen "
-        "non-linear data loss only non-linear solvers like 'L-BFGS-B' are "
-        "viable.",
-        default="lsmr",
-    ):
-        self._add_argument(dict(locals()))
-
-    def add_two_step_cycles(
-        self,
-        option_string="--two-step-cycles",
-        type=int,
-        help="Number of two-step-cycles, i.e. number of "
-        "Slice-to-Volume Registration and Super-Resolution Reconstruction "
-        "cycles",
-        default=3,
+        help="Type of TV solver. Either 'ADMM' or 'PD'.",
+        default="PD",
     ):
         self._add_argument(dict(locals()))
 
@@ -287,6 +305,18 @@ class InputArgparser(object):
         "Possible choices are 'linear', 'soft_l1, 'huber', 'arctan' and "
         "'cauchy'.",
         default="linear",
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_pd_alg_type(
+            self,
+            option_string="-pd_alg_type",
+            type=str,
+            help="Algorithm used to dynamically update parameters for each "
+            "iteration of the dual algorithm. "
+            "Possible choices are 'ALG2', 'ALG2_AHMOD' and 'ALG3' as "
+            "described in Chambolle et al., 2011",
+            default="ALG2",
     ):
         self._add_argument(dict(locals()))
 

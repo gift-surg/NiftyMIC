@@ -76,7 +76,7 @@ class MultiComponentImageWriter(DataWriter):
         self._filename = filename
 
     def write_data(self):
-        
+
         if self._filename is None:
             raise ValueError("Filename is not set")
 

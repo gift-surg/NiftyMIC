@@ -232,6 +232,7 @@ class ImageSlicesDirectoryReader(DataReader):
     #
     def __init__(self,
                  path_to_directory,
+                 image_selection=None,
                  suffix_mask="_mask",
                  prefix_slice="_slice"):
 
@@ -240,6 +241,7 @@ class ImageSlicesDirectoryReader(DataReader):
         self._path_to_directory = path_to_directory
         self._suffix_mask = suffix_mask
         self._prefix_slice = prefix_slice
+        self._image_selection = image_selection
 
     def read_data(self):
 
@@ -263,6 +265,11 @@ class ImageSlicesDirectoryReader(DataReader):
         # Filenames without filename ending as sorted list
         filenames = natsort.natsorted(
             dic_filenames.keys(), key=lambda y: y.lower())
+
+        # Reduce filenames to be read to selection only
+        if self._image_selection is not None:
+            image_selection = self._image_selection.split(" ")
+            filenames = [f for f in image_selection if f in filenames]
 
         self._stacks = [None] * len(filenames)
         for i, filename in enumerate(filenames):

@@ -31,17 +31,6 @@ from volumetricreconstruction.utilities.InputArparser import InputArgparser
 
 if __name__ == '__main__':
 
-    run_ADMM = 0
-    run_PrimalDual = 0
-
-    alpha_ADMM = 0.1
-    iter_max_ADMM = 5
-    iterations_ADMM = 20
-
-    alpha_PD = 0.1
-    iter_max_PD = 5
-    iterations_PD = 20
-
     time_start = ph.start_timing()
 
     # Set print options for numpy
@@ -59,25 +48,26 @@ if __name__ == '__main__':
         "can substantially reduce the computational time.",
         prog="python " + os.path.basename(__file__),
     )
-    input_parser.add_dir_input()
+    input_parser.add_dir_input(required=True)
+    input_parser.add_image_selection(default=[None])
     input_parser.add_dir_output(default="results/")
     input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_prefix_output(default="_SRR")
     input_parser.add_target_stack_index(default=0)
     input_parser.add_extra_frame_target(default=10)
+    input_parser.add_isotropic_resolution(default=None)
     input_parser.add_reconstruction_space(default=None)
+    input_parser.add_minimizer(default="lsmr")
+    input_parser.add_iter_max(default=10)
     input_parser.add_reg_type(default="TK1")
     input_parser.add_data_loss(default="linear")
     input_parser.add_alpha(default=0.01)
-    input_parser.add_isotropic_resolution(default=None)
-    input_parser.add_iter_max(default=10)
     input_parser.add_rho(default=0.5)
-    input_parser.add_admm_iterations(default=10)
-    input_parser.add_minimizer(default="lsmr")
+    input_parser.add_tv_solver(default="PD")
+    input_parser.add_pd_alg_type(default="ALG2")
+    input_parser.add_iterations(default=10)
     input_parser.add_provide_comparison(default=1)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_verbose(default=1)
-
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
@@ -95,7 +85,9 @@ if __name__ == '__main__':
     ph.print_title("Read Data")
 
     data_reader = dr.ImageSlicesDirectoryReader(
-        args.dir_input, suffix_mask=args.suffix_mask)
+        path_to_directory=args.dir_input,
+        suffix_mask=args.suffix_mask,
+        image_selection=args.image_selection[0])
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
@@ -138,60 +130,47 @@ if __name__ == '__main__':
         recons.append(stacks[i])
     recons.insert(0, recon)
 
-    if args.verbose:
-        sitkh.show_stacks(recons)
+    if args.reg_type == "TV" and args.tv_solver == "ADMM":
+        SRR = admm.ADMMSolver(
+            stacks=stacks,
+            reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+            minimizer=args.minimizer,
+            alpha=args.alpha,
+            iter_max=args.iter_max,
+            rho=args.rho,
+            data_loss=args.data_loss,
+            iterations=args.iterations,
+            verbose=args.verbose,
+        )
+        SRR.run_reconstruction()
+        SRR.print_statistics()
+        recon = SRR.get_reconstruction()
+        recon.set_filename(SRR.get_setting_specific_filename())
+        recons.insert(0, recon)
 
-    # for alpha in [0.5, 1, 2, 5, 10]:
-    for alpha in [0.01]:
-        if run_ADMM:
-            SRR = admm.ADMMSolver(
-                stacks=stacks,
-                reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
-                minimizer=args.minimizer,
-                alpha=alpha,
-                iter_max=iter_max_ADMM,
-                # iter_max=args.iter_max,
-                rho=args.rho,
-                # data_loss=args.data_loss,
-                # iterations=args.ADMM_iterations,
-                iterations=iterations_ADMM,
-                verbose=args.verbose,
-            )
-            SRR.run_reconstruction()
-            SRR.print_statistics()
-            recon = SRR.get_reconstruction()
-            recon.set_filename(SRR.get_setting_specific_filename())
-            recons.insert(0, recon)
+        recon.write(args.dir_output)
 
-            recon.write(args.dir_output)
+    elif args.reg_type in ["TV", "huber"] and args.tv_solver == "PD":
 
-            if args.verbose:
-                sitkh.show_stacks(recons)
+        SRR = pd.PrimalDualSolver(
+            stacks=stacks,
+            reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+            minimizer=args.minimizer,
+            alpha=args.alpha,
+            iter_max=args.iter_max,
+            iterations=args.iterations,
+            alg_type=args.pd_alg_type,
+            reg_type=args.reg_type,
+            data_loss=args.data_loss,
+            verbose=args.verbose,
+        )
+        SRR.run_reconstruction()
+        SRR.print_statistics()
+        recon = SRR.get_reconstruction()
+        recon.set_filename(SRR.get_setting_specific_filename())
+        recons.insert(0, recon)
 
-        if run_PrimalDual:
-            SRR = pd.PrimalDualSolver(
-                stacks=stacks,
-                reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
-                minimizer=args.minimizer,
-                alpha=alpha,
-                iter_max=iter_max_PD,
-                iterations=iterations_PD,
-                # alg_type="AHMOD",
-                # reg_type="TV",
-                # reg_type="huber",
-                data_loss=args.data_loss,
-                verbose=args.verbose,
-            )
-            SRR.run_reconstruction()
-            SRR.print_statistics()
-            recon = SRR.get_reconstruction()
-            recon.set_filename(SRR.get_setting_specific_filename())
-            recons.insert(0, recon)
-
-            recon.write(args.dir_output)
-
-            if args.verbose:
-                sitkh.show_stacks(recons)
+        recon.write(args.dir_output)
 
     if args.verbose and not args.provide_comparison:
         sitkh.show_stacks(recons)

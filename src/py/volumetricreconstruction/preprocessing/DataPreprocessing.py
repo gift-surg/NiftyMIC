@@ -77,9 +77,7 @@ class DataPreprocessing:
         self._N_stacks = len(stacks)
 
         # Use stacks provided
-        self._stacks = [None] * self._N_stacks
-        for i in range(0, self._N_stacks):
-            self._stacks[i] = st.Stack.from_stack(stacks[i])
+        self._stacks = [st.Stack.from_stack(s) for s in stacks]
 
         ph.print_info(
             "%s stacks were loaded for data preprocessing." % (self._N_stacks))

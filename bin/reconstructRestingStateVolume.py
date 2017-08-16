@@ -83,7 +83,7 @@ if __name__ == '__main__':
     input_parser.add_verbose(default=1)
     input_parser.add_two_step_cycles(default=1)
     input_parser.add_rho(default=0.5)
-    input_parser.add_admm_iterations(default=10)
+    input_parser.add_iterations(default=10)
     input_parser.add_stack_recon_range(default=15)
 
     args = input_parser.parse_args()
