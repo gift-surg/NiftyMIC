@@ -12,6 +12,11 @@ import argparse
 import pythonhelper.PythonHelper as ph
 import inspect
 
+from volumetricreconstruction.definitions import ALLOWED_EXTENSIONS
+
+# Allowed image types
+IMAGE_TYPES = "(" + (", or ").join(ALLOWED_EXTENSIONS) + ")"
+
 
 ##
 # Class holding a collection of possible arguments to parse for scripts
@@ -51,7 +56,7 @@ class InputArgparser(object):
         self,
         option_string="--filename",
         type=str,
-        help="Path to NIfTI file (.nii or .nii.gz).",
+        help="Path to NIfTI file %s." % (IMAGE_TYPES),
         required=True,
     ):
         self._add_argument(dict(locals()))
@@ -60,7 +65,7 @@ class InputArgparser(object):
         self,
         option_string="--filename-mask",
         type=str,
-        help="Path to NIfTI file mask (.nii or .nii.gz).",
+        help="Path to NIfTI file mask %s." % (IMAGE_TYPES),
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -69,7 +74,7 @@ class InputArgparser(object):
         self,
         option_string="--dir-input",
         type=str,
-        help="Input directory with NIfTI files (.nii or .nii.gz).",
+        help="Input directory with NIfTI files %s." % (IMAGE_TYPES),
         required=False,
         default=None,
     ):
@@ -108,7 +113,7 @@ class InputArgparser(object):
         self,
         option_string="--reference",
         type=str,
-        help="Path to reference image NIfTI file (.nii or .nii.gz).",
+        help="Path to reference image NIfTI file %s." % (IMAGE_TYPES),
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -151,6 +156,16 @@ class InputArgparser(object):
         help="Index according to alphabetical order of stacks (images) "
         "which defines physical space for SRR. First index is 0.",
         default=0,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_reconstruction_space(
+        self,
+        option_string="--reconstruction-space",
+        type=str,
+        help="Path to NIfTI file %s which defines the physical space "
+        "for the volumetric reconstruction/SRR." % (IMAGE_TYPES),
+        default=None,
     ):
         self._add_argument(dict(locals()))
 

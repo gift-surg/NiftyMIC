@@ -64,6 +64,8 @@ if __name__ == '__main__':
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_prefix_output(default="_SRR")
     input_parser.add_target_stack_index(default=0)
+    input_parser.add_extra_frame_target(default=10)
+    input_parser.add_reconstruction_space(default=None)
     input_parser.add_reg_type(default="TK1")
     input_parser.add_data_loss(default="linear")
     input_parser.add_alpha(default=0.01)
@@ -72,7 +74,6 @@ if __name__ == '__main__':
     input_parser.add_rho(default=0.5)
     input_parser.add_admm_iterations(default=10)
     input_parser.add_minimizer(default="lsmr")
-    input_parser.add_extra_frame_target(default=10)
     input_parser.add_provide_comparison(default=1)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_verbose(default=1)
@@ -102,9 +103,17 @@ if __name__ == '__main__':
     # if args.verbose:
     #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 
-    recon0 = stacks[args.target_stack_index].get_isotropically_resampled_stack(
-        spacing_new_scalar=args.isotropic_resolution,
-        extra_frame=args.extra_frame_target)
+    if args.reconstruction_space is None:
+        recon0 = stacks[args.target_stack_index
+                        ].get_isotropically_resampled_stack(
+            spacing_new_scalar=args.isotropic_resolution,
+            extra_frame=args.extra_frame_target)
+    else:
+        recon0 = st.Stack.from_filename(args.reconstruction_space,
+                                        extract_slices=False)
+        # recon0 = recon0.get_isotropically_resampled_stack(
+        #     spacing_new_scalar=args.isotropic_resolution,
+        #     extra_frame=args.extra_frame_target)
 
     SRR0 = tk.TikhonovSolver(
         stacks=stacks,

@@ -122,11 +122,19 @@ class Stack:
     ##
     # Create Stack instance from stack slices in specified directory and add
     # corresponding mask.
-    # \param[in]  dir_input     string to input directory where bundle of
-    #                           slices are stored
-    # \param[in]  prefix_stack  prefix indicating the corresponding stack
-    # \param[in]  suffix_mask   extension of stack filename which indicates
-    #                           associated mask
+    # \date       2017-08-15 19:18:56+0100
+    #
+    # \param      cls                  The cls
+    # \param[in]  dir_input            string to input directory where bundle
+    #                                  of slices are stored
+    # \param[in]  prefix_stack         prefix indicating the corresponding
+    #                                  stack
+    # \param[in]  suffix_mask          extension of stack filename which
+    #                                  indicates associated mask
+    # \param      dic_slice_filenames  Dictionary linking slice number (int)
+    #                                  with filename (without extension)
+    # \param      prefix_slice         The prefix slice
+    #
     # \return     Stack object including its slices with corresponding masks
     # \example    mask (suffix_mask) of slice j of stack i (prefix_stack)
     # reads: i_slicej_mask.nii.gz
@@ -183,7 +191,7 @@ class Stack:
                     file_path=path_to_slice,
                     slice_number=i,
                     file_path_mask=path_to_slice_mask)
-        
+
         else:
             slice_numbers = sorted(dic_slice_filenames.keys())
             stack._N_slices = len(slice_numbers)
