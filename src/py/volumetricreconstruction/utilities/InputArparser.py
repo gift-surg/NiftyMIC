@@ -76,7 +76,6 @@ class InputArgparser(object):
         type=str,
         help="Input directory with NIfTI files %s." % (IMAGE_TYPES),
         required=False,
-        default=None,
     ):
         self._add_argument(dict(locals()))
 
@@ -85,7 +84,6 @@ class InputArgparser(object):
         option_string="--filenames",
         nargs="+",
         help="Filenames.",
-        default="",
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -96,7 +94,6 @@ class InputArgparser(object):
         type=str,
         help="Label for image given by filename.",
         required=False,
-        default=None,
     ):
         self._add_argument(dict(locals()))
 
@@ -105,7 +102,6 @@ class InputArgparser(object):
         option_string="--labels",
         nargs="+",
         help="Labels for images given by filenames.",
-        default="",
     ):
         self._add_argument(dict(locals()))
 
@@ -115,7 +111,6 @@ class InputArgparser(object):
         nargs="+",
         help="Specify image filenames without filename extension which will "
         "be used only. ",
-        default=None,
     ):
         self._add_argument(dict(locals()))
 

@@ -49,7 +49,7 @@ if __name__ == '__main__':
         prog="python " + os.path.basename(__file__),
     )
     input_parser.add_dir_input(required=True)
-    input_parser.add_image_selection(default=[None])
+    input_parser.add_image_selection()
     input_parser.add_dir_output(default="results/")
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
@@ -87,11 +87,11 @@ if __name__ == '__main__':
     data_reader = dr.ImageSlicesDirectoryReader(
         path_to_directory=args.dir_input,
         suffix_mask=args.suffix_mask,
-        image_selection=args.image_selection[0])
+        image_selection=args.image_selection)
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
-
+    
     # if args.verbose:
     #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 

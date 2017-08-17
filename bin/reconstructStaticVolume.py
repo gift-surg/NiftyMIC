@@ -31,6 +31,7 @@ import volumetricreconstruction.preprocessing.DataPreprocessing as dp
 import volumetricreconstruction.registration.SegmentationPropagation as segprop
 import volumetricreconstruction.reconstruction.solver.TikhonovSolver as tk
 from volumetricreconstruction.utilities.InputArparser import InputArgparser
+import volumetricreconstruction.utilities.Exceptions as Exceptions
 
 
 ##
@@ -55,7 +56,7 @@ if __name__ == '__main__':
         "can substantially reduce the computational time.",
         prog="python " + os.path.basename(__file__),
     )
-    input_parser.add_dir_input(default="")
+    input_parser.add_dir_input()
     input_parser.add_filenames()
     input_parser.add_dir_output(default="results/")
     input_parser.add_prefix_output(default="_SRR")
@@ -85,20 +86,24 @@ if __name__ == '__main__':
     ph.print_title("Read Data")
 
     # Neither '--dir-input' nor '--filenames' was specified
-    if args.filenames != "" and args.dir_input != "":
+    if args.filenames is not None and args.dir_input is not None:
         raise Exceptions.IOError(
             "Provide input by either '--dir-input' or '--filenames' "
             "but not both together")
 
     # '--dir-input' specified
-    elif args.dir_input != "":
+    elif args.dir_input is not None:
         data_reader = dr.DirectoryReader(
             args.dir_input, suffix_mask=args.suffix_mask)
 
     # '--filenames' specified
-    else:
+    elif args.filenames is not None:
         data_reader = dr.MultipleImagesReader(
-            args.filenames[0], suffix_mask=args.suffix_mask)
+            args.filenames, suffix_mask=args.suffix_mask)
+
+    else:
+        raise Exceptions.IOError(
+            "Provide input by either '--dir-input' or '--filenames'")
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()

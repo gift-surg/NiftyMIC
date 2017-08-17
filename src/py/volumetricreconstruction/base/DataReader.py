@@ -153,9 +153,8 @@ class MultipleImagesReader(DataReader):
     # \date       2017-07-11 19:04:25+0100
     #
     # \param      self            The object
-    # \param      file_paths      The paths to filenames as single string
-    #                             separated by white spaces, e.g.
-    #                             "A.nii.gz B.nii C.nii.gz"
+    # \param      file_paths      The paths to filenames as list of strings,
+    #                             e.g. ["A.nii.gz", "B.nii", "C.nii.gz"]
     # \param      suffix_mask     extension of stack filename as string
     #                             indicating associated mask, e.g. "_mask" for
     #                             "A_mask.nii".
@@ -168,7 +167,7 @@ class MultipleImagesReader(DataReader):
         super(self.__class__, self).__init__()
 
         # Get list of paths to image
-        self._file_paths = file_paths.split(" ")
+        self._file_paths = file_paths
         self._suffix_mask = suffix_mask
         self._extract_slices = extract_slices
 
@@ -268,8 +267,7 @@ class ImageSlicesDirectoryReader(DataReader):
 
         # Reduce filenames to be read to selection only
         if self._image_selection is not None:
-            image_selection = self._image_selection.split(" ")
-            filenames = [f for f in image_selection if f in filenames]
+            filenames = [f for f in self._image_selection if f in filenames]
 
         self._stacks = [None] * len(filenames)
         for i, filename in enumerate(filenames):

@@ -102,20 +102,24 @@ if __name__ == '__main__':
     ph.print_title("Read Data")
 
     # Neither '--dir-input' nor '--filenames' was specified
-    if args.filenames != "" and args.dir_input != "":
+    if args.filenames is not None and args.dir_input is not None:
         raise Exceptions.IOError(
             "Provide input by either '--dir-input' or '--filenames' "
             "but not both together")
 
     # '--dir-input' specified
-    elif args.dir_input != "":
+    elif args.dir_input is not None:
         data_reader = dr.DirectoryReader(
             args.dir_input, suffix_mask=args.suffix_mask)
 
     # '--filenames' specified
-    else:
+    elif args.filenames is not None:
         data_reader = dr.MultipleImagesReader(
-            args.filenames[0], suffix_mask=args.suffix_mask)
+            args.filenames, suffix_mask=args.suffix_mask)
+
+    else:
+        raise Exceptions.IOError(
+            "Provide input by either '--dir-input' or '--filenames'")
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
