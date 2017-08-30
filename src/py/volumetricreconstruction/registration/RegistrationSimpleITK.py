@@ -8,12 +8,14 @@
 # Import libraries
 import os
 import numpy as np
+import itk
 import SimpleITK as sitk
 
 # Used to parse variable arguments to SimpleITK object, see
 # http://stackoverflow.com/questions/20263839/python-convert-a-string-to-arguments-list:
 from ast import literal_eval
 
+import pythonhelper.SimpleITKHelper as sitkh
 import pythonhelper.PythonHelper as ph
 import registrationtools.SimpleItkRegistration
 
@@ -167,7 +169,7 @@ class RegistrationSimpleITK(AffineRegistrationMethod):
                 self._fixed, self._moving)
 
             # Create recursive YVV Gaussianfilter
-            image_type = itk.Image[itk.D, dim]
+            image_type = itk.Image[itk.D, self._fixed.sitk.GetDimension()]
             gaussian_yvv = itk.SmoothingRecursiveYvvGaussianImageFilter[
                 image_type, image_type].New()
 

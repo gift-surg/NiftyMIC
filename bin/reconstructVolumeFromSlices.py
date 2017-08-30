@@ -39,13 +39,8 @@ if __name__ == '__main__':
     # Read input
     input_parser = InputArgparser(
         description="Volumetric MRI reconstruction framework to reconstruct "
-        "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
-        "slices WITH motion correction. The resolution of the computed "
-        "Super-Resolution Reconstruction (SRR) is given by the in-plane "
-        "spacing of the selected target stack. A region of interest can be "
-        "specified by providing a mask for the selected target stack. Only "
-        "this region will then be reconstructed by the SRR algorithm which "
-        "can substantially reduce the computational time.",
+        "an isotropic, high-resolution 3D volume from multiple stacks of "
+        "motion corrected slices obtained by 'reconstructVolume.py'.",
         prog="python " + os.path.basename(__file__),
     )
     input_parser.add_dir_input(required=True)
@@ -91,7 +86,7 @@ if __name__ == '__main__':
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
-    
+
     # if args.verbose:
     #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 

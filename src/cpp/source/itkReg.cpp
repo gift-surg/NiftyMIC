@@ -474,7 +474,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         optimizerCGLS->SetConvergenceWindowSize( 10 );
         optimizerCGLS->SetMinimumConvergenceValue( 1e-6 );
         optimizerCGLS->SetLowerLimit( 0 );
-        optimizerCGLS->SetUpperLimit( 5 );
+        optimizerCGLS->SetUpperLimit( 1 );
         optimizerCGLS->SetEpsilon( 0.01 );
         optimizerCGLS->SetMaximumLineSearchIterations( 20 );
         optimizerCGLS->SetMaximumStepSizeInPhysicalUnits( 0.0 );
