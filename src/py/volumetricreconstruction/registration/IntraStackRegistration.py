@@ -145,7 +145,6 @@ class IntraStackRegistration(StackRegistrationBase):
                  alpha_reference=1,
                  alpha_parameter=0,
                  transform_type="rigid",
-                 # optimizer="L-BFGS-B",
                  optimizer="least_squares",
                  optimizer_iter_max=20,
                  optimizer_loss="soft_l1",
@@ -1906,7 +1905,6 @@ class IntraStackRegistration(StackRegistrationBase):
 
                 slices_2D[i] = sl.Slice.from_sitk_image(
                     slice_2D_sitk,
-                    dir_input=None,
                     filename=filename,
                     slice_number=slice_number,
                     slice_sitk_mask=slice_2D_sitk_mask)
@@ -1918,7 +1916,6 @@ class IntraStackRegistration(StackRegistrationBase):
 
                 slices_2D[i] = sl.Slice.from_sitk_image(
                     gradient_magnitude_slice_2D_sitk,
-                    dir_input=None,
                     filename="GradMagn_"+filename,
                     slice_number=slice_number,
                     slice_sitk_mask=slice_2D_sitk_mask)

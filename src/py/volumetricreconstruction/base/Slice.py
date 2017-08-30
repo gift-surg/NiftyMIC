@@ -27,7 +27,6 @@ class Slice:
 
     # Create Slice instance with additional information to actual slice
     #  \param[in] slice_sitk 3D slice in \R x \R x 1, sitk.Image object
-    #  \param[in] dir_input directory where parent stack is stored, string
     #  \param[in] filename of parent stack, string
     #  \param[in] slice_number number of slice within parent stack, integer
     #  \param[in] slice_sitk_mask associated mask of slice, sitk.Image object (optional)
