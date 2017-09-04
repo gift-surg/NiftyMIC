@@ -141,7 +141,7 @@ class RegistrationCppITK(RegistrationSimpleITK):
 
         self._run_registration_[self._registration_type](id)
 
-    def _run_registration_rigid_affine(self, id):
+    def _run_registration_rigid_affine(self, id, endl=" \\\n"):
 
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
@@ -177,23 +177,23 @@ class RegistrationCppITK(RegistrationSimpleITK):
 
         # Prepare command for execution
         # cmd =  "/Users/mebner/UCL/UCL/Software/Volumetric\ Reconstruction/build/cpp/bin/itkReg "
-        cmd = DIR_BUILD_CPP + "/bin/itkReg "
-        cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz "
-        cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz "
+        cmd = DIR_BUILD_CPP + "/bin/itkReg" + endl
+        cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz" + endl
+        cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz" + endl
         if self._use_fixed_mask:
-            cmd += "--fmask " + self._dir_tmp + fixed_mask_str + ".nii.gz "
+            cmd += "--fmask " + self._dir_tmp + fixed_mask_str + ".nii.gz" + endl
         if self._use_moving_mask:
-            cmd += "--mmask " + self._dir_tmp + moving_mask_str + ".nii.gz "
-        cmd += "--tout " + self._dir_tmp + registration_transform_str + ".txt "
+            cmd += "--mmask " + self._dir_tmp + moving_mask_str + ".nii.gz" + endl
+        cmd += "--tout " + self._dir_tmp + registration_transform_str + ".txt" + endl
         cmd += "--useAffine " + \
-            str(int(self._registration_type is "Affine")) + " "
+            str(int(self._registration_type is "Affine")) + endl
         cmd += "--useMultires " + \
-            str(int(self._use_multiresolution_framework)) + " "
-        cmd += "--metric " + self._metric + " "
-        cmd += "--scalesEst " + self._scales_estimator + " "
-        cmd += "--interpolator " + self._interpolator + " "
-        cmd += "--ANTSrad " + str(self._ANTSradius) + " "
-        cmd += "--verbose " + verbose + " "
+            str(int(self._use_multiresolution_framework)) + endl
+        cmd += "--metric " + self._metric + endl
+        cmd += "--scalesEst " + self._scales_estimator + endl
+        cmd += "--interpolator " + self._interpolator + endl
+        cmd += "--ANTSrad " + str(self._ANTSradius) + endl
+        cmd += "--verbose " + verbose + endl
 
         # Compute oriented Gaussian PSF if desired
         if self._interpolator in ["OrientedGaussian"]:
@@ -230,7 +230,7 @@ class RegistrationCppITK(RegistrationSimpleITK):
         # moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._registration_transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
         # sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
 
-    def _run_registration_inplane_similarity_3D(self, id):
+    def _run_registration_inplane_similarity_3D(self, id, endl=" \\\n"):
 
         if self._fixed is None or self._moving is None:
             raise ValueError("Error: Fixed and moving image not specified")
@@ -268,31 +268,31 @@ class RegistrationCppITK(RegistrationSimpleITK):
                         fixed_mask_str + ".nii.gz")
 
         # Prepare command for execution
-        cmd = DIR_BUILD_CPP + "/bin/itkInplaneSimilarity3DReg "
-        cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz "
-        cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz "
+        cmd = DIR_BUILD_CPP + "/bin/itkInplaneSimilarity3DReg" + endl
+        cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz" + endl
+        cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz" + endl
         if self._use_fixed_mask:
-            cmd += "--fmask " + self._dir_tmp + fixed_mask_str + ".nii.gz "
+            cmd += "--fmask " + self._dir_tmp + fixed_mask_str + ".nii.gz" + endl
         if self._use_moving_mask:
-            cmd += "--mmask " + self._dir_tmp + moving_mask_str + ".nii.gz "
-        cmd += "--tout " + self._dir_tmp + registration_transform_str + ".txt "
+            cmd += "--mmask " + self._dir_tmp + moving_mask_str + ".nii.gz" + endl
+        cmd += "--tout " + self._dir_tmp + registration_transform_str + ".txt" + endl
         cmd += "--useAffine " + \
-            str(int(self._registration_type is "Affine")) + " "
+            str(int(self._registration_type is "Affine")) + endl
         cmd += "--useMultires " + \
-            str(int(self._use_multiresolution_framework)) + " "
-        cmd += "--metric " + self._metric + " "
-        cmd += "--scalesEst " + self._scales_estimator + " "
-        cmd += "--interpolator " + self._interpolator + " "
-        cmd += "--ANTSrad " + str(self._ANTSradius) + " "
-        # cmd += "--translationScale " + str(self._translation_scale) + " "
-        cmd += "--verbose " + verbose + " "
+            str(int(self._use_multiresolution_framework)) + endl
+        cmd += "--metric " + self._metric + endl
+        cmd += "--scalesEst " + self._scales_estimator + endl
+        cmd += "--interpolator " + self._interpolator + endl
+        cmd += "--ANTSrad " + str(self._ANTSradius) + endl
+        # cmd += "--translationScale " + str(self._translation_scale) + endl
+        cmd += "--verbose " + verbose + endl
 
         # Compute oriented Gaussian PSF if desired
         if self._interpolator in ["OrientedGaussian"]:
             # Get oriented Gaussian covariance matrix
             cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
                 self._fixed, self._moving).flatten()
-            cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
+            cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'" + endl
 
         # if self._use_verbose:
         ph.execute_command(cmd)
