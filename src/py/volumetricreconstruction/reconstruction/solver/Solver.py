@@ -75,6 +75,7 @@ class Solver(object):
                  iter_max=10,
                  minimizer="lsmr",
                  data_loss="linear",
+                 data_loss_scale=1,
                  huber_gamma=1.345,
                  deconvolution_mode="full_3D",
                  predefined_covariance=None,
@@ -93,6 +94,7 @@ class Solver(object):
 
         self._minimizer = minimizer
         self._data_loss = data_loss
+        self._data_loss_scale = data_loss_scale
         self._huber_gamma = huber_gamma
 
         self._predefined_covariance = predefined_covariance
@@ -196,58 +198,6 @@ class Solver(object):
 
     def run_reconstruction(self):
 
-        self._N_stacks = len(self._stacks)
-
-        # Allocate and initialize Oriented Gaussian Interpolate Image Filter
-        self._filter_oriented_Gaussian = \
-            itk.OrientedGaussianInterpolateImageFilter[
-                IMAGE_TYPE, IMAGE_TYPE].New()
-        self._filter_oriented_Gaussian.SetDefaultPixelValue(0.0)
-        self._filter_oriented_Gaussian.SetAlpha(self._alpha_cut)
-
-        # Allocate and initialize Adjoint Oriented Gaussian Interpolate Image
-        # Filter
-        self._filter_adjoint_oriented_Gaussian = \
-            itk.AdjointOrientedGaussianInterpolateImageFilter[
-                IMAGE_TYPE, IMAGE_TYPE].New()
-        self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue(0.0)
-        self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
-        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(
-            self._reconstruction.itk)
-
-        # Extract information ready to use for itk image conversion operations
-        self._reconstruction_shape = sitk.GetArrayFromImage(
-            self._reconstruction.sitk).shape
-
-        # In case only diagonal entries are given, create diagonal matrix
-        if self._predefined_covariance is not None:
-            # Convert to numpy array if required
-            self._predefined_covariance = np.array(self._predefined_covariance)
-
-            if self._predefined_covariance.size is 3:
-                self._predefined_covariance = np.diag(
-                    self._predefined_covariance)
-
-        """
-        Helpers
-        """
-        # Create PyBuffer object for conversion between NumPy arrays and ITK
-        # images
-        self._itk2np = itk.PyBuffer[IMAGE_TYPE]
-
-        # Used for PSF modelling
-        self._psf = psf.PSF()
-
-        # Compute total amount of pixels for all slices
-        self._N_total_slice_voxels = 0
-        for i in range(0, self._N_stacks):
-            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
-            self._N_total_slice_voxels += N_stack_voxels
-
-        # Compute total amount of voxels of x:
-        self._N_voxels_recon = np.array(
-            self._reconstruction.sitk.GetSize()).prod()
-
         # Run solver specific reconstruction
         self._run_reconstruction()
 
@@ -345,6 +295,9 @@ class Solver(object):
     def get_x0(self):
         return sitk.GetArrayFromImage(self._reconstruction.sitk).flatten()
 
+    def get_x_scale(self):
+        return self.get_x0().max()
+
     ##
     # Prints the statistics of the performed reconstruction
     # \date       2017-07-25 16:21:20+0100
@@ -383,6 +336,14 @@ class Solver(object):
     def get_setting_specific_filename(self, prefix=""):
         pass
 
+    @abstractmethod
+    def _run_reconstruction(self):
+        pass
+
+    @abstractmethod
+    def get_solver(self):
+        pass
+
     ##
     #       Sets the predefined covariance matrix, representing
     #             slice-axis aligned Gaussian blurring covariance.
@@ -412,6 +373,60 @@ class Solver(object):
     #
     def get_predefined_covariance(self):
         return self._predefined_covariance
+
+
+    def _run_initialization(self):
+        self._N_stacks = len(self._stacks)
+
+        # Allocate and initialize Oriented Gaussian Interpolate Image Filter
+        self._filter_oriented_Gaussian = \
+            itk.OrientedGaussianInterpolateImageFilter[
+                IMAGE_TYPE, IMAGE_TYPE].New()
+        self._filter_oriented_Gaussian.SetDefaultPixelValue(0.0)
+        self._filter_oriented_Gaussian.SetAlpha(self._alpha_cut)
+
+        # Allocate and initialize Adjoint Oriented Gaussian Interpolate Image
+        # Filter
+        self._filter_adjoint_oriented_Gaussian = \
+            itk.AdjointOrientedGaussianInterpolateImageFilter[
+                IMAGE_TYPE, IMAGE_TYPE].New()
+        self._filter_adjoint_oriented_Gaussian.SetDefaultPixelValue(0.0)
+        self._filter_adjoint_oriented_Gaussian.SetAlpha(self._alpha_cut)
+        self._filter_adjoint_oriented_Gaussian.SetOutputParametersFromImage(
+            self._reconstruction.itk)
+
+        # Extract information ready to use for itk image conversion operations
+        self._reconstruction_shape = sitk.GetArrayFromImage(
+            self._reconstruction.sitk).shape
+
+        # In case only diagonal entries are given, create diagonal matrix
+        if self._predefined_covariance is not None:
+            # Convert to numpy array if required
+            self._predefined_covariance = np.array(self._predefined_covariance)
+
+            if self._predefined_covariance.size is 3:
+                self._predefined_covariance = np.diag(
+                    self._predefined_covariance)
+
+        """
+        Helpers
+        """
+        # Create PyBuffer object for conversion between NumPy arrays and ITK
+        # images
+        self._itk2np = itk.PyBuffer[IMAGE_TYPE]
+
+        # Used for PSF modelling
+        self._psf = psf.PSF()
+
+        # Compute total amount of pixels for all slices
+        self._N_total_slice_voxels = 0
+        for i in range(0, self._N_stacks):
+            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
+            self._N_total_slice_voxels += N_stack_voxels
+
+        # Compute total amount of voxels of x:
+        self._N_voxels_recon = np.array(
+            self._reconstruction.sitk.GetSize()).prod()
 
     #
     # Update internal Oriented and Adjoint Oriented Gaussian Interpolate Image

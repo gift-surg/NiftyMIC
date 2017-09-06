@@ -57,6 +57,7 @@ class InputArgparser(object):
         option_string="--filename",
         type=str,
         help="Path to NIfTI file %s." % (IMAGE_TYPES),
+        default=None,
         required=True,
     ):
         self._add_argument(dict(locals()))
@@ -66,6 +67,7 @@ class InputArgparser(object):
         option_string="--filename-mask",
         type=str,
         help="Path to NIfTI file mask %s." % (IMAGE_TYPES),
+        default=None,
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -75,6 +77,7 @@ class InputArgparser(object):
         option_string="--dir-input",
         type=str,
         help="Input directory with NIfTI files %s." % (IMAGE_TYPES),
+        default=None,
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -84,6 +87,7 @@ class InputArgparser(object):
         option_string="--filenames",
         nargs="+",
         help="Filenames.",
+        default=None,
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -93,6 +97,7 @@ class InputArgparser(object):
         option_string="--label",
         type=str,
         help="Label for image given by filename.",
+        default=None,
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -102,6 +107,8 @@ class InputArgparser(object):
         option_string="--labels",
         nargs="+",
         help="Labels for images given by filenames.",
+        default=None,
+        required=False,
     ):
         self._add_argument(dict(locals()))
 
@@ -111,6 +118,8 @@ class InputArgparser(object):
         nargs="+",
         help="Specify image filenames without filename extension which will "
         "be used only. ",
+        default=None,
+        required=False,
     ):
         self._add_argument(dict(locals()))
 
@@ -119,6 +128,7 @@ class InputArgparser(object):
         option_string="--reference",
         type=str,
         help="Path to reference image NIfTI file %s." % (IMAGE_TYPES),
+        default=None,
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -129,6 +139,7 @@ class InputArgparser(object):
         type=str,
         help="Output directory.",
         default=None,
+        required=False,
     ):
         self._add_argument(dict(locals()))
 
@@ -142,6 +153,7 @@ class InputArgparser(object):
         "image_i.nii.gz for all images image_i in the input "
         "directory.",
         default="_mask",
+        required=False,
     ):
         self._add_argument(dict(locals()))
 
@@ -151,6 +163,7 @@ class InputArgparser(object):
         type=str,
         help="Prefix for SRR output file name.",
         default="SRR_",
+        required=False,
     ):
         self._add_argument(dict(locals()))
 
@@ -161,6 +174,7 @@ class InputArgparser(object):
         help="Index according to alphabetical order of stacks (images) "
         "which defines physical space for SRR. First index is 0.",
         default=0,
+        required=False,
     ):
         self._add_argument(dict(locals()))
 
@@ -171,6 +185,7 @@ class InputArgparser(object):
         help="Path to NIfTI file %s which defines the physical space "
         "for the volumetric reconstruction/SRR." % (IMAGE_TYPES),
         default=None,
+        required=False,
     ):
         self._add_argument(dict(locals()))
 
@@ -303,6 +318,19 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_data_loss_scale(
+        self,
+        option_string="--data-loss-scale",
+        type=float,
+        help="Value of soft margin between inlier and outlier residuals, "
+        "default is 1.0. The loss function is evaluated as "
+        "rho_(f2) = C**2 * rho(f2 / C**2), where C is data_loss_scale. "
+        "This parameter has no effect with data_loss='linear', but for other "
+        "loss values it is of crucial importance.",
+        default=1,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_pd_alg_type(
             self,
             option_string="-pd_alg_type",
@@ -429,6 +457,51 @@ class InputArgparser(object):
         type=int,
         help="Number of components used for SRR.",
         default=15,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_alpha_range(
+        self,
+        option_string="--alpha-range",
+        nargs="+",
+        type=float,
+        help="Specify regularization parameters by providing 'First Last Step'"
+        " information.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_data_losses(
+        self,
+        option_string="--data-losses",
+        nargs="+",
+        help="Specify data losses  'First Last Step'"
+        " information.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_data_loss_scale_range(
+        self,
+        option_string="--data-loss-scale-range",
+        nargs="+",
+        type=float,
+        help="Specify data loss scales by providing 'First Last Step'"
+        " information.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_study_name(
+        self,
+        option_string="--study-name",
+        type=str,
+        help="Name of parameter study (no white spaces).",
+        default=None,
+        required=False,
     ):
         self._add_argument(dict(locals()))
 

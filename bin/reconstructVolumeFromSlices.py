@@ -43,7 +43,8 @@ if __name__ == '__main__':
         "motion corrected slices obtained by 'reconstructVolume.py'.",
         prog="python " + os.path.basename(__file__),
     )
-    input_parser.add_dir_input(required=True)
+    input_parser.add_dir_input()
+    input_parser.add_filenames()
     input_parser.add_image_selection()
     input_parser.add_dir_output(default="results/")
     input_parser.add_suffix_mask(default="_mask")
@@ -55,7 +56,8 @@ if __name__ == '__main__':
     input_parser.add_iter_max(default=10)
     input_parser.add_reg_type(default="TK1")
     input_parser.add_data_loss(default="linear")
-    input_parser.add_alpha(default=0.01)
+    input_parser.add_data_loss_scale(default=1)
+    input_parser.add_alpha(default=0.02)
     input_parser.add_rho(default=0.5)
     input_parser.add_tv_solver(default="PD")
     input_parser.add_pd_alg_type(default="ALG2")
@@ -76,13 +78,30 @@ if __name__ == '__main__':
                          "log_%s_script_execution.sh" % (
                              os.path.basename(__file__).split(".")[0])))
 
-    # Read Data:
+    # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
 
-    data_reader = dr.ImageSlicesDirectoryReader(
-        path_to_directory=args.dir_input,
-        suffix_mask=args.suffix_mask,
-        image_selection=args.image_selection)
+    # Neither '--dir-input' nor '--filenames' was specified
+    if args.filenames is not None and args.dir_input is not None:
+        raise Exceptions.IOError(
+            "Provide input by either '--dir-input' or '--filenames' "
+            "but not both together")
+
+    # '--dir-input' specified
+    elif args.dir_input is not None:
+        data_reader = dr.ImageSlicesDirectoryReader(
+            path_to_directory=args.dir_input,
+            suffix_mask=args.suffix_mask,
+            image_selection=args.image_selection)
+
+    # '--filenames' specified
+    elif args.filenames is not None:
+        data_reader = dr.MultipleImagesReader(
+            args.filenames, suffix_mask=args.suffix_mask)
+
+    else:
+        raise Exceptions.IOError(
+            "Provide input by either '--dir-input' or '--filenames'")
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
@@ -110,9 +129,11 @@ if __name__ == '__main__':
         reg_type="TK1",
         minimizer=args.minimizer,
         data_loss=args.data_loss,
+        data_loss_scale=args.data_loss_scale,
         verbose=args.verbose,
     )
     SRR0.run_reconstruction()
+    SRR0.compute_statistics()
     SRR0.print_statistics()
 
     recon = SRR0.get_reconstruction()

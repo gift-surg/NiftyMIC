@@ -153,28 +153,16 @@ class ADMMSolver(Solver):
 
         return filename
 
-    ##
-    #       Reconstruct volume using TV-L2 regularization via Alternating
-    #             Direction Method of Multipliers (ADMM) method.
-    # \post       self._reconstruction is updated with new volume and can be fetched
-    #             via \p get_recon
-    # \date       2016-08-01 23:22:50+0100
-    #
-    # \param      self                    The object
-    # \param      estimate_initial_value  Estimate initial value by running one
-    #                                     first-order Tikhonov reconstruction
-    #                                     step prior the ADMM algorithm
-    #
-    def _run_reconstruction(self):
+    def get_solver(self):
 
-        self._print_info_text()
+        self._run_initialization()
 
         # Get operators
         A = self.get_A()
         A_adj = self.get_A_adj()
         b = self.get_b()
         x0 = self.get_x0()
-        x_scale = x0.max()
+        x_scale = self.get_x_scale()
 
         spacing = np.array(self._reconstruction.sitk.GetSpacing())
         linear_operators = linop.LinearOperators3D(spacing=spacing)
@@ -186,7 +174,7 @@ class ADMMSolver(Solver):
         B = lambda x: grad(x.reshape(*X_shape)).flatten()
         B_adj = lambda x: grad_adj(x.reshape(*Z_shape)).flatten()
 
-        # Run reconstruction
+        # Set up solver
         solver = admm.ADMMLinearSolver(
             dimension=3,
             A=A, A_adj=A_adj,
@@ -202,6 +190,28 @@ class ADMMSolver(Solver):
             iterations=self._iterations,
             verbose=self._verbose,
         )
+
+        return solver
+
+    ##
+    #       Reconstruct volume using TV-L2 regularization via Alternating
+    #             Direction Method of Multipliers (ADMM) method.
+    # \post       self._reconstruction is updated with new volume and can be fetched
+    #             via \p get_recon
+    # \date       2016-08-01 23:22:50+0100
+    #
+    # \param      self                    The object
+    # \param      estimate_initial_value  Estimate initial value by running one
+    #                                     first-order Tikhonov reconstruction
+    #                                     step prior the ADMM algorithm
+    #
+    def _run_reconstruction(self):
+
+        solver = self.get_solver()
+
+        self._print_info_text()
+
+        # Run reconstruction
         solver.run()
 
         # Get computational time

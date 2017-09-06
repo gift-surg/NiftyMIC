@@ -105,6 +105,7 @@ class TikhonovSolver(Solver):
                  minimizer="lsmr",
                  deconvolution_mode="full_3D",
                  data_loss="linear",
+                 data_loss_scale=1,
                  huber_gamma=1.345,
                  predefined_covariance=None,
                  verbose=1,
@@ -120,6 +121,7 @@ class TikhonovSolver(Solver):
                         minimizer=minimizer,
                         deconvolution_mode=deconvolution_mode,
                         data_loss=data_loss,
+                        data_loss_scale=data_loss_scale,
                         huber_gamma=huber_gamma,
                         predefined_covariance=predefined_covariance,
                         verbose=verbose)
@@ -154,8 +156,8 @@ class TikhonovSolver(Solver):
             self._reconstruction.sitk).flatten()
 
         self._residual_ell2 = self._get_residual_ell2(recon_nda_vec)
-        self._residual_prior = self._get_residual_prior[
-            self._reg_type](recon_nda_vec)
+        # self._residual_prior = self._get_residual_prior[
+        #     self._reg_type](recon_nda_vec)
 
     ##
     # Gets the final cost after optimization
@@ -190,11 +192,11 @@ class TikhonovSolver(Solver):
         if self._alpha > 0:
             filename += "_" + self._reg_type
         filename += "_" + self._minimizer
-        if self._data_loss not in ["linear"] or \
-                self._minimizer in ["L-BFGS-B"]:
+        if self._data_loss not in ["linear"]:
             filename += "_" + self._data_loss
             if self._data_loss in ["huber"]:
                 filename += str(self._huber_gamma)
+            filename += "_fscale%g" % self._data_loss_scale
         filename += "_alpha" + str(self._alpha)
         filename += "_itermax" + str(self._iter_max)
 
@@ -203,33 +205,20 @@ class TikhonovSolver(Solver):
 
         return filename
 
-    ##
-    # Run the reconstruction algorithm based on Tikhonov regularization
-    # \date       2016-07-29 12:35:01+0100
-    # \post       self._reconstruction is updated with new volume and can be
-    #             fetched by \p get_recon
-    #
-    # \param      self  The object
-    # \param      provide_initial_value  Use reconstruction volume during
-    #                                    initialization as initial value, boolean.
-    #                                    Otherwise, assume zero initial vale.
-    #
-    # \return     { description_of_the_return_value }
-    #
-    def _run_reconstruction(self):
-
+    def get_solver(self):
         if self._reg_type not in ["TK0", "TK1"]:
             raise ValueError(
                 "Error: regularization type can only be either 'TK0' or 'TK1'")
 
-        self._print_info_text()
+        self._run_initialization()
 
         # Get operators
         A = self.get_A()
         A_adj = self.get_A_adj()
         b = self.get_b()
         x0 = self.get_x0()
-        x_scale = x0.max()
+        x_scale = self.get_x_scale()
+
         if self._reg_type == "TK0":
             B = lambda x: x.flatten()
             B_adj = lambda x: x.flatten()
@@ -245,7 +234,7 @@ class TikhonovSolver(Solver):
             B = lambda x: grad(x.reshape(*X_shape)).flatten()
             B_adj = lambda x: grad_adj(x.reshape(*Z_shape)).flatten()
 
-        # Run reconstruction
+        # Set up solver
         solver = tk.TikhonovLinearSolver(
             A=A,
             A_adj=A_adj,
@@ -256,11 +245,32 @@ class TikhonovSolver(Solver):
             x_scale=x_scale,
             alpha=self._alpha,
             data_loss=self._data_loss,
+            data_loss_scale=self._data_loss_scale,
             verbose=self._verbose,
             minimizer=self._minimizer,
             iter_max=self._iter_max,
             bounds=(0, np.inf),
         )
+        return solver
+
+    ##
+    # Run the reconstruction algorithm based on Tikhonov regularization
+    # \date       2016-07-29 12:35:01+0100
+    # \post       self._reconstruction is updated with new volume and can be
+    #             fetched by \p get_recon
+    #
+    # \param      self  The object
+    # \param      provide_initial_value  Use reconstruction volume during
+    #                                    initialization as initial value, boolean.
+    #                                    Otherwise, assume zero initial vale.
+    #
+    def _run_reconstruction(self):
+
+        solver = self.get_solver()
+
+        self._print_info_text()
+
+        # Run reconstruction
         solver.run()
 
         # Get computational time
@@ -295,16 +305,10 @@ class TikhonovSolver(Solver):
         else:
             ph.print_info("Loss function: %s" % (self._data_loss))
 
+        if self._data_loss != "linear":
+            ph.print_info("Loss function scale: %g" % (self._data_loss_scale))
+
         ph.print_info("Regularization parameter: " + str(self._alpha))
-
-        # Non-linear loss function requires use of L-BFGS-B
-        if self._data_loss not in ["linear"] and \
-                self._minimizer not in ["L-BFGS-B"]:
-            ph.print_info("Note, selected minimizer '%s' cannot be used."
-                          " Non-linear loss function requires L-BFGS-B."
-                          % (self._minimizer))
-            self._minimizer = "L-BFGS-B"
-
         ph.print_info("Minimizer: " + self._minimizer)
         ph.print_info(
             "Maximum number of iterations: " + str(self._iter_max))

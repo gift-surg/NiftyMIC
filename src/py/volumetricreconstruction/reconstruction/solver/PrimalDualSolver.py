@@ -110,13 +110,13 @@ class PrimalDualSolver(Solver):
 
         return filename
 
-    def _run_reconstruction(self, verbose=0):
+    def get_solver(self):
 
         if self._reg_type not in ["TV", "huber"]:
             raise ValueError("Error: regularization type can only be either "
                              "'TV' or 'huber'")
 
-        self._print_info_text()
+        self._run_initialization()
 
         # L^2 = ||K||^2 = ||\nabla||^2 = ||div||^2 <= 16/h^2 in 3D
         # However, it seems that the smaller L2 the bigger the effect of TV
@@ -128,7 +128,7 @@ class PrimalDualSolver(Solver):
         A_adj = self.get_A_adj()
         b = self.get_b()
         x0 = self.get_x0()
-        x_scale = x0.max()
+        x_scale = self.get_x_scale()
 
         spacing = np.array(self._reconstruction.sitk.GetSpacing())
         linear_operators = linop.LinearOperators3D(spacing=spacing)
@@ -153,6 +153,7 @@ class PrimalDualSolver(Solver):
             prox_g_conj = lambda x, sigma: prox.prox_huber_conj(
                 x, sigma, self._reg_huber_gamma)
 
+        # Set up solver
         solver = pd.PrimalDualSolver(
             prox_f=prox_f,
             prox_g_conj=prox_g_conj,
@@ -166,6 +167,16 @@ class PrimalDualSolver(Solver):
             verbose=self._verbose,
             alg_type=self._alg_type,
         )
+
+        return solver
+
+    def _run_reconstruction(self, verbose=0):
+
+        solver = self.get_solver()
+
+        self._print_info_text()
+
+        # Run reconstruction
         solver.run()
 
         # Get computational time
