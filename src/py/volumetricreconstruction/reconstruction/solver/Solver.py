@@ -104,6 +104,8 @@ class Solver(object):
             # Avoid zero in case zero-image is given
             if self._x_scale == 0:
                 self._x_scale = 1
+        else:
+            self._x_scale = x_scale
 
         self._huber_gamma = huber_gamma
 
