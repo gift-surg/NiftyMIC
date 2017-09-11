@@ -70,16 +70,17 @@ class Solver(object):
     def __init__(self,
                  stacks,
                  reconstruction,
-                 alpha_cut=3,
-                 alpha=0.02,
-                 iter_max=10,
-                 minimizer="lsmr",
-                 data_loss="linear",
-                 data_loss_scale=1,
-                 huber_gamma=1.345,
-                 deconvolution_mode="full_3D",
-                 predefined_covariance=None,
-                 verbose=1):
+                 alpha_cut,
+                 alpha,
+                 iter_max,
+                 minimizer,
+                 x_scale,
+                 data_loss,
+                 data_loss_scale,
+                 huber_gamma,
+                 deconvolution_mode,
+                 predefined_covariance,
+                 verbose):
 
         # Initialize variables
         self._stacks = stacks
@@ -95,6 +96,15 @@ class Solver(object):
         self._minimizer = minimizer
         self._data_loss = data_loss
         self._data_loss_scale = data_loss_scale
+
+        if x_scale == "max":
+            self._x_scale = sitk.GetArrayFromImage(
+                reconstruction.sitk).max()
+
+            # Avoid zero in case zero-image is given
+            if self._x_scale == 0:
+                self._x_scale = 1
+
         self._huber_gamma = huber_gamma
 
         self._predefined_covariance = predefined_covariance
@@ -296,7 +306,7 @@ class Solver(object):
         return sitk.GetArrayFromImage(self._reconstruction.sitk).flatten()
 
     def get_x_scale(self):
-        return self.get_x0().max()
+        return self._x_scale
 
     ##
     # Prints the statistics of the performed reconstruction
@@ -373,7 +383,6 @@ class Solver(object):
     #
     def get_predefined_covariance(self):
         return self._predefined_covariance
-
 
     def _run_initialization(self):
         self._N_stacks = len(self._stacks)
