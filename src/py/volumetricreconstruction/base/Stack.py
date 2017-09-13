@@ -139,6 +139,7 @@ class Stack:
     # \example    mask (suffix_mask) of slice j of stack i (prefix_stack)
     # reads: i_slicej_mask.nii.gz
     #
+    # TODO: Code cleaning
     @classmethod
     def from_slice_filenames(cls,
                              dir_input,
@@ -187,11 +188,16 @@ class Stack:
                 path_to_slice_mask = os.path.join(
                     dir_input,
                     prefix_stack + prefix_slice + str(i) + suffix_mask + ".nii.gz")
-                stack._slices[i] = sl.Slice.from_filename(
-                    file_path=path_to_slice,
-                    slice_number=i,
-                    file_path_mask=path_to_slice_mask)
 
+                if ph.file_exists(path_to_slice_mask):
+                    stack._slices[i] = sl.Slice.from_filename(
+                        file_path=path_to_slice,
+                        slice_number=i,
+                        file_path_mask=path_to_slice_mask)
+                else:
+                    stack._slices[i] = sl.Slice.from_filename(
+                        file_path=path_to_slice,
+                        slice_number=i)
         else:
             slice_numbers = sorted(dic_slice_filenames.keys())
             stack._N_slices = len(slice_numbers)
@@ -203,10 +209,16 @@ class Stack:
                     dic_slice_filenames[slice_number] + ".nii.gz")
                 path_to_slice_mask = os.path.join(
                     dir_input, dic_slice_filenames[slice_number] + suffix_mask + ".nii.gz")
-                stack._slices[i] = sl.Slice.from_filename(
-                    file_path=path_to_slice,
-                    slice_number=slice_number,
-                    file_path_mask=path_to_slice_mask)
+
+                if ph.file_exists(path_to_slice_mask):
+                    stack._slices[i] = sl.Slice.from_filename(
+                        file_path=path_to_slice,
+                        slice_number=slice_number,
+                        file_path_mask=path_to_slice_mask)
+                else:
+                    stack._slices[i] = sl.Slice.from_filename(
+                        file_path=path_to_slice,
+                        slice_number=slice_number)
 
         return stack
 
