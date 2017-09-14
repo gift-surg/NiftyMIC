@@ -7,6 +7,7 @@
 # \date       August 2017
 #
 
+import os
 import argparse
 
 import pythonhelper.PythonHelper as ph
@@ -56,6 +57,17 @@ class InputArgparser(object):
         for arg in sorted(vars(args)):
             ph.print_info("%s: " % (arg), newline=False)
             print(getattr(args, arg))
+
+    def write_performed_script_execution(self,
+                                         file,
+                                         prefix="log_script_execution_"):
+        name = os.path.basename(file)
+        performed_script_execution = ph.get_performed_script_execution(
+            name, self._parser.parse_args())
+        ph.write_performed_script_execution_to_executable_file(
+            performed_script_execution,
+            os.path.join(self._parser.parse_args().dir_output,
+                         "%s%s.sh" % (prefix, name.split(".")[0])))
 
     def add_filename(
         self,
@@ -132,7 +144,17 @@ class InputArgparser(object):
         self,
         option_string="--reference",
         type=str,
-        help="Path to reference image NIfTI file %s." % (IMAGE_TYPES),
+        help="Path to reference image file %s." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_reference_mask(
+        self,
+        option_string="--reference-mask",
+        type=str,
+        help="Path to reference mask image file %s." % (IMAGE_TYPES),
         default=None,
         required=False,
     ):

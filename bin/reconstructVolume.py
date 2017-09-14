@@ -90,13 +90,7 @@ if __name__ == '__main__':
 
     # Write script execution call
     if args.log_script_execution:
-        performed_script_execution = ph.get_performed_script_execution(
-            os.path.basename(__file__), args)
-        ph.write_performed_script_execution_to_executable_file(
-            performed_script_execution,
-            os.path.join(args.dir_output,
-                         "log_%s_script_execution.sh" % (
-                             os.path.basename(__file__).split(".")[0])))
+        input_parser.write_performed_script_execution(__file__)
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")

@@ -46,7 +46,13 @@ if __name__ == '__main__':
     input_parser.add_image_selection()
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_reference(required=True)
+    input_parser.add_reconstruction_space()
+    input_parser.add_reference(
+        help="Path to reference NIfTI image file. If given SRR is "
+        "reconstructed in this physical space. "
+        "Either a reconstruction space or a reference must be provided",
+        required=False)
+    input_parser.add_reference_mask(default=None)
     input_parser.add_study_name()
     input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_measures(default=["PSNR", "RMSE", "SSIM", "NCC", "NMI"])
@@ -62,7 +68,7 @@ if __name__ == '__main__':
     input_parser.add_verbose(default=1)
 
     # Range for parameter sweeps
-    input_parser.add_alpha_range(default=[0.001, 0.1, 20])
+    input_parser.add_alpha_range(default=[0.001, 0.006, 6])
     input_parser.add_data_losses(
         # default=["linear", "arctan"]
     )
@@ -73,15 +79,13 @@ if __name__ == '__main__':
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
+    if args.reference is None and args.reconstruction_space is None:
+        raise IOError("Either reference (--reference) or reconstruction space "
+                      "(--reconstruction-space) must be provided.")
+
     # Write script execution call
     if args.log_script_execution:
-        performed_script_execution = ph.get_performed_script_execution(
-            os.path.basename(__file__), args)
-        ph.write_performed_script_execution_to_executable_file(
-            performed_script_execution,
-            os.path.join(args.dir_output,
-                         "log_%s_script_execution.sh" % (
-                             os.path.basename(__file__).split(".")[0])))
+        input_parser.write_performed_script_execution(__file__)
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -112,15 +116,21 @@ if __name__ == '__main__':
     stacks = data_reader.get_stacks()
 
     if args.reference is not None:
-        data_reader = dr.MultipleImagesReader(
-            [args.reference],
-            suffix_mask=args.suffix_mask,
+        reference = st.Stack.from_filename(
+            file_path=args.reference,
+            file_path_mask=args.reference_mask,
             extract_slices=False)
-        data_reader.read_data()
-        reference = data_reader.get_stacks()[0]
+
+        reconstruction_space = stacks[0].get_resampled_stack(reference.sitk)
         x_ref = sitk.GetArrayFromImage(reference.sitk).flatten()
         x_ref_mask = sitk.GetArrayFromImage(reference.sitk_mask).flatten()
+
     else:
+        reconstruction_space = st.Stack.from_filename(
+            file_path=args.reconstruction_space,
+            extract_slices=False)
+        reconstruction_space = stacks[
+            0].get_resampled_stack(reconstruction_space.sitk)
         x_ref = None
         x_ref_mask = None
 
@@ -134,7 +144,6 @@ if __name__ == '__main__':
             *args.data_loss_scale_range)
 
     # --------------------------Set Up Parameter Study-------------------------
-    reconstruction_space = stacks[0].get_resampled_stack(reference.sitk)
     if args.study_name is None:
         name = args.reconstruction_type
     else:
@@ -196,4 +205,3 @@ if __name__ == '__main__':
 
     print("\nComputational time for Deconvolution Parameter Study %s: %s" %
           (name, parameter_study.get_computational_time()))
-
