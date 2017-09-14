@@ -12,6 +12,11 @@ import argparse
 import pythonhelper.PythonHelper as ph
 import inspect
 
+from numericalsolver.SimilarityMeasures import SimilarityMeasures as \
+    SimilarityMeasures
+from numericalsolver.LossFunctions import LossFunctions as \
+    LossFunctions
+
 from volumetricreconstruction.definitions import ALLOWED_EXTENSIONS
 
 # Allowed image types
@@ -214,7 +219,7 @@ class InputArgparser(object):
         self,
         option_string="--minimizer",
         type=str,
-        help="Coice of minimizer used for the inverse problem associated to "
+        help="Choice of minimizer used for the inverse problem associated to "
         "the SRR. Possible choices are 'lsmr' or any solver in "
         "scipy.optimize.minimize like 'L-BFGS-B'. Note, in case of a chosen "
         "non-linear data loss only non-linear solvers like 'L-BFGS-B' are "
@@ -501,6 +506,30 @@ class InputArgparser(object):
         type=str,
         help="Name of parameter study (no white spaces).",
         default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_measures(
+        self,
+        option_string="--measures",
+        type=str,
+        nargs="+",
+        help="Measures to be evaluated between reference (if given) and "
+        "reconstruction %s. " % ("(" + (", ").join(
+            SimilarityMeasures.similarity_measures.keys()) + ")"),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_reconstruction_type(
+        self,
+        option_string="--reconstruction-type",
+        type=str,
+        help="Define reconstruction type. Allowed values are "
+        "'TK0L2', 'TK1L2', 'TVL2', and 'HuberL2'.",
+        default="TVL1",
         required=False,
     ):
         self._add_argument(dict(locals()))
