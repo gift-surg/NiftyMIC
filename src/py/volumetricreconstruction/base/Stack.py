@@ -415,7 +415,7 @@ class Stack:
     def write(self, directory, filename=None, write_mask=False, write_slices=False, write_transforms=False, suffix_mask="_mask"):
 
         # Create directory if not existing
-        os.system("mkdir -p " + directory)
+        ph.create_directory(directory)
 
         # Construct filename
         if filename is None:

@@ -45,8 +45,8 @@ class ValidationRegistration:
 
         self._dir_results_figures = "results/figures/"
         ## Create directory if not already existing
-        os.system("mkdir -p " + self._dir_results_figures)
-
+        ph.create_directory(self._dir_results_figures)
+        
 
     ## Run Slice-to-Volume Registration, i.e. register each slice of each stack with
     #  given reference volume

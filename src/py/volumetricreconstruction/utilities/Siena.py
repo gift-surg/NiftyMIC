@@ -1,13 +1,13 @@
 ##
 # \file Siena.py
-# \brief      
+# \brief
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       Nov 2016
-# 
+#
 
 
-## Import libraries 
+# Import libraries
 import SimpleITK as sitk
 import numpy as np
 import sys
@@ -15,33 +15,39 @@ import os
 import re
 from skimage.measure import compare_ssim as ssim
 
-## Import modules
+# Import modules
 import pythonhelper.SimpleITKHelper as sitkh
 import pythonhelper.PythonHelper as ph
 
 import volumetricreconstruction.base.Stack as st
+from volumetricreconstruction.definitions import DIR_TMP
 
 
 class Siena(object):
 
-    def __init__(self, stack1, stack2, dir_output="./siena/", options='-B "-B -f 0.1" -2', dir_tmp="/tmp/siena/"):
+    def __init__(self,
+                 stack1,
+                 stack2,
+                 dir_output="./siena/",
+                 options='-B "-B -f 0.1" -2',
+                 dir_tmp=os.path.join(DIR_TMP, "siena/")):
 
         self._stack1 = st.Stack.from_stack(stack1)
         self._stack2 = st.Stack.from_stack(stack2)
-        self._dir_output = dir_output 
-        self._dir_tmp = dir_tmp 
-        self._options = options 
-
+        self._dir_output = dir_output
+        self._dir_tmp = dir_tmp
+        self._options = options
 
     def run(self):
-        os.system("mkdir -p " + re.sub(" ","\ ", self._dir_tmp))
-        os.system("rm -rf " + self._dir_tmp + "*")
+        ph.create_directory(dir_tmp, delete_files=True)
 
-        ## Write images
-        sitk.WriteImage(self._stack1.sitk, self._dir_tmp + self._stack1.get_filename() + ".nii.gz")
-        sitk.WriteImage(self._stack2.sitk, self._dir_tmp + self._stack2.get_filename() + ".nii.gz")
+        # Write images
+        sitk.WriteImage(self._stack1.sitk, self._dir_tmp +
+                        self._stack1.get_filename() + ".nii.gz")
+        sitk.WriteImage(self._stack2.sitk, self._dir_tmp +
+                        self._stack2.get_filename() + ".nii.gz")
 
-        cmd  = "siena "
+        cmd = "siena "
         cmd += self._dir_tmp + self._stack1.get_filename() + ".nii.gz "
         cmd += self._dir_tmp + self._stack2.get_filename() + ".nii.gz "
         cmd += "-o " + self._dir_output + " "
@@ -51,13 +57,13 @@ class Siena(object):
         ph.execute_command(cmd)
         self._elapsed_time = ph.stop_timing(time_start)
 
-        ## Extract measures from report
+        # Extract measures from report
         self._extract_percentage_brain_volume_change()
 
-
     def print_statistics(self):
-        print("\tElapsed time: %s" %(self._elapsed_time))
-        print("\tPercentage Brain Volume Change (PBVC): %.2f%%" %(self._percentage_brain_volume_change))
+        print("\tElapsed time: %s" % (self._elapsed_time))
+        print("\tPercentage Brain Volume Change (PBVC): %.2f%%" %
+              (self._percentage_brain_volume_change))
 
     ##
     # Percentage Brain Volume Change
@@ -73,7 +79,6 @@ class Siena(object):
                 parts = line.split(" ")
                 break
         self._percentage_brain_volume_change = float(parts[1])
-
 
     def get_percentage_brain_volume_change(self):
         return self._percentage_brain_volume_change

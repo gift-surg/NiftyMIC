@@ -111,9 +111,8 @@ if __name__ == '__main__':
     else:
         recon0 = st.Stack.from_filename(args.reconstruction_space,
                                         extract_slices=False)
-        # recon0 = recon0.get_isotropically_resampled_stack(
-        #     spacing_new_scalar=args.isotropic_resolution,
-        #     extra_frame=args.extra_frame_target)
+        recon0 = \
+            stacks[args.target_stack_index].get_resampled_stack(recon0.sitk)
 
     SRR0 = tk.TikhonovSolver(
         stacks=stacks,

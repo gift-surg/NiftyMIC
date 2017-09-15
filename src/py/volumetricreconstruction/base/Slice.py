@@ -290,7 +290,7 @@ class Slice:
     def write(self, directory, filename=None, write_transform=False, suffix_mask="_mask", prefix_slice="_slice"):
 
         # Create directory if not existing
-        os.system("mkdir -p " + directory)
+        ph.create_directory(directory)
 
         # Construct filename
         if filename is None:
