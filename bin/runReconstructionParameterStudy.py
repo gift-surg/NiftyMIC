@@ -187,6 +187,7 @@ if __name__ == '__main__':
             iterations=args.iterations,
             measures=args.measures,
             dimension=3,
+            L2=16./reconstruction_space.sitk.GetSpacing()[0]**2,
             reconstruction_type=args.reconstruction_type,
             rho=args.rho,
             dir_output=args.dir_output,
