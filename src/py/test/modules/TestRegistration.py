@@ -494,7 +494,6 @@ class TestRegistration(unittest.TestCase):
         time_end = time.time()
         # print("Rigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
 
-    """
 
     def test_rigid_registration_of_stack(self):
         filename_prefix = "NoMotion_"
@@ -591,3 +590,6 @@ class TestRegistration(unittest.TestCase):
         print("\t|parameters-parameters_gd| = %s" % (str(norm_diff)))
         print("\tRigid registration test: Elapsed time = %s" %
               (registration.get_computational_time()))
+    """
+
+    test_rigid_motion

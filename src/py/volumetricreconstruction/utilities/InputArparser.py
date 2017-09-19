@@ -119,6 +119,16 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_metric(
+        self,
+        option_string="--metric",
+        type=str,
+        help="Metric for image registration method.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_labels(
         self,
         option_string="--labels",

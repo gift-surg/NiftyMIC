@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ##
-# \file studyTKL2ReconstructionParameters.py
+# \file runReconstructionParameterStudy.py
 # \brief      Script to study reconstruction parameters for least squares
 #             reconstruction with Tikhonov regularization.
 #
@@ -170,33 +170,34 @@ if __name__ == '__main__':
     )
     solver = tmp.get_solver()
 
-    parameter_study_interface = deconv_interface.DeconvolutionParameterStudyInterface(
-        A=solver.get_A(),
-        A_adj=solver.get_A_adj(),
-        D=solver.get_B(),
-        D_adj=solver.get_B_adj(),
-        b=solver.get_b(),
-        x0=solver.get_x0(),
-        alpha=solver.get_alpha(),
-        x_scale=solver.get_x_scale(),
-        data_loss=solver.get_data_loss(),
-        data_loss_scale=solver.get_data_loss_scale(),
-        iter_max=solver.get_iter_max(),
-        minimizer=solver.get_minimizer(),
-        iterations=args.iterations,
-        measures=args.measures,
-        dimension=3,
-        reconstruction_type=args.reconstruction_type,
-        rho=args.rho,
-        dir_output=args.dir_output,
-        parameters=parameters,
-        name=name,
-        reconstruction_info=reconstruction_info,
-        x_ref=x_ref,
-        x_ref_mask=x_ref_mask,
-        tv_solver=args.tv_solver,
-        verbose=args.verbose,
-    )
+    parameter_study_interface = \
+        deconv_interface.DeconvolutionParameterStudyInterface(
+            A=solver.get_A(),
+            A_adj=solver.get_A_adj(),
+            D=solver.get_B(),
+            D_adj=solver.get_B_adj(),
+            b=solver.get_b(),
+            x0=solver.get_x0(),
+            alpha=solver.get_alpha(),
+            x_scale=solver.get_x_scale(),
+            data_loss=solver.get_data_loss(),
+            data_loss_scale=solver.get_data_loss_scale(),
+            iter_max=solver.get_iter_max(),
+            minimizer=solver.get_minimizer(),
+            iterations=args.iterations,
+            measures=args.measures,
+            dimension=3,
+            reconstruction_type=args.reconstruction_type,
+            rho=args.rho,
+            dir_output=args.dir_output,
+            parameters=parameters,
+            name=name,
+            reconstruction_info=reconstruction_info,
+            x_ref=x_ref,
+            x_ref_mask=x_ref_mask,
+            tv_solver=args.tv_solver,
+            verbose=args.verbose,
+        )
     parameter_study_interface.set_up_parameter_study()
     parameter_study = parameter_study_interface.get_parameter_study()
 
