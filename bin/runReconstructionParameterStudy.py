@@ -136,12 +136,15 @@ if __name__ == '__main__':
 
     # ----------------------------Set Up Parameters----------------------------
     parameters = {}
-    parameters["alpha"] = np.linspace(*args.alpha_range)
+    parameters["alpha"] = np.linspace(
+        args.alpha_range[0], args.alpha_range[1], int(args.alpha_range[2]))
     if args.data_losses is not None:
         parameters["data_loss"] = args.data_losses
     if args.data_loss_scale_range is not None:
         parameters["data_loss_scale"] = np.linspace(
-            *args.data_loss_scale_range)
+            args.data_loss_scale_range[0],
+            args.data_loss_scale_range[1],
+            int(args.data_loss_scale_range[2]))
 
     # --------------------------Set Up Parameter Study-------------------------
     if args.study_name is None:

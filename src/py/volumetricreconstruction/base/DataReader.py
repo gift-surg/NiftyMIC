@@ -241,6 +241,7 @@ class ImageSlicesDirectoryReader(DataReader):
         self._suffix_mask = suffix_mask
         self._prefix_slice = prefix_slice
         self._image_selection = image_selection
+        self._transforms_sitk = None
 
     def read_data(self):
 
@@ -270,6 +271,7 @@ class ImageSlicesDirectoryReader(DataReader):
             filenames = [f for f in self._image_selection if f in filenames]
 
         self._stacks = [None] * len(filenames)
+        self._slice_transforms_sitk = [None] * len(filenames)
         for i, filename in enumerate(filenames):
 
             # Get slice names associated to stack
@@ -289,6 +291,26 @@ class ImageSlicesDirectoryReader(DataReader):
                 prefix_stack=filename,
                 suffix_mask=self._suffix_mask,
                 dic_slice_filenames=dic_slice_filenames)
+
+            # Read
+            self._slice_transforms_sitk[i] = [
+                sitk.ReadTransform(os.path.join(
+                    self._path_to_directory,
+                    "%s.tfm" % dic_slice_filenames[k]))
+                for k in sorted(dic_slice_filenames.keys())
+            ]
+
+    ##
+    # Gets the transforms associated with each individual slice for all stacks.
+    # \date       2017-09-20 01:20:30+0100
+    #
+    # \param      self  The object
+    #
+    # \return     List of slice transform lists. Each transform is of type
+    #             sitk.Transform
+    #
+    def get_slice_transforms_sitk(self):
+        return self._slice_transforms_sitk
 
 
 ##

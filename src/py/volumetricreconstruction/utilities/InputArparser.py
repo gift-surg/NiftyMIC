@@ -479,6 +479,16 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_option(
+        self,
+        option_string="--option",
+        type=float,
+        help="Add option.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_psf_aware(
         self,
         option_string='--psf-aware',
