@@ -63,7 +63,7 @@ class InputArgparser(object):
                                          prefix="log_script_execution_"):
         name = os.path.basename(file)
         performed_script_execution = ph.get_performed_script_execution(
-            name, self._parser.parse_args())
+            file, self._parser.parse_args())
         ph.write_performed_script_execution_to_executable_file(
             performed_script_execution,
             os.path.join(self._parser.parse_args().dir_output,
@@ -94,6 +94,17 @@ class InputArgparser(object):
         option_string="--dir-input",
         type=str,
         help="Input directory with NIfTI files %s." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_dir_inputs(
+        self,
+        option_string="--dir-inputs",
+        nargs="+",
+        type=str,
+        help="Input directories with NIfTI files %s." % (IMAGE_TYPES),
         default=None,
         required=False,
     ):

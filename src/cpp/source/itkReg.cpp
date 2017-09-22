@@ -87,8 +87,8 @@ typedef itk::ConjugateGradientLineSearchOptimizerv4Template< PixelType > Conjuga
 
 // typedef LBFGSBOptimizerOptimizerType OptimizerType;
 // typedef MultiStartOptimizerType OptimizerType;
-// typedef RegularStepGradientDescentOptimizerType OptimizerType;
-typedef ConjugateGradientLineSearchOptimizerType OptimizerType;
+typedef RegularStepGradientDescentOptimizerType OptimizerType;
+// typedef ConjugateGradientLineSearchOptimizerType OptimizerType;
 
 // Interpolator Types
 typedef itk::NearestNeighborInterpolateImageFunction< ImageType3D, PixelType > NearestNeighborInterpolatorType;
@@ -454,7 +454,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         optimizerRegularStep->SetScalesEstimator( scalesEstimator );
         optimizerRegularStep->SetLearningRate(1);
         optimizerRegularStep->SetMinimumStepLength( 1e-6 );
-        optimizerRegularStep->SetNumberOfIterations( 500 );
+        optimizerRegularStep->SetNumberOfIterations( 200 );
         optimizerRegularStep->SetRelaxationFactor( 0.5 );
         optimizerRegularStep->SetGradientMagnitudeTolerance( 1e-6 );
         optimizerRegularStep->SetDoEstimateLearningRateOnce( false );

@@ -65,8 +65,8 @@ if __name__ == '__main__':
     input_parser.add_prefix_output(default="_SRR")
     input_parser.add_target_stack_index(default=0)
     input_parser.add_sigma(default=0.9)
-    input_parser.add_alpha(default=0.03)
-    input_parser.add_alpha_first(default=0.1)
+    input_parser.add_alpha(default=0.02)
+    input_parser.add_alpha_first(default=0.05)
     input_parser.add_reg_type(default="TK1")
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)
@@ -90,7 +90,8 @@ if __name__ == '__main__':
 
     # Write script execution call
     if args.log_script_execution:
-        input_parser.write_performed_script_execution(__file__)
+        input_parser.write_performed_script_execution(
+            os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -252,20 +253,20 @@ if __name__ == '__main__':
             # use_multiresolution_framework=True,
             shrink_factors=[2, 1],
             smoothing_sigmas=[1, 0],
-            initializer_type=None,
-            # use_oriented_psf=True,
-            # optimizer="ConjugateGradientLineSearch",
-            # optimizer_params={
-            #     "learningRate": 1,
-            #     "numberOfIterations": 100,
-            # },
-            optimizer="RegularStepGradientDescent",
+            initializer_type="SelfGEOMETRY",
+            # use_oriented_psf=False,
+            optimizer="ConjugateGradientLineSearch",
             optimizer_params={
-                "minStep": 1e-6,
-                "numberOfIterations": 500,
-                "gradientMagnitudeTolerance": 1e-6,
                 "learningRate": 1,
+                "numberOfIterations": 100,
             },
+            # optimizer="RegularStepGradientDescent",
+            # optimizer_params={
+            #     "minStep": 1e-6,
+            #     "numberOfIterations": 500,
+            #     "gradientMagnitudeTolerance": 1e-6,
+            #     "learningRate": 1,
+            # },
         )
 
         # registration = regcppitk.RegistrationCppITK(

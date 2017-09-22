@@ -131,8 +131,12 @@ class VolumeToVolumeRegistration(RegistrationPipeline):
         self._registration_method.set_moving(self._reference)
 
         for i in range(0, len(self._stacks)):
-            ph.print_subtitle("Volume-to-Volume Registration -- "
-                              "Stack %d/%d" % (i+1, len(self._stacks)))
+            txt = "Volume-to-Volume Registration -- " \
+                "Stack %d/%d" % (i+1, len(self._stacks))
+            if self._verbose:
+                ph.print_subtitle(txt)
+            else:
+                ph.print_info(txt)
 
             self._registration_method.set_fixed(self._stacks[i])
             self._registration_method.run_registration()
@@ -192,12 +196,15 @@ class SliceToVolumeRegistration(RegistrationPipeline):
             slices = stack.get_slices()
             for j in range(0, len(slices)):
 
-                ph.print_subtitle(
-                    "%sSlice-to-Volume Registration -- "
+                txt = "%sSlice-to-Volume Registration -- " \
                     "Stack %d/%d -- Slice %d/%d" % (
                         self._print_prefix,
                         i+1, len(self._stacks),
-                        j+1, len(slices)))
+                        j+1, len(slices))
+                if self._verbose:
+                    ph.print_subtitle(txt)
+                else:
+                    ph.print_info(txt)
 
                 self._registration_method.set_fixed(slices[j])
                 self._registration_method.run_registration()

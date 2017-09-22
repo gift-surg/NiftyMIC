@@ -74,7 +74,8 @@ if __name__ == '__main__':
 
     # Write script execution call
     if args.log_script_execution:
-        input_parser.write_performed_script_execution(__file__)
+        input_parser.write_performed_script_execution(
+            os.path.abspath(__file__))
 
     # Read Data:
     ph.print_title("Read Data")

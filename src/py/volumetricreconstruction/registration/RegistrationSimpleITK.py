@@ -41,24 +41,24 @@ class RegistrationSimpleITK(AffineRegistrationMethod):
         interpolator="Linear",
         metric="Correlation",
         metric_params=None,
-        optimizer="ConjugateGradientLineSearch",
-        optimizer_params={
-            "learningRate": 1,
-            "numberOfIterations": 100,
-        },
-        # optimizer="RegularStepGradientDescent",
+        # optimizer="ConjugateGradientLineSearch",
         # optimizer_params={
-        #     "minStep": 1e-6,
-        #     "numberOfIterations": 200,
-        #     "gradientMagnitudeTolerance": 1e-6,
         #     "learningRate": 1,
+        #     "numberOfIterations": 100,
         # },
+        optimizer="RegularStepGradientDescent",
+        optimizer_params={
+            "minStep": 1e-6,
+            "numberOfIterations": 200,
+            "gradientMagnitudeTolerance": 1e-6,
+            "learningRate": 1,
+        },
         scales_estimator="PhysicalShift",
         initializer_type=None,
         use_oriented_psf=False,
         use_multiresolution_framework=False,
-        shrink_factors=[4, 2, 1],
-        smoothing_sigmas=[2, 1, 0],
+        shrink_factors=[2, 1],
+        smoothing_sigmas=[1, 0],
         use_verbose=False,
     ):
 
@@ -72,7 +72,8 @@ class RegistrationSimpleITK(AffineRegistrationMethod):
                                           )
 
         self._REGISTRATION_TYPES = ["Rigid", "Similarity", "Affine"]
-        self._INITIALIZER_TYPES = [None, "MOMENTS", "GEOMETRY"]
+        self._INITIALIZER_TYPES = [None, "MOMENTS", "GEOMETRY",
+                                   "SelfGEOMETRY", "SelfMOMENTS"]
         self._SCALES_ESTIMATORS = ["IndexShift", "PhysicalShift", "Jacobian"]
 
         self._interpolator = interpolator

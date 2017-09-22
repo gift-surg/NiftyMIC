@@ -68,7 +68,8 @@ if __name__ == '__main__':
     input_parser.add_verbose(default=1)
 
     # Range for parameter sweeps
-    input_parser.add_alpha_range(default=[0.001, 0.006, 6])
+    input_parser.add_alpha_range(default=[0.001, 0.05, 20])  # TK1L2
+    # input_parser.add_alpha_range(default=[0.001, 0.003, 10])  # TVL2, HuberL2
     input_parser.add_data_losses(
         # default=["linear", "arctan"]
     )
@@ -85,7 +86,8 @@ if __name__ == '__main__':
 
     # Write script execution call
     if args.log_script_execution:
-        input_parser.write_performed_script_execution(__file__)
+        input_parser.write_performed_script_execution(
+            os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -122,6 +124,8 @@ if __name__ == '__main__':
             extract_slices=False)
 
         reconstruction_space = stacks[0].get_resampled_stack(reference.sitk)
+        reconstruction_space = \
+            reconstruction_space.get_stack_multiplied_with_mask()
         x_ref = sitk.GetArrayFromImage(reference.sitk).flatten()
         x_ref_mask = sitk.GetArrayFromImage(reference.sitk_mask).flatten()
 
@@ -129,8 +133,10 @@ if __name__ == '__main__':
         reconstruction_space = st.Stack.from_filename(
             file_path=args.reconstruction_space,
             extract_slices=False)
-        reconstruction_space = stacks[
-            0].get_resampled_stack(reconstruction_space.sitk)
+        reconstruction_space = stacks[0].get_resampled_stack(
+            reconstruction_space.sitk)
+        reconstruction_space = \
+            reconstruction_space.get_stack_multiplied_with_mask()
         x_ref = None
         x_ref_mask = None
 
@@ -160,6 +166,7 @@ if __name__ == '__main__':
     }
 
     # Create Tikhonov solver from which all information can be extracted
+    # (also for other reconstruction types)
     tmp = tk.TikhonovSolver(
         stacks=stacks,
         reconstruction=reconstruction_space,
