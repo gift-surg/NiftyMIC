@@ -49,6 +49,7 @@ class RegistrationCppITK(RegistrationSimpleITK):
     def __init__(self,
                  fixed=None,
                  moving=None,
+                 cov=None,
                  use_fixed_mask=False,
                  use_moving_mask=False,
                  registration_type="Rigid",
@@ -81,7 +82,7 @@ class RegistrationCppITK(RegistrationSimpleITK):
             smoothing_sigmas=None,
             use_verbose=use_verbose,
         )
-
+        self._cov = cov
         self._REGISTRATION_TYPES = ["Rigid", "Affine", "InplaneSimilarity"]
         self._INITIALIZER_TYPES = [None]
         self._SCALES_ESTIMATORS = ["IndexShift", "PhysicalShift", "Jacobian"]
@@ -198,8 +199,10 @@ class RegistrationCppITK(RegistrationSimpleITK):
         # Compute oriented Gaussian PSF if desired
         if self._interpolator in ["OrientedGaussian"]:
             # Get oriented Gaussian covariance matrix
-            cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
-                self._fixed, self._moving).flatten()
+            # cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+            #     # self._fixed, self._moving).flatten()
+            #     self._moving, self._fixed).flatten()
+            cov_HR_coord = self._cov.flatten()
             cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
         ph.execute_command(cmd, verbose=0)
@@ -209,22 +212,18 @@ class RegistrationCppITK(RegistrationSimpleITK):
             self._dir_tmp + registration_transform_str + ".txt")
 
         if self._registration_type in ["Rigid"]:
-            self._parameters_fixed = params_all[1:4]
+            self._parameters_fixed = params_all[0:4]
             self._parameters = params_all[4:]
             self._registration_transform_sitk = sitk.Euler3DTransform()
-
-            # Append zero for m_ComputeZYX = 0 (part of fixed params in
-            # SimpleITK 1.0.0)
-            fixed_parameters = np.append(self._parameters_fixed, [0])
 
         else:
             self._parameters_fixed = params_all[0:3]
             self._parameters = params_all[3:]
             self._registration_transform_sitk = sitk.AffineTransform(3)
-            fixed_parameters = self._parameters_fixed
 
         self._registration_transform_sitk.SetParameters(self._parameters)
-        self._registration_transform_sitk.SetFixedParameters(fixed_parameters)
+        self._registration_transform_sitk.SetFixedParameters(
+            self._parameters_fixed)        
 
         # Debug
         # moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._registration_transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
@@ -292,7 +291,8 @@ class RegistrationCppITK(RegistrationSimpleITK):
             # Get oriented Gaussian covariance matrix
             cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
                 self._fixed, self._moving).flatten()
-            cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'" + endl
+            cmd += "--cov " + "'" + \
+                ' '.join(cov_HR_coord.astype("|S12")) + "'" + endl
 
         # if self._use_verbose:
         ph.execute_command(cmd)

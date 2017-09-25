@@ -49,7 +49,8 @@ class TestRegistration(unittest.TestCase):
     accuracy = 2
 
     def setUp(self):
-        pass
+        # Set print options for numpy
+        np.set_printoptions(precision=3)
 
     """
     def test_GradientEuler3DTransformImageFilter(self):
@@ -412,10 +413,12 @@ class TestRegistration(unittest.TestCase):
         #                 # print(diff)
         #             print("Minimum = %s at index = %s" %(foo, foo_index))
 
+    """
 
     def test_translation_registration_of_slices(self):
 
-        filename_prefix = "TranslationOnly_"
+        # filename_prefix = "TranslationOnly_"
+        filename_prefix = "RigidTransform_"
 
         filename_HRVolume = "HRVolume"
         filename_StackSim = filename_prefix + "StackSimulated"
@@ -428,24 +431,40 @@ class TestRegistration(unittest.TestCase):
         slices_sim = stack_sim.get_slices()
         N_slices = len(slices_sim)
 
+        scale = np.array([180. / np.pi, 180. / np.pi, 180. / np.pi, 1., 1., 1.])
         time_start = ph.start_timing()
 
         for j in range(0, N_slices):
+        # for j in range(20, N_slices):
             rigid_transform_groundtruth_sitk = sitk.ReadTransform(
                 self.dir_test_data + filename_transforms_prefix + str(j) + ".tfm")
             parameters_gd = np.array(
                 rigid_transform_groundtruth_sitk.GetParameters())
 
+            angle_max = 5. * np.pi / 180.
+            t_max = 5.
             registration = myreg.Registration(
-                fixed=slices_sim[j], moving=HR_volume)
+                fixed=slices_sim[j], moving=HR_volume,
+                # initializer_type="SelfGEOMETRY",
+                use_verbose=0,
+                # data_loss="soft_l1",
+                # x_scale=[angle_max, angle_max, angle_max, t_max, t_max, t_max],
+            )
             registration.run_registration()
             # registration.print_statistics()
 
             # Check parameters
-            parameters = registration.get_parameters()
-
+            transform_sitk = registration.get_registration_transform_sitk()
+            parameters = np.array(transform_sitk.GetParameters())
             norm_diff = np.linalg.norm(parameters-parameters_gd)
-            # print("Slice %s/%s: |parameters-parameters_gd| = %s" %(j, N_slices-1, str(norm_diff)) )
+
+            params = parameters * scale
+            params_gt = parameters_gd * scale
+            print("Slice %s/%s: |parameters-parameters_gd| = %s" %
+                  (j, N_slices-1, str(norm_diff)))
+            print("\tEst:  " + str(params) + " (deg/mmm)")
+            print("\tGT:   " + str(params_gt) + " (deg/mmm)")
+            print("\tDiff: " + str(params - params_gt) + " (deg/mmm)")
 
             self.assertEqual(np.round(
                 norm_diff, decimals=self.accuracy), 0)
@@ -453,6 +472,7 @@ class TestRegistration(unittest.TestCase):
         # Set elapsed time
         print("Translation: " + str(ph.stop_timing(time_start)))
 
+    """
     def test_rigid_registration_of_slices(self):
 
         filename_prefix = "RigidTransform_"
@@ -493,7 +513,6 @@ class TestRegistration(unittest.TestCase):
         # Set elapsed time
         time_end = time.time()
         # print("Rigid registration test: Elapsed time = %s" %(timedelta(seconds=time_end-time_start)))
-
 
     def test_rigid_registration_of_stack(self):
         filename_prefix = "NoMotion_"
@@ -591,5 +610,3 @@ class TestRegistration(unittest.TestCase):
         print("\tRigid registration test: Elapsed time = %s" %
               (registration.get_computational_time()))
     """
-
-    test_rigid_motion

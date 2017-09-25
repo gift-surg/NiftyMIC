@@ -12,7 +12,7 @@ import sys
 import itk
 import SimpleITK as sitk
 import numpy as np
-import scipy
+import scipy.optimize
 import time
 from datetime import timedelta
 
@@ -23,6 +23,7 @@ from numericalsolver.LossFunctions import LossFunctions as lf
 # Import modules
 import volumetricreconstruction.base.PSF as psf
 import volumetricreconstruction.base.Slice as sl
+import volumetricreconstruction.base.Stack as st
 from volumetricreconstruction.registration.RegistrationMethod \
     import AffineRegistrationMethod
 
@@ -71,6 +72,8 @@ class Registration(AffineRegistrationMethod):
                  alpha_cut=3,
                  data_loss="linear",
                  minimizer="least_squares",
+                 initializer_type=None,
+                 x_scale=1.,
                  ):
 
         AffineRegistrationMethod.__init__(self,
@@ -87,6 +90,8 @@ class Registration(AffineRegistrationMethod):
         self._minimizer = minimizer
         self._data_loss = data_loss
         self._alpha_cut = alpha_cut
+        self._x_scale = x_scale
+        self._initializer_type = initializer_type
 
         # Used for PSF modelling
         self._psf = psf.PSF()
@@ -100,8 +105,11 @@ class Registration(AffineRegistrationMethod):
         # Create transform instances
         self._rigid_transform_itk = itk.Euler3DTransform[PIXEL_TYPE].New()
         self._parameters_itk = self._rigid_transform_itk.GetParameters()
+        self._fixed_parameters_itk = \
+            self._rigid_transform_itk.GetFixedParameters()
         self._dof_transform = self._rigid_transform_itk.GetNumberOfParameters()
-        self._parameters = [None]*self._dof_transform
+        self._parameters = None
+        self._fixed_parameters = None
 
     ##
     # Initialize registration class
@@ -144,9 +152,43 @@ class Registration(AffineRegistrationMethod):
         self._filter_gradient_transform.SetTransform(self._rigid_transform_itk)
 
         if self._use_fixed_mask:
-            # self._nda_mask = sitk.GetArrayFromImage(self._fixed.sitk_mask).reshape(-1,1)
+            # self._nda_mask =
+            # sitk.GetArrayFromImage(self._fixed.sitk_mask).reshape(-1,1)
             self._nda_mask = sitk.GetArrayFromImage(
                 self._fixed.sitk_mask).flatten()
+
+        initial_transform = sitk.Euler3DTransform()
+        if self._initializer_type is not None:
+            if self._initializer_type in ["MOMENTS", "GEOMETRY"]:
+                moving_sitk = self._moving.sitk
+                initializer_type = self._initializer_type
+            elif self._initializer_type == "SelfMOMENTS":
+                moving_sitk = self._fixed.sitk
+                initializer_type = "MOMENTS"
+            elif self._initializer_type == "SelfGEOMETRY":
+                moving_sitk = self._fixed.sitk
+                initializer_type = "GEOMETRY"
+            else:
+                raise ValueError("Initializer type '%s' unknown"
+                                 % (self._initializer_type))
+            initial_transform = sitk.CenteredTransformInitializer(
+                self._fixed.sitk,
+                moving_sitk,
+                initial_transform,
+                eval("sitk.CenteredTransformInitializerFilter.%s" % (
+                    initializer_type))
+            )
+        self._parameters = initial_transform.GetParameters()
+        self._fixed_parameters = initial_transform.GetFixedParameters()
+
+        for i in range(0, self._dof_transform):
+            self._parameters_itk.SetElement(i, self._parameters[i])
+        for i in range(0, len(self._fixed_parameters)):
+            self._fixed_parameters_itk.SetElement(i, self._fixed_parameters[i])
+        self._rigid_transform_itk.SetParameters(
+            self._parameters_itk)
+        self._rigid_transform_itk.SetFixedParameters(
+            self._fixed_parameters_itk)
 
     #
     # Set cut-off distance
@@ -199,9 +241,14 @@ class Registration(AffineRegistrationMethod):
         nda_fixed = sitk.GetArrayFromImage(self._fixed.sitk)
 
         # Define variables for least-squares optimization
-        residual = lambda x: self._get_residual_data_fit(x, nda_fixed)
-        jacobian_residual = lambda x: self._get_jacobian_residual_data_fit(x)
-        x0 = np.zeros(self._dof_transform)
+        residual = lambda x: self._get_residual_data_fit(
+            parameters=x,
+            fixed_parameters=self._fixed_parameters,
+            nda_fixed=nda_fixed)
+        jacobian_residual = lambda x: self._get_jacobian_residual_data_fit(
+            parameters=x,
+            fixed_parameters=self._fixed_parameters)
+        x0 = np.array(self._parameters)
 
         if self._minimizer == "least_squares":
 
@@ -209,15 +256,16 @@ class Registration(AffineRegistrationMethod):
                 method = "lm"
             else:
                 method = "trf"
-            ph.print_info("least_squares method: %s" % (method))
+            if self._use_verbose:
+                ph.print_info("least_squares method: %s" % (method))
 
             # Non-linear least-squares method:
             self._parameters = scipy.optimize.least_squares(
                 fun=residual,
                 jac=jacobian_residual,
                 x0=x0,
-                # x_scale='jac',
-                method=method,
+                x_scale=self._x_scale,
+                # method=method,
                 loss=self._data_loss,
                 verbose=2*self._use_verbose,
             ).x
@@ -241,8 +289,15 @@ class Registration(AffineRegistrationMethod):
                     'disp': self._use_verbose},
             ).x
 
-        self._registration_transform_sitk = sitk.Euler3DTransform()
-        self._registration_transform_sitk.SetParameters(self._parameters)
+        # Build new transform
+        transform_sitk = sitk.Euler3DTransform()
+        transform_sitk.SetParameters(self._parameters)
+        transform_sitk.SetFixedParameters(self._fixed_parameters)
+
+        # Get transform where center (fixed_params) is set to zero
+        self._registration_transform_sitk = \
+            sitkh.get_composite_sitk_affine_transform(
+                transform_sitk, sitk.Euler3DTransform())
 
     def _get_warped_moving_sitk(self):
         warped_moving_sitk = sitk.Resample(
@@ -266,10 +321,12 @@ class Registration(AffineRegistrationMethod):
     # \return     The residual data fit as Nk-array, i.e. the number of voxels
     #             of slice y_k.
     #
-    def _get_residual_data_fit(self, parameters, nda_fixed):
+    def _get_residual_data_fit(self, parameters, fixed_parameters, nda_fixed):
 
         Ak_vol_itk = self._execute_oriented_gaussian_interpolate_image_filter(
-            parameters, use_jacobian=False)
+            parameters=parameters,
+            fixed_parameters=fixed_parameters,
+            use_jacobian=False)
 
         nda_Ak_vol = self._itk2np.GetArrayFromImage(Ak_vol_itk)
         residual = (nda_fixed - nda_Ak_vol).flatten()
@@ -288,15 +345,16 @@ class Registration(AffineRegistrationMethod):
     #
     # \return     The Jacobian residual data fit as (Nk x 6)-array
     #
-    def _get_jacobian_residual_data_fit(self, parameters):
+    def _get_jacobian_residual_data_fit(self, parameters, fixed_parameters):
 
         # Allocate array for Jacobian of residual
         jacobian_nda = np.zeros((self._fixed_voxels, self._dof_transform))
 
         # Get Jacobian of filtered image w.r.t. spatial coordinates
-        jacobian_spatial_Ak_vol_itk = \
-            self._execute_oriented_gaussian_interpolate_image_filter(
-                parameters, use_jacobian=True)
+        jacobian_spatial_Ak_vol_itk = self._execute_oriented_gaussian_interpolate_image_filter(
+            parameters=parameters,
+            fixed_parameters=fixed_parameters,
+            use_jacobian=True)
 
         # Get array of Jacobian of forward operator w.r.t. spatial coordinates
         nda_gradient_filter = self._itk2np_CVD33.GetArrayFromImage(
@@ -308,8 +366,15 @@ class Registration(AffineRegistrationMethod):
         # Get array of Jacobian of transform w.r.t. parameters
         for i in range(0, self._dof_transform):
             self._parameters_itk.SetElement(i, parameters[i])
-
         self._rigid_transform_itk.SetParameters(self._parameters_itk)
+
+        # for i in range(0, len(fixed_parameters)):
+        #     self._fixed_parameters_itk.SetElement(i, fixed_parameters[i])
+        # self._rigid_transform_itk.SetFixedParameters(
+        # self._fixed_parameters_itk)
+        # for i in range(self._fixed_parameters_itk.GetNumberOfElements()):
+        # print self._rigid_transform_itk.GetFixedParameters().GetElement(i)
+
         self._filter_gradient_transform.Update()
 
         # Get Jacobian of transform w.r.t. parameters at locations specified by
@@ -352,11 +417,13 @@ class Registration(AffineRegistrationMethod):
     #
     def _execute_oriented_gaussian_interpolate_image_filter(self,
                                                             parameters,
+                                                            fixed_parameters,
                                                             use_jacobian):
 
         # Create registration transform based on parameters
         transform_sitk = sitk.Euler3DTransform()
         transform_sitk.SetParameters(parameters)
+        transform_sitk.SetFixedParameters(fixed_parameters)
 
         # Get composite affine transform: reg_trafo \circ fixed_space
         composite_transform_sitk = sitkh.get_composite_sitk_affine_transform(
@@ -378,8 +445,13 @@ class Registration(AffineRegistrationMethod):
         self._filter_oriented_Gaussian.UpdateLargestPossibleRegion()
 
         # Set oriented PSF based on transformed fixed space
-        Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates_from_direction_and_spacing(
-            direction_sitk, self._fixed_spacing, self._moving)
+        # transformed_fixed = st.Stack.from_sitk_image(
+        #     sitkh.get_transformed_sitk_image(self._fixed.sitk, transform_sitk))
+        # Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(transformed_fixed, self._moving)
+        # print Cov_HR_coord
+        # Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates_from_direction_and_spacing(
+        #     direction_sitk, self._fixed_spacing, self._moving)
+        Cov_HR_coord = np.eye(3)
         self._filter_oriented_Gaussian.SetCovariance(Cov_HR_coord.flatten())
 
         # Compute simulated fixed from volume and its Jacobian w.r.t. to
@@ -395,8 +467,7 @@ class Registration(AffineRegistrationMethod):
 
         # 2) Compute Jacobian w.r.t. to spatial coordinates
         else:
-            jacobian_spatial_Ak_vol_itk = \
-                self._filter_oriented_Gaussian.GetJacobian()
+            jacobian_spatial_Ak_vol_itk = self._filter_oriented_Gaussian.GetJacobian()
             jacobian_spatial_Ak_vol_itk.DisconnectPipeline()
 
             return jacobian_spatial_Ak_vol_itk

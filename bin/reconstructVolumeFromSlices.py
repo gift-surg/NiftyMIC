@@ -57,7 +57,10 @@ if __name__ == '__main__':
     input_parser.add_reg_type(default="TK1")
     input_parser.add_data_loss(default="linear")
     input_parser.add_data_loss_scale(default=1)
-    input_parser.add_alpha(default=0.02)
+    input_parser.add_alpha(
+        default=0.02  # TK1L2
+        # default=0.003  #TVL2, HuberL2
+    )
     input_parser.add_rho(default=0.5)
     input_parser.add_tv_solver(default="PD")
     input_parser.add_pd_alg_type(default="ALG2")

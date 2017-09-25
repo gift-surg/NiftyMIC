@@ -307,8 +307,9 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
     initializer->SetTransform(initialTransform);
     initializer->SetFixedImage( fixed );
-    initializer->SetMovingImage( moving );
-    if (0){
+    initializer->SetMovingImage( fixed );
+    // initializer->SetMovingImage( moving );
+    if (1){
         initializer->GeometryOn();
         // initializer->MomentsOn();
         initializer->InitializeTransform();
@@ -454,7 +455,7 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         optimizerRegularStep->SetScalesEstimator( scalesEstimator );
         optimizerRegularStep->SetLearningRate(1);
         optimizerRegularStep->SetMinimumStepLength( 1e-6 );
-        optimizerRegularStep->SetNumberOfIterations( 200 );
+        optimizerRegularStep->SetNumberOfIterations( 500 );
         optimizerRegularStep->SetRelaxationFactor( 0.5 );
         optimizerRegularStep->SetGradientMagnitudeTolerance( 1e-6 );
         optimizerRegularStep->SetDoEstimateLearningRateOnce( false );
