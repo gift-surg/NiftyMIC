@@ -8,22 +8,25 @@ If you have any questions or comments (or find bugs), please drop an email to @m
 # How it works
 
 Several methods have been implemented to solve the SR Reconstruction (SRR) problem
-$\vec{x^*} := \argmin_x \Big[\sum_{k=1}^K \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha \text{Reg}(\vec{x}) \Big]$
+```math
+\vec{x}^* := \text{argmin}_{\vec{x}} \Big[\sum_{k=1}^K \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big]
+```
 
-to obtain the high-resolution volume $\vec{x}$ from multiple, possibly (rigid) motion corrupted, low-resolution stacks of 2D slices ${\vec{y}_k}_{k=1}^K$
-for a variety of regularizers $\Reg$ and data loss functions $\varrho$.
+to obtain the (vectorized) high-resolution 3D volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly (rigid) motion corrupted, low-resolution stacks of (vectorized) 2D slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$.
+for a variety of regularizers $\Reg$ and data loss functions $`\varrho`$.
+The linear operator $`A_k := D_k B_k W_k`$ represents the combined operator describing the (rigid) motion $`W_k`$, the blurring operator $`B_k`$ and the downsampling operator $`D_k`$.
 Regularizers include
-* Zeroth-order Tikhonov: $\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \vec{x} \Vert_{\ell^2}^2$
-* First-order Tikhonov: $\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \nabla \vec{x} \Vert_{\ell^2}^2$
-* Isotropic Total Variation: $\text{Reg}(\vec{x}) = \text{TV}_\text{iso}(\vec{x}) = \Vert |\nabla \vec{x}| \Vert_{\ell^1}$
-* Huber Function: $\text{Reg}(\vec{x}) =  \big| |\nabla \vec{x}| \big|_{\gamma}$
+* Zeroth-order Tikhonov (TK0): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \vec{x} \Vert_{\ell^2}^2`$
+* First-order Tikhonov (TK1): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \nabla \vec{x} \Vert_{\ell^2}^2`$
+* Isotropic Total Variation (TV): $`\text{Reg}(\vec{x}) = \text{TV}_\text{iso}(\vec{x}) = \big\Vert |\nabla \vec{x}| \big\Vert_{\ell^1}`$
+* Huber Function: $`\text{Reg}(\vec{x}) = \frac{1}{2\gamma} \big| |\nabla \vec{x}| \big|_{\gamma}`$
 
-Data loss functions $\varrho$ are motivated by [[SciPy]](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and include 
-* `linear`: $\varrho(e) = e $ 
-* `soft_l1`: $\varrho(e) = 2 (\sqrt{1+e} - 1)$ 
-<!-- * `huber`: $\varrho(e) = 2 (\sqrt{1+e} - 1)$  -->
-* `arctan`: $\varrho(e) = \text{arctan}(e)$
-* `cauchy`: $\varrho(e) = \text{cauchy}(e)$
+Data loss functions $\varrho$ are motivated by [[SciPy]](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and allow for robust outlier rejection. Implemented data loss functions include:
+* `linear`: $`\varrho(e) = e `$ 
+* `soft_l1`: $`\varrho(e) = 2 (\sqrt{1+e} - 1)`$ 
+* `huber`: $`\varrho(e) = |e|_\gamma = \begin{cases} e, & e < \gamma^2 \\ 2\gamma\sqrt{e} - \gamma^2, & e\ge \gamma^2\end{cases}`$
+* `arctan`: $`\varrho(e) = \arctan(e)`$
+* `cauchy`: $`\varrho(e) = \ln(1 + e)`$
 
 # Installation
 The Installation instructions can be found in the [[Wiki]](https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction/wikis/home).
@@ -34,32 +37,75 @@ The Installation instructions can be found in the [[Wiki]](https://cmiclab.cs.uc
 Leveraging a two-step registration-reconstruction approach an isotropic, high-resolution 3D volume can be generated from multiple stacks of low-resolution slices.
 
 Examples for basic usage are:
-* `python bin/reconstructVolume.py --dir-input dir-with-multiple-stacks --dir-output output-dir`
-* `python bin/reconstructVolume.py --filenames path-to-stack1 ... path-to-stackN --dir-output output-dir`
+* `python bin/reconstructVolume.py \
+--dir-input dir-with-multiple-stacks \
+--dir-output output-dir \
+--suffix-mask _mask`
+* `python bin/reconstructVolume.py \
+--filenames path-to-stack1 ... path-to-stackN \
+--dir-output output-dir \
+--suffix-mask _mask`
 
 The obtained motion-correction transformations can be stored for further processing, e.g. for `reconstructVolumeFromSlices.py` to solve the SRR problem for a variety of different solvers.
 
-## Super-Resolution Reconstruction Methods for Motion Corrected (or Static) Data
+## SRR Methods for Motion Corrected (or Static) Data
 
 The SRR problem can be solved for a variety of different solvers for
 ..1. motion corrected data and, 
 ..2. static data
 
-### Super-Resolution Reconstruction from Motion Corrected (or Static) Slice Acquisitions
+### SRR from Motion Corrected (or Static) Slice Acquisitions
 Solve the SRR problem for motion corrected data:
-* `python bin/reconstructVolumeFromSlices.py --dir-input dir-to-motion-correction --dir-output output-dir --reconstruction-type TVL2 --alpha 0.003`
+* `python bin/reconstructVolumeFromSlices.py \
+--dir-input dir-to-motion-correction \
+--dir-output output-dir \
+--reconstruction-type HuberL2 \
+--alpha 0.003`
+* `python bin/reconstructVolumeFromSlices.py \
+--dir-input dir-to-motion-correction \
+--dir-output output-dir \
+--reconstruction-type TK1L2 \
+--alpha 0.03`
 
 Solve the SRR problem for static data:
-* `python bin/reconstructVolumeFromSlices.py --filenames path-to-stack1 ... path-to-stackN --dir-output output-dir --reconstruction-type HuberL2 --alpha 0.003`
-* `python bin/reconstructVolumeFromSlices.py --filenames path-to-stack1 ... path-to-stackN --dir-output output-dir --reconstruction-type HuberL2 --alpha 0.003 --suffix-mask _mask`
+* `python bin/reconstructVolumeFromSlices.py \
+--filenames path-to-stack1 ... path-to-stackN \
+--dir-output output-dir \
+--reconstruction-type HuberL2 \
+--alpha 0.003 
+--suffix-mask _mask`
+* `python bin/reconstructVolumeFromSlices.py \
+--filenames path-to-stack1 ... path-to-stackN \
+--dir-output output-dir \
+--reconstruction-type TK1L2 \
+--alpha 0.03 \
+--suffix-mask _mask`
 
-### Parameter Studies to Determine Optimal Reconstruction Parameters
-The optimal choice for reconstruction parameters like the regularization parameter or data loss function can be found by running parameter studies.
+### Parameter Studies to Determine Optimal SRR Parameters
+The optimal choice for reconstruction parameters like the regularization parameter or data loss function can be found by running parameter studies. This includes L-curve studies and direct comparison against a reference volume for various cost functions.
 
-Examples for usage are:
-* `python bin/runReconstructionParameterStudy.py --dir-input dir-to-motion-correction --reconstruction-type TVL2 --alpha-range 0.001 0.003 10`
-* `python bin/runReconstructionParameterStudy.py --dir-input dir-to-motion-correction --reconstruction-type TVL2 --alpha-range 0.001 0.003 10`
-* `python bin/runReconstructionParameterStudy.py --dir-input dir-to-motion-correction --reconstruction-type TK1L2 --alpha-range 0.001 0.05 20 --data-loss arctan --data-loss-scale 0.8`
+Example are:
+* `python bin/runReconstructionParameterStudy.py \
+--dir-input dir-to-motion-correction \
+--reconstruction-type HuberL2 \
+--reference path-to-reference-volume.nii.gz \
+--reference-mask path-to-reference-volume_mask.nii.gz \
+--measures RMSE PSNR NCC NMI SSIM \
+--alpha-range 0.001 0.003 10`
+* `python bin/runReconstructionParameterStudy.py \
+--dir-input dir-to-motion-correction \
+--reconstruction-type TVL2 \
+--reference path-to-reference-volume.nii.gz \
+--reference-mask path-to-reference-volume_mask.nii.gz \
+--measures RMSE PSNR NCC NMI SSIM \
+--alpha-range 0.001 0.003 10`
+* `python bin/runReconstructionParameterStudy.py \
+--dir-input dir-to-motion-correction \
+--reconstruction-type TK1L2 \
+--reference path-to-reference-volume.nii.gz \
+--reference-mask path-to-reference-volume_mask.nii.gz \
+--measures RMSE PSNR NCC NMI SSIM \
+--alpha-range 0.001 0.05 20`
 
 
 # References
