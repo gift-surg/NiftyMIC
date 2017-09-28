@@ -12,7 +12,7 @@ Several methods have been implemented to solve the **Super-Resolution Reconstruc
 \vec{x}^* := \text{argmin}_{\vec{x}} \Big[\sum_{k=1}^K \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big]
 ```
 
-to obtain the (vectorized) high-resolution 3D volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly (rigid) motion corrupted, low-resolution stacks of (vectorized) 2D slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$
+to obtain the (vectorized) high-resolution 3D volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$
 for a variety of regularizers $`\text{Reg}`$ and data loss functions $`\varrho`$.
 The linear operator $`A_k := D_k B_k W_k`$ represents the combined operator describing the (rigid) motion $`W_k`$, the blurring operator $`B_k`$ and the downsampling operator $`D_k`$.
 
