@@ -38,7 +38,12 @@ The provided **data loss functions** $`\varrho`$ are motivated by [SciPy](https:
 Additionally, the choice of finding **optimal reconstruction parameters** is facilitated by the [NumericalSolver](https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver) tool.
 
 # Installation
-The Installation instructions can be found in the [Wiki](https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction/wikis/home).
+This toolkit depends on a variety of software packages developed within the [GIFT-Surg](http://www.gift-surg.ac.uk/) including
+* [NumericalSolver](https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver)
+* [RegistrationTools](https://cmiclab.cs.ucl.ac.uk/mebner/RegistrationTools)
+* [PythonHelper](https://cmiclab.cs.ucl.ac.uk/mebner/PythonHelper)
+
+Further information on the installation instructions can be found in the [Wiki](https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction/wikis/home).
 
 # Usage
 
