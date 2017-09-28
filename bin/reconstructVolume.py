@@ -60,7 +60,7 @@ if __name__ == '__main__':
     )
     input_parser.add_dir_input()
     input_parser.add_filenames()
-    input_parser.add_dir_output(default="results/")
+    input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_prefix_output(default="_SRR")
     input_parser.add_target_stack_index(default=0)

@@ -50,7 +50,7 @@ class PrimalDualSolver(Solver):
                  minimizer="lsmr",
                  x_scale="max",
                  data_loss="linear",
-                 data_loss_scale="max",
+                 data_loss_scale=1,
                  huber_gamma=1.345,
                  deconvolution_mode="full_3D",
                  predefined_covariance=None,
@@ -147,8 +147,11 @@ class PrimalDualSolver(Solver):
         prox_f = lambda x, tau: prox.prox_linear_least_squares(
             x=x, tau=tau,
             A=A, A_adj=A_adj,
-            b=b, x0=x0, x_scale=x_scale,
+            b=b, x0=x0,
             iter_max=self._iter_max,
+            x_scale=x_scale,
+            data_loss=self._data_loss,
+            data_loss_scale=self._data_loss_scale,
             verbose=self._verbose)
 
         if self._reg_type == "TV":

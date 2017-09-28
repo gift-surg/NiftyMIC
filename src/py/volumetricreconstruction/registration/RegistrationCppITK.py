@@ -198,11 +198,13 @@ class RegistrationCppITK(RegistrationSimpleITK):
 
         # Compute oriented Gaussian PSF if desired
         if self._interpolator in ["OrientedGaussian"]:
-            # Get oriented Gaussian covariance matrix
-            # cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
-            #     # self._fixed, self._moving).flatten()
-            #     self._moving, self._fixed).flatten()
-            cov_HR_coord = self._cov.flatten()
+            if self._cov is None:
+                # Get oriented Gaussian covariance matrix
+                cov_HR_coord = psf.PSF().\
+                    get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+                    self._moving, self._fixed).flatten()
+            else:
+                cov_HR_coord = self._cov.flatten()
             cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
         ph.execute_command(cmd, verbose=0)
@@ -223,7 +225,7 @@ class RegistrationCppITK(RegistrationSimpleITK):
 
         self._registration_transform_sitk.SetParameters(self._parameters)
         self._registration_transform_sitk.SetFixedParameters(
-            self._parameters_fixed)        
+            self._parameters_fixed)
 
         # Debug
         # moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._registration_transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
@@ -288,11 +290,14 @@ class RegistrationCppITK(RegistrationSimpleITK):
 
         # Compute oriented Gaussian PSF if desired
         if self._interpolator in ["OrientedGaussian"]:
-            # Get oriented Gaussian covariance matrix
-            cov_HR_coord = psf.PSF().get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
-                self._fixed, self._moving).flatten()
-            cmd += "--cov " + "'" + \
-                ' '.join(cov_HR_coord.astype("|S12")) + "'" + endl
+            if self._cov is None:
+                # Get oriented Gaussian covariance matrix
+                cov_HR_coord = psf.PSF().\
+                    get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+                    self._moving, self._fixed).flatten()
+            else:
+                cov_HR_coord = self._cov.flatten()
+            cmd += "--cov " + "'" + ' '.join(cov_HR_coord.astype("|S12")) + "'"
 
         # if self._use_verbose:
         ph.execute_command(cmd)

@@ -46,7 +46,7 @@ if __name__ == '__main__':
     input_parser.add_dir_input()
     input_parser.add_filenames()
     input_parser.add_image_selection()
-    input_parser.add_dir_output(default="results/")
+    input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
     input_parser.add_extra_frame_target(default=10)
@@ -54,17 +54,17 @@ if __name__ == '__main__':
     input_parser.add_reconstruction_space(default=None)
     input_parser.add_minimizer(default="lsmr")
     input_parser.add_iter_max(default=10)
-    input_parser.add_reg_type(default="TK1")
+    input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_data_loss(default="linear")
     input_parser.add_data_loss_scale(default=1)
     input_parser.add_alpha(
         default=0.02  # TK1L2
-        # default=0.003  #TVL2, HuberL2
+        # default=0.006  #TVL2, HuberL2
     )
     input_parser.add_rho(default=0.5)
     input_parser.add_tv_solver(default="PD")
     input_parser.add_pd_alg_type(default="ALG2")
-    input_parser.add_iterations(default=10)
+    input_parser.add_iterations(default=15)
     input_parser.add_provide_comparison(default=1)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_verbose(default=1)
@@ -100,6 +100,9 @@ if __name__ == '__main__':
     else:
         raise Exceptions.IOError(
             "Provide input by either '--dir-input' or '--filenames'")
+
+    if args.reconstruction_type not in ["TK1L2", "TVL2", "HuberL2"]:
+        raise Exceptions.IOError("Reconstruction type unknown")
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
@@ -143,47 +146,49 @@ if __name__ == '__main__':
         recons.append(stacks[i])
     recons.insert(0, recon)
 
-    if args.reg_type == "TV" and args.tv_solver == "ADMM":
-        SRR = admm.ADMMSolver(
-            stacks=stacks,
-            reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
-            minimizer=args.minimizer,
-            alpha=args.alpha,
-            iter_max=args.iter_max,
-            rho=args.rho,
-            data_loss=args.data_loss,
-            iterations=args.iterations,
-            verbose=args.verbose,
-        )
-        SRR.run_reconstruction()
-        SRR.print_statistics()
-        recon = SRR.get_reconstruction()
-        recon.set_filename(SRR.get_setting_specific_filename())
-        recons.insert(0, recon)
+    if args.reconstruction_type in ["TVL2", "HuberL2"]:
 
-        recon.write(args.dir_output)
+        if args.tv_solver == "ADMM":
+            SRR = admm.ADMMSolver(
+                stacks=stacks,
+                reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+                minimizer=args.minimizer,
+                alpha=args.alpha,
+                iter_max=args.iter_max,
+                rho=args.rho,
+                data_loss=args.data_loss,
+                iterations=args.iterations,
+                verbose=args.verbose,
+            )
+            SRR.run_reconstruction()
+            SRR.print_statistics()
+            recon = SRR.get_reconstruction()
+            recon.set_filename(SRR.get_setting_specific_filename())
+            recons.insert(0, recon)
 
-    elif args.reg_type in ["TV", "huber"] and args.tv_solver == "PD":
+            recon.write(args.dir_output)
 
-        SRR = pd.PrimalDualSolver(
-            stacks=stacks,
-            reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
-            minimizer=args.minimizer,
-            alpha=args.alpha,
-            iter_max=args.iter_max,
-            iterations=args.iterations,
-            alg_type=args.pd_alg_type,
-            reg_type=args.reg_type,
-            data_loss=args.data_loss,
-            verbose=args.verbose,
-        )
-        SRR.run_reconstruction()
-        SRR.print_statistics()
-        recon = SRR.get_reconstruction()
-        recon.set_filename(SRR.get_setting_specific_filename())
-        recons.insert(0, recon)
+        else:
 
-        recon.write(args.dir_output)
+            SRR = pd.PrimalDualSolver(
+                stacks=stacks,
+                reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+                minimizer=args.minimizer,
+                alpha=args.alpha,
+                iter_max=args.iter_max,
+                iterations=args.iterations,
+                alg_type=args.pd_alg_type,
+                reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
+                data_loss=args.data_loss,
+                verbose=args.verbose,
+            )
+            SRR.run_reconstruction()
+            SRR.print_statistics()
+            recon = SRR.get_reconstruction()
+            recon.set_filename(SRR.get_setting_specific_filename())
+            recons.insert(0, recon)
+
+            recon.write(args.dir_output)
 
     if args.verbose and not args.provide_comparison:
         sitkh.show_stacks(recons)

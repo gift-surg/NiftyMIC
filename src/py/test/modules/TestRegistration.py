@@ -417,8 +417,8 @@ class TestRegistration(unittest.TestCase):
 
     def test_translation_registration_of_slices(self):
 
-        # filename_prefix = "TranslationOnly_"
-        filename_prefix = "RigidTransform_"
+        filename_prefix = "TranslationOnly_"
+        # filename_prefix = "RigidTransform_"
 
         filename_HRVolume = "HRVolume"
         filename_StackSim = filename_prefix + "StackSimulated"

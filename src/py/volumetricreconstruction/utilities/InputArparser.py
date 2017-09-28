@@ -331,8 +331,8 @@ class InputArgparser(object):
         self,
         option_string="--rho",
         type=float,
-        help="Regularization parameter for augmented Lagrangian term for "
-        "TV regularization by ADMM.",
+        help="Regularization parameter for augmented Lagrangian term required "
+        "by ADMM approach for TV regularization",
         default=0.5,
     ):
         self._add_argument(dict(locals()))
