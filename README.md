@@ -5,31 +5,40 @@ The entire reconstruction pipeline is programmed in Python by using a mix of Sim
 
 If you have any questions or comments (or find bugs), please drop an email to @mebner (`michael.ebner.14@ucl.ac.uk`).
 
-# How it works
+# Features
 
-Several methods have been implemented to solve the SR Reconstruction (SRR) problem
+Several methods have been implemented to solve the **Super-Resolution Reconstruction** (SRR) problem
 ```math
 \vec{x}^* := \text{argmin}_{\vec{x}} \Big[\sum_{k=1}^K \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big]
 ```
 
-to obtain the (vectorized) high-resolution 3D volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly (rigid) motion corrupted, low-resolution stacks of (vectorized) 2D slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$.
-for a variety of regularizers $\Reg$ and data loss functions $`\varrho`$.
+to obtain the (vectorized) high-resolution 3D volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly (rigid) motion corrupted, low-resolution stacks of (vectorized) 2D slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$
+for a variety of regularizers $`\text{Reg}`$ and data loss functions $`\varrho`$.
 The linear operator $`A_k := D_k B_k W_k`$ represents the combined operator describing the (rigid) motion $`W_k`$, the blurring operator $`B_k`$ and the downsampling operator $`D_k`$.
-Regularizers include
+
+---
+
+The **available regularizers** include
 * Zeroth-order Tikhonov (TK0): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \vec{x} \Vert_{\ell^2}^2`$
 * First-order Tikhonov (TK1): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \nabla \vec{x} \Vert_{\ell^2}^2`$
 * Isotropic Total Variation (TV): $`\text{Reg}(\vec{x}) = \text{TV}_\text{iso}(\vec{x}) = \big\Vert |\nabla \vec{x}| \big\Vert_{\ell^1}`$
 * Huber Function: $`\text{Reg}(\vec{x}) = \frac{1}{2\gamma} \big| |\nabla \vec{x}| \big|_{\gamma}`$
 
-Data loss functions $\varrho$ are motivated by [[SciPy]](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and allow for robust outlier rejection. Implemented data loss functions include:
+---
+
+The provided **data loss functions** $`\varrho`$ are motivated by [SciPy](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and allow for robust outlier rejection. Implemented data loss functions are:
 * `linear`: $`\varrho(e) = e `$ 
 * `soft_l1`: $`\varrho(e) = 2 (\sqrt{1+e} - 1)`$ 
 * `huber`: $`\varrho(e) = |e|_\gamma = \begin{cases} e, & e < \gamma^2 \\ 2\gamma\sqrt{e} - \gamma^2, & e\ge \gamma^2\end{cases}`$
 * `arctan`: $`\varrho(e) = \arctan(e)`$
 * `cauchy`: $`\varrho(e) = \ln(1 + e)`$
 
+---
+
+Additionally, the choice of finding **optimal reconstruction parameters** is facilitated by the [NumericalSolver](https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver) tool.
+
 # Installation
-The Installation instructions can be found in the [[Wiki]](https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction/wikis/home).
+The Installation instructions can be found in the [Wiki](https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction/wikis/home).
 
 # Usage
 
@@ -46,13 +55,13 @@ Examples for basic usage are:
 --dir-output output-dir \
 --suffix-mask _mask`
 
-The obtained motion-correction transformations can be stored for further processing, e.g. for `reconstructVolumeFromSlices.py` to solve the SRR problem for a variety of different solvers.
+The obtained motion-correction transformations can be stored for further processing, e.g. by using `reconstructVolumeFromSlices.py` to solve the SRR problem for a variety of different regularization and data loss function types.
 
 ## SRR Methods for Motion Corrected (or Static) Data
 
-The SRR problem can be solved for a variety of different solvers for
-..1. motion corrected data and, 
-..2. static data
+Afer performed motion correction (or having static data in the first place),
+2. different solvers and regularizers can be used to solve the SRR problem for comparison, and
+1. parameter studies can be performed to find optimal reconstruction parameters.
 
 ### SRR from Motion Corrected (or Static) Slice Acquisitions
 Solve the SRR problem for motion corrected data:
@@ -107,6 +116,7 @@ Example are:
 --measures RMSE PSNR NCC NMI SSIM \
 --alpha-range 0.001 0.05 20`
 
+The results can be assessed using the script `showParameterStudy.py` from the [NumericalSolver](https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver) tool.
 
 # References
 Associated publications are 
