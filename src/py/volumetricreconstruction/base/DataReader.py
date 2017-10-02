@@ -330,10 +330,12 @@ class MultiComponentImageReader(DataReader):
         vector_image_sitk = sitkh.read_sitk_vector_image(
             self._path_to_image,
             dtype=np.float64)
-        vector_image_sitk_mask = sitkh.read_sitk_vector_image(
-            self._path_to_image_mask,
-            dtype=np.uint8,
-        )
+
+        if self._path_to_image_mask is not None:
+            vector_image_sitk_mask = sitkh.read_sitk_vector_image(
+                self._path_to_image_mask,
+                dtype=np.uint8,
+            )
 
         N_components = vector_image_sitk.GetNumberOfComponentsPerPixel()
 
@@ -343,8 +345,11 @@ class MultiComponentImageReader(DataReader):
         for i in range(N_components):
             image_sitk = sitk.VectorIndexSelectionCast(
                 vector_image_sitk, i)
-            image_sitk_mask = sitk.VectorIndexSelectionCast(
-                vector_image_sitk_mask, i)
+            if self._path_to_image_mask is not None:
+                image_sitk_mask = sitk.VectorIndexSelectionCast(
+                    vector_image_sitk_mask, i)
+            else:
+                image_sitk_mask = None
 
             filename = filename_base + "_" + str(i)
             self._stacks[i] = st.Stack.from_sitk_image(

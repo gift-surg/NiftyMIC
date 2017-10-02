@@ -145,8 +145,8 @@ if __name__ == '__main__':
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
 
-        # registration = regniftyreg.RegAladin(
-        registration = regflirt.FLIRT(
+        registration = regniftyreg.RegAladin(
+        # registration = regflirt.FLIRT(
             fixed=stacks[args.target_stack_index],
             registration_type="Rigid",
             use_fixed_mask=True,
