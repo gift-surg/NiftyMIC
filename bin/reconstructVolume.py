@@ -259,7 +259,9 @@ if __name__ == '__main__':
             optimizer_params={
                 "learningRate": 1,
                 "numberOfIterations": 100,
+                "lineSearchUpperLimit": 2,
             },
+            scales_estimator="Jacobian",
             # optimizer="RegularStepGradientDescent",
             # optimizer_params={
             #     "minStep": 1e-6,

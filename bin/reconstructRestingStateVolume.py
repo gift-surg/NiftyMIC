@@ -66,8 +66,8 @@ if __name__ == '__main__':
     input_parser.add_target_stack_index(default=0)
     input_parser.add_sigma(default=0.8)
     input_parser.add_reg_type(default="TK1")
-    input_parser.add_alpha_first(default=0.08)
-    input_parser.add_alpha(default=0.05)
+    input_parser.add_alpha_first(default=0.05)
+    input_parser.add_alpha(default=0.03)
     input_parser.add_iter_max_first(default=5)
     input_parser.add_iter_max(default=10)
     input_parser.add_minimizer(default="lsmr")
@@ -244,11 +244,12 @@ if __name__ == '__main__':
             # use_multiresolution_framework=True,
             shrink_factors=[2, 1],
             smoothing_sigmas=[1, 0],
-            initializer_type=None,
+            initializer_type="SelfGEOMETRY",
             optimizer="ConjugateGradientLineSearch",
             optimizer_params={
                 "learningRate": 1,
                 "numberOfIterations": 100,
+                "lineSearchUpperLimit": 2,
             },
             # optimizer="RegularStepGradientDescent",
             # optimizer_params={
@@ -257,6 +258,7 @@ if __name__ == '__main__':
             #     "gradientMagnitudeTolerance": 1e-6,
             #     "learningRate": 1,
             # },
+            scales_estimator="Jacobian",
         )
 
         alphas = np.linspace(args.alpha_first, args.alpha,
