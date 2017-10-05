@@ -14,6 +14,7 @@ import datetime
 from abc import ABCMeta, abstractmethod
 
 import pythonhelper.PythonHelper as ph
+import pythonhelper.SimpleITKHelper as sitkh
 
 import volumetricreconstruction.base.Stack as st
 
@@ -318,6 +319,9 @@ class TwoStepSliceToVolumeRegistrationReconstruction(RegistrationPipeline):
                 self._reconstruction_method.get_setting_specific_filename())
             self._reconstructions.insert(0, st.Stack.from_stack(
                 reference, filename=filename))
+
+            if self._verbose:
+                sitkh.show_stacks(self._reconstructions)
 
 
 ##

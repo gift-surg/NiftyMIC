@@ -37,6 +37,7 @@ class N4BiasFieldCorrection(object):
                  spline_order=3,
                  wiener_filter_noise=0.11,
                  bias_field_fwhm=0.15,
+                 prefix_corrected="",
                  ):
 
         self._stack = stack
@@ -45,16 +46,23 @@ class N4BiasFieldCorrection(object):
         self._spline_order = spline_order
         self._wiener_filter_noise = wiener_filter_noise
         self._bias_field_fwhm = bias_field_fwhm
+        self._prefix_corrected = prefix_corrected
 
         self._stack_corrected = None
+        self._computational_time = ph.get_zero_time()
 
     def set_stack(self, stack):
         self._stack = stack
 
     def get_bias_field_corrected_stack(self):
-        return self._stack_corrected
+        return st.Stack.from_stack(self._stack_corrected)
+
+    def get_computational_time(self):
+        return self._computational_time
 
     def run_bias_field_correction(self):
+
+        time_start = ph.start_timing()
 
         bias_field_corrector = sitk.N4BiasFieldCorrectionImageFilter()
 
@@ -81,9 +89,13 @@ class N4BiasFieldCorrection(object):
             self._stack.sitk_mask.GetPixelIDValue())
 
         self._stack_corrected = st.Stack.from_sitk_image(
-            image_sitk,
-            self._stack.get_filename(),
-            stack_corrected_sitk_mask)
+            image_sitk=image_sitk,
+            image_sitk_mask=stack_corrected_sitk_mask,
+            filename=self._prefix_corrected+self._stack.get_filename(),
+        )
+
+        # Get computational time
+        self._computational_time = ph.stop_timing(time_start)
 
         # Debug
         # sitkh.show_stacks([self._stack, self._stack_corrected], label=["orig", "corr"])

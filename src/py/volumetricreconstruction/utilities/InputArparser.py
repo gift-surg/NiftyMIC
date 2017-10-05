@@ -64,10 +64,13 @@ class InputArgparser(object):
         name = os.path.basename(file)
         performed_script_execution = ph.get_performed_script_execution(
             file, self._parser.parse_args())
+        filename = os.path.join(self._parser.parse_args().dir_output,
+                                "%s%s" % (prefix, name.split(".")[0]))
+        time_stamp = "%s-%s" % (ph.get_current_date(), ph.get_current_time())
+        filename = "%s_%s.sh" % (filename, time_stamp)
         ph.write_performed_script_execution_to_executable_file(
-            performed_script_execution,
-            os.path.join(self._parser.parse_args().dir_output,
-                         "%s%s.sh" % (prefix, name.split(".")[0])))
+            function_call=performed_script_execution,
+            filename=filename)
 
     def add_filename(
         self,
@@ -234,6 +237,35 @@ class InputArgparser(object):
         "for the volumetric reconstruction/SRR." % (IMAGE_TYPES),
         default=None,
         required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_multiresolution(
+        self,
+        option_string="--multiresolution",
+        type=int,
+        help="Turn on/off multiresolution approach for motion correction.",
+        default=0,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_shrink_factors(
+        self,
+        option_string="--shrink-factors",
+        type=int,
+        nargs="+",
+        help="Specify shrink factors for multiresolution approach.",
+        default=[2, 1],
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_smoothing_sigmas(
+        self,
+        option_string="--smoothing-sigmas",
+        type=float,
+        nargs="+",
+        help="Specify smoothing sigmas for multiresolution approach.",
+        default=[1, 0],
     ):
         self._add_argument(dict(locals()))
 
@@ -434,7 +466,7 @@ class InputArgparser(object):
 
     def add_isotropic_resolution(
         self,
-        option_string="--isotropic_resolution",
+        option_string="--isotropic-resolution",
         type=int,
         help="Specify isotropic resolution for obtained SRR volume. Default "
         "resolution is specified by in-plane resolution of chosen target "

@@ -480,8 +480,9 @@ class Stack:
         self._update_sitk_and_itk_stack_position(affine_transform_sitk)
 
         # Update slices
-        for i in range(0, self._N_slices):
-            self._slices[i].update_motion_correction(affine_transform_sitk)
+        if self.get_slices() is not None:
+            for i in range(0, self._N_slices):
+                self._slices[i].update_motion_correction(affine_transform_sitk)
 
     ##
     #       Apply transforms on all the slices of the stack. Stack itself

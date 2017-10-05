@@ -203,3 +203,8 @@ if __name__ == '__main__':
                           )
 
     ph.print_line_separator()
+
+    elapsed_time = ph.stop_timing(time_start)
+    ph.print_title("Summary")
+    print("Computational Time for Volumetric Reconstruction: %s" %
+          (elapsed_time))
