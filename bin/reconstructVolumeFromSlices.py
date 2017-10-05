@@ -110,14 +110,25 @@ if __name__ == '__main__':
     # if args.verbose:
     #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 
+    # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:
         recon0 = stacks[args.target_stack_index
                         ].get_isotropically_resampled_stack(
             spacing_new_scalar=args.isotropic_resolution,
             extra_frame=args.extra_frame_target)
+
+    # Reconstruction space was provided by user
     else:
         recon0 = st.Stack.from_filename(args.reconstruction_space,
                                         extract_slices=False)
+
+        # Change resolution for isotropic resolution if provided by user
+        if args.isotropic_resolution is not None:
+            recon0 = recon0.get_isotropically_resampled_stack(
+                args.isotropic_resolution)
+
+        # Use image information of selected target stack as recon0 serves
+        # as initial value for reconstruction
         recon0 = \
             stacks[args.target_stack_index].get_resampled_stack(recon0.sitk)
 
