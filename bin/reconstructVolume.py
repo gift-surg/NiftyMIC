@@ -62,8 +62,10 @@ if __name__ == '__main__':
     input_parser.add_filenames()
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_prefix_output(default="_SRR")
     input_parser.add_target_stack_index(default=0)
+    input_parser.add_multiresolution(default=0)
+    input_parser.add_shrink_factors(default=[2, 1])
+    input_parser.add_smoothing_sigmas(default=[1, 0])
     input_parser.add_sigma(default=0.9)
     input_parser.add_alpha(default=0.02)
     input_parser.add_alpha_first(default=0.05)
@@ -84,6 +86,8 @@ if __name__ == '__main__':
     input_parser.add_two_step_cycles(default=3)
     input_parser.add_rho(default=0.5)
     input_parser.add_iterations(default=10)
+    input_parser.add_reference()
+    input_parser.add_reference_mask()
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -148,6 +152,18 @@ if __name__ == '__main__':
     # Get preprocessed stacks
     stacks = data_preprocessing.get_preprocessed_stacks()
 
+    # Define reference/target stack for registration and reconstruction
+    if args.reference is not None:
+        reference = st.Stack.from_filename(
+            file_path=args.reference,
+            file_path_mask=args.reference_mask,
+            extract_slices=False)
+        if args.reference_mask is None:
+            use_reference_mask = False
+    else:
+        reference = st.Stack.from_stack(stacks[args.target_stack_index])
+        use_reference_mask = True
+
     # # ----------------- Begin HACK for Imperial College data ----------------
     # # Split stack acquired as overlapping slices into two
     # stacks_foo = []
@@ -168,18 +184,17 @@ if __name__ == '__main__':
 
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
-        # registration = regflirt.FLIRT(
         registration = regniftyreg.RegAladin(
-            fixed=stacks[args.target_stack_index],
+        # registration = regflirt.FLIRT(
             registration_type="Rigid",
             use_fixed_mask=True,
-            use_moving_mask=True,
+            use_moving_mask=use_reference_mask,
             use_verbose=False,
         )
 
         v2vreg = pipeline.VolumeToVolumeRegistration(
             stacks=stacks,
-            reference=stacks[args.target_stack_index],
+            reference=reference,
             registration_method=registration,
             verbose=args.verbose,
         )
@@ -195,22 +210,20 @@ if __name__ == '__main__':
 
     # Isotropic resampling to define HR target space
     ph.print_title("Isotropic Resampling")
-    HR_volume = stacks[args.target_stack_index].\
-        get_isotropically_resampled_stack(
+    HR_volume = reference.get_isotropically_resampled_stack(
         spacing_new_scalar=args.isotropic_resolution,
         extra_frame=args.extra_frame_target)
-    HR_volume.set_filename(
-        stacks[args.target_stack_index].get_filename() +
-        "_upsampled")
 
-    # Scattered Data Approximation to get first estimate of HR volume
-    ph.print_title("Scattered Data Approximation")
-    SDA = sda.ScatteredDataApproximation(stacks, HR_volume, sigma=args.sigma)
-    SDA.run_reconstruction()
-    SDA.generate_mask_from_stack_mask_unions(
-        mask_dilation_radius=2, mask_dilation_kernel="Ball")
-    HR_volume = SDA.get_reconstruction()
-    HR_volume.set_filename(SDA.get_setting_specific_filename())
+    if args.reference is None:
+        # Scattered Data Approximation to get first estimate of HR volume
+        ph.print_title("Scattered Data Approximation")
+        SDA = sda.ScatteredDataApproximation(
+            stacks, HR_volume, sigma=args.sigma)
+        SDA.run_reconstruction()
+        SDA.generate_mask_from_stack_mask_unions(
+            mask_dilation_radius=2, mask_dilation_kernel="Ball")
+        HR_volume = SDA.get_reconstruction()
+        HR_volume.set_filename(SDA.get_setting_specific_filename())
 
     time_reconstruction = ph.stop_timing(time_tmp)
 
@@ -244,15 +257,15 @@ if __name__ == '__main__':
         registration = regsitk.RegistrationSimpleITK(
             moving=HR_volume,
             use_fixed_mask=True,
-            use_moving_mask=True,
+            use_moving_mask=use_reference_mask,
             use_verbose=args.verbose,
             interpolator="Linear",
             metric="Correlation",
             # metric="MattesMutualInformation",  # Might cause error messages
             # like "Too many samples map outside moving image buffer."
-            # use_multiresolution_framework=True,
-            shrink_factors=[2, 1],
-            smoothing_sigmas=[1, 0],
+            use_multiresolution_framework=args.multiresolution,
+            shrink_factors=args.shrink_factors,
+            smoothing_sigmas=args.smoothing_sigmas,
             initializer_type="SelfGEOMETRY",
             # use_oriented_psf=False,
             optimizer="ConjugateGradientLineSearch",

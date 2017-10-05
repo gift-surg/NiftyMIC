@@ -127,8 +127,11 @@ if __name__ == '__main__':
             args.dir_output, write_mask=True, suffix_mask=args.suffix_mask)
 
         if args.verbose:
-            sitkh.show_stacks([reference, stacks[i], stacks_corrected[i]],
-                              segmentation=stacks[i])
+            sitkh.show_stacks([
+                reference, stacks_corrected[i],
+                # stacks[i],
+                ],
+                segmentation=stacks_corrected[i])
             # ph.pause()
 
     # Write reference too (although not intensity corrected)
