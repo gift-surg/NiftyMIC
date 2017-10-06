@@ -65,6 +65,7 @@ if __name__ == '__main__':
     input_parser.add_tv_solver(default="PD")
     input_parser.add_pd_alg_type(default="ALG2")
     input_parser.add_iterations(default=15)
+    input_parser.add_subfolder_comparison()
     input_parser.add_provide_comparison(default=1)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_verbose(default=1)
@@ -210,7 +211,8 @@ if __name__ == '__main__':
         sitkh.show_stacks(recons,
                           show_comparison_file=args.provide_comparison,
                           dir_output=os.path.join(
-                              args.dir_output, "comparison"),
+                              args.dir_output,
+                              args.subfolder_comparison),
                           )
 
     ph.print_line_separator()

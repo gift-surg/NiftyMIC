@@ -102,6 +102,28 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_subfolder_motion_correction(
+        self,
+        option_string="--subfolder-motion-correction",
+        type=str,
+        help="Name of folder within output directory where all motion "
+        "correction results are stored",
+        default="motion_correction",
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_subfolder_comparison(
+        self,
+        option_string="--subfolder-comparison",
+        type=str,
+        help="Name of folder within output directory where all motion "
+        "correction results are stored",
+        default="comparison",
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_dir_inputs(
         self,
         option_string="--dir-inputs",

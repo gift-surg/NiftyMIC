@@ -80,6 +80,8 @@ if __name__ == '__main__':
     input_parser.add_intensity_correction(default=0)
     input_parser.add_isotropic_resolution(default=None)
     input_parser.add_log_script_execution(default=1)
+    input_parser.add_subfolder_motion_correction()
+    input_parser.add_subfolder_comparison()
     input_parser.add_write_motion_correction(default=1)
     input_parser.add_provide_comparison(default=1)
     input_parser.add_verbose(default=0)
@@ -184,8 +186,8 @@ if __name__ == '__main__':
 
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
-        registration = regniftyreg.RegAladin(
-        # registration = regflirt.FLIRT(
+        # registration = regniftyreg.RegAladin(
+        registration = regflirt.FLIRT(
             registration_type="Rigid",
             use_fixed_mask=True,
             use_moving_mask=use_reference_mask,
@@ -330,7 +332,8 @@ if __name__ == '__main__':
     if args.write_motion_correction:
         for stack in stacks:
             stack.write(
-                os.path.join(args.dir_output, "motion_correction"),
+                os.path.join(args.dir_output,
+                             args.subfolder_motion_correction),
                 write_mask=True,
                 write_slices=True,
                 write_transforms=True,
@@ -352,7 +355,8 @@ if __name__ == '__main__':
                           segmentation=HR_volume,
                           show_comparison_file=args.provide_comparison,
                           dir_output=os.path.join(
-                              args.dir_output, "comparison"),
+                              args.dir_output,
+                              args.subfolder_comparison),
                           )
 
     # Summary
