@@ -1,9 +1,11 @@
 # Volumetric MRI Reconstruction from Motion Corrupted 2D Slices
 
-This is a research-focused toolkit developed within the [GIFT-Surg](http://www.gift-surg.ac.uk/) project to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
+This is a research-focused toolkit developed within the [GIFT-Surg][giftsurg] project  to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
 The entire reconstruction pipeline is programmed in Python by using a mix of SimpleITK, WrapITK and standard C++ITK.
 
-If you have any questions or comments (or find bugs), please drop an email to @mebner (`michael.ebner.14@ucl.ac.uk`).
+The algorithm and software were developed by [Michael Ebner][mebner] at the [Translational Imaging Group][tig] in the [Centre for Medical Image Computing][cmic] at [University College London (UCL)][ucl].
+
+If you have any questions or comments (or find bugs), please drop an email to `michael.ebner.14@ucl.ac.uk`.
 
 # Features
 
@@ -38,10 +40,10 @@ The provided **data loss functions** $`\varrho`$ are motivated by [SciPy](https:
 Additionally, the choice of finding **optimal reconstruction parameters** is facilitated by the [NumericalSolver](https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver) tool.
 
 # Installation
-This toolkit depends on a variety of software packages developed within the [GIFT-Surg](http://www.gift-surg.ac.uk/) including
-* [NumericalSolver](https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver)
-* [RegistrationTools](https://cmiclab.cs.ucl.ac.uk/mebner/RegistrationTools)
-* [PythonHelper](https://cmiclab.cs.ucl.ac.uk/mebner/PythonHelper)
+This toolkit depends on a variety of software packages developed within the [GIFT-Surg][giftsurg] including
+* [NumericalSolver][numericalsolver]
+* [RegistrationTools][registrationtools]
+* [PythonHelper][pythonhelper]
 
 Further information on the installation instructions can be found in the [Wiki](https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction/wikis/home).
 
@@ -121,14 +123,35 @@ Example are:
 --measures RMSE PSNR NCC NMI SSIM \
 --alpha-range 0.001 0.05 20`
 
-The results can be assessed using the script `showParameterStudy.py` from the [NumericalSolver](https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver) tool.
+The results can be assessed using the script `showParameterStudy.py` from the [NumericalSolver][numericalsolver] tool.
+
+# License
+Copyright (c) 2015-2017, [University College London][ucl].
+
+This framework available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
+
+
+# Funding
+This work is partially funded by the UCL [Engineering and Physical Sciences Research Council (EPSRC)][epsrc] Centre for Doctoral Training in Medical Imaging (EP/L016478/1), the Innovative Engineering for Health award ([Wellcome Trust][wellcometrust] [WT101957] and [EPSRC][epsrc] [NS/A000027/1]), the [Multiple Sclerosis Society of Great Britain and Northern Ireland][mssociety] (grant references 20 and 984) and supported by the [National Institute for Health Research][nihr] [University College London Hospitals (UCLH)][uclh] Biomedical Research Centre. FP is supported by the [Guarantors of Brain][guarantors].
 
 # References
 Associated publications are 
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., and Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
 * [[Ebner2017a]](https://www.journals.elsevier.com/neuroimage) Ebner, M., Chung, K. K., Prados, F., Cardoso, M. J., Chard, D. T., Vercauteren, T., and Ourselin, S. (In press). Volumetric Reconstruction from Printed Films: Enabling 30 Year Longitudinal Analysis in MR Neuroimaging. NeuroImage.
 
-
-# License
-This toolkit is still under development and has NOT been publicly released yet.
-See LICENSE file for details.
+[citation]: http://www.sciencedirect.com/science/article/pii/S1053811917308042
+[mebner]: http://cmictig.cs.ucl.ac.uk/people/phd-students/michael-ebner
+[tig]: http://cmictig.cs.ucl.ac.uk
+[bsd]: https://opensource.org/licenses/BSD-3-Clause
+[giftsurg]: http://www.gift-surg.ac.uk
+[cmic]: http://cmic.cs.ucl.ac.uk
+[guarantors]: https://guarantorsofbrain.org/
+[ucl]: http://www.ucl.ac.uk
+[uclh]: http://www.uclh.nhs.uk
+[epsrc]: http://www.epsrc.ac.uk
+[wellcometrust]: http://www.wellcome.ac.uk
+[mssociety]: https://www.mssociety.org.uk/
+[nihr]: http://www.nihr.ac.uk/research
+[numericalsolver]: https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver
+[registrationtools]: https://cmiclab.cs.ucl.ac.uk/mebner/RegistrationTools
+[pythonhelper]: https://cmiclab.cs.ucl.ac.uk/mebner/PythonHelper
