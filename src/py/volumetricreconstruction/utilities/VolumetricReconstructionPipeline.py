@@ -10,7 +10,8 @@
 # \date       Aug 2017
 #
 
-import datetime
+import numpy as np
+import SimpleITK as sitk
 from abc import ABCMeta, abstractmethod
 
 import pythonhelper.PythonHelper as ph
@@ -30,7 +31,7 @@ class Pipeline(object):
         self._stacks = stacks
         self._verbose = verbose
 
-        self._computational_time = datetime.timedelta(seconds=0)
+        self._computational_time = ph.get_zero_time()
 
     def set_stacks(self, stacks):
         self._stacks = stacks
@@ -234,9 +235,9 @@ class TwoStepSliceToVolumeRegistrationReconstruction(RegistrationPipeline):
     # \param      registration_method    Registration method, e.g.
     #                                    RegistrationCppITK
     # \param      reconstruction_method  Reconstruction method, e.g. TK1
-    # \param      alphas                 Specify regularization parameter used
-    #                                    for each individual cycle, list or
-    #                                    array
+    # \param      alpha_range            Specify regularization parameter range
+    #                                    used for each individual cycle, list
+    #                                    or array
     # \param      cycles                 Number of cycles, int
     # \param      verbose                The verbose
     #
@@ -245,7 +246,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(RegistrationPipeline):
                  reference,
                  registration_method,
                  reconstruction_method,
-                 alphas,
+                 alpha_range,
                  cycles,
                  verbose=1,
                  ):
@@ -259,11 +260,15 @@ class TwoStepSliceToVolumeRegistrationReconstruction(RegistrationPipeline):
 
         self._reconstruction_method = reconstruction_method
         self._cycles = cycles
-        self._alphas = alphas
+
+        # Use linear spacing for alphas excluding the last alpha reserved
+        # for the final SRR step
+        self._alphas = np.linspace(
+            alpha_range[0], alpha_range[1], cycles + 1)[0:cycles]
 
         self._reconstructions = []
-        self._computational_time_registration = datetime.timedelta(seconds=0)
-        self._computational_time_reconstruction = datetime.timedelta(seconds=0)
+        self._computational_time_registration = ph.get_zero_time()
+        self._computational_time_reconstruction = ph.get_zero_time()
 
     def get_iterative_reconstructions(self):
         return self._reconstructions
@@ -324,12 +329,237 @@ class TwoStepSliceToVolumeRegistrationReconstruction(RegistrationPipeline):
                 sitkh.show_stacks(self._reconstructions)
 
 
+class HieararchicalSliceSetRegistrationReconstruction(RegistrationPipeline):
+
+    def __init__(self,
+                 stacks,
+                 reference,
+                 registration_method,
+                 registration_method_vol,
+                 reconstruction_method,
+                 alpha_range,
+                 interleave,
+                 verbose=1,
+                 ):
+
+        RegistrationPipeline.__init__(
+            self,
+            stacks=stacks,
+            reference=reference,
+            registration_method=registration_method,
+            verbose=verbose)
+        self._reconstruction_method = reconstruction_method
+        self._registration_method_vol = registration_method_vol
+        self._interleave = interleave
+        self._alpha_range = alpha_range
+
+        self._reconstructions = []
+        self._computational_time_registration = ph.get_zero_time()
+        self._computational_time_reconstruction = ph.get_zero_time()
+
+    def get_iterative_reconstructions(self):
+        return self._reconstructions
+
+    def get_computational_time_registration(self):
+        return self._computational_time_registration
+
+    def get_computational_time_reconstruction(self):
+        return self._computational_time_reconstruction
+
+    def _run(self, debug=1):
+        ph.print_title(
+            "Hierarchical SliceSet2V-Registration and SRR Reconstruction")
+        N_stacks = len(self._stacks)
+        N_min = 1
+        slice_sets_indices = [None] * N_stacks
+        for i, stack in enumerate(self._stacks):
+            slice_sets_indices[i] = \
+                self._get_slice_set_indices_per_cycle(stack, N_min=N_min)
+
+        # Debug
+        if debug:
+            for i, stack in enumerate(self._stacks):
+                print("Stack %d/%d:" % (i+1, N_stacks))
+                for k, v in slice_sets_indices[i].iteritems():
+                    print("\tCycle %d: arrays = %s" % (k, str(v)))
+
+        N_cycles = np.max([len(slice_sets_indices[i])
+                           for i in range(N_stacks)])
+
+        reference = self._reference
+        alphas = np.linspace(
+            self._alpha_range[0], self._alpha_range[1], N_cycles + 1)[0:N_cycles]
+        x = [0]
+        registration_method = self._registration_method_vol
+        # registration_method = self._registration_method
+        
+        for i_cycle in range(0, N_cycles-1):
+            registration_method.set_moving(reference)
+
+            for i, stack in enumerate(self._stacks):
+                ph.print_subtitle("Cycle %d/%d -- Stack %d/%d" %
+                                  (i_cycle+1,
+                                   N_cycles,
+                                   i+1,
+                                   len(self._stacks)))
+                slices = stack.get_slices()
+                if i_cycle not in slice_sets_indices[i].keys():
+                    continue
+                for indices in slice_sets_indices[i][i_cycle]:
+                    if len(indices) <= 2:
+                        continue
+                    image = self._get_stack_subgroup(stack, indices)
+
+                    registration_method.set_fixed(image)
+                    registration_method.run_registration()
+                    transform_sitk = registration_method.\
+                        get_registration_transform_sitk()
+
+                    for j in indices:
+                        slices[j].update_motion_correction(transform_sitk)
+
+            # SRR step
+            self._reconstruction_method.set_alpha(alphas[i_cycle])
+            self._reconstruction_method.run_reconstruction()
+
+            self._computational_time_reconstruction += \
+                self._reconstruction_method.get_computational_time()
+
+            reference = self._reconstruction_method.get_reconstruction()
+
+            # Store SRR
+            filename = "Iter%d_%s" % (
+                ph.add_one(x),
+                self._reconstruction_method.get_setting_specific_filename())
+            self._reconstructions.insert(0, st.Stack.from_stack(
+                reference, filename=filename))
+            if self._verbose:
+                sitkh.show_stacks(self._reconstructions)
+
+        s2vreg = SliceToVolumeRegistration(
+            stacks=self._stacks,
+            reference=reference,
+            registration_method=self._registration_method,
+            verbose=self._verbose)
+        s2vreg.run()
+        self._computational_time_registration += \
+            s2vreg.get_computational_time()
+
+        # SRR step
+        self._reconstruction_method.set_alpha(alphas[-1])
+        self._reconstruction_method.run_reconstruction()
+
+        self._computational_time_reconstruction += \
+            self._reconstruction_method.get_computational_time()
+
+        # Store SRR
+        filename = "Iter%d_%s" % (
+            ph.add_one(x),
+            self._reconstruction_method.get_setting_specific_filename())
+        self._reconstructions.insert(0, st.Stack.from_stack(
+            reference, filename=filename))
+
+        if self._verbose:
+            sitkh.show_stacks(self._reconstructions)
+
+    def _get_slice_set_indices_per_cycle(self, stack, N_min):
+        N_slices = stack.get_number_of_slices()
+
+        # Separate in packages according to scan interleave
+        interleaved_acquisitions = {
+            0: [np.arange(i, N_slices, self._interleave)
+                for i in range(self._interleave)]
+        }
+
+        # Split into smaller subpackages until single slice remains
+        finished = False
+        i = 0
+        while not finished:
+            i = i+1
+            interleaved_acquisitions[i] = self._get_array_list_split(
+                interleaved_acquisitions[i-1], N_min)
+
+            # Stop if number of elements correspond to number of slices, i.e.
+            # only single slices left
+            if len(interleaved_acquisitions[i]) == N_slices:
+                finished = True
+
+        return interleaved_acquisitions
+
+    def _get_array_list_split(self, array_list, N_min):
+        new_array_list = []
+        for lst in np.atleast_1d(array_list):
+            if len(lst) > N_min:
+                a = np.array_split(lst, 2)
+                new_array_list.extend(np.array_split(lst, 2))
+            else:
+                new_array_list.extend(np.array([lst]))
+                a = np.atleast_1d(lst)
+        return new_array_list
+
+    def _get_stack_subgroup(self, stack, indices):
+
+        ph.print_info("Slice indices: %s" % (str(indices)))
+
+        # For some reason simple element indexing does not work for sitk
+        # Problem: indices = [ 8 10 12 14]; but only 3 (!) slices are indexed!
+        # But this happens quite irregularly!?
+        # print all_[indices[0]:indices[-1]+1:self._interleave]
+        # print all_
+        # image_sitk = stack.sitk[
+        #     :,
+        #     :,
+        #     indices[0]:indices[-1]+self._interleave:self._interleave]
+        # image_sitk_mask = stack.sitk_mask[
+        #     :,
+        #     :,
+        #     indices[0]:indices[-1]+self._interleave:self._interleave]
+
+        nda = sitk.GetArrayFromImage(stack.sitk)
+        nda_mask = sitk.GetArrayFromImage(stack.sitk_mask)
+
+        image_sitk = sitk.GetImageFromArray(nda[indices, :, :])
+        image_sitk_mask = sitk.GetImageFromArray(nda_mask[indices, :, :])
+
+        spacing = np.array(stack.sitk.GetSpacing())
+        affine_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(
+            stack.get_slice(indices[0]).sitk)
+        origin = \
+            sitkh.get_sitk_image_origin_from_sitk_affine_transform(
+                affine_sitk)
+        direction = \
+            sitkh.get_sitk_image_direction_from_sitk_affine_transform(
+                affine_sitk, spacing)
+
+        spacing[2] *= self._interleave
+        image_sitk.SetSpacing(spacing)
+        image_sitk.SetDirection(direction)
+        image_sitk.SetOrigin(origin)
+        image_sitk_mask.CopyInformation(image_sitk)
+
+        # print(len(indices))
+        # print(image_sitk.GetDepth())
+
+        filename = stack.get_filename()
+        filename += "-" + ("_").join([str(j) for j in indices])
+        image = st.Stack.from_sitk_image(
+            image_sitk=image_sitk,
+            filename=filename,
+            image_sitk_mask=image_sitk_mask,
+            extract_slices=False)
+        # stack.show(1)
+        # image.show(1)
+
+        return image
+
 ##
 # Class to perform multi-component reconstruction
 #
 # Each stack is individually reconstructed at a given reconstruction space
 # \date       2017-08-08 02:34:40+0100
 #
+
+
 class MultiComponentReconstruction(Pipeline):
 
     ##

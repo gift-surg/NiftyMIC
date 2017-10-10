@@ -63,6 +63,7 @@ if __name__ == '__main__':
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
+    input_parser.add_search_angle(default=180)
     input_parser.add_multiresolution(default=0)
     input_parser.add_shrink_factors(default=[2, 1])
     input_parser.add_smoothing_sigmas(default=[1, 0])
@@ -186,18 +187,25 @@ if __name__ == '__main__':
 
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
-        # registration = regniftyreg.RegAladin(
-        registration = regflirt.FLIRT(
+        # Define search angle ranges for FLIRT in all three dimensions
+        search_angles = ["-searchr%s -%d %d" %
+                         (x, args.search_angle, args.search_angle)
+                         for x in ["x", "y", "z"]]
+        search_angles = (" ").join(search_angles)
+
+        # vol_registration = regniftyreg.RegAladin(
+        vol_registration = regflirt.FLIRT(
             registration_type="Rigid",
             use_fixed_mask=True,
             use_moving_mask=use_reference_mask,
+            options=search_angles,
             use_verbose=False,
         )
 
         v2vreg = pipeline.VolumeToVolumeRegistration(
             stacks=stacks,
             reference=reference,
-            registration_method=registration,
+            registration_method=vol_registration,
             verbose=args.verbose,
         )
         v2vreg.run()
@@ -223,7 +231,7 @@ if __name__ == '__main__':
             stacks, HR_volume, sigma=args.sigma)
         SDA.run_reconstruction()
         SDA.generate_mask_from_stack_mask_unions(
-            mask_dilation_radius=2, mask_dilation_kernel="Ball")
+            mask_dilation_radius=1, mask_dilation_kernel="Ball")
         HR_volume = SDA.get_reconstruction()
         HR_volume.set_filename(SDA.get_setting_specific_filename())
 
@@ -295,9 +303,6 @@ if __name__ == '__main__':
         #     metric="Correlation",
         #     # metric="MattesMutualInformation",  # Might cause error messages
         # )
-
-        alphas = np.linspace(args.alpha_first, args.alpha,
-                             args.two_step_cycles + 1)
         two_step_s2v_reg_recon = \
             pipeline.TwoStepSliceToVolumeRegistrationReconstruction(
                 stacks=stacks,
@@ -305,7 +310,18 @@ if __name__ == '__main__':
                 registration_method=registration,
                 reconstruction_method=SRR,
                 cycles=args.two_step_cycles,
-                alphas=alphas[0:args.two_step_cycles],
+                alpha_range=[args.alpha_first, args.alpha],
+                verbose=args.verbose,
+            )
+        two_step_s2v_reg_recon = \
+            pipeline.HieararchicalSliceSetRegistrationReconstruction(
+                stacks=stacks,
+                reference=HR_volume,
+                registration_method=registration,
+                registration_method_vol=vol_registration,
+                reconstruction_method=SRR,
+                alpha_range=[args.alpha_first, args.alpha],
+                interleave=2,
                 verbose=args.verbose,
             )
         two_step_s2v_reg_recon.run()

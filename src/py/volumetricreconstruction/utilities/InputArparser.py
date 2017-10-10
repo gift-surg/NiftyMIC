@@ -262,6 +262,15 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_search_angle(
+        self,
+        option_string="--search_angle",
+        type=int,
+        help="Maximum search angle to be used to find correct orientation.",
+        default=180,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_multiresolution(
         self,
         option_string="--multiresolution",
