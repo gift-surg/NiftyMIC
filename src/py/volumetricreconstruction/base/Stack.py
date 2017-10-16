@@ -500,8 +500,8 @@ class Stack:
                     affine_transforms_sitk[i])
 
         else:
-            raise ValueErr(
-                "Number of affine transforms does not match the number of slices")
+            raise ValueError("Number of affine transforms does not match the "
+                             "number of slices")
 
     def _update_sitk_and_itk_stack_position(self, affine_transform_sitk):
 

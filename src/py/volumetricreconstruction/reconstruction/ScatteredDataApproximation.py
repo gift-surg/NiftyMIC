@@ -261,8 +261,9 @@ class ScatteredDataApproximation:
             for j in range(0, N_slices):
                 # print("\t\tSlice %s/%s" %(j,N_slices-1))
                 slice = slices[j]
-                slice_masked_sitk = slice.sitk * \
-                    sitk.Cast(slice.sitk_mask, slice.sitk.GetPixelIDValue())
+                slice_masked_sitk = slice.sitk
+                # slice_masked_sitk = slice.sitk * \
+                #     sitk.Cast(slice.sitk_mask, slice.sitk.GetPixelIDValue())
 
                 # Nearest neighbour resampling of slice to target space (HR
                 # volume)

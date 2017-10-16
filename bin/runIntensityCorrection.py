@@ -42,6 +42,7 @@ if __name__ == '__main__':
     input_parser.add_dir_output(required=True)
     input_parser.add_reference(required=True)
     input_parser.add_suffix_mask(default="_mask")
+    input_parser.add_search_angle(default=180)
     input_parser.add_reference_mask()
     input_parser.add_prefix_output(default="IC_")
     input_parser.add_log_script_execution(default=1)
@@ -84,6 +85,7 @@ if __name__ == '__main__':
             registration_type="Rigid",
             use_fixed_mask=True,
             use_moving_mask=True,
+            options=search_angles,
             use_verbose=False,
         )
 

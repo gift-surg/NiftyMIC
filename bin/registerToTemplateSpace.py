@@ -56,11 +56,7 @@ if __name__ == '__main__':
     input_parser.add_dir_input()
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_option(
-        option_string="--search-angle",
-        type=int,
-        help="Maximum search angle to be used to find correct orientation",
-        default=180)
+    input_parser.add_search_angle(default=180)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
