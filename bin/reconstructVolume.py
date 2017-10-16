@@ -318,7 +318,6 @@ if __name__ == '__main__':
                 stacks=stacks,
                 reference=HR_volume,
                 registration_method=registration,
-                registration_method_vol=vol_registration,
                 reconstruction_method=SRR,
                 alpha_range=[args.alpha_first, args.alpha],
                 interleave=2,

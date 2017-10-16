@@ -735,7 +735,7 @@ class Solver(object):
             for j in range(0, stack.get_number_of_slices()):
 
                 # Define index for last voxel to specify current slice
-                # (exlusive)
+                # (exclusive)
                 i_max = i_min + N_slice_voxels
 
                 # Compute M_k A_k y_k
