@@ -14,6 +14,7 @@
 
 from setuptools import setup
 
+description = "Motion correction and volumetric Image ReConstruction of 2D ultra-fast MRI"
 long_description = "This is a research-focused toolkit developed within the" \
     " [GIFT-Surg](http: // www.gift-surg.ac.uk/) project to reconstruct an " \
     "isotropic, high-resolution volume from multiple, possibly " \
@@ -24,44 +25,29 @@ long_description = "This is a research-focused toolkit developed within the" \
     "The entire reconstruction pipeline is programmed in Python by using a " \
     "mix of SimpleITK, WrapITK and standard C++ITK."
 
-setup(name='VolumetricReconstruction',
+setup(name='NiftyMIC',
       version='0.1.dev1',
-      description='Volumetric MRI Reconstruction from 2D Slices in the '
-      'Presence of Motion',
+      description=description,
       long_description=long_description,
-      url='https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction',
+      url='https://github.com/gift-surg/NiftyMIC',
       author='Michael Ebner',
       author_email='michael.ebner.14@ucl.ac.uk',
-      license='MIT',
-      packages=['volumetricreconstruction'],
-      package_dir={'': 'src/py'},  # tell distutils packages are under src/py
-      # include_package_data=True,    # include everything in source control
-      install_requires=['pythonhelper', 'numericalsolver'],
+      license='BSD-3-Clause',
+      packages=['niftymic'],
+      install_requires=['pysitk', 'nsol', 'simplereg'],
       zip_safe=False,
       keywords='development numericalsolver convexoptimisation',
       classifiers=[
-          # How mature is this project? Common values are
-          #   3 - Alpha
-          #   4 - Beta
-          #   5 - Production/Stable
           'Development Status :: 3 - Alpha',
 
-          # Indicate who your project is intended for
           'Intended Audience :: Developers',
           'Topic :: Software Development :: Build Tools',
 
-          # Pick your license as you wish (should match "license" above)
-           'License :: OSI Approved :: MIT License',
+           'License :: OSI Approved :: BSD License',
 
-          # Specify the Python versions you support here. In particular, ensure
-          # that you indicate whether you support Python 2, Python 3 or both.
-          # 'Programming Language :: Python :: 2',
-          # 'Programming Language :: Python :: 2.6',
+          'Programming Language :: Python',
+          'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 2.7',
-          # 'Programming Language :: Python :: 3',
-          # 'Programming Language :: Python :: 3.2',
-          # 'Programming Language :: Python :: 3.3',
-          # 'Programming Language :: Python :: 3.4',
       ],
 
       )
