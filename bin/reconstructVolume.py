@@ -313,16 +313,16 @@ if __name__ == '__main__':
                 alpha_range=[args.alpha_first, args.alpha],
                 verbose=args.verbose,
             )
-        two_step_s2v_reg_recon = \
-            pipeline.HieararchicalSliceSetRegistrationReconstruction(
-                stacks=stacks,
-                reference=HR_volume,
-                registration_method=registration,
-                reconstruction_method=SRR,
-                alpha_range=[args.alpha_first, args.alpha],
-                interleave=2,
-                verbose=args.verbose,
-            )
+        # two_step_s2v_reg_recon = \
+        #     pipeline.HieararchicalSliceSetRegistrationReconstruction(
+        #         stacks=stacks,
+        #         reference=HR_volume,
+        #         registration_method=registration,
+        #         reconstruction_method=SRR,
+        #         alpha_range=[args.alpha_first, args.alpha],
+        #         interleave=2,
+        #         verbose=args.verbose,
+        #     )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
             two_step_s2v_reg_recon.get_iterative_reconstructions()
