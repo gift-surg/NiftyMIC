@@ -1,5 +1,6 @@
 backups/
 build/
+data/
 doc/py/html/
 doc/py/latex/
 src/test-data/
