@@ -11,16 +11,12 @@ import numpy as np
 import unittest
 import sys
 
-## Add directories to import modules
-dir_src_root = "../src/"
-sys.path.append( dir_src_root )
+import pythonhelper.SimpleITKHelper as sitkh
 
-## Import modules from src-folder
-import utilities.FirstEstimateOfHRVolume as efhrv
-import utilities.SimpleITKHelper as sitkh
-import utilities.StackManager as sm
-import base.Slice as sl
-import base.Stack as st
+import volumetricreconstruction.utilities.FirstEstimateOfHRVolume as efhrv
+import volumetricreconstruction.utilities.StackManager as sm
+import volumetricreconstruction.base.Slice as sl
+import volumetricreconstruction.base.Stack as st
 
 
 ## Concept of unit testing for python used in here is based on
@@ -41,7 +37,10 @@ class TestFirstEstimateOfHRVolume(unittest.TestCase):
     def test_01_get_zero_framed_stack(self):
 
         ## Read stack
-        stack = st.Stack.from_filename(self.dir_test_data, filename="fetal_brain_0", suffix_mask="_mask")
+        stack = st.Stack.from_filename(
+            os.path.join(self.dir_test_data, "fetal_brain_0.nii.gz"),
+            os.path.join(self.dir_test_data, "fetal_brain_0_mask.nii.gz")
+            )
 
         ## Isotropically resample stack (simulate HR volume for FirstEstimateOfHRVolume)
         #  Idea: Don't "merge" more stacks but only use one isotropic stack where ground

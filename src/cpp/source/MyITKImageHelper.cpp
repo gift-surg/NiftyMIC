@@ -587,6 +587,12 @@ void MyITKImageHelper::writeTransform(itk::InplaneSimilarity3DTransform< PixelTy
     }
 }
 
+void MyITKImageHelper::printInfo(const std::string &sInfo, const bool bVerbose){
+    if (bVerbose){
+      std::cout << "--- " << sInfo << std::endl;
+    }
+}
+
 void MyITKImageHelper::executeShellCommand(const std::string &cmd){
     std::cout << cmd << std::endl;
     system(cmd.c_str());

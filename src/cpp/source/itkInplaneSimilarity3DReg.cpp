@@ -190,7 +190,6 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
     const std::string sVerbose = input[19];
     const bool bVerbose = std::stoi(sVerbose);
     const double dANTSrad = std::stod(input[20]);
-    const double dTranslationScale = std::stod(input[21]);
 
     // Read images
     const ImageType3D::Pointer moving = MyITKImageHelper::readImage<ImageType3D>(sMoving);
@@ -240,7 +239,19 @@ void RegistrationFunction( const std::vector<std::string> &input ) {
         registration->SetNumberOfLevels ( numberOfLevels );
         registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
         registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
-    }   
+    }
+    // Multi-resolution framework is used by default! Update to not use it
+    else{
+        shrinkFactorsPerLevel.SetSize( 1 );
+        shrinkFactorsPerLevel[0] = 1;
+        smoothingSigmasPerLevel.SetSize( 1 );
+        smoothingSigmasPerLevel[0] = 0;
+
+        registration->SetNumberOfLevels ( 1 );
+        registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
+        registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
+        registration->SetSmoothingSigmasAreSpecifiedInPhysicalUnits( true );
+    }
 
 
     // typename MetricType::MeasureType valueReturn;

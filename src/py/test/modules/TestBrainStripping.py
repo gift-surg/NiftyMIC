@@ -12,10 +12,10 @@ import unittest
 import sys
 
 ## Import modules from src-folder
-import utilities.SimpleITKHelper as sitkh
-import preprocessing.BrainStripping as bs
+import pythonhelper.SimpleITKHelper as sitkh
 
-from definitions import dir_test
+import volumetricreconstruction.preprocessing.BrainStripping as bs
+from volumetricreconstruction.definitions import DIR_TEST
 
 ## Concept of unit testing for python used in here is based on
 #  http://pythontesting.net/framework/unittest/unittest-introduction/
@@ -23,7 +23,7 @@ from definitions import dir_test
 class TestBrainStripping(unittest.TestCase):
 
     ## Specify input data
-    dir_test_data = dir_test
+    dir_test_data = DIR_TEST
 
     accuracy = 7
 
