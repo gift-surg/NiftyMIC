@@ -1,10 +1,8 @@
 backups/
 build/
+html/
+latex/
 data/
-doc/py/html/
-doc/py/latex/
-src/test-data/
-test-data/
 .*
 *.nii
 *.nii.gz

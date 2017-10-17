@@ -1,6 +1,6 @@
-# Volumetric MRI Reconstruction from Motion Corrupted 2D Slices
+# Motion Correction and Volumetric Image Reconstruction of 2D Ultra-fast MRI
 
-This is a research-focused toolkit developed within the [GIFT-Surg][giftsurg] project  to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
+NiftyMIC is a research-focused toolkit developed within the [GIFT-Surg][giftsurg] project  to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
 The entire reconstruction pipeline is programmed in Python by using a mix of SimpleITK, WrapITK and standard C++ITK.
 
 The algorithm and software were developed by [Michael Ebner][mebner] at the [Translational Imaging Group][tig] in the [Centre for Medical Image Computing][cmic] at [University College London (UCL)][ucl].
@@ -125,10 +125,9 @@ Example are:
 
 The results can be assessed using the script `showParameterStudy.py` from the [NumericalSolver][numericalsolver] tool.
 
-# License
-Copyright (c) 2015-2017, [University College London][ucl].
-
-This framework available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
+# Licensing and Copyright
+Copyright (c) 2017, [University College London][ucl].
+This framework is available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
 
 
 # Funding
