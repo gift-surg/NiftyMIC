@@ -19,10 +19,10 @@ import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 # Import modules
-import niftymic.base.DataReader as dr
-import niftymic.base.Stack as st
-import niftymic.preprocessing.N4BiasFieldCorrection as n4itk
-from niftymic.utilities.InputArparser import InputArgparser
+import niftymic.base.data_reader as dr
+import niftymic.base.stack as st
+import niftymic.preprocessing.n4_bias_field_correction as n4itk
+from niftymic.utilities.input_arparser import InputArgparser
 
 
 def main():

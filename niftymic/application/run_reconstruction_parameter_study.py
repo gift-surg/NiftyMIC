@@ -22,11 +22,11 @@ import nsol.deconvolution_solver_parameter_study_interface as \
     deconv_interface
 
 # Import modules
-import niftymic.base.DataReader as dr
-import niftymic.base.Stack as st
-import niftymic.utilities.Exceptions as Exceptions
-import niftymic.reconstruction.solver.TikhonovSolver as tk
-from niftymic.utilities.InputArparser import InputArgparser
+import niftymic.base.data_reader as dr
+import niftymic.base.stack as st
+import niftymic.utilities.exceptions as Exceptions
+import niftymic.reconstruction.solver.tikhonov_solver as tk
+from niftymic.utilities.input_arparser import InputArgparser
 
 
 def main():

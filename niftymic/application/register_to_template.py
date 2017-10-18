@@ -20,13 +20,13 @@ import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 # Import modules
-import niftymic.base.DataReader as dr
-import niftymic.base.Stack as st
-import niftymic.registration.FLIRT as regflirt
-import niftymic.registration.NiftyReg as regniftyreg
-import niftymic.registration.RegistrationSimpleITK as regsitk
-import niftymic.preprocessing.IntensityCorrection as ic
-from niftymic.utilities.InputArparser import InputArgparser
+import niftymic.base.data_reader as dr
+import niftymic.base.stack as st
+import niftymic.registration.flirt as regflirt
+import niftymic.registration.niftyreg as regniftyreg
+import niftymic.registration.simple_itk_registration as regsitk
+import niftymic.preprocessing.intensity_correction as ic
+from niftymic.utilities.input_arparser import InputArgparser
 
 
 def main():

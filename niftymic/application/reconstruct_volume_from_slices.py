@@ -21,12 +21,12 @@ import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 # Import modules
-import niftymic.base.DataReader as dr
-import niftymic.base.Stack as st
-import niftymic.reconstruction.solver.TikhonovSolver as tk
-import niftymic.reconstruction.solver.ADMMSolver as admm
-import niftymic.reconstruction.solver.PrimalDualSolver as pd
-from niftymic.utilities.InputArparser import InputArgparser
+import niftymic.base.data_reader as dr
+import niftymic.base.stack as st
+import niftymic.reconstruction.solver.tikhonov_solver as tk
+import niftymic.reconstruction.solver.admm_solver as admm
+import niftymic.reconstruction.solver.primal_dual_solver as pd
+from niftymic.utilities.input_arparser import InputArgparser
 
 
 def main():

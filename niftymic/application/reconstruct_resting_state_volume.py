@@ -20,24 +20,24 @@ import os
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
-import niftymic.base.DataReader as dr
-import niftymic.base.Stack as st
-import niftymic.preprocessing.DataPreprocessing as dp
-import niftymic.preprocessing.N4BiasFieldCorrection as n4bfc
-import niftymic.registration.RegistrationSimpleITK as regsitk
-import niftymic.registration.RegistrationCppITK as regitk
-import niftymic.registration.FLIRT as regflirt
-import niftymic.registration.NiftyReg as regniftyreg
-import niftymic.registration.SegmentationPropagation as segprop
-import niftymic.reconstruction.ScatteredDataApproximation as \
+import niftymic.base.data_reader as dr
+import niftymic.base.stack as st
+import niftymic.preprocessing.data_preprocessing as dp
+import niftymic.preprocessing.n4_bias_field_correction as n4bfc
+import niftymic.registration.simple_itk_registration as regsitk
+import niftymic.registration.cpp_itk_registration as regitk
+import niftymic.registration.flirt as regflirt
+import niftymic.registration.niftyreg as regniftyreg
+import niftymic.registration.segmentation_propagation as segprop
+import niftymic.reconstruction.scattered_data_approximation as \
     sda
-import niftymic.reconstruction.solver.TikhonovSolver as tk
-import niftymic.reconstruction.solver.ADMMSolver as admm
-import niftymic.utilities.Exceptions as Exceptions
-import niftymic.utilities.VolumetricReconstructionPipeline as \
+import niftymic.reconstruction.solver.tikhonov_solver as tk
+import niftymic.reconstruction.solver.admm_solver as admm
+import niftymic.utilities.exceptions as Exceptions
+import niftymic.utilities.volumetric_reconstruction_pipeline as \
     pipeline
-from niftymic.utilities.InputArparser import InputArgparser
-import niftymic.base.DataWriter as dw
+from niftymic.utilities.input_arparser import InputArgparser
+import niftymic.base.data_writer as dw
 
 
 def main():
@@ -115,8 +115,8 @@ def main():
 
     segmentation_propagator = segprop.SegmentationPropagation(
         # registration_method=regniftyreg.RegAladin(use_verbose=args.verbose),
-        # registration_method=regsitk.RegistrationSimpleITK(use_verbose=args.verbose),
-        # registration_method=regitk.RegistrationCppITK(use_verbose=args.verbose),
+        # registration_method=regsitk.SimpleItkRegistration(use_verbose=args.verbose),
+        # registration_method=regitk.CppItkRegistration(use_verbose=args.verbose),
         dilation_radius=args.dilation_radius,
         dilation_kernel="Ball",
     )
@@ -232,7 +232,7 @@ def main():
     if args.two_step_cycles > 0:
 
         # Two-step registration reconstruction
-        registration = regsitk.RegistrationSimpleITK(
+        registration = regsitk.SimpleItkRegistration(
             moving=HR_volume,
             use_fixed_mask=True,
             use_moving_mask=True,

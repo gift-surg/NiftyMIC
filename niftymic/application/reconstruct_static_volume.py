@@ -25,13 +25,13 @@ import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
 
 # Import modules
-import niftymic.base.Stack as st
-import niftymic.base.DataReader as dr
-import niftymic.preprocessing.DataPreprocessing as dp
-import niftymic.registration.SegmentationPropagation as segprop
-import niftymic.reconstruction.solver.TikhonovSolver as tk
-from niftymic.utilities.InputArparser import InputArgparser
-import niftymic.utilities.Exceptions as Exceptions
+import niftymic.base.stack as st
+import niftymic.base.data_reader as dr
+import niftymic.preprocessing.data_preprocessing as dp
+import niftymic.registration.segmentation_propagation as segprop
+import niftymic.reconstruction.solver.tikhonov_solver as tk
+from niftymic.utilities.input_arparser import InputArgparser
+import niftymic.utilities.exceptions as Exceptions
 
 
 def main():
