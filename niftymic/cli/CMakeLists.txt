@@ -55,28 +55,7 @@ include_directories(test/catch)
 # set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) 
 
 #***Directories with additional CMakeLists.txt:
-add_subdirectory(source)
-add_subdirectory(test)
-
-
-# IF(CMAKE_BUILD_TYPE MATCHES Debug)
-#   message("Debug build.")
-# ELSEIF(CMAKE_BUILD_TYPE MATCHES Release)
-#   message("Release build.")
-# ELSE()
-#   message("Some other build type.")
-# ENDIF()
-
-##############################################################################
-# Copy test data into build folder.
-##############################################################################
-set (DIR_TEST_DATA "../../test-data")
-
-## Set directory where test data is located
-file(GLOB MY_COPY_FILES
-  "${DIR_TEST_DATA}/*"
-)
-file(COPY ${MY_COPY_FILES} DESTINATION ${CMAKE_BINARY_DIR}/test/test-data)
+add_subdirectory(src)
 
 ##############################################################################
 # Compilation info
