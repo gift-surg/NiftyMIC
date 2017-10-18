@@ -36,7 +36,6 @@ if __name__ == '__main__':
 
     input_parser = InputArgparser(
         description="Run intensity correction",
-        prog="python " + os.path.basename(__file__),
     )
     input_parser.add_filenames(required=True)
     input_parser.add_dir_output(required=True)

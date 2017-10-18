@@ -39,7 +39,6 @@ if __name__ == '__main__':
     # Read input
     input_parser = InputArgparser(
         description="",
-        prog="python " + os.path.basename(__file__),
     )
     input_parser.add_dir_input()
     input_parser.add_filenames()

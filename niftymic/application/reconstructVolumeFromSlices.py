@@ -41,7 +41,6 @@ if __name__ == '__main__':
         description="Volumetric MRI reconstruction framework to reconstruct "
         "an isotropic, high-resolution 3D volume from multiple stacks of "
         "motion corrected slices obtained by 'reconstructVolume.py'.",
-        prog="python " + os.path.basename(__file__),
     )
     input_parser.add_dir_input()
     input_parser.add_filenames()

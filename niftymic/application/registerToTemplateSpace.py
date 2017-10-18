@@ -41,7 +41,6 @@ if __name__ == '__main__':
         "obtained motion correction slice transforms so that a volumetric "
         "reconstruction is possible in the (standard anatomical) space "
         "defined by the template.",
-        prog="python " + os.path.basename(__file__),
     )
     input_parser.add_option(
         option_string="--template",

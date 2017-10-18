@@ -56,7 +56,6 @@ if __name__ == '__main__':
         "specified by providing a mask for the selected target stack. Only "
         "this region will then be reconstructed by the SRR algorithm which "
         "can substantially reduce the computational time.",
-        prog="python " + os.path.basename(__file__),
     )
     input_parser.add_dir_input()
     input_parser.add_filenames()

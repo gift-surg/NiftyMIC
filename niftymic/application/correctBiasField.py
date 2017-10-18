@@ -32,9 +32,7 @@ if __name__ == '__main__':
     np.set_printoptions(precision=3)
 
     input_parser = InputArgparser(
-        description="Perform Bias Field correction on images based on "
-        "N4ITK.",
-        prog="python " + os.path.basename(__file__),
+        description="Perform Bias Field correction on images based on N4ITK.",
     )
     input_parser.add_filenames(required=True)
     input_parser.add_dir_output(required=True)
