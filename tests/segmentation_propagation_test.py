@@ -61,7 +61,11 @@ class SegmentationPropagationTest(unittest.TestCase):
         # sitkh.show_sitk_image([template.sitk, stack_sitk])
 
         optimizer = "RegularStepGradientDescent"
-        optimizer_params = "{'learningRate': 1, 'minStep': 1e-6, 'numberOfIterations': 300}"
+        optimizer_params = {
+            'learningRate': 1,
+            'minStep': 1e-6,
+            'numberOfIterations': 300
+        }
 
         # optimizer="ConjugateGradientLineSearch"
         # optimizer_params="{'learningRate': 1, 'numberOfIterations': 100}"

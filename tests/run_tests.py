@@ -19,7 +19,7 @@ from modules.brain_stripping_test import *
 from modules.cpp_itk_registration_test import *
 from modules.differential_operations_test import *
 from modules.intensity_correction_test import *
-# from modules.intra_stack_registration_test import *
+from modules.intra_stack_registration_test import *
 from modules.linear_image_quality_transfer_test import *
 from modules.niftyreg_test import *
 from modules.parameter_normalization_test import *
