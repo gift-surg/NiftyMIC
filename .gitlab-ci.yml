@@ -1,0 +1,46 @@
+builddocs:
+  # only:
+  #   - master
+  script:
+    - cd doc
+    - doxygen doxyfile
+  tags:
+    - gift-adelie
+
+testjob:
+  only:
+    - master
+  script:
+    # save PySiTK folder path just in case
+    - export pysitk_dir=$(pwd)
+
+    # create a virtual env to dev-test
+    - pyversion=2
+    - tmpdir=tmp
+    - venv="pysitk-test-py${pyversion}"
+    - mypython=$(which python${pyversion})
+    - virtualenv -p $mypython $venv
+    - cd $venv
+    - venv_dir=$(pwd)
+    - source bin/activate
+    
+    # print Python version to CI output
+    - which python
+    - python --version
+
+    # copy ITK_NiftyMIC-build WrapITK to site-packages of venv
+    - itkpath=/mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-python${pyversion}-build/Wrapping/Generators/Python/WrapITK.pth
+    - pypath=${venv_dir}/lib/python*/site-packages
+    - cp -v ${itkpath} ${pypath}
+
+    # install requirements
+    - cd $pysitk_dir
+    - pip install -r requirements.txt
+
+    # tests
+    python niftymic_reconstruct_volume --dir-input /home/mebner/data/FetalBrain/input_data --dir-output ${tmpdir} --verbose 0
+    # - python -m unittest discover -s "tests" -p "*_test.py"
+    
+
+  tags:
+    - gift-adelie    
