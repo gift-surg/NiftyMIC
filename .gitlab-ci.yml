@@ -38,7 +38,7 @@ testjob:
     - pip install -r requirements.txt
 
     # tests
-    python niftymic_reconstruct_volume --dir-input /home/mebner/data/FetalBrain/input_data --dir-output ${tmpdir} --verbose 0
+    - python niftymic_reconstruct_volume --dir-input /home/mebner/data/FetalBrain/input_data --dir-output ${tmpdir} --verbose 0
     # - python -m unittest discover -s "tests" -p "*_test.py"
     
 
