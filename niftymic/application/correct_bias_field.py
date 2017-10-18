@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ##
-# \file correctBiasField.py
+# \file correct_bias_field.py
 # \brief      Script to correct for bias field. Based on N4ITK
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
@@ -25,7 +25,7 @@ import niftymic.preprocessing.N4BiasFieldCorrection as n4itk
 from niftymic.utilities.InputArparser import InputArgparser
 
 
-if __name__ == '__main__':
+def main():
 
     time_start = ph.start_timing()
 
@@ -116,3 +116,8 @@ if __name__ == '__main__':
     ph.print_title("Summary")
     print("Computational Time for Bias Field Correction(s): %s" %
           (elapsed_time))
+
+    return 0
+
+if __name__ == '__main__':
+    main()

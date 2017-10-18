@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ##
-# \file reconstructVolume.py
+# \file reconstruct_volume.py
 # \brief      Script to reconstruct an isotropic, high-resolution volume from
 #             multiple stacks of low-resolution 2D slices including
 #             motion-correction.
@@ -39,7 +39,8 @@ import niftymic.utilities.VolumetricReconstructionPipeline as \
 from niftymic.utilities.InputArparser import InputArgparser
 import niftymic.base.DataWriter as dw
 
-if __name__ == '__main__':
+
+def main():
 
     time_start = ph.start_timing()
 
@@ -145,7 +146,7 @@ if __name__ == '__main__':
     if args.two_step_cycles > 0:
 
         registration = regniftyreg.RegAladin(
-        # registration = regflirt.FLIRT(
+            # registration = regflirt.FLIRT(
             fixed=stacks[args.target_stack_index],
             registration_type="Rigid",
             use_fixed_mask=True,
@@ -354,3 +355,8 @@ if __name__ == '__main__':
           (elapsed_time_total))
 
     ph.print_line_separator()
+
+    return 0
+
+if __name__ == '__main__':
+    main()

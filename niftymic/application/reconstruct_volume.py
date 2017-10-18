@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ##
-# \file reconstructVolume.py
+# \file reconstruct_volume.py
 # \brief      Script to reconstruct an isotropic, high-resolution volume from
 #             multiple stacks of low-resolution 2D slices including
 #             motion-correction.
@@ -39,7 +39,8 @@ import niftymic.utilities.VolumetricReconstructionPipeline as \
     pipeline
 from niftymic.utilities.InputArparser import InputArgparser
 
-if __name__ == '__main__':
+
+def main():
 
     time_start = ph.start_timing()
 
@@ -385,3 +386,8 @@ if __name__ == '__main__':
           (elapsed_time_total))
 
     ph.print_line_separator()
+
+    return 0
+
+if __name__ == '__main__':
+    main()

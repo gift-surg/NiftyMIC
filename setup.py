@@ -49,5 +49,15 @@ setup(name='NiftyMIC',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 2.7',
       ],
-
+      entry_points={
+          'console_scripts': [
+              'niftymic_correct_bias_field = niftymic.application.correct_bias_field:main',
+              'niftymic_reconstruct_volume = niftymic.application.reconstruct_volume:main',
+              'niftymic_reconstruct_volume_from_slices = niftymic.application.reconstruct_volume_from_slices:main',
+              'niftymic_register_to_template = niftymic.application.register_to_template:main',
+              'niftymic_run_intensity_correction = niftymic.application.run_intensity_correction:main',
+              'niftymic_run_reconstruction_parameter_study = niftymic.application.run_reconstruction_parameter_study:main',
+              'niftymic_show_reconstruction_parameter_study = nsol.application.show_parameter_study:main',
+          ],
+      },
       )

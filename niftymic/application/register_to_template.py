@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ##
-# \file registerToTemplateSpace.py
+# \file register_to_template.py
 # \brief      Script to register the obtained reconstruction to a template
 #             space.
 #
@@ -28,7 +28,8 @@ import niftymic.registration.RegistrationSimpleITK as regsitk
 import niftymic.preprocessing.IntensityCorrection as ic
 from niftymic.utilities.InputArparser import InputArgparser
 
-if __name__ == '__main__':
+
+def main():
 
     time_start = ph.start_timing()
 
@@ -131,3 +132,8 @@ if __name__ == '__main__':
     # Summary
     ph.print_title("Summary")
     print("Computational Time: %s" % (elapsed_time_total))
+
+    return 0
+
+if __name__ == '__main__':
+    main()

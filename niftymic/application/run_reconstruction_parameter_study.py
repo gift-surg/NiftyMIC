@@ -28,8 +28,8 @@ import niftymic.utilities.Exceptions as Exceptions
 import niftymic.reconstruction.solver.TikhonovSolver as tk
 from niftymic.utilities.InputArparser import InputArgparser
 
-# noinspection PyDictCreation
-if __name__ == '__main__':
+
+def main():
 
     time_start = ph.start_timing()
 
@@ -216,3 +216,8 @@ if __name__ == '__main__':
 
     print("\nComputational time for Deconvolution Parameter Study %s: %s" %
           (name, parameter_study.get_computational_time()))
+
+    return 0
+
+if __name__ == '__main__':
+    main()

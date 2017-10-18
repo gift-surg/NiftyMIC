@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ##
-# \file reconstructVolume.py
+# \file reconstruct_volume.py
 # \brief      Script to reconstruct an isotropic, high-resolution volume from
 #             multiple stacks of low-resolution 2D slices including
 #             motion-correction.
@@ -29,7 +29,7 @@ import niftymic.reconstruction.solver.PrimalDualSolver as pd
 from niftymic.utilities.InputArparser import InputArgparser
 
 
-if __name__ == '__main__':
+def main():
 
     time_start = ph.start_timing()
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     input_parser = InputArgparser(
         description="Volumetric MRI reconstruction framework to reconstruct "
         "an isotropic, high-resolution 3D volume from multiple stacks of "
-        "motion corrected slices obtained by 'reconstructVolume.py'.",
+        "motion corrected slices obtained by 'reconstruct_volume.py'.",
     )
     input_parser.add_dir_input()
     input_parser.add_filenames()
@@ -220,3 +220,8 @@ if __name__ == '__main__':
     ph.print_title("Summary")
     print("Computational Time for Volumetric Reconstruction: %s" %
           (elapsed_time))
+
+    return 0
+
+if __name__ == '__main__':
+    main()

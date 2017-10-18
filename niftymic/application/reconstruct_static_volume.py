@@ -1,14 +1,14 @@
 #!/usr/bin/python
 
 ##
-# \file reconstructStaticVolume.py
+# \file reconstruct_static_volume.py
 # \brief      Script to reconstruct an isotropic, high-resolution volume from
 #             multiple stacks of low-resolution 2D slices without
 #             motion-correction.
 #
 # Example usage:
-#       - `python reconstructStaticVolume.py --help`
-#       - `python reconstructStaticVolume.py --dir_input=path-to-data`
+#       - `python reconstruct_static_volume.py --help`
+#       - `python reconstruct_static_volume.py --dir_input=path-to-data`
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       May 2017
@@ -34,10 +34,7 @@ from niftymic.utilities.InputArparser import InputArgparser
 import niftymic.utilities.Exceptions as Exceptions
 
 
-##
-# Main Function
-#
-if __name__ == '__main__':
+def main():
 
     time_start = ph.start_timing()
 
@@ -185,3 +182,8 @@ if __name__ == '__main__':
     print("Computational Time for Super-Resolution Algorithm: %s" % (time_SRR))
     print("Computational Time for Entire Reconstruction Pipeline: %s" %
           (elapsed_time))
+
+    return 0
+
+if __name__ == '__main__':
+    main()
