@@ -18,7 +18,7 @@ import os
 
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
-import nsol.DeconvolutionSolverParameterStudyInterface as \
+import nsol.deconvolution_solver_parameter_study_interface as \
     deconv_interface
 
 # Import modules

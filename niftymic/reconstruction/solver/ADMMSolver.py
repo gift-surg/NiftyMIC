@@ -17,8 +17,8 @@ import SimpleITK as sitk
 import numpy as np
 import time
 
-import nsol.ADMMLinearSolver as admm
-import nsol.LinearOperators as linop
+import nsol.admm_linear_solver as admm
+import nsol.linear_operators as linop
 import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
 

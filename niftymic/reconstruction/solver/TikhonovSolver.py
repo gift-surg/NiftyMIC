@@ -17,8 +17,8 @@ import numpy as np
 import time
 from scipy.optimize import minimize
 
-import nsol.TikhonovLinearSolver as tk
-import nsol.LinearOperators as linop
+import nsol.tikhonov_linear_solver as tk
+import nsol.linear_operators as linop
 import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
 

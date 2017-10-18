@@ -26,7 +26,7 @@ from scipy.optimize import minimize
 # Import modules
 import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
-from nsol.LossFunctions import LossFunctions as lf
+from nsol.loss_functions import LossFunctions as lf
 
 import niftymic.base.Stack as st
 import niftymic.utilities.ParameterNormalization as pn

@@ -18,7 +18,7 @@ from datetime import timedelta
 
 import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
-from nsol.LossFunctions import LossFunctions as lf
+from nsol.loss_functions import LossFunctions as lf
 
 # Import modules
 import niftymic.base.PSF as psf

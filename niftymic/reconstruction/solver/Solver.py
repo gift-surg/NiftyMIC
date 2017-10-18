@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# \file Solver.py
+# \file solver.py
 #  \brief Implementation of basis class to solve the slice acquisition model
 #  \f[
 #       y_k = D_k B_k W_k x = A_k x

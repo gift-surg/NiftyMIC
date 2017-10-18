@@ -1,5 +1,5 @@
 ##
-# \file PrimalDualSolver.py
+# \file primal_dual_solver.py
 # \brief      Solve reconstruction problem A_k x = y_k for all slices k via
 #             Primal-Dual solver.
 #
@@ -24,11 +24,11 @@ import numpy as np
 import time
 from datetime import timedelta
 
-import nsol.PrimalDualSolver as pd
-import nsol.LinearOperators as linop
+import nsol.primal_dual_solver as pd
+import nsol.linear_operators as linop
 import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
-from nsol.ProximalOperators import ProximalOperators as prox
+from nsol.proximal_operators import ProximalOperators as prox
 
 # Import modules
 import niftymic.reconstruction.solver.TikhonovSolver as tk

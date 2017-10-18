@@ -13,9 +13,9 @@ import argparse
 import pysitk.python_helper as ph
 import inspect
 
-from nsol.SimilarityMeasures import SimilarityMeasures as \
+from nsol.similarity_measures import SimilarityMeasures as \
     SimilarityMeasures
-from nsol.LossFunctions import LossFunctions as \
+from nsol.loss_functions import LossFunctions as \
     LossFunctions
 
 from niftymic.definitions import ALLOWED_EXTENSIONS
