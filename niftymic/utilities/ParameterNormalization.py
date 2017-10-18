@@ -15,7 +15,7 @@ import sys
 import numpy as np
 
 ## Import modules
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 
 ##

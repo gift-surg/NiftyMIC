@@ -24,8 +24,8 @@ from scipy.optimize import least_squares
 from scipy.optimize import minimize
 
 # Import modules
-import pysitk.SimpleITKHelper as sitkh
-import pysitk.PythonHelper as ph
+import pysitk.simple_itk_helper as sitkh
+import pysitk.python_helper as ph
 from nsol.LossFunctions import LossFunctions as lf
 
 import niftymic.base.Stack as st

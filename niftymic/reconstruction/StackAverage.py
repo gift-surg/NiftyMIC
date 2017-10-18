@@ -13,7 +13,7 @@ import SimpleITK as sitk
 import numpy as np
 import time                     
 
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.Stack as st
 

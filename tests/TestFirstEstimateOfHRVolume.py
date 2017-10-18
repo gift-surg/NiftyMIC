@@ -11,7 +11,7 @@ import numpy as np
 import unittest
 import sys
 
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.utilities.FirstEstimateOfHRVolume as efhrv
 import niftymic.utilities.StackManager as sm

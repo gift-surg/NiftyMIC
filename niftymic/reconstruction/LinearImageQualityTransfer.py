@@ -21,7 +21,7 @@ from scipy.optimize import nnls
 import time
 from datetime import timedelta
 
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 
 import niftymic.base.Stack as st

@@ -19,7 +19,7 @@ import os
 import sys
 
 ## Import modules from src-folder
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.Stack as st
 import niftymic.base.Slice as sl

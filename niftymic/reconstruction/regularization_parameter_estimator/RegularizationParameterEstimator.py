@@ -23,7 +23,7 @@ import datetime
 import re               #regular expression
 
 ## Import modules from src-folder
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 import base.PSF as psf
 import base.Stack as st
 import reconstruction.InverseProblemSolver as ips

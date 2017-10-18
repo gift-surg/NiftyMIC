@@ -13,7 +13,7 @@ import itk
 import numpy as np
 
 ## Import modules from src-folder
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.utilities.StackManager as sm
 import niftymic.reconstruction.ScatteredDataApproximation as sda

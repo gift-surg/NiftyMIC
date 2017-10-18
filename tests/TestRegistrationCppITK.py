@@ -12,7 +12,7 @@ import numpy as np
 import sys
 import os
 
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 # Import modules
 import niftymic.base.Stack as st

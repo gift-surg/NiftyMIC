@@ -11,8 +11,8 @@ import numpy as np
 import SimpleITK as sitk
 from abc import ABCMeta, abstractmethod
 
-import pysitk.PythonHelper as ph
-import simplereg.NiftyReg
+import pysitk.python_helper as ph
+import simplereg.niftyreg
 
 import niftymic.base.Stack as st
 from niftymic.registration.RegistrationMethod \
@@ -87,7 +87,7 @@ class RegAladin(AffineRegistrationMethod):
         if not self._use_verbose:
             options += " -voff"
 
-        self._registration_method = simplereg.NiftyReg.RegAladin(
+        self._registration_method = simplereg.niftyreg.RegAladin(
             fixed_sitk=self._fixed.sitk,
             moving_sitk=self._moving.sitk,
             fixed_sitk_mask=fixed_sitk_mask,
@@ -161,7 +161,7 @@ class RegF3D(RegistrationMethod):
         if not self._use_verbose:
             options += " -voff"
 
-        self._registration_method = simplereg.NiftyReg.RegF3D(
+        self._registration_method = simplereg.niftyreg.RegF3D(
             fixed_sitk=self._fixed.sitk,
             moving_sitk=self._moving.sitk,
             fixed_sitk_mask=fixed_sitk_mask,

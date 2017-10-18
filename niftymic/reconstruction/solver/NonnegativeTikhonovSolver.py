@@ -24,7 +24,7 @@ import time
 from datetime import timedelta
 
 ## Import modules
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 from niftymic.reconstruction.solver.TikhonovSolver import TikhonovSolver
 

@@ -17,7 +17,7 @@ import os
 import re  # regular expression
 
 # Import modules
-import pysitk.PythonHelper as ph
+import pysitk.python_helper as ph
 
 ##
 #

@@ -17,7 +17,7 @@ from scipy.optimize import minimize
 from scipy import ndimage
 import matplotlib.pyplot as plt
 
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.PSF as psf
 

@@ -15,8 +15,8 @@ from scipy.optimize import least_squares
 import time
 import matplotlib.pyplot as plt
 
-import pysitk.SimpleITKHelper as sitkh
-import pysitk.PythonHelper as ph
+import pysitk.simple_itk_helper as sitkh
+import pysitk.python_helper as ph
 
 import niftymic.base.Stack as st
 

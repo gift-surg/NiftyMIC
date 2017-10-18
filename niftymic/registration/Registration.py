@@ -16,8 +16,8 @@ import scipy.optimize
 import time
 from datetime import timedelta
 
-import pysitk.SimpleITKHelper as sitkh
-import pysitk.PythonHelper as ph
+import pysitk.simple_itk_helper as sitkh
+import pysitk.python_helper as ph
 from nsol.LossFunctions import LossFunctions as lf
 
 # Import modules

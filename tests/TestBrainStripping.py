@@ -12,7 +12,7 @@ import unittest
 import sys
 
 ## Import modules from src-folder
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.preprocessing.BrainStripping as bs
 from niftymic.definitions import DIR_TEST

@@ -15,7 +15,7 @@ import sys
 sys.path.append("../src/")
 
 ## Import modules from src-folder
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 import reconstruction.InverseProblemSolver as ips
 import base.Stack as st
 import base.PSF as psf

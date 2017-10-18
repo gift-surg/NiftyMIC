@@ -10,8 +10,8 @@ import os
 import numpy as np
 import SimpleITK as sitk
 
-import pysitk.PythonHelper as ph
-import simplereg.FLIRT
+import pysitk.python_helper as ph
+import simplereg.flirt
 
 import niftymic.base.Stack as st
 from niftymic.registration.RegistrationMethod \
@@ -91,7 +91,7 @@ class FLIRT(AffineRegistrationMethod):
         if self._use_verbose:
             options += " -verbose 1"
 
-        self._registration_method = simplereg.FLIRT.FLIRT(
+        self._registration_method = simplereg.flirt.FLIRT(
             fixed_sitk=self._fixed.sitk,
             moving_sitk=self._moving.sitk,
             fixed_sitk_mask=fixed_sitk_mask,

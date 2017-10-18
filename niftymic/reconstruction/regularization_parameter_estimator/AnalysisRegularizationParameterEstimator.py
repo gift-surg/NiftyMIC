@@ -25,7 +25,7 @@ dir_src_root = "../../src/py/"
 sys.path.append(dir_src_root)
 
 ## Import modules
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import reconstruction.solver.TikhonovSolver as tk
 import reconstruction.regularization_parameter_estimator.TikhonovRegularizationParameterEstimator as tkrpe

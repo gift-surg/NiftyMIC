@@ -9,7 +9,7 @@
 import os
 import numpy as np
 
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 ## Import modules from src-folder
 import niftymic.base.Stack as st

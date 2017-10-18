@@ -14,8 +14,8 @@ import numpy as np
 import SimpleITK as sitk
 from abc import ABCMeta, abstractmethod
 
-import pysitk.PythonHelper as ph
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.Stack as st
 

@@ -15,8 +15,8 @@ import SimpleITK as sitk
 # http://stackoverflow.com/questions/20263839/python-convert-a-string-to-arguments-list:
 from ast import literal_eval
 
-import pysitk.PythonHelper as ph
-import simplereg.WrapItkRegistration
+import pysitk.python_helper as ph
+import simplereg.wrap_itk_registration
 
 import niftymic.base.PSF as psf
 import niftymic.base.Stack as st
@@ -119,7 +119,7 @@ class RegistrationWrapITK(RegistrationSimpleITK):
             itk_gaussian_interpolator = None
 
         self._registration_method = \
-            simplereg.WrapItkRegistration.WrapItkRegistration(
+            simplereg.wrap_itk_registration.WrapItkRegistration(
                 dimension=dimension,
                 fixed_itk=self._fixed.itk,
                 moving_itk=self._moving.itk,

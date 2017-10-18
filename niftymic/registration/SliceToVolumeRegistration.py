@@ -14,7 +14,7 @@ import numpy as np
 
 
 ## Import modules from src-folder
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.PSF as psf
 import niftymic.reconstruction.ScatteredDataApproximation as sda

@@ -21,8 +21,8 @@ import numpy as np
 import sys
 import os
 
-import pysitk.SimpleITKHelper as sitkh
-import pysitk.PythonHelper as ph
+import pysitk.simple_itk_helper as sitkh
+import pysitk.python_helper as ph
 
 # Import modules
 import niftymic.base.Stack as st

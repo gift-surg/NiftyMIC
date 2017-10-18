@@ -17,8 +17,8 @@ import numpy as np
 import re
 import copy
 
-import pysitk.SimpleITKHelper as sitkh
-import pysitk.PythonHelper as ph
+import pysitk.simple_itk_helper as sitkh
+import pysitk.python_helper as ph
 
 import niftymic.base.Slice as sl
 import niftymic.utilities.FilenameParser as fp

@@ -15,7 +15,7 @@ import sys
 from scipy.ndimage import imread
 
 ## Import modules
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.Stack as st
 import niftymic.utilities.ParameterNormalization as pn

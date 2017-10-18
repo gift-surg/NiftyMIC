@@ -26,8 +26,8 @@ from datetime import timedelta
 
 import nsol.PrimalDualSolver as pd
 import nsol.LinearOperators as linop
-import pysitk.SimpleITKHelper as sitkh
-import pysitk.PythonHelper as ph
+import pysitk.simple_itk_helper as sitkh
+import pysitk.python_helper as ph
 from nsol.ProximalOperators import ProximalOperators as prox
 
 # Import modules

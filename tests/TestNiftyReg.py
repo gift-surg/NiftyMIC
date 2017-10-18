@@ -13,7 +13,7 @@ import sys
 import os
 
 # Import modules
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.registration.NiftyReg as nreg
 import niftymic.base.Stack as st

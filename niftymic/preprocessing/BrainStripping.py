@@ -16,8 +16,8 @@ import SimpleITK as sitk
 import numpy as np
 
 ## Import modules
-import pysitk.SimpleITKHelper as sitkh
-import pysitk.PythonHelper as ph
+import pysitk.simple_itk_helper as sitkh
+import pysitk.python_helper as ph
 
 from niftymic.definitions import DIR_TMP
 from niftymic.definitions import BET_EXE

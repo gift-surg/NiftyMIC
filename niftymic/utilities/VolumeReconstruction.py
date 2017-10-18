@@ -18,7 +18,7 @@ import time
 
 
 ## Import modules from src-folder
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 import reconstruction.InverseProblemSolver as ips
 import reconstruction.ScatteredDataApproximation as sda
 

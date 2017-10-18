@@ -14,7 +14,7 @@ import SimpleITK as sitk
 import numpy as np
 import matplotlib.pyplot as plt
 
-import pysitk.SimpleITKHelper as sitkh
+import pysitk.simple_itk_helper as sitkh
 
 ## Import modules from src-folder
 import niftymic.utilities.StackManager as sm

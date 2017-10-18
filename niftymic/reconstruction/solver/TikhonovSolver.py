@@ -19,8 +19,8 @@ from scipy.optimize import minimize
 
 import nsol.TikhonovLinearSolver as tk
 import nsol.LinearOperators as linop
-import pysitk.SimpleITKHelper as sitkh
-import pysitk.PythonHelper as ph
+import pysitk.simple_itk_helper as sitkh
+import pysitk.python_helper as ph
 
 # Import modules
 from niftymic.reconstruction.solver.Solver import Solver

@@ -15,8 +15,8 @@ import sys
 import os
 from skimage.measure import compare_ssim as ssim
 
-import pysitk.SimpleITKHelper as sitkh
-import pysitk.PythonHelper as ph
+import pysitk.simple_itk_helper as sitkh
+import pysitk.python_helper as ph
 
 ## Import modules
 import niftymic.base.Stack as st

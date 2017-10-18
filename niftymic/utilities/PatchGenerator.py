@@ -10,7 +10,7 @@ import itertools
 import numpy as np
 import SimpleITK as sitk
 from abc import ABCMeta, abstractmethod
-import pysitk.PythonHelper as ph
+import pysitk.python_helper as ph
 
 import niftymic.base.Stack as st
 
