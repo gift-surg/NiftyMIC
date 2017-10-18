@@ -127,7 +127,7 @@ The results can be assessed using the script `showParameterStudy.py` from the [N
 
 # Licensing and Copyright
 Copyright (c) 2017, [University College London][ucl].
-This framework is available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
+This framework is made available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
 
 
 # Funding
