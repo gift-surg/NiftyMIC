@@ -33,9 +33,14 @@ testjob:
     - pypath=${venv_dir}/lib/python*/site-packages
     - cp -v ${itkpath} ${pypath}
 
-    # install requirements
+    # add CI_JOB_TOKEN for cloning dependent repositories in requirements.txt
+    # (https://docs.gitlab.com/ee/user/project/new_ci_build_permissions_model.html#dependent-repositories)
     - cd $pysitk_dir
+    - sed -i -- "s/cmiclab/gitlab-ci-token:${CI_JOB_TOKEN}@cmiclab/g" requirements.txt
+
+    # install requirements
     - pip install -r requirements.txt
+    - pip install -e .
 
     # 1) reconstruct_volume
     - python niftymic_reconstruct_volume.py \

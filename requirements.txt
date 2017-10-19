@@ -4,6 +4,6 @@ natsort>=5.0.3
 matplotlib>=2.0.2
 numpy>=1.13.1
 SimpleITK>=1.0.1
-git+ssh://git@cmiclab.cs.ucl.ac.uk/gift-surg/PySiTK.git
-git+ssh://git@cmiclab.cs.ucl.ac.uk/gift-surg/NSoL.git
-git+ssh://git@cmiclab.cs.ucl.ac.uk/gift-surg/SimpleReg.git
+-e git+https://cmiclab.cs.ucl.ac.uk/gift-surg/PySiTK.git#egg=PySiTK
+-e git+https://git@cmiclab.cs.ucl.ac.uk/gift-surg/NSoL.git#egg=NSoL
+-e git+https://git@cmiclab.cs.ucl.ac.uk/gift-surg/SimpleReg.git#egg=SimpleReg

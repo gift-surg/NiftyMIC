@@ -45,7 +45,7 @@ This toolkit depends on a variety of software packages developed within the [GIF
 * [RegistrationTools][registrationtools]
 * [PythonHelper][pythonhelper]
 
-Further information on the installation instructions can be found in the [Wiki](https://cmiclab.cs.ucl.ac.uk/mebner/VolumetricReconstruction/wikis/home).
+Further information on the installation instructions can be found in the [Wiki][itkniftymic].
 
 # Usage
 
@@ -138,7 +138,7 @@ Associated publications are
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., and Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
 * [[Ebner2017a]](https://www.journals.elsevier.com/neuroimage) Ebner, M., Chung, K. K., Prados, F., Cardoso, M. J., Chard, D. T., Vercauteren, T., and Ourselin, S. (In press). Volumetric Reconstruction from Printed Films: Enabling 30 Year Longitudinal Analysis in MR Neuroimaging. NeuroImage.
 
-[citation]: http://www.sciencedirect.com/science/article/pii/S1053811917308042
+[citation]: https://www.sciencedirect.com/science/article/pii/S1053811917308042
 [mebner]: http://cmictig.cs.ucl.ac.uk/people/phd-students/michael-ebner
 [tig]: http://cmictig.cs.ucl.ac.uk
 [bsd]: https://opensource.org/licenses/BSD-3-Clause
@@ -151,6 +151,7 @@ Associated publications are
 [wellcometrust]: http://www.wellcome.ac.uk
 [mssociety]: https://www.mssociety.org.uk/
 [nihr]: http://www.nihr.ac.uk/research
+[itkniftymic]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/ITK_NiftyMIC/wikis/home
 [numericalsolver]: https://cmiclab.cs.ucl.ac.uk/mebner/NumericalSolver
 [registrationtools]: https://cmiclab.cs.ucl.ac.uk/mebner/RegistrationTools
 [pythonhelper]: https://cmiclab.cs.ucl.ac.uk/mebner/PythonHelper
