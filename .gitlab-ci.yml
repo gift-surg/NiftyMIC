@@ -1,22 +1,12 @@
-builddocs:
-  # only:
-  #   - master
-  script:
-    - cd doc
-    - doxygen doxyfile
-  tags:
-    - gift-adelie
+variables:
+    pyversion: "2"
+    tmpdir: tmp
 
-testjob:
-  # only:
-  #   - master
-  script:
+before_script:
     # save PySiTK folder path just in case
     - export pysitk_dir=$(pwd)
 
     # create a virtual env to dev-test
-    - pyversion=2
-    - tmpdir=tmp
     - venv="pysitk-test-py${pyversion}"
     - mypython=$(which python${pyversion})
     - virtualenv -p $mypython $venv
@@ -42,14 +32,34 @@ testjob:
     - pip install -r requirements.txt
     - pip install -e .
 
-    # 1) reconstruct_volume
+builddocs:
+  # only:
+  #   - master
+  script:
+    - cd doc
+    - doxygen doxyfile
+  tags:
+    - gift-adelie
+
+testjob_reconstruct_volume:
+  # only:
+  #   - master
+  script:
     - python niftymic_reconstruct_volume.py --dir-input /home/mebner/data/FetalBrain/input_data --dir-output ${tmpdir} --verbose 0
     
     # 2) reconstruct_volume_from_slices
     - python niftymic_reconstruct_volume_from_slices.py --dir-input /home/mebner/data/FetalBrain/motion_correction_oriented --reconstruction-space /home/mebner/data/FetalBrain/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz --dir-output ${tmpdir} --verbose 0
-
     # delete tmp-directory
     - rm -rf ${tmpdir}
-
   tags:
-    - gift-adelie    
+    - gift-adelie
+
+testjob_reconstruct_volume_from_slices:
+  # only:
+  #   - master
+  script:    
+    - python niftymic_reconstruct_volume_from_slices.py --dir-input /home/mebner/data/FetalBrain/motion_correction_oriented --reconstruction-space /home/mebner/data/FetalBrain/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz --dir-output ${tmpdir} --verbose 0
+    # delete tmp-directory
+    - rm -rf ${tmpdir}
+  tags:
+    - gift-adelie  
