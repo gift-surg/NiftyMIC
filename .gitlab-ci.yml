@@ -43,17 +43,10 @@ testjob:
     - pip install -e .
 
     # 1) reconstruct_volume
-    - python niftymic_reconstruct_volume.py \
-    - --dir-input /home/mebner/data/FetalBrain/input_data \
-    - --dir-output ${tmpdir} \
-    - --verbose 0
+    - python niftymic_reconstruct_volume.py --dir-input /home/mebner/data/FetalBrain/input_data --dir-output ${tmpdir} --verbose 0
     
     # 2) reconstruct_volume_from_slices
-    - python niftymic_reconstruct_volume_from_slices.py \
-    - --dir-input /home/mebner/data/FetalBrain/motion_correction_oriented \
-    - --reconstruction-space /home/mebner/data/FetalBrain/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz \
-    - --dir-output ${tmpdir} \
-    - --verbose 0
+    - python niftymic_reconstruct_volume_from_slices.py --dir-input /home/mebner/data/FetalBrain/motion_correction_oriented --reconstruction-space /home/mebner/data/FetalBrain/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz --dir-output ${tmpdir} --verbose 0
 
     # delete tmp-directory
     - rm -rf ${tmpdir}
