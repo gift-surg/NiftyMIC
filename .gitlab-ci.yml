@@ -1,6 +1,6 @@
 variables:
     pyversion: "2"
-    tmpdir: tmp
+    tmpdir: ./tmp
 
 before_script:
     # save PySiTK folder path just in case
@@ -26,11 +26,16 @@ before_script:
     # add CI_JOB_TOKEN for cloning dependent repositories in requirements.txt
     # (https://docs.gitlab.com/ee/user/project/new_ci_build_permissions_model.html#dependent-repositories)
     - cd $pysitk_dir
+    - pwd
     - sed -i -- "s/cmiclab/gitlab-ci-token:${CI_JOB_TOKEN}@cmiclab/g" requirements.txt
 
     # install requirements
     - pip install -r requirements.txt
     - pip install -e .
+
+after_script:
+    # delete tmp-directory
+    - rm -rf ${tmpdir}
 
 builddocs:
   # only:
@@ -46,11 +51,6 @@ testjob_reconstruct_volume:
   #   - master
   script:
     - python niftymic_reconstruct_volume.py --dir-input /home/mebner/data/FetalBrain/input_data --dir-output ${tmpdir} --verbose 0
-    
-    # 2) reconstruct_volume_from_slices
-    - python niftymic_reconstruct_volume_from_slices.py --dir-input /home/mebner/data/FetalBrain/motion_correction_oriented --reconstruction-space /home/mebner/data/FetalBrain/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz --dir-output ${tmpdir} --verbose 0
-    # delete tmp-directory
-    - rm -rf ${tmpdir}
   tags:
     - gift-adelie
 
@@ -59,7 +59,5 @@ testjob_reconstruct_volume_from_slices:
   #   - master
   script:    
     - python niftymic_reconstruct_volume_from_slices.py --dir-input /home/mebner/data/FetalBrain/motion_correction_oriented --reconstruction-space /home/mebner/data/FetalBrain/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz --dir-output ${tmpdir} --verbose 0
-    # delete tmp-directory
-    - rm -rf ${tmpdir}
   tags:
     - gift-adelie  
