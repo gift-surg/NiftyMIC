@@ -9,7 +9,8 @@ from pysitk.definitions import NIFTYVIEW_EXE
 DIR_ROOT = os.path.realpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 DIR_TEST = os.path.join(DIR_ROOT, "data/")
-DIR_BUILD_CPP = os.path.join(DIR_ROOT, "build", "cpp")
+DIR_CPP = os.path.join(DIR_ROOT, "niftymic", "cli")
+DIR_CPP_BUILD = os.path.join(DIR_ROOT, "build", "cpp")
 
 ALLOWED_EXTENSIONS = ["nii.gz", "nii"]
 REGEX_FILENAMES = "[A-Za-z0-9+-_]+"

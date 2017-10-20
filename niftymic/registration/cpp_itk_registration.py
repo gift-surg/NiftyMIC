@@ -22,7 +22,7 @@ import niftymic.base.slice as sl
 from niftymic.registration.simple_itk_registration \
     import SimpleItkRegistration
 from niftymic.definitions import DIR_TMP
-from niftymic.definitions import DIR_BUILD_CPP
+from niftymic.definitions import DIR_CPP_BUILD
 
 
 class CppItkRegistration(SimpleItkRegistration):
@@ -178,7 +178,7 @@ class CppItkRegistration(SimpleItkRegistration):
 
         # Prepare command for execution
         # cmd =  "/Users/mebner/UCL/UCL/Software/Volumetric\ Reconstruction/build/cpp/bin/itkReg "
-        cmd = DIR_BUILD_CPP + "/bin/itkReg" + endl
+        cmd = DIR_CPP_BUILD + "/bin/itkReg" + endl
         cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz" + endl
         cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz" + endl
         if self._use_fixed_mask:
@@ -269,7 +269,7 @@ class CppItkRegistration(SimpleItkRegistration):
                         fixed_mask_str + ".nii.gz")
 
         # Prepare command for execution
-        cmd = DIR_BUILD_CPP + "/bin/itkInplaneSimilarity3DReg" + endl
+        cmd = DIR_CPP_BUILD + "/bin/itkInplaneSimilarity3DReg" + endl
         cmd += "--f " + self._dir_tmp + fixed_str + ".nii.gz" + endl
         cmd += "--m " + self._dir_tmp + moving_str + ".nii.gz" + endl
         if self._use_fixed_mask:

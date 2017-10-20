@@ -23,7 +23,7 @@ import pysitk.python_helper as ph
 
 import niftymic.base.stack as st
 
-from niftymic.definitions import DIR_BUILD_CPP
+from niftymic.definitions import DIR_CPP_BUILD
 from niftymic.definitions import DIR_TMP
 
 ##
@@ -64,7 +64,7 @@ class N4BiasFieldCorrection(object):
             sitk.WriteImage(self._stack.sitk_mask, self._dir_tmp + filename_out + "_mask.nii.gz")
 
 
-        cmd =  DIR_BUILD_CPP + "/bin/runN4BiasFieldCorrectionImageFilter "
+        cmd =  DIR_CPP_BUILD + "/bin/runN4BiasFieldCorrectionImageFilter "
         cmd += "--f " + self._dir_tmp + filename_out + " "
         if self._use_mask:
             cmd += "--fmask " + self._dir_tmp + filename_out + "_mask "
