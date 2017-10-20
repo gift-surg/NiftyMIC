@@ -63,7 +63,7 @@ def main():
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
-    input_parser.add_search_angle(default=180)
+    input_parser.add_search_angle(default=90)
     input_parser.add_multiresolution(default=0)
     input_parser.add_shrink_factors(default=[2, 1])
     input_parser.add_smoothing_sigmas(default=[1, 0])

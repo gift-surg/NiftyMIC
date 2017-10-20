@@ -264,7 +264,7 @@ class InputArgparser(object):
 
     def add_search_angle(
         self,
-        option_string="--search_angle",
+        option_string="--search-angle",
         type=int,
         help="Maximum search angle to be used to find correct orientation.",
         default=180,

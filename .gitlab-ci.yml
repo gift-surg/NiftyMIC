@@ -1,3 +1,4 @@
+# -----------------------------------Set Up------------------------------------
 variables:
     pyversion: "2"
     tmpdir: ./tmp
@@ -9,6 +10,7 @@ before_script:
     # create a virtual env to dev-test
     - venv="pysitk-test-py${pyversion}"
     - mypython=$(which python${pyversion})
+    - rm -rf $venv
     - virtualenv -p $mypython $venv
     - cd $venv
     - venv_dir=$(pwd)
@@ -32,11 +34,13 @@ before_script:
     # install requirements
     - pip install -r requirements.txt
     - pip install -e .
+    - pip list
 
 after_script:
     # delete tmp-directory
-    - rm -rf ${tmpdir}
+    - rm -rfv ${tmpdir}
 
+# ----------------------------------Test Jobs----------------------------------
 builddocs:
   # only:
   #   - master
@@ -46,7 +50,7 @@ builddocs:
   tags:
     - gift-adelie
 
-testjob_reconstruct_volume:
+reconstruct_volume:
   # only:
   #   - master
   script:
@@ -54,7 +58,7 @@ testjob_reconstruct_volume:
   tags:
     - gift-adelie
 
-testjob_reconstruct_volume_from_slices:
+reconstruct_volume_from_slices:
   # only:
   #   - master
   script:    
