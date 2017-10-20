@@ -1,10 +1,9 @@
-#!/usr/bin/python
-
+##
 # \file data_anonymizer.py
-#  \brief
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date Dec 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       Dec 2016
+#
 
 
 # Import libraries
@@ -19,13 +18,14 @@ import re  # regular expression
 # Import modules
 import pysitk.python_helper as ph
 
-##
-#
-
 
 class DataAnonymizer(object):
 
-    def __init__(self, dictionary=None, identifiers=None, prefix_identifiers="", filenames=None):
+    def __init__(self,
+                 dictionary=None,
+                 identifiers=None,
+                 prefix_identifiers="",
+                 filenames=None):
 
         self._dictionary = dictionary
         self._identifiers = identifiers
@@ -55,7 +55,8 @@ class DataAnonymizer(object):
             self._identifiers = [None]*len(self._filenames)
             for j in range(0, len(self._filenames)):
                 self._identifiers[j] = ''.join(random.choice(
-                    string.ascii_uppercase + string.digits) for i in range(digits))
+                    string.ascii_uppercase + string.digits)
+                    for i in range(digits))
 
         # Identifier based on alphabet
         else:
@@ -139,7 +140,11 @@ class DataAnonymizer(object):
     # \param      directory  The directory
     # \param      filename   The filename without extension
     #
-    def write_dictionary(self, directory, filename, filename_backup=None, verbose=False):
+    def write_dictionary(self,
+                         directory,
+                         filename,
+                         filename_backup=None,
+                         verbose=False):
 
         # Save randomized dictionary
         f = open(directory + filename + ".p", 'wb')
@@ -230,8 +235,9 @@ class DataAnonymizer(object):
 
         for i in range(0, len(self._filenames)):
             filename_anonymized = self._identifiers[i] + filename_extension
-            filename_revealed = self._identifiers[
-                i] + filename_extension + "_" + self._dictionary[self._identifiers[i]] + filename_extension
+            filename_revealed = self._identifiers[i] + \
+                filename_extension + "_" + \
+                self._dictionary[self._identifiers[i]] + filename_extension
 
             if not os.path.isfile(directory + filename_anonymized):
                 print("%s: Nothing to reveal" % (filename_anonymized))
@@ -255,10 +261,11 @@ class DataAnonymizer(object):
     def reveal_original_files(self, directory, filename_extension=".nii.gz"):
 
         for i in range(0, len(self._filenames)):
-            filename_revealed = self._identifiers[
-                i] + filename_extension + "_" + self._dictionary[self._identifiers[i]] + filename_extension
-            filename_original = self._dictionary[
-                self._identifiers[i]] + filename_extension
+            filename_revealed = self._identifiers[i] + \
+                filename_extension + "_" + \
+                self._dictionary[self._identifiers[i]] + filename_extension
+            filename_original = \
+                self._dictionary[self._identifiers[i]] + filename_extension
 
             if not os.path.isfile(directory + filename_revealed):
                 print("%s: Nothing to reveal" % (filename_revealed))
