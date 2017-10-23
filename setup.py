@@ -11,50 +11,27 @@
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       July 2017
 #
-# \see        https://python-packaging.readthedocs.io/en/latest/minimal.html
-# \see        https://python-packaging-user-guide.readthedocs.io/tutorials/distributing-packages/
-#
 
 
 import re
 import os
 import sys
 from setuptools import setup
-from distutils.command.build_ext import build_ext
+from distutils.command.install import install
 
-from niftymic.definitions import DIR_CPP, DIR_CPP_BUILD, DIR_ROOT
+from install_cli import main as install_cli
 
 
 ##
-# Build additionally required command line interface tools located in
-# niftymic/cli.
-#
+# Post-installation to build additionally required command line interface tools
+# located in niftymic/cli.
 # \date       2017-10-20 17:00:53+0100
 #
-class BuildCommandLineInterface(build_ext):
+class PostInstallCommand(install):
 
-    def run(self, prefix_environ="NIFTYMIC_"):
-
-        # Add cmake arguments marked by prefix_environ
-        pattern = prefix_environ + "(.*)"
-        p = re.compile(pattern)
-        environment_vars = {p.match(f).group(1): p.match(f).group(0)
-                            for f in os.environ.keys() if p.match(f)}
-        cmake_args = []
-        for k, v in environment_vars.iteritems():
-            cmake_args.append("-D %s=%s" % (k, os.environ[v]))
-        cmake_args.append(DIR_CPP)
-
-        # Create build-directory
-        if not os.path.isdir(DIR_CPP_BUILD):
-            os.makedirs(DIR_CPP_BUILD)
-
-        # Change current working directory to build-directory
-        os.chdir(DIR_CPP_BUILD)
-
-        # Compile using cmake
-        os.system("cmake %s" % (" ").join(cmake_args))
-        os.system("make -j")
+    def run(self):
+        install.run(self)
+        install_cli()
 
 
 description = "Motion Correction and Volumetric Image Reconstruction of 2D " \
@@ -105,7 +82,7 @@ setup(name='NiftyMIC',
           'Programming Language :: Python :: 2.7',
       ],
       cmdclass={
-          "build_ext": BuildCommandLineInterface,
+          "install": PostInstallCommand,
       },
       entry_points={
           'console_scripts': [
