@@ -19,6 +19,7 @@ import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
 import niftymic.utilities.exceptions as Exceptions
+from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import REGEX_FILENAMES
 from niftymic.definitions import REGEX_FILENAME_EXTENSIONS
 
@@ -183,12 +184,25 @@ class MultipleImagesReader(DataReader):
 
             # Build absolute path to directory of image
             path_to_directory = os.path.dirname(file_path)
+            filename = os.path.basename(file_path)
+
             if not ph.directory_exists(path_to_directory):
                 raise Exceptions.DirectoryNotExistent(path_to_directory)
             abs_path_to_directory = os.path.abspath(path_to_directory)
 
             # Get absolute path mask to image
-            filename = os.path.basename(file_path).split(".")[0]
+            pattern = "(" + REGEX_FILENAMES + \
+                ")[.]" + REGEX_FILENAME_EXTENSIONS
+            p = re.compile(pattern)
+            # filename = [p.match(f).group(1) if p.match(file_path)][0]
+            if not file_path.endswith(tuple(ALLOWED_EXTENSIONS)):
+                raise IOError("Input image type not correct. Allowed types %s"
+                              % "(" + (", or ").join(ALLOWED_EXTENSIONS) + ")")
+
+            # Strip extension from filename to find associated mask
+            filename = [re.sub("." + ext, "", filename)
+                        for ext in ALLOWED_EXTENSIONS
+                        if file_path.endswith(ext)][0]
             pattern_mask = filename + self._suffix_mask + "[.]" + \
                 REGEX_FILENAME_EXTENSIONS
             p_mask = re.compile(pattern_mask)

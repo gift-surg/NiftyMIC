@@ -25,6 +25,7 @@ import niftymic.utilities.filename_parser as fp
 import niftymic.utilities.exceptions as Exceptions
 
 from niftymic.definitions import DIR_TMP
+from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import REGEX_FILENAMES
 from niftymic.definitions import REGEX_FILENAME_EXTENSIONS
 
@@ -63,21 +64,14 @@ class Stack:
 
             path_to_directory = os.path.dirname(file_path)
 
+        # Strip extension from filename and remove potentially included "."
+        filename = [re.sub("." + ext, "", os.path.basename(file_path))
+                    for ext in ALLOWED_EXTENSIONS
+                    if file_path.endswith(ext)][0]
+        # filename = filename.replace(".", "p")
+
         stack._dir = os.path.dirname(file_path)
-        stack._filename = os.path.basename(file_path).split(".")[0]
-
-        # # Get data filenames of images without filename extension
-        # pattern = filename + "[.]" + REGEX_FILENAME_EXTENSIONS
-        # p = re.compile(pattern)
-        # filename_list = [p.match(f).group(0)
-        #                  for f in os.listdir(stack._dir) if p.match(f)]
-
-        # if len(filename_list) == 0:
-        #     raise Exceptions.FileNotExistent(
-        #         os.path.join(stack._dir, filename))
-        # elif len(filename_list) > 1:
-        #     raise Exceptions.FilenameAmbiguous(
-        #         os.path.join(stack._dir, filename))
+        stack._filename = filename
 
         # Append stacks as SimpleITK and ITK Image objects
         stack.sitk = sitk.ReadImage(file_path, sitk.sitkFloat64)
