@@ -70,7 +70,7 @@ reconstruct_volume:
   # only:
   #   - master
   script:
-    - python niftymic_reconstruct_volume.py --dir-input /home/mebner/data/FetalBrain/input_data --dir-output ${TMPDIR} --verbose 0
+    - python niftymic_reconstruct_volume.py --dir-input /home/mebner/data/FetalBrain/input_data --dir-output ${TMPDIR} --verbose 0 --two-step-cycles 1
   tags:
     - gift-adelie
 

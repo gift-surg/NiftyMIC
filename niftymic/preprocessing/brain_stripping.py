@@ -20,6 +20,7 @@ import pysitk.python_helper as ph
 
 from niftymic.definitions import DIR_TMP
 
+DIR_TMP = "/tmp"
 
 # This class implements the interface to the Brain Extraction Tool (BET)
 #  TODO

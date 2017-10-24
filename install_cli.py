@@ -21,6 +21,7 @@ DIR_CPP_BUILD = os.path.join(DIR_ROOT, "build", "cpp")
 
 def main(prefix_environ="NIFTYMIC_"):
 
+    # Get current working directory
     cwd = os.getcwd()
 
     # Add cmake arguments marked by prefix_environ
@@ -48,6 +49,7 @@ def main(prefix_environ="NIFTYMIC_"):
     print(cmd)
     os.system(cmd)
 
+    # Get back to previous current working directory
     os.chdir(cwd)
 
     return 0
