@@ -251,6 +251,16 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_target_stack(
+        self,
+        option_string="--target-stack",
+        type=str,
+        help="Choose target stack for reconstruction/pre-processing %s." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_reconstruction_space(
         self,
         option_string="--reconstruction-space",

@@ -65,9 +65,9 @@ def main():
     input_parser.add_pd_alg_type(default="ALG2")
     input_parser.add_iterations(default=15)
     input_parser.add_subfolder_comparison()
-    input_parser.add_provide_comparison(default=1)
+    input_parser.add_provide_comparison(default=0)
     input_parser.add_log_script_execution(default=1)
-    input_parser.add_verbose(default=1)
+    input_parser.add_verbose(default=0)
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
@@ -141,7 +141,7 @@ def main():
         minimizer=args.minimizer,
         data_loss=args.data_loss,
         data_loss_scale=args.data_loss_scale,
-        verbose=args.verbose,
+        # verbose=args.verbose,
     )
     SRR0.run_reconstruction()
     SRR0.compute_statistics()

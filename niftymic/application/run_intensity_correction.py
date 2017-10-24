@@ -42,7 +42,6 @@ def main():
     input_parser.add_reference(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_search_angle(default=180)
-    input_parser.add_reference_mask()
     input_parser.add_prefix_output(default="IC_")
     input_parser.add_log_script_execution(default=1)
     input_parser.add_option(
@@ -61,16 +60,24 @@ def main():
         input_parser.write_performed_script_execution(
             os.path.abspath(__file__))
 
+    if args.reference in args.filenames:
+        args.filenames.remove(args.reference)
+
     # Read data
     data_reader = dr.MultipleImagesReader(
-        args.filenames, suffix_mask=args.suffix_mask)
+        args.filenames, suffix_mask=args.suffix_mask, extract_slices=False)
     data_reader.read_data()
     stacks = data_reader.get_stacks()
 
-    reference = st.Stack.from_filename(
-        file_path=args.reference,
-        file_path_mask=args.reference_mask,
-        extract_slices=False)
+    data_reader = dr.MultipleImagesReader(
+        [args.reference], suffix_mask=args.suffix_mask, extract_slices=False)
+    data_reader.read_data()
+    reference = data_reader.get_stacks()[0]
+
+    # reference = st.Stack.from_filename(
+    #     file_path=args.reference,
+    #     file_path_mask=args.reference_mask,
+    #     extract_slices=False)
 
     # if args.verbose:
     #     stacks_vis = [s for s in stacks]
@@ -78,7 +85,11 @@ def main():
     #     sitkh.show_stacks(stacks_vis)
 
     if args.registration:
-        # registration = regniftyreg.RegAladin(
+        # Define search angle ranges for FLIRT in all three dimensions
+        search_angles = ["-searchr%s -%d %d" %
+                         (x, args.search_angle, args.search_angle)
+                         for x in ["x", "y", "z"]]
+        search_angles = (" ").join(search_angles)
         registration = regflirt.FLIRT(
             moving=reference,
             registration_type="Rigid",

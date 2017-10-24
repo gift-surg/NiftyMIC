@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 ##
 # \file correct_bias_field.py
 # \brief      Script to correct for bias field. Based on N4ITK

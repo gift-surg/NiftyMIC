@@ -45,6 +45,7 @@ class StackMaskMorphologicalOperations(object):
         self = cls(dilation_radius=dilation_radius, dilation_kernel=dilation_kernel, use_dilation_in_plane_only=use_dilation_in_plane_only)
 
         self._mask_sitk = mask_sitk
+        self._stack = None
 
         return self
 
@@ -62,7 +63,7 @@ class StackMaskMorphologicalOperations(object):
         self._mask_sitk = mask_sitk
 
     def get_stack(self):
-        return self._stack
+        return st.Stack.from_stack(self._stack)
 
     def set_dilation_radius(self, dilation_radius):
         self._dilation_radius = dilation_radius
@@ -115,5 +116,11 @@ class StackMaskMorphologicalOperations(object):
 
         else:
             self._mask_sitk = dilater.Execute(self._mask_sitk)
+
+        if self._stack is not None:
+            self._stack = st.Stack.from_sitk_image(
+                self._stack.sitk,
+                image_sitk_mask=self._mask_sitk,
+                filename=self._stack.get_filename())
 
         self._computational_time = ph.stop_timing(time_start)

@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 ##
 # \file register_to_template.py
 # \brief      Script to register the obtained reconstruction to a template
@@ -49,6 +47,11 @@ def main():
         help="Template image used to perform reorientation.",
         required=True)
     input_parser.add_option(
+        option_string="--template-mask",
+        type=str,
+        help="Template image mask used to perform reorientation.",
+        required=False)
+    input_parser.add_option(
         option_string="--reconstruction",
         type=str,
         help="Image which shall be registered to the template space.",
@@ -65,7 +68,7 @@ def main():
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
     reconstruction = st.Stack.from_filename(args.reconstruction)
-    template = st.Stack.from_filename(args.template)
+    template = st.Stack.from_filename(args.template, args.template_mask)
 
     # -------------------Register Reconstruction to Template-------------------
     ph.print_title("Register Reconstruction to Template")
@@ -97,11 +100,15 @@ def main():
     # Resample reconstruction to template space
     reconstruction_orient = \
         reconstruction_orient.get_resampled_stack(template.sitk)
+    reconstruction_orient = st.Stack.from_sitk_image(
+        reconstruction_orient.sitk,
+        filename=reconstruction_orient.get_filename(),
+        image_sitk_mask=template.sitk_mask)
     reconstruction_orient.set_filename(
         reconstruction_orient.get_filename() + "ResamplingToTemplateSpace")
 
     # Write resampled reconstruction
-    reconstruction_orient.write(args.dir_output)
+    reconstruction_orient.write(args.dir_output, write_mask=False)
 
     if args.dir_input is not None:
         data_reader = dr.ImageSlicesDirectoryReader(
@@ -125,7 +132,10 @@ def main():
             )
 
     if args.verbose:
-        sitkh.show_stacks([template, reconstruction_orient])
+        tmp = reconstruction_orient.get_stack_multiplied_with_mask()
+        tmp.set_filename(reconstruction.get_filename() + "_times_mask")
+        sitkh.show_stacks([template, reconstruction_orient, tmp],
+                          segmentation=reconstruction_orient)
 
     elapsed_time_total = ph.stop_timing(time_start)
 

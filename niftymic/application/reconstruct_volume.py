@@ -84,7 +84,7 @@ def main():
     input_parser.add_subfolder_motion_correction()
     input_parser.add_subfolder_comparison()
     input_parser.add_write_motion_correction(default=1)
-    input_parser.add_provide_comparison(default=1)
+    input_parser.add_provide_comparison(default=0)
     input_parser.add_verbose(default=0)
     input_parser.add_two_step_cycles(default=3)
     input_parser.add_rho(default=0.5)
@@ -340,7 +340,7 @@ def main():
     elapsed_time_total = ph.stop_timing(time_start)
 
     # -------------------------------Cleaning up-------------------------------
-    HR_volume_final = SRR.get_reconstruction().get_stack_multiplied_with_mask()
+    HR_volume_final = SRR.get_reconstruction()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
     HR_volume_final.write(args.dir_output)
 
