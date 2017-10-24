@@ -17,22 +17,22 @@ import re
 import os
 import sys
 from setuptools import setup
-from distutils.command.develop import develop
-from distutils.command.install import install
+# from setuptools.command.develop import develop
+from setuptools.command.install import install
 
 from install_cli import main as install_cli
 
 
-##
-# Post-installation to build additionally required command line interface tools
-# located in niftymic/cli.
-# \date       2017-10-20 17:00:53+0100
-#
-class PostDevelopCommand(develop):
+# ##
+# # Post-installation to build additionally required command line interface tools
+# # located in niftymic/cli.
+# # \date       2017-10-20 17:00:53+0100
+# #
+# class PostDevelopCommand(develop):
 
-    def run(self):
-        install_cli()
-        develop.run(self)
+#     def run(self):
+#         install_cli()
+#         develop.run(self)
 
 
 ##
@@ -94,7 +94,7 @@ setup(name='NiftyMIC',
           'Programming Language :: Python :: 2.7',
       ],
       cmdclass={
-          'develop': PostDevelopCommand,
+          # "develop": PostDevelopCommand,
           "install": PostInstallCommand,
       },
       entry_points={
