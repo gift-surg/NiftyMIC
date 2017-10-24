@@ -16,7 +16,6 @@
 import re
 import os
 import sys
-import atexit
 from setuptools import setup
 from distutils.command.install import install
 
@@ -30,15 +29,8 @@ from install_cli import main as install_cli
 #
 class PostInstallCommand(install):
 
-    ##
-    # Post-install instructions based on
-    # https://stackoverflow.com/questions/20288711/post-install-script-with-python-setuptools
-    # \date       2017-10-24 17:50:48+0100
-    #
     def run(self):
-        def _post_install():
-            install_cli()
-        atexit.register(_post_install)
+        install_cli()
         install.run(self)
 
 

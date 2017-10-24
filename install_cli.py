@@ -4,7 +4,17 @@ import os
 import re
 
 # from niftymic.definitions import DIR_CPP, DIR_CPP_BUILD
+# Leads to error:
+#     File "<string>", line 1, in <module>
+#     File "whatever-path/niftymic/setup.py", line 23, in <module>
+#     from install_cli import main as install_cli
+#     File "install_cli.py", line 6, in <module>
+#     from niftymic.definitions import DIR_CPP, DIR_CPP_BUILD
+#     File "niftymic/definitions.py", line 4, in <module>
+#     from pysitk.definitions import DIR_TMP
+#     ImportError: No module named pysitk.definitions
 
+DIR_ROOT = os.path.abspath(__file__)
 DIR_CPP = os.path.join(DIR_ROOT, "niftymic", "cli")
 DIR_CPP_BUILD = os.path.join(DIR_ROOT, "build", "cpp")
 
