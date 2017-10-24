@@ -21,6 +21,8 @@ DIR_CPP_BUILD = os.path.join(DIR_ROOT, "build", "cpp")
 
 def main(prefix_environ="NIFTYMIC_"):
 
+    cwd = os.getcwd()
+
     # Add cmake arguments marked by prefix_environ
     pattern = prefix_environ + "(.*)"
     p = re.compile(pattern)
@@ -45,6 +47,8 @@ def main(prefix_environ="NIFTYMIC_"):
     cmd = "make -j"
     print(cmd)
     os.system(cmd)
+
+    os.chdir(cwd)
 
     return 0
 
