@@ -23,28 +23,54 @@ from setuptools.command.install import install
 from install_cli import main as install_command_line_interfaces
 
 
-##
-# Post-installation to build additionally required command line interface tools
-# located in niftymic/cli.
-# \date       2017-10-20 17:00:53+0100
-#
-class PostDevelopCommand(develop):
+def friendly(command_subclass):
+    """A decorator for classes subclassing one of the setuptools commands.
 
-    def run(self):
+    It modifies the run() method so that it prints a friendly greeting.
+    """
+    orig_run = command_subclass.run
+
+    def modified_run(self):
         install_command_line_interfaces()
-        develop.run(self)
+        print "Hello, developer, how are you? :)"
+        orig_run(self)
+
+    command_subclass.run = modified_run
+    return command_subclass
 
 
-##
-# Post-installation to build additionally required command line interface tools
-# located in niftymic/cli.
-# \date       2017-10-20 17:00:53+0100
-#
-class PostInstallCommand(install):
+@friendly
+class CustomDevelopCommand(develop):
+    pass
 
-    def run(self):
-        install_command_line_interfaces()
-        install.run(self)
+
+@friendly
+class CustomInstallCommand(install):
+    pass
+
+
+# ##
+# # Post-installation to build additionally required command line interface tools
+# # located in niftymic/cli.
+# # \date       2017-10-20 17:00:53+0100
+# #
+# class CustomDevelopCommand(develop):
+
+#     def run(self):
+#         install_command_line_interfaces()
+#         develop.run(self)
+
+
+# ##
+# # Post-installation to build additionally required command line interface tools
+# # located in niftymic/cli.
+# # \date       2017-10-20 17:00:53+0100
+# #
+# class CustomInstallCommand(install):
+
+#     def run(self):
+#         install_command_line_interfaces()
+#         install.run(self)
 
 
 description = "Motion Correction and Volumetric Image Reconstruction of 2D " \
@@ -94,8 +120,8 @@ setup(name='NiftyMIC',
           'Programming Language :: Python :: 2.7',
       ],
       cmdclass={
-          "develop": PostDevelopCommand,
-          "install": PostInstallCommand,
+          "develop": CustomDevelopCommand,
+          "install": CustomInstallCommand,
       },
       entry_points={
           'console_scripts': [
