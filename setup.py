@@ -27,13 +27,13 @@ def friendly(command_subclass):
     """A decorator for classes subclassing one of the setuptools commands.
 
     It modifies the run() method so that it prints a friendly greeting.
+    https://blog.niteoweb.com/setuptools-run-custom-code-in-setup-py/
     """
     orig_run = command_subclass.run
 
     def modified_run(self):
-        print "Hello, developer, how are you? :)"
+        # print "Hello, developer, how are you? :)"
         install_command_line_interfaces()
-        print "Hello, developer, how are you? :)"
         orig_run(self)
 
     command_subclass.run = modified_run

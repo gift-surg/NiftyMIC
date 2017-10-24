@@ -50,7 +50,7 @@ before_script:
     - export NIFTYMIC_ITK_DIR=$ITK_DIR
 
     # run installation
-    - pip install -e .
+    - python setup.py develop --user
 
 after_script:
     # delete tmp-directory
