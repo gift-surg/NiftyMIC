@@ -382,7 +382,7 @@ class BrainStripping(object):
         bet.inputs.args = options
 
         if debug:
-            print bet.cmdline
+            print(bet.cmdline)
         bet.run()
 
         if self._compute_brain_image:

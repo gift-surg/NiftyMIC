@@ -472,7 +472,7 @@ class SliceToVolumeRegistration:
 
         sys.stdout.flush() #flush output; otherwise sys.stdout.write would wait until next newline before printing
         os.system(cmd)
-        print "done"
+        print("done")
 
         ## Read trafo and invert such that format fits within SimpleITK structure
         matrix = np.loadtxt(dir_tmp+res_affine_matrix+".txt")
