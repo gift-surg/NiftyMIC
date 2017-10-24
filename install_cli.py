@@ -3,7 +3,10 @@ import sys
 import os
 import re
 
-from niftymic.definitions import DIR_CPP, DIR_CPP_BUILD
+# from niftymic.definitions import DIR_CPP, DIR_CPP_BUILD
+
+DIR_CPP = os.path.join(DIR_ROOT, "niftymic", "cli")
+DIR_CPP_BUILD = os.path.join(DIR_ROOT, "build", "cpp")
 
 
 def main(prefix_environ="NIFTYMIC_"):
