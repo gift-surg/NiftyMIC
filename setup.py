@@ -18,7 +18,7 @@ import os
 import sys
 from setuptools import setup
 from setuptools.command.develop import develop
-from distutils.command.install import install
+from setuptools.command.install import install
 
 from install_cli import main as install_cli
 
