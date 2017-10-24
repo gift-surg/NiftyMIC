@@ -46,5 +46,7 @@ def main(prefix_environ="NIFTYMIC_"):
     print(cmd)
     os.system(cmd)
 
+    return 0
+
 if __name__ == "__main__":
     sys.exit(main())

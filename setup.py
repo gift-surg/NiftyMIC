@@ -31,6 +31,7 @@ def friendly(command_subclass):
     orig_run = command_subclass.run
 
     def modified_run(self):
+        print "Hello, developer, how are you? :)"
         install_command_line_interfaces()
         print "Hello, developer, how are you? :)"
         orig_run(self)
