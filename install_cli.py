@@ -14,7 +14,7 @@ import re
 #     from pysitk.definitions import DIR_TMP
 #     ImportError: No module named pysitk.definitions
 
-DIR_ROOT = os.path.abspath(__file__)
+DIR_ROOT = os.path.dirname(os.path.abspath(__file__))
 DIR_CPP = os.path.join(DIR_ROOT, "niftymic", "cli")
 DIR_CPP_BUILD = os.path.join(DIR_ROOT, "build", "cpp")
 
@@ -48,5 +48,6 @@ def main(prefix_environ="NIFTYMIC_"):
 
     return 0
 
+
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
