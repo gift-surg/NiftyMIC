@@ -362,11 +362,20 @@ class BrainStripping(object):
 
         self._dir_tmp = ph.create_directory(self._dir_tmp, delete_files=True)
 
-        sitk.WriteImage(self._sitk, self._dir_tmp + filename_out + ".nii.gz")
+        path_to_image = os.path.join(
+            self._dir_tmp, filename_out + ".nii.gz")
+        path_to_res = os.path.join(
+            self._dir_tmp, filename_out + "_bet.nii.gz")
+        path_to_res_mask = os.path.join(
+            self._dir_tmp, filename_out + "_bet_mask.nii.gz")
+        path_to_res_skull = os.path.join(
+            self._dir_tmp, filename_out + "_bet_skull.nii.gz")
+
+        sitk.WriteImage(self._sitk, path_to_image)
 
         bet = nipype.interfaces.fsl.BET()
-        bet.inputs.in_file = self._dir_tmp + filename_out + ".nii.gz"
-        bet.inputs.out_file = self._dir_tmp + filename_out + "_bet.nii.gz"
+        bet.inputs.in_file = path_to_image
+        bet.inputs.out_file = path_to_res
 
         options = ""
         if not self._compute_brain_image:
@@ -387,14 +396,11 @@ class BrainStripping(object):
 
         if self._compute_brain_image:
             self._sitk_brain_image = sitk.ReadImage(
-                self._dir_tmp + filename_out + "_bet.nii.gz",
-                sitk.sitkFloat64)
+                path_to_res, sitk.sitkFloat64)
 
         if self._compute_brain_mask:
             self._sitk_brain_mask = sitk.ReadImage(
-                self._dir_tmp + filename_out + "_bet_mask.nii.gz",
-                sitk.sitkUInt8)
+                path_to_res_mask, sitk.sitkUInt8)
 
         if self._compute_skull_image:
-            self._sitk_skull_image = sitk.ReadImage(
-                self._dir_tmp + filename_out + "_bet_skull.nii.gz")
+            self._sitk_skull_image = sitk.ReadImage(path_to_res_skull)
