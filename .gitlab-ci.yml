@@ -4,25 +4,25 @@ variables:
     TMPDIR: ./tmp
     VENV: pysitk-test-py${PY_VERSION}
     ITK_DIR: /mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-python${PY_VERSION}-build/
-    ITK_WRAPITK: ${ITK_DIR}/Wrapping/Generators/Python/WrapITK.pth
     NIFTYREG_INSTALL: /mnt/shared/mebner/environment/NiftyReg/NiftyReg-master-install
     FSL_INSTALL: /mnt/shared/mebner/environment/FSL/fsl/
     CONVERT3D_INSTALL: /mnt/shared/mebner/environment/Convert3D/c3d-git-install
 
 before_script:
-    # add NiftyReg to path
+    # add NiftyReg to PATH
     - export PATH="${NIFTYREG_INSTALL}/bin:$PATH"
 
-    # add FSL
+    # add FSL to PATH
     - export PATH="${FSL_INSTALL}/bin:$PATH"
+    - export FSLOUTPUTTYPE=NIFTI_GZ  # Eliminate associated warning on gift-adelie
 
-    # add Convert3D to path
+    # add Convert3D to PATH
     - export PATH="${CONVERT3D_INSTALL}/bin:$PATH"
 
-    # save PySiTK folder path just in case
-    - export pysitk_dir=$(pwd)
+    # save current folder path
+    - cwd_dir=$(pwd)
 
-    # create a virtual env to dev-test
+    # create virtual environment
     - rm -rf ${VENV}
     - mypython=$(which python${PY_VERSION})
     - virtualenv -p $mypython ${VENV}
@@ -40,7 +40,7 @@ before_script:
 
     # add CI_JOB_TOKEN for cloning dependent repositories in requirements.txt
     # (https://docs.gitlab.com/ee/user/project/new_ci_build_permissions_model.html#dependent-repositories)
-    - cd $pysitk_dir
+    - cd $cwd_dir
     - sed -i -- "s/cmiclab/gitlab-ci-token:${CI_JOB_TOKEN}@cmiclab/g" requirements.txt
 
     # install requirements
