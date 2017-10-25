@@ -3,17 +3,20 @@ variables:
     PY_VERSION: 2
     TMPDIR: ./tmp
     VENV: pysitk-test-py${PY_VERSION}
-    ITK_DIR: /mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-python${PY_VERSION}-build/
+    ITK_DIR: /mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-python${PY_VERSION}-build
+    FSL_DIR: /usr/share/fsl/5.0
     NIFTYREG_INSTALL: /mnt/shared/mebner/environment/NiftyReg/NiftyReg-master-install
-    FSL_INSTALL: /mnt/shared/mebner/environment/FSL/fsl/
     CONVERT3D_INSTALL: /mnt/shared/mebner/environment/Convert3D/c3d-git-install
 
 before_script:
     # add NiftyReg to PATH
     - export PATH="${NIFTYREG_INSTALL}/bin:$PATH"
 
-    # Eliminate FSL-associated warning on gift-adelie
-    - export FSLOUTPUTTYPE=NIFTI_GZ  
+    # add FSL
+    - FSL_DIR="/usr/share/fsl/5.0"
+    - . ${FSL_DIR}/etc/fslconf/fsl.sh
+    - PATH=${FSL_DIR}/bin:${PATH}
+    - export FSL_DIR PATH
 
     # add Convert3D to PATH
     - export PATH="${CONVERT3D_INSTALL}/bin:$PATH"
