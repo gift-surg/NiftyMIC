@@ -12,9 +12,8 @@ before_script:
     # add NiftyReg to PATH
     - export PATH="${NIFTYREG_INSTALL}/bin:$PATH"
 
-    # add FSL to PATH
-    - export PATH="${FSL_INSTALL}/bin:$PATH"
-    - export FSLOUTPUTTYPE=NIFTI_GZ  # Eliminate associated warning on gift-adelie
+    # Eliminate FSL-associated warning on gift-adelie
+    - export FSLOUTPUTTYPE=NIFTI_GZ  
 
     # add Convert3D to PATH
     - export PATH="${CONVERT3D_INSTALL}/bin:$PATH"
