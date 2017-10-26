@@ -67,6 +67,15 @@ builddocs:
   tags:
     - gift-adelie
 
+installation:
+  # only:
+  #   - master
+  script:
+    - python -m nose tests/installation_test.py
+    - doxygen doxyfile
+  tags:
+    - gift-adelie
+
 reconstruct_volume:
   # only:
   #   - master
