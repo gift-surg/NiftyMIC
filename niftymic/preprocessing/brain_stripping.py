@@ -20,10 +20,11 @@ import pysitk.python_helper as ph
 
 from niftymic.definitions import DIR_TMP
 
-DIR_TMP = "/tmp"
 
+##
 # This class implements the interface to the Brain Extraction Tool (BET)
-#  TODO
+# \date       2017-10-26 18:11:17+0100
+#
 class BrainStripping(object):
 
     ##
