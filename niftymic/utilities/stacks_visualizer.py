@@ -7,20 +7,12 @@
 #  \date Apr 2017
 
 
-## Import libraries 
+## Import libraries
 import SimpleITK as sitk
-import numpy as np
-import os
-import sys
 import matplotlib.pyplot as plt
-
-from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
-
-## Import modules from src-folder
-import niftymic.utilities.FigureEventHandling as feh
-import niftymic.utilities.filename_parser as fp
 
 
 ##

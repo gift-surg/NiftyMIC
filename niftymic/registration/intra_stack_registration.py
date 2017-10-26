@@ -13,23 +13,15 @@
 
 
 # Import libraries
-import sys
 import SimpleITK as sitk
 import itk
 import numpy as np
-import re
-from scipy.optimize import least_squares
-import time
-from datetime import timedelta
-
-# Import modules
-import pysitk.simple_itk_helper as sitkh
-import pysitk.python_helper as ph
 
 import niftymic.base.slice as sl
 import niftymic.base.stack as st
-import niftymic.preprocessing.intensity_correction as ic
-import niftymic.utilities.parameter_normalization as pn
+import niftymic.utilities.intensity_correction as ic
+# Import modules
+import pysitk.simple_itk_helper as sitkh
 from niftymic.registration.stack_registration_base import StackRegistrationBase
 
 

@@ -7,18 +7,15 @@
 
 
 # Import libraries
-import SimpleITK as sitk
 import unittest
 
 from nipype.testing import example_data
 
-import simplereg.flirt
-import simplereg.niftyreg
 import niftymic.base.stack as st
-import niftymic.preprocessing.brain_stripping as bs
 import niftymic.registration.cpp_itk_registration as cppreg
-import niftymic.registration.niftyreg as niftyreg
 import niftymic.registration.flirt as flirt
+import niftymic.registration.niftyreg as niftyreg
+import niftymic.utilities.brain_stripping as bs
 
 
 class InstallationTest(unittest.TestCase):

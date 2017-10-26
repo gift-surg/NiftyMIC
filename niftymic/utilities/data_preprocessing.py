@@ -5,23 +5,12 @@
 #  \date May 2017
 
 # Import libraries
-import os
-import sys
-import SimpleITK as sitk
-import numpy as np
-import re
-import natsort
-
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
-import niftymic.preprocessing.intensity_correction as ic
-import niftymic.preprocessing.n4_bias_field_correction as n4bfc
-import niftymic.utilities.exceptions as Exceptions
-
-from niftymic.definitions import REGEX_FILENAMES
-from niftymic.definitions import REGEX_FILENAME_EXTENSIONS
+import niftymic.utilities.intensity_correction as ic
+import niftymic.utilities.n4_bias_field_correction as n4bfc
+import niftymic.base.exceptions as exceptions
+import pysitk.python_helper as ph
 
 
 ##
@@ -189,7 +178,7 @@ class DataPreprocessing:
     #  \param[in] dir_output output directory
     def write_preprocessed_data(self, dir_output):
         if all(x is None for x in self._stacks):
-            raise Exceptions.ObjectNotCreated("run_preprocessing")
+            raise exceptions.ObjectNotCreated("run_preprocessing")
 
         # Write all slices
         for i in range(0, self._N_stacks):

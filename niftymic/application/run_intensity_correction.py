@@ -9,22 +9,16 @@
 #
 
 # Import libraries
-import SimpleITK as sitk
-import argparse
 import numpy as np
-import sys
 import os
-
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
 
 # Import modules
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
 import niftymic.registration.flirt as regflirt
-import niftymic.registration.niftyreg as regniftyreg
-import niftymic.registration.simple_itk_registration as regsitk
-import niftymic.preprocessing.intensity_correction as ic
+import niftymic.utilities.intensity_correction as ic
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
 
 

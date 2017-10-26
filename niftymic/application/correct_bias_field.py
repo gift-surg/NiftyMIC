@@ -7,19 +7,14 @@
 #
 
 # Import libraries
-import SimpleITK as sitk
-import argparse
 import numpy as np
-import sys
 import os
-
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
 
 # Import modules
 import niftymic.base.data_reader as dr
-import niftymic.base.stack as st
-import niftymic.preprocessing.n4_bias_field_correction as n4itk
+import niftymic.utilities.n4_bias_field_correction as n4itk
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
 
 
