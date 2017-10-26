@@ -137,9 +137,6 @@ def get_inplane_corrupted_stack(stack,
     return stack_corrupted, motion_sitk, motion_2_sitk
 
 
-# Concept of unit testing for python used in here is based on
-#  http://pythontesting.net/framework/unittest/unittest-introduction/
-#  Retrieved: Aug 6, 2015
 class IntraStackRegistrationTest(unittest.TestCase):
 
     # Specify input data
@@ -1078,7 +1075,7 @@ class IntraStackRegistrationTest(unittest.TestCase):
         nda_slice = np.array(nda[i, :, :])
         nda_mask_slice = np.array(nda_mask[i, :, :])
 
-        for i in range(0, nda.shape[0]): #23 slices
+        for i in range(0, nda.shape[0]):  # 23 slices
             nda[i, :, :] = nda_slice
             nda_mask[i, :, :] = nda_mask_slice
 
@@ -1116,7 +1113,7 @@ class IntraStackRegistrationTest(unittest.TestCase):
             use_reference_mask=True,
             interpolator="Linear",
             use_verbose=True,
-            )
+        )
         # inplane_registration = inplanereg.IntraStackRegistration(stack_corrupted)
         inplane_registration.set_transform_initializer_type("geometry")
         # inplane_registration.set_transform_initializer_type("identity")
@@ -1139,9 +1136,9 @@ class IntraStackRegistrationTest(unittest.TestCase):
         inplane_registration.set_prior_intensity_coefficients(
             (intensity_scale, intensity_bias))
         # inplane_registration.set_intensity_correction_type_slice_neighbour_fit(
-            # "affine")
+        # "affine")
         # inplane_registration.set_intensity_correction_type_reference_fit(
-            # "affine")
+        # "affine")
         inplane_registration.set_alpha_reference(1)
         inplane_registration.set_alpha_neighbour(0)
         inplane_registration.set_alpha_parameter(0)

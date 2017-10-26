@@ -36,10 +36,6 @@ IMAGE_TYPE_CV33 = itk.Image.CVD33
 IMAGE_TYPE_CV183 = itk.Image.CVD183
 IMAGE_TYPE_CV363 = itk.Image.CVD363
 
-# Concept of unit testing for python used in here is based on
-#  http://pythontesting.net/framework/unittest/unittest-introduction/
-#  Retrieved: Aug 6, 2015
-
 
 class RegistrationTest(unittest.TestCase):
 
@@ -431,11 +427,12 @@ class RegistrationTest(unittest.TestCase):
         slices_sim = stack_sim.get_slices()
         N_slices = len(slices_sim)
 
-        scale = np.array([180. / np.pi, 180. / np.pi, 180. / np.pi, 1., 1., 1.])
+        scale = np.array(
+            [180. / np.pi, 180. / np.pi, 180. / np.pi, 1., 1., 1.])
         time_start = ph.start_timing()
 
         for j in range(0, N_slices):
-        # for j in range(20, N_slices):
+            # for j in range(20, N_slices):
             rigid_transform_groundtruth_sitk = sitk.ReadTransform(
                 self.dir_test_data + filename_transforms_prefix + str(j) + ".tfm")
             parameters_gd = np.array(

@@ -30,9 +30,6 @@ pixel_type = itk.D
 image_type = itk.Image[pixel_type, 3]
 
 
-# Concept of unit testing for python used in here is based on
-#  http://pythontesting.net/framework/unittest/unittest-introduction/
-#  Retrieved: Aug 6, 2015
 class SimulatorSliceAcqusitionTest(unittest.TestCase):
 
     # Specify input data

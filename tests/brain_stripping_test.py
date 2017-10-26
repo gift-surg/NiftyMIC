@@ -17,10 +17,6 @@ import pysitk.simple_itk_helper as sitkh
 import niftymic.preprocessing.brain_stripping as bs
 from niftymic.definitions import DIR_TEST
 
-# Concept of unit testing for python used in here is based on
-#  http://pythontesting.net/framework/unittest/unittest-introduction/
-#  Retrieved: Aug 6, 2015
-
 
 class BrainStrippingTest(unittest.TestCase):
 

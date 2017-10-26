@@ -21,9 +21,6 @@ import niftymic.base.stack as st
 from niftymic.definitions import DIR_TEST
 
 
-# Concept of unit testing for python used in here is based on
-#  http://pythontesting.net/framework/unittest/unittest-introduction/
-#  Retrieved: Aug 6, 2015
 class NiftyRegTest(unittest.TestCase):
 
     # Specify input data
