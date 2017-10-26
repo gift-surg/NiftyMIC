@@ -5,18 +5,17 @@
 #  \date December 2015
 
 
+import unittest
+
 # Import libraries
 import SimpleITK as sitk
 import numpy as np
-import unittest
-import sys
 import os
 
 # Import modules
 import niftymic.base.stack as st
-import niftymic.utilities.exceptions as Exceptions
-
 from niftymic.definitions import DIR_TEST
+import niftymic.base.exceptions as exceptions
 
 
 class StackTest(unittest.TestCase):
@@ -57,36 +56,15 @@ class StackTest(unittest.TestCase):
         self.assertEqual(np.round(
             np.linalg.norm(nda_stack_mask - nda_stack_resampled_mask), decimals=self.accuracy), 0)
 
-    # Being handled (or should be in class DataReader)
-    # def test_io_image_data_ambiguous(self):
-
-    #     # fetal_brain_0.nii and fetal_brain_0.nii.gz exist (ambiguous)
-    #     filename = "fetal_brain_0"
-    #     self.assertRaises(Exceptions.FilenameAmbiguous, lambda:
-    #                       st.Stack.from_filename(
-    #                           os.path.join(self.dir_test_data, "IO",
-    #                                        filename + ".nii.gz"))
-    #                       )
-
-    # def test_io_image_mask_data_ambiguous(self):
-    #     # fetal_brain_1_mask.nii and fetal_brain_1_mask.nii.gz exist
-    #     # (ambiguous)
-    #     filename = "fetal_brain_1"
-    #     self.assertRaises(Exceptions.FilenameAmbiguous, lambda:
-    #                       st.Stack.from_filename(
-    #                           os.path.join(self.dir_test_data, "IO",
-    #                                        filename + ".nii.gz"))
-    #                       )
-
     def test_io_image_not_existent(self):
         # Neither fetal_brain_2.nii.gz nor fetal_brain_2.nii exists
         filename = "fetal_brain_2"
-        self.assertRaises(Exceptions.FileNotExistent, lambda:
+        self.assertRaises(exceptions.FileNotExistent, lambda:
                           st.Stack.from_filename(
                               os.path.join(self.dir_test_data_io,
                                            filename + ".nii.gz"))
                           )
-        self.assertRaises(Exceptions.FileNotExistent, lambda:
+        self.assertRaises(exceptions.FileNotExistent, lambda:
                           st.Stack.from_filename(
                               os.path.join(self.dir_test_data_io,
                                            filename + ".nii"))

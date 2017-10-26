@@ -9,21 +9,15 @@
 #  \date July 2016
 
 # Import libraries
-import os
-import sys
-import itk
 import SimpleITK as sitk
 import numpy as np
-import time
-from scipy.optimize import minimize
 
-import nsol.tikhonov_linear_solver as tk
 import nsol.linear_operators as linop
-import pysitk.simple_itk_helper as sitkh
+import nsol.tikhonov_linear_solver as tk
 import pysitk.python_helper as ph
-
+import pysitk.simple_itk_helper as sitkh
 # Import modules
-from niftymic.reconstruction.solver.solver import Solver
+from niftymic.reconstruction.solver import Solver
 
 
 # This class implements the framework to iteratively solve

@@ -5,18 +5,17 @@
 #  \date September 2015
 
 
-# Import libraries
-import os
-import itk
 import SimpleITK as sitk
 import numpy as np
+# Import libraries
+import os
 
-# Import modules from src-folder
-import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
 
-import niftymic.utilities.exceptions as Exceptions
+import pysitk.simple_itk_helper as sitkh
+import niftymic.base.exceptions as exceptions
 from niftymic.definitions import DIR_TMP
+
 
 # In addition to the nifti-image as being stored as sitk.Image for a single
 #  3D slice \f$ \in R^3 \times R^3 \times 1\f$ the class Slice
@@ -101,7 +100,7 @@ class Slice:
         slice = cls()
 
         if not ph.file_exists(file_path):
-            raise Exceptions.FileNotExistent(file_path)
+            raise exceptions.FileNotExistent(file_path)
 
         slice._dir_input = os.path.dirname(file_path)
         slice._filename = os.path.basename(file_path).split(".")[0]
@@ -120,7 +119,7 @@ class Slice:
 
         else:
             if not ph.file_exists(file_path_mask):
-                raise Exceptions.FileNotExistent(file_path_mask)
+                raise exceptions.FileNotExistent(file_path_mask)
             slice.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
 
         slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)

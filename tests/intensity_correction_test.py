@@ -7,20 +7,16 @@
 #  \date October 2016
 
 
+import unittest
+
 # Import libraries
 import SimpleITK as sitk
-import itk
 import numpy as np
-import unittest
-import sys
 from scipy.ndimage import imread
-
-import pysitk.simple_itk_helper as sitkh
 
 # Import modules
 import niftymic.base.stack as st
-import niftymic.preprocessing.intensity_correction as ic
-
+import niftymic.utilities.intensity_correction as ic
 from niftymic.definitions import DIR_TEST
 
 

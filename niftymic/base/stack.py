@@ -8,26 +8,18 @@
 #
 
 
-# Import libraries
-import os
-import sys
-import itk
 import SimpleITK as sitk
 import numpy as np
+# Import libraries
+import os
 import re
-import copy
-
-import pysitk.simple_itk_helper as sitkh
-import pysitk.python_helper as ph
 
 import niftymic.base.slice as sl
-import niftymic.utilities.filename_parser as fp
-import niftymic.utilities.exceptions as Exceptions
-
-from niftymic.definitions import DIR_TMP
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 from niftymic.definitions import ALLOWED_EXTENSIONS
-from niftymic.definitions import REGEX_FILENAMES
-from niftymic.definitions import REGEX_FILENAME_EXTENSIONS
+import niftymic.base.exceptions as exceptions
+
 
 ##
 # In addition to the nifti-image (stored as sitk.Image object) this class Stack
@@ -60,7 +52,7 @@ class Stack:
         stack = cls()
 
         if not ph.file_exists(file_path):
-            raise Exceptions.FileNotExistent(file_path)
+            raise exceptions.FileNotExistent(file_path)
 
             path_to_directory = os.path.dirname(file_path)
 
@@ -86,7 +78,7 @@ class Stack:
 
         else:
             if not ph.file_exists(file_path_mask):
-                raise Exceptions.FileNotExistent(file_path_mask)
+                raise exceptions.FileNotExistent(file_path_mask)
             stack.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
             stack._is_unity_mask = False
 

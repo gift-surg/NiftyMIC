@@ -17,22 +17,14 @@
 #
 
 # Import libraries
-import sys
-import itk
-import SimpleITK as sitk
 import numpy as np
-import time
-from datetime import timedelta
 
-import nsol.primal_dual_solver as pd
 import nsol.linear_operators as linop
-import pysitk.simple_itk_helper as sitkh
+import nsol.primal_dual_solver as pd
 import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
+from niftymic.reconstruction.solver import Solver
 from nsol.proximal_operators import ProximalOperators as prox
-
-# Import modules
-import niftymic.reconstruction.solver.tikhonov_solver as tk
-from niftymic.reconstruction.solver.solver import Solver
 
 
 # This class implements the framework to iteratively solve

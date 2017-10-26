@@ -6,15 +6,11 @@
 
 
 # Import libraries
-import SimpleITK as sitk
-import numpy as np
 import unittest
-import sys
 
+import niftymic.utilities.brain_stripping as bs
 # Import modules from src-folder
 import pysitk.simple_itk_helper as sitkh
-
-import niftymic.preprocessing.brain_stripping as bs
 from niftymic.definitions import DIR_TEST
 
 

@@ -11,21 +11,16 @@
 
 # Import libraries
 import SimpleITK as sitk
-import argparse
 import numpy as np
-import sys
 import os
-
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
-import nsol.deconvolution_solver_parameter_study_interface as \
-    deconv_interface
 
 # Import modules
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
-import niftymic.utilities.exceptions as Exceptions
-import niftymic.reconstruction.solver.tikhonov_solver as tk
+import niftymic.reconstruction.tikhonov_solver as tk
+import nsol.deconvolution_solver_parameter_study_interface as \
+    deconv_interface
+import pysitk.python_helper as ph
 from niftymic.utilities.input_arparser import InputArgparser
 
 
@@ -93,7 +88,7 @@ def main():
 
     # Neither '--dir-input' nor '--filenames' was specified
     if args.filenames is not None and args.dir_input is not None:
-        raise Exceptions.IOError(
+        raise IOError(
             "Provide input by either '--dir-input' or '--filenames' "
             "but not both together")
 
@@ -110,7 +105,7 @@ def main():
             args.filenames, suffix_mask=args.suffix_mask)
 
     else:
-        raise Exceptions.IOError(
+        raise IOError(
             "Provide input by either '--dir-input' or '--filenames'")
 
     data_reader.read_data()

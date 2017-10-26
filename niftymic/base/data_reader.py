@@ -5,20 +5,18 @@
 #  \date July 2017
 
 
+import SimpleITK as sitk
+import natsort
+import numpy as np
+import os
+import re
 # Import libraries
 from abc import ABCMeta, abstractmethod
-import os
-import sys
-import SimpleITK as sitk
-import numpy as np
-import re
-import natsort
-
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
-import niftymic.utilities.exceptions as Exceptions
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
+import niftymic.base.exceptions as exceptions
 from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import REGEX_FILENAMES
 from niftymic.definitions import REGEX_FILENAME_EXTENSIONS
@@ -49,7 +47,7 @@ class DataReader(object):
     def get_stacks(self):
 
         if type(self._stacks) is not list:
-            raise Exceptions.ObjectNotCreated("read_data")
+            raise exceptions.ObjectNotCreated("read_data")
 
         return self._stacks
 
@@ -94,7 +92,7 @@ class DirectoryReader(DataReader):
     def read_data(self):
 
         if not ph.directory_exists(self._path_to_directory):
-            raise Exceptions.DirectoryNotExistent(self._path_to_directory)
+            raise exceptions.DirectoryNotExistent(self._path_to_directory)
 
         abs_path_to_directory = os.path.abspath(self._path_to_directory)
 
@@ -187,7 +185,7 @@ class MultipleImagesReader(DataReader):
             filename = os.path.basename(file_path)
 
             if not ph.directory_exists(path_to_directory):
-                raise Exceptions.DirectoryNotExistent(path_to_directory)
+                raise exceptions.DirectoryNotExistent(path_to_directory)
             abs_path_to_directory = os.path.abspath(path_to_directory)
 
             # Get absolute path mask to image
@@ -260,7 +258,7 @@ class ImageSlicesDirectoryReader(DataReader):
     def read_data(self):
 
         if not ph.directory_exists(self._path_to_directory):
-            raise Exceptions.DirectoryNotExistent(self._path_to_directory)
+            raise exceptions.DirectoryNotExistent(self._path_to_directory)
 
         abs_path_to_directory = os.path.abspath(self._path_to_directory)
 

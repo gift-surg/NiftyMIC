@@ -11,32 +11,23 @@
 #
 
 # Import libraries
-import SimpleITK as sitk
-import argparse
 import numpy as np
-import sys
 import os
-
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
-import niftymic.preprocessing.data_preprocessing as dp
-import niftymic.preprocessing.n4_bias_field_correction as n4bfc
-import niftymic.registration.simple_itk_registration as regsitk
-import niftymic.registration.wrap_itk_registration as regwrapitk
-import niftymic.registration.cpp_itk_registration as regcppitk
-import niftymic.registration.flirt as regflirt
-import niftymic.registration.niftyreg as regniftyreg
-import niftymic.registration.segmentation_propagation as segprop
+import niftymic.reconstruction.admm_solver as admm
 import niftymic.reconstruction.scattered_data_approximation as \
     sda
-import niftymic.reconstruction.solver.tikhonov_solver as tk
-import niftymic.reconstruction.solver.admm_solver as admm
-import niftymic.utilities.exceptions as Exceptions
+import niftymic.reconstruction.tikhonov_solver as tk
+import niftymic.registration.flirt as regflirt
+import niftymic.registration.segmentation_propagation as segprop
+import niftymic.registration.simple_itk_registration as regsitk
+import niftymic.utilities.data_preprocessing as dp
 import niftymic.utilities.volumetric_reconstruction_pipeline as \
     pipeline
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
 
 
@@ -105,7 +96,7 @@ def main():
 
     # Neither '--dir-input' nor '--filenames' was specified
     if args.filenames is not None and args.dir_input is not None:
-        raise Exceptions.IOError(
+        raise IOError(
             "Provide input by either '--dir-input' or '--filenames' "
             "but not both together")
 
@@ -120,7 +111,7 @@ def main():
             args.filenames, suffix_mask=args.suffix_mask)
 
     else:
-        raise Exceptions.IOError(
+        raise IOError(
             "Provide input by either '--dir-input' or '--filenames'")
 
     data_reader.read_data()

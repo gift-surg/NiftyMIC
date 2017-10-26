@@ -11,21 +11,17 @@
 #
 
 # Import libraries
-import SimpleITK as sitk
-import argparse
 import numpy as np
-import sys
 import os
-
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
 
 # Import modules
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
-import niftymic.reconstruction.solver.tikhonov_solver as tk
-import niftymic.reconstruction.solver.admm_solver as admm
-import niftymic.reconstruction.solver.primal_dual_solver as pd
+import niftymic.reconstruction.admm_solver as admm
+import niftymic.reconstruction.primal_dual_solver as pd
+import niftymic.reconstruction.tikhonov_solver as tk
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
 
 
@@ -81,7 +77,7 @@ def main():
 
     # Neither '--dir-input' nor '--filenames' was specified
     if args.filenames is not None and args.dir_input is not None:
-        raise Exceptions.IOError(
+        raise IOError(
             "Provide input by either '--dir-input' or '--filenames' "
             "but not both together")
 
@@ -98,11 +94,11 @@ def main():
             args.filenames, suffix_mask=args.suffix_mask)
 
     else:
-        raise Exceptions.IOError(
+        raise IOError(
             "Provide input by either '--dir-input' or '--filenames'")
 
     if args.reconstruction_type not in ["TK1L2", "TVL2", "HuberL2"]:
-        raise Exceptions.IOError("Reconstruction type unknown")
+        raise IOError("Reconstruction type unknown")
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
