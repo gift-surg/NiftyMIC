@@ -4,7 +4,7 @@ variables:
     TMPDIR: ./tmp
     VENV: pysitk-test-py${PY_VERSION}
     ITK_DIR: /mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-python${PY_VERSION}-build
-    FSL_DIR: /usr/share/fsl/5.0
+    FSL_DIR: /mnt/shared/mebner/environment/FSL/fsl
     NIFTYREG_INSTALL: /mnt/shared/mebner/environment/NiftyReg/NiftyReg-master-install
     CONVERT3D_INSTALL: /mnt/shared/mebner/environment/Convert3D/c3d-git-install
 
@@ -13,10 +13,9 @@ before_script:
     - export PATH="${NIFTYREG_INSTALL}/bin:$PATH"
 
     # add FSL
-    - FSL_DIR="/usr/share/fsl/5.0"
-    - . ${FSL_DIR}/etc/fslconf/fsl.sh
     - PATH=${FSL_DIR}/bin:${PATH}
-    - export FSL_DIR PATH
+    - export PATH="${FSL_INSTALL}/bin:$PATH"
+    - export FSLOUTPUTTYPE=NIFTI_GZ
 
     # add Convert3D to PATH
     - export PATH="${CONVERT3D_INSTALL}/bin:$PATH"

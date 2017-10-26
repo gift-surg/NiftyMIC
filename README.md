@@ -1,6 +1,6 @@
 # Motion Correction and Volumetric Image Reconstruction of 2D Ultra-fast MRI
 
-NiftyMIC is a Python-based open source toolkit for research developed within the [GIFT-Surg][giftsurg] project to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
+NiftyMIC is a Python-based open-source toolkit for research developed within the [GIFT-Surg][giftsurg] project to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
 Please note that currently **only Python 2** is supported.
 
 The algorithm and software were developed by [Michael Ebner][mebner] at the [Translational Imaging Group][tig] in the [Centre for Medical Image Computing][cmic] at [University College London (UCL)][ucl].
@@ -53,7 +53,7 @@ If you use this software in your work, please cite [Ebner et al., 2017][citation
 
 NiftyMIC is currently supported for **Python 2 only** and was tested on
 
-* Mac OS X 10.10, 10.12
+* Mac OS X 10.10 and 10.12
 * Ubuntu 14.04 and 16.04
 
 NiftyMIC builds on a couple of additional libraries developed within the [GIFT-Surg][giftsurg] project including 

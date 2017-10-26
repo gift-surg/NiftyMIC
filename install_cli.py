@@ -45,7 +45,7 @@ def main(prefix_environ="NIFTYMIC_"):
     cmd = "cmake %s" % (" ").join(cmake_args)
     print(cmd)
     os.system(cmd)
-    cmd = "make -j"
+    cmd = "make -j8"
     print(cmd)
     os.system(cmd)
 
