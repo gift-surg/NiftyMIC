@@ -64,7 +64,7 @@ NiftyMIC builds on a couple of additional libraries developed within the [GIFT-S
 
 whose installation requirements need to be met. Therefore, the installation comes in three steps:
 
-1. [Installation of NiftyMIC_ITK][itkniftymic]
+1. [Installation of ITK_NiftyMIC][itkniftymic]
 1. [Installation of SimpleReg dependencies][simplereg-dependencies]
 1. [Installation of NiftyMIC][niftymic-install]
 
@@ -164,7 +164,7 @@ This work is partially funded by the UCL [Engineering and Physical Sciences Rese
 
 ## References
 Associated publications are 
-* [[Ebner2017a]](https://www.journals.elsevier.com/neuroimage) Ebner, M., Chung, K. K., Prados, F., Cardoso, M. J., Chard, D. T., Vercauteren, T., and Ourselin, S. (In press). Volumetric Reconstruction from Printed Films: Enabling 30 Year Longitudinal Analysis in MR Neuroimaging. NeuroImage.
+* [[Ebner2017a]][citation] Ebner, M., Chung, K. K., Prados, F., Cardoso, M. J., Chard, D. T., Vercauteren, T., and Ourselin, S. (In press). Volumetric Reconstruction from Printed Films: Enabling 30 Year Longitudinal Analysis in MR Neuroimaging. NeuroImage.
 * [Ranzini2017] Ranzini, M. B., Ebner, M., Cardoso, M. J., Fotiadou, A., Vercauteren, T., Henckel, J., Hart, A., Ourselin, S., and Modat, M. (2017). Joint Multimodal Segmentation of Clinical CT and MR from Hip Arthroplasty Patients. MICCAI Workshop on Computational Methods and Clinical Applications in Musculoskeletal Imaging (MSKI) 2017.
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., and Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
 
@@ -183,7 +183,7 @@ Associated publications are
 [nihr]: http://www.nihr.ac.uk/research
 [itkniftymic]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/ITK_NiftyMIC/wikis/home
 [niftymic-install]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/NiftyMIC/wikis/niftymic-installation
-[nsol]: https://cmiclab.cs.ucl.ac.uk/mebner/NSoL
-[simplereg]: https://cmiclab.cs.ucl.ac.uk/mebner/SimpleReg
+[nsol]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/NSoL
+[simplereg]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/SimpleReg
 [simplereg-dependencies]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/SimpleReg/wikis/simplereg-dependencies
-[pysitk]: https://cmiclab.cs.ucl.ac.uk/mebner/PySiTK
+[pysitk]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/PySiTK
