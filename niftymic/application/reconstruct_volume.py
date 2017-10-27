@@ -21,9 +21,9 @@ import niftymic.reconstruction.scattered_data_approximation as \
     sda
 import niftymic.reconstruction.tikhonov_solver as tk
 import niftymic.registration.flirt as regflirt
-import niftymic.registration.segmentation_propagation as segprop
 import niftymic.registration.simple_itk_registration as regsitk
 import niftymic.utilities.data_preprocessing as dp
+import niftymic.utilities.segmentation_propagation as segprop
 import niftymic.utilities.volumetric_reconstruction_pipeline as \
     pipeline
 import pysitk.python_helper as ph
