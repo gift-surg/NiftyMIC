@@ -19,7 +19,6 @@ from brain_stripping_test import *
 from cpp_itk_registration_test import *
 from intensity_correction_test import *
 from intra_stack_registration_test import *
-from linear_image_quality_transfer_test import *
 from niftyreg_test import *
 from parameter_normalization_test import *
 from registration_test import *

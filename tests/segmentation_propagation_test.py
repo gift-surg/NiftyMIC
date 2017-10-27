@@ -5,22 +5,17 @@
 #  \date May 2017
 
 
+import unittest
+
 # Import libraries
 import SimpleITK as sitk
 import numpy as np
-import unittest
-import sys
 import os
 
-# Import modules from src-folder
 import pysitk.simple_itk_helper as sitkh
-
 import niftymic.base.stack as st
 import niftymic.registration.simple_itk_registration as regsitk
-import niftymic.registration.cpp_itk_registration as regitk
-import niftymic.registration.niftyreg as regniftyreg
-import niftymic.registration.segmentation_propagation as segprop
-
+import niftymic.utilities.segmentation_propagation as segprop
 from niftymic.definitions import DIR_TEST
 
 
