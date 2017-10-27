@@ -17,7 +17,6 @@ import os
 # Import modules for unit testing
 from brain_stripping_test import *
 from cpp_itk_registration_test import *
-from differential_operations_test import *
 from intensity_correction_test import *
 from intra_stack_registration_test import *
 from linear_image_quality_transfer_test import *
