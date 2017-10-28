@@ -87,7 +87,7 @@ class WrapItkRegistration(SimpleItkRegistration):
         self._alpha_cut = alpha_cut
         self._pixel_type = itk.D
 
-    def _run_registration(self):
+    def _run(self):
 
         dimension = self._fixed.sitk.GetDimension()
 

@@ -112,7 +112,7 @@ class SegmentationPropagation(object):
             self._registration_method.set_fixed(self._template)
             self._registration_method.set_moving(self._stack)
             self._registration_method.use_fixed_mask(self._use_template_mask)
-            self._registration_method.run_registration()
+            self._registration_method.run()
 
             self._registration_transform_sitk = self._registration_method.get_registration_transform_sitk()
             self._registration_transform_sitk = eval(

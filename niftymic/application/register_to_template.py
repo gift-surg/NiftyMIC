@@ -80,7 +80,7 @@ def main():
         options=search_angles,
     )
     ph.print_info("Run Registration ... ", newline=False)
-    registration.run_registration()
+    registration.run()
     print("done")
     transform_sitk = registration.get_registration_transform_sitk()
 

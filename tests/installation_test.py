@@ -39,11 +39,11 @@ class InstallationTest(unittest.TestCase):
         # Run flirt registration
         registration_method = flirt.FLIRT(
             fixed=self.fixed, moving=self.moving)
-        registration_method.run_registration()
+        registration_method.run()
 
         # Run BET brain stripping
         brain_stripper = bs.BrainStripping.from_sitk_image(self.fixed.sitk)
-        brain_stripper.run_stripping()
+        brain_stripper.run()
 
     ##
     # Test whether NiftyReg installation was successful
@@ -54,12 +54,12 @@ class InstallationTest(unittest.TestCase):
         # Run reg_aladin registration
         registration_method = niftyreg.RegAladin(
             fixed=self.fixed, moving=self.moving)
-        registration_method.run_registration()
+        registration_method.run()
 
         # Run reg_f3d registration
         registration_method = niftyreg.RegF3D(
             fixed=self.fixed, moving=self.moving)
-        registration_method.run_registration()
+        registration_method.run()
 
     ##
     # Test whether ITK_NiftyMIC installation was successful
@@ -79,4 +79,4 @@ class InstallationTest(unittest.TestCase):
 
         registration_method = cppreg.CppItkRegistration(
             fixed=self.fixed, moving=self.moving)
-        registration_method.run_registration()
+        registration_method.run()

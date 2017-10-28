@@ -207,7 +207,7 @@ class ADMMSolver(Solver):
     #                                     first-order Tikhonov reconstruction
     #                                     step prior the ADMM algorithm
     #
-    def _run_reconstruction(self):
+    def _run(self):
 
         solver = self.get_solver()
 

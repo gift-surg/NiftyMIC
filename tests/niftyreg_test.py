@@ -53,7 +53,7 @@ class NiftyRegTest(unittest.TestCase):
         nifty_reg.use_verbose(False)
 
         # Register via NiftyReg
-        nifty_reg.run_registration()
+        nifty_reg.run()
 
         # Get associated results
         affine_transform_sitk = nifty_reg.get_registration_transform_sitk()

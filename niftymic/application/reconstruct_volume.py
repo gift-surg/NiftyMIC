@@ -140,7 +140,7 @@ def main():
         boundary_k=0,
         unit="mm",
     )
-    data_preprocessing.run_preprocessing()
+    data_preprocessing.run()
     time_data_preprocessing = data_preprocessing.get_computational_time()
 
     # Get preprocessed stacks
@@ -157,21 +157,6 @@ def main():
     else:
         reference = st.Stack.from_stack(stacks[args.target_stack_index])
         use_reference_mask = True
-
-    # # ----------------- Begin HACK for Imperial College data ----------------
-    # # Split stack acquired as overlapping slices into two
-    # stacks_foo = []
-    # for i in range(0, len(stacks)):
-    #     for j in range(0, 2):
-    #         stack_sitk = stacks[i].sitk[:, :, j::2]
-    #         stack_sitk_mask = stacks[i].sitk_mask[:, :, j::2]
-    #         stacks_foo.append(
-    #             st.Stack.from_sitk_image(stack_sitk,
-    #                                      image_sitk_mask=stack_sitk_mask,
-    #                                      filename=stacks[i].get_filename() +
-    #                                      "_" + str(j+1)))
-    # stacks = stacks_foo
-    # # ------------------ End HACK for Imperial College data -----------------
 
     if args.verbose:
         sitkh.show_stacks(stacks, segmentation=stacks[0])
@@ -192,7 +177,6 @@ def main():
             options=search_angles,
             use_verbose=False,
         )
-
         v2vreg = pipeline.VolumeToVolumeRegistration(
             stacks=stacks,
             reference=reference,
@@ -220,7 +204,7 @@ def main():
         ph.print_title("Scattered Data Approximation")
         SDA = sda.ScatteredDataApproximation(
             stacks, HR_volume, sigma=args.sigma)
-        SDA.run_reconstruction()
+        SDA.run()
         SDA.generate_mask_from_stack_mask_unions(
             mask_dilation_radius=1, mask_dilation_kernel="Ball")
         HR_volume = SDA.get_reconstruction()
@@ -325,7 +309,7 @@ def main():
     ph.print_title("Final Super-Resolution Reconstruction")
     SRR.set_alpha(args.alpha)
     SRR.set_iter_max(args.iter_max)
-    SRR.run_reconstruction()
+    SRR.run()
     time_reconstruction += SRR.get_computational_time()
 
     elapsed_time_total = ph.stop_timing(time_start)

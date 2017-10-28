@@ -149,7 +149,7 @@ class SimpleItkRegistration(AffineRegistrationMethod):
         else:
             self._scales_estimator = scales_estimator
 
-    def _run_registration(self):
+    def _run(self):
 
         if self._use_fixed_mask:
             fixed_sitk_mask = self._fixed.sitk_mask

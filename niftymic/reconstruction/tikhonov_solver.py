@@ -260,7 +260,7 @@ class TikhonovSolver(Solver):
     #                                    initialization as initial value, boolean.
     #                                    Otherwise, assume zero initial vale.
     #
-    def _run_reconstruction(self):
+    def _run(self):
 
         solver = self.get_solver()
 

@@ -610,7 +610,7 @@ class IntraStackRegistrationTest(unittest.TestCase):
         # inplane_registration._run_registration_pipeline_initialization()
         # inplane_registration._apply_motion_correction()
         inplane_registration.use_verbose(True)
-        inplane_registration.run_registration()
+        inplane_registration.run()
         inplane_registration.print_statistics()
 
         stack_registered = inplane_registration.get_corrected_stack()
@@ -680,7 +680,7 @@ class IntraStackRegistrationTest(unittest.TestCase):
         # inplane_registration._run_registration_pipeline_initialization()
         # inplane_registration._apply_motion_correction()
         # inplane_registration.use_verbose(True)
-        inplane_registration.run_registration()
+        inplane_registration.run()
         inplane_registration.print_statistics()
 
         stack_registered = inplane_registration.get_corrected_stack()
@@ -755,7 +755,7 @@ class IntraStackRegistrationTest(unittest.TestCase):
         inplane_registration.set_alpha_parameter(0)
         inplane_registration.set_optimizer_iter_max(30)
         inplane_registration.use_verbose(True)
-        inplane_registration.run_registration()
+        inplane_registration.run()
         inplane_registration.print_statistics()
 
         stack_registered = inplane_registration.get_corrected_stack()
@@ -837,7 +837,7 @@ class IntraStackRegistrationTest(unittest.TestCase):
         inplane_registration.set_alpha_parameter(1e3)
         inplane_registration.set_optimizer_iter_max(15)
         inplane_registration.use_verbose(True)
-        inplane_registration.run_registration()
+        inplane_registration.run()
         inplane_registration.print_statistics()
 
         stack_registered = inplane_registration.get_corrected_stack()
@@ -936,7 +936,7 @@ class IntraStackRegistrationTest(unittest.TestCase):
         inplane_registration.set_alpha_parameter(1e10)
         inplane_registration.set_optimizer_iter_max(20)
         inplane_registration.use_verbose(True)
-        inplane_registration.run_registration()
+        inplane_registration.run()
         inplane_registration.print_statistics()
 
         # inplane_registration._run_registration_pipeline_initialization()
@@ -1028,7 +1028,7 @@ class IntraStackRegistrationTest(unittest.TestCase):
         # inplane_registration.use_stack_mask(True)
         # inplane_registration.use_reference_mask(True)
         inplane_registration.set_optimizer_iter_max(10)
-        inplane_registration.run_registration()
+        inplane_registration.run()
         inplane_registration.print_statistics()
 
         stack_registered = inplane_registration.get_corrected_stack()
@@ -1143,7 +1143,7 @@ class IntraStackRegistrationTest(unittest.TestCase):
         inplane_registration.set_alpha_neighbour(0)
         inplane_registration.set_alpha_parameter(0)
         inplane_registration.set_optimizer_iter_max(30)
-        inplane_registration.run_registration()
+        inplane_registration.run()
         inplane_registration.print_statistics()
 
         # inplane_registration._run_registration_pipeline_initialization()

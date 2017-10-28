@@ -348,7 +348,7 @@ class BrainStripping(object):
     #
     # \param      self  The object
     #
-    def run_stripping(self):
+    def run(self):
         self._run_bet_for_brain_stripping()
 
     ##

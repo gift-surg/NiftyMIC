@@ -1,9 +1,11 @@
-backups/
 build/
 html/
 latex/
 data/
 *.nii
 *.nii.gz
+*.png
+*.zip
 *.pyc
 *iterate.dat
+*.egg-info

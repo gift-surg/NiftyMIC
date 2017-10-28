@@ -141,7 +141,7 @@ class VolumeToVolumeRegistration(RegistrationPipeline):
                 ph.print_info(txt)
 
             self._registration_method.set_fixed(self._stacks[i])
-            self._registration_method.run_registration()
+            self._registration_method.run()
 
             # Update position of stack
             transform_sitk = \
@@ -209,7 +209,7 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                     ph.print_info(txt)
 
                 self._registration_method.set_fixed(slices[j])
-                self._registration_method.run_registration()
+                self._registration_method.run()
 
                 # Update position of slice
                 transform_sitk = \
@@ -279,7 +279,7 @@ class SliceSetToVolumeRegistration(RegistrationPipeline):
                     stack.get_slice(indices[1]).show()
 
                 self._registration_method.set_fixed(image)
-                self._registration_method.run_registration()
+                self._registration_method.run()
                 transform_sitk = self._registration_method.\
                     get_registration_transform_sitk()
 
@@ -487,7 +487,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
             # SRR step
             self._reconstruction_method.set_alpha(alphas[cycle])
-            self._reconstruction_method.run_reconstruction()
+            self._reconstruction_method.run()
 
             self._computational_time_reconstruction += \
                 self._reconstruction_method.get_computational_time()
@@ -602,7 +602,7 @@ class HieararchicalSliceSetRegistrationReconstruction(
 
             # SRR step
             self._reconstruction_method.set_alpha(alphas[i_cycle])
-            self._reconstruction_method.run_reconstruction()
+            self._reconstruction_method.run()
 
             self._computational_time_reconstruction += \
                 self._reconstruction_method.get_computational_time()
@@ -632,7 +632,7 @@ class HieararchicalSliceSetRegistrationReconstruction(
 
             # SRR step
             self._reconstruction_method.set_alpha(alphas[-1])
-            self._reconstruction_method.run_reconstruction()
+            self._reconstruction_method.run()
 
             self._computational_time_reconstruction += \
                 self._reconstruction_method.get_computational_time()
@@ -763,7 +763,7 @@ class MultiComponentReconstruction(Pipeline):
                               "Stack %d/%d" % (i+1, len(self._stacks)))
             stack = self._stacks[i]
             self._reconstruction_method.set_stacks([stack])
-            self._reconstruction_method.run_reconstruction()
+            self._reconstruction_method.run()
             self._reconstructions[i] = st.Stack.from_stack(
                 self._reconstruction_method.get_reconstruction())
             self._reconstructions[i].set_filename(
