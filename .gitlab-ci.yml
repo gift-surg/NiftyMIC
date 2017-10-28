@@ -80,7 +80,12 @@ reconstruct_volume:
   # only:
   #   - master
   script:
-    - python niftymic_reconstruct_volume.py --dir-input ${DATADIR}/input_data --dir-output ${TMPDIR} --verbose 0 --two-step-cycles 1
+    - >
+      python niftymic_reconstruct_volume.py 
+      --dir-input ${DATADIR}/input_data 
+      --dir-output ${TMPDIR} 
+      --verbose 0 
+      --two-step-cycles 1
   tags:
     - gift-adelie
 
@@ -88,7 +93,12 @@ reconstruct_volume_from_slices:
   # only:
   #   - master
   script:    
-    - python niftymic_reconstruct_volume_from_slices.py --dir-input ${DATADIR}/motion_correction_oriented --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz --dir-output ${TMPDIR} --verbose 0
+    - >
+      python niftymic_reconstruct_volume_from_slices.py
+      --dir-input ${DATADIR}/motion_correction_oriented
+      --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
+      --dir-output ${TMPDIR} 
+      --verbose 0
   tags:
     - gift-adelie  
 
@@ -97,8 +107,20 @@ param_study_tk1l2:
   #   - master
   script:
     - recon_type=TK1L2
-    - python niftymic_run_reconstruction_parameter_study.py --dir-input ${DATADIR}/motion_correction_oriented --dir-output ${TMPDIR}/param_study --alpha-range 0.01 0.05 2 --iter-max 2 --reconstruction-type ${recon_type} --verbose 0 --iterations 2
-    - python niftymic_show_reconstruction_parameter_study.py --dir-input {TMPDIR}/param_study --study-name ${recon_type}
+    - >
+      python niftymic_run_reconstruction_parameter_study.py
+      --dir-input ${DATADIR}/motion_correction_oriented 
+      --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
+      --dir-output ${TMPDIR}/param_study 
+      --alpha-range 0.01 0.05 2 
+      --iter-max 2 
+      --verbose 0 
+      --iterations 2
+      --reconstruction-type ${recon_type} 
+    - >
+      python niftymic_show_reconstruction_parameter_study.py 
+      --dir-input {TMPDIR}/param_study 
+      --study-name ${recon_type}
   tags:
     - gift-adelie
 
@@ -107,8 +129,20 @@ param_study_tvl2:
   #   - master
   script:
     - recon_type=TVL2
-    - python niftymic_run_reconstruction_parameter_study.py --dir-input ${DATADIR}/motion_correction_oriented --dir-output ${TMPDIR}/param_study --alpha-range 0.01 0.05 2 --iter-max 2 --reconstruction-type ${recon_type} --verbose 0 --iterations 2
-    - python niftymic_show_reconstruction_parameter_study.py --dir-input {TMPDIR}/param_study --study-name ${recon_type}
+    - >
+      python niftymic_run_reconstruction_parameter_study.py
+      --dir-input ${DATADIR}/motion_correction_oriented 
+      --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
+      --dir-output ${TMPDIR}/param_study 
+      --alpha-range 0.01 0.05 2 
+      --iter-max 2 
+      --verbose 0 
+      --iterations 2
+      --reconstruction-type ${recon_type} 
+    - >
+      python niftymic_show_reconstruction_parameter_study.py 
+      --dir-input {TMPDIR}/param_study 
+      --study-name ${recon_type}
   tags:
     - gift-adelie
 
@@ -117,7 +151,19 @@ param_study_huberl2:
   #   - master
   script:
     - recon_type=HuberL2
-    - python niftymic_run_reconstruction_parameter_study.py --dir-input ${DATADIR}/motion_correction_oriented --dir-output ${TMPDIR}/param_study --alpha-range 0.01 0.05 2 --iter-max 2 --reconstruction-type ${recon_type} --verbose 0 --iterations 2
-    - python niftymic_show_reconstruction_parameter_study.py --dir-input {TMPDIR}/param_study --study-name ${recon_type}
+    - >
+      python niftymic_run_reconstruction_parameter_study.py
+      --dir-input ${DATADIR}/motion_correction_oriented 
+      --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
+      --dir-output ${TMPDIR}/param_study 
+      --alpha-range 0.01 0.05 2 
+      --iter-max 2 
+      --verbose 0 
+      --iterations 2
+      --reconstruction-type ${recon_type} 
+    - >
+      python niftymic_show_reconstruction_parameter_study.py 
+      --dir-input {TMPDIR}/param_study 
+      --study-name ${recon_type}
   tags:
     - gift-adelie

@@ -152,7 +152,8 @@ Example are:
 The results can be assessed by accessing the [NSoL][nsol]-script `show_parameter_study.py` via
 * `niftymic_show_parameter_study \
 --dir-input dir-to-param-study-output \
---study-name TK1L2`
+--study-name TK1L2 \
+--dir-output-figures dir-to-figures`
 
 ## Licensing and Copyright
 Copyright (c) 2017, [University College London][ucl].
