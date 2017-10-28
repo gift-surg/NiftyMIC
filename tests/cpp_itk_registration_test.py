@@ -7,19 +7,15 @@
 
 # Import libraries
 import unittest
+
 import SimpleITK as sitk
 import numpy as np
-import sys
 import os
-
-import pysitk.simple_itk_helper as sitkh
 
 # Import modules
 import niftymic.base.stack as st
-import niftymic.registration.registration as myreg
-import niftymic.registration.simple_itk_registration as regsitk
 import niftymic.registration.cpp_itk_registration as regitk
-
+import pysitk.simple_itk_helper as sitkh
 from niftymic.definitions import DIR_TEST
 
 
