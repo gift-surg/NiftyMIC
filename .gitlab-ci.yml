@@ -119,7 +119,7 @@ param_study_tk1l2:
       --reconstruction-type ${recon_type} 
     - >
       python niftymic_show_reconstruction_parameter_study.py 
-      --dir-input {TMPDIR}/param_study 
+      --dir-input ${TMPDIR}/param_study 
       --study-name ${recon_type}
   tags:
     - gift-adelie
@@ -141,7 +141,7 @@ param_study_tvl2:
       --reconstruction-type ${recon_type} 
     - >
       python niftymic_show_reconstruction_parameter_study.py 
-      --dir-input {TMPDIR}/param_study 
+      --dir-input ${TMPDIR}/param_study 
       --study-name ${recon_type}
   tags:
     - gift-adelie
@@ -163,7 +163,7 @@ param_study_huberl2:
       --reconstruction-type ${recon_type} 
     - >
       python niftymic_show_reconstruction_parameter_study.py 
-      --dir-input {TMPDIR}/param_study 
+      --dir-input ${TMPDIR}/param_study 
       --study-name ${recon_type}
   tags:
     - gift-adelie
