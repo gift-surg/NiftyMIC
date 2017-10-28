@@ -2,6 +2,7 @@
 variables:
     PY_VERSION: 2
     TMPDIR: ./tmp
+    DATADIR: /home/mebner/data/ci/FetalBrain
     VENV: pysitk-test-py${PY_VERSION}
     ITK_DIR: /mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-python${PY_VERSION}-build
     FSL_DIR: /mnt/shared/mebner/environment/FSL/fsl
@@ -79,7 +80,7 @@ reconstruct_volume:
   # only:
   #   - master
   script:
-    - python niftymic_reconstruct_volume.py --dir-input /home/mebner/data/FetalBrain/input_data --dir-output ${TMPDIR} --verbose 0 --two-step-cycles 1
+    - python niftymic_reconstruct_volume.py --dir-input ${DATADIR}/input_data --dir-output ${TMPDIR} --verbose 0 --two-step-cycles 1
   tags:
     - gift-adelie
 
@@ -87,6 +88,36 @@ reconstruct_volume_from_slices:
   # only:
   #   - master
   script:    
-    - python niftymic_reconstruct_volume_from_slices.py --dir-input /home/mebner/data/FetalBrain/motion_correction_oriented --reconstruction-space /home/mebner/data/FetalBrain/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz --dir-output ${TMPDIR} --verbose 0
+    - python niftymic_reconstruct_volume_from_slices.py --dir-input ${DATADIR}/motion_correction_oriented --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz --dir-output ${TMPDIR} --verbose 0
   tags:
     - gift-adelie  
+
+param_study_tk1l2:
+  # only:
+  #   - master
+  script:
+    - recon_type=TK1L2
+    - python niftymic_run_reconstruction_parameter_study.py --dir-input ${DATADIR}/motion_correction_oriented --dir-output ${TMPDIR}/param_study --alpha-range 0.01 0.05 2 --iter-max 2 --reconstruction-type ${recon_type} --verbose 0 --iterations 2
+    - python niftymic_show_reconstruction_parameter_study.py --dir-input {TMPDIR}/param_study --study-name ${recon_type}
+  tags:
+    - gift-adelie
+
+param_study_tvl2:
+  # only:
+  #   - master
+  script:
+    - recon_type=TVL2
+    - python niftymic_run_reconstruction_parameter_study.py --dir-input ${DATADIR}/motion_correction_oriented --dir-output ${TMPDIR}/param_study --alpha-range 0.01 0.05 2 --iter-max 2 --reconstruction-type ${recon_type} --verbose 0 --iterations 2
+    - python niftymic_show_reconstruction_parameter_study.py --dir-input {TMPDIR}/param_study --study-name ${recon_type}
+  tags:
+    - gift-adelie
+
+param_study_huberl2:
+  # only:
+  #   - master
+  script:
+    - recon_type=HuberL2
+    - python niftymic_run_reconstruction_parameter_study.py --dir-input ${DATADIR}/motion_correction_oriented --dir-output ${TMPDIR}/param_study --alpha-range 0.01 0.05 2 --iter-max 2 --reconstruction-type ${recon_type} --verbose 0 --iterations 2
+    - python niftymic_show_reconstruction_parameter_study.py --dir-input {TMPDIR}/param_study --study-name ${recon_type}
+  tags:
+    - gift-adelie
