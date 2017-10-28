@@ -208,10 +208,10 @@ class Solver(object):
     def get_verbose(self):
         return self._verbose
 
-    def run_reconstruction(self):
+    def run(self):
 
         # Run solver specific reconstruction
-        self._run_reconstruction()
+        self._run()
 
     # Get current estimate of reconstruction
     #  \return current estimate of reconstruction, instance of Stack
@@ -324,7 +324,7 @@ class Solver(object):
                       (self.get_computational_time()))
 
         # if self._elapsed_time_sec < 0:
-        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
+        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run' first.")
         # else:
         # if self._residual_ell2 is not None:
         #     ph.print_info("ell^2-residual sum_k ||M_k(A_k x - y_k)||_2^2 = %.3e" %
@@ -349,7 +349,7 @@ class Solver(object):
         pass
 
     @abstractmethod
-    def _run_reconstruction(self):
+    def _run(self):
         pass
 
     @abstractmethod

@@ -139,7 +139,7 @@ def main():
         data_loss_scale=args.data_loss_scale,
         # verbose=args.verbose,
     )
-    SRR0.run_reconstruction()
+    SRR0.run()
     SRR0.compute_statistics()
     SRR0.print_statistics()
 
@@ -167,7 +167,7 @@ def main():
                 iterations=args.iterations,
                 verbose=args.verbose,
             )
-            SRR.run_reconstruction()
+            SRR.run()
             SRR.print_statistics()
             recon = SRR.get_reconstruction()
             recon.set_filename(SRR.get_setting_specific_filename())
@@ -189,7 +189,7 @@ def main():
                 data_loss=args.data_loss,
                 verbose=args.verbose,
             )
-            SRR.run_reconstruction()
+            SRR.run()
             SRR.print_statistics()
             recon = SRR.get_reconstruction()
             recon.set_filename(SRR.get_setting_specific_filename())

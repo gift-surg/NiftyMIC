@@ -135,7 +135,7 @@ class CppItkRegistration(SimpleItkRegistration):
     # def get_transformed_fixed(self):
         # return self._registered_image
 
-    def _run_registration(self, id=""):
+    def _run(self, id=""):
 
         # Clean output directory first
         ph.clear_directory(self._dir_tmp, verbose=0)

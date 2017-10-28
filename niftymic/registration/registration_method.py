@@ -153,7 +153,7 @@ class RegistrationMethod(object):
     #
     # \param      self  The object
     #
-    def run_registration(self):
+    def run(self):
 
         if not isinstance(self._fixed, st.Stack) and \
                 not isinstance(self._fixed, sl.Slice):
@@ -166,7 +166,7 @@ class RegistrationMethod(object):
         time_start = ph.start_timing()
 
         # Execute registration method
-        self._run_registration()
+        self._run()
 
         # Get computational time
         self._computational_time = ph.stop_timing(time_start)
@@ -176,7 +176,7 @@ class RegistrationMethod(object):
                           (self.get_computational_time()))
 
     @abstractmethod
-    def _run_registration(self):
+    def _run(self):
         pass
 
     ##

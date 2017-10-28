@@ -83,7 +83,7 @@ class DataPreprocessing:
     #
     # \param      self  The object
     #
-    def run_preprocessing(self):
+    def run(self):
 
         time_start = ph.start_timing()
 
@@ -178,7 +178,7 @@ class DataPreprocessing:
     #  \param[in] dir_output output directory
     def write_preprocessed_data(self, dir_output):
         if all(x is None for x in self._stacks):
-            raise exceptions.ObjectNotCreated("run_preprocessing")
+            raise exceptions.ObjectNotCreated("run")
 
         # Write all slices
         for i in range(0, self._N_stacks):

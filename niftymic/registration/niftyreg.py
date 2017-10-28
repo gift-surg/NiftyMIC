@@ -68,7 +68,7 @@ class RegAladin(AffineRegistrationMethod):
     def get_options(self):
         return self._options
 
-    def _run_registration(self):
+    def _run(self):
 
         if self._use_fixed_mask:
             fixed_sitk_mask = self._fixed.sitk_mask
@@ -144,7 +144,7 @@ class RegF3D(RegistrationMethod):
     def get_options(self):
         return self._options
 
-    def _run_registration(self):
+    def _run(self):
 
         if self._use_fixed_mask:
             fixed_sitk_mask = self._fixed.sitk_mask

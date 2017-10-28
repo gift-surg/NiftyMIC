@@ -298,7 +298,7 @@ class RegistrationTest(unittest.TestCase):
         registration.set_metric("Correlation")
         # registration.set_scales_estimator("PhysicalShift")
         # registration.use_verbose(True)
-        registration.run_registration()
+        registration.run()
 
         parameters_estimated = registration.get_parameters()
         fixed_parameters_estimated = registration.get_parameters_fixed()
@@ -447,7 +447,7 @@ class RegistrationTest(unittest.TestCase):
                 # data_loss="soft_l1",
                 # x_scale=[angle_max, angle_max, angle_max, t_max, t_max, t_max],
             )
-            registration.run_registration()
+            registration.run()
             # registration.print_statistics()
 
             # Check parameters
@@ -495,7 +495,7 @@ class RegistrationTest(unittest.TestCase):
 
             registration = myreg.Registration(
                 fixed=slices_sim[j], moving=HR_volume)
-            registration.run_registration()
+            registration.run()
             # registration.print_statistics()
 
             # Check parameters
@@ -544,7 +544,7 @@ class RegistrationTest(unittest.TestCase):
         )
         # registration.use_fixed_mask(True)
         registration.use_verbose(True)
-        registration.run_registration()
+        registration.run()
 
         # Check parameters (should be the negative of parameters_gd)
         parameters = registration.get_parameters()
@@ -580,7 +580,7 @@ class RegistrationTest(unittest.TestCase):
         registration.set_metric("MeanSquares")
         registration.use_verbose(use_verbose)
         registration.set_scales_estimator(scales_estimator)
-        registration.run_registration()
+        registration.run()
 
         parameters = np.array(
             registration.get_registration_transform_sitk().GetParameters())
@@ -597,7 +597,7 @@ class RegistrationTest(unittest.TestCase):
         registration.use_verbose(use_verbose)
         registration.set_scales_estimator(scales_estimator)
         registration.set_metric("MeanSquares")
-        registration.run_registration()
+        registration.run()
 
         parameters = np.array(
             registration.get_registration_transform_sitk().GetParameters())

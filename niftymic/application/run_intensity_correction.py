@@ -106,7 +106,7 @@ def main():
             ph.print_info("Image %d/%d: Registration ... "
                           % (i+1, len(stacks)), newline=False)
             registration.set_fixed(stack)
-            registration.run_registration()
+            registration.run()
             transform_sitk = registration.get_registration_transform_sitk()
             stack.update_motion_correction(transform_sitk)
             print("done")

@@ -169,7 +169,7 @@ class PrimalDualSolver(Solver):
 
         return solver
 
-    def _run_reconstruction(self, verbose=0):
+    def _run(self, verbose=0):
 
         solver = self.get_solver()
 

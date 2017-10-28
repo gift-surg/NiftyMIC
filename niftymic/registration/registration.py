@@ -225,7 +225,7 @@ class Registration(AffineRegistrationMethod):
     #
     # \param[in]  self     The object
     #
-    def _run_registration(self):
+    def _run(self):
 
         if self._data_loss not in DATA_LOSS:
             raise ValueError("data_loss must be in " + str(DATA_LOSS))

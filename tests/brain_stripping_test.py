@@ -32,7 +32,7 @@ class BrainStrippingTest(unittest.TestCase):
         brain_stripping.compute_brain_image(0)
         brain_stripping.compute_brain_mask(0)
         brain_stripping.compute_skull_image(0)
-        brain_stripping.run_stripping()
+        brain_stripping.run()
 
         with self.assertRaises(ValueError) as ve:
             brain_stripping.get_brain_image_sitk()
@@ -62,7 +62,7 @@ class BrainStrippingTest(unittest.TestCase):
         brain_stripping.compute_skull_image(0)
         # brain_stripping.set_bet_options("-f 0.3")
 
-        brain_stripping.run_stripping()
+        brain_stripping.run()
         original_sitk = brain_stripping.get_input_image_sitk()
         brain_mask_sitk = brain_stripping.get_brain_mask_sitk()
         sitkh.show_sitk_image([original_sitk], segmentation=brain_mask_sitk)

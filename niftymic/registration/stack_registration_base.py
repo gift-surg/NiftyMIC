@@ -415,7 +415,7 @@ class StackRegistrationBase(object):
     def print_statistics(self):
         # print("\nStatistics for performed registration:" %(self._reg_type))
         # if self._elapsed_time_sec < 0:
-        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run_reconstruction' first.")
+        #     raise ValueError("Error: Elapsed time has not been measured. Run 'run' first.")
         # else:
         print("\tElapsed time: %s" % (self._elapsed_time))
         # print("\tell^2-residual sum_k ||M_k(A_k x - y_k||_2^2 = %.3e" %(self._residual_ell2))
@@ -427,7 +427,7 @@ class StackRegistrationBase(object):
     #
     # \param      self  The object
     #
-    def run_registration(self):
+    def run(self):
 
         print_precisicion = 3
         print_suppress = True

@@ -82,7 +82,7 @@ class CppItkRegistrationTest(unittest.TestCase):
         registration.use_fixed_mask(True)
         registration.use_multiresolution_framework(True)
         # registration.use_verbose(True)
-        registration.run_registration()
+        registration.run()
 
         # Get uniform in-plane scaling factor
         scale_est = registration.get_parameters()[6]

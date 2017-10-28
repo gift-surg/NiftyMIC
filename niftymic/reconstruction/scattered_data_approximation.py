@@ -54,7 +54,7 @@ class ScatteredDataApproximation:
             self._sigma_array = np.array(sigma_array)
 
         # Define dictionary to choose computational approach for SDA
-        self._run_reconstruction = {
+        self._run = {
             "Shepard-YVV":   self._run_discrete_shepard_reconstruction,
             "Shepard-Deriche":   self._run_discrete_shepard_based_on_Deriche_reconstruction,
         }
@@ -125,13 +125,13 @@ class ScatteredDataApproximation:
 
     # Computed reconstructed volume based on current estimated positions of
     # slices
-    def run_reconstruction(self):
+    def run(self):
         print("Chosen SDA approach: " + self._sda_approach)
         print("Smoothing parameter sigma = " + str(self._sigma_array))
 
         t0 = time.clock()
 
-        self._run_reconstruction[self._sda_approach]()
+        self._run[self._sda_approach]()
 
         time_elapsed = time.clock() - t0
         # print("Elapsed time for SDA: %s seconds" %(time_elapsed))
