@@ -85,7 +85,10 @@ reconstruct_volume:
       --dir-input ${DATADIR}/input_data 
       --dir-output ${TMPDIR} 
       --verbose 0 
+      --isotropic-resolution 2
       --two-step-cycles 1
+      --iter-max 2
+      --iter-max-first 2
   tags:
     - gift-adelie
 
@@ -99,52 +102,10 @@ reconstruct_volume_from_slices:
       --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
       --dir-output ${TMPDIR} 
       --verbose 0
+      --isotropic-resolution 2
+      --iter-max 2
   tags:
     - gift-adelie  
-
-param_study_tk1l2:
-  # only:
-  #   - master
-  script:
-    - recon_type=TK1L2
-    - >
-      python niftymic_run_reconstruction_parameter_study.py
-      --dir-input ${DATADIR}/motion_correction_oriented 
-      --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
-      --dir-output ${TMPDIR}/param_study 
-      --alpha-range 0.01 0.05 2 
-      --iter-max 2 
-      --verbose 0 
-      --iterations 2
-      --reconstruction-type ${recon_type} 
-    - >
-      python niftymic_show_reconstruction_parameter_study.py 
-      --dir-input ${TMPDIR}/param_study 
-      --study-name ${recon_type}
-  tags:
-    - gift-adelie
-
-param_study_tvl2:
-  # only:
-  #   - master
-  script:
-    - recon_type=TVL2
-    - >
-      python niftymic_run_reconstruction_parameter_study.py
-      --dir-input ${DATADIR}/motion_correction_oriented 
-      --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
-      --dir-output ${TMPDIR}/param_study 
-      --alpha-range 0.01 0.05 2 
-      --iter-max 2 
-      --verbose 0 
-      --iterations 2
-      --reconstruction-type ${recon_type} 
-    - >
-      python niftymic_show_reconstruction_parameter_study.py 
-      --dir-input ${TMPDIR}/param_study 
-      --study-name ${recon_type}
-  tags:
-    - gift-adelie
 
 param_study_huberl2:
   # only:
@@ -161,9 +122,5 @@ param_study_huberl2:
       --verbose 0 
       --iterations 2
       --reconstruction-type ${recon_type} 
-    - >
-      python niftymic_show_reconstruction_parameter_study.py 
-      --dir-input ${TMPDIR}/param_study 
-      --study-name ${recon_type}
   tags:
     - gift-adelie
