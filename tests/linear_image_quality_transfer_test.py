@@ -5,17 +5,16 @@
 #  \date July 2016
 
 
-# Import libraries
-import SimpleITK as sitk
-import numpy as np
 import unittest
-import sys
+
+# Import libraries
+import numpy as np
 from scipy import ndimage
 
-# Import modules from src-folder
-import niftymic.reconstruction.linear_image_quality_transfer as liqt
-
 from niftymic.definitions import DIR_TEST
+
+
+# Import modules from src-folder
 
 
 class LinearImageQualityTransferTest(unittest.TestCase):

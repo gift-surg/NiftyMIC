@@ -16,7 +16,7 @@ import os
 import niftymic.base.psf as psf
 # Import modules
 import niftymic.base.stack as st
-import niftymic.utilities.simulator_slice_acqusition as sa
+import niftymic.prototyping.simulator_slice_acqusition as sa
 import pysitk.simple_itk_helper as sitkh
 from niftymic.definitions import DIR_TEST
 

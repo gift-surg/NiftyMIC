@@ -5,27 +5,19 @@
 #  \date September 2016
 
 
+import unittest
+
 # Import libraries
 import SimpleITK as sitk
 import itk
 import numpy as np
-import unittest
 import os
-import sys
-import time
-from datetime import timedelta
-
-import pysitk.simple_itk_helper as sitkh
-import pysitk.python_helper as ph
 
 # Import modules
 import niftymic.base.stack as st
-import niftymic.registration.registration as myreg
-import niftymic.registration.simple_itk_registration as regsitk
-import niftymic.registration.cpp_itk_registration as regitk
-
+import niftymic.prototyping.registration as myreg
+import pysitk.python_helper as ph
 from niftymic.definitions import DIR_TEST
-
 
 # Pixel type of used 3D ITK image
 PIXEL_TYPE = itk.D
