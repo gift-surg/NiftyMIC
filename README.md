@@ -109,8 +109,9 @@ The obtained motion-correction transformations can be stored for further process
 
 ### SRR Methods for Motion Corrected (or Static) Data
 
-Afer performed motion correction (or having static data in the first place),
-2. different solvers and regularizers can be used to solve the SRR problem for comparison, and
+After performed motion correction (or having static data in the first place),
+
+1. different solvers and regularizers can be used to solve the SRR problem for comparison, and
 1. parameter studies can be performed to find optimal reconstruction parameters.
 
 #### 1. SRR from Motion Corrected (or Static) Slice Acquisitions
