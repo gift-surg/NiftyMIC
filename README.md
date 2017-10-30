@@ -5,34 +5,49 @@ Please note that currently **only Python 2** is supported.
 
 The algorithm and software were developed by [Michael Ebner][mebner] at the [Translational Imaging Group][tig] in the [Centre for Medical Image Computing][cmic] at [University College London (UCL)][ucl].
 
-If you have any questions or comments (or find bugs), please drop an email to `michael.ebner.14@ucl.ac.uk`.
+If you have any questions or comments, please drop an email to `michael.ebner.14@ucl.ac.uk`.
 
 ## Features
 Several methods have been implemented to solve the **Super-Resolution Reconstruction** (SRR) problem
-```math
-\vec{x}^* := \text{argmin}_{\vec{x}} \Big[\sum_{k=1}^K \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big]
-```
+<!-- ```math -->
+<!-- \vec{x}^* := \text{argmin}_{\vec{x}} \Big[\sum_{k=1}^K \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big] -->
+<!-- ``` -->
+<p align="center">
+<img src="http://latex.codecogs.com/svg.latex?%5Cvec%7Bx%7D%5E%2A%3A%3D%5Ctext%7Bargmin%7D_%7B%5Cvec%7Bx%7D%7D%5CBig%5B%5Csum_%7Bk%3D1%7D%5EK%5Csum_%7Bi%3D1%7D%5E%7BN_k%7D%5Cvarrho%5Cbig%28%28A_k%5Cvec%7Bx%7D-%5Cvec%7By%7D_k%29_i%5E2%5Cbig%29%2B%5Calpha%5C%2C%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%5CBig%5D">
+</p>
 
-to obtain the (vectorized) high-resolution 3D MRI volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D MR slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$
-for a variety of regularizers $`\text{Reg}`$ and data loss functions $`\varrho`$.
-The linear operator $`A_k := D_k B_k W_k`$ represents the comd operator descri the (rigid) motion $`W_k`$, the blurring operator $`B_k`$ and the downsampling operator $`D_k`$.
+<!--to obtain the (vectorized) high-resolution 3D MRI volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D MR slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$-->
+<!--for a variety of regularizers $`\text{Reg}`$ and data loss functions $`\varrho`$.-->
+<!--The linear operator $`A_k := D_k B_k W_k`$ represents the comd operator descri the (rigid) motion $`W_k`$, the blurring operator $`B_k`$ and the downsampling operator $`D_k`$.-->
+to obtain the (vectorized) high-resolution 3D MRI volume ![img](http://latex.codecogs.com/svg.latex?%5Cvec%7Bx%7D%5Cin%5Cmathbb%7BR%7D%5EN) from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D MR slices ![img](http://latex.codecogs.com/svg.latex?%5Cvec%7By%7D_k%5Cin%5Cmathbb%7BR%7D%5E%7BN_k%7D) with ![img](http://latex.codecogs.com/svg.latex?N_k%5Cll%7BN%7D) for ![img](http://latex.codecogs.com/svg.latex?k%3D1%2C...%2C%5C%2CK)
+for a variety of regularizers ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D) and data loss functions ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho).
+The linear operator ![img](http://latex.codecogs.com/svg.latex?A_k%3A%3DD_kB_kW_k) represents the comd operator descri the (rigid) motion ![img](http://latex.codecogs.com/svg.latex?W_k), the blurring operator ![img](http://latex.codecogs.com/svg.latex?B_k) and the downsampling operator ![img](http://latex.codecogs.com/svg.latex?D_k).
 
 ---
 
-The provided **data loss functions** $`\varrho`$ are motivated by [SciPy](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and allow for robust outlier rejection. Implemented data loss functions are:
-* `linear`: $`\varrho(e) = e `$ 
-* `soft_l1`: $`\varrho(e) = 2 (\sqrt{1+e} - 1)`$ 
-* `huber`: $`\varrho(e) = |e|_\gamma = \begin{cases} e, & e < \gamma^2 \\ 2\gamma\sqrt{e} - \gamma^2, & e\ge \gamma^2\end{cases}`$
-* `arctan`: $`\varrho(e) = \arctan(e)`$
-* `cauchy`: $`\varrho(e) = \ln(1 + e)`$
+The provided **data loss functions** ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho) are motivated by [SciPy](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and allow for robust outlier rejection. Implemented data loss functions are:
+<!--$`\varrho(e)=e`$-->
+<!--$`\varrho(e)=2(\sqrt{1+e}-1)`$ -->
+<!--$`\varrho(e)=|e|_\gamma=\begin{cases}e,&e<\gamma^2\\2\gamma\sqrt{e}-\gamma^2,&e\ge\gamma^2\end{cases}`$-->
+<!--$`\varrho(e)=\arctan(e)`$-->
+<!--$`\varrho(e)=\ln(1 + e)`$-->
+* `linear`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3De)
+* `soft_l1`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D2%28%5Csqrt%7B1%2Be%7D-1%29)
+* `huber`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%7Ce%7C_%5Cgamma%3D%5Cbegin%7Bcases%7De%2C%26e%3C%5Cgamma%5E2%5C%5C2%5Cgamma%5Csqrt%7Be%7D-%5Cgamma%5E2%2C%26e%5Cge%5Cgamma%5E2%5Cend%7Bcases%7D)
+* `arctan`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%5Carctan%28e%29)
+* `cauchy`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%5Cln%281%2Be%29)
 
 ---
 
 The **available regularizers** include
-* Zeroth-order Tikhonov (TK0): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \vec{x} \Vert_{\ell^2}^2`$
-* First-order Tikhonov (TK1): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \nabla \vec{x} \Vert_{\ell^2}^2`$
-* Isotropic Total Variation (TV): $`\text{Reg}(\vec{x}) = \text{TV}_\text{iso}(\vec{x}) = \big\Vert |\nabla \vec{x}| \big\Vert_{\ell^1}`$
-* Huber Function: $`\text{Reg}(\vec{x}) = \frac{1}{2\gamma} \big| |\nabla \vec{x}| \big|_{\gamma}`$
+<!-- * Zeroth-order Tikhonov (TK0): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \vec{x} \Vert_{\ell^2}^2`$ -->
+<!-- * First-order Tikhonov (TK1): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \nabla \vec{x} \Vert_{\ell^2}^2`$ -->
+<!-- * Isotropic Total Variation (TV): $`\text{Reg}(\vec{x}) = \text{TV}_\text{iso}(\vec{x}) = \big\Vert |\nabla \vec{x}| \big\Vert_{\ell^1}`$ -->
+<!-- * Huber Function: $`\text{Reg}(\vec{x}) = \frac{1}{2\gamma} \big| |\nabla \vec{x}| \big|_{\gamma}`$ -->
+* Zeroth-order Tikhonov (TK0): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%7D%5CVert%5Cvec%7Bx%7D%5CVert_%7B%5Cell%5E2%7D%5E2)
+* First-order Tikhonov (TK1): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%7D%5CVert%5Cnabla%5Cvec%7Bx%7D%5CVert_%7B%5Cell%5E2%7D%5E2)
+* Isotropic Total Variation (TV): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Ctext%7BTV%7D_%5Ctext%7Biso%7D%28%5Cvec%7Bx%7D%29%3D%5Cbig%5CVert%7C%5Cnabla%5Cvec%7Bx%7D%7C%5Cbig%5CVert_%7B%5Cell%5E1%7D)
+* Huber Function: ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%5Cgamma%7D%5Cbig%7C%7C%5Cnabla%5Cvec%7Bx%7D%7C%5Cbig%7C_%7B%5Cgamma%7D)
 
 ---
 
@@ -77,83 +92,104 @@ Provided the input MR image data in NIfTI format (`nii` or `nii.gz`), NiftyMIC c
 Leveraging a two-step registration-reconstruction approach an isotropic, high-resolution 3D volume can be generated from multiple stacks of low-resolution slices.
 
 Examples for basic usage are:
-* `niftymic_reconstruct_volume \
+```
+niftymic_reconstruct_volume \
 --dir-input dir-with-multiple-stacks \
 --dir-output output-dir \
---suffix-mask _mask`
-* `niftymic_reconstruct_volume \
+--suffix-mask _mask
+```
+```
+niftymic_reconstruct_volume \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
 --dir-output output-dir \
---suffix-mask _mask`
+--suffix-mask _mask
+```
 
 The obtained motion-correction transformations can be stored for further processing, e.g. by using `niftymic_reconstruct_volume_from_slices.py` to solve the SRR problem for a variety of different regularization and data loss function types.
 
 ### SRR Methods for Motion Corrected (or Static) Data
 
-Afer performed motion correction (or having static data in the first place),
-2. different solvers and regularizers can be used to solve the SRR problem for comparison, and
+After performed motion correction (or having static data in the first place),
+
+1. different solvers and regularizers can be used to solve the SRR problem for comparison, and
 1. parameter studies can be performed to find optimal reconstruction parameters.
 
 #### 1. SRR from Motion Corrected (or Static) Slice Acquisitions
 Solve the SRR problem for motion corrected data:
-* `niftymic_reconstruct_volume_from_slices \
+```
+niftymic_reconstruct_volume_from_slices \
 --dir-input dir-to-motion-correction \
 --dir-output output-dir \
 --reconstruction-type HuberL2 \
---alpha 0.003`
-* `niftymic_reconstruct_volume_from_slices \
+--alpha 0.003
+```
+```
+niftymic_reconstruct_volume_from_slices \
 --dir-input dir-to-motion-correction \
 --dir-output output-dir \
 --reconstruction-type TK1L2 \
---alpha 0.03`
+--alpha 0.03
+```
 
 Solve the SRR problem for static data:
-* `niftymic_reconstruct_volume_from_slices \
+```
+niftymic_reconstruct_volume_from_slices \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
 --dir-output output-dir \
 --reconstruction-type HuberL2 \
 --alpha 0.003 
---suffix-mask _mask`
-* `niftymic_reconstruct_volume_from_slices \
+--suffix-mask _mask
+```
+```
+niftymic_reconstruct_volume_from_slices \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
 --dir-output output-dir \
 --reconstruction-type TK1L2 \
 --alpha 0.03 \
---suffix-mask _mask`
+--suffix-mask _mask
+```
 
 #### 2. Parameter Studies to Determine Optimal SRR Parameters
 The optimal choice for reconstruction parameters like the regularization parameter or data loss function can be found by running parameter studies. This includes L-curve studies and direct comparison against a reference volume for various cost functions.
 
 Example are:
-* `niftymic_run_reconstruction_parameter_study \
+```
+niftymic_run_reconstruction_parameter_study \
 --dir-input dir-to-motion-correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type HuberL2 \
 --reference path-to-reference-volume.nii.gz \
 --reference-mask path-to-reference-volume_mask.nii.gz \
 --measures RMSE PSNR NCC NMI SSIM \
---alpha-range 0.001 0.003 10`
-* `niftymic_run_reconstruction_parameter_study \
+--alpha-range 0.001 0.003 10
+```
+```
+niftymic_run_reconstruction_parameter_study \
 --dir-input dir-to-motion-correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type TVL2 \
 --reference path-to-reference-volume.nii.gz \
 --reference-mask path-to-reference-volume_mask.nii.gz \
 --measures RMSE PSNR NCC NMI SSIM \
---alpha-range 0.001 0.003 10`
-* `niftymic_run_reconstruction_parameter_study \
+--alpha-range 0.001 0.003 10
+```
+```
+niftymic_run_reconstruction_parameter_study \
 --dir-input dir-to-motion-correction \
 --reconstruction-type TK1L2 \
 --reference path-to-reference-volume.nii.gz \
 --reference-mask path-to-reference-volume_mask.nii.gz \
 --measures RMSE PSNR NCC NMI SSIM \
---alpha-range 0.001 0.05 20`
+--alpha-range 0.001 0.05 20
+```
 
 The results can be assessed by accessing the [NSoL][nsol]-script `show_parameter_study.py` via
-* `niftymic_show_parameter_study \
+```
+niftymic_show_parameter_study \
 --dir-input dir-to-param-study-output \
 --study-name TK1L2 \
---dir-output-figures dir-to-figures`
+--dir-output-figures dir-to-figures
+```
 
 ## Licensing and Copyright
 Copyright (c) 2017, [University College London][ucl].
