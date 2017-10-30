@@ -182,9 +182,9 @@ Associated publications are
 [wellcometrust]: http://www.wellcome.ac.uk
 [mssociety]: https://www.mssociety.org.uk/
 [nihr]: http://www.nihr.ac.uk/research
-[itkniftymic]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/ITK_NiftyMIC/wikis/home
-[niftymic-install]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/NiftyMIC/wikis/niftymic-installation
-[nsol]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/NSoL
-[simplereg]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/SimpleReg
-[simplereg-dependencies]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/SimpleReg/wikis/simplereg-dependencies
-[pysitk]: https://cmiclab.cs.ucl.ac.uk/GIFT-Surg/PySiTK
+[itkniftymic]: https://github.com/gift-surg/ITK_NiftyMIC/wikis/home
+[niftymic-install]: https://github.com/gift-surg/NiftyMIC/wikis/niftymic-installation
+[nsol]: https://github.com/gift-surg/NSoL
+[simplereg]: https://github.com/gift-surg/SimpleReg
+[simplereg-dependencies]: https://github.com/gift-surg/SimpleReg/wikis/simplereg-dependencies
+[pysitk]: https://github.com/gift-surg/PySiTK
