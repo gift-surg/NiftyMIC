@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 ##
 # \file reconstruct_volume.py
 # \brief      Script to reconstruct an isotropic, high-resolution volume from
@@ -7,7 +5,7 @@
 #             motion-correction.
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
-# \date       March 2016
+# \date       March 2017
 #
 
 # Import libraries
@@ -121,9 +119,7 @@ def main():
     ph.print_title("Data Preprocessing")
 
     segmentation_propagator = segprop.SegmentationPropagation(
-        # registration_method=regniftyreg.RegAladin(use_verbose=args.verbose),
-        # registration_method=regsitk.SimpleItkRegistration(use_verbose=args.verbose),
-        # registration_method=regwrapitk.WrapItkRegistration(use_verbose=args.verbose),
+        # registration_method=regflirt.FLIRT(use_verbose=args.verbose),
         dilation_radius=args.dilation_radius,
         dilation_kernel="Ball",
     )
@@ -169,7 +165,6 @@ def main():
                          for x in ["x", "y", "z"]]
         search_angles = (" ").join(search_angles)
 
-        # vol_registration = regniftyreg.RegAladin(
         vol_registration = regflirt.FLIRT(
             registration_type="Rigid",
             use_fixed_mask=True,
@@ -246,13 +241,10 @@ def main():
             use_verbose=args.verbose,
             interpolator="Linear",
             metric="Correlation",
-            # metric="MattesMutualInformation",  # Might cause error messages
-            # like "Too many samples map outside moving image buffer."
             use_multiresolution_framework=args.multiresolution,
             shrink_factors=args.shrink_factors,
             smoothing_sigmas=args.smoothing_sigmas,
             initializer_type="SelfGEOMETRY",
-            # use_oriented_psf=False,
             optimizer="ConjugateGradientLineSearch",
             optimizer_params={
                 "learningRate": 1,
@@ -260,24 +252,7 @@ def main():
                 "lineSearchUpperLimit": 2,
             },
             scales_estimator="Jacobian",
-            # optimizer="RegularStepGradientDescent",
-            # optimizer_params={
-            #     "minStep": 1e-6,
-            #     "numberOfIterations": 500,
-            #     "gradientMagnitudeTolerance": 1e-6,
-            #     "learningRate": 1,
-            # },
         )
-
-        # registration = regcppitk.CppItkRegistration(
-        #     moving=HR_volume,
-        #     use_fixed_mask=True,
-        #     use_moving_mask=True,
-        #     use_verbose=args.verbose,
-        #     interpolator="Linear",
-        #     metric="Correlation",
-        #     # metric="MattesMutualInformation",  # Might cause error messages
-        # )
         two_step_s2v_reg_recon = \
             pipeline.TwoStepSliceToVolumeRegistrationReconstruction(
                 stacks=stacks,
@@ -288,16 +263,6 @@ def main():
                 alpha_range=[args.alpha_first, args.alpha],
                 verbose=args.verbose,
             )
-        # two_step_s2v_reg_recon = \
-        #     pipeline.HieararchicalSliceSetRegistrationReconstruction(
-        #         stacks=stacks,
-        #         reference=HR_volume,
-        #         registration_method=registration,
-        #         reconstruction_method=SRR,
-        #         alpha_range=[args.alpha_first, args.alpha],
-        #         interleave=2,
-        #         verbose=args.verbose,
-        #     )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
             two_step_s2v_reg_recon.get_iterative_reconstructions()
