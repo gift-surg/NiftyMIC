@@ -25,7 +25,7 @@ The linear operator ![img](http://latex.codecogs.com/svg.latex?A_k%3A%3DD_kB_kW_
 
 ---
 
-The provided **data loss functions** $`\varrho`$ are motivated by [SciPy](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and allow for robust outlier rejection. Implemented data loss functions are:
+The provided **data loss functions** ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho) are motivated by [SciPy](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and allow for robust outlier rejection. Implemented data loss functions are:
 <!--$`\varrho(e)=e`$-->
 <!--$`\varrho(e)=2(\sqrt{1+e}-1)`$ -->
 <!--$`\varrho(e)=|e|_\gamma=\begin{cases}e,&e<\gamma^2\\2\gamma\sqrt{e}-\gamma^2,&e\ge\gamma^2\end{cases}`$-->
