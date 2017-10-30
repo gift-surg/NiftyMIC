@@ -77,14 +77,18 @@ Provided the input MR image data in NIfTI format (`nii` or `nii.gz`), NiftyMIC c
 Leveraging a two-step registration-reconstruction approach an isotropic, high-resolution 3D volume can be generated from multiple stacks of low-resolution slices.
 
 Examples for basic usage are:
-* `niftymic_reconstruct_volume \
+```
+niftymic_reconstruct_volume \
 --dir-input dir-with-multiple-stacks \
 --dir-output output-dir \
---suffix-mask _mask`
-* `niftymic_reconstruct_volume \
+--suffix-mask _mask
+```
+```
+niftymic_reconstruct_volume \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
 --dir-output output-dir \
---suffix-mask _mask`
+--suffix-mask _mask
+```
 
 The obtained motion-correction transformations can be stored for further processing, e.g. by using `niftymic_reconstruct_volume_from_slices.py` to solve the SRR problem for a variety of different regularization and data loss function types.
 
@@ -96,64 +100,80 @@ Afer performed motion correction (or having static data in the first place),
 
 #### 1. SRR from Motion Corrected (or Static) Slice Acquisitions
 Solve the SRR problem for motion corrected data:
-* `niftymic_reconstruct_volume_from_slices \
+```
+niftymic_reconstruct_volume_from_slices \
 --dir-input dir-to-motion-correction \
 --dir-output output-dir \
 --reconstruction-type HuberL2 \
---alpha 0.003`
-* `niftymic_reconstruct_volume_from_slices \
+--alpha 0.003
+```
+```
+niftymic_reconstruct_volume_from_slices \
 --dir-input dir-to-motion-correction \
 --dir-output output-dir \
 --reconstruction-type TK1L2 \
---alpha 0.03`
+--alpha 0.03
+```
 
 Solve the SRR problem for static data:
-* `niftymic_reconstruct_volume_from_slices \
+```
+niftymic_reconstruct_volume_from_slices \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
 --dir-output output-dir \
 --reconstruction-type HuberL2 \
 --alpha 0.003 
---suffix-mask _mask`
-* `niftymic_reconstruct_volume_from_slices \
+--suffix-mask _mask
+```
+```
+niftymic_reconstruct_volume_from_slices \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
 --dir-output output-dir \
 --reconstruction-type TK1L2 \
 --alpha 0.03 \
---suffix-mask _mask`
+--suffix-mask _mask
+```
 
 #### 2. Parameter Studies to Determine Optimal SRR Parameters
 The optimal choice for reconstruction parameters like the regularization parameter or data loss function can be found by running parameter studies. This includes L-curve studies and direct comparison against a reference volume for various cost functions.
 
 Example are:
-* `niftymic_run_reconstruction_parameter_study \
+```
+niftymic_run_reconstruction_parameter_study \
 --dir-input dir-to-motion-correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type HuberL2 \
 --reference path-to-reference-volume.nii.gz \
 --reference-mask path-to-reference-volume_mask.nii.gz \
 --measures RMSE PSNR NCC NMI SSIM \
---alpha-range 0.001 0.003 10`
-* `niftymic_run_reconstruction_parameter_study \
+--alpha-range 0.001 0.003 10
+```
+```
+niftymic_run_reconstruction_parameter_study \
 --dir-input dir-to-motion-correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type TVL2 \
 --reference path-to-reference-volume.nii.gz \
 --reference-mask path-to-reference-volume_mask.nii.gz \
 --measures RMSE PSNR NCC NMI SSIM \
---alpha-range 0.001 0.003 10`
-* `niftymic_run_reconstruction_parameter_study \
+--alpha-range 0.001 0.003 10
+```
+```
+niftymic_run_reconstruction_parameter_study \
 --dir-input dir-to-motion-correction \
 --reconstruction-type TK1L2 \
 --reference path-to-reference-volume.nii.gz \
 --reference-mask path-to-reference-volume_mask.nii.gz \
 --measures RMSE PSNR NCC NMI SSIM \
---alpha-range 0.001 0.05 20`
+--alpha-range 0.001 0.05 20
+```
 
 The results can be assessed by accessing the [NSoL][nsol]-script `show_parameter_study.py` via
-* `niftymic_show_parameter_study \
+```
+niftymic_show_parameter_study \
 --dir-input dir-to-param-study-output \
 --study-name TK1L2 \
---dir-output-figures dir-to-figures`
+--dir-output-figures dir-to-figures
+```
 
 ## Licensing and Copyright
 Copyright (c) 2017, [University College London][ucl].
