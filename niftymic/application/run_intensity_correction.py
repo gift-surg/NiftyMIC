@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 ##
 # \file run_intensity_correction.py
 # \brief      Script to correct for bias field. Based on N4ITK

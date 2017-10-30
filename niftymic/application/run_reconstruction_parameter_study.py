@@ -1,9 +1,7 @@
-#!/usr/bin/python
-
 ##
-# \file runReconstructionParameterStudy.py
-# \brief      Script to study reconstruction parameters for least squares
-#             reconstruction with Tikhonov regularization.
+# \file run_reconstruction_parameter_study.py
+# \brief      Script to study reconstruction parameters and their impact on the
+#             volumetric reconstruction quality.
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       September 2017
@@ -33,7 +31,8 @@ def main():
 
     # Read input
     input_parser = InputArgparser(
-        description="",
+        description="Script to study reconstruction parameters and their "
+        "impact on the volumetric reconstruction quality.",
     )
     input_parser.add_dir_input()
     input_parser.add_filenames()
@@ -42,8 +41,8 @@ def main():
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_reconstruction_space()
     input_parser.add_reference(
-        help="Path to reference NIfTI image file. If given SRR is "
-        "reconstructed in this physical space. "
+        help="Path to reference NIfTI image file. If given the volumetric "
+        "reconstructed is performed in this physical space. "
         "Either a reconstruction space or a reference must be provided",
         required=False)
     input_parser.add_reference_mask(default=None)
