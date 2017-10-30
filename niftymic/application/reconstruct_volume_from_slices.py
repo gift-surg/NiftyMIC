@@ -1,13 +1,11 @@
-#!/usr/bin/python
-
 ##
-# \file reconstruct_volume.py
+# \file reconstruct_volume_from_slices.py
 # \brief      Script to reconstruct an isotropic, high-resolution volume from
-#             multiple stacks of low-resolution 2D slices including
-#             motion-correction.
+#             multiple motion-corrected (or static) stacks of low-resolution 2D
+#             slices.
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
-# \date       March 2016
+# \date       March 2017
 #
 
 # Import libraries
@@ -35,8 +33,8 @@ def main():
     # Read input
     input_parser = InputArgparser(
         description="Volumetric MRI reconstruction framework to reconstruct "
-        "an isotropic, high-resolution 3D volume from multiple stacks of "
-        "motion corrected slices obtained by 'reconstruct_volume.py'.",
+        "an isotropic, high-resolution 3D volume from multiple "
+        "motion-corrected (or static) stacks of low-resolution slices.",
     )
     input_parser.add_dir_input()
     input_parser.add_filenames()
@@ -102,9 +100,6 @@ def main():
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
-
-    # if args.verbose:
-    #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:
