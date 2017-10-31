@@ -21,7 +21,7 @@ Several methods have been implemented to solve the **Super-Resolution Reconstruc
 <!--The linear operator $`A_k := D_k B_k W_k`$ represents the comd operator descri the (rigid) motion $`W_k`$, the blurring operator $`B_k`$ and the downsampling operator $`D_k`$.-->
 to obtain the (vectorized) high-resolution 3D MRI volume ![img](http://latex.codecogs.com/svg.latex?%5Cvec%7Bx%7D%5Cin%5Cmathbb%7BR%7D%5EN) from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D MR slices ![img](http://latex.codecogs.com/svg.latex?%5Cvec%7By%7D_k%5Cin%5Cmathbb%7BR%7D%5E%7BN_k%7D) with ![img](http://latex.codecogs.com/svg.latex?N_k%5Cll%7BN%7D) for ![img](http://latex.codecogs.com/svg.latex?k%3D1%2C...%2C%5C%2CK)
 for a variety of regularizers ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D) and data loss functions ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho).
-The linear operator ![img](http://latex.codecogs.com/svg.latex?A_k%3A%3DD_kB_kW_k) represents the comd operator descri the (rigid) motion ![img](http://latex.codecogs.com/svg.latex?W_k), the blurring operator ![img](http://latex.codecogs.com/svg.latex?B_k) and the downsampling operator ![img](http://latex.codecogs.com/svg.latex?D_k).
+The linear operator ![img](http://latex.codecogs.com/svg.latex?A_k%3A%3DD_kB_kW_k) represents the combined operator describing the (rigid) motion ![img](http://latex.codecogs.com/svg.latex?W_k), the blurring operator ![img](http://latex.codecogs.com/svg.latex?B_k) and the downsampling operator ![img](http://latex.codecogs.com/svg.latex?D_k).
 
 ---
 
