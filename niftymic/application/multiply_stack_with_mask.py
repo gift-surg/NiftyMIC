@@ -1,6 +1,6 @@
 ##
 # \file mulitply_stack_with_mask.py
-# \brief      Script to multiply template mask with stack/reconstruction
+# \brief      Script to stack/reconstruction with multiply template mask.
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       October 2017
@@ -28,7 +28,7 @@ from niftymic.definitions import DIR_TEMPLATES
 def main():
 
     input_parser = InputArgparser(
-        description="Multiply template mask with stack/reconstruction.",
+        description="Multiply stack/reconstruction with template mask.",
     )
 
     input_parser.add_filename(required=True)
