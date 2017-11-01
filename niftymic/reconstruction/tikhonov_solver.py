@@ -1,12 +1,11 @@
-#!/usr/bin/python
-
+##
 # \file tikhonov_solver.py
-#  \brief Implementation to get an approximate solution of the inverse problem
-#  \f$ y_k = A_k x \f$ for each slice \f$ y_k,\,k=1,\dots,K \f$
-#  by using Tikhonov-regularization
+# \brief      Implementation to get an approximate solution of the SRR
+#             problem using Tikhonov-regularization
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date July 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       July 2016
+#
 
 # Import libraries
 import SimpleITK as sitk

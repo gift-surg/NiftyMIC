@@ -1,9 +1,10 @@
+##
 # \file MotionSimulator.py
-#  \brief Abstract class to define interface for motion simulator
+# \brief      Abstract class to define interface for motion simulator
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date September 2017
-
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       September 2017
+#
 
 # Import libraries
 from abc import ABCMeta, abstractmethod

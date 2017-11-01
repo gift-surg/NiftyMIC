@@ -1,8 +1,10 @@
+##
 # \file SegmentationPropagation.py
-#  \brief
+# \brief      { item_description }
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date May 2017
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       May 2017
+#
 
 
 # Import libraries

@@ -1,9 +1,10 @@
+##
 # \file Slice.py
-#  \brief
+# \brief      { item_description }
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date September 2015
-
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       September 2015
+#
 
 import SimpleITK as sitk
 import numpy as np

@@ -1,14 +1,11 @@
-#!/usr/bin/python
-
+##
 # \file solver.py
-#  \brief Implementation of basis class to solve the slice acquisition model
-#  \f[
-#       y_k = D_k B_k W_k x = A_k x
-#  \f]
-#  for each slice \f$ y_k,\,k=1,\dots,K \f$ during reconstruction
+# \brief      Base class to solve the SRR problem y_k = D_k B_k W_k x = A_k x
+#             for all slices k = 1, ..., K.
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date July 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       July 2016
+#
 
 
 # Import libraries

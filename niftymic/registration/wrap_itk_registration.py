@@ -1,8 +1,10 @@
-# \file RegistrationWrapITK.py
+##
+# \file wrap_itk_registration.py
 # \brief      Class to use registration method based on SimpleITK
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       Aug 2017
+#
 
 
 # Import libraries

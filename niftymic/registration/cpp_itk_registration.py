@@ -1,8 +1,10 @@
-# \file RegistrationCppITK.py
-#  \brief This class makes ITK registration accessible via Python
+##
+# \file cpp_itk_registration.py
+# \brief      This class makes ITK registration accessible via Python
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date June 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       June 2016
+#
 
 # Import libraries
 import os

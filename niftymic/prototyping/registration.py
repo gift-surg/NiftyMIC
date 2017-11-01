@@ -1,10 +1,10 @@
-#!/usr/bin/python
-
+##
 # \file registration.py
-#  \brief
+# \brief      { item_description }
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date Aug 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       Aug 2016
+#
 
 
 # Import libraries

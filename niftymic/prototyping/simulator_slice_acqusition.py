@@ -1,14 +1,19 @@
-# \file SimulatorSliceAcqusition.py
-#  \brief Based on a given volume, this class aims to simulate the slice
-#       acquisition.
+##
+# \file simulator_slice_acquisition.py
+# \brief      Based on a given volume, this class aims to simulate the slice
+#             acquisition.
 #
-#       Based on the slice acquisition model,
-#                   \f[ y_k = D_k B_k W_k x \f]
-#       the orthogonal acquisition of stacks based on their slices \f$ y_k \f$
-#       are simulated from a volume \f$ x \f$.
+# Based on the slice acquisition model,
+# \f[ y_k = D_k B_k W_k x
+# \f] the orthogonal acquisition of stacks based on their slices
+# \f$ y_k
+# \f$ are simulated from a volume
+# \f$ x
+# \f$.
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date May 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       May 2016
+#
 
 
 # Import libraries

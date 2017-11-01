@@ -1,9 +1,11 @@
+##
 # \file ScatteredDataApproximation.py
-#  \brief Implementation of two different approaches for Scattered Data
-#         Approximation (SDA)
+# \brief      Implementation of two different approaches for Scattered Data
+#             Approximation (SDA)
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date April 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       April 2016
+#
 
 
 # Import libraries

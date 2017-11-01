@@ -1,10 +1,10 @@
-#!/usr/bin/python
-
-## \file stacks_visualizer.py
-#  \brief 
+##
+# \file stacks_visualizer.py
+# \brief      { item_description }
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date Apr 2017
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       Apr 2017
+#
 
 
 ## Import libraries

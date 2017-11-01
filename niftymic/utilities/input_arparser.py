@@ -1,5 +1,5 @@
 ##
-# \file InputArparser.py
+# \file input_argparser.py
 # \brief      Class holding a collection of possible arguments to parse for
 #             scripts
 #

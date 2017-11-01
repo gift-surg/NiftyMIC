@@ -1,13 +1,9 @@
-#!/usr/bin/python
-
 ##
-# \file reconstruct_volume.py
-# \brief      Script to reconstruct an isotropic, high-resolution volume from
-#             multiple stacks of low-resolution 2D slices including
-#             motion-correction.
+# \file reconstruct_resting_state_volume.py
+# \brief      { item_description }
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
-# \date       March 2016
+# \date       March 2017
 #
 
 # Import libraries

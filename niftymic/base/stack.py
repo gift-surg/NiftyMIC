@@ -1,7 +1,6 @@
 ##
 # \file stack.py
-# \brief      Class containing a stack as sitk.Image object with additional
-#             helper methods
+# \brief      { item_description }
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       September 2015

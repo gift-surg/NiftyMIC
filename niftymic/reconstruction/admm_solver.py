@@ -1,13 +1,12 @@
-#!/usr/bin/python
-
+##
 # \file admm_solver.py
-#  \brief Implementation to get an approximate solution of the inverse problem
-#  \f$ y_k = A_k x \f$ for each slice \f$ y_k,\,k=1,\dots,K \f$
-#  by using TV-L2-regularization.
-#  Solution via Alternating Direction Method of Multipliers (ADMM) method.
+# \brief      Implementation to get an approximate solution of the TVL2-SRR
+#             problem via the Alternating Direction Method of Multipliers (ADMM)
+#             method.
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date July 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       July 2016
+#
 
 # Import libraries
 import SimpleITK as sitk
