@@ -30,6 +30,7 @@ def main():
     )
     input_parser.add_filenames(required=True)
     input_parser.add_target_stack(required=True)
+    input_parser.add_suffix_mask(default="_mask")
     input_parser.add_dir_output(required=True)
     input_parser.add_verbose(default=0)
     input_parser.add_gestational_age(required=False)
@@ -90,6 +91,7 @@ def main():
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         cmd_args.append("--dir-output %s" % dir_output_preprocessing)
         cmd_args.append("--prefix-output %s" % prefix_bias)
+        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         # cmd_args.append("--verbose %d" % args.verbose)
         cmd = "niftymic_correct_bias_field %s" % (" ").join(cmd_args)
         time_start_bias = ph.start_timing()
@@ -109,6 +111,7 @@ def main():
         cmd_args.append("--search-angle %d" % args.search_angle)
         cmd_args.append("--dir-output %s" % dir_output_preprocessing)
         cmd_args.append("--prefix-output %s" % prefix_ic)
+        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         # cmd_args.append("--verbose %d" % args.verbose)
         cmd = "niftymic_correct_intensities %s" % (" ").join(cmd_args)
         time_start_ic = ph.start_timing()
@@ -131,6 +134,7 @@ def main():
         cmd_args.append("--multiresolution %d" % args.multiresolution)
         cmd_args.append("--target-stack-index %d" % target_stack_index)
         cmd_args.append("--dir-output %s" % dir_output_recon_subject_space)
+        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         cmd_args.append("--verbose %d" % args.verbose)
         cmd = "niftymic_reconstruct_volume %s" % (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
@@ -180,6 +184,13 @@ def main():
         cmd_args.append("--dir-input %s" % dir_input)
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
         cmd_args.append("--reconstruction-space %s" % reconstruction_space)
+
+        # Do not use any mask for this step!
+        # (Rationale: Visually it looks nicer to have wider FOV in recon space.
+        # Stack is multiplied by the template mask in subsequent step anyway)
+        cmd_args.append("--suffix-mask ^^^")
+        # cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+
         cmd = "niftymic_reconstruct_volume_from_slices %s" % \
             (" ").join(cmd_args)
         ph.execute_command(cmd)
