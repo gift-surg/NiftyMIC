@@ -146,30 +146,6 @@ class TikhonovSolver(Solver):
     def get_regularization_type(self):
         return self._reg_type
 
-    # Compute statistics associated to performed reconstruction
-    def compute_statistics(self):
-        recon_nda_vec = sitk.GetArrayFromImage(
-            self._reconstruction.sitk).flatten()
-
-        self._residual_ell2 = self._get_residual_ell2(recon_nda_vec)
-        # self._residual_prior = self._get_residual_prior[
-        #     self._reg_type](recon_nda_vec)
-
-    ##
-    # Gets the final cost after optimization
-    # \date       2016-11-25 18:33:00+0000
-    #
-    # \param      self  The object
-    #
-    # \return     The final cost.
-    #
-    def get_final_cost(self):
-
-        if self._residual_ell2 is None or self._residual_prior is None:
-            self.compute_statistics()
-
-        return self._residual_ell2 + self._alpha*self._residual_prior
-
     ##
     #       Gets the setting specific filename indicating the information
     #             used for the reconstruction step

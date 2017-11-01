@@ -135,7 +135,6 @@ def main():
         # verbose=args.verbose,
     )
     SRR0.run()
-    SRR0.compute_statistics()
     SRR0.print_statistics()
 
     recon = SRR0.get_reconstruction()
