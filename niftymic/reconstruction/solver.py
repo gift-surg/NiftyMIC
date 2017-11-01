@@ -125,11 +125,45 @@ class Solver(object):
         # images
         self._itk2np = itk.PyBuffer[image_type]
 
+        # -----------------------------Set helpers-----------------------------
+        self._N_stacks = len(self._stacks)
+
+        # Compute total amount of pixels for all slices
+        self._N_total_slice_voxels = 0
+        for i in range(0, self._N_stacks):
+            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
+            self._N_total_slice_voxels += N_stack_voxels
+
+        # Extract information ready to use for itk image conversion operations
+        self._reconstruction_shape = sitk.GetArrayFromImage(
+            self._reconstruction.sitk).shape
+
+        # Compute total amount of voxels of x:
+        self._N_voxels_recon = np.array(
+            self._reconstruction.sitk.GetSize()).prod()
+
     def set_stacks(self, stacks):
         self._stacks = stacks
 
+        # Update helpers
+        self._N_stacks = len(self._stacks)
+
+        # Compute total amount of pixels for all slices
+        self._N_total_slice_voxels = 0
+        for i in range(0, self._N_stacks):
+            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
+            self._N_total_slice_voxels += N_stack_voxels
+
     def set_reconstruction(self, reconstruction):
         self._reconstruction = reconstruction
+
+        # Extract information ready to use for itk image conversion operations
+        self._reconstruction_shape = sitk.GetArrayFromImage(
+            self._reconstruction.sitk).shape
+
+        # Compute total amount of voxels of x:
+        self._N_voxels_recon = np.array(
+            self._reconstruction.sitk.GetSize()).prod()
 
     #
     # Set regularization parameter for Tikhonov regularization
@@ -203,22 +237,6 @@ class Solver(object):
         return self._verbose
 
     def run(self):
-
-        self._N_stacks = len(self._stacks)
-
-        # Extract information ready to use for itk image conversion operations
-        self._reconstruction_shape = sitk.GetArrayFromImage(
-            self._reconstruction.sitk).shape
-
-        # Compute total amount of pixels for all slices
-        self._N_total_slice_voxels = 0
-        for i in range(0, self._N_stacks):
-            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
-            self._N_total_slice_voxels += N_stack_voxels
-
-        # Compute total amount of voxels of x:
-        self._N_voxels_recon = np.array(
-            self._reconstruction.sitk.GetSize()).prod()
 
         # Run solver specific reconstruction
         self._run()
