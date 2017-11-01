@@ -160,7 +160,7 @@ class SimulatorSliceAcqusitionTest(unittest.TestCase):
             resampler.SetOutputParametersFromImage(stacks_simulated[i].itk)
 
             # Set covariance based on oblique PSF
-            Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+            Cov_HR_coord = PSF.get_covariance_matrix_in_reconstruction_space(
                 stacks_simulated[i], HR_volume)
             interpolator.SetCovariance(Cov_HR_coord.flatten())
 
@@ -329,7 +329,7 @@ class SimulatorSliceAcqusitionTest(unittest.TestCase):
                     rigid_motion_transforms_ground_truth[i][j])
 
                 # Get covariance based on oblique PSF
-                Cov_HR_coord = PSF.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+                Cov_HR_coord = PSF.get_covariance_matrix_in_reconstruction_space(
                     slice, HR_volume)
 
                 # Update resampler

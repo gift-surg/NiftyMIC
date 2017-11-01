@@ -447,7 +447,7 @@ class Registration(AffineRegistrationMethod):
         # Set oriented PSF based on transformed fixed space
         # transformed_fixed = st.Stack.from_sitk_image(
         #     sitkh.get_transformed_sitk_image(self._fixed.sitk, transform_sitk))
-        # Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(transformed_fixed, self._moving)
+        # Cov_HR_coord = self._psf.get_covariance_matrix_in_reconstruction_space(transformed_fixed, self._moving)
         # print Cov_HR_coord
         # Cov_HR_coord = self._psf.get_gaussian_PSF_covariance_matrix_reconstruction_coordinates_from_direction_and_spacing(
         #     direction_sitk, self._fixed_spacing, self._moving)

@@ -201,7 +201,7 @@ class CppItkRegistration(SimpleItkRegistration):
             if self._cov is None:
                 # Get oriented Gaussian covariance matrix
                 cov_HR_coord = psf.PSF().\
-                    get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+                    get_covariance_matrix_in_reconstruction_space(
                     self._moving, self._fixed).flatten()
             else:
                 cov_HR_coord = self._cov.flatten()
@@ -293,7 +293,7 @@ class CppItkRegistration(SimpleItkRegistration):
             if self._cov is None:
                 # Get oriented Gaussian covariance matrix
                 cov_HR_coord = psf.PSF().\
-                    get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+                    get_covariance_matrix_in_reconstruction_space(
                     self._moving, self._fixed).flatten()
             else:
                 cov_HR_coord = self._cov.flatten()

@@ -166,7 +166,7 @@ class SimpleItkRegistration(AffineRegistrationMethod):
 
             # Get oriented Gaussian covariance matrix
             cov_HR_coord = psf.PSF(
-            ).get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+            ).get_covariance_matrix_in_reconstruction_space(
                 self._fixed, self._moving)
 
             # Create recursive YVV Gaussianfilter

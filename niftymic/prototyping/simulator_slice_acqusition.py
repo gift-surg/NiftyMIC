@@ -415,7 +415,7 @@ class SliceAcqusition:
 
         # Obtain relative oriented Gaussian based on the relative position
         # between (motion corrupted) simulated slice and HR volume
-        Cov_HR_coord = PSF.get_covariance_matrix_in_reconstruction_space(
+        Cov_HR_coord = PSF.get_covariance_matrix_in_reconstruction_space_sitk(
             self._HR_volume.sitk.GetDirection(),
             output_transformed_direction_sitk,
             self._output_spacing)

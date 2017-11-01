@@ -8,12 +8,9 @@
 
 
 # Import libraries
-import sys
 import itk
-import SimpleITK as sitk
 import numpy as np
 
-import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.psf as psf
@@ -21,6 +18,22 @@ import niftymic.base.psf as psf
 
 class LinearOperators(object):
 
+    ##
+    # Store relevant information
+    # \date       2017-11-01 16:29:41+0000
+    #
+    # \param      self                   The object
+    # \param      deconvolution_mode     Either "full_3D" or "only_in_plane".
+    #                                    Indicates whether full 3D or only
+    #                                    in-plane deconvolution is considered
+    # \param      predefined_covariance  Either only diagonal entries
+    #                                    (sigma_x2, sigma_y2, sigma_z2) or as
+    #                                    full 3x3 numpy array
+    # \param      alpha_cut              Cut-off distance for Gaussian blurring
+    #                                    filter
+    # \param      image_type             itk.Image type
+    # \param      default_pixel_type     The default pixel type for resampling
+    #
     def __init__(self,
                  deconvolution_mode="full_3D",
                  predefined_covariance=None,
@@ -173,7 +186,7 @@ class LinearOperators(object):
             slice_itk.GetDirection())
         slice_spacing = np.array(slice_itk.GetSpacing())
 
-        cov = self._psf.get_covariance_matrix_in_reconstruction_space(
+        cov = self._psf.get_covariance_matrix_in_reconstruction_space_sitk(
             reconstruction_direction_sitk=reconstruction_direction_sitk,
             slice_direction_sitk=slice_direction_sitk,
             slice_spacing=slice_spacing)
@@ -194,7 +207,7 @@ class LinearOperators(object):
         # only in-plane deconvolution is approximated
         slice_spacing[2] = 1e-6
 
-        cov = self._psf.get_covariance_matrix_in_reconstruction_space(
+        cov = self._psf.get_covariance_matrix_in_reconstruction_space_sitk(
             reconstruction_direction_sitk=reconstruction_direction_sitk,
             slice_direction_sitk=slice_direction_sitk,
             slice_spacing=slice_spacing)
