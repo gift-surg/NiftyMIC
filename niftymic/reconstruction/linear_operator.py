@@ -161,8 +161,6 @@ class LinearOperator(object):
         Mk_slice_itk = self._masking.GetOutput()
         Mk_slice_itk.DisconnectPipeline()
 
-        # Mk_slice_itk = image_itk
-
         return Mk_slice_itk
 
     def _get_covariance_full_3d(self,

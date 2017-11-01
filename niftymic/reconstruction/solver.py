@@ -27,9 +27,12 @@ import niftymic.reconstruction.linear_operator as lin_op
 DATA_LOSS = ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']
 
 
+##
+# This class contains the common functions/attributes of the solvers
+# \date       2017-11-01 01:04:31+0000
+#
 class Solver(object):
-
-    """ This class contains the common functions/attributes of the solvers """
+    __metaclass__ = ABCMeta
 
     ##
     # Constructor
@@ -74,7 +77,7 @@ class Solver(object):
                  deconvolution_mode,
                  predefined_covariance,
                  verbose,
-                 image_type=itk.Image.D3
+                 image_type=itk.Image.D3,
                  ):
 
         # Initialize variables
@@ -204,6 +207,22 @@ class Solver(object):
 
     def run(self):
 
+        self._N_stacks = len(self._stacks)
+
+        # Extract information ready to use for itk image conversion operations
+        self._reconstruction_shape = sitk.GetArrayFromImage(
+            self._reconstruction.sitk).shape
+
+        # Compute total amount of pixels for all slices
+        self._N_total_slice_voxels = 0
+        for i in range(0, self._N_stacks):
+            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
+            self._N_total_slice_voxels += N_stack_voxels
+
+        # Compute total amount of voxels of x:
+        self._N_voxels_recon = np.array(
+            self._reconstruction.sitk.GetSize()).prod()
+
         # Run solver specific reconstruction
         self._run()
 
@@ -271,19 +290,6 @@ class Solver(object):
         return self._x_scale
 
     ##
-    # Prints the statistics of the performed reconstruction
-    # \date       2017-07-25 16:21:20+0100
-    #
-    # \param      self  The object
-    #
-    # \return     { description_of_the_return_value }
-    #
-    def print_statistics(self):
-        ph.print_subtitle("Statistics")
-        ph.print_info("Elapsed time: %s" %
-                      (self.get_computational_time()))
-
-    ##
     #       Gets the setting specific filename indicating the information
     #             used for the reconstruction step
     # \date       2016-11-17 15:41:58+0000
@@ -315,23 +321,7 @@ class Solver(object):
     #
     def get_predefined_covariance(self):
         return self._predefined_covariance
-
-    def _run_initialization(self):
-        self._N_stacks = len(self._stacks)
-
-        # Extract information ready to use for itk image conversion operations
-        self._reconstruction_shape = sitk.GetArrayFromImage(
-            self._reconstruction.sitk).shape
-
-        # Compute total amount of pixels for all slices
-        self._N_total_slice_voxels = 0
-        for i in range(0, self._N_stacks):
-            N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
-            self._N_total_slice_voxels += N_stack_voxels
-
-        # Compute total amount of voxels of x:
-        self._N_voxels_recon = np.array(
-            self._reconstruction.sitk.GetSize()).prod()
+        
 
     ##
     # Evaluate
@@ -528,7 +518,7 @@ class Solver(object):
                     Ak_adj_Mk_slice_itk).flatten()
 
                 # Add contribution
-                A_adj_M_y = A_adj_M_y + Ak_adj_Mk_slice_nda_vec
+                A_adj_M_y += Ak_adj_Mk_slice_nda_vec
 
                 # Define index for first voxel to specify subsequent slice
                 # (inclusive)

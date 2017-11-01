@@ -135,7 +135,6 @@ def main():
         # verbose=args.verbose,
     )
     SRR0.run()
-    SRR0.print_statistics()
 
     recon = SRR0.get_reconstruction()
     recon.set_filename(SRR0.get_setting_specific_filename())
@@ -162,7 +161,6 @@ def main():
                 verbose=args.verbose,
             )
             SRR.run()
-            SRR.print_statistics()
             recon = SRR.get_reconstruction()
             recon.set_filename(SRR.get_setting_specific_filename())
             recons.insert(0, recon)
@@ -184,7 +182,6 @@ def main():
                 verbose=args.verbose,
             )
             SRR.run()
-            SRR.print_statistics()
             recon = SRR.get_reconstruction()
             recon.set_filename(SRR.get_setting_specific_filename())
             recons.insert(0, recon)

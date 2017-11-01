@@ -125,10 +125,6 @@ class TikhonovSolver(Solver):
         # Settings for optimizer
         self._reg_type = reg_type
 
-        # Residual values after optimization
-        self._residual_prior = None
-        self._residual_ell2 = None
-
     #
     # Set type of regularization. It can be either 'TK0' or 'TK1'
     # \date       2017-07-25 15:19:17+0100
@@ -181,8 +177,6 @@ class TikhonovSolver(Solver):
         if self._reg_type not in ["TK0", "TK1"]:
             raise ValueError(
                 "Error: regularization type can only be either 'TK0' or 'TK1'")
-
-        self._run_initialization()
 
         # Get operators
         A = self.get_A()

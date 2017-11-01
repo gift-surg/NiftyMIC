@@ -118,14 +118,6 @@ class ADMMSolver(Solver):
     def get_iterations(self):
         return self._iterations
 
-    # Compute statistics associated to performed reconstruction
-    def compute_statistics(self):
-        reconstruction_nda_vec = sitk.GetArrayFromImage(
-            self._reconstruction.sitk).flatten()
-
-        self._residual_ell2 = self._get_residual_ell2(reconstruction_nda_vec)
-        # self._residual_prior = self._get_residual_prior(reconstruction_nda_vec)
-
     ##
     #       Gets the setting specific filename indicating the information
     #             used for the reconstruction step
@@ -156,8 +148,6 @@ class ADMMSolver(Solver):
         return filename
 
     def get_solver(self):
-
-        self._run_initialization()
 
         # Get operators
         A = self.get_A()
