@@ -14,6 +14,8 @@ import pysitk.python_helper as ph
 
 from niftymic.definitions import DIR_TEMPLATES
 from niftymic.utilities.input_arparser import InputArgparser
+import niftymic.prototyping.simulate_stacks_from_reconstruction as \
+    simulate_stacks_from_reconstruction
 
 
 def main():
@@ -51,6 +53,7 @@ def main():
         help="Turn on/off preprocessing including bias field and linear "
         "intensity correction",
         default=1)
+    input_parser.add_alpha(default=0.01)
     input_parser.add_option(
         option_string="--run-recon-subject-space",
         type=int,
@@ -60,6 +63,12 @@ def main():
         option_string="--run-recon-template-space",
         type=int,
         help="Turn on/off reconstruction in template space",
+        default=1)
+    input_parser.add_option(
+        option_string="--run-data-vs-simulated-data",
+        type=int,
+        help="Turn on/off comparison of data vs data simulated from the "
+        "obtained volumetric reconstruction",
         default=1)
 
     args = input_parser.parse_args()
@@ -78,6 +87,8 @@ def main():
         args.dir_output, "recon_subject_space")
     dir_output_recon_template_space = os.path.join(
         args.dir_output, "recon_template_space")
+    dir_output_data_vs_simulatd_data = os.path.join(
+        args.dir_output, "data_vs_simulated_data")
 
     if args.run_recon_template_space and args.gestational_age is None:
         raise IOError("Gestational age must be set in order to pick the "
@@ -135,6 +146,7 @@ def main():
         cmd_args.append("--target-stack-index %d" % target_stack_index)
         cmd_args.append("--dir-output %s" % dir_output_recon_subject_space)
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--verbose %d" % args.verbose)
         cmd = "niftymic_reconstruct_volume %s" % (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
@@ -166,6 +178,7 @@ def main():
             dir_output_recon_subject_space,
             "motion_correction"))
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
+        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
         cmd = "niftymic_register_to_template %s" % (" ").join(cmd_args)
         ph.execute_command(cmd)
@@ -184,18 +197,17 @@ def main():
         cmd_args.append("--dir-input %s" % dir_input)
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
         cmd_args.append("--reconstruction-space %s" % reconstruction_space)
+        cmd_args.append("--alpha %s" % args.alpha)
 
         # Do not use any mask for this step!
         # (Rationale: Visually it looks nicer to have wider FOV in recon space.
         # Stack is multiplied by the template mask in subsequent step anyway)
         cmd_args.append("--suffix-mask ^^^")
-        # cmd_args.append("--suffix-mask %s" % args.suffix_mask)
 
         cmd = "niftymic_reconstruct_volume_from_slices %s" % \
             (" ").join(cmd_args)
         ph.execute_command(cmd)
 
-        # Copy SRR to output directory
         pattern = "[a-zA-Z0-9_.]+(stacks[0-9]+).*(.nii.gz)"
         p = re.compile(pattern)
         reconstruction = {
@@ -206,9 +218,11 @@ def main():
             if p.match(f) and not p.match(f).group(0).endswith(
                 "ResamplingToTemplateSpace.nii.gz")}
         key = reconstruction.keys()[0]
-        output = "%sSRR_%s.nii.gz" % (args.prefix_output, key)
         path_to_recon = os.path.join(
             dir_output_recon_template_space, reconstruction[key])
+
+        # Copy SRR to output directory
+        output = "%sSRR_%s.nii.gz" % (args.prefix_output, key)
         path_to_output = os.path.join(args.dir_output, output)
         cmd = "cp %s %s" % (path_to_recon, path_to_output)
         ph.execute_command(cmd)
@@ -225,6 +239,35 @@ def main():
 
     else:
         elapsed_time_template = ph.get_zero_time()
+
+    if args.run_data_vs_simulated_data:
+
+        dir_input = os.path.join(
+            dir_output_recon_template_space, "motion_correction")
+
+        pattern = "[a-zA-Z0-9_.]+(stacks[0-9]+).*(.nii.gz)"
+        p = re.compile(pattern)
+        reconstruction = {
+            p.match(f).group(1):
+            os.path.join(
+                dir_output_recon_template_space, p.match(f).group(0))
+            for f in os.listdir(dir_output_recon_template_space)
+            if p.match(f) and not p.match(f).group(0).endswith(
+                "ResamplingToTemplateSpace.nii.gz")}
+        key = reconstruction.keys()[0]
+        path_to_recon = os.path.join(
+            dir_output_recon_template_space, reconstruction[key])
+
+        cmd_args = []
+        cmd_args.append("--dir-input %s" % dir_input)
+        cmd_args.append("--dir-output %s" % dir_output_data_vs_simulatd_data)
+        cmd_args.append("--reconstruction %s" % path_to_recon)
+        cmd_args.append("--copy-data 1")
+        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--verbose %s" % args.verbose)
+        exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
+        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        ph.execute_command(cmd)
 
     ph.print_title("Summary")
     print("Computational Time for Bias Field Correction: %s" %

@@ -262,6 +262,17 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_reconstruction(
+        self,
+        option_string="--reconstruction",
+        type=str,
+        help="Path to NIfTI file %s of the obtained volumetric reconstruction "
+        % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_reconstruction_space(
         self,
         option_string="--reconstruction-space",

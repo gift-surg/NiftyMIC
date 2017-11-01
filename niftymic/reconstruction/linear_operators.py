@@ -14,6 +14,7 @@ import numpy as np
 import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.psf as psf
+import niftymic.base.slice as sl
 
 
 class LinearOperators(object):
@@ -114,6 +115,33 @@ class LinearOperators(object):
         A_itk_reconstruction.DisconnectPipeline()
 
         return A_itk_reconstruction
+
+    ##
+    # Perform forward operation using Stack/Slice objects
+    # \date       2017-11-01 19:35:08+0000
+    #
+    # \param      self            The object
+    # \param      reconstruction  Reconstruction image as Stack object
+    # \param      slice           Slice image as Slice object. Required to
+    #                             define output space and orientation for PSF.
+    #
+    # \return     Image A(x) as Slice object in slice image space
+    #
+    def A(self, reconstruction, slice):
+
+        simulated_slice_itk = self.A_itk(reconstruction.itk, slice.itk)
+        simulated_slice_sitk = sitkh.get_sitk_from_itk_image(
+            simulated_slice_itk)
+
+        # Remark: Mask did not undergo forward operation
+        simulated_slice = sl.Slice.from_sitk_image(
+            slice_sitk=simulated_slice_sitk,
+            slice_number=slice.get_slice_number(),
+            filename=slice.get_filename(),
+            slice_sitk_mask=slice.sitk_mask
+        )
+
+        return simulated_slice
 
     ##
     # Perform backward operation on slice image, i.e.
