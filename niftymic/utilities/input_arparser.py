@@ -255,7 +255,8 @@ class InputArgparser(object):
         self,
         option_string="--target-stack",
         type=str,
-        help="Choose target stack for reconstruction/pre-processing %s." % (IMAGE_TYPES),
+        help="Choose target stack for reconstruction/pre-processing %s." % (
+            IMAGE_TYPES),
         default=None,
         required=False,
     ):
@@ -267,6 +268,27 @@ class InputArgparser(object):
         type=str,
         help="Path to NIfTI file %s which defines the physical space "
         "for the volumetric reconstruction/SRR." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_gestational_age(
+        self,
+        option_string="--gestational-age",
+        type=int,
+        help="Gestational age in weeks of the fetal brain to "
+        "be reconstructed.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_dir_input_templates(
+        self,
+        option_string="--dir-input-templates",
+        type=str,
+        help="Input directory holding the fetal brain templates.",
         default=None,
         required=False,
     ):

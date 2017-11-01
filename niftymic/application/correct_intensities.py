@@ -68,16 +68,6 @@ def main():
     data_reader.read_data()
     reference = data_reader.get_stacks()[0]
 
-    # reference = st.Stack.from_filename(
-    #     file_path=args.reference,
-    #     file_path_mask=args.reference_mask,
-    #     extract_slices=False)
-
-    # if args.verbose:
-    #     stacks_vis = [s for s in stacks]
-    #     stacks_vis.insert(0, reference)
-    #     sitkh.show_stacks(stacks_vis)
-
     if args.registration:
         # Define search angle ranges for FLIRT in all three dimensions
         search_angles = ["-searchr%s -%d %d" %

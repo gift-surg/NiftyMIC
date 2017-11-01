@@ -6,22 +6,14 @@
 # \date       October 2017
 #
 
-# Import libraries
-import SimpleITK as sitk
-import argparse
-import numpy as np
-import sys
 import os
 import re
+import numpy as np
 
 import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
 
-# Import modules
-import niftymic.base.data_reader as dr
-import niftymic.base.stack as st
-from niftymic.utilities.input_arparser import InputArgparser
 from niftymic.definitions import DIR_TEMPLATES
+from niftymic.utilities.input_arparser import InputArgparser
 
 
 def main():
@@ -40,6 +32,12 @@ def main():
     input_parser.add_target_stack(required=True)
     input_parser.add_dir_output(required=True)
     input_parser.add_verbose(default=0)
+    input_parser.add_gestational_age(required=False)
+    input_parser.add_prefix_output(default="")
+    input_parser.add_search_angle(default=180)
+    input_parser.add_multiresolution(default=0)
+    input_parser.add_log_script_execution(default=1)
+    input_parser.add_dir_input_templates(default=DIR_TEMPLATES)
     input_parser.add_option(
         option_string="--registration",
         type=int,
@@ -55,28 +53,13 @@ def main():
     input_parser.add_option(
         option_string="--run-recon-subject-space",
         type=int,
-        help="Turn on/off reconstruction",
+        help="Turn on/off reconstruction in subject space",
         default=1)
     input_parser.add_option(
         option_string="--run-recon-template-space",
         type=int,
-        help="Turn on/off registration to template",
+        help="Turn on/off reconstruction in template space",
         default=1)
-    input_parser.add_option(
-        option_string="--gestational-age",
-        type=int,
-        help="Gestational age of fetus to reconstruct",
-        required=False,
-        default=None)
-    input_parser.add_option(
-        option_string="--dir-input-templates",
-        type=str,
-        help="Input directory for templates",
-        default=DIR_TEMPLATES)
-    input_parser.add_prefix_output(default="")
-    input_parser.add_search_angle(default=180)
-    input_parser.add_multiresolution(default=0)
-    input_parser.add_log_script_execution(default=1)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -96,7 +79,8 @@ def main():
         args.dir_output, "recon_template_space")
 
     if args.run_recon_template_space and args.gestational_age is None:
-        raise IOError("Gestational age must be set to define template")
+        raise IOError("Gestational age must be set in order to pick the "
+                      "right template")
 
     if args.run_preprocessing:
 
@@ -218,11 +202,12 @@ def main():
         cmd = "cp %s %s" % (path_to_recon, path_to_output)
         ph.execute_command(cmd)
 
-        # Apply masking of template
+        # Multiply template mask with reconstruction
         cmd_args = []
         cmd_args.append("--filename %s" % path_to_output)
         cmd_args.append("--gestational-age %s" % args.gestational_age)
         cmd_args.append("--verbose %s" % args.verbose)
+        cmd_args.append("--dir-input-templates %s " % DIR_TEMPLATES)
         cmd = "niftymic_multiply_stack_with_mask %s" % (
             " ").join(cmd_args)
         ph.execute_command(cmd)

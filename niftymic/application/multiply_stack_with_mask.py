@@ -6,20 +6,11 @@
 # \date       October 2017
 #
 
-# Import libraries
-import SimpleITK as sitk
-import argparse
-import numpy as np
-import sys
 import os
-import re
 
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
-from niftymic.definitions import DIR_TMP
-from niftymic.definitions import ALLOWED_EXTENSIONS
-import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
 from niftymic.utilities.input_arparser import InputArgparser
 from niftymic.definitions import DIR_TEMPLATES
@@ -32,17 +23,8 @@ def main():
     )
 
     input_parser.add_filename(required=True)
-    input_parser.add_option(
-        option_string="--dir-input-templates",
-        type=str,
-        help="Input directory for templates",
-        default=DIR_TEMPLATES),
-    input_parser.add_option(
-        option_string="--gestational-age",
-        type=int,
-        help="Gestational age of fetus to reconstruct",
-        required=True,
-        default=None)
+    input_parser.add_gestational_age(required=True)
+    input_parser.add_dir_input_templates(default=DIR_TEMPLATES)
     input_parser.add_verbose(default=1)
     input_parser.add_prefix_output(default="Masked_")
     args = input_parser.parse_args()
