@@ -1,5 +1,5 @@
 ##
-# \file linear_operator.py
+# \file linear_operators.py
 # \brief      Implementation of linear operations associated with the physical
 #             slice acquisition model.
 #
@@ -19,7 +19,7 @@ import pysitk.simple_itk_helper as sitkh
 import niftymic.base.psf as psf
 
 
-class LinearOperator(object):
+class LinearOperators(object):
 
     def __init__(self,
                  deconvolution_mode="full_3D",

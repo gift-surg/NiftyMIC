@@ -21,7 +21,7 @@ import numpy as np
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
-import niftymic.reconstruction.linear_operator as lin_op
+import niftymic.reconstruction.linear_operators as lin_op
 
 # Allowed data loss functions
 DATA_LOSS = ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']
@@ -89,7 +89,7 @@ class Solver(object):
 
         self._deconvolution_mode = deconvolution_mode
         self._predefined_covariance = predefined_covariance
-        self._linear_operator = lin_op.LinearOperator(
+        self._linear_operators = lin_op.LinearOperators(
             deconvolution_mode=self._deconvolution_mode,
             predefined_covariance=self._predefined_covariance,
             alpha_cut=self._alpha_cut,
@@ -321,7 +321,6 @@ class Solver(object):
     #
     def get_predefined_covariance(self):
         return self._predefined_covariance
-        
 
     ##
     # Evaluate
@@ -360,7 +359,7 @@ class Solver(object):
                 slice_k = slices[j]
 
                 # Apply M_k y_k
-                slice_itk = self._linear_operator.M_itk(
+                slice_itk = self._linear_operators.M_itk(
                     slice_k.itk, slice_k.itk_mask)
                 slice_nda_vec = self._itk2np.GetArrayFromImage(
                     slice_itk).flatten()
@@ -387,11 +386,11 @@ class Solver(object):
     def _Mk_Ak(self, reconstruction_itk, slice_k):
 
         # Compute A_k x
-        Ak_reconstruction_itk = self._linear_operator.A_itk(
+        Ak_reconstruction_itk = self._linear_operators.A_itk(
             reconstruction_itk, slice_k.itk)
 
         # Compute M_k A_k x
-        Ak_reconstruction_itk = self._linear_operator.M_itk(
+        Ak_reconstruction_itk = self._linear_operators.M_itk(
             Ak_reconstruction_itk, slice_k.itk_mask)
 
         return Ak_reconstruction_itk
@@ -410,11 +409,13 @@ class Solver(object):
     def _Ak_adj_Mk(self, slice_itk, slice_k):
 
         # Compute M_k y_k
-        Mk_slice_itk = self._linear_operator.M_itk(slice_itk, slice_k.itk_mask)
+        Mk_slice_itk = self._linear_operators.M_itk(
+            slice_itk, slice_k.itk_mask)
 
         # Compute A_k^* M_k y_k
-        Mk_slice_itk = self._linear_operator.A_adj_itk(
+        Mk_slice_itk = self._linear_operators.A_adj_itk(
             Mk_slice_itk, self._reconstruction.itk)
+
         return Mk_slice_itk
 
     #
