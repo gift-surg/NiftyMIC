@@ -116,7 +116,7 @@ def main():
     if all(s.is_unity_mask() is True for s in stacks):
         ph.print_line_separator(symbol="X")
         ph.print_info(
-            "No mask is not provided! "
+            "WARNING: No mask is not provided! "
             "Generated reconstruction space may be very big!")
         ph.print_line_separator(symbol="X", add_newline=False)
 
@@ -194,7 +194,7 @@ def main():
     time_tmp = ph.start_timing()
 
     # Isotropic resampling to define HR target space
-    ph.print_title("Isotropic Resampling")
+    ph.print_title("Reconstruction Space Generation")
     HR_volume = reference.get_isotropically_resampled_stack(
         spacing_new_scalar=args.isotropic_resolution)
     ph.print_info(
@@ -222,7 +222,7 @@ def main():
         )
 
         # Scattered Data Approximation to get first estimate of HR volume
-        ph.print_title("Scattered Data Approximation")
+        ph.print_title("First Estimate of HR Volume")
         SDA = sda.ScatteredDataApproximation(
             stacks, HR_volume, sigma=args.sigma)
         SDA.run()
