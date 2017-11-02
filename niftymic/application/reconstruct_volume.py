@@ -9,8 +9,8 @@
 #
 
 # Import libraries
-import numpy as np
 import os
+import numpy as np
 
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
@@ -113,6 +113,13 @@ def main():
     data_reader.read_data()
     stacks = data_reader.get_stacks()
 
+    if all(s.is_unity_mask() is True for s in stacks):
+        ph.print_line_separator(symbol="X")
+        ph.print_info(
+            "WARNING: No mask is not provided! "
+            "Generated reconstruction space may be very big!")
+        ph.print_line_separator(symbol="X", add_newline=False)
+
     # ---------------------------Data Preprocessing---------------------------
     ph.print_title("Data Preprocessing")
 
@@ -187,7 +194,7 @@ def main():
     time_tmp = ph.start_timing()
 
     # Isotropic resampling to define HR target space
-    ph.print_title("Isotropic Resampling")
+    ph.print_title("Reconstruction Space Generation")
     HR_volume = reference.get_isotropically_resampled_stack(
         spacing_new_scalar=args.isotropic_resolution)
     ph.print_info(
@@ -203,6 +210,8 @@ def main():
         )
         joint_image_mask_builder.run()
         HR_volume = joint_image_mask_builder.get_stack()
+        ph.print_info(
+            "Isotropic reconstruction space centered around joint stack masks")
 
         # Crop to space defined by mask (plus extra margin)
         HR_volume = HR_volume.get_cropped_stack_based_on_mask(
@@ -213,7 +222,7 @@ def main():
         )
 
         # Scattered Data Approximation to get first estimate of HR volume
-        ph.print_title("Scattered Data Approximation")
+        ph.print_title("First Estimate of HR Volume")
         SDA = sda.ScatteredDataApproximation(
             stacks, HR_volume, sigma=args.sigma)
         SDA.run()
@@ -278,6 +287,19 @@ def main():
     else:
         HR_volume_iterations = []
 
+    # Write motion-correction results
+    if args.write_motion_correction:
+        for stack in stacks:
+            stack.write(
+                os.path.join(args.dir_output,
+                             args.subfolder_motion_correction),
+                write_mask=True,
+                write_slices=True,
+                write_transforms=True,
+                suffix_mask=args.suffix_mask,
+            )
+
+    # ------------------Final Super-Resolution Reconstruction------------------
     ph.print_title("Final Super-Resolution Reconstruction")
     if args.reconstruction_type in ["TVL2", "HuberL2"]:
         SRR = pd.PrimalDualSolver(
@@ -300,21 +322,10 @@ def main():
 
     elapsed_time_total = ph.stop_timing(time_start)
 
-    # -------------------------------Cleaning up-------------------------------
+    # Write SRR result
     HR_volume_final = SRR.get_reconstruction()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
     HR_volume_final.write(args.dir_output)
-
-    if args.write_motion_correction:
-        for stack in stacks:
-            stack.write(
-                os.path.join(args.dir_output,
-                             args.subfolder_motion_correction),
-                write_mask=True,
-                write_slices=True,
-                write_transforms=True,
-                suffix_mask=args.suffix_mask,
-            )
 
     HR_volume_iterations.insert(0, HR_volume_final)
     for stack in stacks:

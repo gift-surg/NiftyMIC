@@ -71,7 +71,7 @@ class DataPreprocessing:
         self._stacks = [st.Stack.from_stack(s) for s in stacks]
 
         ph.print_info(
-            "%s stacks were loaded for data preprocessing." % (self._N_stacks))
+            "%s stacks were loaded for data preprocessing" % (self._N_stacks))
 
     # Specify whether bias field correction based on N4 Bias Field Correction
     #  Filter shall be used
