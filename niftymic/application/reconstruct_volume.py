@@ -24,6 +24,7 @@ import niftymic.utilities.data_preprocessing as dp
 import niftymic.utilities.segmentation_propagation as segprop
 import niftymic.utilities.volumetric_reconstruction_pipeline as \
     pipeline
+import niftymic.utilities.joint_image_mask_builder as imb
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
@@ -188,23 +189,35 @@ def main():
     # Isotropic resampling to define HR target space
     ph.print_title("Isotropic Resampling")
     HR_volume = reference.get_isotropically_resampled_stack(
-        spacing_new_scalar=args.isotropic_resolution,
-        extra_frame=args.extra_frame_target)
+        spacing_new_scalar=args.isotropic_resolution)
     ph.print_info(
         "Isotropic reconstruction space with %g mm resolution created" %
         HR_volume.sitk.GetSpacing()[0])
 
     if args.reference is None:
+        # Create joint image mask in target space
+        joint_image_mask_builder = imb.JointImageMaskBuilder(
+            stacks=stacks,
+            target=HR_volume,
+            dilation_radius=1,
+        )
+        joint_image_mask_builder.run()
+        HR_volume = joint_image_mask_builder.get_stack()
+
+        # Crop to space defined by mask (plus extra margin)
+        HR_volume = HR_volume.get_cropped_stack_based_on_mask(
+            boundary_i=args.extra_frame_target,
+            boundary_j=args.extra_frame_target,
+            boundary_k=args.extra_frame_target,
+            unit="mm",
+        )
+
         # Scattered Data Approximation to get first estimate of HR volume
         ph.print_title("Scattered Data Approximation")
         SDA = sda.ScatteredDataApproximation(
             stacks, HR_volume, sigma=args.sigma)
         SDA.run()
-        SDA.generate_mask_from_stack_mask_unions(
-            mask_dilation_radius=1, mask_dilation_kernel="Ball")
         HR_volume = SDA.get_reconstruction()
-        HR_volume = HR_volume.get_stack_multiplied_with_mask()
-        HR_volume.set_filename(SDA.get_setting_specific_filename())
 
     time_reconstruction = ph.stop_timing(time_tmp)
 

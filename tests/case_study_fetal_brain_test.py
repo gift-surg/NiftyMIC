@@ -56,18 +56,16 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         dir_root = os.path.join(self.dir_data, "reconstruct_volume")
         dir_input = os.path.join(dir_root, "input-data")
         dir_reference = os.path.join(dir_root, "result-comparison")
-        filename_reference = "SRR_stacks3_TK1_lsmr_alpha0p02_itermax3.nii.gz"
+        filename_reference = "SRR_stacks3_TK1_lsmr_alpha0p02_itermax5.nii.gz"
         path_to_reference = os.path.join(dir_reference, filename_reference)
 
         two_step_cycles = 1
-        iter_max_first = 3
-        iter_max = 3
+        iter_max = 5
 
         cmd_args = []
         cmd_args.append("--dir-input %s" % dir_input)
         cmd_args.append("--dir-output %s" % self.dir_output)
         cmd_args.append("--two-step-cycles %s" % two_step_cycles)
-        cmd_args.append("--iter-max-first %s" % iter_max_first)
         cmd_args.append("--iter-max %s" % iter_max)
 
         cmd = "niftymic_reconstruct_volume %s" % (
