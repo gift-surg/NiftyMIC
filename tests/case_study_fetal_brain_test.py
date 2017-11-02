@@ -74,6 +74,7 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
             " ").join(cmd_args)
         self.assertEqual(ph.execute_command(cmd), 0)
 
+        # Check whether identical reconstruction has been created
         path_to_reconstruction = os.path.join(
             self.dir_output, filename_reference)
         reconstruction_sitk = sitk.ReadImage(path_to_reconstruction)
@@ -83,3 +84,5 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         error = np.linalg.norm(sitk.GetArrayFromImage(difference_sitk))
 
         self.assertAlmostEqual(error, 0, places=self.precision)
+
+        # Obtained reconstructions could be tested too
