@@ -90,7 +90,7 @@ reconstruct_volume_tk1l2:
       --dir-output ${TMPDIR} 
       --verbose 0 
       --isotropic-resolution 2
-      --reconstrction-type TK1L2
+      --reconstruction-type TK1L2
       --two-step-cycles 1
       --iter-max 2
       --iter-max-first 2
@@ -107,7 +107,7 @@ reconstruct_volume:
       --dir-output ${TMPDIR} 
       --verbose 0 
       --isotropic-resolution 2
-      --reconstrction-type HuberL2
+      --reconstruction-type HuberL2
       --two-step-cycles 1
       --iter-max 2
       --iter-max-first 2
