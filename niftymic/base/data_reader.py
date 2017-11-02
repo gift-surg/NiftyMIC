@@ -1,8 +1,10 @@
+##
 # \file DataReader.py
-#  \brief Reads data and returns Stack objects
+# \brief      Reads data and returns Stack objects
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date July 2017
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       July 2017
+#
 
 
 import SimpleITK as sitk

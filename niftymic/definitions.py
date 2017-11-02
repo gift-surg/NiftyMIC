@@ -8,7 +8,8 @@ from pysitk.definitions import NIFTYVIEW_EXE
 
 DIR_ROOT = os.path.realpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-DIR_TEST = os.path.join(DIR_ROOT, "data/")
+DIR_TEST = os.path.join(DIR_ROOT, "data", "tests")
+DIR_TEMPLATES = os.path.join(DIR_ROOT, "data", "templates")
 DIR_CPP_BUILD = os.path.join(DIR_ROOT, "build", "cpp")
 
 ALLOWED_EXTENSIONS = ["nii.gz", "nii"]

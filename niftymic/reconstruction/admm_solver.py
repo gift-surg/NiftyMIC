@@ -1,13 +1,12 @@
-#!/usr/bin/python
-
+##
 # \file admm_solver.py
-#  \brief Implementation to get an approximate solution of the inverse problem
-#  \f$ y_k = A_k x \f$ for each slice \f$ y_k,\,k=1,\dots,K \f$
-#  by using TV-L2-regularization.
-#  Solution via Alternating Direction Method of Multipliers (ADMM) method.
+# \brief      Implementation to get an approximate solution of the TVL2-SRR
+#             problem via the Alternating Direction Method of Multipliers (ADMM)
+#             method.
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date July 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       July 2016
+#
 
 # Import libraries
 import SimpleITK as sitk
@@ -118,14 +117,6 @@ class ADMMSolver(Solver):
     def get_iterations(self):
         return self._iterations
 
-    # Compute statistics associated to performed reconstruction
-    def compute_statistics(self):
-        reconstruction_nda_vec = sitk.GetArrayFromImage(
-            self._reconstruction.sitk).flatten()
-
-        self._residual_ell2 = self._get_residual_ell2(reconstruction_nda_vec)
-        # self._residual_prior = self._get_residual_prior(reconstruction_nda_vec)
-
     ##
     #       Gets the setting specific filename indicating the information
     #             used for the reconstruction step
@@ -156,8 +147,6 @@ class ADMMSolver(Solver):
         return filename
 
     def get_solver(self):
-
-        self._run_initialization()
 
         # Get operators
         A = self.get_A()

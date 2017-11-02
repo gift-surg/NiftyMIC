@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 ##
 # \file stack_registration_base.py
 # \brief      Abstract class containing the shared attributes and functions for

@@ -34,20 +34,13 @@ def main():
         "reconstruction is possible in the (standard anatomical) space "
         "defined by the template.",
     )
+    input_parser.add_reconstruction(
+        required=True,
+        help="Image which shall be registered to the template space.")
     input_parser.add_option(
         option_string="--template",
         type=str,
         help="Template image used to perform reorientation.",
-        required=True)
-    input_parser.add_option(
-        option_string="--template-mask",
-        type=str,
-        help="Template image mask used to perform reorientation.",
-        required=False)
-    input_parser.add_option(
-        option_string="--reconstruction",
-        type=str,
-        help="Image which shall be registered to the template space.",
         required=True)
     input_parser.add_dir_input()
     input_parser.add_dir_output(required=True)
@@ -61,7 +54,10 @@ def main():
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
     reconstruction = st.Stack.from_filename(args.reconstruction)
-    template = st.Stack.from_filename(args.template, args.template_mask)
+
+    data_reader = dr.MultipleImagesReader([args.template], suffix_mask="_mask")
+    data_reader.read_data()
+    template = data_reader.get_stacks()[0]
 
     # -------------------Register Reconstruction to Template-------------------
     ph.print_title("Register Reconstruction to Template")

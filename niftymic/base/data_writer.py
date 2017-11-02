@@ -1,9 +1,10 @@
+##
 # \file DataWriter.py
-#  \brief Writes data to HDD
+# \brief      Writes data to HDD
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date Aug 2017
-
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       Aug 2017
+#
 
 # Import libraries
 from abc import ABCMeta, abstractmethod

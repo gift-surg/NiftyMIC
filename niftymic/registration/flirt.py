@@ -1,8 +1,10 @@
-# \file FLIRT.py
+##
+# \file flirt.py
 # \brief      Class to use registration method FLIRT
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       Aug 2017
+#
 
 
 # Import libraries

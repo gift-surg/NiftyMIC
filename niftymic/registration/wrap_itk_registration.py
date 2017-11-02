@@ -1,8 +1,10 @@
-# \file RegistrationWrapITK.py
+##
+# \file wrap_itk_registration.py
 # \brief      Class to use registration method based on SimpleITK
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       Aug 2017
+#
 
 
 # Import libraries
@@ -108,7 +110,7 @@ class WrapItkRegistration(SimpleItkRegistration):
 
             # Get oriented Gaussian covariance matrix
             cov_HR_coord = psf.PSF(
-            ).get_gaussian_PSF_covariance_matrix_reconstruction_coordinates(
+            ).get_covariance_matrix_in_reconstruction_space(
                 self._fixed, self._moving)
             itk_gaussian_interpolator = itk.OrientedGaussianInterpolateImageFunction[
                 image_type, self._pixel_type].New()

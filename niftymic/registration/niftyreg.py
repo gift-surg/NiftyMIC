@@ -1,8 +1,10 @@
-# \file NiftyReg.py
+##
+# \file niftyreg.py
 # \brief      Class to use registration method NiftyReg
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       Aug 2017
+#
 
 
 # Import libraries

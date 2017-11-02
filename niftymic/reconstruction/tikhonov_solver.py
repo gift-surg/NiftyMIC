@@ -1,12 +1,11 @@
-#!/usr/bin/python
-
+##
 # \file tikhonov_solver.py
-#  \brief Implementation to get an approximate solution of the inverse problem
-#  \f$ y_k = A_k x \f$ for each slice \f$ y_k,\,k=1,\dots,K \f$
-#  by using Tikhonov-regularization
+# \brief      Implementation to get an approximate solution of the SRR
+#             problem using Tikhonov-regularization
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date July 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       July 2016
+#
 
 # Import libraries
 import SimpleITK as sitk
@@ -125,10 +124,6 @@ class TikhonovSolver(Solver):
         # Settings for optimizer
         self._reg_type = reg_type
 
-        # Residual values after optimization
-        self._residual_prior = None
-        self._residual_ell2 = None
-
     #
     # Set type of regularization. It can be either 'TK0' or 'TK1'
     # \date       2017-07-25 15:19:17+0100
@@ -145,30 +140,6 @@ class TikhonovSolver(Solver):
     #  \return regularization type as string
     def get_regularization_type(self):
         return self._reg_type
-
-    # Compute statistics associated to performed reconstruction
-    def compute_statistics(self):
-        recon_nda_vec = sitk.GetArrayFromImage(
-            self._reconstruction.sitk).flatten()
-
-        self._residual_ell2 = self._get_residual_ell2(recon_nda_vec)
-        # self._residual_prior = self._get_residual_prior[
-        #     self._reg_type](recon_nda_vec)
-
-    ##
-    # Gets the final cost after optimization
-    # \date       2016-11-25 18:33:00+0000
-    #
-    # \param      self  The object
-    #
-    # \return     The final cost.
-    #
-    def get_final_cost(self):
-
-        if self._residual_ell2 is None or self._residual_prior is None:
-            self.compute_statistics()
-
-        return self._residual_ell2 + self._alpha*self._residual_prior
 
     ##
     #       Gets the setting specific filename indicating the information
@@ -205,8 +176,6 @@ class TikhonovSolver(Solver):
         if self._reg_type not in ["TK0", "TK1"]:
             raise ValueError(
                 "Error: regularization type can only be either 'TK0' or 'TK1'")
-
-        self._run_initialization()
 
         # Get operators
         A = self.get_A()

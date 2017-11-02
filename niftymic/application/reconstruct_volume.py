@@ -14,7 +14,7 @@ import os
 
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
-import niftymic.reconstruction.admm_solver as admm
+import niftymic.reconstruction.primal_dual_solver as pd
 import niftymic.reconstruction.scattered_data_approximation as \
     sda
 import niftymic.reconstruction.tikhonov_solver as tk
@@ -24,6 +24,7 @@ import niftymic.utilities.data_preprocessing as dp
 import niftymic.utilities.segmentation_propagation as segprop
 import niftymic.utilities.volumetric_reconstruction_pipeline as \
     pipeline
+import niftymic.utilities.joint_image_mask_builder as imb
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
@@ -40,7 +41,7 @@ def main():
     input_parser = InputArgparser(
         description="Volumetric MRI reconstruction framework to reconstruct "
         "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
-        "slices WITH motion correction. The resolution of the computed "
+        "slices with motion correction. The resolution of the computed "
         "Super-Resolution Reconstruction (SRR) is given by the in-plane "
         "spacing of the selected target stack. A region of interest can be "
         "specified by providing a mask for the selected target stack. Only "
@@ -57,13 +58,12 @@ def main():
     input_parser.add_shrink_factors(default=[2, 1])
     input_parser.add_smoothing_sigmas(default=[1, 0])
     input_parser.add_sigma(default=0.9)
+    input_parser.add_reconstruction_type(default="TK1L2")
+    input_parser.add_iterations(default=15)
     input_parser.add_alpha(default=0.02)
     input_parser.add_alpha_first(default=0.05)
-    input_parser.add_reg_type(default="TK1")
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)
-    input_parser.add_minimizer(default="lsmr")
-    input_parser.add_data_loss(default="linear")
     input_parser.add_dilation_radius(default=3)
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_bias_field_correction(default=0)
@@ -71,13 +71,11 @@ def main():
     input_parser.add_isotropic_resolution(default=None)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_subfolder_motion_correction()
+    input_parser.add_provide_comparison(default=0)
     input_parser.add_subfolder_comparison()
     input_parser.add_write_motion_correction(default=1)
-    input_parser.add_provide_comparison(default=0)
     input_parser.add_verbose(default=0)
     input_parser.add_two_step_cycles(default=3)
-    input_parser.add_rho(default=0.5)
-    input_parser.add_iterations(default=10)
     input_parser.add_reference()
     input_parser.add_reference_mask()
 
@@ -191,19 +189,35 @@ def main():
     # Isotropic resampling to define HR target space
     ph.print_title("Isotropic Resampling")
     HR_volume = reference.get_isotropically_resampled_stack(
-        spacing_new_scalar=args.isotropic_resolution,
-        extra_frame=args.extra_frame_target)
+        spacing_new_scalar=args.isotropic_resolution)
+    ph.print_info(
+        "Isotropic reconstruction space with %g mm resolution created" %
+        HR_volume.sitk.GetSpacing()[0])
 
     if args.reference is None:
+        # Create joint image mask in target space
+        joint_image_mask_builder = imb.JointImageMaskBuilder(
+            stacks=stacks,
+            target=HR_volume,
+            dilation_radius=1,
+        )
+        joint_image_mask_builder.run()
+        HR_volume = joint_image_mask_builder.get_stack()
+
+        # Crop to space defined by mask (plus extra margin)
+        HR_volume = HR_volume.get_cropped_stack_based_on_mask(
+            boundary_i=args.extra_frame_target,
+            boundary_j=args.extra_frame_target,
+            boundary_k=args.extra_frame_target,
+            unit="mm",
+        )
+
         # Scattered Data Approximation to get first estimate of HR volume
         ph.print_title("Scattered Data Approximation")
         SDA = sda.ScatteredDataApproximation(
             stacks, HR_volume, sigma=args.sigma)
         SDA.run()
-        SDA.generate_mask_from_stack_mask_unions(
-            mask_dilation_radius=1, mask_dilation_kernel="Ball")
         HR_volume = SDA.get_reconstruction()
-        HR_volume.set_filename(SDA.get_setting_specific_filename())
 
     time_reconstruction = ph.stop_timing(time_tmp)
 
@@ -213,24 +227,15 @@ def main():
         sitkh.show_stacks(tmp, segmentation=HR_volume)
 
     # ----------------Two-step Slice-to-Volume Registration SRR----------------
-    if args.reg_type in ["TK0", "TK1"]:
-        SRR = tk.TikhonovSolver(
-            stacks=stacks,
-            reconstruction=HR_volume,
-            reg_type=args.reg_type,
-        )
-    elif args.reg_type == "TV":
-        SRR = admm.ADMMSolver(
-            stacks=stacks,
-            reconstruction=HR_volume,
-            rho=args.rho,
-            iterations=args.ADMM_iterations,
-        )
-    SRR.set_alpha(args.alpha_first)
-    SRR.set_iter_max(args.iter_max_first)
-    SRR.set_minimizer(args.minimizer)
-    SRR.set_data_loss(args.data_loss)
-    SRR.set_verbose(True)
+    SRR = tk.TikhonovSolver(
+        stacks=stacks,
+        reconstruction=HR_volume,
+        reg_type="TK1",
+        minimizer="lsmr",
+        alpha=args.alpha_first,
+        iter_max=args.iter_max_first,
+        verbose=True,
+    )
 
     if args.two_step_cycles > 0:
 
@@ -270,10 +275,26 @@ def main():
             two_step_s2v_reg_recon.get_computational_time_registration()
         time_reconstruction += \
             two_step_s2v_reg_recon.get_computational_time_reconstruction()
+    else:
+        HR_volume_iterations = []
 
     ph.print_title("Final Super-Resolution Reconstruction")
+    if args.reconstruction_type in ["TVL2", "HuberL2"]:
+        SRR = pd.PrimalDualSolver(
+            stacks=stacks,
+            reconstruction=HR_volume,
+            reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
+            iterations=args.iterations,
+        )
+    else:
+        SRR = tk.TikhonovSolver(
+            stacks=stacks,
+            reconstruction=HR_volume,
+            reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
+        )
     SRR.set_alpha(args.alpha)
     SRR.set_iter_max(args.iter_max)
+    SRR.set_verbose(True)
     SRR.run()
     time_reconstruction += SRR.get_computational_time()
 

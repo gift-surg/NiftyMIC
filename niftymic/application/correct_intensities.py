@@ -1,6 +1,7 @@
 ##
-# \file run_intensity_correction.py
-# \brief      Script to correct for bias field. Based on N4ITK
+# \file correct_intensities.py
+# \brief      Script to perform intensity correction across images given a
+#             reference image
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       October 2017
@@ -27,7 +28,8 @@ def main():
     np.set_printoptions(precision=3)
 
     input_parser = InputArgparser(
-        description="Run intensity correction",
+        description="Perform (linear) intensity correction across "
+        "stacks/images given a reference stack/image",
     )
     input_parser.add_filenames(required=True)
     input_parser.add_dir_output(required=True)
@@ -65,16 +67,6 @@ def main():
         [args.reference], suffix_mask=args.suffix_mask, extract_slices=False)
     data_reader.read_data()
     reference = data_reader.get_stacks()[0]
-
-    # reference = st.Stack.from_filename(
-    #     file_path=args.reference,
-    #     file_path_mask=args.reference_mask,
-    #     extract_slices=False)
-
-    # if args.verbose:
-    #     stacks_vis = [s for s in stacks]
-    #     stacks_vis.insert(0, reference)
-    #     sitkh.show_stacks(stacks_vis)
 
     if args.registration:
         # Define search angle ranges for FLIRT in all three dimensions

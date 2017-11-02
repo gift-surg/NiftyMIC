@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 ##
 # \file intra_stack_registration.py
 # \brief      Intra-stack registration steps where slices are only transformed

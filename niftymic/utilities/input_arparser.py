@@ -1,5 +1,5 @@
 ##
-# \file InputArparser.py
+# \file input_argparser.py
 # \brief      Class holding a collection of possible arguments to parse for
 #             scripts
 #
@@ -117,8 +117,8 @@ class InputArgparser(object):
         self,
         option_string="--subfolder-comparison",
         type=str,
-        help="Name of folder within output directory where all motion "
-        "correction results are stored",
+        help="Name of folder within output directory where all comparison "
+        "results are stored",
         default="comparison",
         required=False,
     ):
@@ -255,7 +255,19 @@ class InputArgparser(object):
         self,
         option_string="--target-stack",
         type=str,
-        help="Choose target stack for reconstruction/pre-processing %s." % (IMAGE_TYPES),
+        help="Choose target stack for reconstruction/pre-processing %s." % (
+            IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_reconstruction(
+        self,
+        option_string="--reconstruction",
+        type=str,
+        help="Path to NIfTI file %s of the obtained volumetric reconstruction "
+        % (IMAGE_TYPES),
         default=None,
         required=False,
     ):
@@ -267,6 +279,27 @@ class InputArgparser(object):
         type=str,
         help="Path to NIfTI file %s which defines the physical space "
         "for the volumetric reconstruction/SRR." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_gestational_age(
+        self,
+        option_string="--gestational-age",
+        type=int,
+        help="Gestational age in weeks of the fetal brain to "
+        "be reconstructed.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_dir_input_templates(
+        self,
+        option_string="--dir-input-templates",
+        type=str,
+        help="Input directory holding the fetal brain templates.",
         default=None,
         required=False,
     ):
@@ -362,22 +395,6 @@ class InputArgparser(object):
         help="Regularization parameter like 'alpha' but used for the first"
         "SRR step.",
         default=0.1,
-    ):
-        self._add_argument(dict(locals()))
-
-    def add_reg_type(
-        self,
-        option_string="--reg-type",
-        type=str,
-        help="Type of regularization for SR algorithm. Either "
-        "'TK0', 'TK1' or 'TV' for zeroth/first order Tikhonov "
-        " or total variation regularization, respectively."
-        "I.e. "
-        "R(x) = ||x||_2^2 for 'TK0', "
-        "R(x) = ||Dx||_2^2 for 'TK1', "
-        "or "
-        "R(x) = ||Dx||_1 for 'TV'. ",
-        default="TK1",
     ):
         self._add_argument(dict(locals()))
 

@@ -1,9 +1,11 @@
+##
 # \file ScatteredDataApproximation.py
-#  \brief Implementation of two different approaches for Scattered Data
-#         Approximation (SDA)
+# \brief      Implementation of two different approaches for Scattered Data
+#             Approximation (SDA)
 #
-#  \author Michael Ebner (michael.ebner.14@ucl.ac.uk)
-#  \date April 2016
+# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
+# \date       April 2016
+#
 
 
 # Import libraries
@@ -252,7 +254,7 @@ class ScatteredDataApproximation:
         default_pixel_value = 0.0
 
         for i in range(0, self._N_stacks):
-            ph.print_info("Stack %s/%s" % (i, self._N_stacks-1))
+            ph.print_info("Stack %s/%s" % (i+1, self._N_stacks))
             stack = self._stacks[i]
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
@@ -363,8 +365,7 @@ class ScatteredDataApproximation:
         default_pixel_value = 0.0
 
         for i in range(0, self._N_stacks):
-            # for i in range(0, 2):
-            print("  Stack %s/%s" % (i, self._N_stacks-1))
+            ph.print_info("Stack %s/%s" % (i+1, self._N_stacks))
             stack = self._stacks[i]
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()

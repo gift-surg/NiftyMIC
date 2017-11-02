@@ -1,10 +1,6 @@
 ##
 # \file n4_bias_field_correction.py
-# \brief      N4 bias field correction according to the file
-#             runN4BiasFieldCorrectionImageFilter.cpp in src/cpp/source
-#
-# SimpleITK 1.0 does contain N4 Bias field corrector. Thus, file here has
-# become obsolete
+# \brief      N4ITK Bias-Field Correction interface
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       May 2017

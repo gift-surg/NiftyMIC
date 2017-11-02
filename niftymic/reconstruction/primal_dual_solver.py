@@ -112,8 +112,6 @@ class PrimalDualSolver(Solver):
             raise ValueError("Error: regularization type can only be either "
                              "'TV' or 'huber'")
 
-        self._run_initialization()
-
         # L^2 = ||K||^2 = ||\nabla||^2 = ||div||^2 <= 16/h^2 in 3D
         # However, it seems that the smaller L2 the bigger the effect of TV
         # regularization. Try, e.g. L2 = 1.
