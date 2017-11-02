@@ -97,7 +97,7 @@ reconstruct_volume_tk1l2:
   tags:
     - gift-adelie
 
-reconstruct_volume:
+reconstruct_volume_huberl2:
   # only:
   #   - master
   script:
