@@ -240,9 +240,6 @@ def main():
             scales_estimator="Jacobian",
         )
 
-        alphas = np.linspace(args.alpha_first, args.alpha,
-                             args.two_step_cycles + 1)
-
         reconstruction_method.set_stacks(
             stacks[args.target_stack_index: args.stack_recon_range])
         reconstruction_method.set_reconstruction(HR_volume)
@@ -255,7 +252,7 @@ def main():
                 registration_method=registration,
                 reconstruction_method=reconstruction_method,
                 cycles=args.two_step_cycles,
-                alphas=alphas[0:args.two_step_cycles],
+                alpha_range=[args.alpha_first, args.alpha],
                 verbose=args.verbose,
             )
         two_step_s2v_reg_recon.run()
