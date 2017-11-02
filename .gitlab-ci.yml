@@ -80,6 +80,23 @@ installation:
   tags:
     - gift-adelie
 
+reconstruct_volume_tk1l2:
+  # only:
+  #   - master
+  script:
+    - >
+      python niftymic_reconstruct_volume.py 
+      --dir-input ${DATADIR}/input_data 
+      --dir-output ${TMPDIR} 
+      --verbose 0 
+      --isotropic-resolution 2
+      --reconstruction-type TK1L2
+      --two-step-cycles 1
+      --iter-max 2
+      --iter-max-first 2
+  tags:
+    - gift-adelie
+
 reconstruct_volume:
   # only:
   #   - master
@@ -90,9 +107,11 @@ reconstruct_volume:
       --dir-output ${TMPDIR} 
       --verbose 0 
       --isotropic-resolution 2
+      --reconstruction-type HuberL2
       --two-step-cycles 1
       --iter-max 2
       --iter-max-first 2
+      --iterations 1
   tags:
     - gift-adelie
 
