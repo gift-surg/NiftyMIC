@@ -486,23 +486,25 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                 s2vreg.get_computational_time()
 
             # SRR step
-            self._reconstruction_method.set_alpha(alphas[cycle])
-            self._reconstruction_method.run()
+            if cycle < self._cycles - 1:
+                self._reconstruction_method.set_alpha(alphas[cycle])
+                self._reconstruction_method.run()
 
-            self._computational_time_reconstruction += \
-                self._reconstruction_method.get_computational_time()
+                self._computational_time_reconstruction += \
+                    self._reconstruction_method.get_computational_time()
 
-            reference = self._reconstruction_method.get_reconstruction()
+                reference = self._reconstruction_method.get_reconstruction()
 
-            # Store SRR
-            filename = "Iter%d_%s" % (
-                cycle+1,
-                self._reconstruction_method.get_setting_specific_filename())
-            self._reconstructions.insert(0, st.Stack.from_stack(
-                reference, filename=filename))
+                # Store SRR
+                filename = "Iter%d_%s" % (
+                    cycle+1,
+                    self._reconstruction_method.get_setting_specific_filename()
+                )
+                self._reconstructions.insert(0, st.Stack.from_stack(
+                    reference, filename=filename))
 
-            if self._verbose:
-                sitkh.show_stacks(self._reconstructions)
+                if self._verbose:
+                    sitkh.show_stacks(self._reconstructions)
 
 
 ##

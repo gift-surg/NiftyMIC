@@ -23,12 +23,14 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         self.precision = 7
         self.dir_data = os.path.join(DIR_TEST, "case-studies", "fetal-brain")
         self.dir_output = os.path.join(DIR_TMP, "case-studies", "fetal-brain")
-        self.reference = "reference-result.nii.gz"
 
-    def test_volumetric_reconstruction(self):
-
-        dir_input = os.path.join(self.dir_data, "SRR", "motion_correction")
-        path_to_reference = os.path.join(self.dir_data,  self.reference)
+    def test_reconstruct_volume_from_slices(self):
+        dir_root = os.path.join(
+            self.dir_data, "reconstruct_volume_from_slices")
+        dir_input = os.path.join(dir_root, "input-data")
+        dir_reference = os.path.join(dir_root, "result-comparison")
+        filename_reference = "SRR_stacks3_TK1_lsmr_alpha0p02_itermax10.nii.gz"
+        path_to_reference = os.path.join(dir_reference, filename_reference)
 
         cmd_args = []
         cmd_args.append("--dir-input %s" % dir_input)
@@ -39,14 +41,41 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
             " ").join(cmd_args)
         self.assertEqual(ph.execute_command(cmd), 0)
 
-        pattern = "[a-zA-Z0-9_]+(stacks)[a-zA-Z0-9_]+(.nii.gz)"
-        p = re.compile(pattern)
-        path_to_reconstruction = [
-            os.path.join(
-                self.dir_output, p.match(f).group(0))
-            for f in os.listdir(self.dir_output)
-            if p.match(f)][0]
+        # Check whether identical reconstruction has been created
+        path_to_reconstruction = os.path.join(
+            self.dir_output, filename_reference)
+        reconstruction_sitk = sitk.ReadImage(path_to_reconstruction)
+        reference_sitk = sitk.ReadImage(path_to_reference)
 
+        difference_sitk = reconstruction_sitk - reference_sitk
+        error = np.linalg.norm(sitk.GetArrayFromImage(difference_sitk))
+
+        self.assertAlmostEqual(error, 0, places=self.precision)
+
+    def test_reconstruct_volume(self):
+        dir_root = os.path.join(self.dir_data, "reconstruct_volume")
+        dir_input = os.path.join(dir_root, "input-data")
+        dir_reference = os.path.join(dir_root, "result-comparison")
+        filename_reference = "SRR_stacks3_TK1_lsmr_alpha0p02_itermax3.nii.gz"
+        path_to_reference = os.path.join(dir_reference, filename_reference)
+
+        two_step_cycles = 1
+        iter_max_first = 3
+        iter_max = 3
+
+        cmd_args = []
+        cmd_args.append("--dir-input %s" % dir_input)
+        cmd_args.append("--dir-output %s" % self.dir_output)
+        cmd_args.append("--two-step-cycles %s" % two_step_cycles)
+        cmd_args.append("--iter-max-first %s" % iter_max_first)
+        cmd_args.append("--iter-max %s" % iter_max)
+
+        cmd = "niftymic_reconstruct_volume %s" % (
+            " ").join(cmd_args)
+        self.assertEqual(ph.execute_command(cmd), 0)
+
+        path_to_reconstruction = os.path.join(
+            self.dir_output, filename_reference)
         reconstruction_sitk = sitk.ReadImage(path_to_reconstruction)
         reference_sitk = sitk.ReadImage(path_to_reference)
 

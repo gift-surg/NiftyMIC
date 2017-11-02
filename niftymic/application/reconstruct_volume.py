@@ -61,8 +61,6 @@ def main():
     input_parser.add_alpha_first(default=0.05)
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)
-    input_parser.add_minimizer(default="lsmr")
-    input_parser.add_data_loss(default="linear")
     input_parser.add_dilation_radius(default=3)
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_bias_field_correction(default=0)
@@ -190,6 +188,9 @@ def main():
     HR_volume = reference.get_isotropically_resampled_stack(
         spacing_new_scalar=args.isotropic_resolution,
         extra_frame=args.extra_frame_target)
+    ph.print_info(
+        "Isotropic reconstruction space with %g mm resolution created" %
+        HR_volume.sitk.GetSpacing()[0])
 
     if args.reference is None:
         # Scattered Data Approximation to get first estimate of HR volume
@@ -214,12 +215,11 @@ def main():
         stacks=stacks,
         reconstruction=HR_volume,
         reg_type="TK1",
+        minimizer="lsmr",
+        alpha=args.alpha_first,
+        iter_max=args.iter_max_first,
+        verbose=True,
     )
-    SRR.set_alpha(args.alpha_first)
-    SRR.set_iter_max(args.iter_max_first)
-    SRR.set_minimizer(args.minimizer)
-    SRR.set_data_loss(args.data_loss)
-    SRR.set_verbose(True)
 
     if args.two_step_cycles > 0:
 
