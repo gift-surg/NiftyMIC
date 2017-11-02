@@ -120,7 +120,7 @@ def main():
         boundary_k=0,
         unit="mm",
     )
-    data_preprocessing.run_preprocessing()
+    data_preprocessing.run()
     time_data_preprocessing = data_preprocessing.get_computational_time()
 
     # Get preprocessed stacks
@@ -204,7 +204,7 @@ def main():
     SDA = sda.ScatteredDataApproximation(
         stacks[args.target_stack_index: args.stack_recon_range],
         HR_volume, sigma=args.sigma)
-    SDA.run_reconstruction()
+    SDA.run()
     SDA.generate_mask_from_stack_mask_unions(
         mask_dilation_radius=2, mask_dilation_kernel="Ball")
     HR_volume = SDA.get_reconstruction()
@@ -280,7 +280,7 @@ def main():
     ph.print_title("Final Super-Resolution Reconstruction")
     reconstruction_method.set_alpha(args.alpha)
     reconstruction_method.set_iter_max(args.iter_max)
-    reconstruction_method.run_reconstruction()
+    reconstruction_method.run()
     time_reconstruction += reconstruction_method.get_computational_time()
 
     HR_volume = reconstruction_method.get_reconstruction()
