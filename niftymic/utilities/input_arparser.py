@@ -117,8 +117,8 @@ class InputArgparser(object):
         self,
         option_string="--subfolder-comparison",
         type=str,
-        help="Name of folder within output directory where all motion "
-        "correction results are stored",
+        help="Name of folder within output directory where all comparison "
+        "results are stored",
         default="comparison",
         required=False,
     ):
@@ -395,22 +395,6 @@ class InputArgparser(object):
         help="Regularization parameter like 'alpha' but used for the first"
         "SRR step.",
         default=0.1,
-    ):
-        self._add_argument(dict(locals()))
-
-    def add_reg_type(
-        self,
-        option_string="--reg-type",
-        type=str,
-        help="Type of regularization for SR algorithm. Either "
-        "'TK0', 'TK1' or 'TV' for zeroth/first order Tikhonov "
-        " or total variation regularization, respectively."
-        "I.e. "
-        "R(x) = ||x||_2^2 for 'TK0', "
-        "R(x) = ||Dx||_2^2 for 'TK1', "
-        "or "
-        "R(x) = ||Dx||_1 for 'TV'. ",
-        default="TK1",
     ):
         self._add_argument(dict(locals()))
 

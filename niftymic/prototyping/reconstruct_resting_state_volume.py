@@ -53,7 +53,6 @@ def main():
     input_parser.add_prefix_output(default="SRR_")
     input_parser.add_target_stack_index(default=0)
     input_parser.add_sigma(default=0.8)
-    input_parser.add_reg_type(default="TK1")
     input_parser.add_alpha_first(default=0.05)
     input_parser.add_alpha(default=0.03)
     input_parser.add_iter_max_first(default=5)
@@ -155,21 +154,18 @@ def main():
     else:
         time_registration = ph.get_zero_time()
 
-    if args.reg_type in ["TK0", "TK1"]:
-        reconstruction_method = tk.TikhonovSolver(
-            stacks=None,
-            reconstruction=st.Stack.from_stack(
-                stacks[args.target_stack_index]),
-            reg_type=args.reg_type,
-        )
-    elif args.reg_type == "TV":
-        reconstruction_method = admm.ADMMSolver(
-            stacks=stacks,
-            reconstruction=st.Stack.from_stack(
-                stacks[args.target_stack_index]),
-            rho=args.rho,
-            iterations=args.ADMM_iterations,
-        )
+    reconstruction_space = st.Stack.from_stack(stacks[args.target_stack_index])
+    # reconstruction_method = tk.TikhonovSolver(
+    #     stacks=stacks,
+    #     reconstruction=reconstruction_space,
+    #     reg_type="TK1",
+    # )
+    reconstruction_method = admm.ADMMSolver(
+        stacks=stacks,
+        reconstruction=reconstruction_space,
+        rho=args.rho,
+        iterations=args.iterations,
+    )
     reconstruction_method.set_alpha(args.alpha)
     reconstruction_method.set_iter_max(args.iter_max)
     reconstruction_method.set_minimizer(args.minimizer)

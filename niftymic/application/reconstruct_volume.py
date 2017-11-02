@@ -40,7 +40,7 @@ def main():
     input_parser = InputArgparser(
         description="Volumetric MRI reconstruction framework to reconstruct "
         "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
-        "slices WITH motion correction. The resolution of the computed "
+        "slices with motion correction. The resolution of the computed "
         "Super-Resolution Reconstruction (SRR) is given by the in-plane "
         "spacing of the selected target stack. A region of interest can be "
         "specified by providing a mask for the selected target stack. Only "
@@ -59,7 +59,6 @@ def main():
     input_parser.add_sigma(default=0.9)
     input_parser.add_alpha(default=0.02)
     input_parser.add_alpha_first(default=0.05)
-    input_parser.add_reg_type(default="TK1")
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)
     input_parser.add_minimizer(default="lsmr")
@@ -71,13 +70,11 @@ def main():
     input_parser.add_isotropic_resolution(default=None)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_subfolder_motion_correction()
+    input_parser.add_provide_comparison(default=0)
     input_parser.add_subfolder_comparison()
     input_parser.add_write_motion_correction(default=1)
-    input_parser.add_provide_comparison(default=0)
     input_parser.add_verbose(default=0)
     input_parser.add_two_step_cycles(default=3)
-    input_parser.add_rho(default=0.5)
-    input_parser.add_iterations(default=10)
     input_parser.add_reference()
     input_parser.add_reference_mask()
 
@@ -213,19 +210,11 @@ def main():
         sitkh.show_stacks(tmp, segmentation=HR_volume)
 
     # ----------------Two-step Slice-to-Volume Registration SRR----------------
-    if args.reg_type in ["TK0", "TK1"]:
-        SRR = tk.TikhonovSolver(
-            stacks=stacks,
-            reconstruction=HR_volume,
-            reg_type=args.reg_type,
-        )
-    elif args.reg_type == "TV":
-        SRR = admm.ADMMSolver(
-            stacks=stacks,
-            reconstruction=HR_volume,
-            rho=args.rho,
-            iterations=args.ADMM_iterations,
-        )
+    SRR = tk.TikhonovSolver(
+        stacks=stacks,
+        reconstruction=HR_volume,
+        reg_type="TK1",
+    )
     SRR.set_alpha(args.alpha_first)
     SRR.set_iter_max(args.iter_max_first)
     SRR.set_minimizer(args.minimizer)
