@@ -464,7 +464,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
         # Use linear spacing for alphas excluding the last alpha reserved
         # for the final SRR step
         alphas = np.linspace(
-            self._alpha_range[0], self._alpha_range[1], self._cycles + 1)
+            self._alpha_range[0], self._alpha_range[1], self._cycles)
         alphas = alphas[0:self._cycles]
 
         s2vreg = SliceToVolumeRegistration(
