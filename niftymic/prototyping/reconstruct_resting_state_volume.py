@@ -13,7 +13,7 @@ import os
 import niftymic.base.data_reader as dr
 import niftymic.base.data_writer as dw
 import niftymic.base.stack as st
-import niftymic.reconstruction.admm_solver as admm
+import niftymic.reconstruction.primal_dual_solver as pd
 import niftymic.reconstruction.scattered_data_approximation as \
     sda
 import niftymic.reconstruction.tikhonov_solver as tk
@@ -57,6 +57,7 @@ def main():
     input_parser.add_alpha(default=0.03)
     input_parser.add_iter_max_first(default=5)
     input_parser.add_iter_max(default=10)
+    input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_minimizer(default="lsmr")
     input_parser.add_data_loss(default="linear")
     input_parser.add_dilation_radius(default=3)
@@ -155,22 +156,16 @@ def main():
         time_registration = ph.get_zero_time()
 
     reconstruction_space = st.Stack.from_stack(stacks[args.target_stack_index])
-    # reconstruction_method = tk.TikhonovSolver(
-    #     stacks=stacks,
-    #     reconstruction=reconstruction_space,
-    #     reg_type="TK1",
-    # )
-    reconstruction_method = admm.ADMMSolver(
+    reconstruction_method = tk.TikhonovSolver(
         stacks=stacks,
         reconstruction=reconstruction_space,
-        rho=args.rho,
-        iterations=args.iterations,
+        reg_type="TK1",
+        alpha=args.alpha,
+        iter_max=args.iter_max,
+        minimizer=args.minimizer,
+        data_loss=args.data_loss,
+        verbose=args.verbose,
     )
-    reconstruction_method.set_alpha(args.alpha)
-    reconstruction_method.set_iter_max(args.iter_max)
-    reconstruction_method.set_minimizer(args.minimizer)
-    reconstruction_method.set_data_loss(args.data_loss)
-    reconstruction_method.set_verbose(args.verbose)
 
     multi_component_reconstruction = pipeline.MultiComponentReconstruction(
         stacks=stacks,
@@ -187,7 +182,7 @@ def main():
     data_writer = dw.MultiComponentImageWriter(stacks_recon_v2v, filename)
     data_writer.write_data()
 
-    # ---------------------------Create first volume---------------------------
+    # ---------------------------Create first volume------------------------
     time_tmp = ph.start_timing()
     # Isotropic resampling to define HR target space
     ph.print_title("Isotropic Resampling")
@@ -212,7 +207,7 @@ def main():
 
     time_reconstruction += ph.stop_timing(time_tmp)
 
-    # ----------------Two-step Slice-to-Volume Registration SRR----------------
+    # ----------------Two-step Slice-to-Volume Registration SRR-------------
     if args.two_step_cycles > 0:
 
         # Two-step registration reconstruction
@@ -292,8 +287,28 @@ def main():
         stack.write(args.dir_output)
 
     # -----------------------Build multi-component image-----------------------
-    reconstruction_method.set_reconstruction(st.Stack.from_stack(
-        stacks[args.target_stack_index]))
+    reconstruction_space = st.Stack.from_stack(
+        stacks[args.target_stack_index])
+    if args.reconstruction_type in ["TVL2", "HuberL2"]:
+        reconstruction_method = pd.PrimalDualSolver(
+            stacks=stacks,
+            reconstruction=reconstruction_space,
+            reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
+            iterations=args.iterations,
+        )
+    else:
+        reconstruction_method = tk.TikhonovSolver(
+            stacks=stacks,
+            reconstruction=reconstruction_space,
+            reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
+        )
+    reconstruction_method.set_alpha(args.alpha)
+    reconstruction_method.set_iter_max(args.iter_max)
+    reconstruction_method.set_verbose(args.verbose)
+    # multi_component_reconstruction = pipeline.MultiComponentReconstruction(
+    #     stacks=stacks,
+    #     reconstruction_method=reconstruction_method,
+    #     suffix="_recon_v2v")
     multi_component_reconstruction.set_reconstruction_method(
         reconstruction_method)
     multi_component_reconstruction.set_suffix("_recon_s2v")

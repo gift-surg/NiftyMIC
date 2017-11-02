@@ -14,7 +14,7 @@ import os
 
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
-import niftymic.reconstruction.admm_solver as admm
+import niftymic.reconstruction.primal_dual_solver as pd
 import niftymic.reconstruction.scattered_data_approximation as \
     sda
 import niftymic.reconstruction.tikhonov_solver as tk
@@ -57,6 +57,8 @@ def main():
     input_parser.add_shrink_factors(default=[2, 1])
     input_parser.add_smoothing_sigmas(default=[1, 0])
     input_parser.add_sigma(default=0.9)
+    input_parser.add_reconstruction_type(default="TK1L2")
+    input_parser.add_iterations(default=15)
     input_parser.add_alpha(default=0.02)
     input_parser.add_alpha_first(default=0.05)
     input_parser.add_iter_max(default=10)
@@ -201,6 +203,7 @@ def main():
         SDA.generate_mask_from_stack_mask_unions(
             mask_dilation_radius=1, mask_dilation_kernel="Ball")
         HR_volume = SDA.get_reconstruction()
+        HR_volume = HR_volume.get_stack_multiplied_with_mask()
         HR_volume.set_filename(SDA.get_setting_specific_filename())
 
     time_reconstruction = ph.stop_timing(time_tmp)
@@ -259,10 +262,26 @@ def main():
             two_step_s2v_reg_recon.get_computational_time_registration()
         time_reconstruction += \
             two_step_s2v_reg_recon.get_computational_time_reconstruction()
+    else:
+        HR_volume_iterations = []
 
     ph.print_title("Final Super-Resolution Reconstruction")
+    if args.reconstruction_type in ["TVL2", "HuberL2"]:
+        SRR = pd.PrimalDualSolver(
+            stacks=stacks,
+            reconstruction=HR_volume,
+            reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
+            iterations=args.iterations,
+        )
+    else:
+        SRR = tk.TikhonovSolver(
+            stacks=stacks,
+            reconstruction=HR_volume,
+            reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
+        )
     SRR.set_alpha(args.alpha)
     SRR.set_iter_max(args.iter_max)
+    SRR.set_verbose(True)
     SRR.run()
     time_reconstruction += SRR.get_computational_time()
 
