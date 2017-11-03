@@ -42,10 +42,10 @@ class Siena(object):
         ph.create_directory(dir_tmp, delete_files=True)
 
         # Write images
-        sitk.WriteImage(self._stack1.sitk, self._dir_tmp +
-                        self._stack1.get_filename() + ".nii.gz")
-        sitk.WriteImage(self._stack2.sitk, self._dir_tmp +
-                        self._stack2.get_filename() + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._stack1.sitk, self._dir_tmp +
+                                  self._stack1.get_filename() + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._stack2.sitk, self._dir_tmp +
+                                  self._stack2.get_filename() + ".nii.gz")
 
         cmd = "siena "
         cmd += self._dir_tmp + self._stack1.get_filename() + ".nii.gz "

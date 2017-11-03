@@ -164,19 +164,19 @@ class CppItkRegistration(SimpleItkRegistration):
 
         # Write images to HDD
         # if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
-        sitk.WriteImage(self._moving.sitk, self._dir_tmp +
-                        moving_str + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._moving.sitk, self._dir_tmp +
+                                  moving_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + fixed_str + ".nii.gz"):
-        sitk.WriteImage(self._fixed.sitk, self._dir_tmp +
-                        fixed_str + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._fixed.sitk, self._dir_tmp +
+                                  fixed_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz")
         # and self._use_moving_mask:
-        sitk.WriteImage(self._moving.sitk_mask,
-                        self._dir_tmp + moving_mask_str + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._moving.sitk_mask,
+                                  self._dir_tmp + moving_mask_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz") and
         # self._use_fixed_mask:
-        sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp +
-                        fixed_mask_str + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._fixed.sitk_mask, self._dir_tmp +
+                                  fixed_mask_str + ".nii.gz")
 
         # Prepare command for execution
         # cmd =  "/Users/mebner/UCL/UCL/Software/Volumetric\ Reconstruction/build/cpp/bin/itkReg "
@@ -231,7 +231,7 @@ class CppItkRegistration(SimpleItkRegistration):
 
         # Debug
         # moving_warped_sitk = sitk.Resample(self._moving.sitk, self._fixed.sitk, self._registration_transform_sitk, sitk.sitkLinear, 0.0, self._moving.sitk.GetPixelIDValue())
-        # sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
+        # sitkh.write_nifti_image_sitk(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
 
     def _run_registration_inplane_similarity_3D(self, id, endl=" \\\n"):
 
@@ -256,19 +256,19 @@ class CppItkRegistration(SimpleItkRegistration):
 
         # Write images to HDD
         # if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
-        sitk.WriteImage(self._moving.sitk, self._dir_tmp +
-                        moving_str + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._moving.sitk, self._dir_tmp +
+                                  moving_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + fixed_str + ".nii.gz"):
-        sitk.WriteImage(self._fixed.sitk, self._dir_tmp +
-                        fixed_str + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._fixed.sitk, self._dir_tmp +
+                                  fixed_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz")
         # and self._use_moving_mask:
-        sitk.WriteImage(self._moving.sitk_mask,
-                        self._dir_tmp + moving_mask_str + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._moving.sitk_mask,
+                                  self._dir_tmp + moving_mask_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz") and
         # self._use_fixed_mask:
-        sitk.WriteImage(self._fixed.sitk_mask, self._dir_tmp +
-                        fixed_mask_str + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self._fixed.sitk_mask, self._dir_tmp +
+                                  fixed_mask_str + ".nii.gz")
 
         # Prepare command for execution
         cmd = DIR_CPP_BUILD + "/bin/itkInplaneSimilarity3DReg" + endl
@@ -325,7 +325,7 @@ class CppItkRegistration(SimpleItkRegistration):
         # moving_sitk = sitk.Image(self._moving.sitk)
         # moving_sitk.SetSpacing(spacing)
         # moving_warped_sitk = sitk.Resample(moving_sitk, self._fixed.sitk, transform_sitk, sitk.sitkLinear)
-        # sitk.WriteImage(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
+        # sitkh.write_nifti_image_sitk(moving_warped_sitk, self._dir_tmp + "RegistrationITK_result.nii.gz")
 
         # sitkh.show_sitk_image([self._fixed.sitk, moving_warped_sitk], ["fixed", "moving_registered"])
         #

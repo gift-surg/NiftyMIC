@@ -411,7 +411,7 @@ class Stack:
         # Write file to specified location
         ph.print_info("Write image stack to %s.nii.gz ... " %
                       (full_file_name), newline=False)
-        sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self.sitk, full_file_name + ".nii.gz")
         print("done")
 
         # Write mask to specified location if given
@@ -422,7 +422,7 @@ class Stack:
             if not self._is_unity_mask and write_mask:
                 ph.print_info("Write image stack mask to %s%s.nii.gz ... " % (
                     full_file_name, suffix_mask), newline=False)
-                sitk.WriteImage(
+                sitkh.write_nifti_image_sitk(
                     self.sitk_mask, full_file_name + "%s.nii.gz" % (
                         suffix_mask))
                 print("done")

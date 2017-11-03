@@ -12,8 +12,8 @@ import numpy as np
 import os
 
 import pysitk.python_helper as ph
-
 import pysitk.simple_itk_helper as sitkh
+
 import niftymic.base.exceptions as exceptions
 from niftymic.definitions import DIR_TMP
 
@@ -263,9 +263,10 @@ class Slice:
 
         filename_out = self._filename + "_" + str(self._slice_number)
         if show_segmentation:
-            sitk.WriteImage(self.sitk, dir_output + filename_out + ".nii.gz")
-            sitk.WriteImage(self.sitk_mask, dir_output +
-                            filename_out + "_mask.nii.gz")
+            sitkh.write_nifti_image_sitk(
+                self.sitk, dir_output + filename_out + ".nii.gz")
+            sitkh.write_nifti_image_sitk(self.sitk_mask, dir_output +
+                                      filename_out + "_mask.nii.gz")
 
             cmd = "itksnap " \
                 + "-g " + dir_output + filename_out + ".nii.gz " \
@@ -273,7 +274,8 @@ class Slice:
                 "& "
 
         else:
-            sitk.WriteImage(self.sitk, dir_output + filename_out + ".nii.gz")
+            sitkh.write_nifti_image_sitk(
+                self.sitk, dir_output + filename_out + ".nii.gz")
 
             cmd = "itksnap " \
                 + "-g " + dir_output + filename_out + ".nii.gz " \
@@ -302,7 +304,7 @@ class Slice:
         full_file_name = os.path.join(directory, filename_out)
 
         # Write slice and affine transform
-        sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self.sitk, full_file_name + ".nii.gz")
         if write_transform:
             sitk.WriteTransform(
                 # self.get_affine_transform(),
@@ -315,8 +317,8 @@ class Slice:
 
             # Write mask if it does not consist of only ones
             if not np.all(nda):
-                sitk.WriteImage(self.sitk_mask, full_file_name +
-                                "%s.nii.gz" % (suffix_mask))
+                sitkh.write_nifti_image_sitk(self.sitk_mask, full_file_name +
+                                          "%s.nii.gz" % (suffix_mask))
 
         # print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
         # print("Transformation of slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))

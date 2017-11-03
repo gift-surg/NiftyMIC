@@ -98,7 +98,8 @@ class FLIRT(AffineRegistrationMethod):
             moving_sitk=self._moving.sitk,
             fixed_sitk_mask=fixed_sitk_mask,
             moving_sitk_mask=moving_sitk_mask,
-            options=options
+            options=options,
+            verbose=self._use_verbose,
         )
         self._registration_method.run()
 
