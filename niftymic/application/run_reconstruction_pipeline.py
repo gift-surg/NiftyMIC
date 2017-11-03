@@ -34,6 +34,7 @@ def main():
     input_parser.add_target_stack(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_dir_output(required=True)
+    input_parser.add_alpha(default=0.01)
     input_parser.add_verbose(default=0)
     input_parser.add_gestational_age(required=False)
     input_parser.add_prefix_output(default="")
@@ -53,7 +54,6 @@ def main():
         help="Turn on/off preprocessing including bias field and linear "
         "intensity correction",
         default=1)
-    input_parser.add_alpha(default=0.01)
     input_parser.add_option(
         option_string="--run-recon-subject-space",
         type=int,
