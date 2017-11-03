@@ -73,6 +73,12 @@ def main():
     input_parser.add_rho(default=0.5)
     input_parser.add_iterations(default=10)
     input_parser.add_stack_recon_range(default=15)
+    input_parser.add_option(
+        option_string="--reconstruction-spacing",
+        type=float,
+        nargs="+",
+        help="Specify spacing of reconstruction space in case a change is desired",
+        default=None)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -93,6 +99,12 @@ def main():
         args.filename, args.filename_mask)
     data_reader.read_data()
     stacks = data_reader.get_stacks()
+
+    # Define reconstruction space for rsfmri
+    reconstruction_space = st.Stack.from_stack(stacks[args.target_stack_index])
+    if args.reconstruction_spacing is not None:
+        reconstruction_space = reconstruction_space.get_resampled_stack(
+            spacing=args.reconstruction_spacing)
 
     # ------------------------------DELETE LATER------------------------------
     # stacks = stacks[0:3]
@@ -155,7 +167,6 @@ def main():
     else:
         time_registration = ph.get_zero_time()
 
-    reconstruction_space = st.Stack.from_stack(stacks[args.target_stack_index])
     reconstruction_method = tk.TikhonovSolver(
         stacks=stacks,
         reconstruction=reconstruction_space,
@@ -188,7 +199,7 @@ def main():
     ph.print_title("Isotropic Resampling")
     HR_volume = stacks[args.target_stack_index].\
         get_isotropically_resampled_stack(
-        spacing_new_scalar=args.isotropic_resolution,
+        resolution=args.isotropic_resolution,
         extra_frame=args.extra_frame_target)
     HR_volume.set_filename(
         stacks[args.target_stack_index].get_filename() +
@@ -284,8 +295,6 @@ def main():
         stack.write(args.dir_output)
 
     # -----------------------Build multi-component image-----------------------
-    reconstruction_space = st.Stack.from_stack(
-        stacks[args.target_stack_index])
     if args.reconstruction_type in ["TVL2", "HuberL2"]:
         reconstruction_method = pd.PrimalDualSolver(
             stacks=stacks,

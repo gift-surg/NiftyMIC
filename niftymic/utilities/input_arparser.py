@@ -583,6 +583,7 @@ class InputArgparser(object):
     def add_option(
         self,
         option_string="--option",
+        nargs=None,
         type=float,
         help="Add option.",
         default=None,
