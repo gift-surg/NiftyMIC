@@ -143,6 +143,7 @@ def main():
         filenames = [os.path.join(dir_output_preprocessing, "%s%s%s" % (
             prefix_ic, prefix_bias, os.path.basename(f)))
             for f in args.filenames]
+        # filenames = args.filenames
         target_stack_index = args.filenames.index(target_stack)
 
         cmd_args = []
@@ -227,7 +228,7 @@ def main():
             dir_output_recon_template_space, reconstruction[key])
 
         # Copy SRR to output directory
-        output = "%sSRR_%s.nii.gz" % (args.prefix_output, key)
+        output = "%sSRR_%s_GW%d.nii.gz" % (args.prefix_output, key, args.gestational_age)
         path_to_output = os.path.join(args.dir_output, output)
         cmd = "cp %s %s" % (path_to_recon, path_to_output)
         ph.execute_command(cmd)

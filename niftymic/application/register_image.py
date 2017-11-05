@@ -42,6 +42,12 @@ def main():
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_search_angle(default=180)
     input_parser.add_option(
+        option_string="--transform-only",
+        type=int,
+        help="Turn on/off functionality to transform moving image to fixed "
+        "image only, i.e. no resampling to fixed image space",
+        default=0)
+    input_parser.add_option(
         option_string="--write-transform",
         type=int,
         help="Turn on/off functionality to write registration transform",
@@ -88,6 +94,10 @@ def main():
     # Apply rigidly transform to align reconstruction (moving) with template
     # (fixed)
     moving.update_motion_correction(transform_sitk)
+
+    if args.transform_only:
+        moving.write(args.dir_output, write_mask=True)
+        ph.exit()
 
     # Resample reconstruction (moving) to template space (fixed)
     warped_moving = \
