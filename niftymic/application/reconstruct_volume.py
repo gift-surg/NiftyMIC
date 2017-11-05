@@ -153,11 +153,15 @@ def main():
             file_path=args.reference,
             file_path_mask=args.reference_mask,
             extract_slices=False)
+        # if args.verbose:
+        #     tmp = [reference]
+        #     tmp.extend(stacks)
+        #     sitkh.show_stacks(tmp, segmentation=reference)
+
     else:
         reference = st.Stack.from_stack(stacks[args.target_stack_index])
-
-    if args.verbose:
-        sitkh.show_stacks(stacks, segmentation=stacks[0])
+        # if args.verbose:
+        #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:

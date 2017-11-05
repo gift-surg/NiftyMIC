@@ -31,7 +31,7 @@ def main():
         "and (iii) volumetric reconstruction in template space.",
     )
     input_parser.add_filenames(required=True)
-    input_parser.add_target_stack(required=True)
+    input_parser.add_target_stack(required=False)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_dir_output(required=True)
     input_parser.add_alpha(default=0.01)
@@ -94,6 +94,11 @@ def main():
         raise IOError("Gestational age must be set in order to pick the "
                       "right template")
 
+    if args.target_stack is None:
+        target_stack = args.filenames[0]
+    else:
+        target_stack = args.target_stack
+
     if args.run_preprocessing:
 
         # run bias field correction
@@ -112,12 +117,12 @@ def main():
         # run intensity correction
         filenames = [os.path.join(dir_output_preprocessing, "%s%s" % (
             prefix_bias, os.path.basename(f))) for f in filenames]
-        target_stack = os.path.join(dir_output_preprocessing, "%s%s" % (
-            prefix_bias, os.path.basename(args.target_stack)))
+        target = os.path.join(dir_output_preprocessing, "%s%s" % (
+            prefix_bias, os.path.basename(target_stack)))
 
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(filenames))
-        cmd_args.append("--reference %s" % target_stack)
+        cmd_args.append("--reference %s" % target)
         cmd_args.append("--registration %d" % args.registration)
         cmd_args.append("--search-angle %d" % args.search_angle)
         cmd_args.append("--dir-output %s" % dir_output_preprocessing)
@@ -138,7 +143,7 @@ def main():
         filenames = [os.path.join(dir_output_preprocessing, "%s%s%s" % (
             prefix_ic, prefix_bias, os.path.basename(f)))
             for f in args.filenames]
-        target_stack_index = args.filenames.index(args.target_stack)
+        target_stack_index = args.filenames.index(target_stack)
 
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(filenames))
@@ -171,8 +176,8 @@ def main():
             for f in os.listdir(dir_output_recon_subject_space)
             if p.match(f)][0]
         cmd_args = []
-        cmd_args.append("--reconstruction %s" % reconstruction)
-        cmd_args.append("--template %s" % template)
+        cmd_args.append("--moving %s" % reconstruction)
+        cmd_args.append("--fixed %s" % template)
         # cmd_args.append("--template-mask %s" % template_mask)
         cmd_args.append("--dir-input %s" % os.path.join(
             dir_output_recon_subject_space,
@@ -180,7 +185,7 @@ def main():
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
-        cmd = "niftymic_register_to_template %s" % (" ").join(cmd_args)
+        cmd = "niftymic_register_image %s" % (" ").join(cmd_args)
         ph.execute_command(cmd)
 
         # reconstruct volume in template space
