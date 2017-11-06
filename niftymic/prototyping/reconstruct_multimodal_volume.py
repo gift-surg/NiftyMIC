@@ -147,24 +147,32 @@ if __name__ == '__main__':
         1: 0.887,
     }
 
+    T2_only = True
+    T2_only = False
     multi_modal_reconstruction = multirec.MultiModalReconstruction(
         stacks_dic=stacks_dic,
         TE_dic=TE_dic,
         TR_dic=TR_dic,
         reconstruction=recon0,
         iter_max=args.iter_max,
+        T2_only=T2_only,
     )
     multi_modal_reconstruction.run()
 
-    T2_sitk = multi_modal_reconstruction.get_T2_sitk()
     S0_sitk = multi_modal_reconstruction.get_S0_sitk()
-
-    T1 = sitk.GetArrayFromImage(T2_sitk)
+    T2_sitk = multi_modal_reconstruction.get_T2_sitk()
     T2 = sitk.GetArrayFromImage(T2_sitk)
 
     tmp = [recon0.sitk]
     label = ["recon0"]
-
+    if not T2_only:
+        T1_sitk = multi_modal_reconstruction.get_T1_sitk()
+        T1 = sitk.GetArrayFromImage(T1_sitk)
+        tmp.append(T1_sitk)
+        label.append("T1")
+    else:
+        # dummy
+        T1 = T2
     tmp.append(T2_sitk)
     label.append("T2")
 
