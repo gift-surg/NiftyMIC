@@ -11,6 +11,7 @@
 # Import libraries
 import os
 import numpy as np
+import SimpleITK as sitk
 
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
@@ -32,7 +33,8 @@ from niftymic.utilities.input_arparser import InputArgparser
 import niftymic.prototyping.multi_modal_reconstruction as multirec
 
 
-def main():
+if __name__ == '__main__':
+    # def main():
 
     time_start = ph.start_timing()
 
@@ -129,31 +131,68 @@ def main():
 
         # Use image information of selected target stack as recon0 serves
         # as initial value for reconstruction
-        recon0 = \
-            stacks[args.target_stack_index].get_resampled_stack(recon0.sitk)
+        # recon0 = \
+        #     stacks[args.target_stack_index].get_resampled_stack(recon0.sitk)
 
     stacks_dic = {
-        0: [stacks[0], stacks[4]],
-        # 1: [stacks[1], stacks[2], stacks[3]]
+        0: [stacks[1], stacks[2], stacks[3]],
+        1: [stacks[0], stacks[4]],
     }
     TE_dic = {
-        0: 0.066,
-        1: 0.098,
+        0: 0.098,
+        1: 0.066,
     }
     TR_dic = {
-        0: 0.887,
-        1: 1.290,
+        0: 1.290,
+        1: 0.887,
     }
 
     multi_modal_reconstruction = multirec.MultiModalReconstruction(
         stacks_dic=stacks_dic,
         TE_dic=TE_dic,
         TR_dic=TR_dic,
-        reconstruction=recon0)
+        reconstruction=recon0,
+        iter_max=args.iter_max,
+    )
     multi_modal_reconstruction.run()
 
-    return 0
+    T2_sitk = multi_modal_reconstruction.get_T2_sitk()
+    S0_sitk = multi_modal_reconstruction.get_S0_sitk()
+
+    T1 = sitk.GetArrayFromImage(T2_sitk)
+    T2 = sitk.GetArrayFromImage(T2_sitk)
+
+    tmp = [recon0.sitk]
+    label = ["recon0"]
+
+    tmp.append(T2_sitk)
+    label.append("T2")
+
+    for m in stacks_dic.keys():
+        TE_m = TE_dic[m]
+        TR_m = TR_dic[m]
+        S0_m = sitk.GetArrayFromImage(S0_sitk[m])
+        tmp.append(S0_sitk[m])
+        label.append("S0_%d" % m)
+
+    for m in stacks_dic.keys():
+        TE_m = TE_dic[m]
+        TR_m = TR_dic[m]
+        S0_m = sitk.GetArrayFromImage(S0_sitk[m])
+        x_m = multirec.MRILaw.f(S0_m, TR_m, TE_m, T1, T2)
+        x_m_sitk = sitk.GetImageFromArray(x_m)
+        x_m_sitk.CopyInformation(recon0.sitk)
+        tmp.append(x_m_sitk)
+        title = "TE%s_TR%s" % (TE_m, TR_m)
+        title = title.replace(".", "p")
+        label.append(title)
+
+    sitkh.show_sitk_image(tmp, label=label, dir_output=args.dir_output)
+
+# T2_sitk =
+
+# return 0
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
