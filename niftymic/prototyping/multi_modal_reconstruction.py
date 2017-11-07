@@ -167,7 +167,7 @@ class MultiModalReconstruction(object):
 
         T2 = recon[-self._N_voxels:]
         # Eliminate unchanged values for visualization (unmasked regions)
-        T2[np.where(T2 == T20)] = 0
+        # T2[np.where(T2 == T20)] = 0
         T2_sitk = self._get_sitk_image_from_array(
             T2, self._reconstruction.sitk)
         self._T2 = T2_sitk
@@ -175,7 +175,7 @@ class MultiModalReconstruction(object):
         if not self._T2_only:
             T1 = recon[-2*self._N_voxels:-self._N_voxels]
             # Eliminate unchanged values for visualization (unmasked regions)
-            T1[np.where(T1 == T10)] = 0
+            # T1[np.where(T1 == T10)] = 0
             T1_sitk = self._get_sitk_image_from_array(
                 T1, self._reconstruction.sitk)
             self._T1 = T1_sitk
