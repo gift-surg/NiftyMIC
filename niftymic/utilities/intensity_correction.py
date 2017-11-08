@@ -183,7 +183,9 @@ class IntensityCorrection(object):
     #
     def run_lower_percentile_capping_of_stack(self, percentile=10):
 
-        print("Cap lower intensities at %d%%-percentile" % (percentile))
+        if self._use_verbose:
+            ph.print_info(
+                "Cap lower intensities at %d%%-percentile" % (percentile))
 
         nda = sitk.GetArrayFromImage(self._stack.sitk)
 
@@ -254,8 +256,9 @@ class IntensityCorrection(object):
         nda, nda_reference, nda_mask, nda_additional_stack = self._get_data_arrays_prior_to_intensity_correction()
 
         if self._use_individual_slice_correction:
-            print("Run " + correction_model +
-                  " intensity correction for each slice individually")
+            if self._use_verbose:
+                ph.print_info("Run " + correction_model +
+                              " intensity correction for each slice individually")
             for i in range(0, N_slices):
                 if self._use_verbose:
                     sys.stdout.write("Slice %2d/%d: " %
@@ -267,16 +270,19 @@ class IntensityCorrection(object):
                 else:
                     nda[i, :, :], correction_coefficients[i, :], nda_additional_stack[i, :, :] = self._apply_intensity_correction[
                         correction_model](nda[i, :, :], nda_reference[i, :, :], nda_mask[i, :, :], nda_additional_stack[i, :, :])
+            correction_coefficients[:, ] = np.tile(cc, (N_slices, 1))
         else:
-            print("Run " + correction_model +
-                  " intensity correction uniformly for entire stack")
+            if self._use_verbose:
+                ph.print_info("Run " + correction_model +
+                              " intensity correction uniformly for entire stack")
             if self._additional_stack is None:
-                nda, cc = self._apply_intensity_correction[
-                    correction_model](nda, nda_reference, nda_mask)
+                nda, cc = \
+                    self._apply_intensity_correction[
+                        correction_model](nda, nda_reference, nda_mask)
             else:
                 nda, cc, nda_additional_stack = self._apply_intensity_correction[
                     correction_model](nda, nda_reference, nda_mask, nda_additional_stack)
-            correction_coefficients[:, ] = np.tile(cc, (N_slices, 1))
+            correction_coefficients = cc
 
         # Create Stack instance with correct image header information
         if self._additional_stack is None:
@@ -313,7 +319,7 @@ class IntensityCorrection(object):
         c1, c0 = B.dot(y)
 
         if self._use_verbose:
-            print("(c1, c0) = (%.3f, %.3f)" % (c1, c0))
+            ph.print_info("(c1, c0) = (%.3f, %.3f)" % (c1, c0))
 
         if nda_additional_stack is None:
             return nda*c1 + c0, np.array([c1, c0])
@@ -346,7 +352,7 @@ class IntensityCorrection(object):
         c1 = x.dot(y)/x.dot(x)
 
         if self._use_verbose:
-            print("c1 = %.3f" % (c1))
+            ph.print_info("c1 = %.3f" % (c1))
 
         if nda_additional_stack is None:
             return nda*c1, c1
