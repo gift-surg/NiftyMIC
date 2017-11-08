@@ -114,11 +114,8 @@ def main():
     stacks = data_reader.get_stacks()
 
     if all(s.is_unity_mask() is True for s in stacks):
-        ph.print_line_separator(symbol="X")
-        ph.print_info(
-            "WARNING: No mask is provided! "
-            "Generated reconstruction space may be very big!")
-        ph.print_line_separator(symbol="X", add_newline=False)
+        ph.print_warning("No mask is provided! "
+                         "Generated reconstruction space may be very big!")
 
     # ---------------------------Data Preprocessing---------------------------
     ph.print_title("Data Preprocessing")

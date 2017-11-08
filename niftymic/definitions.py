@@ -15,3 +15,6 @@ DIR_CPP_BUILD = os.path.join(DIR_ROOT, "build", "cpp")
 ALLOWED_EXTENSIONS = ["nii.gz", "nii"]
 REGEX_FILENAMES = "[A-Za-z0-9+-_]+"
 REGEX_FILENAME_EXTENSIONS = "(" + "|".join(ALLOWED_EXTENSIONS) + ")"
+
+# Set default viewer
+VIEWER = ITKSNAP_EXE

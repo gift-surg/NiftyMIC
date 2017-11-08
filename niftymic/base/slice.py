@@ -15,8 +15,7 @@ import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.exceptions as exceptions
-from niftymic.definitions import DIR_TMP
-
+from niftymic.definitions import VIEWER
 
 # In addition to the nifti-image as being stored as sitk.Image for a single
 #  3D slice \f$ \in R^3 \times R^3 \times 1\f$ the class Slice
@@ -259,30 +258,22 @@ class Slice:
 
     # Display slice with external viewer (ITK-Snap)
     #  \param[in] show_segmentation display slice with or without associated segmentation (default=0)
-    def show(self, show_segmentation=0, dir_output=DIR_TMP):
+    def show(self, show_segmentation=0, label=None, viewer=VIEWER, verbose=True):
 
-        filename_out = self._filename + "_" + str(self._slice_number)
+        if label is None:
+            label = self._filename + "_" + str(self._slice_number)
+
         if show_segmentation:
-            sitkh.write_nifti_image_sitk(
-                self.sitk, dir_output + filename_out + ".nii.gz")
-            sitkh.write_nifti_image_sitk(self.sitk_mask, dir_output +
-                                      filename_out + "_mask.nii.gz")
-
-            cmd = "itksnap " \
-                + "-g " + dir_output + filename_out + ".nii.gz " \
-                + "-s " +  dir_output + filename_out + "_mask.nii.gz " + \
-                "& "
-
+            segmentation = self._sitk_mask
         else:
-            sitkh.write_nifti_image_sitk(
-                self.sitk, dir_output + filename_out + ".nii.gz")
+            segmentation = None
 
-            cmd = "itksnap " \
-                + "-g " + dir_output + filename_out + ".nii.gz " \
-                "& "
-
-        # cmd = "fslview " + dir_output + filename_out + ".nii.gz & "
-        os.system(cmd)
+        sitkh.show_sitk_image(
+            self.sitk,
+            segmentation=segmentation,
+            label=label,
+            viewer=viewer,
+            verbose=verbose)
 
     # Write information of Slice to HDD to given diretory:
     #  - sitk.Image object of slice
@@ -318,7 +309,7 @@ class Slice:
             # Write mask if it does not consist of only ones
             if not np.all(nda):
                 sitkh.write_nifti_image_sitk(self.sitk_mask, full_file_name +
-                                          "%s.nii.gz" % (suffix_mask))
+                                             "%s.nii.gz" % (suffix_mask))
 
         # print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
         # print("Transformation of slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))

@@ -18,14 +18,13 @@ import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 from niftymic.definitions import ALLOWED_EXTENSIONS
 import niftymic.base.exceptions as exceptions
+from niftymic.definitions import VIEWER
 
 
 ##
 # In addition to the nifti-image (stored as sitk.Image object) this class Stack
 # also contains additional variables helpful to work with the data.
 #
-
-
 class Stack:
 
     def __init__(self):
@@ -377,7 +376,7 @@ class Stack:
 
     # Display stack with external viewer (ITK-Snap)
     #  \param[in][in] show_segmentation display stack with or without associated segmentation (default=0)
-    def show(self, show_segmentation=0, label=None, viewer="itksnap", verbose=True):
+    def show(self, show_segmentation=0, label=None, viewer=VIEWER, verbose=True):
 
         if label is None:
             label = self._filename
@@ -708,7 +707,6 @@ class Stack:
                 self.sitk.GetDirection(),
                 0,
                 self.sitk_mask.GetPixelIDValue())
-
 
         # Create Stack instance
         if filename is None:
