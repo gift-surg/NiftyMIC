@@ -268,7 +268,10 @@ class Stack:
         if image_sitk_mask is not None:
             stack.sitk_mask = image_sitk_mask
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
-            stack._is_unity_mask = False
+            if sitk.GetArrayFromImage(stack.sitk_mask).prod() == 1:
+                stack._is_unity_mask = True
+            else:
+                stack._is_unity_mask = False
         else:
             stack.sitk_mask = stack._generate_identity_mask()
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
