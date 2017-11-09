@@ -6,16 +6,15 @@
 # \date       October 2017
 #
 
+import numpy as np
 import os
 import re
-import numpy as np
 
+import niftymic.validation.simulate_stacks_from_reconstruction as \
+    simulate_stacks_from_reconstruction
 import pysitk.python_helper as ph
-
 from niftymic.definitions import DIR_TEMPLATES
 from niftymic.utilities.input_arparser import InputArgparser
-import niftymic.prototyping.simulate_stacks_from_reconstruction as \
-    simulate_stacks_from_reconstruction
 
 
 def main():

@@ -30,7 +30,7 @@ def main():
     input_parser.add_reconstruction(required=True)
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_prefix_output(default="Simlulated_")
+    input_parser.add_prefix_output(default="Simulated_")
     input_parser.add_option(
         option_string="--copy-data",
         type=int,
