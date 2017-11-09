@@ -565,7 +565,7 @@ class InputArgparser(object):
     def add_isotropic_resolution(
         self,
         option_string="--isotropic-resolution",
-        type=int,
+        type=float,
         help="Specify isotropic resolution for obtained SRR volume. Default "
         "resolution is specified by in-plane resolution of chosen target "
         "stack.",
