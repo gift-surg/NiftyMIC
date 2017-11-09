@@ -100,6 +100,7 @@ def main():
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
+    ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:

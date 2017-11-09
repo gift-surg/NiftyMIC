@@ -112,6 +112,7 @@ def main():
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
+    ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     if all(s.is_unity_mask() is True for s in stacks):
         ph.print_warning("No mask is provided! "
@@ -258,11 +259,13 @@ def main():
             shrink_factors=args.shrink_factors,
             smoothing_sigmas=args.smoothing_sigmas,
             initializer_type="SelfGEOMETRY",
-            optimizer="ConjugateGradientLineSearch",
+            optimizer="RegularStepGradientDescent",
             optimizer_params={
-                "learningRate": 1,
-                "numberOfIterations": 100,
-                "lineSearchUpperLimit": 2,
+                "learningRate": 5,
+                "minStep": 1e-5,
+                "numberOfIterations": 500,
+                "relaxationFactor": 0.5,
+                "gradientMagnitudeTolerance": 1e-6,
             },
             scales_estimator="Jacobian",
         )
