@@ -18,14 +18,13 @@ import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 from niftymic.definitions import ALLOWED_EXTENSIONS
 import niftymic.base.exceptions as exceptions
+from niftymic.definitions import VIEWER
 
 
 ##
 # In addition to the nifti-image (stored as sitk.Image object) this class Stack
 # also contains additional variables helpful to work with the data.
 #
-
-
 class Stack:
 
     def __init__(self):
@@ -268,7 +267,10 @@ class Stack:
         if image_sitk_mask is not None:
             stack.sitk_mask = image_sitk_mask
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
-            stack._is_unity_mask = False
+            if sitk.GetArrayFromImage(stack.sitk_mask).prod() == 1:
+                stack._is_unity_mask = True
+            else:
+                stack._is_unity_mask = False
         else:
             stack.sitk_mask = stack._generate_identity_mask()
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
@@ -374,7 +376,7 @@ class Stack:
 
     # Display stack with external viewer (ITK-Snap)
     #  \param[in][in] show_segmentation display stack with or without associated segmentation (default=0)
-    def show(self, show_segmentation=0, label=None, viewer="itksnap", verbose=True):
+    def show(self, show_segmentation=0, label=None, viewer=VIEWER, verbose=True):
 
         if label is None:
             label = self._filename
@@ -411,7 +413,7 @@ class Stack:
         # Write file to specified location
         ph.print_info("Write image stack to %s.nii.gz ... " %
                       (full_file_name), newline=False)
-        sitk.WriteImage(self.sitk, full_file_name + ".nii.gz")
+        sitkh.write_nifti_image_sitk(self.sitk, full_file_name + ".nii.gz")
         print("done")
 
         # Write mask to specified location if given
@@ -422,7 +424,7 @@ class Stack:
             if not self._is_unity_mask and write_mask:
                 ph.print_info("Write image stack mask to %s%s.nii.gz ... " % (
                     full_file_name, suffix_mask), newline=False)
-                sitk.WriteImage(
+                sitkh.write_nifti_image_sitk(
                     self.sitk_mask, full_file_name + "%s.nii.gz" % (
                         suffix_mask))
                 print("done")
@@ -438,16 +440,27 @@ class Stack:
                 # self._slices):
                 if not hasattr(self, '_slices'):
                     raise ValueError(
-                        "Error occurred in attempt to write %s.nii.gz: No separate slices of object Slice are found" % (full_file_name))
+                        "Error occurred in attempt to write %s.nii.gz: "
+                        "No separate slices of object Slice are found" %
+                        full_file_name)
 
                 # Write slices
                 else:
+                    if write_transforms:
+                        ph.print_info(
+                            "Write image slices + transforms to %s ... " %
+                            directory, newline=False)
+                    else:
+                        ph.print_info(
+                            "Write image slices to %s ... " %
+                            directory, newline=False)
                     for slice in self.get_slices():
                         slice.write(
                             directory=directory,
                             filename=filename,
                             write_transform=write_transforms,
                             suffix_mask=suffix_mask)
+                    print("done")
 
             except ValueError as err:
                 print(err.message)
@@ -638,7 +651,12 @@ class Stack:
     #
     # \return     The resampled stack as Stack object
     #
-    def get_resampled_stack(self, resampling_grid, interpolator="Linear", default_pixel_value=0.0, filename=None):
+    def get_resampled_stack(self, resampling_grid=None, spacing=None, interpolator="Linear", default_pixel_value=0.0, filename=None):
+
+        if (resampling_grid is None and spacing is None) or \
+                (resampling_grid is not None and spacing is not None):
+            raise IOError(
+                "Either 'resampling_grid' or 'spacing' must be specified")
 
         # Get SimpleITK-interpolator
         try:
@@ -647,21 +665,48 @@ class Stack:
         except:
             raise ValueError("Error: interpolator is not known")
 
-        resampled_stack_sitk = sitk.Resample(
-            self.sitk,
-            resampling_grid,
-            sitk.Euler3DTransform(),
-            interpolator,
-            default_pixel_value,
-            self.sitk.GetPixelIDValue())
+        if resampling_grid is not None:
+            resampled_stack_sitk = sitk.Resample(
+                self.sitk,
+                resampling_grid,
+                sitk.Euler3DTransform(),
+                interpolator,
+                default_pixel_value,
+                self.sitk.GetPixelIDValue())
 
-        resampled_stack_sitk_mask = sitk.Resample(
-            self.sitk_mask,
-            resampling_grid,
-            sitk.Euler3DTransform(),
-            sitk.sitkNearestNeighbor,
-            0,
-            self.sitk_mask.GetPixelIDValue())
+            resampled_stack_sitk_mask = sitk.Resample(
+                self.sitk_mask,
+                resampling_grid,
+                sitk.Euler3DTransform(),
+                sitk.sitkNearestNeighbor,
+                0,
+                self.sitk_mask.GetPixelIDValue())
+        else:
+            spacing0 = np.array(self.sitk.GetSpacing())
+            size0 = np.array(self.sitk.GetSize())
+            size = np.round(size0 * spacing0 / spacing).astype("int")
+
+            resampled_stack_sitk = sitk.Resample(
+                self.sitk,
+                size,
+                sitk.Euler3DTransform(),
+                interpolator,
+                self.sitk.GetOrigin(),
+                spacing,
+                self.sitk.GetDirection(),
+                default_pixel_value,
+                self.sitk.GetPixelIDValue())
+
+            resampled_stack_sitk_mask = sitk.Resample(
+                self.sitk_mask,
+                size,
+                sitk.Euler3DTransform(),
+                interpolator,
+                self.sitk.GetOrigin(),
+                spacing,
+                self.sitk.GetDirection(),
+                0,
+                self.sitk_mask.GetPixelIDValue())
 
         # Create Stack instance
         if filename is None:
@@ -698,9 +743,9 @@ class Stack:
 
     # Get stack resampled on isotropic grid based on the actual position of
     #  its slices
-    #  \param[in] spacing_new_scalar length of voxel side, scalar
+    #  \param[in] resolution length of voxel side, scalar
     #  \return isotropically, resampled stack as Stack object
-    def get_isotropically_resampled_stack_from_slices(self, spacing_new_scalar=None, interpolator="NearestNeighbor", default_pixel_value=0.0, filename=None):
+    def get_isotropically_resampled_stack_from_slices(self, resolution=None, interpolator="NearestNeighbor", default_pixel_value=0.0, filename=None):
         resampled_stack = self.get_resampled_stack_from_slices()
 
         # Choose interpolator
@@ -714,14 +759,14 @@ class Stack:
         spacing = np.array(resampled_stack.sitk.GetSpacing())
         size = np.array(resampled_stack.sitk.GetSize()).astype("int")
 
-        if spacing_new_scalar is None:
+        if resolution is None:
             size_new = size
             spacing_new = spacing
             # Update information according to isotropic resolution
             size_new[2] = np.round(spacing[2]/spacing[0]*size[2]).astype("int")
             spacing_new[2] = spacing[0]
         else:
-            spacing_new = np.ones(3)*spacing_new_scalar
+            spacing_new = np.ones(3)*resolution
             size_new = np.round(spacing/spacing_new*size).astype("int")
 
         # Resample image and its mask to isotropic grid
@@ -756,21 +801,11 @@ class Stack:
         return stack
 
     ##
-    # Get isotropically resampled grid
-    # \param[in]  spacing_new_scalar
-    # \param[in]  interpolator        choose type of interpolator for
-    #                                 resampling
-    # \param[in]  extra_frame         additional extra frame of zero
-    #                                 intensities surrounding the stack in mm
-    # \return     isotropically, resampled stack as Stack object
-    #
-
-    ##
     # Gets the isotropically resampled stack.
     # \date       2017-02-03 16:34:24+0000
     #
     # \param      self                  The object
-    # \param      spacing_new_scalar    length of voxel side, scalar
+    # \param      resolution    length of voxel side, scalar
     # \param      interpolator          choose type of interpolator for
     #                                   resampling
     # \param      extra_frame           additional extra frame of zero
@@ -782,7 +817,7 @@ class Stack:
     #
     # \return     The isotropically resampled stack.
     #
-    def get_isotropically_resampled_stack(self, spacing_new_scalar=None, interpolator="Linear", extra_frame=0, filename=None, mask_dilation_radius=0, mask_dilation_kernel="Ball"):
+    def get_isotropically_resampled_stack(self, resolution=None, interpolator="Linear", extra_frame=0, filename=None, mask_dilation_radius=0, mask_dilation_kernel="Ball"):
 
         # Choose interpolator
         try:
@@ -797,14 +832,14 @@ class Stack:
         origin = np.array(self.sitk.GetOrigin())
         direction = self.sitk.GetDirection()
 
-        if spacing_new_scalar is None:
+        if resolution is None:
             size_new = size
             spacing_new = spacing
             # Update information according to isotropic resolution
             size_new[2] = np.round(spacing[2]/spacing[0]*size[2]).astype("int")
             spacing_new[2] = spacing[0]
         else:
-            spacing_new = np.ones(3)*spacing_new_scalar
+            spacing_new = np.ones(3)*resolution
             size_new = np.round(spacing/spacing_new*size).astype("int")
 
         if extra_frame is not 0:
@@ -872,7 +907,7 @@ class Stack:
 
     # Increase stack by adding zero voxels in respective directions
     #  \remark Used for MS project to add empty slices on top of (chopped) brain
-    #  \param[in] spacing_new_scalar length of voxel side, scalar
+    #  \param[in] resolution length of voxel side, scalar
     #  \param[in] interpolator choose type of interpolator for resampling
     #  \param[in] extra_frame additional extra frame of zero intensities surrounding the stack in mm
     #  \return isotropically, resampled stack as Stack object

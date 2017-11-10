@@ -112,13 +112,11 @@ def main():
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
+    ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     if all(s.is_unity_mask() is True for s in stacks):
-        ph.print_line_separator(symbol="X")
-        ph.print_info(
-            "WARNING: No mask is provided! "
-            "Generated reconstruction space may be very big!")
-        ph.print_line_separator(symbol="X", add_newline=False)
+        ph.print_warning("No mask is provided! "
+                         "Generated reconstruction space may be very big!")
 
     # ---------------------------Data Preprocessing---------------------------
     ph.print_title("Data Preprocessing")
@@ -153,14 +151,15 @@ def main():
             file_path=args.reference,
             file_path_mask=args.reference_mask,
             extract_slices=False)
-        if args.reference_mask is None:
-            use_reference_mask = False
+        # if args.verbose:
+        #     tmp = [reference]
+        #     tmp.extend(stacks)
+        #     sitkh.show_stacks(tmp, segmentation=reference)
+
     else:
         reference = st.Stack.from_stack(stacks[args.target_stack_index])
-        use_reference_mask = True
-
-    if args.verbose:
-        sitkh.show_stacks(stacks, segmentation=stacks[0])
+        # if args.verbose:
+        #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
@@ -173,7 +172,7 @@ def main():
         vol_registration = regflirt.FLIRT(
             registration_type="Rigid",
             use_fixed_mask=True,
-            use_moving_mask=use_reference_mask,
+            use_moving_mask=True,
             options=search_angles,
             use_verbose=False,
         )
@@ -196,9 +195,9 @@ def main():
     # Isotropic resampling to define HR target space
     ph.print_title("Reconstruction Space Generation")
     HR_volume = reference.get_isotropically_resampled_stack(
-        spacing_new_scalar=args.isotropic_resolution)
+        resolution=args.isotropic_resolution)
     ph.print_info(
-        "Isotropic reconstruction space with %g mm resolution created" %
+        "Isotropic reconstruction space with %g mm resolution is created" %
         HR_volume.sitk.GetSpacing()[0])
 
     if args.reference is None:
@@ -211,7 +210,8 @@ def main():
         joint_image_mask_builder.run()
         HR_volume = joint_image_mask_builder.get_stack()
         ph.print_info(
-            "Isotropic reconstruction space centered around joint stack masks")
+            "Isotropic reconstruction space is centered around "
+            "joint stack masks. ")
 
         # Crop to space defined by mask (plus extra margin)
         HR_volume = HR_volume.get_cropped_stack_based_on_mask(
@@ -251,7 +251,7 @@ def main():
         registration = regsitk.SimpleItkRegistration(
             moving=HR_volume,
             use_fixed_mask=True,
-            use_moving_mask=use_reference_mask,
+            use_moving_mask=True,
             use_verbose=args.verbose,
             interpolator="Linear",
             metric="Correlation",
@@ -325,7 +325,7 @@ def main():
     # Write SRR result
     HR_volume_final = SRR.get_reconstruction()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
-    HR_volume_final.write(args.dir_output)
+    HR_volume_final.write(args.dir_output, write_mask=False)
 
     HR_volume_iterations.insert(0, HR_volume_final)
     for stack in stacks:
@@ -360,6 +360,7 @@ def main():
     ph.print_line_separator()
 
     return 0
+
 
 if __name__ == '__main__':
     main()
