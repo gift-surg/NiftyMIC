@@ -1,5 +1,5 @@
 ##
-# \file register_to_template.py
+# \file register_image.py
 # \brief      Script to register the obtained reconstruction to a template
 #             space.
 #
@@ -27,25 +27,31 @@ def main():
     np.set_printoptions(precision=3)
 
     input_parser = InputArgparser(
-        description="Register an obtained reconstruction to a template space "
-        "using rigid registration. "
+        description="Register an obtained reconstruction (moving) "
+        "to a template image/space (fixed) using rigid registration. "
         "The resulting registration can optionally be applied to previously "
         "obtained motion correction slice transforms so that a volumetric "
         "reconstruction is possible in the (standard anatomical) space "
-        "defined by the template.",
+        "defined by the fixed.",
     )
-    input_parser.add_reconstruction(
-        required=True,
-        help="Image which shall be registered to the template space.")
-    input_parser.add_option(
-        option_string="--template",
-        type=str,
-        help="Template image used to perform reorientation.",
-        required=True)
-    input_parser.add_dir_input()
+    input_parser.add_fixed(required=True)
+    input_parser.add_moving(required=True)
     input_parser.add_dir_output(required=True)
+    input_parser.add_dir_input()
+    input_parser.add_moving_mask()
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_search_angle(default=180)
+    input_parser.add_option(
+        option_string="--transform-only",
+        type=int,
+        help="Turn on/off functionality to transform moving image to fixed "
+        "image only, i.e. no resampling to fixed image space",
+        default=0)
+    input_parser.add_option(
+        option_string="--write-transform",
+        type=int,
+        help="Turn on/off functionality to write registration transform",
+        default=0)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
@@ -53,11 +59,11 @@ def main():
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
-    reconstruction = st.Stack.from_filename(args.reconstruction)
+    moving = st.Stack.from_filename(args.moving, args.moving_mask)
 
-    data_reader = dr.MultipleImagesReader([args.template], suffix_mask="_mask")
+    data_reader = dr.MultipleImagesReader([args.fixed], suffix_mask="_mask")
     data_reader.read_data()
-    template = data_reader.get_stacks()[0]
+    fixed = data_reader.get_stacks()[0]
 
     # -------------------Register Reconstruction to Template-------------------
     ph.print_title("Register Reconstruction to Template")
@@ -69,8 +75,8 @@ def main():
     search_angles = (" ").join(search_angles)
 
     registration = regflirt.FLIRT(
-        fixed=reconstruction,
-        moving=template,
+        fixed=moving,
+        moving=fixed,
         registration_type="Rigid",
         use_verbose=False,
         options=search_angles,
@@ -80,24 +86,31 @@ def main():
     print("done")
     transform_sitk = registration.get_registration_transform_sitk()
 
-    # Apply rigidly transform to align reconstruction with template
-    reconstruction_orient_sitk = sitkh.get_transformed_sitk_image(
-        reconstruction.sitk, transform_sitk)
-    reconstruction_orient = st.Stack.from_sitk_image(
-        reconstruction_orient_sitk, filename=reconstruction.get_filename())
+    if args.write_transform:
+        path_to_transform = os.path.join(
+            args.dir_output, "registration_transform_sitk.txt")
+        sitk.WriteTransform(transform_sitk, path_to_transform)
 
-    # Resample reconstruction to template space
-    reconstruction_orient = \
-        reconstruction_orient.get_resampled_stack(template.sitk)
-    reconstruction_orient = st.Stack.from_sitk_image(
-        reconstruction_orient.sitk,
-        filename=reconstruction_orient.get_filename(),
-        image_sitk_mask=template.sitk_mask)
-    reconstruction_orient.set_filename(
-        reconstruction_orient.get_filename() + "ResamplingToTemplateSpace")
+    # Apply rigidly transform to align reconstruction (moving) with template
+    # (fixed)
+    moving.update_motion_correction(transform_sitk)
 
-    # Write resampled reconstruction
-    reconstruction_orient.write(args.dir_output, write_mask=False)
+    if args.transform_only:
+        moving.write(args.dir_output, write_mask=True)
+        ph.exit()
+
+    # Resample reconstruction (moving) to template space (fixed)
+    warped_moving = \
+        moving.get_resampled_stack(fixed.sitk)
+    warped_moving.set_filename(
+        warped_moving.get_filename() + "ResamplingToTemplateSpace")
+
+    # Write resampled reconstruction (moving)
+    if args.moving_mask is not None:
+        write_mask = True
+    else:
+        write_mask = False
+    warped_moving.write(args.dir_output, write_mask=write_mask)
 
     if args.dir_input is not None:
         data_reader = dr.ImageSlicesDirectoryReader(
@@ -121,10 +134,10 @@ def main():
             )
 
     if args.verbose:
-        tmp = reconstruction_orient.get_stack_multiplied_with_mask()
-        tmp.set_filename(reconstruction.get_filename() + "_times_mask")
-        sitkh.show_stacks([template, reconstruction_orient, tmp],
-                          segmentation=reconstruction_orient)
+        tmp = warped_moving.get_stack_multiplied_with_mask()
+        tmp.set_filename(moving.get_filename() + "_times_mask")
+        sitkh.show_stacks([fixed, warped_moving, tmp],
+                          segmentation=warped_moving)
 
     elapsed_time_total = ph.stop_timing(time_start)
 

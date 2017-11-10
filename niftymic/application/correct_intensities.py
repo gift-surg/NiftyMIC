@@ -89,6 +89,7 @@ def main():
         use_reference_mask=True,
         use_individual_slice_correction=False,
         prefix_corrected=args.prefix_output,
+        use_verbose=False,
     )
     stacks_corrected = [None] * len(stacks)
     for i, stack in enumerate(stacks):
@@ -116,7 +117,7 @@ def main():
         # intensity_corrector.run_affine_intensity_correction()
         stacks_corrected[i] = \
             intensity_corrector.get_intensity_corrected_stack()
-        print("done")
+        print("done (c1 = %g) " % intensity_corrector.get_intensity_correction_coefficients())
 
         # Write Data
         stacks_corrected[i].write(

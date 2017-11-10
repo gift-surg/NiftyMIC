@@ -155,6 +155,46 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_fixed(
+        self,
+        option_string="--fixed",
+        type=str,
+        help="Fixed image to be registered.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_fixed_mask(
+        self,
+        option_string="--fixed-mask",
+        type=str,
+        help="Fixed image mask to be registered.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_moving(
+        self,
+        option_string="--moving",
+        type=str,
+        help="Moving image to be registered.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_moving_mask(
+        self,
+        option_string="--moving-mask",
+        type=str,
+        help="Moving image mask to be registered.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_metric(
         self,
         option_string="--metric",
@@ -525,7 +565,7 @@ class InputArgparser(object):
     def add_isotropic_resolution(
         self,
         option_string="--isotropic-resolution",
-        type=int,
+        type=float,
         help="Specify isotropic resolution for obtained SRR volume. Default "
         "resolution is specified by in-plane resolution of chosen target "
         "stack.",
@@ -583,6 +623,7 @@ class InputArgparser(object):
     def add_option(
         self,
         option_string="--option",
+        nargs=None,
         type=float,
         help="Add option.",
         default=None,

@@ -504,7 +504,8 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                     reference, filename=filename))
 
                 if self._verbose:
-                    sitkh.show_stacks(self._reconstructions)
+                    sitkh.show_stacks(self._reconstructions,
+                                      segmentation=self._reference)
 
 
 ##

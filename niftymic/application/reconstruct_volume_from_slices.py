@@ -100,13 +100,14 @@ def main():
 
     data_reader.read_data()
     stacks = data_reader.get_stacks()
+    ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:
-        recon0 = stacks[args.target_stack_index
-                        ].get_isotropically_resampled_stack(
-            spacing_new_scalar=args.isotropic_resolution,
-            extra_frame=args.extra_frame_target)
+        recon0 = \
+            stacks[args.target_stack_index].get_isotropically_resampled_stack(
+                resolution=args.isotropic_resolution,
+                extra_frame=args.extra_frame_target)
 
     # Reconstruction space was provided by user
     else:
@@ -209,6 +210,7 @@ def main():
           (elapsed_time))
 
     return 0
+
 
 if __name__ == '__main__':
     main()

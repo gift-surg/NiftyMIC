@@ -373,7 +373,7 @@ class BrainStripping(object):
         path_to_res_skull = os.path.join(
             self._dir_tmp, filename_out + "_bet_skull.nii.gz")
 
-        sitk.WriteImage(self._sitk, path_to_image)
+        sitkh.write_nifti_image_sitk(self._sitk, path_to_image)
 
         bet = nipype.interfaces.fsl.BET()
         bet.inputs.in_file = path_to_image
