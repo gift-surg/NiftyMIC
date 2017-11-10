@@ -259,13 +259,11 @@ def main():
             shrink_factors=args.shrink_factors,
             smoothing_sigmas=args.smoothing_sigmas,
             initializer_type="SelfGEOMETRY",
-            optimizer="RegularStepGradientDescent",
+            optimizer="ConjugateGradientLineSearch",
             optimizer_params={
-                "learningRate": 5,
-                "minStep": 1e-5,
-                "numberOfIterations": 500,
-                "relaxationFactor": 0.5,
-                "gradientMagnitudeTolerance": 1e-6,
+                "learningRate": 1,
+                "numberOfIterations": 100,
+                "lineSearchUpperLimit": 2,
             },
             scales_estimator="Jacobian",
         )
