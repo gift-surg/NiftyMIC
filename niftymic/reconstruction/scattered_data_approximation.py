@@ -128,8 +128,8 @@ class ScatteredDataApproximation:
     # Computed reconstructed volume based on current estimated positions of
     # slices
     def run(self):
-        print("Chosen SDA approach: " + self._sda_approach)
-        print("Smoothing parameter sigma = " + str(self._sigma_array))
+        ph.print_info("Chosen SDA approach: " + self._sda_approach)
+        ph.print_info("Smoothing parameter sigma = " + str(self._sigma_array))
 
         t0 = time.clock()
 
