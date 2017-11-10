@@ -71,7 +71,7 @@ def main():
         dic_stack_similarity = {
             measures[i]: similarities[:, i] for i in range(len(measures))
         }
-        dic_stack_similarity["measures"] = measures
+        # dic_stack_similarity["measures"] = measures
 
         # Store information of to dictionary
         dic_stacks[filename] = dic_stack_similarity

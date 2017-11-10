@@ -42,6 +42,14 @@ def main():
         "from the original data.",
         default="Simulated_",
     )
+    input_parser.add_option(
+        option_string="--dir-input-simulated",
+        type=str,
+        help="Specify the directory where the simulated stacks are. "
+        "If not given, it is assumed that they are in the same directory "
+        "as the original ones.",
+        default=None
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -57,9 +65,13 @@ def main():
     stacks_original = data_reader.get_stacks()
 
     # Read data simulated from obtained reconstruction
+    if args.dir_input_simulated is None:
+        dir_input_simulated = os.path.dirname(filenames_original[0])
+    else:
+        dir_input_simulated = args.dir_input_simulated
     filenames_simulated = [
         os.path.join("%s", "%s%s") %
-        (os.path.dirname(f), args.prefix_simulated, os.path.basename(f))
+        (dir_input_simulated, args.prefix_simulated, os.path.basename(f))
         for f in filenames_original
     ]
     data_reader = dr.MultipleImagesReader(
