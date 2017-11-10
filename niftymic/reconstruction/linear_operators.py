@@ -15,6 +15,7 @@ import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.psf as psf
 import niftymic.base.slice as sl
+import niftymic.base.stack as st
 
 
 class LinearOperators(object):
@@ -127,21 +128,27 @@ class LinearOperators(object):
     #
     # \return     Image A(x) as Slice object in slice image space
     #
-    def A(self, reconstruction, slice):
+    def A(self, reconstruction, stack_slice):
 
-        simulated_slice_itk = self.A_itk(reconstruction.itk, slice.itk)
-        simulated_slice_sitk = sitkh.get_sitk_from_itk_image(
-            simulated_slice_itk)
+        simulated_itk = self.A_itk(reconstruction.itk, stack_slice.itk)
+        simulated_sitk = sitkh.get_sitk_from_itk_image(simulated_itk)
 
         # Remark: Mask did not undergo forward operation
-        simulated_slice = sl.Slice.from_sitk_image(
-            slice_sitk=simulated_slice_sitk,
-            slice_number=slice.get_slice_number(),
-            filename=slice.get_filename(),
-            slice_sitk_mask=slice.sitk_mask
-        )
+        if isinstance(stack_slice, sl.Slice):
+            simulated = sl.Slice.from_sitk_image(
+                slice_sitk=simulated_sitk,
+                slice_number=stack_slice.get_slice_number(),
+                filename=stack_slice.get_filename(),
+                slice_sitk_mask=stack_slice.sitk_mask,
+            )
+        elif isinstance(stack_slice, st.Stack):
+            simulated = st.Stack.from_sitk_image(
+                image_sitk=simulated_sitk,
+                image_sitk_mask=stack_slice.sitk_mask,
+                filename=stack_slice.get_filename(),
+            )
 
-        return simulated_slice
+        return simulated
 
     ##
     # Perform backward operation on slice image, i.e.
