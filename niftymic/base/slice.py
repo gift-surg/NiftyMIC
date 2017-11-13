@@ -264,7 +264,7 @@ class Slice:
             label = self._filename + "_" + str(self._slice_number)
 
         if show_segmentation:
-            segmentation = self._sitk_mask
+            segmentation = self.sitk_mask
         else:
             segmentation = None
 
