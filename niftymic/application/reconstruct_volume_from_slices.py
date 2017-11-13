@@ -40,6 +40,7 @@ def main():
     input_parser.add_filenames()
     input_parser.add_image_selection()
     input_parser.add_dir_output(required=True)
+    input_parser.add_prefix_output(default="SRR_")
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
     input_parser.add_extra_frame_target(default=10)
@@ -99,7 +100,7 @@ def main():
         raise IOError("Reconstruction type unknown")
 
     data_reader.read_data()
-    stacks = data_reader.get_stacks()
+    stacks = data_reader.get_data()
     ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     # Reconstruction space is given isotropically resampled target stack
@@ -138,7 +139,7 @@ def main():
     SRR0.run()
 
     recon = SRR0.get_reconstruction()
-    recon.set_filename(SRR0.get_setting_specific_filename())
+    recon.set_filename(SRR0.get_setting_specific_filename(args.prefix_output))    
     recon.write(args.dir_output)
 
     # List to store SRRs
@@ -163,7 +164,8 @@ def main():
             )
             SRR.run()
             recon = SRR.get_reconstruction()
-            recon.set_filename(SRR.get_setting_specific_filename())
+            recon.set_filename(
+                SRR.get_setting_specific_filename(args.prefix_output))
             recons.insert(0, recon)
 
             recon.write(args.dir_output)
@@ -184,7 +186,8 @@ def main():
             )
             SRR.run()
             recon = SRR.get_reconstruction()
-            recon.set_filename(SRR.get_setting_specific_filename())
+            recon.set_filename(
+                SRR.get_setting_specific_filename(args.prefix_output))
             recons.insert(0, recon)
 
             recon.write(args.dir_output)

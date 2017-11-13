@@ -62,7 +62,7 @@ def main():
     data_reader = dr.MultipleImagesReader(
         filenames_original, suffix_mask=args.suffix_mask)
     data_reader.read_data()
-    stacks_original = data_reader.get_stacks()
+    stacks_original = data_reader.get_data()
 
     # Read data simulated from obtained reconstruction
     if args.dir_input_simulated is None:
@@ -77,7 +77,7 @@ def main():
     data_reader = dr.MultipleImagesReader(
         filenames_simulated, suffix_mask=args.suffix_mask)
     data_reader.read_data()
-    stacks_simulated = data_reader.get_stacks()
+    stacks_simulated = data_reader.get_data()
 
     for i in range(len(stacks_original)):
         try:

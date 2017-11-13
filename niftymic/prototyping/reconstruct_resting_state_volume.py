@@ -98,7 +98,7 @@ def main():
     data_reader = dr.MultiComponentImageReader(
         args.filename, args.filename_mask)
     data_reader.read_data()
-    stacks = data_reader.get_stacks()
+    stacks = data_reader.get_data()
 
     # Define reconstruction space for rsfmri
     reconstruction_space = st.Stack.from_stack(stacks[args.target_stack_index])

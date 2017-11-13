@@ -46,7 +46,7 @@ def main():
         path_to_directory=args.dir_input,
         suffix_mask=args.suffix_mask)
     data_reader.read_data()
-    stacks = data_reader.get_stacks()
+    stacks = data_reader.get_data()
 
     reconstruction = st.Stack.from_filename(
         args.reconstruction, extract_slices=False)

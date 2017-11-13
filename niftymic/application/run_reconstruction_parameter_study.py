@@ -108,7 +108,7 @@ def main():
             "Provide input by either '--dir-input' or '--filenames'")
 
     data_reader.read_data()
-    stacks = data_reader.get_stacks()
+    stacks = data_reader.get_data()
 
     if args.reference is not None:
         reference = st.Stack.from_filename(

@@ -63,7 +63,7 @@ def main():
 
     data_reader = dr.MultipleImagesReader([args.fixed], suffix_mask="_mask")
     data_reader.read_data()
-    fixed = data_reader.get_stacks()[0]
+    fixed = data_reader.get_data()[0]
 
     # -------------------Register Reconstruction to Template-------------------
     ph.print_title("Register Reconstruction to Template")
@@ -117,7 +117,7 @@ def main():
             path_to_directory=args.dir_input,
             suffix_mask=args.suffix_mask)
         data_reader.read_data()
-        stacks = data_reader.get_stacks()
+        stacks = data_reader.get_data()
 
         for i, stack in enumerate(stacks):
             stack.update_motion_correction(transform_sitk)

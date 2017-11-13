@@ -23,20 +23,34 @@ from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import REGEX_FILENAMES
 from niftymic.definitions import REGEX_FILENAME_EXTENSIONS
 
+##
+# DataReader is an abstract class to read data.
+# \date       2017-07-12 11:38:07+0100
+#
+
+
+class DataReader(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def read_data(self):
+        pass
+
+    @abstractmethod
+    def get_data(self):
+        pass
+
 
 ##
 # DataReader is an abstract class to read 3D images.
 # \date       2017-07-12 11:38:07+0100
 #
-class DataReader(object):
+class ImageDataReader(DataReader):
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        DataReader.__init__(self)
         self._stacks = None
-
-    @abstractmethod
-    def read_data(self):
-        pass
 
     ##
     # Returns the read data as list of Stack objects
@@ -46,7 +60,7 @@ class DataReader(object):
     #
     # \return     The stacks.
     #
-    def get_stacks(self):
+    def get_data(self):
 
         if type(self._stacks) is not list:
             raise exceptions.ObjectNotCreated("read_data")
@@ -55,11 +69,11 @@ class DataReader(object):
 
 
 ##
-# DirectoryReader reads images and their masks from a given directory and
+# ImageDirectoryReader reads images and their masks from a given directory and
 # returns them as a list of Stack objects.
 # \date       2017-07-12 11:36:22+0100
 #
-class DirectoryReader(DataReader):
+class ImageDirectoryReader(ImageDataReader):
 
     ##
     # Store relevant information to images and their potential masks from a
@@ -146,7 +160,7 @@ class DirectoryReader(DataReader):
 # of Stack objects.
 # \date       2017-07-12 11:28:10+0100
 #
-class MultipleImagesReader(DataReader):
+class MultipleImagesReader(ImageDataReader):
 
     ##
     # Store relevant information to read multiple images and their potential
@@ -228,7 +242,7 @@ class MultipleImagesReader(DataReader):
 # registration steps.
 # \date       2017-07-17 22:32:11+0100
 #
-class ImageSlicesDirectoryReader(DataReader):
+class ImageSlicesDirectoryReader(ImageDataReader):
 
     ##
     # Store relevant information to images, slices and their potential masks
@@ -331,7 +345,7 @@ class ImageSlicesDirectoryReader(DataReader):
 # MultiComponentImageReader reads a single image which has multiple components
 # \date       2017-08-05 23:39:24+0100
 #
-class MultiComponentImageReader(DataReader):
+class MultiComponentImageReader(ImageDataReader):
 
     def __init__(self, path_to_image, path_to_image_mask=None):
 
@@ -370,3 +384,62 @@ class MultiComponentImageReader(DataReader):
                 image_sitk=image_sitk,
                 filename=filename,
                 image_sitk_mask=image_sitk_mask)
+
+
+class TransformationDataReader(DataReader):
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        DataReader.__init__(self)
+        self._transforms_sitk = None
+
+    def get_data(self):
+        return self._transforms_sitk
+
+
+class TransformationDirectoryReader(TransformationDataReader):
+
+    def __init__(self, directory):
+        TransformationDataReader.__init__(self)
+        self._directory = directory
+
+    def read_data(self, extension="tfm"):
+        pattern = REGEX_FILENAMES + "[.]" + extension
+        p = re.compile(pattern)
+
+        filenames = [
+            os.path.join(self._directory, f)
+            for f in os.listdir(self._directory) if p.match(f)
+        ]
+        filenames = natsort.natsorted(filenames, key=lambda y: y.lower())
+
+        transforms_reader = MultipleTransformationsReader(filenames)
+        transforms_reader.read_data()
+        self._transforms_sitk = transforms_reader.get_data()
+
+
+class MultipleTransformationsReader(TransformationDataReader):
+
+    def __init__(self, file_paths):
+        super(self.__class__, self).__init__()
+        self._file_paths = file_paths
+
+        # Third line in *.tfm file contains information on the transform type
+        self._transform_type = {
+            "Euler3DTransform_double_3_3": sitk.Euler3DTransform,
+            "AffineTransform_double_3_3": sitk.AffineTransform,
+        }
+
+    def read_data(self):
+        self._transforms_sitk = [None] * len(self._file_paths)
+
+        for i in range(len(self._file_paths)):
+            # Read transform as type sitk.Transform
+            transform_sitk = sitk.ReadTransform(self._file_paths[i])
+
+            # Convert transform to respective type, e.g. Euler, Affine etc
+            transform_type = open(self._file_paths[i]).readlines()[2]
+            transform_type = re.sub("\n", "", transform_type)
+            transform_type = transform_type.split(" ")[1]
+            self._transforms_sitk[i] = self._transform_type[transform_type](
+                transform_sitk)

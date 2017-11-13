@@ -110,7 +110,7 @@ if __name__ == '__main__':
         raise IOError("Reconstruction type unknown")
 
     data_reader.read_data()
-    stacks = data_reader.get_stacks()
+    stacks = data_reader.get_data()
 
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:

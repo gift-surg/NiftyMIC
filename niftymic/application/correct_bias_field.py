@@ -71,7 +71,7 @@ def main():
     data_reader = dr.MultipleImagesReader(
         args.filenames, suffix_mask=args.suffix_mask)
     data_reader.read_data()
-    stacks = data_reader.get_stacks()
+    stacks = data_reader.get_data()
 
     # Perform Bias Field Correction
     ph.print_title("Perform Bias Field Correction")

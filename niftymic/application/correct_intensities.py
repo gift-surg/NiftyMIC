@@ -61,12 +61,12 @@ def main():
     data_reader = dr.MultipleImagesReader(
         args.filenames, suffix_mask=args.suffix_mask, extract_slices=False)
     data_reader.read_data()
-    stacks = data_reader.get_stacks()
+    stacks = data_reader.get_data()
 
     data_reader = dr.MultipleImagesReader(
         [args.reference], suffix_mask=args.suffix_mask, extract_slices=False)
     data_reader.read_data()
-    reference = data_reader.get_stacks()[0]
+    reference = data_reader.get_data()[0]
 
     if args.registration:
         # Define search angle ranges for FLIRT in all three dimensions
