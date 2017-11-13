@@ -7,42 +7,64 @@
 #
 
 # Import libraries
-from abc import ABCMeta, abstractmethod
-import SimpleITK as sitk
+import os
 import numpy as np
+import SimpleITK as sitk
+from abc import ABCMeta, abstractmethod
+
+import pysitk.python_helper as ph
 
 
 class MotionSimulator(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, dimension):
+    def __init__(self, dimension, verbose):
         self._transforms_sitk = None
         self._dimension = dimension
+        self._verbose = verbose
 
     @abstractmethod
     def simulate_motion(self):
         pass
 
     def get_transforms_sitk(self):
-        # Return copy of transforms
 
-        transforms_sitk = [eval("sitk." + self._transforms_sitk[0].GetName() +
-                                "(t)") for t in self._transforms_sitk]
+        # Return copy of transforms
+        transforms_sitk = [
+            eval("sitk." + self._transforms_sitk[0].GetName() +
+                 "(t)") for t in self._transforms_sitk
+        ]
         return transforms_sitk
+
+    def write_transforms_sitk(self,
+                              directory,
+                              prefix_filename="Euler3dTransform_"):
+        ph.create_directory(directory)
+        for i, transform in enumerate(self._transforms_sitk):
+            path_to_file = os.path.join(
+                directory, "%s%d.tfm" % (prefix_filename, i+1))
+            sitk.WriteTransform(transform, path_to_file)
+            if self._verbose:
+                ph.print_info("Transform written to %s" % path_to_file)
 
 
 class RigidMotionSimulator(MotionSimulator):
     __metaclass__ = ABCMeta
 
-    def __init__(self, dimension):
-        MotionSimulator.__init__(self, dimension)
+    def __init__(self, dimension, verbose):
+        MotionSimulator.__init__(self, dimension=dimension, verbose=verbose)
         self._transform0_sitk = eval("sitk.Euler%dDTransform" % (dimension))
 
 
 class RandomRigidMotionSimulator(RigidMotionSimulator):
 
-    def __init__(self, dimension, angle_max_deg=5, translation_max=5):
-        RigidMotionSimulator.__init__(self, dimension)
+    def __init__(self,
+                 dimension,
+                 angle_max_deg=5,
+                 translation_max=5,
+                 verbose=False):
+        RigidMotionSimulator.__init__(
+            self, dimension=dimension, verbose=verbose)
         self._angle_max_deg = angle_max_deg
         self._translation_max = translation_max
 
