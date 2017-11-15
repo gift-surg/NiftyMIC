@@ -61,7 +61,7 @@ long_description = "This is a research-focused toolkit developed within the" \
 
 
 setup(name='NiftyMIC',
-      version='0.1.dev1',
+      version='0.1rc1',
       description=description,
       long_description=long_description,
       url='https://github.com/gift-surg/NiftyMIC',
@@ -70,9 +70,9 @@ setup(name='NiftyMIC',
       license='BSD-3-Clause',
       packages=['niftymic'],
       install_requires=[
-          'pysitk',
-          'nsol',
-          'simplereg',
+          'pysitk==0.1',
+          'nsol==0.1',
+          'simplereg==0.1',
           'scikit_image>=0.12.3',
           'scipy>=0.19.1',
           'natsort>=5.0.3',
@@ -82,16 +82,18 @@ setup(name='NiftyMIC',
       zip_safe=False,
       keywords='development numericalsolver convexoptimisation',
       classifiers=[
-          'Development Status :: 3 - Alpha',
-
           'Intended Audience :: Developers',
-          'Topic :: Software Development :: Build Tools',
+          'Intended Audience :: Healthcare Industry',
+          'Intended Audience :: Science/Research',
 
           'License :: OSI Approved :: BSD License',
 
+          'Topic :: Software Development :: Build Tools',
+          'Topic :: Scientific/Engineering :: Medical Science Apps.',
+
           'Programming Language :: Python',
           'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3',
       ],
       cmdclass={
           "develop": CustomDevelopCommand,
