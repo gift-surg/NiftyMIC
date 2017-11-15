@@ -98,7 +98,7 @@ def main():
 
     # '--dir-input' specified
     elif args.dir_input is not None:
-        data_reader = dr.DirectoryReader(
+        data_reader = dr.ImageDirectoryReader(
             args.dir_input, suffix_mask=args.suffix_mask)
 
     # '--filenames' specified
@@ -111,7 +111,7 @@ def main():
             "Provide input by either '--dir-input' or '--filenames'")
 
     data_reader.read_data()
-    stacks = data_reader.get_stacks()
+    stacks = data_reader.get_data()
     ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     if all(s.is_unity_mask() is True for s in stacks):
