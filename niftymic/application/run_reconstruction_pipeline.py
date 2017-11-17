@@ -12,6 +12,10 @@ import re
 
 import niftymic.validation.simulate_stacks_from_reconstruction as \
     simulate_stacks_from_reconstruction
+import niftymic.validation.evaluate_simulated_stack_similarity as \
+    evaluate_simulated_stack_similarity
+import niftymic.validation.show_evaluated_simulated_stack_similarity as \
+    show_evaluated_simulated_stack_similarity
 import pysitk.python_helper as ph
 from niftymic.definitions import DIR_TEMPLATES
 from niftymic.utilities.input_arparser import InputArgparser
@@ -41,6 +45,7 @@ def main():
     input_parser.add_multiresolution(default=0)
     input_parser.add_log_script_execution(default=1)
     input_parser.add_dir_input_templates(default=DIR_TEMPLATES)
+    input_parser.add_isotropic_resolution()
     input_parser.add_option(
         option_string="--registration",
         type=int,
@@ -153,6 +158,9 @@ def main():
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--verbose %d" % args.verbose)
+        if args.isotropic_resolution is not None:
+            cmd_args.append("--isotropic-resolution %d" %
+                            args.isotropic_resolution)
         cmd = "niftymic_reconstruct_volume %s" % (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
         ph.execute_command(cmd)
@@ -204,10 +212,12 @@ def main():
         cmd_args.append("--reconstruction-space %s" % reconstruction_space)
         cmd_args.append("--alpha %s" % args.alpha)
 
-        # Do not use any mask for this step!
+        # No mask for this step?
         # (Rationale: Visually it looks nicer to have wider FOV in recon space.
         # Stack is multiplied by the template mask in subsequent step anyway)
-        cmd_args.append("--suffix-mask ^^^")
+        # Issues occur in case some slices need to be ignored.
+        # cmd_args.append("--suffix-mask no-mask-used")
+        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
 
         cmd = "niftymic_reconstruct_volume_from_slices %s" % \
             (" ").join(cmd_args)
@@ -227,7 +237,8 @@ def main():
             dir_output_recon_template_space, reconstruction[key])
 
         # Copy SRR to output directory
-        output = "%sSRR_%s_GW%d.nii.gz" % (args.prefix_output, key, args.gestational_age)
+        output = "%sSRR_%s_GW%d.nii.gz" % (
+            args.prefix_output, key, args.gestational_age)
         path_to_output = os.path.join(args.dir_output, output)
         cmd = "cp %s %s" % (path_to_recon, path_to_output)
         ph.execute_command(cmd)
@@ -269,8 +280,34 @@ def main():
         cmd_args.append("--reconstruction %s" % path_to_recon)
         cmd_args.append("--copy-data 1")
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
-        cmd_args.append("--verbose %s" % args.verbose)
+        # cmd_args.append("--verbose %s" % args.verbose)
         exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
+        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        ph.execute_command(cmd)
+
+        filenames = [os.path.join(dir_output_data_vs_simulatd_data, "%s%s%s" % (
+            prefix_ic, prefix_bias, os.path.basename(f)))
+            for f in args.filenames]
+
+        dir_output_evaluation = os.path.join(
+            dir_output_data_vs_simulatd_data, "evaluation")
+        dir_output_figures = os.path.join(
+            dir_output_data_vs_simulatd_data, "figures")
+
+        cmd_args = []
+        cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--measures NCC SSIM")
+        cmd_args.append("--dir-output %s" % dir_output_evaluation)
+        exe = os.path.abspath(evaluate_simulated_stack_similarity.__file__)
+        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        ph.execute_command(cmd)
+
+        cmd_args = []
+        cmd_args.append("--dir-input %s" % dir_output_evaluation)
+        cmd_args.append("--dir-output %s" % dir_output_figures)
+        exe = os.path.abspath(
+            show_evaluated_simulated_stack_similarity.__file__)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
         ph.execute_command(cmd)
 
