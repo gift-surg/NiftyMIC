@@ -176,6 +176,7 @@ niftymic_run_reconstruction_parameter_study \
 ```
 niftymic_run_reconstruction_parameter_study \
 --dir-input dir-to-motion-correction \
+--dir-output dir-to-param-study-output \
 --reconstruction-type TK1L2 \
 --reference path-to-reference-volume.nii.gz \
 --reference-mask path-to-reference-volume_mask.nii.gz \
