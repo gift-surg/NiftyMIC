@@ -111,9 +111,13 @@ def main():
             x_2D_mask = nda_3D_mask[k, :, :].flatten()
 
             indices = np.where(x_2D_mask > 0)
+
             for m, measure in enumerate(args.measures):
-                similarities[m] = similarity_measures[measure](
-                    x_2D_original[indices], x_2D_simulated[indices])
+                if len(indices[0]) > 0:
+                    similarities[m] = similarity_measures[measure](
+                        x_2D_original[indices], x_2D_simulated[indices])
+                else:
+                    similarities[m] = np.inf
             ph.write_array_to_file(path_to_file, similarities.reshape(1, -1))
 
     return 0
