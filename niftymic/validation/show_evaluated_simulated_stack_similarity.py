@@ -105,6 +105,12 @@ def main():
                 ax.set_ylim([0, 1])
 
         plt.suptitle(filename)
+        try:
+            # Open windows (and also save them) in full screen
+            manager = plt.get_current_fig_manager()
+            manager.full_screen_toggle()
+        except:
+            pass
         plt.show(block=False)
         if args.dir_output is not None:
             filename = "Similarity_%s.pdf" % filename
@@ -143,6 +149,12 @@ def main():
         order=measures,
     )
     ax.set_axisbelow(True)
+    try:
+        # Open windows (and also save them) in full screen
+        manager = plt.get_current_fig_manager()
+        manager.full_screen_toggle()
+    except:
+        pass
     plt.show(block=False)
     if args.dir_output is not None:
         filename = "Boxplot.pdf"
