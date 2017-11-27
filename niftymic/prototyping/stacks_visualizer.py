@@ -77,7 +77,7 @@ class StacksVisualizer(object):
 
         if colors is None:
             # http://matplotlib.org/examples/color/colormaps_reference.html
-            cmap = plt.get_cmap('Vega20')
+            cmap = plt.get_cmap('tab20')
             # cmap = plt.get_cmap('nipy_spectral')
             # cmap = plt.get_cmap('rainbow')
             # colors = [cmap(i) for i in np.linspace(0, 1, self._N_stacks)]

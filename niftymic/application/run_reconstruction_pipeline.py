@@ -16,6 +16,8 @@ import niftymic.validation.evaluate_simulated_stack_similarity as \
     evaluate_simulated_stack_similarity
 import niftymic.validation.show_evaluated_simulated_stack_similarity as \
     show_evaluated_simulated_stack_similarity
+import niftymic.validation.export_side_by_side_simulated_vs_original_slice_comparison as \
+    export_side_by_side_simulated_vs_original_slice_comparison
 import pysitk.python_helper as ph
 from niftymic.definitions import DIR_TEMPLATES
 from niftymic.utilities.input_arparser import InputArgparser
@@ -262,6 +264,7 @@ def main():
             dir_output_recon_template_space, "motion_correction")
 
         pattern = "[a-zA-Z0-9_.]+(stacks[0-9]+).*(.nii.gz)"
+        # pattern = "Masked_[a-zA-Z0-9_.]+(stacks[0-9]+).*(.nii.gz)"
         p = re.compile(pattern)
         reconstruction = {
             p.match(f).group(1):
@@ -274,6 +277,7 @@ def main():
         path_to_recon = os.path.join(
             dir_output_recon_template_space, reconstruction[key])
 
+        # Get simulated/projected slices
         cmd_args = []
         cmd_args.append("--dir-input %s" % dir_input)
         cmd_args.append("--dir-output %s" % dir_output_data_vs_simulatd_data)
@@ -293,7 +297,10 @@ def main():
             dir_output_data_vs_simulatd_data, "evaluation")
         dir_output_figures = os.path.join(
             dir_output_data_vs_simulatd_data, "figures")
+        dir_output_side_by_side = os.path.join(
+            dir_output_figures, "side-by-side")
 
+        # Evaluate slice similarities to ground truth
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
@@ -303,11 +310,21 @@ def main():
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
         ph.execute_command(cmd)
 
+        # Generate figures showing the quantitative comparison
         cmd_args = []
         cmd_args.append("--dir-input %s" % dir_output_evaluation)
         cmd_args.append("--dir-output %s" % dir_output_figures)
         exe = os.path.abspath(
             show_evaluated_simulated_stack_similarity.__file__)
+        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        ph.execute_command(cmd)
+
+        # Generate pdfs showing all the side-by-side comparisons
+        cmd_args = []
+        cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--dir-output %s" % dir_output_side_by_side)
+        exe = os.path.abspath(
+            export_side_by_side_simulated_vs_original_slice_comparison.__file__)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
         ph.execute_command(cmd)
 
