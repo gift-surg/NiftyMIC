@@ -2,6 +2,13 @@
 # \file simulate_stacks_from_reconstruction.py
 # \brief      Simulate stacks from obtained reconstruction
 #
+# Example call:
+# python simulate_stacks_from_reconstruction.py \
+# --dir-input dir-to-motion-correction \
+# --reconstruction volumetric_reconstruction.nii.gz \
+# --copy-data 1 \
+# --dir-output dir-to-output
+#
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       November 2017
 #
@@ -24,7 +31,11 @@ from niftymic.utilities.input_arparser import InputArgparser
 def main():
 
     input_parser = InputArgparser(
-        description="Simulate stacks from obtained reconstruction",
+        description="Simulate stacks from obtained reconstruction. "
+        "Script simulates/projects the slices at estimated positions "
+        "within reconstructed volume. Ideally, if motion correction was "
+        "correct, the resulting stack of such obtained projected slices, "
+        "corresponds to the originally acquired (motion corrupted) data.",
     )
     input_parser.add_dir_input(required=True)
     input_parser.add_reconstruction(required=True)
@@ -37,11 +48,18 @@ def main():
         help="Turn on/off copying of original data (including masks) to "
         "output folder.",
         default=0)
+    input_parser.add_option(
+        option_string="--reconstruction-mask",
+        type=str,
+        help="If given, reconstruction image mask is propagated to "
+        "simulated stack(s) of slices as well",
+        default=None)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
+    # Read motion corrected data
     data_reader = dr.ImageSlicesDirectoryReader(
         path_to_directory=args.dir_input,
         suffix_mask=args.suffix_mask)
@@ -49,36 +67,67 @@ def main():
     stacks = data_reader.get_data()
 
     reconstruction = st.Stack.from_filename(
-        args.reconstruction, extract_slices=False)
+        args.reconstruction, args.reconstruction_mask, extract_slices=False)
 
     linear_operators = lin_op.LinearOperators()
 
     for i, stack in enumerate(stacks):
 
-        # initialize data array
-        nda = sitk.GetArrayFromImage(stack.sitk) * 0
+        # initialize image data array(s)
+        nda = np.zeros_like(sitk.GetArrayFromImage(stack.sitk))
+
+        if args.reconstruction_mask:
+            nda_mask = np.zeros_like(sitk.GetArrayFromImage(stack.sitk_mask))
+
+        # Simulate slices at estimated positions within reconstructed volume
         simulated_slices = [
             linear_operators.A(reconstruction, s) for s in stack.get_slices()
         ]
 
+        # Fill stack information "as if slice was acquired consecutively"
+        # Therefore, simulated stack slices correspond to acquired slices
+        # (in case motion correction was correct)
         for j, simulated_slice in enumerate(simulated_slices):
             nda[j, :, :] = sitk.GetArrayFromImage(simulated_slice.sitk)
 
+            if args.reconstruction_mask:
+                nda_mask[j, :, :] = sitk.GetArrayFromImage(
+                    simulated_slice.sitk_mask)
+
+        # Create nifti image with same image header as original stack
         simulated_stack_sitk = sitk.GetImageFromArray(nda)
         simulated_stack_sitk.CopyInformation(stack.sitk)
 
+        if args.reconstruction_mask:
+            simulated_stack_sitk_mask = sitk.GetImageFromArray(nda_mask)
+            simulated_stack_sitk_mask.CopyInformation(stack.sitk_mask)
+        else:
+            simulated_stack_sitk_mask = None
+
         simulated_stack = st.Stack.from_sitk_image(
             image_sitk=simulated_stack_sitk,
+            image_sitk_mask=simulated_stack_sitk_mask,
             filename=args.prefix_output + stack.get_filename(),
             extract_slices=False)
 
         if args.verbose:
-            sitkh.show_stacks([stack, simulated_stack], segmentation=stack)
+            sitkh.show_stacks([
+                stack, simulated_stack],
+                segmentation=simulated_stack
+                if args.reconstruction_mask else None)
 
         simulated_stack.write(
-            args.dir_output, write_mask=False, write_slices=False)
-        stack.write(
-            args.dir_output, write_mask=True, write_slices=False)
+            args.dir_output,
+            write_mask=True,
+            write_slices=False,
+            suffix_mask=args.suffix_mask)
+
+        if args.copy_data:
+            stack.write(
+                args.dir_output,
+                write_mask=True,
+                write_slices=False,
+                suffix_mask=args.suffix_mask)
 
     return 0
 

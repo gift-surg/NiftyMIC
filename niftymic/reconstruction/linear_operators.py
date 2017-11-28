@@ -18,6 +18,11 @@ import niftymic.base.slice as sl
 import niftymic.base.stack as st
 
 
+##
+# Class implementing linear operations associated with the physical slice
+# acquisition model
+# \date       2017-11-28 22:25:27+0000
+#
 class LinearOperators(object):
 
     ##
@@ -118,33 +123,55 @@ class LinearOperators(object):
         return A_itk_reconstruction
 
     ##
-    # Perform forward operation using Stack/Slice objects
+    # Perform forward operation using Stack/Slice objects.
+    #
+    # If reconstruction holds a (non-unity) mask, it is mapped to the
+    # Stack/Slice objects as well using standard interpolation techniques.
     # \date       2017-11-01 19:35:08+0000
     #
-    # \param      self            The object
-    # \param      reconstruction  Reconstruction image as Stack object
-    # \param      slice           Slice image as Slice object. Required to
-    #                             define output space and orientation for PSF.
+    # \param      self               The object
+    # \param      reconstruction     Reconstruction image as Stack object
+    # \param      stack_slice        Slice image as Slice object. Required to
+    #                                define output space and orientation for
+    #                                PSF.
+    # \param      interpolator_mask  Interpolator used for resampling
+    #                                reconstruction mask (if given) to
+    #                                Stack/Slice object space as string.
+    #                                Examples are "NearestNeighbor", or
+    #                                "Linear".
     #
     # \return     Image A(x) as Slice object in slice image space
     #
-    def A(self, reconstruction, stack_slice):
+    def A(self, reconstruction, stack_slice, interpolator_mask="Linear"):
 
         simulated_itk = self.A_itk(reconstruction.itk, stack_slice.itk)
         simulated_sitk = sitkh.get_sitk_from_itk_image(simulated_itk)
 
-        # Remark: Mask did not undergo forward operation
+        # Update stack/slice mask, in case provided for reconstruction
+        if not reconstruction.is_unity_mask():
+            slice_tmp = reconstruction.get_resampled_stack(
+                stack_slice.sitk, interpolator=interpolator_mask)
+            simulated_sitk_mask = slice_tmp.sitk_mask
+
+            # PSF-aware resampling omitted as results less plausible for mask
+            # simulated_itk_mask = self.A_itk(
+            #     reconstruction.itk_mask, stack_slice.itk_mask)
+            # simulated_sitk_mask = sitkh.get_sitk_from_itk_image(
+            #     simulated_itk_mask)
+        else:
+            simulated_sitk_mask = None
+
         if isinstance(stack_slice, sl.Slice):
             simulated = sl.Slice.from_sitk_image(
                 slice_sitk=simulated_sitk,
                 slice_number=stack_slice.get_slice_number(),
                 filename=stack_slice.get_filename(),
-                slice_sitk_mask=stack_slice.sitk_mask,
+                slice_sitk_mask=simulated_sitk_mask,
             )
         elif isinstance(stack_slice, st.Stack):
             simulated = st.Stack.from_sitk_image(
                 image_sitk=simulated_sitk,
-                image_sitk_mask=stack_slice.sitk_mask,
+                image_sitk_mask=simulated_sitk_mask,
                 filename=stack_slice.get_filename(),
             )
 

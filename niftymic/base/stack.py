@@ -663,7 +663,11 @@ class Stack:
             interpolator_str = interpolator
             interpolator = eval("sitk.sitk" + interpolator_str)
         except:
-            raise ValueError("Error: interpolator is not known")
+            raise ValueError(
+                "Error: interpolator is not known. " 
+                "Must fit sitk.InterpolatorEnum format. "
+                "Possible examples include "
+                "'NearestNeighbor', 'Linear', or 'BSpline'.")
 
         if resampling_grid is not None:
             resampled_stack_sitk = sitk.Resample(
@@ -678,7 +682,7 @@ class Stack:
                 self.sitk_mask,
                 resampling_grid,
                 sitk.Euler3DTransform(),
-                sitk.sitkNearestNeighbor,
+                interpolator,
                 0,
                 self.sitk_mask.GetPixelIDValue())
         else:
