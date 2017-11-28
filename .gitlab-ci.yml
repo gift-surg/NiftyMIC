@@ -1,7 +1,7 @@
 # -----------------------------------Set Up------------------------------------
 variables:
     PY_VERSION: 2
-    CMICLAB: 0
+    CMICLAB: 1
     TMPDIR: ./tmp
     DATADIR: /home/mebner/data/ci/FetalBrain
     VENV: pysitk-test-py${PY_VERSION}
