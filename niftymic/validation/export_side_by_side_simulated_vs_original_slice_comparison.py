@@ -24,13 +24,29 @@ from niftymic.utilities.input_arparser import InputArgparser
 from niftymic.definitions import DIR_TMP
 
 
-def export_pdf_comparison(nda_original, nda_projected, path_to_file, extension="png"):
+##
+# Export a side-by-side comparison to a (pdf) file
+# \date       2017-11-28 23:28:12+0000
+#
+# \param      nda_original   numpy data 3D array of original data
+# \param      nda_projected  numpy data 3D array of projected/simulated data
+# \param      path_to_file   path to file, string
+# \param      resize         factor to resize images (otherwise they
+#                            might be very small depending on the FOV)
+# \param      extension      extension of images produced for tmp results.
+#
+def export_comparison_to_file(nda_original,
+                              nda_projected,
+                              path_to_file,
+                              resize,
+                              extension="png"):
     dir_tmp = os.path.join(DIR_TMP, "ImageMagick")
     ph.clear_directory(dir_tmp, verbose=False)
     for k in range(nda_original.shape[0]):
         ctr = k+1
+
         # Export as individual image side-by-side
-        export_image_side_by_side(
+        _export_image_side_by_side(
             nda_left=nda_original[k, :, :],
             nda_right=nda_projected[k, :, :],
             label_left="original",
@@ -38,31 +54,31 @@ def export_pdf_comparison(nda_original, nda_projected, path_to_file, extension="
             path_to_file=os.path.join(
                 dir_tmp, "%03d.%s" % (ctr, extension)),
             ctr=ctr,
+            resize=resize,
             extension=extension,
         )
+
     # Combine all side-by-side images to single pdf
-    export_pdf_from_side_by_side_images(
+    _export_pdf_from_side_by_side_images(
         dir_tmp, path_to_file, extension=extension)
     ph.print_info("Side-by-side comparison exported to '%s'" % path_to_file)
 
-
-def rescale_image(path_to_file, scale=3):
-
-    factor = scale * 100
-    cmd_args = []
-    cmd_args.append("%s" % path_to_file)
-    cmd_args.append("-resize %dx%d%%\\!" % (factor, factor))
-    cmd = "convert %s %s" % ((" ").join(cmd_args), path_to_file)
-    ph.execute_command(cmd, verbose=False)
+    # Delete tmp directory
+    ph.delete_directory(dir_tmp, verbose=False)
 
 
-def export_image_side_by_side(
+##
+# Export a single side-by-side comparison of two images
+# \date       2017-11-28 23:30:23+0000
+#
+def _export_image_side_by_side(
         nda_left,
         nda_right,
         label_left,
         label_right,
         path_to_file,
         ctr,
+        resize,
         extension,
         border=10,
         background="black",
@@ -81,8 +97,8 @@ def export_image_side_by_side(
     ph.write_image(nda_left, path_to_left, verbose=False)
     ph.write_image(nda_right, path_to_right, verbose=False)
 
-    rescale_image(path_to_left)
-    rescale_image(path_to_right)
+    _resize_image(path_to_left, resize=resize)
+    _resize_image(path_to_right, resize=resize)
 
     cmd_args = []
     cmd_args.append("-geometry +%d+%d" % (border, border))
@@ -99,12 +115,37 @@ def export_image_side_by_side(
     ph.execute_command(cmd, verbose=False)
 
 
-def export_pdf_from_side_by_side_images(directory, path_to_file, extension):
+##
+# Resize image
+# \date       2017-11-28 23:31:07+0000
+#
+def _resize_image(path_to_file, resize):
+
+    factor = resize * 100
+    cmd_args = []
+    cmd_args.append("%s" % path_to_file)
+    cmd_args.append("-resize %dx%d%%\\!" % (factor, factor))
+    cmd = "convert %s %s" % ((" ").join(cmd_args), path_to_file)
+    ph.execute_command(cmd, verbose=False)
+
+
+##
+# Create single pdf from multiple side-by-side (png) images
+# \date       2017-11-28 23:33:46+0000
+#
+# \param      directory     Path to directory with side-by-side png images
+# \param      path_to_file  Path to combined pdf result
+# \param      extension     The extension
+#
+def _export_pdf_from_side_by_side_images(directory, path_to_file, extension):
+
+    # Read all sidy-by-side (png) images in directory
     pattern = "[a-zA-Z0-9_]+[.]%s" % extension
     p = re.compile(pattern)
-
     files = [os.path.join(directory, f)
              for f in os.listdir(directory) if p.match(f)]
+
+    # Convert consecutive sequence of images into single pdf
     files = natsort.natsorted(files, key=lambda y: y.lower())
     cmd = "convert %s %s" % ((" ").join(files), path_to_file)
     ph.execute_command(cmd, verbose=False)
@@ -112,16 +153,15 @@ def export_pdf_from_side_by_side_images(directory, path_to_file, extension):
 
 def main():
 
-    # Read input
     input_parser = InputArgparser(
-        description="Script to evaluate the similarity of simulated stack "
-        "from obtained reconstruction against the original stack. "
+        description="Script to export a side-by-side comparison of originally "
+        "acquired and simulated/projected slice given the estimated "
+        "volumetric reconstruction."
         "This function takes the result of "
         "simulate_stacks_from_reconstruction.py as input.",
     )
     input_parser.add_filenames(required=True)
     input_parser.add_dir_output(required=True)
-    input_parser.add_suffix_mask(default="_mask")
     input_parser.add_option(
         option_string="--prefix-simulated",
         type=str,
@@ -137,6 +177,12 @@ def main():
         "as the original ones.",
         default=None
     )
+    input_parser.add_option(
+        option_string="--resize",
+        type=float,
+        help="Factor to resize images (otherwise they might be very small "
+        "depending on the FOV)",
+        default=3)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -146,8 +192,7 @@ def main():
 
     # Read original data
     filenames_original = args.filenames
-    data_reader = dr.MultipleImagesReader(
-        filenames_original, suffix_mask=args.suffix_mask)
+    data_reader = dr.MultipleImagesReader(filenames_original)
     data_reader.read_data()
     stacks_original = data_reader.get_data()
 
@@ -161,8 +206,7 @@ def main():
         (dir_input_simulated, args.prefix_simulated, os.path.basename(f))
         for f in filenames_original
     ]
-    data_reader = dr.MultipleImagesReader(
-        filenames_simulated, suffix_mask=args.suffix_mask)
+    data_reader = dr.MultipleImagesReader(filenames_simulated)
     data_reader.read_data()
     stacks_simulated = data_reader.get_data()
 
@@ -175,9 +219,12 @@ def main():
             raise IOError("Images '%s' and '%s' do not occupy the same space!"
                           % (filenames_original[i], filenames_simulated[i]))
 
+    # ---------------------Create side-by-side comparisons---------------------
+    ph.print_title("Create side-by-side comparisons")
     intensity_max = 255
     intensity_min = 0
     for i in range(len(stacks_original)):
+        ph.print_subtitle("Stack %d/%d" % (i+1, len(stacks_original)))
         nda_3D_original = sitk.GetArrayFromImage(stacks_original[i].sitk)
         nda_3D_simulated = sitk.GetArrayFromImage(stacks_simulated[i].sitk)
 
@@ -195,8 +242,10 @@ def main():
         filename = stacks_original[i].get_filename()
         path_to_file = os.path.join(args.dir_output, "%s.pdf" % filename)
 
-        # Export side-by-side comparison of stack to pdf
-        export_pdf_comparison(nda_3D_original, nda_3D_simulated, path_to_file)
+        # Export side-by-side comparison of each stack to a pdf file
+        export_comparison_to_file(
+            nda_3D_original, nda_3D_simulated, path_to_file,
+            resize=args.resize)
 
 if __name__ == '__main__':
     main()
