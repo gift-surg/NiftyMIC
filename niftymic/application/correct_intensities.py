@@ -139,7 +139,7 @@ def main():
     elapsed_time = ph.stop_timing(time_start)
 
     ph.print_title("Summary")
-    print("Computational Time for Bias Field Correction(s): %s" %
+    print("Computational Time for Intensity Correction(s): %s" %
           (elapsed_time))
 
     return 0

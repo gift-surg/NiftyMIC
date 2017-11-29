@@ -109,6 +109,7 @@ def main():
 
     data_reader.read_data()
     stacks = data_reader.get_data()
+    ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     if args.reference is not None:
         reference = st.Stack.from_filename(

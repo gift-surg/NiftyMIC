@@ -105,6 +105,12 @@ def main():
     warped_moving.set_filename(
         warped_moving.get_filename() + "ResamplingToTemplateSpace")
 
+    if args.verbose:
+        tmp = warped_moving.get_stack_multiplied_with_mask()
+        tmp.set_filename(moving.get_filename() + "_times_mask")
+        sitkh.show_stacks([fixed, warped_moving, tmp],
+                          segmentation=warped_moving)
+
     # Write resampled reconstruction (moving)
     if args.moving_mask is not None:
         write_mask = True
@@ -132,12 +138,6 @@ def main():
                 write_transforms=True,
                 suffix_mask=args.suffix_mask,
             )
-
-    if args.verbose:
-        tmp = warped_moving.get_stack_multiplied_with_mask()
-        tmp.set_filename(moving.get_filename() + "_times_mask")
-        sitkh.show_stacks([fixed, warped_moving, tmp],
-                          segmentation=warped_moving)
 
     elapsed_time_total = ph.stop_timing(time_start)
 

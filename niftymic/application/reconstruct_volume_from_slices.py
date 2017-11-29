@@ -124,7 +124,10 @@ def main():
         # as initial value for reconstruction
         recon0 = \
             stacks[args.target_stack_index].get_resampled_stack(recon0.sitk)
+        recon0 = recon0.get_stack_multiplied_with_mask()
 
+    if args.reconstruction_type in ["TVL2", "HuberL2"]:
+        ph.print_title("Compute Initial value for %s" % args.reconstruction_type)
     SRR0 = tk.TikhonovSolver(
         stacks=stacks,
         reconstruction=recon0,
@@ -149,7 +152,7 @@ def main():
     recons.insert(0, recon)
 
     if args.reconstruction_type in ["TVL2", "HuberL2"]:
-
+        ph.print_title("Compute %s reconstruction" % args.reconstruction_type)
         if args.tv_solver == "ADMM":
             SRR = admm.ADMMSolver(
                 stacks=stacks,
