@@ -26,6 +26,10 @@ import niftymic.base.data_reader as dr
 import niftymic.base.data_writer as dw
 import niftymic.reconstruction.linear_operators as lin_op
 from niftymic.utilities.input_arparser import InputArgparser
+from niftymic.definitions import ALLOWED_INTERPOLATORS
+
+INTERPOLATOR_TYPES = "%s, or %s" % (
+    (", ").join(ALLOWED_INTERPOLATORS[0:-1]), ALLOWED_INTERPOLATORS[-1])
 
 
 def main():
@@ -54,10 +58,20 @@ def main():
         help="If given, reconstruction image mask is propagated to "
         "simulated stack(s) of slices as well",
         default=None)
+    input_parser.add_interpolator(
+        option_string="--interpolator-mask",
+        help="Choose the interpolator type to propagate the reconstruction "
+        "mask (%s)." % (INTERPOLATOR_TYPES),
+        default="NearestNeighbor")
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
+
+    if args.interpolator_mask not in ALLOWED_INTERPOLATORS:
+        raise IOError(
+            "Unknown interpolator provided. Possible choices are %s" % (
+                INTERPOLATOR_TYPES))
 
     # Read motion corrected data
     data_reader = dr.ImageSlicesDirectoryReader(
@@ -81,7 +95,9 @@ def main():
 
         # Simulate slices at estimated positions within reconstructed volume
         simulated_slices = [
-            linear_operators.A(reconstruction, s) for s in stack.get_slices()
+            linear_operators.A(
+                reconstruction, s, interpolator_mask=args.interpolator_mask)
+            for s in stack.get_slices()
         ]
 
         # Fill stack information "as if slice was acquired consecutively"
