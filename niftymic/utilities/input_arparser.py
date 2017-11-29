@@ -19,9 +19,12 @@ from nsol.loss_functions import LossFunctions as \
     LossFunctions
 
 from niftymic.definitions import ALLOWED_EXTENSIONS
+from niftymic.definitions import ALLOWED_INTERPOLATORS
 
 # Allowed image types
 IMAGE_TYPES = "(" + (", or ").join(ALLOWED_EXTENSIONS) + ")"
+INTERPOLATOR_TYPES = "(%s, or %s)" % (
+    (", ").join(ALLOWED_INTERPOLATORS[0:-1]), ALLOWED_INTERPOLATORS[-1])
 
 
 ##
@@ -714,6 +717,16 @@ class InputArgparser(object):
         help="Define reconstruction type. Allowed values are "
         "'TK0L2', 'TK1L2', 'TVL2', and 'HuberL2'.",
         default="TVL1",
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_interpolator(
+        self,
+        option_string="--interpolator",
+        type=str,
+        help="Choose type of interpolator %s." % (INTERPOLATOR_TYPES),
+        default="Linear",
         required=False,
     ):
         self._add_argument(dict(locals()))

@@ -49,8 +49,8 @@ class CustomInstallCommand(install):
 
 description = "Motion Correction and Volumetric Image Reconstruction of 2D " \
     "Ultra-fast MRI"
-long_description = "This is a research-focused toolkit developed within the" \
-    " [GIFT-Surg](http: // www.gift-surg.ac.uk/) project to reconstruct an " \
+long_description = "This is a research-focused toolkit developed within the " \
+    "[GIFT-Surg](http://www.gift-surg.ac.uk/) project to reconstruct an " \
     "isotropic, high-resolution volume from multiple, possibly " \
     "motion-corrupted, stacks of low-resolution 2D slices. The framework " \
     "relies on slice-to-volume registration algorithms for motion " \
@@ -61,7 +61,7 @@ long_description = "This is a research-focused toolkit developed within the" \
 
 
 setup(name='NiftyMIC',
-      version='0.2rc1',
+      version='0.3rc1',
       description=description,
       long_description=long_description,
       url='https://github.com/gift-surg/NiftyMIC',
