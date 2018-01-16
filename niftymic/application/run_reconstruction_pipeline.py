@@ -48,6 +48,8 @@ def main():
     input_parser.add_log_script_execution(default=1)
     input_parser.add_dir_input_templates(default=DIR_TEMPLATES)
     input_parser.add_isotropic_resolution()
+    input_parser.add_reference()
+    input_parser.add_reference_mask()
     input_parser.add_option(
         option_string="--registration",
         type=int,
@@ -161,8 +163,12 @@ def main():
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--verbose %d" % args.verbose)
         if args.isotropic_resolution is not None:
-            cmd_args.append("--isotropic-resolution %d" %
+            cmd_args.append("--isotropic-resolution %f" %
                             args.isotropic_resolution)
+        if args.reference is not None:
+            cmd_args.append("--reference %s" % args.reference)
+        if args.reference_mask is not None:
+            cmd_args.append("--reference-mask %s" % args.reference_mask)
         cmd = "niftymic_reconstruct_volume %s" % (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
         ph.execute_command(cmd)
