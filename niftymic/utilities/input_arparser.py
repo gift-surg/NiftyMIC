@@ -820,11 +820,12 @@ class InputArgparser(object):
         # Read path to config file
         path_to_config_file = sys.argv[sys.argv.index(self._config_arg) + 1]
 
-        # Read config file
+        # Read config file and insert all config entries into sys.argv (read by
+        # argparse later)
         with open(path_to_config_file) as json_file:
             dic = json.load(json_file)
 
-            # Insert all config entries into sys.argv (read by argparse later)
+            # Insert all config entries into sys.argv
             for k, v in dic.iteritems():
 
                 # A 'None' entry should be ignored

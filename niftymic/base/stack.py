@@ -294,6 +294,10 @@ class Stack:
     def from_stack(cls, stack_to_copy, filename=None):
         stack = cls()
 
+        if not isinstance(stack_to_copy, Stack):
+            raise ValueError("Input must be of type Stack. Given: %s" %
+                             type(stack_to_copy))
+
         # Copy image stack and mask
         stack.sitk = sitk.Image(stack_to_copy.sitk)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
