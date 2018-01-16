@@ -12,21 +12,21 @@
 import os
 import numpy as np
 
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
+
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
 import niftymic.reconstruction.primal_dual_solver as pd
-import niftymic.reconstruction.scattered_data_approximation as \
-    sda
+import niftymic.reconstruction.scattered_data_approximation as sda
 import niftymic.reconstruction.tikhonov_solver as tk
 import niftymic.registration.flirt as regflirt
+import niftymic.registration.niftyreg as niftyreg
 import niftymic.registration.simple_itk_registration as regsitk
 import niftymic.utilities.data_preprocessing as dp
 import niftymic.utilities.segmentation_propagation as segprop
-import niftymic.utilities.volumetric_reconstruction_pipeline as \
-    pipeline
+import niftymic.utilities.volumetric_reconstruction_pipeline as pipeline
 import niftymic.utilities.joint_image_mask_builder as imb
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
 
 
@@ -76,6 +76,8 @@ def main():
     input_parser.add_write_motion_correction(default=1)
     input_parser.add_verbose(default=0)
     input_parser.add_two_step_cycles(default=3)
+    input_parser.add_use_masks_srr(default=1)
+    input_parser.add_boundary_stacks(default=[10, 10, 0])
     input_parser.add_reference()
     input_parser.add_reference_mask()
 
@@ -86,6 +88,9 @@ def main():
     if args.log_script_execution:
         input_parser.write_performed_script_execution(
             os.path.abspath(__file__))
+
+    # Use FLIRT for volume-to-volume reg. step. Otherwise, RegAladin is used.
+    use_flirt_for_v2v_registration = True
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -109,6 +114,11 @@ def main():
     else:
         raise IOError(
             "Provide input by either '--dir-input' or '--filenames'")
+
+    if len(args.boundary_stacks) is not 3:
+        raise IOError(
+            "Provide exactly three values for '--boundary-stacks' to define "
+            "cropping in i-, j-, and k-dimension of the input stacks")
 
     data_reader.read_data()
     stacks = data_reader.get_data()
@@ -134,9 +144,9 @@ def main():
         use_N4BiasFieldCorrector=args.bias_field_correction,
         use_intensity_correction=args.intensity_correction,
         target_stack_index=args.target_stack_index,
-        boundary_i=0,
-        boundary_j=0,
-        boundary_k=0,
+        boundary_i=args.boundary_stacks[0],
+        boundary_j=args.boundary_stacks[1],
+        boundary_k=args.boundary_stacks[2],
         unit="mm",
     )
     data_preprocessing.run()
@@ -151,15 +161,9 @@ def main():
             file_path=args.reference,
             file_path_mask=args.reference_mask,
             extract_slices=False)
-        # if args.verbose:
-        #     tmp = [reference]
-        #     tmp.extend(stacks)
-        #     sitkh.show_stacks(tmp, segmentation=reference)
 
     else:
         reference = st.Stack.from_stack(stacks[args.target_stack_index])
-        # if args.verbose:
-        #     sitkh.show_stacks(stacks, segmentation=stacks[0])
 
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0:
@@ -169,13 +173,21 @@ def main():
                          for x in ["x", "y", "z"]]
         search_angles = (" ").join(search_angles)
 
-        vol_registration = regflirt.FLIRT(
-            registration_type="Rigid",
-            use_fixed_mask=True,
-            use_moving_mask=True,
-            options=search_angles,
-            use_verbose=False,
-        )
+        if use_flirt_for_v2v_registration:
+            vol_registration = regflirt.FLIRT(
+                registration_type="Rigid",
+                use_fixed_mask=True,
+                use_moving_mask=True,
+                options=search_angles,
+                use_verbose=False,
+            )
+        else:
+            vol_registration = niftyreg.RegAladin(
+                registration_type="Rigid",
+                use_fixed_mask=True,
+                use_moving_mask=True,
+                use_verbose=False,
+            )
         v2vreg = pipeline.VolumeToVolumeRegistration(
             stacks=stacks,
             reference=reference,
@@ -244,6 +256,7 @@ def main():
         alpha=args.alpha_first,
         iter_max=args.iter_max_first,
         verbose=True,
+        use_masks=args.use_masks_srr,
     )
 
     if args.two_step_cycles > 0:
@@ -313,6 +326,7 @@ def main():
             stacks=stacks,
             reconstruction=HR_volume,
             reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
+            use_masks=args.use_masks_srr,
         )
     SRR.set_alpha(args.alpha)
     SRR.set_iter_max(args.iter_max)
@@ -325,7 +339,8 @@ def main():
     # Write SRR result
     HR_volume_final = SRR.get_reconstruction()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
-    HR_volume_final.write(args.dir_output, write_mask=False)
+    HR_volume_final.write(
+        args.dir_output, write_mask=True, suffix_mask=args.suffix_mask)
 
     HR_volume_iterations.insert(0, HR_volume_final)
     for stack in stacks:

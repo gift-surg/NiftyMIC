@@ -8,6 +8,9 @@
 #
 
 import os
+import re
+import sys
+import json
 import argparse
 
 import pysitk.python_helper as ph
@@ -37,22 +40,38 @@ class InputArgparser(object):
                  description=None,
                  prog=None,
                  epilog="Author: Michael Ebner (michael.ebner.14@ucl.ac.uk)",
+                 config_arg="--config"
                  ):
+
+        config_helper = "Args that start with '--' (eg. --dir-output) " \
+            "can also be set in a config file (specified via %s). " \
+            "If an arg is specified in more than one place, then " \
+            "commandline values override config file values which " \
+            "override defaults." % (config_arg)
 
         kwargs = {}
         if description is not None:
-            kwargs['description'] = description
+            kwargs['description'] = "%s %s" % (description, config_helper)
         if prog is not None:
             kwargs['prog'] = prog
         if epilog is not None:
             kwargs['epilog'] = epilog
 
         self._parser = argparse.ArgumentParser(**kwargs)
+        self._parser.add_argument(
+            config_arg,
+            help="Configuration file in JSON format.")
+        self._config_arg = config_arg
 
     def get_parser(self):
         return self._parser
 
     def parse_args(self):
+
+        # read config file if available
+        if self._config_arg in sys.argv:
+            self._parse_config_file()
+
         return self._parser.parse_args()
 
     def print_arguments(self, args, title="Input Parameters:"):
@@ -61,19 +80,47 @@ class InputArgparser(object):
             ph.print_info("%s: " % (arg), newline=False)
             print(getattr(args, arg))
 
+    ##
+    # Writes a performed script execution.
+    # \date       2018-01-16 16:05:53+0000
+    #
+    # \param      self    The object
+    # \param      file    path to executed file obtained, e.g. via
+    #                     os.path.abspath(__file__)
+    # \param      prefix  filename prefix
+    #
     def write_performed_script_execution(self,
                                          file,
-                                         prefix="log_script_execution_"):
-        name = os.path.basename(file)
-        performed_script_execution = ph.get_performed_script_execution(
-            file, self._parser.parse_args())
-        filename = os.path.join(self._parser.parse_args().dir_output,
-                                "%s%s" % (prefix, name.split(".")[0]))
+                                         prefix="config"):
+
+        # parser returns options with underscores, e.g. 'dir_output'
+        dic_with_underscores = vars(self._parser.parse_args())
+
+        # get output directory to write log/config file
+        dir_output = dic_with_underscores["dir_output"]
+
+        # build output file name
+        name = os.path.basename(file).split(".")[0]
         time_stamp = "%s-%s" % (ph.get_current_date(), ph.get_current_time())
-        filename = "%s_%s.sh" % (filename, time_stamp)
-        ph.write_performed_script_execution_to_executable_file(
-            function_call=performed_script_execution,
-            filename=filename)
+        path_to_config_file = os.path.join(
+            dir_output,
+            "%s_%s_%s.json" % (prefix, name, time_stamp))
+
+        # exclude config file (as setting in parameters reflected anyway)
+        dic_with_underscores.pop(re.sub("--", "", self._config_arg))
+
+        # replace underscore by dashes for correct commandline parsing,
+        # e.g. "dir-output" instead of "dir_output"
+        dic = {
+            re.sub("_", "-", k): v
+            for k, v in dic_with_underscores.iteritems()}
+
+        # write config file to output
+        ph.create_directory(dir_output)
+        with open(path_to_config_file, "w") as fp:
+            json.dump(dic, fp, sort_keys=True, indent=4)
+            ph.print_info(
+                "Configuration written to '%s'." % path_to_config_file)
 
     def add_filename(
         self,
@@ -181,6 +228,7 @@ class InputArgparser(object):
     def add_moving(
         self,
         option_string="--moving",
+        nargs=None,
         type=str,
         help="Moving image to be registered.",
         default=None,
@@ -270,6 +318,30 @@ class InputArgparser(object):
         "directory.",
         default="_mask",
         required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_use_masks_srr(
+        self,
+        option_string="--use-masks-srr",
+        type=int,
+        help="Use masks in SRR step to confine volumetric reconstruction only "
+        "to the masked slice regions.",
+        default=1,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_boundary_stacks(
+        self,
+        option_string="--boundary-stacks",
+        type=int,
+        nargs="+",
+        help="Specify boundary in i-, j- and k-direction in mm "
+        "for cropping the given input stacks. "
+        "Stack will be cropped to bounding box encompassing the mask plus "
+        "the added boundary.",
+        default=[0, 0, 0],
     ):
         self._add_argument(dict(locals()))
 
@@ -730,6 +802,46 @@ class InputArgparser(object):
         required=False,
     ):
         self._add_argument(dict(locals()))
+
+    ##
+    # Parse the provided configuration file
+    #
+    # Additional arguments provided in the commandline will be preferred. E.g.
+    # 'script.py --config config.json --dir-output path-to-output-dir' will set
+    # dir-output to path-to-output-dir regardless the setting in config.json.
+    # \date       2018-01-16 15:56:38+0000
+    #
+    # \param      self  The object
+    # \post       sys.argv extended by the arguments provided in the config
+    #             file
+    #
+    def _parse_config_file(self):
+
+        # Read path to config file
+        path_to_config_file = sys.argv[sys.argv.index(self._config_arg) + 1]
+
+        # Read config file and insert all config entries into sys.argv (read by
+        # argparse later)
+        with open(path_to_config_file) as json_file:
+            dic = json.load(json_file)
+
+            # Insert all config entries into sys.argv
+            for k, v in dic.iteritems():
+
+                # A 'None' entry should be ignored
+                if v is None:
+                    continue
+
+                # Insert values as string right at the beginning of arguments
+                # Rationale: Later options, outside of the config file, will
+                # overwrite the config values
+                if type(v) is list:
+                    for vi in reversed(v):
+                        sys.argv.insert(1, str(vi))
+                else:
+                    sys.argv.insert(1, str(v))
+
+                sys.argv.insert(1, "--%s" % k)
 
     ##
     # Adds an argument to argument parser.

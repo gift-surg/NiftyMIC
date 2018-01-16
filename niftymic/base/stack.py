@@ -294,6 +294,10 @@ class Stack:
     def from_stack(cls, stack_to_copy, filename=None):
         stack = cls()
 
+        if not isinstance(stack_to_copy, Stack):
+            raise ValueError("Input must be of type Stack. Given: %s" %
+                             type(stack_to_copy))
+
         # Copy image stack and mask
         stack.sitk = sitk.Image(stack_to_copy.sitk)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
@@ -347,9 +351,27 @@ class Stack:
         index = int(index)
         if abs(index) > self._N_slices - 1:
             raise ValueError("Enter a valid index between -%s and %s. Tried: %s" %
-                             (self._N_slices-1, self._N_slices-1))
+                             (self._N_slices-1, self._N_slices-1, index))
 
         return self._slices[index]
+
+    ##
+    # Delete slice at given index
+    # \date       2017-12-01 00:38:56+0000
+    #
+    # \param      self   The object
+    # \param      index  The index
+    #
+    def delete_slice(self, index):
+        if self._N_slices > 0:
+            # check whether slice exists
+            self.get_slice(index)
+
+            # delete slice at given index
+            del self._slices[index]
+            self._N_slices -= 1
+        else:
+            raise RuntimeError("No slice available anymore")
 
     # Get name of directory where nifti was read from
     #  \return string of directory wher nifti was read from
@@ -387,7 +409,11 @@ class Stack:
             sitk_mask = None
 
         sitkh.show_sitk_image(
-            self.sitk, label=label, segmentation=sitk_mask, viewer=viewer, verbose=verbose)
+            self.sitk,
+            label=label,
+            segmentation=sitk_mask,
+            viewer=viewer,
+            verbose=verbose)
 
     def show_slices(self):
         sitkh.plot_stack_of_slices(
@@ -664,7 +690,7 @@ class Stack:
             interpolator = eval("sitk.sitk" + interpolator_str)
         except:
             raise ValueError(
-                "Error: interpolator is not known. " 
+                "Error: interpolator is not known. "
                 "Must fit sitk.InterpolatorEnum format. "
                 "Possible examples include "
                 "'NearestNeighbor', 'Linear', or 'BSpline'.")
@@ -986,10 +1012,6 @@ class Stack:
             image_crop_sitk, self._filename, mask_crop_sitk)
 
         return stack
-
-    def eliminate_slice(self, index):
-        self._slices.pop(index)
-        self._N_slices -= 1
 
     # Return rectangular region surrounding masked region.
     #  \param[in] mask_sitk sitk.Image representing the mask

@@ -147,6 +147,10 @@ class Slice:
     def from_slice(cls, slice_to_copy):
         slice = cls()
 
+        if not isinstance(slice_to_copy, Slice):
+            raise ValueError("Input must be of type Slice. Given: %s" %
+                             type(slice_to_copy))
+
         # Copy image slice and mask
         slice.sitk = sitk.Image(slice_to_copy.sitk)
         slice.itk = sitkh.get_itk_from_sitk_image(slice.sitk)

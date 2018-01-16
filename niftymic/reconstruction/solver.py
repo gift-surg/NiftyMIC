@@ -75,6 +75,7 @@ class Solver(object):
                  predefined_covariance,
                  verbose,
                  image_type=itk.Image.D3,
+                 use_masks=True,
                  ):
 
         # Initialize variables
@@ -96,6 +97,8 @@ class Solver(object):
         # Settings for solver
         self._alpha = alpha
         self._iter_max = iter_max
+
+        self._use_masks = use_masks
 
         self._minimizer = minimizer
         self._data_loss = data_loss
@@ -374,8 +377,11 @@ class Solver(object):
                 slice_k = slices[j]
 
                 # Apply M_k y_k
-                slice_itk = self._linear_operators.M_itk(
-                    slice_k.itk, slice_k.itk_mask)
+                if self._use_masks:
+                    slice_itk = self._linear_operators.M_itk(
+                        slice_k.itk, slice_k.itk_mask)
+                else:
+                    slice_itk = slice_k.itk
                 slice_nda_vec = self._itk2np.GetArrayFromImage(
                     slice_itk).flatten()
 
@@ -404,6 +410,9 @@ class Solver(object):
         Ak_reconstruction_itk = self._linear_operators.A_itk(
             reconstruction_itk, slice_k.itk)
 
+        if not self._use_masks:
+            return Ak_reconstruction_itk
+        
         # Compute M_k A_k x
         Ak_reconstruction_itk = self._linear_operators.M_itk(
             Ak_reconstruction_itk, slice_k.itk_mask)
@@ -424,8 +433,11 @@ class Solver(object):
     def _Ak_adj_Mk(self, slice_itk, slice_k):
 
         # Compute M_k y_k
-        Mk_slice_itk = self._linear_operators.M_itk(
-            slice_itk, slice_k.itk_mask)
+        if self._use_masks:
+            Mk_slice_itk = self._linear_operators.M_itk(
+                slice_itk, slice_k.itk_mask)
+        else:
+            Mk_slice_itk = slice_itk
 
         # Compute A_k^* M_k y_k
         Mk_slice_itk = self._linear_operators.A_adj_itk(
