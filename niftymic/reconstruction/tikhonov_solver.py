@@ -103,6 +103,7 @@ class TikhonovSolver(Solver):
                  huber_gamma=1.345,
                  predefined_covariance=None,
                  verbose=1,
+                 use_masks=True,
                  ):
 
         # Run constructor of superclass
@@ -119,7 +120,9 @@ class TikhonovSolver(Solver):
                         data_loss_scale=data_loss_scale,
                         huber_gamma=huber_gamma,
                         predefined_covariance=predefined_covariance,
-                        verbose=verbose)
+                        verbose=verbose,
+                        use_masks=use_masks,
+                        )
 
         # Settings for optimizer
         self._reg_type = reg_type
@@ -261,7 +264,7 @@ class TikhonovSolver(Solver):
             ph.print_info("(Only in-plane deconvolution is performed)")
 
         elif self._deconvolution_mode in ["predefined_covariance"]:
-            ph.print_info("(Predefined covariance used: cov = diag(%s))"
+            ph.print_info("(Predefined covariance used: cov = %s)"
                           % (np.diag(self._predefined_covariance)))
 
         if self._data_loss in ["huber"]:

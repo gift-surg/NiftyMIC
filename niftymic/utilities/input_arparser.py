@@ -181,6 +181,7 @@ class InputArgparser(object):
     def add_moving(
         self,
         option_string="--moving",
+        nargs=None,
         type=str,
         help="Moving image to be registered.",
         default=None,
@@ -270,6 +271,30 @@ class InputArgparser(object):
         "directory.",
         default="_mask",
         required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_use_masks_srr(
+        self,
+        option_string="--use-masks-srr",
+        type=int,
+        help="Use masks in SRR step to confine volumetric reconstruction only "
+        "to the masked slice regions.",
+        default=1,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_boundary_stacks(
+        self,
+        option_string="--boundary-stacks",
+        type=int,
+        nargs="+",
+        help="Specify boundary in i-, j- and k-direction in mm "
+        "for cropping the given input stacks. "
+        "Stack will be cropped to bounding box encompassing the mask plus "
+        "the added boundary.",
+        default=[0, 0, 0],
     ):
         self._add_argument(dict(locals()))
 

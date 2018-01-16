@@ -1,3 +1,3 @@
--e git+https://github.com/gift-surg/PySiTK.git@v0.1#egg=PySiTK-0.1
--e git+https://github.com/gift-surg/NSoL.git@v0.1#egg=NSoL-0.1
--e git+https://github.com/gift-surg/SimpleReg.git@v0.1#egg=SimpleReg-0.1
+-e git+https://github.com/gift-surg/PySiTK.git@v0.1.1#egg=PySiTK-0.1.1
+-e git+https://github.com/gift-surg/NSoL.git@v0.1.1#egg=NSoL-0.1.1
+-e git+https://github.com/gift-surg/SimpleReg.git@v0.1.1#egg=SimpleReg-0.1.1
