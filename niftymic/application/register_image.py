@@ -7,16 +7,16 @@
 # \date       October 2017
 #
 
-# Import libraries
 import numpy as np
 import os
 
-# Import modules
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
+
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
 import niftymic.registration.flirt as regflirt
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
+import niftymic.registration.niftyreg as niftyreg
 from niftymic.utilities.input_arparser import InputArgparser
 
 
@@ -35,16 +35,21 @@ def main():
         "defined by the fixed.",
     )
     input_parser.add_fixed(required=True)
-    input_parser.add_moving(required=True)
+    input_parser.add_moving(
+        required=True,
+        nargs="+",
+        help="Specify moving image to be warped to fixed space. "
+        "If multiple images are provided, all images will be transformed "
+        "uniformly according to the registration obtained for the first one."
+    )
     input_parser.add_dir_output(required=True)
     input_parser.add_dir_input()
-    input_parser.add_moving_mask()
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_search_angle(default=180)
     input_parser.add_option(
         option_string="--transform-only",
         type=int,
-        help="Turn on/off functionality to transform moving image to fixed "
+        help="Turn on/off functionality to transform moving image(s) to fixed "
         "image only, i.e. no resampling to fixed image space",
         default=0)
     input_parser.add_option(
@@ -57,9 +62,13 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
+    use_reg_aladin_for_refinement = True
+
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
-    moving = st.Stack.from_filename(args.moving, args.moving_mask)
+    data_reader = dr.MultipleImagesReader(args.moving, suffix_mask="_mask")
+    data_reader.read_data()
+    moving = data_reader.get_data()
 
     data_reader = dr.MultipleImagesReader([args.fixed], suffix_mask="_mask")
     data_reader.read_data()
@@ -73,15 +82,20 @@ def main():
                      (x, args.search_angle, args.search_angle)
                      for x in ["x", "y", "z"]]
     search_angles = (" ").join(search_angles)
-
+    options_args = []
+    options_args.append(search_angles)
+    # cost = "mutualinfo"
+    # options_args.append("-searchcost %s -cost %s" % (cost, cost))
     registration = regflirt.FLIRT(
-        fixed=moving,
+        fixed=moving[0],
         moving=fixed,
+        # use_fixed_mask=True,
+        # use_moving_mask=True,  # moving mask only seems to work for SB cases
         registration_type="Rigid",
         use_verbose=False,
-        options=search_angles,
+        options=(" ").join(options_args),
     )
-    ph.print_info("Run Registration ... ", newline=False)
+    ph.print_info("Run Registration (FLIRT) ... ", newline=False)
     registration.run()
     print("done")
     transform_sitk = registration.get_registration_transform_sitk()
@@ -93,30 +107,46 @@ def main():
 
     # Apply rigidly transform to align reconstruction (moving) with template
     # (fixed)
-    moving.update_motion_correction(transform_sitk)
+    for m in moving:
+        m.update_motion_correction(transform_sitk)
+
+        # Additionally, use RegAladin for more accurate alignment
+        # Rationale: FLIRT has better capture range, but RegAladin seems to
+        # find better alignment once it is within its capture range.
+        if use_reg_aladin_for_refinement:
+            registration = niftyreg.RegAladin(
+                fixed=m,
+                use_fixed_mask=True,
+                moving=fixed,
+                registration_type="Rigid",
+                use_verbose=False,
+            )
+            ph.print_info("Run Registration (RegAladin) ... ", newline=False)
+            registration.run()
+            print("done")
+            transform2_sitk = registration.get_registration_transform_sitk()
+            m.update_motion_correction(transform2_sitk)
+            transform_sitk = sitkh.get_composite_sitk_affine_transform(
+                transform2_sitk, transform_sitk)
 
     if args.transform_only:
-        moving.write(args.dir_output, write_mask=True)
+        for m in moving:
+            m.write(args.dir_output, write_mask=False)
         ph.exit()
 
     # Resample reconstruction (moving) to template space (fixed)
-    warped_moving = \
-        moving.get_resampled_stack(fixed.sitk)
-    warped_moving.set_filename(
-        warped_moving.get_filename() + "ResamplingToTemplateSpace")
+    warped_moving = [m.get_resampled_stack(fixed.sitk, interpolator="Linear")
+                     for m in moving]
 
-    if args.verbose:
-        tmp = warped_moving.get_stack_multiplied_with_mask()
-        tmp.set_filename(moving.get_filename() + "_times_mask")
-        sitkh.show_stacks([fixed, warped_moving, tmp],
-                          segmentation=warped_moving)
+    for wm in warped_moving:
+        wm.set_filename(
+            wm.get_filename() + "ResamplingToTemplateSpace")
 
-    # Write resampled reconstruction (moving)
-    if args.moving_mask is not None:
-        write_mask = True
-    else:
-        write_mask = False
-    warped_moving.write(args.dir_output, write_mask=write_mask)
+        if args.verbose:
+            sitkh.show_stacks([fixed, wm], segmentation=fixed)
+
+        # Write resampled reconstruction (moving)
+        wm.write(args.dir_output, write_mask=False)
 
     if args.dir_input is not None:
         data_reader = dr.ImageSlicesDirectoryReader(
