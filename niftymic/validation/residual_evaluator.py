@@ -242,6 +242,8 @@ class ResidualEvaluator(object):
 
             # Read array
             array = np.loadtxt(path_to_file, skiprows=2)
+            if array.ndim == 1:
+                array = array.reshape(len(array), 1)
 
             for i_m, m in enumerate(measures):
                 self._slice_similarities[stack_name][m] = array[:, i_m]
