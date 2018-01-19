@@ -90,9 +90,6 @@ class FLIRT(AffineRegistrationMethod):
         elif self.get_registration_type() == "Affine":
             options += " -dof 12"
 
-        if self._use_verbose:
-            options += " -verbose 1"
-
         self._registration_method = simplereg.flirt.FLIRT(
             fixed_sitk=self._fixed.sitk,
             moving_sitk=self._moving.sitk,
