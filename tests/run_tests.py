@@ -23,6 +23,7 @@ from linear_operators_test import *
 from niftyreg_test import *
 from parameter_normalization_test import *
 from registration_test import *
+from residual_evaluator_test import *
 from segmentation_propagation_test import *
 from simulator_slice_acquisition_test import *
 from stack_test import *
