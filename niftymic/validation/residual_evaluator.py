@@ -50,11 +50,13 @@ class ResidualEvaluator(object):
             reference=None,
             use_masks=True,
             measures=["NCC", "NMI", "PSNR", "SSIM", "RMSE"],
+            verbose=True,
     ):
         self._stacks = stacks
         self._reference = reference
         self._measures = measures
         self._use_masks = use_masks
+        self._verbose = verbose
 
         self._slice_projections = None
         self._similarities = None
@@ -129,11 +131,20 @@ class ResidualEvaluator(object):
             slices = stack.get_slices()
             self._slice_projections[i_stack] = [None] * len(slices)
 
+            if self._verbose:
+                ph.print_info(
+                    "Stack %d/%d: Compute slice projections ... " % (
+                        i_stack+1, len(self._stacks)),
+                    newline=False)
+
             # Compute slice projections based on assumed slice acquisition
             # protocol
             for i_slice, slice in enumerate(slices):
                 self._slice_projections[i_stack][i_slice] = linear_operators.A(
                     self._reference, slice)
+
+            if self._verbose:
+                print("done")
 
     ##
     # Evaluate slice similarities for all simulated slices of all stacks for
@@ -161,6 +172,12 @@ class ResidualEvaluator(object):
             self._slice_similarities[stack_name] = {
                 m: np.zeros(len(slices)) for m in self._measures
             }
+            if self._verbose:
+                ph.print_info(
+                    "Stack %d/%d: Compute similarity measures ... " % (
+                        i_stack+1, len(self._stacks)),
+                    newline=False)
+
             for i_slice, slice in enumerate(slices):
 
                 slice_nda = np.squeeze(sitk.GetArrayFromImage(slice.sitk))
@@ -183,6 +200,8 @@ class ResidualEvaluator(object):
                     for m in self._measures:
                         self._slice_similarities[
                             stack_name][m][i_slice] = np.inf
+            if self._verbose:
+                print("done")
 
     ##
     # Writes the computed slice similarities for all stacks to output directory
@@ -200,14 +219,14 @@ class ResidualEvaluator(object):
             # Write header info
             header = "# %s, %s\n" % (stack.get_filename(), ph.get_time_stamp())
             header += "# %s\n" % ("\t").join(self._measures)
-            ph.write_to_file(path_to_file, header)
+            ph.write_to_file(path_to_file, header, verbose=self._verbose)
 
             # Write array information
             array = np.zeros(
                 (stack.get_number_of_slices(), len(self._measures)))
             for i_m, m in enumerate(self._measures):
                 array[:, i_m] = self._slice_similarities[stack_name][m]
-            ph.write_array_to_file(path_to_file, array)
+            ph.write_array_to_file(path_to_file, array, verbose=self._verbose)
 
     ##
     # Reads computed slice similarities for all files in directory.
@@ -219,6 +238,11 @@ class ResidualEvaluator(object):
     # \post       self._slice_similarities updated
     #
     def read_slice_similarities(self, directory, ext="txt"):
+
+        if not ph.directory_exists(directory):
+            raise IOError("Given directory '%s' does not exist" % (
+                directory))
+
         pattern = "([a-zA-Z0-9_\+\-]+)[.]%s" % ext
         p = re.compile(pattern)
 
