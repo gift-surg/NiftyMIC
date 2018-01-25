@@ -65,6 +65,7 @@ class ADMMSolver(Solver):
                  predefined_covariance=None,
                  rho=0.5,
                  iterations=10,
+                 use_masks=1,
                  verbose=1,
                  ):
 
@@ -82,6 +83,7 @@ class ADMMSolver(Solver):
                         huber_gamma=huber_gamma,
                         deconvolution_mode=deconvolution_mode,
                         predefined_covariance=predefined_covariance,
+                        use_masks=use_masks,
                         verbose=verbose,
                         )
 
