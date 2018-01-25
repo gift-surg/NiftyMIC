@@ -167,22 +167,31 @@ class MultipleImagesReader(ImageDataReader):
     # masks.
     # \date       2017-07-11 19:04:25+0100
     #
-    # \param      self            The object
-    # \param      file_paths      The paths to filenames as list of strings,
-    #                             e.g. ["A.nii.gz", "B.nii", "C.nii.gz"]
-    # \param      suffix_mask     extension of stack filename as string
-    #                             indicating associated mask, e.g. "_mask" for
-    #                             "A_mask.nii".
-    # \param      extract_slices  Boolean to indicate whether given 3D image
-    #                             shall be split into its slices along the
-    #                             k-direction.
+    # \param      self              The object
+    # \param      file_paths        The paths to filenames as list of strings,
+    #                               e.g. ["A.nii.gz", "B.nii", "C.nii.gz"]
+    # \param      file_paths_masks  The paths to the filename masks as list of
+    #                               strings. If given 'suffix_mask' is ignored.
+    #                               It is assumed the the sequence matches the
+    #                               filename order.
+    # \param      suffix_mask       extension of stack filename as string
+    #                               indicating associated mask, e.g. "_mask"
+    #                               for "A_mask.nii".
+    # \param      extract_slices    Boolean to indicate whether given 3D image
+    #                               shall be split into its slices along the
+    #                               k-direction.
     #
-    def __init__(self, file_paths, suffix_mask="_mask", extract_slices=True):
+    def __init__(self,
+                 file_paths,
+                 file_paths_masks=None,
+                 suffix_mask="_mask",
+                 extract_slices=True):
 
         super(self.__class__, self).__init__()
 
         # Get list of paths to image
         self._file_paths = file_paths
+        self._file_paths_masks = file_paths_masks
         self._suffix_mask = suffix_mask
         self._extract_slices = extract_slices
 
@@ -192,48 +201,79 @@ class MultipleImagesReader(ImageDataReader):
     #
     def read_data(self):
 
+        self._check_input()
+
         self._stacks = [None] * len(self._file_paths)
 
         for i, file_path in enumerate(self._file_paths):
 
-            # Build absolute path to directory of image
-            path_to_directory = os.path.dirname(file_path)
-            filename = os.path.basename(file_path)
-
-            if not ph.directory_exists(path_to_directory):
-                raise exceptions.DirectoryNotExistent(path_to_directory)
-            abs_path_to_directory = os.path.abspath(path_to_directory)
-
-            # Get absolute path mask to image
-            pattern = "(" + REGEX_FILENAMES + \
-                ")[.]" + REGEX_FILENAME_EXTENSIONS
-            p = re.compile(pattern)
-            # filename = [p.match(f).group(1) if p.match(file_path)][0]
-            if not file_path.endswith(tuple(ALLOWED_EXTENSIONS)):
-                raise IOError("Input image type not correct. Allowed types %s"
-                              % "(" + (", or ").join(ALLOWED_EXTENSIONS) + ")")
-
-            # Strip extension from filename to find associated mask
-            filename = [re.sub("." + ext, "", filename)
-                        for ext in ALLOWED_EXTENSIONS
-                        if file_path.endswith(ext)][0]
-            pattern_mask = filename + self._suffix_mask + "[.]" + \
-                REGEX_FILENAME_EXTENSIONS
-            p_mask = re.compile(pattern_mask)
-            filename_mask = [p_mask.match(f).group(0)
-                             for f in os.listdir(abs_path_to_directory)
-                             if p_mask.match(f)]
-
-            if len(filename_mask) == 0:
-                abs_path_mask = None
+            if self._file_paths_masks is None:
+                file_path_mask = self._get_path_to_potential_mask(file_path)
             else:
-                abs_path_mask = os.path.join(abs_path_to_directory,
-                                             filename_mask[0])
+                if i < len(self._file_paths_masks):
+                    file_path_mask = self._file_paths_masks[i]
+                else:
+                    file_path_mask = None
+            
             self._stacks[i] = st.Stack.from_filename(
                 file_path,
-                abs_path_mask,
+                file_path_mask,
                 extract_slices=self._extract_slices)
 
+    def _check_input(self):
+        if type(self._file_paths) is not list:
+            raise IOError("file_paths must be provided as list")
+
+        if self._file_paths_masks is not None:
+            if type(self._file_paths_masks) is not list:
+                raise IOError("file_paths_masks must be provided as list")
+
+    ##
+    # Gets the path to potential mask for a given file_path.
+    # \date       2018-01-25 12:34:23+0000
+    #
+    # \param      self       The object
+    # \param      file_path  The file path
+    #
+    # \return     The path the mask associated with the file or None in case no
+    #             mask was found.
+    #
+    def _get_path_to_potential_mask(self, file_path):
+        # Build absolute path to directory of image
+        path_to_directory = os.path.dirname(file_path)
+        filename = os.path.basename(file_path)
+
+        if not ph.directory_exists(path_to_directory):
+            raise exceptions.DirectoryNotExistent(path_to_directory)
+        abs_path_to_directory = os.path.abspath(path_to_directory)
+
+        # Get absolute path mask to image
+        pattern = "(" + REGEX_FILENAMES + \
+            ")[.]" + REGEX_FILENAME_EXTENSIONS
+        p = re.compile(pattern)
+        # filename = [p.match(f).group(1) if p.match(file_path)][0]
+        if not file_path.endswith(tuple(ALLOWED_EXTENSIONS)):
+            raise IOError("Input image type not correct. Allowed types %s"
+                          % "(" + (", or ").join(ALLOWED_EXTENSIONS) + ")")
+
+        # Strip extension from filename to find associated mask
+        filename = [re.sub("." + ext, "", filename)
+                    for ext in ALLOWED_EXTENSIONS
+                    if file_path.endswith(ext)][0]
+        pattern_mask = filename + self._suffix_mask + "[.]" + \
+            REGEX_FILENAME_EXTENSIONS
+        p_mask = re.compile(pattern_mask)
+        filename_mask = [p_mask.match(f).group(0)
+                         for f in os.listdir(abs_path_to_directory)
+                         if p_mask.match(f)]
+
+        if len(filename_mask) == 0:
+            abs_path_mask = None
+        else:
+            abs_path_mask = os.path.join(abs_path_to_directory,
+                                         filename_mask[0])
+
+        return abs_path_mask
 
 ##
 # ImageSlicesDirectoryReader reads multiple stacks and their associated
@@ -242,6 +282,8 @@ class MultipleImagesReader(ImageDataReader):
 # registration steps.
 # \date       2017-07-17 22:32:11+0100
 #
+
+
 class ImageSlicesDirectoryReader(ImageDataReader):
 
     ##

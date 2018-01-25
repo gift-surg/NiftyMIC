@@ -51,6 +51,13 @@ class Slice:
         # Append masks (if provided)
         if slice_sitk_mask is not None:
             slice.sitk_mask = slice_sitk_mask
+            try:
+                # ensure mask occupies the same physical space
+                slice.sitk_mask.CopyInformation(slice.sitk)
+            except RuntimeError as e:
+                raise IOError(
+                    "Given image and its mask do not occupy the same space: %s" %
+                    e.message)
             slice.itk_mask = sitkh.get_itk_from_sitk_image(slice_sitk_mask)
         else:
             slice.sitk_mask = slice._generate_identity_mask()
@@ -121,6 +128,13 @@ class Slice:
             if not ph.file_exists(file_path_mask):
                 raise exceptions.FileNotExistent(file_path_mask)
             slice.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
+            try:
+                # ensure mask occupies the same physical space
+                slice.sitk_mask.CopyInformation(slice.sitk)
+            except RuntimeError as e:
+                raise IOError(
+                    "Given image and its mask do not occupy the same space: %s" %
+                    e.message)
 
         slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
 

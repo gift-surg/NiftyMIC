@@ -50,6 +50,7 @@ def main():
     )
     input_parser.add_dir_input()
     input_parser.add_filenames()
+    input_parser.add_filenames_masks()
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
@@ -109,7 +110,9 @@ def main():
     # '--filenames' specified
     elif args.filenames is not None:
         data_reader = dr.MultipleImagesReader(
-            args.filenames, suffix_mask=args.suffix_mask)
+            file_paths=args.filenames,
+            file_paths_masks=args.filenames_masks,
+            suffix_mask=args.suffix_mask)
 
     else:
         raise IOError(

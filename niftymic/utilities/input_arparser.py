@@ -78,7 +78,18 @@ class InputArgparser(object):
         ph.print_title(title)
         for arg in sorted(vars(args)):
             ph.print_info("%s: " % (arg), newline=False)
-            print(getattr(args, arg))
+            vals = getattr(args, arg)
+
+            if type(vals) is list:
+                # print list element in new lines, unless only one entry in list
+                # if len(vals) == 1:
+                #     print(vals[0])
+                # else:
+                print("") 
+                for val in vals:
+                    print("\t%s" % val)
+            else:
+                print(vals)
 
     ##
     # Writes a performed script execution.
@@ -189,7 +200,17 @@ class InputArgparser(object):
         self,
         option_string="--filenames",
         nargs="+",
-        help="Filenames.",
+        help="Paths to NIfTI file images %s." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_filenames_masks(
+        self,
+        option_string="--filenames-masks",
+        nargs="+",
+        help="Paths to NIfTI file image masks %s." % (IMAGE_TYPES),
         default=None,
         required=False,
     ):

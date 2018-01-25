@@ -38,6 +38,7 @@ def main():
     )
     input_parser.add_dir_input()
     input_parser.add_filenames()
+    input_parser.add_filenames_masks()
     input_parser.add_image_selection()
     input_parser.add_dir_output(required=True)
     input_parser.add_prefix_output(default="SRR_")
@@ -62,7 +63,9 @@ def main():
     input_parser.add_subfolder_comparison()
     input_parser.add_provide_comparison(default=0)
     input_parser.add_log_script_execution(default=1)
+    input_parser.add_use_masks_srr(default=1)
     input_parser.add_verbose(default=0)
+
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
@@ -90,7 +93,9 @@ def main():
     # '--filenames' specified
     elif args.filenames is not None:
         data_reader = dr.MultipleImagesReader(
-            args.filenames, suffix_mask=args.suffix_mask)
+            file_paths=args.filenames,
+            file_paths_masks=args.filenames_masks,
+            suffix_mask=args.suffix_mask)
 
     else:
         raise IOError(
@@ -137,6 +142,7 @@ def main():
         minimizer=args.minimizer,
         data_loss=args.data_loss,
         data_loss_scale=args.data_loss_scale,
+        use_masks=args.use_masks_srr,
         # verbose=args.verbose,
     )
     SRR0.run()
@@ -163,6 +169,7 @@ def main():
                 rho=args.rho,
                 data_loss=args.data_loss,
                 iterations=args.iterations,
+                use_masks=args.use_masks_srr,
                 verbose=args.verbose,
             )
             SRR.run()

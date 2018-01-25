@@ -78,6 +78,13 @@ class Stack:
             if not ph.file_exists(file_path_mask):
                 raise exceptions.FileNotExistent(file_path_mask)
             stack.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
+            try:
+                # ensure masks occupy same physical space
+                stack.sitk_mask.CopyInformation(stack.sitk)
+            except RuntimeError as e:
+                raise IOError(
+                    "Given image and its mask do not occupy the same space: %s" %
+                    e.message)
             stack._is_unity_mask = False
 
         # Append itk object
@@ -266,6 +273,13 @@ class Stack:
         # Append masks (if provided)
         if image_sitk_mask is not None:
             stack.sitk_mask = image_sitk_mask
+            try:
+                # ensure mask occupies the same physical space
+                stack.sitk_mask.CopyInformation(stack.sitk)
+            except RuntimeError as e:
+                raise IOError(
+                    "Given image and its mask do not occupy the same space: %s" %
+                    e.message)
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
             if sitk.GetArrayFromImage(stack.sitk_mask).prod() == 1:
                 stack._is_unity_mask = True
