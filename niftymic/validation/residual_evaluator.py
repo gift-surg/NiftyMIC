@@ -90,7 +90,7 @@ class ResidualEvaluator(object):
     # \param      self  The object
     #
     # \return     The slice similarities for all slices and measures as
-    #             dictionary. E.g.
+    #             dictionary. E.g. {
     #             fetal_brain_1: {'NCC': 1D-array[...], 'NMI': 1D-array[..]},
     #             ...
     #             fetal_brain_N: {'NCC': 1D-array[...], 'NMI': 1D-array[..]}

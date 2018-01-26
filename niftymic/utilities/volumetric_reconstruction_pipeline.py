@@ -18,6 +18,7 @@ import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
+import niftymic.validation.motion_evaluator as me
 
 
 ##
@@ -196,7 +197,9 @@ class SliceToVolumeRegistration(RegistrationPipeline):
         for i in range(0, len(self._stacks)):
             stack = self._stacks[i]
             slices = stack.get_slices()
-            for j in range(0, len(slices)):
+
+            transforms_sitk = [None] * len(slices)
+            for j, slice in enumerate(slices):
 
                 txt = "%sSlice-to-Volume Registration -- " \
                     "Stack %d/%d -- Slice %d/%d" % (
@@ -208,14 +211,26 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                 else:
                     ph.print_info(txt)
 
-                self._registration_method.set_fixed(slices[j])
+                self._registration_method.set_fixed(slice)
                 self._registration_method.run()
 
-                # Update position of slice
+                # Store information on registration transform
                 transform_sitk = \
                     self._registration_method.\
                     get_registration_transform_sitk()
-                slices[j].update_motion_correction(transform_sitk)
+                transforms_sitk[j] = transform_sitk
+
+            dir_output = "/tmp/foo/verbose"
+            motion_evaluator = me.MotionEvaluator(transforms_sitk)
+            motion_evaluator.run()
+            title = "%s%s" % (self._print_prefix, stack.get_filename())
+            motion_evaluator.display(dir_output=dir_output, title=title)
+            motion_evaluator.show(dir_output=dir_output, title=title)
+
+
+            # Update position of slice
+            for j, slice in enumerate(slices):
+                slice.update_motion_correction(transforms_sitk[j])
 
 
 ##
