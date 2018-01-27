@@ -58,11 +58,17 @@ def main():
         help="Turn on/off functionality to write registration transform",
         default=0)
     input_parser.add_verbose(default=0)
+    input_parser.add_log_script_execution(default=1)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
     use_reg_aladin_for_refinement = True
+
+    # Write script execution call
+    if args.log_script_execution:
+        input_parser.write_performed_script_execution(
+            os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -90,7 +96,7 @@ def main():
         fixed=moving[0],
         moving=fixed,
         # use_fixed_mask=True,
-        # use_moving_mask=True,  # moving mask only seems to work for SB cases
+        use_moving_mask=True,  # moving mask only seems to work for SB cases
         registration_type="Rigid",
         use_verbose=False,
         options=(" ").join(options_args),
