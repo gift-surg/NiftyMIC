@@ -95,7 +95,7 @@ def main():
     registration = regflirt.FLIRT(
         fixed=moving[0],
         moving=fixed,
-        # use_fixed_mask=True,
+        use_fixed_mask=True,
         use_moving_mask=True,  # moving mask only seems to work for SB cases
         registration_type="Rigid",
         use_verbose=False,
@@ -123,6 +123,7 @@ def main():
             registration = niftyreg.RegAladin(
                 fixed=m,
                 use_fixed_mask=True,
+                use_moving_mask=True,
                 moving=fixed,
                 registration_type="Rigid",
                 use_verbose=False,
