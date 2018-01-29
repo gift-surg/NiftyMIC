@@ -132,7 +132,8 @@ def main():
         recon0 = recon0.get_stack_multiplied_with_mask()
 
     if args.reconstruction_type in ["TVL2", "HuberL2"]:
-        ph.print_title("Compute Initial value for %s" % args.reconstruction_type)
+        ph.print_title("Compute Initial value for %s" %
+                       args.reconstruction_type)
     SRR0 = tk.TikhonovSolver(
         stacks=stacks,
         reconstruction=recon0,
@@ -148,7 +149,7 @@ def main():
     SRR0.run()
 
     recon = SRR0.get_reconstruction()
-    recon.set_filename(SRR0.get_setting_specific_filename(args.prefix_output))    
+    recon.set_filename(SRR0.get_setting_specific_filename(args.prefix_output))
     recon.write(args.dir_output)
 
     # List to store SRRs

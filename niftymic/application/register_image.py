@@ -57,6 +57,18 @@ def main():
         type=int,
         help="Turn on/off functionality to write registration transform",
         default=0)
+    input_parser.add_option(
+        option_string="--use-fixed-mask",
+        type=int,
+        help="Turn on/off functionality to use fixed image mask during "
+        "registration.",
+        default=0)
+    input_parser.add_option(
+        option_string="--use-moving-mask",
+        type=int,
+        help="Turn on/off functionality to use moving image mask during "
+        "registration.",
+        default=0)
     input_parser.add_verbose(default=0)
     input_parser.add_log_script_execution(default=1)
 
@@ -95,8 +107,8 @@ def main():
     registration = regflirt.FLIRT(
         fixed=moving[0],
         moving=fixed,
-        use_fixed_mask=True,
-        use_moving_mask=True,  # moving mask only seems to work for SB cases
+        use_fixed_mask=args.use_fixed_mask,
+        use_moving_mask=args.use_moving_mask,
         registration_type="Rigid",
         use_verbose=False,
         options=(" ").join(options_args),
@@ -122,8 +134,8 @@ def main():
         if use_reg_aladin_for_refinement:
             registration = niftyreg.RegAladin(
                 fixed=m,
-                use_fixed_mask=True,
-                use_moving_mask=True,
+                use_fixed_mask=args.use_fixed_mask,
+                use_moving_mask=args.use_moving_mask,
                 moving=fixed,
                 registration_type="Rigid",
                 use_verbose=False,
@@ -165,7 +177,7 @@ def main():
         for i, stack in enumerate(stacks):
             stack.update_motion_correction(transform_sitk)
             ph.print_info("Stack %d/%d: All slice transforms updated" %
-                          (i+1, len(stacks)))
+                          (i + 1, len(stacks)))
 
             # Write transformed slices
             stack.write(
