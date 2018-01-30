@@ -135,8 +135,7 @@ def main():
         if args.verbose:
             sitkh.show_stacks([
                 stack, simulated_stack],
-                segmentation=stack
-                if args.reconstruction_mask else None)
+                segmentation=stack)
 
         simulated_stack.write(
             args.dir_output,
