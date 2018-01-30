@@ -58,7 +58,7 @@ class Slice:
                 raise IOError(
                     "Given image and its mask do not occupy the same space: %s" %
                     e.message)
-            slice.itk_mask = sitkh.get_itk_from_sitk_image(slice_sitk_mask)
+            slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
         else:
             slice.sitk_mask = slice._generate_identity_mask()
             slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
