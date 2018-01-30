@@ -8,7 +8,13 @@ DIR_ROOT = os.path.dirname(os.path.abspath(__file__))
 DIR_CPP = os.path.join(DIR_ROOT, "niftymic", "cli")
 DIR_CPP_BUILD = os.path.join(DIR_ROOT, "build", "cpp")
 
-
+##
+# Compile and install the cpp-code associated with NiftyMIC.
+# 
+# Prior to running `python install_cli.py`. Set the environment variable
+# accordingly. E.g. `export NIFTYMIC_ITK_DIR=path-to-ITK-build`
+# \date       2018-01-30 10:00:40+0000
+#
 def main(prefix_environ="NIFTYMIC_"):
 
     # Get current working directory
