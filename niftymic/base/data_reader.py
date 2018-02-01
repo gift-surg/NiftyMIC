@@ -12,7 +12,6 @@ import natsort
 import numpy as np
 import os
 import re
-# Import libraries
 from abc import ABCMeta, abstractmethod
 
 import niftymic.base.stack as st
@@ -23,12 +22,11 @@ from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import REGEX_FILENAMES
 from niftymic.definitions import REGEX_FILENAME_EXTENSIONS
 
+
 ##
 # DataReader is an abstract class to read data.
 # \date       2017-07-12 11:38:07+0100
 #
-
-
 class DataReader(object):
     __metaclass__ = ABCMeta
 
@@ -214,7 +212,7 @@ class MultipleImagesReader(ImageDataReader):
                     file_path_mask = self._file_paths_masks[i]
                 else:
                     file_path_mask = None
-            
+
             self._stacks[i] = st.Stack.from_filename(
                 file_path,
                 file_path_mask,
@@ -435,16 +433,91 @@ class TransformationDataReader(DataReader):
         DataReader.__init__(self)
         self._transforms_sitk = None
 
+        # Third line in *.tfm file contains information on the transform type
+        self._transform_type = {
+            "Euler3DTransform_double_3_3": sitk.Euler3DTransform,
+            "AffineTransform_double_3_3": sitk.AffineTransform,
+        }
+
     def get_data(self):
         return self._transforms_sitk
 
+    def _get_sitk_transform_from_filepath(self, path_to_sitk_transform):
+        # Read transform as type sitk.Transform
+        transform_sitk = sitk.ReadTransform(path_to_sitk_transform)
 
+        # Convert transform to respective type, e.g. Euler, Affine etc
+        # Third line in *.tfm file contains information on the transform type
+        transform_type = open(path_to_sitk_transform).readlines()[2]
+        transform_type = re.sub("\n", "", transform_type)
+        transform_type = transform_type.split(" ")[1]
+        transform_sitk = self._transform_type[transform_type](transform_sitk)
+
+        return transform_sitk
+
+
+##
+# Reads slice transformations stored in the format 'filename_slice#.tfm'.
+#
+# Rationale: Read only slice transformations associated with
+# 'motion_correction' export achieved by the volumetric reconstruction
+# algorithm
+# \date       2018-01-31 19:16:00+0000
+#
+class SliceTransformationDirectoryReader(TransformationDataReader):
+
+    def __init__(self, directory, suffix_slice="_slice"):
+        TransformationDataReader.__init__(self)
+        self._directory = directory
+        self._suffix_slice = suffix_slice
+
+    def read_data(self):
+
+        if not ph.directory_exists(self._directory):
+            raise exceptions.DirectoryNotExistent(self._directory)
+
+        # Create absolute path for directory
+        directory = os.path.abspath(self._directory)
+
+        pattern = "(" + REGEX_FILENAMES + \
+            ")%s([0-9]+)[.]tfm" % self._suffix_slice
+        p = re.compile(pattern)
+
+        dic_tmp = {
+            (p.match(f).group(1), int(p.match(f).group(2))):
+            os.path.join(directory, p.match(f).group(0))
+            for f in os.listdir(directory) if p.match(f)
+        }
+        fnames = list(set([k[0] for k in dic_tmp.keys()]))
+        self._transforms_sitk = {fname: {} for fname in fnames}
+        for (fname, slice_number), path in dic_tmp.iteritems():
+            self._transforms_sitk[fname][slice_number] = \
+                self._get_sitk_transform_from_filepath(path)
+
+
+##
+# Reads all transformations in a given directory and stores them in an ordered
+# list
+# \date       2018-01-31 19:34:52+0000
+#
 class TransformationDirectoryReader(TransformationDataReader):
 
     def __init__(self, directory):
         TransformationDataReader.__init__(self)
         self._directory = directory
 
+    ##
+    # Reads all transformations in a given directory and stores them in an
+    # ordered list
+    # \date       2018-01-31 19:32:45+0000
+    #
+    # \param      self       The object
+    # \param      extension  The extension
+    # \post       self._transforms_sitk contains transformations as list of
+    #             sitk.Transformation objects
+    #
+    # \return     { description_of_the_return_value }
+    #
     def read_data(self, extension="tfm"):
         pattern = REGEX_FILENAMES + "[.]" + extension
         p = re.compile(pattern)
@@ -460,28 +533,26 @@ class TransformationDirectoryReader(TransformationDataReader):
         self._transforms_sitk = transforms_reader.get_data()
 
 
+##
+# Reads multiple transformations and store them as lists
+# \date       2018-01-31 19:33:51+0000
+#
 class MultipleTransformationsReader(TransformationDataReader):
 
     def __init__(self, file_paths):
         super(self.__class__, self).__init__()
         self._file_paths = file_paths
 
-        # Third line in *.tfm file contains information on the transform type
-        self._transform_type = {
-            "Euler3DTransform_double_3_3": sitk.Euler3DTransform,
-            "AffineTransform_double_3_3": sitk.AffineTransform,
-        }
-
+    ##
+    # Reads multiple transformations and store them as lists
+    # \date       2018-01-31 19:32:45+0000
+    #
+    # \param      self  The object
+    # \post       self._transforms_sitk contains transformations as list of
+    #             sitk.Transformation objects
+    #
     def read_data(self):
-        self._transforms_sitk = [None] * len(self._file_paths)
-
-        for i in range(len(self._file_paths)):
-            # Read transform as type sitk.Transform
-            transform_sitk = sitk.ReadTransform(self._file_paths[i])
-
-            # Convert transform to respective type, e.g. Euler, Affine etc
-            transform_type = open(self._file_paths[i]).readlines()[2]
-            transform_type = re.sub("\n", "", transform_type)
-            transform_type = transform_type.split(" ")[1]
-            self._transforms_sitk[i] = self._transform_type[transform_type](
-                transform_sitk)
+        self._transforms_sitk = [
+            self._get_sitk_transform_from_filepath(self._file_paths[i])
+            for i in range(len(self._file_paths))
+        ]
