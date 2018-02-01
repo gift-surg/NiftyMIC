@@ -1,5 +1,5 @@
 ##
-# \file evalute_image_similarity.py
+# \file evaluate_image_similarity.py
 # \brief      Evaluate similarity to a reference of one or more images
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
@@ -96,25 +96,31 @@ def main():
     for i_stack, stack in enumerate(stacks):
         error[i_stack, :] = np.array([measures[m][i_stack] for m in measures])
         rows.append(stack.get_filename())
-    
-    # Print out
-    df = pd.DataFrame(error, rows, cols)
-    print(df)
+
+    header = "# Ref: %s, Ref-Mask: %d, %s \n" % (
+        reference.get_filename(),
+        args.reference_mask is None,
+        ph.get_time_stamp(),
+    )
+    header += "# %s\n" % ("\t").join(measures)
+
+    path_to_file_filenames = os.path.join(
+        args.dir_output, "filenames.txt")
+    path_to_file_similarities = os.path.join(
+        args.dir_output, "similarities.txt")
 
     # Write to files
-    for i_stack, stack in enumerate(stacks):
-        path_to_file = os.path.join(
-            args.dir_output, "%s.txt" % stack.get_filename())
-        header = "# Ref: %s, Ref-Mask: %d, Image: %s, %s \n" % (
-            reference.get_filename(),
-            args.reference_mask is None,
-            stack.get_filename(),
-            ph.get_time_stamp(),
-        )
-        header += "# %s\n" % ("\t").join(measures)
-        ph.write_to_file(path_to_file, header, verbose=False)
-        ph.write_array_to_file(path_to_file, error[i_stack, :], verbose=False)
-        ph.print_info("Similarities written to '%s'" % path_to_file)
+    ph.write_to_file(path_to_file_similarities, header)
+    ph.write_array_to_file(
+        path_to_file_similarities, error, verbose=False)
+    text = header
+    text += "%s\n" %"\n".join(rows)
+    ph.write_to_file(path_to_file_filenames, text)
+
+    # Print to screen
+    ph.print_subtitle("Computed Similarities")
+    df = pd.DataFrame(error, rows, cols)
+    print(df)
 
     return 0
 
