@@ -48,14 +48,16 @@ class ResidualEvaluator(object):
             self,
             stacks=None,
             reference=None,
-            use_masks=True,
+            use_slice_masks=True,
+            use_reference_mask=True,
             measures=["NCC", "NMI", "PSNR", "SSIM", "RMSE"],
             verbose=True,
     ):
         self._stacks = stacks
         self._reference = reference
         self._measures = measures
-        self._use_masks = use_masks
+        self._use_slice_masks = use_slice_masks
+        self._use_reference_mask = use_reference_mask
         self._verbose = verbose
 
         self._slice_projections = None
@@ -81,6 +83,9 @@ class ResidualEvaluator(object):
     #
     def set_reference(self, reference):
         self._reference = reference
+
+    def get_measures(self):
+        return self._measures
 
     ##
     # Gets the slice similarities computed between simulated/projected and
@@ -134,7 +139,7 @@ class ResidualEvaluator(object):
             if self._verbose:
                 ph.print_info(
                     "Stack %d/%d: Compute slice projections ... " % (
-                        i_stack+1, len(self._stacks)),
+                        i_stack + 1, len(self._stacks)),
                     newline=False)
 
             # Compute slice projections based on assumed slice acquisition
@@ -175,7 +180,7 @@ class ResidualEvaluator(object):
             if self._verbose:
                 ph.print_info(
                     "Stack %d/%d: Compute similarity measures ... " % (
-                        i_stack+1, len(self._stacks)),
+                        i_stack + 1, len(self._stacks)),
                     newline=False)
 
             for i_slice, slice in enumerate(slices):
@@ -184,22 +189,37 @@ class ResidualEvaluator(object):
                 slice_proj_nda = np.squeeze(sitk.GetArrayFromImage(
                     self._slice_projections[i_stack][i_slice].sitk))
 
-                if self._use_masks:
-                    mask_nda = np.squeeze(
+                mask_nda = np.ones_like(slice_nda)
+
+                if self._use_slice_masks:
+                    mask_nda *= np.squeeze(
                         sitk.GetArrayFromImage(slice.sitk_mask))
-                    indices = np.where(mask_nda > 0)
-                else:
-                    indices = np.where(slice_nda != np.inf)
+                if self._use_reference_mask:
+                    mask_nda *= np.squeeze(
+                        sitk.GetArrayFromImage(
+                            self._slice_projections[i_stack][i_slice].sitk_mask))
+                indices = np.where(mask_nda > 0)
 
                 if len(indices[0]) > 0:
                     for m in self._measures:
-                        self._slice_similarities[stack_name][m][i_slice] = \
-                            similarity_measures[m](
-                                slice_nda[indices], slice_proj_nda[indices])
+                        try:
+                            self._slice_similarities[stack_name][m][i_slice] = \
+                                similarity_measures[m](
+                                    slice_nda[indices], slice_proj_nda[indices])
+                        except ValueError as e:
+                            # Error in case only a few/to less non-zero entries
+                            # exist
+                            if m == "SSIM":
+                                self._slice_similarities[
+                                    stack_name][m][i_slice] = \
+                                    SimilarityMeasures.UNDEF[m]
+                            else:
+                                raise ValueError(e.message)
                 else:
                     for m in self._measures:
                         self._slice_similarities[
-                            stack_name][m][i_slice] = np.inf
+                            stack_name][m][i_slice] = \
+                            SimilarityMeasures.UNDEF[m]
             if self._verbose:
                 print("done")
 
@@ -259,15 +279,15 @@ class ResidualEvaluator(object):
             path_to_file = os.path.join(directory, "%s.%s" % (stack_name, ext))
 
             # Read computed measures
-            measures = ph.read_file_line_by_line(path_to_file)[1]
-            measures = re.sub("# ", "", measures)
-            measures = re.sub("\n", "", measures)
-            measures = measures.split("\t")
+            self._measures = ph.read_file_line_by_line(path_to_file)[1]
+            self._measures = re.sub("# ", "", self._measures)
+            self._measures = re.sub("\n", "", self._measures)
+            self._measures = self._measures.split("\t")
 
             # Read array
             array = np.loadtxt(path_to_file, skiprows=2)
             if array.ndim == 1:
                 array = array.reshape(len(array), 1)
 
-            for i_m, m in enumerate(measures):
+            for i_m, m in enumerate(self._measures):
                 self._slice_similarities[stack_name][m] = array[:, i_m]
