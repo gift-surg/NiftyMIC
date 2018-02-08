@@ -58,7 +58,7 @@ class TemplateStackEstimator(object):
             dic = json.load(json_file)
 
         # Get gestational ages as list of integers
-        # gestational_ages = sorted([int(gw) for gw in dic.keys()])
+        gestational_ages = sorted([int(gw) for gw in dic.keys()])
         # template_volumes = np.array([dic[str(k)]["mask_volume"]
         #                     for k in gestational_ages])
         # index = np.argmin(np.abs(template_volumes - volume))
