@@ -24,6 +24,7 @@ import niftymic.registration.flirt as regflirt
 import niftymic.registration.niftyreg as niftyreg
 import niftymic.registration.simple_itk_registration as regsitk
 import niftymic.utilities.data_preprocessing as dp
+import niftymic.utilities.intensity_correction as ic
 import niftymic.utilities.segmentation_propagation as segprop
 import niftymic.utilities.volumetric_reconstruction_pipeline as pipeline
 import niftymic.utilities.joint_image_mask_builder as imb
@@ -54,7 +55,7 @@ def main():
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
-    input_parser.add_search_angle(default=90)
+    input_parser.add_search_angle(default=45)
     input_parser.add_multiresolution(default=0)
     input_parser.add_shrink_factors(default=[2, 1])
     input_parser.add_smoothing_sigmas(default=[1, 0])
@@ -91,7 +92,7 @@ def main():
             os.path.abspath(__file__))
 
     # Use FLIRT for volume-to-volume reg. step. Otherwise, RegAladin is used.
-    use_flirt_for_v2v_registration = True
+    use_flirt_for_v2v_registration = 0
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -145,7 +146,6 @@ def main():
         segmentation_propagator=segmentation_propagator,
         use_cropping_to_mask=True,
         use_N4BiasFieldCorrector=args.bias_field_correction,
-        use_intensity_correction=args.intensity_correction,
         target_stack_index=args.target_stack_index,
         boundary_i=args.boundary_stacks[0],
         boundary_j=args.boundary_stacks[1],
@@ -187,8 +187,8 @@ def main():
         else:
             vol_registration = niftyreg.RegAladin(
                 registration_type="Rigid",
-                use_fixed_mask=True,
-                use_moving_mask=True,
+                # use_fixed_mask=True,
+                # use_moving_mask=True,
                 use_verbose=False,
             )
         v2vreg = pipeline.VolumeToVolumeRegistration(
@@ -203,6 +203,30 @@ def main():
 
     else:
         time_registration = ph.get_zero_time()
+
+    # ---------------------------Intensity Correction--------------------------
+    if args.intensity_correction:
+        ph.print_title("Intensity Correction")
+        intensity_corrector = ic.IntensityCorrection()
+        intensity_corrector.use_individual_slice_correction(False)
+        intensity_corrector.use_reference_mask(True)
+        intensity_corrector.use_verbose(False)
+
+        for i, stack in enumerate(stacks):
+            if i == args.target_stack_index:
+                ph.print_info("Stack %d: Reference image. Skipped." % (i+1))
+                continue
+            else:
+                ph.print_info("Stack %d: Intensity Correction ... " % (i+1),
+                              newline=False)
+            intensity_corrector.set_stack(stack)
+            intensity_corrector.set_reference(
+                stacks[args.target_stack_index].get_resampled_stack(
+                    resampling_grid=stack.sitk))
+            intensity_corrector.run_linear_intensity_correction()
+            stacks[i] = intensity_corrector.get_intensity_corrected_stack()
+            print("done (c1 = %g) " %
+                  intensity_corrector.get_intensity_correction_coefficients())
 
     # ---------------------------Create first volume---------------------------
     time_tmp = ph.start_timing()

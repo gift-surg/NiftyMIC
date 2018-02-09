@@ -13,6 +13,7 @@ import re
 import SimpleITK as sitk
 
 import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 
 from niftymic.definitions import DIR_TMP, DIR_TEST
 
@@ -44,8 +45,9 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         # Check whether identical reconstruction has been created
         path_to_reconstruction = os.path.join(
             self.dir_output, filename_reference)
-        reconstruction_sitk = sitk.ReadImage(path_to_reconstruction)
-        reference_sitk = sitk.ReadImage(path_to_reference)
+        reconstruction_sitk = sitkh.read_nifti_image_sitk(
+            path_to_reconstruction)
+        reference_sitk = sitkh.read_nifti_image_sitk(path_to_reference)
 
         difference_sitk = reconstruction_sitk - reference_sitk
         error = np.linalg.norm(sitk.GetArrayFromImage(difference_sitk))
@@ -75,8 +77,9 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         # Check whether identical reconstruction has been created
         path_to_reconstruction = os.path.join(
             self.dir_output, filename_reference)
-        reconstruction_sitk = sitk.ReadImage(path_to_reconstruction)
-        reference_sitk = sitk.ReadImage(path_to_reference)
+        reconstruction_sitk = sitkh.read_nifti_image_sitk(
+            path_to_reconstruction)
+        reference_sitk = sitkh.read_nifti_image_sitk(path_to_reference)
 
         difference_sitk = reconstruction_sitk - reference_sitk
         error = np.linalg.norm(sitk.GetArrayFromImage(difference_sitk))

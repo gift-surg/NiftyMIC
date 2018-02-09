@@ -15,6 +15,8 @@ import numpy as np
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 
+import pysitk.simple_itk_helper as sitkh
+
 
 ##
 # Helper to visualize geometries of a list of stacks
@@ -68,7 +70,8 @@ class StacksVisualizer(object):
                 "Number of labels must match provided number of filenames.")
 
         for i in range(0, N_stacks):
-            stacks_visualizer._stacks_sitk[i] = sitk.ReadImage(filenames[i])
+            stacks_visualizer._stacks_sitk[i] = sitkh.read_nifti_image_sitk(
+                filenames[i])
             stacks_visualizer._labels[i] = labels[i]
 
         return stacks_visualizer
@@ -141,14 +144,14 @@ class StacksVisualizer(object):
 
         step = 0.5
         tick_range_max = 1
-        ax.set_xticks(np.arange(-tick_range_max, tick_range_max+step, step))
-        ax.set_yticks(np.arange(-tick_range_max, tick_range_max+step, step))
-        ax.set_zticks(np.arange(-tick_range_max, tick_range_max+step, step))
+        ax.set_xticks(np.arange(-tick_range_max, tick_range_max + step, step))
+        ax.set_yticks(np.arange(-tick_range_max, tick_range_max + step, step))
+        ax.set_zticks(np.arange(-tick_range_max, tick_range_max + step, step))
 
         # fig.tight_layout()
 
         ax.legend(legend_objects, self._labels, loc=8,
-                  bbox_to_anchor=(0.5, 0.96), ncol=self._N_stacks/2)
+                  bbox_to_anchor=(0.5, 0.96), ncol=self._N_stacks / 2)
 
         if title is not None:
             plt.title(title)

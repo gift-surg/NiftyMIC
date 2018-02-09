@@ -7,8 +7,9 @@
 # \date       October 2017
 #
 
-import numpy as np
 import os
+import numpy as np
+import SimpleITK as sitk
 
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
@@ -17,7 +18,48 @@ import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
 import niftymic.registration.flirt as regflirt
 import niftymic.registration.niftyreg as niftyreg
+import niftymic.validation.image_similarity_evaluator as ise
 from niftymic.utilities.input_arparser import InputArgparser
+
+
+##
+# Gets the ap flip transform in case the 'stack' physical coordinate is aligned
+# with the voxel space
+# \date       2018-02-07 19:59:39+0000
+#
+# \param      stack             The stack
+# \param      initializer_type  The initializer type
+#
+# \return     The ap flip transform.
+#
+def get_ap_flip_transform(stack, initializer_type="GEOMETRY"):
+    initial_transform = sitk.CenteredTransformInitializer(
+        stack.sitk,
+        stack.sitk,
+        sitk.Euler3DTransform(),
+        eval("sitk.CenteredTransformInitializerFilter.%s" % (
+            initializer_type)))
+
+    translation = np.array(initial_transform.GetFixedParameters()[0:3])
+
+    transform_sitk1 = sitk.Euler3DTransform()
+    transform_sitk1.SetTranslation(-translation)
+
+    transform_sitk2 = sitk.Euler3DTransform()
+    transform_sitk2.SetRotation(0, 0, np.pi)
+
+    transform_sitk3 = sitk.Euler3DTransform(transform_sitk1.GetInverse())
+
+    transform_sitk = sitkh.get_composite_sitk_euler_transform(
+        transform_sitk2, transform_sitk1)
+    transform_sitk = sitkh.get_composite_sitk_euler_transform(
+        transform_sitk3, transform_sitk)
+
+    # sitkh.show_sitk_image((
+    #     [stack.sitk,
+    #     sitkh.get_transformed_sitk_image(stack.sitk, transform_sitk)]))
+
+    return transform_sitk
 
 
 def main():
@@ -57,12 +99,36 @@ def main():
         type=int,
         help="Turn on/off functionality to write registration transform",
         default=0)
+    input_parser.add_option(
+        option_string="--use-fixed-mask",
+        type=int,
+        help="Turn on/off functionality to use fixed image mask during "
+        "registration.",
+        default=0)
+    input_parser.add_option(
+        option_string="--use-moving-mask",
+        type=int,
+        help="Turn on/off functionality to use moving image mask during "
+        "registration.",
+        default=0)
+    input_parser.add_option(
+        option_string="--test-ap-flip",
+        type=int,
+        help="Turn on/off functionality to apply an AP-flip. Seems to be more "
+        "robust to find better registration outcome in general.",
+        default=1)
     input_parser.add_verbose(default=0)
+    input_parser.add_log_script_execution(default=1)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
     use_reg_aladin_for_refinement = True
+
+    # Write script execution call
+    if args.log_script_execution:
+        input_parser.write_performed_script_execution(
+            os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -89,8 +155,8 @@ def main():
     registration = regflirt.FLIRT(
         fixed=moving[0],
         moving=fixed,
-        # use_fixed_mask=True,
-        # use_moving_mask=True,  # moving mask only seems to work for SB cases
+        use_fixed_mask=args.use_fixed_mask,
+        use_moving_mask=args.use_moving_mask,
         registration_type="Rigid",
         use_verbose=False,
         options=(" ").join(options_args),
@@ -100,6 +166,69 @@ def main():
     print("done")
     transform_sitk = registration.get_registration_transform_sitk()
 
+    # Additionally, use RegAladin for more accurate alignment
+    # Rationale: FLIRT has better capture range, but RegAladin seems to
+    # find better alignment once it is within its capture range.
+    if use_reg_aladin_for_refinement:
+        moving[0].update_motion_correction(transform_sitk)
+        registration = niftyreg.RegAladin(
+            fixed=moving[0],
+            use_fixed_mask=args.use_fixed_mask,
+            use_moving_mask=args.use_moving_mask,
+            moving=fixed,
+            registration_type="Rigid",
+            use_verbose=False,
+        )
+        ph.print_info("Run Registration (RegAladin) ... ", newline=False)
+        registration.run()
+        print("done")
+
+        transform2_sitk = registration.get_registration_transform_sitk()
+        moving[0].update_motion_correction(transform2_sitk)
+        transform_sitk = sitkh.get_composite_sitk_affine_transform(
+            transform2_sitk, transform_sitk)
+
+    if args.test_ap_flip:
+        moving0_flipped = st.Stack.from_stack(moving[0])
+        moving0_flipped.set_filename("%s_flipped" % moving[0].get_filename())
+
+        transform_ap_flip_sitk = get_ap_flip_transform(moving0_flipped)
+
+        moving0_flipped.update_motion_correction(transform_ap_flip_sitk)
+        registration = niftyreg.RegAladin(
+            fixed=moving0_flipped,
+            use_fixed_mask=args.use_fixed_mask,
+            use_moving_mask=args.use_moving_mask,
+            moving=fixed,
+            registration_type="Rigid",
+            use_verbose=False,
+        )
+        ph.print_info("Run Registration AP-flipped (RegAladin) ... ",
+                      newline=False)
+        registration.run()
+        print("done")
+
+        transform2_sitk = registration.get_registration_transform_sitk()
+        moving0_flipped.update_motion_correction(transform2_sitk)
+
+        stacks = [s.get_resampled_stack(fixed.sitk)
+                  for s in [moving[0], moving0_flipped]]
+        image_similarity_evaluator = ise.ImageSimilarityEvaluator(
+            stacks=stacks, reference=fixed)
+        image_similarity_evaluator.compute_similarities()
+        similarities = image_similarity_evaluator.get_similarities()
+
+        if similarities["NMI"][1] > similarities["NMI"][0]:
+            ph.print_info("AP-flipped outcome better")
+            transform_update_sitk = sitkh.get_composite_sitk_affine_transform(
+                transform2_sitk, transform_ap_flip_sitk)
+            moving[0].update_motion_correction(transform_update_sitk)
+
+            transform_sitk = sitkh.get_composite_sitk_affine_transform(
+                transform_update_sitk, transform_sitk)
+        else:
+            ph.print_info("AP-flip does not improve outcome")
+
     if args.write_transform:
         path_to_transform = os.path.join(
             args.dir_output, "registration_transform_sitk.txt")
@@ -107,27 +236,8 @@ def main():
 
     # Apply rigidly transform to align reconstruction (moving) with template
     # (fixed)
-    for m in moving:
+    for m in moving[1:]:
         m.update_motion_correction(transform_sitk)
-
-        # Additionally, use RegAladin for more accurate alignment
-        # Rationale: FLIRT has better capture range, but RegAladin seems to
-        # find better alignment once it is within its capture range.
-        if use_reg_aladin_for_refinement:
-            registration = niftyreg.RegAladin(
-                fixed=m,
-                use_fixed_mask=True,
-                moving=fixed,
-                registration_type="Rigid",
-                use_verbose=False,
-            )
-            ph.print_info("Run Registration (RegAladin) ... ", newline=False)
-            registration.run()
-            print("done")
-            transform2_sitk = registration.get_registration_transform_sitk()
-            m.update_motion_correction(transform2_sitk)
-            transform_sitk = sitkh.get_composite_sitk_affine_transform(
-                transform2_sitk, transform_sitk)
 
     if args.transform_only:
         for m in moving:
@@ -158,7 +268,7 @@ def main():
         for i, stack in enumerate(stacks):
             stack.update_motion_correction(transform_sitk)
             ph.print_info("Stack %d/%d: All slice transforms updated" %
-                          (i+1, len(stacks)))
+                          (i + 1, len(stacks)))
 
             # Write transformed slices
             stack.write(

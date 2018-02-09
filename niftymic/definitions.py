@@ -17,5 +17,7 @@ REGEX_FILENAMES = "[A-Za-z0-9+-_]+"
 REGEX_FILENAME_EXTENSIONS = "(" + "|".join(ALLOWED_EXTENSIONS) + ")"
 ALLOWED_INTERPOLATORS = ["NearestNeighbor", "Linear", "BSpline"]
 
+TEMPLATES_INFO = "templates_info.json"
+
 # Set default viewer
 VIEWER = ITKSNAP_EXE

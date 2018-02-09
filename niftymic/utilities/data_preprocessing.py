@@ -6,8 +6,6 @@
 # \date       May 2017
 #
 
-# Import libraries
-
 import niftymic.base.stack as st
 import niftymic.utilities.intensity_correction as ic
 import niftymic.utilities.n4_bias_field_correction as n4bfc

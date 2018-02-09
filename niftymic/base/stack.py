@@ -64,7 +64,7 @@ class Stack:
         stack._filename = filename
 
         # Append stacks as SimpleITK and ITK Image objects
-        stack.sitk = sitk.ReadImage(file_path, sitk.sitkFloat64)
+        stack.sitk = sitkh.read_nifti_image_sitk(file_path, sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         # Append masks (either provided or binary mask)
@@ -77,7 +77,8 @@ class Stack:
         else:
             if not ph.file_exists(file_path_mask):
                 raise exceptions.FileNotExistent(file_path_mask)
-            stack.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
+            stack.sitk_mask = sitkh.read_nifti_image_sitk(
+                file_path_mask, sitk.sitkUInt8)
             try:
                 # ensure masks occupy same physical space
                 stack.sitk_mask.CopyInformation(stack.sitk)
@@ -148,7 +149,7 @@ class Stack:
         stack._filename = prefix_stack
 
         # Get 3D images
-        stack.sitk = sitk.ReadImage(
+        stack.sitk = sitkh.read_nifti_image_sitk(
             dir_input + prefix_stack + ".nii.gz", sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
@@ -156,7 +157,7 @@ class Stack:
         if suffix_mask is not None and \
             os.path.isfile(dir_input +
                            prefix_stack + suffix_mask + ".nii.gz"):
-            stack.sitk_mask = sitk.ReadImage(
+            stack.sitk_mask = sitkh.read_nifti_image_sitk(
                 dir_input + prefix_stack + suffix_mask + ".nii.gz",
                 sitk.sitkUInt8)
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
@@ -330,7 +331,7 @@ class Stack:
         # given
         if stack_to_copy.get_slices() is not None:
             stack._N_slices = stack_to_copy.get_number_of_slices()
-            stack._slices = [None]*stack._N_slices
+            stack._slices = [None] * stack._N_slices
             slices_to_copy = stack_to_copy.get_slices()
 
             for i in range(0, stack._N_slices):
@@ -365,7 +366,7 @@ class Stack:
         index = int(index)
         if abs(index) > self._N_slices - 1:
             raise ValueError("Enter a valid index between -%s and %s. Tried: %s" %
-                             (self._N_slices-1, self._N_slices-1, index))
+                             (self._N_slices - 1, self._N_slices - 1, index))
 
         return self._slices[index]
 
@@ -807,11 +808,12 @@ class Stack:
             size_new = size
             spacing_new = spacing
             # Update information according to isotropic resolution
-            size_new[2] = np.round(spacing[2]/spacing[0]*size[2]).astype("int")
+            size_new[2] = np.round(
+                spacing[2] / spacing[0] * size[2]).astype("int")
             spacing_new[2] = spacing[0]
         else:
-            spacing_new = np.ones(3)*resolution
-            size_new = np.round(spacing/spacing_new*size).astype("int")
+            spacing_new = np.ones(3) * resolution
+            size_new = np.round(spacing / spacing_new * size).astype("int")
 
         # Resample image and its mask to isotropic grid
         isotropic_resampled_stack_sitk = sitk.Resample(
@@ -880,32 +882,33 @@ class Stack:
             size_new = size
             spacing_new = spacing
             # Update information according to isotropic resolution
-            size_new[2] = np.round(spacing[2]/spacing[0]*size[2]).astype("int")
+            size_new[2] = np.round(
+                spacing[2] / spacing[0] * size[2]).astype("int")
             spacing_new[2] = spacing[0]
         else:
-            spacing_new = np.ones(3)*resolution
-            size_new = np.round(spacing/spacing_new*size).astype("int")
+            spacing_new = np.ones(3) * resolution
+            size_new = np.round(spacing / spacing_new * size).astype("int")
 
         if extra_frame is not 0:
 
             # Get extra_frame in voxel space
             extra_frame_vox = np.round(
-                extra_frame/spacing_new[0]).astype("int")
+                extra_frame / spacing_new[0]).astype("int")
 
             # Compute size of resampled stack by considering additional
             # extra_frame
-            size_new = size_new + 2*extra_frame_vox
+            size_new = size_new + 2 * extra_frame_vox
 
             # Compute origin of resampled stack by considering additional
             # extra_frame
             a_x = self.sitk.TransformIndexToPhysicalPoint((1, 0, 0)) - origin
             a_y = self.sitk.TransformIndexToPhysicalPoint((0, 1, 0)) - origin
             a_z = self.sitk.TransformIndexToPhysicalPoint((0, 0, 1)) - origin
-            e_x = a_x/np.linalg.norm(a_x)
-            e_y = a_y/np.linalg.norm(a_y)
-            e_z = a_z/np.linalg.norm(a_z)
+            e_x = a_x / np.linalg.norm(a_x)
+            e_y = a_y / np.linalg.norm(a_y)
+            e_z = a_z / np.linalg.norm(a_z)
 
-            translation = (e_x + e_y + e_z)*extra_frame_vox*spacing_new
+            translation = (e_x + e_y + e_z) * extra_frame_vox * spacing_new
 
             origin = origin - translation
 
@@ -995,7 +998,7 @@ class Stack:
 
         # Create Stack instance
         stack = self.from_sitk_image(
-            isotropic_resampled_stack_sitk, "zincreased_"+self._filename, isotropic_resampled_stack_sitk_mask)
+            isotropic_resampled_stack_sitk, "zincreased_" + self._filename, isotropic_resampled_stack_sitk_mask)
 
         return stack
 
@@ -1017,10 +1020,22 @@ class Stack:
             stack_crop_sitk, boundary_i, boundary_j, boundary_k, unit=unit)
 
         # Resample original image and mask to specified image region
-        image_crop_sitk = sitk.Resample(self.sitk, stack_crop_sitk, sitk.Euler3DTransform(
-        ), sitk.sitkNearestNeighbor, 0, self.sitk.GetPixelIDValue())
-        mask_crop_sitk = sitk.Resample(self.sitk_mask, stack_crop_sitk, sitk.Euler3DTransform(
-        ), sitk.sitkNearestNeighbor, 0, self.sitk_mask.GetPixelIDValue())
+        image_crop_sitk = sitk.Resample(
+            self.sitk,
+            stack_crop_sitk,
+            sitk.Euler3DTransform(),
+            sitk.sitkNearestNeighbor,
+            0,
+            self.sitk.GetPixelIDValue(),
+        )
+        mask_crop_sitk = sitk.Resample(
+            self.sitk_mask,
+            stack_crop_sitk,
+            sitk.Euler3DTransform(),
+            sitk.sitkNearestNeighbor,
+            0,
+            self.sitk_mask.GetPixelIDValue(),
+        )
 
         stack = self.from_sitk_image(
             image_crop_sitk, self._filename, mask_crop_sitk)
@@ -1059,17 +1074,17 @@ class Stack:
         # Non-zero elements of numpy array nda defining x_range
         ran = np.nonzero(sum_yz)[0]
         range_x[0] = np.max([0,         ran[0]])
-        range_x[1] = np.min([shape[0], ran[-1]+1])
+        range_x[1] = np.min([shape[0], ran[-1] + 1])
 
         # Non-zero elements of numpy array nda defining y_range
         ran = np.nonzero(sum_xz)[0]
         range_y[0] = np.max([0,         ran[0]])
-        range_y[1] = np.min([shape[1], ran[-1]+1])
+        range_y[1] = np.min([shape[1], ran[-1] + 1])
 
         # Non-zero elements of numpy array nda defining z_range
         ran = np.nonzero(sum_xy)[0]
         range_z[0] = np.max([0,         ran[0]])
-        range_z[1] = np.min([shape[2], ran[-1]+1])
+        range_z[1] = np.min([shape[2], ran[-1] + 1])
 
         # Numpy reads the array as z,y,x coordinates! So swap them accordingly
         return range_z.astype(int), range_y.astype(int), range_x.astype(int)
@@ -1094,15 +1109,15 @@ class Stack:
     #  return list of Slice objects
     def _extract_slices(self):
 
-        slices = [None]*self._N_slices
+        slices = [None] * self._N_slices
 
         # Extract slices and add masks
         for i in range(0, self._N_slices):
             slices[i] = sl.Slice.from_sitk_image(
-                slice_sitk=self.sitk[:, :, i:i+1],
+                slice_sitk=self.sitk[:, :, i:i + 1],
                 filename=self._filename,
                 slice_number=i,
-                slice_sitk_mask=self.sitk_mask[:, :, i:i+1])
+                slice_sitk_mask=self.sitk_mask[:, :, i:i + 1])
 
         return slices
 
