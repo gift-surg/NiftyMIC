@@ -13,6 +13,8 @@ import numpy as np
 import json
 import SimpleITK as sitk
 
+import pysitk.simple_itk_helper as sitkh
+
 from niftymic.definitions import DIR_TEMPLATES, TEMPLATES_INFO
 
 
