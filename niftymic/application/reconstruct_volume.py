@@ -80,6 +80,8 @@ def main():
     input_parser.add_two_step_cycles(default=3)
     input_parser.add_use_masks_srr(default=1)
     input_parser.add_boundary_stacks(default=[10, 10, 0])
+    input_parser.add_metric(default="Correlation")
+    input_parser.add_metric_radius(default=10)
     input_parser.add_reference()
     input_parser.add_reference_mask()
 
@@ -214,10 +216,10 @@ def main():
 
         for i, stack in enumerate(stacks):
             if i == args.target_stack_index:
-                ph.print_info("Stack %d: Reference image. Skipped." % (i+1))
+                ph.print_info("Stack %d: Reference image. Skipped." % (i + 1))
                 continue
             else:
-                ph.print_info("Stack %d: Intensity Correction ... " % (i+1),
+                ph.print_info("Stack %d: Intensity Correction ... " % (i + 1),
                               newline=False)
             intensity_corrector.set_stack(stack)
             intensity_corrector.set_reference(
@@ -288,13 +290,19 @@ def main():
 
     if args.two_step_cycles > 0:
 
+        if args.metric == "ANTSNeighborhoodCorrelation":
+            metric_params = {"radius": args.metric_radius}
+        else:
+            metric_params = None
+
         registration = regsitk.SimpleItkRegistration(
             moving=HR_volume,
             use_fixed_mask=True,
             use_moving_mask=True,
             use_verbose=args.verbose,
             interpolator="Linear",
-            metric="Correlation",
+            metric=args.metric,
+            metric_params=metric_params,
             use_multiresolution_framework=args.multiresolution,
             shrink_factors=args.shrink_factors,
             smoothing_sigmas=args.smoothing_sigmas,

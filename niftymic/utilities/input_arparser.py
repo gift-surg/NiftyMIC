@@ -277,6 +277,16 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_metric_radius(
+        self,
+        option_string="--metric-radius",
+        type=int,
+        help="Radius in case metric 'ANTSNeighborhoodCorrelation' is chosen.",
+        default=10,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_labels(
         self,
         option_string="--labels",
