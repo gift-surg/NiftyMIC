@@ -64,7 +64,7 @@ class Stack:
         stack._filename = filename
 
         # Append stacks as SimpleITK and ITK Image objects
-        stack.sitk = sitk.ReadImage(file_path, sitk.sitkFloat64)
+        stack.sitk = sitkh.read_nifti_image_sitk(file_path, sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         # Append masks (either provided or binary mask)
@@ -77,7 +77,8 @@ class Stack:
         else:
             if not ph.file_exists(file_path_mask):
                 raise exceptions.FileNotExistent(file_path_mask)
-            stack.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
+            stack.sitk_mask = sitkh.read_nifti_image_sitk(
+                file_path_mask, sitk.sitkUInt8)
             try:
                 # ensure masks occupy same physical space
                 stack.sitk_mask.CopyInformation(stack.sitk)
@@ -148,7 +149,7 @@ class Stack:
         stack._filename = prefix_stack
 
         # Get 3D images
-        stack.sitk = sitk.ReadImage(
+        stack.sitk = sitkh.read_nifti_image_sitk(
             dir_input + prefix_stack + ".nii.gz", sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
@@ -156,7 +157,7 @@ class Stack:
         if suffix_mask is not None and \
             os.path.isfile(dir_input +
                            prefix_stack + suffix_mask + ".nii.gz"):
-            stack.sitk_mask = sitk.ReadImage(
+            stack.sitk_mask = sitkh.read_nifti_image_sitk(
                 dir_input + prefix_stack + suffix_mask + ".nii.gz",
                 sitk.sitkUInt8)
             stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)

@@ -90,7 +90,7 @@ class BrainStripping(object):
                    compute_brain_mask=compute_brain_mask,
                    compute_skull_image=compute_skull_image,
                    dir_tmp=dir_tmp)
-        self._sitk = sitk.ReadImage(
+        self._sitk = sitkh.read_nifti_image_sitk(
             dir_input + filename + ".nii.gz", sitk.sitkFloat64)
 
         return self
@@ -460,12 +460,13 @@ class BrainStripping(object):
         bet.run()
 
         if self._compute_brain_image:
-            self._sitk_brain_image = sitk.ReadImage(
+            self._sitk_brain_image = sitkh.read_nifti_image_sitk(
                 path_to_res, sitk.sitkFloat64)
 
         if self._compute_brain_mask:
-            self._sitk_brain_mask = sitk.ReadImage(
+            self._sitk_brain_mask = sitkh.read_nifti_image_sitk(
                 path_to_res_mask, sitk.sitkUInt8)
 
         if self._compute_skull_image:
-            self._sitk_skull_image = sitk.ReadImage(path_to_res_skull)
+            self._sitk_skull_image = sitkh.read_nifti_image_sitk(
+                path_to_res_skull)

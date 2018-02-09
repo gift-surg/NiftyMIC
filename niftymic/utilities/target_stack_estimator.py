@@ -13,6 +13,7 @@ import re
 import numpy as np
 import SimpleITK as sitk
 
+import pysitk.simple_itk_helper as sitkh
 
 ##
 # Class to estimate target stack automatically
@@ -37,7 +38,7 @@ class TargetStackEstimator(object):
     def from_masks(cls, file_paths_masks):
         target_stack_estimator = cls()
 
-        masks_sitk = [sitk.ReadImage(str(f), sitk.sitkUInt8)
+        masks_sitk = [sitkh.read_nifti_image_sitk(str(f), sitk.sitkUInt8)
                       for f in file_paths_masks]
 
         # Compute volumes of all masks

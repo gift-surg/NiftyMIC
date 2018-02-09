@@ -114,7 +114,7 @@ class Slice:
         slice._slice_number = slice_number
 
         # Append stacks as SimpleITK and ITK Image objects
-        slice.sitk = sitk.ReadImage(file_path, sitk.sitkFloat64)
+        slice.sitk = sitkh.read_nifti_image_sitk(file_path, sitk.sitkFloat64)
         slice.itk = sitkh.get_itk_from_sitk_image(slice.sitk)
 
         # Append masks (if provided)
@@ -127,7 +127,8 @@ class Slice:
         else:
             if not ph.file_exists(file_path_mask):
                 raise exceptions.FileNotExistent(file_path_mask)
-            slice.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
+            slice.sitk_mask = sitkh.read_nifti_image_sitk(
+                file_path_mask, sitk.sitkUInt8)
             try:
                 # ensure mask occupies the same physical space
                 slice.sitk_mask.CopyInformation(slice.sitk)

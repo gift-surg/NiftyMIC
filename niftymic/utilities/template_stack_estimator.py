@@ -47,7 +47,8 @@ class TemplateStackEstimator(object):
     def from_mask(cls, file_path_mask):
         template_stack_estimator = cls()
 
-        mask_sitk = sitk.ReadImage(str(file_path_mask), sitk.sitkUInt8)
+        mask_sitk = sitkh.read_nifti_image_sitk(
+            file_path_mask, sitk.sitkUInt8)
         mask_nda = sitk.GetArrayFromImage(mask_sitk)
         spacing = np.array(mask_sitk.GetSpacing())
         volume = len(np.where(mask_nda > 0)[0]) * spacing.prod()
