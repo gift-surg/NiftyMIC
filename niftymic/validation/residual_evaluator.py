@@ -14,10 +14,12 @@ import os
 import re
 import numpy as np
 import SimpleITK as sitk
+import matplotlib.pyplot as plt
 
 from nsol.similarity_measures import SimilarityMeasures as \
     SimilarityMeasures
 import pysitk.python_helper as ph
+import pysitk.statistics_helper as sh
 
 import niftymic.reconstruction.linear_operators as lin_op
 import niftymic.base.exceptions as exceptions
@@ -95,7 +97,7 @@ class ResidualEvaluator(object):
     # \param      self  The object
     #
     # \return     The slice similarities for all slices and measures as
-    #             dictionary. E.g.
+    #             dictionary. E.g. {
     #             fetal_brain_1: {'NCC': 1D-array[...], 'NMI': 1D-array[..]},
     #             ...
     #             fetal_brain_N: {'NCC': 1D-array[...], 'NMI': 1D-array[..]}
@@ -291,3 +293,69 @@ class ResidualEvaluator(object):
 
             for i_m, m in enumerate(self._measures):
                 self._slice_similarities[stack_name][m] = array[:, i_m]
+
+    ##
+    # Shows the slice similarities in plots.
+    # \date       2018-02-09 18:28:45+0000
+    #
+    # \param      self       The object
+    # \param      directory  The directory
+    # \param      title      The title
+    # \param      measures   The measures
+    # \param      threshold  The threshold
+    #
+    def show_slice_similarities(
+            self,
+            directory=None,
+            title=None,
+            measures=["NCC"],
+            threshold=0.8,
+            ):
+
+        for i_m, measure in enumerate(measures):
+            fig = plt.figure(measure)
+            fig.clf()
+            if title is not None:
+                title = "%s: %s" % (title, measure)
+            else:
+                title = measure
+            plt.suptitle(title)
+
+            stack_names = self._slice_similarities.keys()
+            for i_name, stack_name in enumerate(stack_names):
+                ax = plt.subplot(np.ceil(len(stack_names) / 2.), 2, i_name + 1)
+                nda = self._slice_similarities[stack_name][measure]
+
+                nda = np.nan_to_num(nda)
+
+                indices_in = np.where(nda >= threshold)
+                indices_out = np.where(nda < threshold)
+
+                plt.plot(indices_in[0], nda[indices_in],
+                    color=ph.COLORS_TABLEAU20[0],
+                    markerfacecolor="w",
+                    marker=ph.MARKERS[0],
+                    linestyle="",
+                    )
+                plt.plot(indices_out[0], nda[indices_out],
+                    color=ph.COLORS_TABLEAU20[6],
+                    markerfacecolor="w",
+                    marker=ph.MARKERS[2],
+                    linestyle="",
+                    )
+
+                plt.xlabel("Slice")
+                # plt.ylabel(measure)
+                plt.title(stack_name)
+
+                x = np.arange(nda.size)
+                ax.set_xticks(x)
+                # ax.set_xticklabels(x + 1)
+                ax.set_ylim([0, 1])
+
+            sh.make_figure_fullscreen()
+            plt.show(block=False)
+
+            if directory is not None:
+                filename = "slice_similarities_%s.pdf" % measure
+                ph.save_fig(fig, directory, filename)

@@ -144,6 +144,7 @@ class PrimalDualSolver(Solver):
             x_scale=x_scale,
             data_loss=self._data_loss,
             data_loss_scale=self._data_loss_scale,
+            minimizer=self._minimizer,
             verbose=self._verbose)
 
         if self._reg_type == "TV":
