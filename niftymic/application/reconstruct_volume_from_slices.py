@@ -134,18 +134,30 @@ def main():
     if args.reconstruction_type in ["TVL2", "HuberL2"]:
         ph.print_title("Compute Initial value for %s" %
                        args.reconstruction_type)
-    SRR0 = tk.TikhonovSolver(
-        stacks=stacks,
-        reconstruction=recon0,
-        alpha=args.alpha,
-        iter_max=args.iter_max,
-        reg_type="TK1",
-        minimizer=args.minimizer,
-        data_loss=args.data_loss,
-        data_loss_scale=args.data_loss_scale,
-        use_masks=args.use_masks_srr,
-        # verbose=args.verbose,
-    )
+        SRR0 = tk.TikhonovSolver(
+            stacks=stacks,
+            reconstruction=recon0,
+            alpha=args.alpha,
+            iter_max=np.min([5, args.iter_max]),
+            reg_type="TK1",
+            minimizer="lsmr",
+            data_loss="linear",
+            use_masks=args.use_masks_srr,
+            # verbose=args.verbose,
+        )
+    else:
+        SRR0 = tk.TikhonovSolver(
+            stacks=stacks,
+            reconstruction=recon0,
+            alpha=args.alpha,
+            iter_max=args.iter_max,
+            reg_type="TK1",
+            minimizer=args.minimizer,
+            data_loss=args.data_loss,
+            data_loss_scale=args.data_loss_scale,
+            use_masks=args.use_masks_srr,
+            # verbose=args.verbose,
+        )
     SRR0.run()
 
     recon = SRR0.get_reconstruction()
@@ -182,7 +194,6 @@ def main():
             recon.write(args.dir_output)
 
         else:
-
             SRR = pd.PrimalDualSolver(
                 stacks=stacks,
                 reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
