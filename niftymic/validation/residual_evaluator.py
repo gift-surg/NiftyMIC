@@ -327,28 +327,32 @@ class ResidualEvaluator(object):
                 nda = self._slice_similarities[stack_name][measure]
 
                 nda = np.nan_to_num(nda)
+                x = np.arange(nda.size)
 
-                indices_in = np.where(nda >= threshold)
+                # indices_in = np.where(nda >= threshold)
                 indices_out = np.where(nda < threshold)
 
-                plt.plot(indices_in[0], nda[indices_in],
+                plt.plot(x, nda,
                     color=ph.COLORS_TABLEAU20[0],
                     markerfacecolor="w",
                     marker=ph.MARKERS[0],
-                    linestyle="",
+                    linestyle=":",
                     )
                 plt.plot(indices_out[0], nda[indices_out],
                     color=ph.COLORS_TABLEAU20[6],
-                    markerfacecolor="w",
-                    marker=ph.MARKERS[2],
+                    # markerfacecolor="w",
+                    marker=ph.MARKERS[0],
                     linestyle="",
+                    )
+                plt.plot([x[0], x[-1]], np.ones(2) * threshold,
+                    color=ph.COLORS_TABLEAU20[6],
+                    linestyle="-.",
                     )
 
                 plt.xlabel("Slice")
                 # plt.ylabel(measure)
                 plt.title(stack_name)
 
-                x = np.arange(nda.size)
                 ax.set_xticks(x)
                 # ax.set_xticklabels(x + 1)
                 ax.set_ylim([0, 1])
