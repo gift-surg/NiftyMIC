@@ -85,7 +85,7 @@ class InputArgparser(object):
                 # if len(vals) == 1:
                 #     print(vals[0])
                 # else:
-                print("") 
+                print("")
                 for val in vals:
                     print("\t%s" % val)
             else:
@@ -363,6 +363,17 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_use_outlier_rejection(
+        self,
+        option_string="--use-outlier-rejection",
+        type=int,
+        help="Turn on/off use of outlier rejection mechanism to eliminate "
+        "misregistered slices.",
+        default=0,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_boundary_stacks(
         self,
         option_string="--boundary-stacks",
@@ -541,6 +552,26 @@ class InputArgparser(object):
         help="Regularization parameter like 'alpha' but used for the first"
         "SRR step.",
         default=0.1,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_threshold(
+        self,
+        option_string="--threshold",
+        type=float,
+        help="Threshold between 0 and 1 to detect misregistered slices based "
+        "on NCC in final cycle.",
+        default=0.7,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_threshold_first(
+        self,
+        option_string="--threshold-first",
+        type=float,
+        help="Threshold between 0 and 1 to detect misregistered slices based "
+        "on NCC in first cycle.",
+        default=0.6,
     ):
         self._add_argument(dict(locals()))
 

@@ -84,6 +84,9 @@ def main():
     input_parser.add_metric_radius(default=10)
     input_parser.add_reference()
     input_parser.add_reference_mask()
+    input_parser.add_use_outlier_rejection(default=0)
+    input_parser.add_threshold_first(default=0.6)
+    input_parser.add_threshold(default=0.7)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -324,6 +327,8 @@ def main():
                 cycles=args.two_step_cycles,
                 alpha_range=[args.alpha_first, args.alpha],
                 verbose=args.verbose,
+                threshold_range=[args.threshold_first, args.threshold],
+                use_outlier_rejection=args.use_outlier_rejection,
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
@@ -332,6 +337,7 @@ def main():
             two_step_s2v_reg_recon.get_computational_time_registration()
         time_reconstruction += \
             two_step_s2v_reg_recon.get_computational_time_reconstruction()
+        stacks = two_step_s2v_reg_recon.get_stacks()
     else:
         HR_volume_iterations = []
 

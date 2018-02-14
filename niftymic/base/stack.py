@@ -29,6 +29,7 @@ class Stack:
 
     def __init__(self):
         self._is_unity_mask = True
+        self._deleted_slices = []
 
     ##
     # Create Stack instance from file and add corresponding mask. Mask is
@@ -334,8 +335,8 @@ class Stack:
             stack._slices = [None] * stack._N_slices
             slices_to_copy = stack_to_copy.get_slices()
 
-            for i in range(0, stack._N_slices):
-                stack._slices[i] = sl.Slice.from_slice(slices_to_copy[i])
+            for j, slice_j in enumerate(slices_to_copy):
+                stack._slices[j] = sl.Slice.from_slice(slice_j)
         else:
             stack._N_slices = 0
             stack._slices = None
@@ -357,7 +358,7 @@ class Stack:
     # Get all slices of current stack
     #  \return Array of sitk.Images containing slices in 3D space
     def get_slices(self):
-        return self._slices
+        return [s for s in self._slices if s is not None]
 
     # Get one particular slice of current stack
     #  \return requested 3D slice of stack as Slice object
@@ -378,15 +379,14 @@ class Stack:
     # \param      index  The index
     #
     def delete_slice(self, index):
-        if self._N_slices > 0:
-            # check whether slice exists
-            self.get_slice(index)
-
-            # delete slice at given index
-            del self._slices[index]
-            self._N_slices -= 1
+        # delete slice at given index
+        if index in range(self._N_slices):
+            self._slices[index] = None
+            self._deleted_slices.append(index)
+            self._deleted_slices = sorted(list(set(self._deleted_slices)))
         else:
-            raise RuntimeError("No slice available anymore")
+            raise RuntimeError(
+                "Slice number must be between 0 and %d" % self._N_slices)
 
     # Get name of directory where nifti was read from
     #  \return string of directory wher nifti was read from
@@ -406,7 +406,7 @@ class Stack:
     # Get number of slices of stack
     #  \return number of slices of stack
     def get_number_of_slices(self):
-        return self._N_slices
+        return len(self.get_slices())
 
     def is_unity_mask(self):
         return self._is_unity_mask

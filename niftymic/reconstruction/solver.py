@@ -360,28 +360,24 @@ class Solver(object):
         # Define index for first voxel of first slice within array
         i_min = 0
 
-        for i in range(0, self._N_stacks):
-            stack = self._stacks[i]
+        for i, stack in enumerate(self._stacks):
             slices = stack.get_slices()
 
             # Get number of voxels of each slice in current stack
             N_slice_voxels = np.array(slices[0].sitk.GetSize()).prod()
 
-            for j in range(0, stack.get_number_of_slices()):
+            for j, slice_j in enumerate(slices):
 
                 # Define index for last voxel to specify current slice
                 # (exlusive)
                 i_max = i_min + N_slice_voxels
 
-                # Get current slice
-                slice_k = slices[j]
-
                 # Apply M_k y_k
                 if self._use_masks:
                     slice_itk = self._linear_operators.M_itk(
-                        slice_k.itk, slice_k.itk_mask)
+                        slice_j.itk, slice_j.itk_mask)
                 else:
-                    slice_itk = slice_k.itk
+                    slice_itk = slice_j.itk
                 slice_nda_vec = self._itk2np.GetArrayFromImage(
                     slice_itk).flatten()
 
@@ -472,21 +468,20 @@ class Solver(object):
         # Define index for first voxel of first slice within array
         i_min = 0
 
-        for i in range(0, self._N_stacks):
-            stack = self._stacks[i]
+        for i, stack in enumerate(self._stacks):
             slices = stack.get_slices()
 
             # Get number of voxels of each slice in current stack
             N_slice_voxels = np.array(slices[0].sitk.GetSize()).prod()
 
-            for j in range(0, stack.get_number_of_slices()):
+            for j, slice_j in enumerate(slices):
 
                 # Define index for last voxel to specify current slice
                 # (exclusive)
                 i_max = i_min + N_slice_voxels
 
                 # Compute M_k A_k y_k
-                slice_itk = self._Mk_Ak(x_itk, slices[j])
+                slice_itk = self._Mk_Ak(x_itk, slice_j)
                 slice_nda = self._itk2np.GetArrayFromImage(slice_itk)
 
                 # Fill corresponding elements
@@ -519,29 +514,25 @@ class Solver(object):
         # Define index for first voxel of first slice within array
         i_min = 0
 
-        for i in range(0, self._N_stacks):
-            stack = self._stacks[i]
+        for i, stack in enumerate(self._stacks):
             slices = stack.get_slices()
 
             # Get number of voxels of each slice in current stack
             N_slice_voxels = np.array(slices[0].sitk.GetSize()).prod()
 
-            for j in range(0, stack.get_number_of_slices()):
+            for j, slice_j in enumerate(slices):
 
                 # Define index for last voxel to specify current slice
                 # (exlusive)
                 i_max = i_min + N_slice_voxels
 
-                # Get current slice
-                slice_k = slices[j]
-
                 # Extract 1D corresponding to current slice and convert it to
                 # itk.Object
                 slice_itk = self._get_itk_image_from_array_vec(
-                    stacked_slices_nda_vec[i_min:i_max], slice_k.itk)
+                    stacked_slices_nda_vec[i_min:i_max], slice_j.itk)
 
                 # Apply A_k' M_k on current slice
-                Ak_adj_Mk_slice_itk = self._Ak_adj_Mk(slice_itk, slice_k)
+                Ak_adj_Mk_slice_itk = self._Ak_adj_Mk(slice_itk, slice_j)
                 Ak_adj_Mk_slice_nda_vec = self._itk2np.GetArrayFromImage(
                     Ak_adj_Mk_slice_itk).flatten()
 

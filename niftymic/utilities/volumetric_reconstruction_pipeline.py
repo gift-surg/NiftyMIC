@@ -18,6 +18,8 @@ import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
+import niftymic.validation.motion_evaluator as me
+import niftymic.validation.residual_evaluator as re
 
 
 ##
@@ -134,7 +136,7 @@ class VolumeToVolumeRegistration(RegistrationPipeline):
 
         for i in range(0, len(self._stacks)):
             txt = "Volume-to-Volume Registration -- " \
-                "Stack %d/%d" % (i+1, len(self._stacks))
+                "Stack %d/%d" % (i + 1, len(self._stacks))
             if self._verbose:
                 ph.print_subtitle(txt)
             else:
@@ -168,6 +170,8 @@ class SliceToVolumeRegistration(RegistrationPipeline):
     # \param      verbose              The verbose
     # \param      print_prefix         Print at each iteration at the
     #                                  beginning, string
+    # \param      threshold            The threshold
+    # \param      threshold_measure    The threshold measure
     #
     def __init__(self,
                  stacks,
@@ -175,6 +179,8 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                  registration_method,
                  verbose=1,
                  print_prefix="",
+                 threshold=None,
+                 threshold_measure="NCC",
                  ):
         RegistrationPipeline.__init__(
             self,
@@ -183,9 +189,23 @@ class SliceToVolumeRegistration(RegistrationPipeline):
             registration_method=registration_method,
             verbose=verbose)
         self._print_prefix = print_prefix
+        self._threshold = threshold
+        self._threshold_measure = threshold_measure
 
     def set_print_prefix(self, print_prefix):
         self._print_prefix = print_prefix
+
+    def set_threshold(self, threshold):
+        self._threshold = threshold
+
+    def get_threshold(self):
+        return self._threshold
+
+    def set_threshold_measure(self, threshold_measure):
+        self._threshold_measure = threshold_measure
+
+    def get_threshold_measure(self):
+        return self._threshold_measure
 
     def _run(self):
 
@@ -193,29 +213,93 @@ class SliceToVolumeRegistration(RegistrationPipeline):
 
         self._registration_method.set_moving(self._reference)
 
-        for i in range(0, len(self._stacks)):
-            stack = self._stacks[i]
+        for i, stack in enumerate(self._stacks):
             slices = stack.get_slices()
-            for j in range(0, len(slices)):
+            transforms_sitk = [None] * len(slices)
+
+            for j, slice_j in enumerate(slices):
 
                 txt = "%sSlice-to-Volume Registration -- " \
                     "Stack %d/%d -- Slice %d/%d" % (
                         self._print_prefix,
-                        i+1, len(self._stacks),
-                        j+1, len(slices))
+                        i + 1, len(self._stacks),
+                        j + 1, len(slices))
                 if self._verbose:
                     ph.print_subtitle(txt)
                 else:
                     ph.print_info(txt)
 
-                self._registration_method.set_fixed(slices[j])
+                self._registration_method.set_fixed(slice_j)
                 self._registration_method.run()
 
-                # Update position of slice
+                # Store information on registration transform
                 transform_sitk = \
                     self._registration_method.\
                     get_registration_transform_sitk()
-                slices[j].update_motion_correction(transform_sitk)
+                transforms_sitk[j] = transform_sitk
+
+            # dir_output = "/tmp/fetal/figs"
+            # motion_evaluator = me.MotionEvaluator(transforms_sitk)
+            # motion_evaluator.run()
+            # title = "%s%s" % (self._print_prefix, stack.get_filename())
+            # motion_evaluator.display(dir_output=dir_output, title=title)
+            # motion_evaluator.show(dir_output=dir_output, title=title)
+
+            # Update position of slice
+            for j, slice_j in enumerate(slices):
+                slice_j.update_motion_correction(transforms_sitk[j])
+
+        if self._threshold is not None:
+            ph.print_subtitle(
+                "Slice Outlier Rejection (Threshold = %g @ %s)" % (
+                    self._threshold, self._threshold_measure))
+            residual_evaluator = re.ResidualEvaluator(
+                stacks=self._stacks,
+                reference=self._reference,
+                use_slice_masks=False,
+                use_reference_mask=True,
+                verbose=False,
+            )
+            residual_evaluator.compute_slice_projections()
+            residual_evaluator.evaluate_slice_similarities()
+            slice_sim = residual_evaluator.get_slice_similarities()
+            # residual_evaluator.show_slice_similarities(
+            #     threshold=self._threshold,
+            #     measures=[self._threshold_measure],
+            #     directory="/tmp/spina/figs%s" % self._print_prefix[0:7],
+            # )
+
+            remove_stacks = []
+            for i, stack in enumerate(self._stacks):
+                nda_sim = np.nan_to_num(
+                    slice_sim[stack.get_filename()][self._threshold_measure])
+                indices = np.where(nda_sim < self._threshold)[0]
+                N_slices = len(stack.get_slices())
+                for j in indices:
+                    stack.delete_slice(j)
+
+                ph.print_info("Stack %d/%d: %d/%d slices deleted (%s)" % (
+                    i + 1,
+                    len(self._stacks),
+                    len(indices),
+                    N_slices,
+                    stack.get_filename(),
+                ))
+
+                # Log stack where all slices were rejected
+                if stack.get_number_of_slices() == 0:
+                    remove_stacks.append(stack)
+
+            # Remove stacks where all slices where rejected
+            for stack in remove_stacks:
+                self._stacks.remove(stack)
+                ph.print_info("Stack '%s' removed entirely." %
+                              stack.get_filename())
+
+            if len(self._stacks) == 0:
+                raise RuntimeError(
+                    "All slices of all stacks were rejected "
+                    "as outliers. Volumetric reconstruction is aborted.")
 
 
 ##
@@ -264,7 +348,7 @@ class SliceSetToVolumeRegistration(RegistrationPipeline):
                 txt = "%sSliceSet-to-Volume Registration -- " \
                     "Stack %d/%d -- Slices %s" % (
                         self._print_prefix,
-                        i+1, len(self._stacks),
+                        i + 1, len(self._stacks),
                         str(indices))
                 if self._verbose:
                     ph.print_subtitle(txt)
@@ -444,6 +528,9 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                  alpha_range,
                  cycles,
                  verbose=1,
+                 threshold_measure="NCC",
+                 threshold_range=[0.6, 0.7],
+                 use_outlier_rejection=False,
                  ):
 
         ReconstructionRegistrationPipeline.__init__(
@@ -456,6 +543,9 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             verbose=verbose)
 
         self._cycles = cycles
+        self._threshold_measure = threshold_measure
+        self._threshold_range = threshold_range
+        self._use_outlier_rejection = use_outlier_rejection
 
     def _run(self):
 
@@ -467,11 +557,17 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             self._alpha_range[0], self._alpha_range[1], self._cycles)
         alphas = alphas[0:self._cycles]
 
+        thresholds = np.linspace(
+            self._threshold_range[0], self._threshold_range[1], self._cycles)
+        thresholds = thresholds[0:self._cycles]
+
         s2vreg = SliceToVolumeRegistration(
             stacks=self._stacks,
             reference=self._reference,
             registration_method=self._registration_method,
-            verbose=self._verbose)
+            verbose=self._verbose,
+            threshold_measure=self._threshold_measure,
+        )
 
         reference = self._reference
 
@@ -479,7 +575,10 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
             # Slice-to-volume registration step
             s2vreg.set_reference(reference)
-            s2vreg.set_print_prefix("Cycle %d/%d: " % (cycle+1, self._cycles))
+            s2vreg.set_print_prefix("Cycle %d/%d: " %
+                                    (cycle + 1, self._cycles))
+            if self._use_outlier_rejection:
+                s2vreg.set_threshold(thresholds[cycle])
             s2vreg.run()
 
             self._computational_time_registration += \
@@ -497,7 +596,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
                 # Store SRR
                 filename = "Iter%d_%s" % (
-                    cycle+1,
+                    cycle + 1,
                     self._reconstruction_method.get_setting_specific_filename()
                 )
                 self._reconstructions.insert(0, st.Stack.from_stack(
@@ -569,9 +668,9 @@ class HieararchicalSliceSetRegistrationReconstruction(
         # Debug
         if debug:
             for i, stack in enumerate(self._stacks):
-                print("Stack %d/%d:" % (i+1, N_stacks))
+                print("Stack %d/%d:" % (i + 1, N_stacks))
                 for k, v in slice_sets_indices[i].iteritems():
-                    print("\tCycle %d: arrays = %s" % (k+1, str(v)))
+                    print("\tCycle %d: arrays = %s" % (k + 1, str(v)))
 
         N_cycles = np.max([len(slice_sets_indices[i])
                            for i in range(N_stacks)])
@@ -592,7 +691,7 @@ class HieararchicalSliceSetRegistrationReconstruction(
             }
 
             ss2vreg = SliceSetToVolumeRegistration(
-                print_prefix="Cycle %d/%d -- " % (i_cycle+1, N_cycles),
+                print_prefix="Cycle %d/%d -- " % (i_cycle + 1, N_cycles),
                 stacks=self._stacks,
                 reference=reference,
                 registration_method=self._registration_method,
@@ -675,11 +774,11 @@ class HieararchicalSliceSetRegistrationReconstruction(
 
         # Split into smaller subpackages
         while not finished:
-            i = i+1
+            i = i + 1
 
             # Get list of indices based on interleaved acquisition
             interleaved_acquisitions[i] = self._get_array_list_split(
-                interleaved_acquisitions[i-1], N_min)
+                interleaved_acquisitions[i - 1], N_min)
 
             # Stop if number of elements smaller than N_min. Remark, single
             # index splits can still occur. E.g. [1,3,5] is split into [1,3]
@@ -763,7 +862,7 @@ class MultiComponentReconstruction(Pipeline):
 
         for i in range(0, len(self._stacks)):
             ph.print_subtitle("Multi-Component Reconstruction -- "
-                              "Stack %d/%d" % (i+1, len(self._stacks)))
+                              "Stack %d/%d" % (i + 1, len(self._stacks)))
             stack = self._stacks[i]
             self._reconstruction_method.set_stacks([stack])
             self._reconstruction_method.run()
