@@ -95,27 +95,45 @@ def main():
         "image only, i.e. no resampling to fixed image space",
         default=0)
     input_parser.add_option(
+        option_string="--initial-transform",
+        type=str,
+        help="Set initial transform to be used.",
+        default=None)
+    input_parser.add_option(
         option_string="--write-transform",
         type=int,
         help="Turn on/off functionality to write registration transform",
-        default=0)
+        default=1)
     input_parser.add_option(
         option_string="--use-fixed-mask",
         type=int,
         help="Turn on/off functionality to use fixed image mask during "
-        "registration.",
+        "registration. It is defined via 'mask-suffix' and must be in the "
+        "same directory as the fixed image.",
         default=0)
     input_parser.add_option(
         option_string="--use-moving-mask",
         type=int,
         help="Turn on/off functionality to use moving image mask during "
-        "registration.",
+        "registration. It is defined via 'mask-suffix' and must be in the "
+        "same directory as the moving image(s).",
         default=0)
     input_parser.add_option(
         option_string="--test-ap-flip",
         type=int,
-        help="Turn on/off functionality to apply an AP-flip. Seems to be more "
-        "robust to find better registration outcome in general.",
+        help="Turn on/off functionality to run an additional registration "
+        "after an AP-flip. Seems to be more robust to find a better "
+        "registration outcome in general.",
+        default=1)
+    input_parser.add_option(
+        option_string="--use-flirt",
+        type=int,
+        help="Turn on/off functionality to use FLIRT for the registration.",
+        default=1)
+    input_parser.add_option(
+        option_string="--use-regaladin",
+        type=int,
+        help="Turn on/off functionality to use RegAladin for the registration.",
         default=1)
     input_parser.add_verbose(default=0)
     input_parser.add_log_script_execution(default=1)
@@ -123,12 +141,13 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    use_reg_aladin_for_refinement = True
-
     # Write script execution call
     if args.log_script_execution:
         input_parser.write_performed_script_execution(
             os.path.abspath(__file__))
+
+    if not args.use_regaladin and not args.use_flirt:
+        raise IOError("Either RegAladin or FLIRT must be activated.")
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -140,37 +159,50 @@ def main():
     data_reader.read_data()
     fixed = data_reader.get_data()[0]
 
+    if args.initial_transform is not None:
+        data_reader = dr.MultipleTransformationsReader(
+            [args.initial_transform])
+        data_reader.read_data()
+        transform_sitk = data_reader.get_data()[0]
+        moving[0].update_motion_correction(transform_sitk)
+    else:
+        transform_sitk = sitk.AffineTransform(fixed.sitk.GetDimension())
+
     # -------------------Register Reconstruction to Template-------------------
     ph.print_title("Register Reconstruction to Template")
 
-    # Define search angle ranges for FLIRT in all three dimensions
-    search_angles = ["-searchr%s -%d %d" %
-                     (x, args.search_angle, args.search_angle)
-                     for x in ["x", "y", "z"]]
-    search_angles = (" ").join(search_angles)
-    options_args = []
-    options_args.append(search_angles)
-    # cost = "mutualinfo"
-    # options_args.append("-searchcost %s -cost %s" % (cost, cost))
-    registration = regflirt.FLIRT(
-        fixed=moving[0],
-        moving=fixed,
-        use_fixed_mask=args.use_fixed_mask,
-        use_moving_mask=args.use_moving_mask,
-        registration_type="Rigid",
-        use_verbose=False,
-        options=(" ").join(options_args),
-    )
-    ph.print_info("Run Registration (FLIRT) ... ", newline=False)
-    registration.run()
-    print("done")
-    transform_sitk = registration.get_registration_transform_sitk()
+    if args.use_flirt:
+        # Define search angle ranges for FLIRT in all three dimensions
+        search_angles = ["-searchr%s -%d %d" %
+                         (x, args.search_angle, args.search_angle)
+                         for x in ["x", "y", "z"]]
+        search_angles = (" ").join(search_angles)
+        options_args = []
+        options_args.append(search_angles)
+        # cost = "mutualinfo"
+        # options_args.append("-searchcost %s -cost %s" % (cost, cost))
+        registration = regflirt.FLIRT(
+            fixed=moving[0],
+            moving=fixed,
+            use_fixed_mask=args.use_fixed_mask,
+            use_moving_mask=args.use_moving_mask,
+            registration_type="Rigid",
+            use_verbose=False,
+            options=(" ").join(options_args),
+        )
+        ph.print_info("Run Registration (FLIRT) ... ", newline=False)
+        registration.run()
+        print("done")
+        transform2_sitk = registration.get_registration_transform_sitk()
+        moving[0].update_motion_correction(transform2_sitk)
+
+        transform_sitk = sitkh.get_composite_sitk_affine_transform(
+            transform2_sitk, transform_sitk)
 
     # Additionally, use RegAladin for more accurate alignment
     # Rationale: FLIRT has better capture range, but RegAladin seems to
     # find better alignment once it is within its capture range.
-    if use_reg_aladin_for_refinement:
-        moving[0].update_motion_correction(transform_sitk)
+    if args.use_regaladin:
         registration = niftyreg.RegAladin(
             fixed=moving[0],
             use_fixed_mask=args.use_fixed_mask,
@@ -233,6 +265,8 @@ def main():
         path_to_transform = os.path.join(
             args.dir_output, "registration_transform_sitk.txt")
         sitk.WriteTransform(transform_sitk, path_to_transform)
+        ph.print_info("Registration transform written to '%s'" %
+                      path_to_transform)
 
     # Apply rigidly transform to align reconstruction (moving) with template
     # (fixed)
