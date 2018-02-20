@@ -288,6 +288,10 @@ class ResidualEvaluator(object):
 
             # Read array
             array = np.loadtxt(path_to_file, skiprows=2)
+
+            # Ensure correct shape in case only a single slice available
+            array = array.reshape(-1, len(self._measures))
+
             if array.ndim == 1:
                 array = array.reshape(len(array), 1)
 
