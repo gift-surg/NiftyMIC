@@ -64,6 +64,9 @@ class StackMaskMorphologicalOperations(object):
     def set_mask_sitk(self, mask_sitk):
         self._mask_sitk = mask_sitk
 
+    def get_mask_sitk(self):
+        return self._mask_sitk
+
     def get_stack(self):
         return st.Stack.from_stack(self._stack)
 
