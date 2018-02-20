@@ -36,7 +36,7 @@ def main():
         "STA%d.nii.gz" % args.gestational_age)
     template_mask = os.path.join(
         args.dir_input_templates,
-        "STA%d_mask.nii.gz" % args.gestational_age)
+        "STA%d_mask_dil.nii.gz" % args.gestational_age)
 
     stack = st.Stack.from_filename(args.filename, template_mask,
                                    extract_slices=False)
