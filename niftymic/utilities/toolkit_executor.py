@@ -58,26 +58,26 @@ class ToolkitExecuter(object):
         cmd_args.append("PWD=$(pwd)")
 
         # change to output directory
-        cmd_args.append("echo 'Change to output directory'")
+        cmd_args.append("\necho 'Change to output directory'")
         cmd_args.append("mkdir -p %s" % self._dir_output)
         cmd_args.append("cd %s" % self._dir_output)
 
         # create temp directory if required
-        cmd_args.append("echo 'Create temp directory'")
+        cmd_args.append("\necho 'Create temp directory'")
         cmd_args.append("mkdir -p %s" % self._subdir_temp)
 
         # dilate masks
         if kernel_mask_dilation is not None:
-            cmd_args.append("echo 'Dilate masks'")
+            cmd_args.append("\necho 'Dilate masks'")
             cmd_args.append(self._exe_dilate_masks(
                 kernel_mask_dilation, self._paths_to_masks))
 
         # exe to determine slice thickness for toolkit
-        cmd_args.append("echo 'Fetch slice thickness for all stacks'")
+        cmd_args.append("\necho 'Fetch slice thickness for all stacks'")
         cmd_args.append(self._exe_to_fetch_slice_thickness(self._paths_to_images))
         
         # toolkit execution
-        cmd_args.append("echo 'IRTK Toolkit Execution'")
+        cmd_args.append("\necho 'IRTK Toolkit Execution'")
         exe_args = [exe]
         exe_args.append("-o %s" % output_name)
         exe_args.append("-i %s%s" %
@@ -91,10 +91,10 @@ class ToolkitExecuter(object):
         toolkit_execution = "%s" % self._sep.join(exe_args)
         cmd_args.append(toolkit_execution)
         
-        cmd_args.append("echo 'Delete temp directory'")
+        cmd_args.append("\necho 'Delete temp directory'")
         cmd_args.append("rm -rf %s" %self._subdir_temp)
 
-        cmd_args.append("echo 'Change back to original directory'")
+        cmd_args.append("\necho 'Change back to original directory'")
         cmd_args.append("cd ${PWD}")
         cmd_args.append("\n")
 
