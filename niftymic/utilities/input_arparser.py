@@ -648,7 +648,7 @@ class InputArgparser(object):
 
     def add_pd_alg_type(
             self,
-            option_string="-pd_alg_type",
+            option_string="--pd-alg-type",
             type=str,
             help="Algorithm used to dynamically update parameters for each "
             "iteration of the dual algorithm. "
