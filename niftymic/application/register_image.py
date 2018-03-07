@@ -133,13 +133,16 @@ def main():
     input_parser.add_option(
         option_string="--use-regaladin",
         type=int,
-        help="Turn on/off functionality to use RegAladin for the registration.",
+        help="Turn on/off functionality to use RegAladin for the "
+        "registration.",
         default=1)
     input_parser.add_verbose(default=0)
     input_parser.add_log_script_execution(default=1)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
+
+    debug = 0
 
     # Write script execution call
     if args.log_script_execution:
@@ -180,7 +183,7 @@ def main():
         options_args = []
         options_args.append(search_angles)
         # cost = "mutualinfo"
-        # options_args.append("-searchcost %s -cost %s" % (cost, cost))
+        # options_args.append("-cost %s" % (cost))
         registration = regflirt.FLIRT(
             fixed=moving[0],
             moving=fixed,
@@ -198,6 +201,9 @@ def main():
 
         transform_sitk = sitkh.get_composite_sitk_affine_transform(
             transform2_sitk, transform_sitk)
+
+        if debug:
+            sitkh.show_stacks([fixed, moving[0]], segmentation=fixed)
 
     # Additionally, use RegAladin for more accurate alignment
     # Rationale: FLIRT has better capture range, but RegAladin seems to
@@ -219,6 +225,9 @@ def main():
         moving[0].update_motion_correction(transform2_sitk)
         transform_sitk = sitkh.get_composite_sitk_affine_transform(
             transform2_sitk, transform_sitk)
+
+        if debug:
+            sitkh.show_stacks([fixed, moving[0]], segmentation=fixed)
 
     if args.test_ap_flip:
         moving0_flipped = st.Stack.from_stack(moving[0])
