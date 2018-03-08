@@ -67,17 +67,17 @@ class TemplateStackEstimator(object):
         # template_volumes = np.array([dic[str(k)]["volume_mask"]
         #                              for k in gestational_ages])
         # index = np.argmin(np.abs(template_volumes - volume))
-        
+
         # # Ensure valid index after correction
         # index = np.max([0, index - 1])
         # # index = np.min([index + 1, len(template_volumes)-1])
-        
+
         # # Matching gestational age/week
         # gw_match = str(gestational_ages[index])
 
         # template_stack_estimator._template_path = os.path.join(
         #     DIR_TEMPLATES, dic[gw_match]["image"])
-        
+
         # return template_stack_estimator
 
         # Find template which has slightly smaller mask volume
