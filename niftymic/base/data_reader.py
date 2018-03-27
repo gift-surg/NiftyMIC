@@ -117,9 +117,11 @@ class ImageDirectoryReader(ImageDataReader):
         p = re.compile(pattern)
         p_mask = re.compile(pattern_mask)
 
-        # Exclude potential mask filenames
-        # TODO: If folder contains A.nii and A.nii.gz that ambiguity will not
-        #       be detected
+        # TODO:
+        #  - If folder contains A.nii and A.nii.gz that ambiguity will not
+        # be detected
+        #  - exclude potential mask filenames
+        #  - hidden files are not excluded
         dic_filenames = {p.match(f).group(1): p.match(f).group(0)
                          for f in os.listdir(abs_path_to_directory)
                          if p.match(f) and not p_mask.match(f)}

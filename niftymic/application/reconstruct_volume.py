@@ -78,7 +78,7 @@ def main():
     input_parser.add_write_motion_correction(default=1)
     input_parser.add_verbose(default=0)
     input_parser.add_two_step_cycles(default=3)
-    input_parser.add_use_masks_srr(default=1)
+    input_parser.add_use_masks_srr(default=0)
     input_parser.add_boundary_stacks(default=[10, 10, 0])
     input_parser.add_metric(default="Correlation")
     input_parser.add_metric_radius(default=10)
@@ -87,6 +87,9 @@ def main():
     input_parser.add_use_outlier_rejection(default=0)
     input_parser.add_threshold_first(default=0.6)
     input_parser.add_threshold(default=0.7)
+    input_parser.add_use_robust_registration(default=0)
+    input_parser.add_s2v_smoothing(default=0.5)
+    input_parser.add_interleave(default=2)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -327,8 +330,11 @@ def main():
                 cycles=args.two_step_cycles,
                 alpha_range=[args.alpha_first, args.alpha],
                 verbose=args.verbose,
-                threshold_range=[args.threshold_first, args.threshold],
                 use_outlier_rejection=args.use_outlier_rejection,
+                threshold_range=[args.threshold_first, args.threshold],
+                use_robust_registration=args.use_robust_registration,
+                s2v_smoothing=args.s2v_smoothing,
+                interleave=args.interleave,
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \

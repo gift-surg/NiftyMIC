@@ -20,6 +20,7 @@ import pysitk.simple_itk_helper as sitkh
 import niftymic.base.stack as st
 import niftymic.validation.motion_evaluator as me
 import niftymic.validation.residual_evaluator as re
+import niftymic.utilities.robust_motion_estimator as rme
 
 
 ##
@@ -181,6 +182,8 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                  print_prefix="",
                  threshold=None,
                  threshold_measure="NCC",
+                 s2v_smoothing=None,
+                 interleave=2,
                  ):
         RegistrationPipeline.__init__(
             self,
@@ -191,6 +194,8 @@ class SliceToVolumeRegistration(RegistrationPipeline):
         self._print_prefix = print_prefix
         self._threshold = threshold
         self._threshold_measure = threshold_measure
+        self._s2v_smoothing = s2v_smoothing
+        self._interleave = interleave
 
     def set_print_prefix(self, print_prefix):
         self._print_prefix = print_prefix
@@ -200,6 +205,12 @@ class SliceToVolumeRegistration(RegistrationPipeline):
 
     def get_threshold(self):
         return self._threshold
+
+    def set_s2v_smoothing(self, s2v_smoothing):
+        self._s2v_smoothing = s2v_smoothing
+
+    def get_s2v_smoothing(self):
+        return self._s2v_smoothing
 
     def set_threshold_measure(self, threshold_measure):
         self._threshold_measure = threshold_measure
@@ -238,6 +249,23 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                     get_registration_transform_sitk()
                 transforms_sitk[j] = transform_sitk
 
+            # Avoid slice misregistrations
+            if self._s2v_smoothing is not None:
+                ph.print_subtitle(
+                    "Robust slice motion estimation "
+                    "(GP smoothing = %g, interleave = %d)" % (
+                        self._s2v_smoothing, self._interleave))
+                robust_motion_estimator = rme.RobustMotionEstimator(
+                    transforms_sitk=transforms_sitk,
+                    interleave=self._interleave)
+                robust_motion_estimator.run_gaussian_process_smoothing(
+                    self._s2v_smoothing)
+
+                # robust_motion_estimator.show_estimated_transform_parameters(
+                # dir_output="/tmp/fetal_brain/figs", title="Stack%d" % i)
+                transforms_sitk = \
+                    robust_motion_estimator.get_robust_transforms_sitk()
+
             # dir_output = "/tmp/fetal/figs"
             # motion_evaluator = me.MotionEvaluator(transforms_sitk)
             # motion_evaluator.run()
@@ -249,6 +277,7 @@ class SliceToVolumeRegistration(RegistrationPipeline):
             for j, slice_j in enumerate(slices):
                 slice_j.update_motion_correction(transforms_sitk[j])
 
+        # Reject misregistered slices
         if self._threshold is not None:
             ph.print_subtitle(
                 "Slice Outlier Rejection (Threshold = %g @ %s)" % (
@@ -528,9 +557,12 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                  alpha_range,
                  cycles,
                  verbose=1,
+                 use_outlier_rejection=False,
                  threshold_measure="NCC",
                  threshold_range=[0.6, 0.7],
-                 use_outlier_rejection=False,
+                 use_robust_registration=False,
+                 s2v_smoothing=0.5,
+                 interleave=2,
                  ):
 
         ReconstructionRegistrationPipeline.__init__(
@@ -543,9 +575,12 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             verbose=verbose)
 
         self._cycles = cycles
+        self._use_outlier_rejection = use_outlier_rejection
         self._threshold_measure = threshold_measure
         self._threshold_range = threshold_range
-        self._use_outlier_rejection = use_outlier_rejection
+        self._use_robust_registration = use_robust_registration
+        self._s2v_smoothing = s2v_smoothing
+        self._interleave = interleave
 
     def _run(self):
 
@@ -567,6 +602,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             registration_method=self._registration_method,
             verbose=self._verbose,
             threshold_measure=self._threshold_measure,
+            interleave=self._interleave,
         )
 
         reference = self._reference
@@ -579,6 +615,10 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                                     (cycle + 1, self._cycles))
             if self._use_outlier_rejection:
                 s2vreg.set_threshold(thresholds[cycle])
+            if self._use_robust_registration and cycle < self._cycles - 1:
+                s2vreg.set_s2v_smoothing(self._s2v_smoothing)
+            else:
+                s2vreg.set_s2v_smoothing(None)
             s2vreg.run()
 
             self._computational_time_registration += \

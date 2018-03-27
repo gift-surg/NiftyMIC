@@ -374,6 +374,16 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_use_robust_registration(
+        self,
+        option_string="--use-robust-registration",
+        type=int,
+        help="Turn on/off use of robust slice-to-volume registration.",
+        default=0,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_boundary_stacks(
         self,
         option_string="--boundary-stacks",
@@ -572,6 +582,24 @@ class InputArgparser(object):
         help="Threshold between 0 and 1 to detect misregistered slices based "
         "on NCC in first cycle.",
         default=0.6,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_s2v_smoothing(
+        self,
+        option_string="--s2v-smoothing",
+        type=float,
+        help="Value for Gaussian process parameter smoothing.",
+        default=0.5,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_interleave(
+        self,
+        option_string="--interleave",
+        type=int,
+        help="Interleave used for slice acquisition",
+        default=2,
     ):
         self._add_argument(dict(locals()))
 

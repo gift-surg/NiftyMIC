@@ -63,7 +63,7 @@ def main():
     input_parser.add_subfolder_comparison()
     input_parser.add_provide_comparison(default=0)
     input_parser.add_log_script_execution(default=1)
-    input_parser.add_use_masks_srr(default=1)
+    input_parser.add_use_masks_srr(default=0)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
