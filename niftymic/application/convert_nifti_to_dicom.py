@@ -87,8 +87,8 @@ def main():
     path_to_output = os.path.join(args.dir_output, "%s.dcm" % args.label)
 
     # Prepare for intermediate output
-    ph.create_directory(dir_output_2d_slices, delete_files=True)
     dir_output_2d_slices = os.path.join(DIR_TMP, "dicom_slices")
+    ph.create_directory(dir_output_2d_slices, delete_files=True)
 
     # Create set of 2D DICOM slices from 3D NIfTI image
     # (correct image orientation!)
@@ -121,9 +121,13 @@ def main():
     dataset_template = pydicom.dcmread(args.template)
 
     # Copy tags from template (to guarantee grouping with original data)
-    update_dicom_tags = {
-        tag: getattr(dataset_template, tag) for tag in COPY_DICOM_TAGS
-    }
+    update_dicom_tags = {}
+    for tag in COPY_DICOM_TAGS:
+        try:
+            update_dicom_tags[tag] = getattr(dataset_template, tag)
+        except:
+            update_dicom_tags[tag] = ""
+
     # Additional tags
     update_dicom_tags["InstitutionName"] = "UCL, WEISS"
     update_dicom_tags["SeriesDescription"] = args.label
