@@ -260,16 +260,18 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                     interleave=self._interleave)
                 robust_motion_estimator.run_gaussian_process_smoothing(
                     self._s2v_smoothing)
-
-                # robust_motion_estimator.show_estimated_transform_parameters(
-                # dir_output="/tmp/fetal_brain/figs", title="Stack%d" % i)
                 transforms_sitk = \
                     robust_motion_estimator.get_robust_transforms_sitk()
+
+                # Export figures
+                title = "%s_Stack%d%s" % (self._print_prefix, i, stack.get_filename())
+                title = ph.replace_string_for_print(title)
+                robust_motion_estimator.show_estimated_transform_parameters(
+                    dir_output="/tmp/fetal_brain/figs", title=title)
 
             # dir_output = "/tmp/fetal/figs"
             # motion_evaluator = me.MotionEvaluator(transforms_sitk)
             # motion_evaluator.run()
-            # title = "%s%s" % (self._print_prefix, stack.get_filename())
             # motion_evaluator.display(dir_output=dir_output, title=title)
             # motion_evaluator.show(dir_output=dir_output, title=title)
 
@@ -615,7 +617,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                                     (cycle + 1, self._cycles))
             if self._use_outlier_rejection:
                 s2vreg.set_threshold(thresholds[cycle])
-            if self._use_robust_registration and cycle < self._cycles - 1:
+            if self._use_robust_registration and cycle == 0:
                 s2vreg.set_s2v_smoothing(self._s2v_smoothing)
             else:
                 s2vreg.set_s2v_smoothing(None)
