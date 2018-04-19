@@ -38,7 +38,6 @@ def main():
     # Set print options for numpy
     np.set_printoptions(precision=3)
 
-    # Read input
     input_parser = InputArgparser(
         description="Volumetric MRI reconstruction framework to reconstruct "
         "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
