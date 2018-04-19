@@ -305,7 +305,7 @@ class Stack:
     # Copy constructor
     #  \param[in] stack_to_copy Stack object to be copied
     #  \return copied Stack object
-    # TODO: That's not really well done!
+    # TODO: That's not really well done
     @classmethod
     def from_stack(cls, stack_to_copy, filename=None):
         stack = cls()
@@ -360,16 +360,44 @@ class Stack:
     def get_slices(self):
         return [s for s in self._slices if s is not None]
 
+    ##
     # Get one particular slice of current stack
-    #  \return requested 3D slice of stack as Slice object
+    # \date       2018-04-18 22:06:38-0600
+    #
+    # \param      self   The object
+    # \param      index  slice index as integer
+    #
+    # \return     requested 3D slice of stack as Slice object
+    #
     def get_slice(self, index):
 
         index = int(index)
         if abs(index) > self._N_slices - 1:
-            raise ValueError("Enter a valid index between -%s and %s. Tried: %s" %
-                             (self._N_slices - 1, self._N_slices - 1, index))
+            raise ValueError(
+                "Enter a valid index between -%s and %s. Tried: %s" %
+                (self._N_slices - 1, self._N_slices - 1, index))
 
         return self._slices[index]
+
+    ##
+    # Sets the slice.
+    # \date       2018-04-18 22:05:28-0600
+    #
+    # \param      self   The object
+    # \param      slice  slice as Slice object
+    # \param      index  slice index as integer
+    #
+    def set_slice(self, slice, index):
+        if not isinstance(slice, sl.Slice):
+            raise IOError("Input must be of type Slice")
+
+        index = int(index)
+        if abs(index) > self._N_slices - 1:
+            raise ValueError(
+                "Enter a valid index between -%s and %s. Tried: %s" %
+                (self._N_slices - 1, self._N_slices - 1, index))
+
+        self._slices[index] = slice
 
     ##
     # Delete slice at given index
