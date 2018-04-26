@@ -90,8 +90,7 @@ class RobustMotionEstimator(object):
                 tau=tau / smoothing_param,
                 observed=y,
             )
-            res = pymc3.find_MAP(
-                vars=[z], fmin=scipy.optimize.fmin_l_bfgs_b)
+            res = pymc3.find_MAP(vars=[z], method="L-BFGS-B")
             return res['z']
 
     # ##

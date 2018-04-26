@@ -46,7 +46,6 @@ def main():
     input_parser.add_option(
         option_string="--use-slice-masks", type=int, default=1)
 
-
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
@@ -84,7 +83,7 @@ def main():
         measures=args.measures,
         use_reference_mask=args.use_reference_mask,
         use_slice_masks=args.use_slice_masks,
-        )
+    )
     residual_evaluator.compute_slice_projections()
     residual_evaluator.evaluate_slice_similarities()
     residual_evaluator.write_slice_similarities(args.dir_output)

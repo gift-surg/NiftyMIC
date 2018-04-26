@@ -276,6 +276,7 @@ class MultipleImagesReader(ImageDataReader):
 
         return abs_path_mask
 
+
 ##
 # ImageSlicesDirectoryReader reads multiple stacks and their associated
 # individual slices from a directory.
@@ -283,8 +284,6 @@ class MultipleImagesReader(ImageDataReader):
 # registration steps.
 # \date       2017-07-17 22:32:11+0100
 #
-
-
 class ImageSlicesDirectoryReader(ImageDataReader):
 
     ##
