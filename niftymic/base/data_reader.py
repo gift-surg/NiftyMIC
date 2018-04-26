@@ -12,6 +12,7 @@ import natsort
 import numpy as np
 import os
 import re
+import six
 from abc import ABCMeta, abstractmethod
 
 import niftymic.base.stack as st
@@ -492,7 +493,7 @@ class SliceTransformationDirectoryReader(TransformationDataReader):
         }
         fnames = list(set([k[0] for k in dic_tmp.keys()]))
         self._transforms_sitk = {fname: {} for fname in fnames}
-        for (fname, slice_number), path in dic_tmp.iteritems():
+        for (fname, slice_number), path in six.iteritems(dic_tmp):
             self._transforms_sitk[fname][slice_number] = \
                 self._get_sitk_transform_from_filepath(path)
 

@@ -10,6 +10,7 @@
 # \date       Aug 2017
 #
 
+import six
 import numpy as np
 import SimpleITK as sitk
 from abc import ABCMeta, abstractmethod
@@ -709,7 +710,7 @@ class HieararchicalSliceSetRegistrationReconstruction(
         if debug:
             for i, stack in enumerate(self._stacks):
                 print("Stack %d/%d:" % (i + 1, N_stacks))
-                for k, v in slice_sets_indices[i].iteritems():
+                for k, v in six.iteritems(slice_sets_indices[i]):
                     print("\tCycle %d: arrays = %s" % (k + 1, str(v)))
 
         N_cycles = np.max([len(slice_sets_indices[i])

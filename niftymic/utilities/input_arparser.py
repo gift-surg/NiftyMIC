@@ -9,6 +9,7 @@
 
 import os
 import re
+import six
 import sys
 import json
 import argparse
@@ -124,7 +125,7 @@ class InputArgparser(object):
         # e.g. "dir-output" instead of "dir_output"
         dic = {
             re.sub("_", "-", k): v
-            for k, v in dic_with_underscores.iteritems()}
+            for k, v in six.iteritems(dic_with_underscores)}
 
         # write config file to output
         ph.create_directory(dir_output)
@@ -916,7 +917,7 @@ class InputArgparser(object):
             dic = json.load(json_file)
 
             # Insert all config entries into sys.argv
-            for k, v in dic.iteritems():
+            for k, v in six.iteritems(dic):
 
                 # A 'None' entry should be ignored
                 if v is None:
@@ -954,7 +955,7 @@ class InputArgparser(object):
 
         # Build dictionary for additional, optional parameters
         kwargs = {}
-        for key, value in allvars.iteritems():
+        for key, value in six.iteritems(allvars):
             kwargs[key] = value
 
         # Add information on default value in case provided
