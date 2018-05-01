@@ -120,7 +120,6 @@ def main():
 
     if args.run_recon_subject_space:
 
-        # filenames = args.filenames
         target_stack_index = args.filenames.index(target_stack)
 
         cmd_args = []

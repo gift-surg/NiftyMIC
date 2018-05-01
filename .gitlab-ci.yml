@@ -5,7 +5,7 @@ variables:
     TMPDIR: ./tmp
     DATADIR: /home/mebner/data/ci/FetalBrain
     VENV: pysitk-test-py${PY_VERSION}
-    ITK_DIR: /mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-python${PY_VERSION}-build
+    ITK_DIR: /mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-{PY_VERSION}-b
     FSL_DIR: /mnt/shared/mebner/environment/FSL/fsl
     NIFTYREG_INSTALL: /mnt/shared/mebner/environment/NiftyReg/NiftyReg-master-install
     CONVERT3D_INSTALL: /mnt/shared/mebner/environment/Convert3D/c3d-git-install
@@ -27,19 +27,18 @@ before_script:
 
     # create virtual environment
     - rm -rf ${VENV}
-    - mypython=$(which python${PY_VERSION})
+    - mypython=$(which {PY_VERSI
     - virtualenv -p $mypython ${VENV}
     - cd ${VENV}
     - venv_dir=$(pwd)
     - source bin/activate
     
-    # print Python version to CI output
-    - which python
-    - python --version
+    # print version to CI ou
+    - which     - --ver
 
-    # copy ITK_NiftyMIC-build WrapITK to site-packages of python venv
-    - py_sitepkg=${venv_dir}/lib/python*/site-packages
-    - cp -v ${ITK_DIR}/Wrapping/Generators/Python/WrapITK.pth ${py_sitepkg}
+    # copy ITK_NiftyMIC-build WrapITK to site-packages of 
+    - py_sitepkg=${venv_dir}/lib//site-pack
+    - cp -v ${ITK_DIR}/Wrapping/Generators/WrapITK.pth ${py_site
 
     - cd $cwd_dir
     # If cmiclab is used:
@@ -76,7 +75,7 @@ installation:
   # only:
   #   - master
   script:
-    - python -m nose tests/installation_test.py
+    - -m nose tests/installation_tes
   tags:
     - gift-adelie
 
@@ -85,7 +84,7 @@ reconstruct_volume_tk1l2:
   #   - master
   script:
     - >
-      python niftymic_reconstruct_volume.py 
+      niftymic_reconstruct_volume
       --dir-input ${DATADIR}/input_data 
       --dir-output ${TMPDIR} 
       --verbose 0 
@@ -102,7 +101,7 @@ run_reconstruction_pipeline:
   #   - master
   script:
     - >
-      python niftymic_run_reconstruction_pipeline.py 
+      niftymic_run_reconstruction_pipeline
       --filenames ${DATADIR}/axial.nii.gz
       --dir-output ${TMPDIR} 
       --gestational-age 33
@@ -120,7 +119,7 @@ reconstruct_volume_huberl2:
   #   - master
   script:
     - >
-      python niftymic_reconstruct_volume.py 
+      niftymic_reconstruct_volume
       --dir-input ${DATADIR}/input_data 
       --dir-output ${TMPDIR} 
       --verbose 0 
@@ -138,7 +137,7 @@ reconstruct_volume_from_slices:
   #   - master
   script:    
     - >
-      python niftymic_reconstruct_volume_from_slices.py
+      niftymic_reconstruct_volume_from_slice
       --dir-input ${DATADIR}/motion_correction_oriented
       --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
       --dir-output ${TMPDIR} 
@@ -154,7 +153,7 @@ param_study_huberl2:
   script:
     - recon_type=HuberL2
     - >
-      python niftymic_run_reconstruction_parameter_study.py
+      niftymic_run_reconstruction_parameter_stud
       --dir-input ${DATADIR}/motion_correction_oriented 
       --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
       --dir-output ${TMPDIR}/param_study 
