@@ -103,7 +103,8 @@ run_reconstruction_pipeline:
   script:
     - >
       niftymic_run_reconstruction_pipeline
-      --filenames ${DATADIR}/axial.nii.gz
+      --filenames ${DATADIR}/input_data/axial.nii.gz
+      --dir-input-templates ${DATADIR}/templates
       --dir-output ${TMPDIR} 
       --gestational-age 33
       --bias-field-correction 1
