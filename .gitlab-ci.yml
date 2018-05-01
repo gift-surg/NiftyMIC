@@ -97,6 +97,24 @@ reconstruct_volume_tk1l2:
   tags:
     - gift-adelie
 
+run_reconstruction_pipeline:
+  # only:
+  #   - master
+  script:
+    - >
+      python niftymic_run_reconstruction_pipeline.py 
+      --filenames ${DATADIR}/axial.nii.gz
+      --dir-output ${TMPDIR} 
+      --gestational-age 33
+      --bias-field-correction 1
+      --two-step-cycles 0
+      --iter-max 1
+      --run-data-vs-simulated-data 0
+      --verbose 0 
+  tags:
+    - gift-adelie
+
+
 reconstruct_volume_huberl2:
   # only:
   #   - master

@@ -560,7 +560,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                  alpha_range,
                  cycles,
                  verbose=1,
-                 use_outlier_rejection=False,
+                 outlier_rejection=False,
                  threshold_measure="NCC",
                  threshold_range=[0.6, 0.7],
                  use_robust_registration=False,
@@ -578,7 +578,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             verbose=verbose)
 
         self._cycles = cycles
-        self._use_outlier_rejection = use_outlier_rejection
+        self._outlier_rejection = outlier_rejection
         self._threshold_measure = threshold_measure
         self._threshold_range = threshold_range
         self._use_robust_registration = use_robust_registration
@@ -616,7 +616,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             s2vreg.set_reference(reference)
             s2vreg.set_print_prefix("Cycle %d/%d: " %
                                     (cycle + 1, self._cycles))
-            if self._use_outlier_rejection:
+            if self._outlier_rejection:
                 s2vreg.set_threshold(thresholds[cycle])
             if self._use_robust_registration and cycle == 0:
                 s2vreg.set_s2v_smoothing(self._s2v_smoothing)

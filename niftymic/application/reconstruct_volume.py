@@ -83,7 +83,7 @@ def main():
     input_parser.add_metric_radius(default=10)
     input_parser.add_reference()
     input_parser.add_reference_mask()
-    input_parser.add_use_outlier_rejection(default=0)
+    input_parser.add_outlier_rejection(default=0)
     input_parser.add_threshold_first(default=0.6)
     input_parser.add_threshold(default=0.7)
     input_parser.add_use_robust_registration(default=0)
@@ -288,7 +288,7 @@ def main():
         reg_type="TK1",
         minimizer="lsmr",
         alpha=args.alpha_first,
-        iter_max=args.iter_max_first,
+        iter_max=np.min([args.iter_max_first, args.iter_max]),
         verbose=True,
         use_masks=args.use_masks_srr,
     )
@@ -329,7 +329,7 @@ def main():
                 cycles=args.two_step_cycles,
                 alpha_range=[args.alpha_first, args.alpha],
                 verbose=args.verbose,
-                use_outlier_rejection=args.use_outlier_rejection,
+                outlier_rejection=args.outlier_rejection,
                 threshold_range=[args.threshold_first, args.threshold],
                 use_robust_registration=args.use_robust_registration,
                 s2v_smoothing=args.s2v_smoothing,

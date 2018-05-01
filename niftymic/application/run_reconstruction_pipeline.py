@@ -50,18 +50,10 @@ def main():
     input_parser.add_isotropic_resolution()
     input_parser.add_reference()
     input_parser.add_reference_mask()
-    input_parser.add_option(
-        option_string="--registration",
-        type=int,
-        help="Turn on/off registration from image to reference prior to "
-        "intensity correction.",
-        default=1)
-    input_parser.add_option(
-        option_string="--run-preprocessing",
-        type=int,
-        help="Turn on/off preprocessing including bias field and linear "
-        "intensity correction",
-        default=1)
+    input_parser.add_bias_field_correction(default=1)
+    input_parser.add_intensity_correction(default=1)
+    input_parser.add_iter_max(default=10)
+    input_parser.add_two_step_cycles(default=3)
     input_parser.add_option(
         option_string="--run-recon-subject-space",
         type=int,
@@ -78,6 +70,7 @@ def main():
         help="Turn on/off comparison of data vs data simulated from the "
         "obtained volumetric reconstruction",
         default=1)
+    input_parser.add_outlier_rejection(default=1)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -107,12 +100,9 @@ def main():
     else:
         target_stack = args.target_stack
 
-    if args.run_preprocessing:
-
-        # run bias field correction
-        filenames = list(args.filenames)
+    if args.bias_field_correction:
         cmd_args = []
-        cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--filenames %s" % (" ").join(args.filenames))
         cmd_args.append("--dir-output %s" % dir_output_preprocessing)
         cmd_args.append("--prefix-output %s" % prefix_bias)
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
@@ -121,36 +111,15 @@ def main():
         time_start_bias = ph.start_timing()
         ph.execute_command(cmd)
         elapsed_time_bias = ph.stop_timing(time_start_bias)
-
-        # run intensity correction
         filenames = [os.path.join(dir_output_preprocessing, "%s%s" % (
-            prefix_bias, os.path.basename(f))) for f in filenames]
-        target = os.path.join(dir_output_preprocessing, "%s%s" % (
-            prefix_bias, os.path.basename(target_stack)))
-
-        cmd_args = []
-        cmd_args.append("--filenames %s" % (" ").join(filenames))
-        cmd_args.append("--reference %s" % target)
-        cmd_args.append("--registration %d" % args.registration)
-        cmd_args.append("--search-angle %d" % args.search_angle)
-        cmd_args.append("--dir-output %s" % dir_output_preprocessing)
-        cmd_args.append("--prefix-output %s" % prefix_ic)
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
-        # cmd_args.append("--verbose %d" % args.verbose)
-        cmd = "niftymic_correct_intensities %s" % (" ").join(cmd_args)
-        time_start_ic = ph.start_timing()
-        ph.execute_command(cmd)
-        elapsed_time_ic = ph.stop_timing(time_start_ic)
+            prefix_bias, os.path.basename(f)))
+            for f in args.filenames]
     else:
         elapsed_time_bias = ph.get_zero_time()
-        elapsed_time_ic = ph.get_zero_time()
+        filenames = args.filenames
 
     if args.run_recon_subject_space:
 
-        # reconstruct volume in subject space
-        filenames = [os.path.join(dir_output_preprocessing, "%s%s%s" % (
-            prefix_ic, prefix_bias, os.path.basename(f)))
-            for f in args.filenames]
         # filenames = args.filenames
         target_stack_index = args.filenames.index(target_stack)
 
@@ -160,7 +129,13 @@ def main():
         cmd_args.append("--target-stack-index %d" % target_stack_index)
         cmd_args.append("--dir-output %s" % dir_output_recon_subject_space)
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--intensity-correction %d" %
+                        args.intensity_correction)
         cmd_args.append("--alpha %s" % args.alpha)
+        cmd_args.append("--iter-max %d" % args.iter_max)
+        cmd_args.append("--two-step-cycles %d" % args.two_step_cycles)
+        cmd_args.append("--outlier-rejection %d" %
+                        args.outlier_rejection)
         cmd_args.append("--verbose %d" % args.verbose)
         if args.isotropic_resolution is not None:
             cmd_args.append("--isotropic-resolution %f" %
@@ -218,13 +193,8 @@ def main():
         cmd_args.append("--dir-input %s" % dir_input)
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
         cmd_args.append("--reconstruction-space %s" % reconstruction_space)
+        cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--alpha %s" % args.alpha)
-
-        # No mask for this step?
-        # (Rationale: Visually it looks nicer to have wider FOV in recon space.
-        # Stack is multiplied by the template mask in subsequent step anyway)
-        # Issues occur in case some slices need to be ignored.
-        # cmd_args.append("--suffix-mask no-mask-used")
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
 
         cmd = "niftymic_reconstruct_volume_from_slices %s" % \
@@ -337,8 +307,6 @@ def main():
     ph.print_title("Summary")
     print("Computational Time for Bias Field Correction: %s" %
           elapsed_time_bias)
-    print("Computational Time for Intensity Correction: %s" %
-          elapsed_time_ic)
     print("Computational Time for Volumetric Reconstruction: %s" %
           elapsed_time_volrec)
     print("Computational Time for Pipeline: %s" %

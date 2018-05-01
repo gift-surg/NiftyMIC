@@ -364,9 +364,9 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
-    def add_use_outlier_rejection(
+    def add_outlier_rejection(
         self,
-        option_string="--use-outlier-rejection",
+        option_string="--outlier-rejection",
         type=int,
         help="Turn on/off use of outlier rejection mechanism to eliminate "
         "misregistered slices.",
