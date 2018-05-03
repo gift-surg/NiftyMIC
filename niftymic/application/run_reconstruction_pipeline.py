@@ -234,7 +234,7 @@ def main():
         cmd_args.append("--filename %s" % path_to_output)
         cmd_args.append("--gestational-age %s" % args.gestational_age)
         cmd_args.append("--verbose %s" % args.verbose)
-        cmd_args.append("--dir-input-templates %s " % DIR_TEMPLATES)
+        cmd_args.append("--dir-input-templates %s " % args.dir_input_templates)
         cmd = "niftymic_multiply_stack_with_mask %s" % (
             " ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
