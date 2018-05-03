@@ -185,19 +185,19 @@ def main():
             raise RuntimeError("Registration to template space failed")
 
         # reconstruct volume in template space
-        pattern = "[a-zA-Z0-9_.]+(ResamplingToTemplateSpace.nii.gz)"
-        p = re.compile(pattern)
-        reconstruction_space = [
-            os.path.join(dir_output_recon_template_space, p.match(f).group(0))
-            for f in os.listdir(dir_output_recon_template_space)
-            if p.match(f)][0]
+        # pattern = "[a-zA-Z0-9_.]+(ResamplingToTemplateSpace.nii.gz)"
+        # p = re.compile(pattern)
+        # reconstruction_space = [
+        #     os.path.join(dir_output_recon_template_space, p.match(f).group(0))
+        #     for f in os.listdir(dir_output_recon_template_space)
+        #     if p.match(f)][0]
 
         dir_input = os.path.join(
             dir_output_recon_template_space, "motion_correction")
         cmd_args = []
         cmd_args.append("--dir-input %s" % dir_input)
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
-        cmd_args.append("--reconstruction-space %s" % reconstruction_space)
+        cmd_args.append("--reconstruction-space %s" % template)
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
@@ -218,8 +218,7 @@ def main():
             if p.match(f) and not p.match(f).group(0).endswith(
                 "ResamplingToTemplateSpace.nii.gz")}
         key = reconstruction.keys()[0]
-        path_to_recon = os.path.join(
-            dir_output_recon_template_space, reconstruction[key])
+        path_to_recon = reconstruction[key]
 
         # Copy SRR to output directory
         output = "%sSRR_%s_GW%d.nii.gz" % (
@@ -278,9 +277,9 @@ def main():
         if exit_code != 0:
             raise RuntimeError("SRR slice projections failed")
 
-        filenames = [os.path.join(dir_output_data_vs_simulatd_data, "%s%s%s" % (
-            prefix_ic, prefix_bias, os.path.basename(f)))
-            for f in args.filenames]
+        filenames_simulated = [
+            os.path.join(dir_output_data_vs_simulatd_data, os.path.basename(f))
+            for f in filenames]
 
         dir_output_evaluation = os.path.join(
             dir_output_data_vs_simulatd_data, "evaluation")
@@ -291,7 +290,7 @@ def main():
 
         # Evaluate slice similarities to ground truth
         cmd_args = []
-        cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         cmd_args.append("--measures NCC SSIM")
         cmd_args.append("--dir-output %s" % dir_output_evaluation)
@@ -314,7 +313,7 @@ def main():
 
         # Generate pdfs showing all the side-by-side comparisons
         cmd_args = []
-        cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
         cmd_args.append("--dir-output %s" % dir_output_side_by_side)
         exe = os.path.abspath(
             export_side_by_side_simulated_vs_original_slice_comparison.__file__)
