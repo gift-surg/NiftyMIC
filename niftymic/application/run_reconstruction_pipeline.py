@@ -109,7 +109,9 @@ def main():
         # cmd_args.append("--verbose %d" % args.verbose)
         cmd = "niftymic_correct_bias_field %s" % (" ").join(cmd_args)
         time_start_bias = ph.start_timing()
-        ph.execute_command(cmd)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Bias field correction failed")
         elapsed_time_bias = ph.stop_timing(time_start_bias)
         filenames = [os.path.join(dir_output_preprocessing, "%s%s" % (
             prefix_bias, os.path.basename(f)))
@@ -145,7 +147,9 @@ def main():
             cmd_args.append("--reference-mask %s" % args.reference_mask)
         cmd = "niftymic_reconstruct_volume %s" % (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
-        ph.execute_command(cmd)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Reconstruction in subject space failed")
         elapsed_time_volrec = ph.stop_timing(time_start_volrec)
     else:
         elapsed_time_volrec = ph.get_zero_time()
@@ -176,7 +180,9 @@ def main():
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
         cmd = "niftymic_register_image %s" % (" ").join(cmd_args)
-        ph.execute_command(cmd)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Registration to template space failed")
 
         # reconstruct volume in template space
         pattern = "[a-zA-Z0-9_.]+(ResamplingToTemplateSpace.nii.gz)"
@@ -198,7 +204,9 @@ def main():
 
         cmd = "niftymic_reconstruct_volume_from_slices %s" % \
             (" ").join(cmd_args)
-        ph.execute_command(cmd)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Reconstruction in template space failed")
 
         pattern = "[a-zA-Z0-9_.]+(stacks[0-9]+).*(.nii.gz)"
         p = re.compile(pattern)
@@ -217,8 +225,10 @@ def main():
         output = "%sSRR_%s_GW%d.nii.gz" % (
             args.prefix_output, key, args.gestational_age)
         path_to_output = os.path.join(args.dir_output, output)
-        cmd = "cp %s %s" % (path_to_recon, path_to_output)
-        ph.execute_command(cmd)
+        cmd = "cp -p %s %s" % (path_to_recon, path_to_output)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Copy of SRR to output directory failed")
 
         # Multiply template mask with reconstruction
         cmd_args = []
@@ -228,7 +238,9 @@ def main():
         cmd_args.append("--dir-input-templates %s " % DIR_TEMPLATES)
         cmd = "niftymic_multiply_stack_with_mask %s" % (
             " ").join(cmd_args)
-        ph.execute_command(cmd)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("SRR brain masking failed")
 
     else:
         elapsed_time_template = ph.get_zero_time()
@@ -262,7 +274,9 @@ def main():
         # cmd_args.append("--verbose %s" % args.verbose)
         exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
-        ph.execute_command(cmd)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("SRR slice projections failed")
 
         filenames = [os.path.join(dir_output_data_vs_simulatd_data, "%s%s%s" % (
             prefix_ic, prefix_bias, os.path.basename(f)))
@@ -283,7 +297,9 @@ def main():
         cmd_args.append("--dir-output %s" % dir_output_evaluation)
         exe = os.path.abspath(evaluate_simulated_stack_similarity.__file__)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
-        ph.execute_command(cmd)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Evaluation of slice similarities failed")
 
         # Generate figures showing the quantitative comparison
         cmd_args = []
@@ -292,7 +308,9 @@ def main():
         exe = os.path.abspath(
             show_evaluated_simulated_stack_similarity.__file__)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
-        ph.execute_command(cmd)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Visualization of slice similarities failed")
 
         # Generate pdfs showing all the side-by-side comparisons
         cmd_args = []
@@ -301,7 +319,9 @@ def main():
         exe = os.path.abspath(
             export_side_by_side_simulated_vs_original_slice_comparison.__file__)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
-        ph.execute_command(cmd)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Generation of PDF overview failed")
 
     ph.print_title("Summary")
     print("Computational Time for Bias Field Correction: %s" %
