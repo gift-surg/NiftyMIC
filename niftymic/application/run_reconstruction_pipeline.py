@@ -308,7 +308,7 @@ def main():
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
-            raise RuntimeError("Visualization of slice similarities failed")
+            ph.print_warning("Visualization of slice similarities failed")
 
         # Generate pdfs showing all the side-by-side comparisons
         cmd_args = []
