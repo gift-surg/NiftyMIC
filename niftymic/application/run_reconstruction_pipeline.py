@@ -260,8 +260,7 @@ def main():
             if p.match(f) and not p.match(f).group(0).endswith(
                 "ResamplingToTemplateSpace.nii.gz")}
         key = reconstruction.keys()[0]
-        path_to_recon = os.path.join(
-            dir_output_recon_template_space, reconstruction[key])
+        path_to_recon = reconstruction[key]
 
         # Get simulated/projected slices
         cmd_args = []
