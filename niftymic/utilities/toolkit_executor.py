@@ -74,8 +74,9 @@ class ToolkitExecuter(object):
 
         # exe to determine slice thickness for toolkit
         cmd_args.append("\necho 'Fetch slice thickness for all stacks'")
-        cmd_args.append(self._exe_to_fetch_slice_thickness(self._paths_to_images))
-        
+        cmd_args.append(self._exe_to_fetch_slice_thickness(
+            self._paths_to_images))
+
         # toolkit execution
         cmd_args.append("\necho 'IRTK Toolkit Execution'")
         exe_args = [exe]
@@ -90,9 +91,9 @@ class ToolkitExecuter(object):
         exe_args.extend(option_args)
         toolkit_execution = "%s" % self._sep.join(exe_args)
         cmd_args.append(toolkit_execution)
-        
+
         cmd_args.append("\necho 'Delete temp directory'")
-        cmd_args.append("rm -rf %s" %self._subdir_temp)
+        cmd_args.append("rm -rf %s" % self._subdir_temp)
 
         cmd_args.append("\necho 'Change back to original directory'")
         cmd_args.append("cd ${PWD}")
@@ -100,6 +101,12 @@ class ToolkitExecuter(object):
 
         cmd = (" \n").join(cmd_args)
         return cmd
+
+    @staticmethod
+    def write_function_call_to_file(function_call, path_to_file):
+        text = "#!/bin/zsh\n\n%s" % function_call
+        ph.write_to_file(path_to_file, text, verbose=False)
+        ph.execute_command("chmod +x %s" % path_to_file, verbose=False)
 
     ##
     # Provide bash-commands to read out slice thickness on-the-fly
