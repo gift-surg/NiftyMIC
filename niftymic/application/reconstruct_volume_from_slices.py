@@ -36,8 +36,8 @@ def main():
         "an isotropic, high-resolution 3D volume from multiple "
         "motion-corrected (or static) stacks of low-resolution slices.",
     )
-    input_parser.add_dir_input()
-    input_parser.add_filenames()
+    input_parser.add_dir_input(option_string="--dir-motion-correction")
+    input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
     input_parser.add_image_selection()
     input_parser.add_dir_output(required=True)
@@ -77,29 +77,12 @@ def main():
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
 
-    # Neither '--dir-input' nor '--filenames' was specified
-    if args.filenames is not None and args.dir_input is not None:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames' "
-            "but not both together")
-
-    # '--dir-input' specified
-    elif args.dir_input is not None:
-        data_reader = dr.ImageSlicesDirectoryReader(
-            path_to_directory=args.dir_input,
-            suffix_mask=args.suffix_mask,
-            image_selection=args.image_selection)
-
-    # '--filenames' specified
-    elif args.filenames is not None:
-        data_reader = dr.MultipleImagesReader(
-            file_paths=args.filenames,
-            file_paths_masks=args.filenames_masks,
-            suffix_mask=args.suffix_mask)
-
-    else:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames'")
+    data_reader = dr.MultipleImagesReader(
+        file_paths=args.filenames,
+        file_paths_masks=args.filenames_masks,
+        suffix_mask=args.suffix_mask,
+        dir_motion_correction=args.dir_motion_correction,
+    )
 
     if args.reconstruction_type not in ["TK1L2", "TVL2", "HuberL2"]:
         raise IOError("Reconstruction type unknown")
@@ -107,7 +90,7 @@ def main():
     data_reader.read_data()
     stacks = data_reader.get_data()
     ph.print_info("%d input stacks read for further processing" % len(stacks))
-
+    
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:
         recon0 = \

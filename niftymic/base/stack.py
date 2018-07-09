@@ -263,7 +263,9 @@ class Stack:
                         image_sitk,
                         filename="unknown",
                         image_sitk_mask=None,
-                        extract_slices=True):
+                        extract_slices=True,
+                        slice_numbers=None,
+                        ):
         stack = cls()
 
         stack.sitk = sitk.Image(image_sitk)
@@ -295,7 +297,7 @@ class Stack:
         # Extract all slices and their masks from the stack and store them
         if extract_slices:
             stack._N_slices = stack.sitk.GetSize()[-1]
-            stack._slices = stack._extract_slices()
+            stack._slices = stack._extract_slices(slice_numbers=slice_numbers)
         else:
             stack._N_slices = 0
             stack._slices = None
@@ -327,6 +329,7 @@ class Stack:
         else:
             stack._filename = filename
         stack._dir = stack_to_copy.get_directory()
+        stack._deleted_slices = stack_to_copy.get_deleted_slice_numbers()
 
         # Extract all slices and their masks from the stack and store them if
         # given
@@ -379,6 +382,9 @@ class Stack:
 
         return self._slices[index]
 
+    def get_deleted_slice_numbers(self):
+        return list(self._deleted_slices)
+
     ##
     # Sets the slice.
     # \date       2018-04-18 22:05:28-0600
@@ -403,15 +409,21 @@ class Stack:
     # Delete slice at given index
     # \date       2017-12-01 00:38:56+0000
     #
+    # Note that index refers to list index of slices (0 ... N_slices) whereas
+    # "deleted slice index" refers to actual slice number within original stack
+    #
     # \param      self   The object
     # \param      index  The index
+    #
+    # \return     
     #
     def delete_slice(self, index):
         # delete slice at given index
         if index in range(self._N_slices):
-            self._slices[index] = None
-            self._deleted_slices.append(index)
+            slice_number = self._slices[index].get_slice_number()
+            self._deleted_slices.append(slice_number)
             self._deleted_slices = sorted(list(set(self._deleted_slices)))
+            self._slices[index] = None
         else:
             raise RuntimeError(
                 "Slice number must be between 0 and %d" % self._N_slices)
@@ -468,7 +480,15 @@ class Stack:
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifying the filename. If not given the assigned one within Stack will be chosen.
     #  \param[in] write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
-    def write(self, directory, filename=None, write_mask=False, write_slices=False, write_transforms=False, suffix_mask="_mask"):
+    def write(self,
+              directory,
+              filename=None,
+              write_stack=True,
+              write_mask=False,
+              write_slices=False,
+              write_transforms=False,
+              suffix_mask="_mask",
+              use_float32=True):
 
         # Create directory if not existing
         ph.create_directory(directory)
@@ -480,10 +500,16 @@ class Stack:
         full_file_name = os.path.join(directory, filename)
 
         # Write file to specified location
-        ph.print_info("Write image stack to %s.nii.gz ... " %
-                      (full_file_name), newline=False)
-        sitkh.write_nifti_image_sitk(self.sitk, full_file_name + ".nii.gz")
-        print("done")
+        if write_stack:
+            ph.print_info("Write image stack to %s.nii.gz ... " %
+                          (full_file_name), newline=False)
+            if use_float32:
+                image_sitk = sitk.Cast(self.sitk, sitk.sitkFloat32)
+            else:
+                image_sitk = self.sitk
+            sitkh.write_nifti_image_sitk(
+                image_sitk, full_file_name + ".nii.gz")
+            print("done")
 
         # Write mask to specified location if given
         if self.sitk_mask is not None:
@@ -502,7 +528,7 @@ class Stack:
         # %(full_file_name))
 
         # Write each separate Slice of stack (if they exist)
-        if write_slices:
+        if write_slices or write_transforms:
             try:
                 # Check whether variable exists
                 # if 'self._slices' not in locals() or all(i is None for i in
@@ -515,9 +541,13 @@ class Stack:
 
                 # Write slices
                 else:
-                    if write_transforms:
+                    if write_transforms and write_slices:
                         ph.print_info(
-                            "Write image slices + transforms to %s ... " %
+                            "Write image slices and slice transforms to %s ... " %
+                            directory, newline=False)
+                    elif write_transforms and not write_slices:
+                        ph.print_info(
+                            "Write slice transforms to %s ... " %
                             directory, newline=False)
                     else:
                         ph.print_info(
@@ -528,6 +558,7 @@ class Stack:
                             directory=directory,
                             filename=filename,
                             write_transform=write_transforms,
+                            write_slice=write_slices,
                             suffix_mask=suffix_mask)
                     print("done")
 
@@ -1039,34 +1070,53 @@ class Stack:
         if x_range is None:
             return None
 
+        if unit == "mm":
+            spacing = self.sitk.GetSpacing()
+            boundary_i = np.round(boundary_i / float(spacing[0]))
+            boundary_j = np.round(boundary_j / float(spacing[1]))
+            boundary_k = np.round(boundary_k / float(spacing[2]))
+
+        shape = self.sitk.GetSize()
+        x_range[0] = np.max([0, x_range[0] - boundary_i])
+        x_range[1] = np.min([shape[0], x_range[1] + boundary_i])
+
+        y_range[0] = np.max([0, y_range[0] - boundary_j])
+        y_range[1] = np.min([shape[1], y_range[1] + boundary_j])
+
+        z_range[0] = np.max([0, z_range[0] - boundary_k])
+        z_range[1] = np.min([shape[2], z_range[1] + boundary_k])
+
         # Crop to image region defined by rectangular mask
-        stack_crop_sitk = self._crop_image_to_region(
+        image_crop_sitk = self._crop_image_to_region(
             self.sitk, x_range, y_range, z_range)
+        mask_crop_sitk = self._crop_image_to_region(
+            self.sitk_mask, x_range, y_range, z_range)
 
         # Increase image region
-        stack_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(
-            stack_crop_sitk, boundary_i, boundary_j, boundary_k, unit=unit)
+        # stack_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(
+        #     stack_crop_sitk, boundary_i, boundary_j, boundary_k, unit=unit)
 
-        # Resample original image and mask to specified image region
-        image_crop_sitk = sitk.Resample(
-            self.sitk,
-            stack_crop_sitk,
-            sitk.Euler3DTransform(),
-            sitk.sitkNearestNeighbor,
-            0,
-            self.sitk.GetPixelIDValue(),
-        )
-        mask_crop_sitk = sitk.Resample(
-            self.sitk_mask,
-            stack_crop_sitk,
-            sitk.Euler3DTransform(),
-            sitk.sitkNearestNeighbor,
-            0,
-            self.sitk_mask.GetPixelIDValue(),
-        )
-
+        # # Resample original image and mask to specified image region
+        # image_crop_sitk = sitk.Resample(
+        #     self.sitk,
+        #     stack_crop_sitk,
+        #     sitk.Euler3DTransform(),
+        #     sitk.sitkNearestNeighbor,
+        #     0,
+        #     self.sitk.GetPixelIDValue(),
+        # )
+        # mask_crop_sitk = sitk.Resample(
+        #     self.sitk_mask,
+        #     stack_crop_sitk,
+        #     sitk.Euler3DTransform(),
+        #     sitk.sitkNearestNeighbor,
+        #     0,
+        #     self.sitk_mask.GetPixelIDValue(),
+        # )
+        slice_numbers = range(z_range[0], z_range[1])
         stack = self.from_sitk_image(
-            image_crop_sitk, self._filename, mask_crop_sitk)
+            image_crop_sitk, self._filename, mask_crop_sitk,
+            slice_numbers=slice_numbers)
 
         return stack
 
@@ -1135,16 +1185,19 @@ class Stack:
 
     # Burst the stack into its slices and return all slices of the stack
     #  return list of Slice objects
-    def _extract_slices(self):
+    def _extract_slices(self, slice_numbers=None):
 
         slices = [None] * self._N_slices
+
+        if slice_numbers is None:
+            slice_numbers = range(0, self._N_slices)
 
         # Extract slices and add masks
         for i in range(0, self._N_slices):
             slices[i] = sl.Slice.from_sitk_image(
                 slice_sitk=self.sitk[:, :, i:i + 1],
                 filename=self._filename,
-                slice_number=i,
+                slice_number=slice_numbers[i],
                 slice_sitk_mask=self.sitk_mask[:, :, i:i + 1])
 
         return slices

@@ -11,7 +11,6 @@ import os
 import re
 import six
 import sys
-import json
 import argparse
 
 import pysitk.python_helper as ph
@@ -109,7 +108,10 @@ class InputArgparser(object):
         dic_with_underscores = vars(self._parser.parse_args())
 
         # get output directory to write log/config file
-        dir_output = dic_with_underscores["dir_output"]
+        try:
+            dir_output = dic_with_underscores["dir_output"]
+        except KeyError:
+            dir_output = os.path.dirname(dic_with_underscores["output"])
 
         # build output file name
         name = os.path.basename(file).split(".")[0]
@@ -128,11 +130,7 @@ class InputArgparser(object):
             for k, v in six.iteritems(dic_with_underscores)}
 
         # write config file to output
-        ph.create_directory(dir_output)
-        with open(path_to_config_file, "w") as fp:
-            json.dump(dic, fp, sort_keys=True, indent=4)
-            ph.print_info(
-                "Configuration written to '%s'." % path_to_config_file)
+        ph.write_dictionary_to_json(dic, path_to_config_file, verbose=True)
 
     def add_filename(
         self,
@@ -324,6 +322,16 @@ class InputArgparser(object):
         option_string="--reference-mask",
         type=str,
         help="Path to reference mask image file %s." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_output(
+        self,
+        option_string="--output",
+        type=str,
+        help="Path to output image file %s." % (IMAGE_TYPES),
         default=None,
         required=False,
     ):
@@ -914,7 +922,7 @@ class InputArgparser(object):
         # Read config file and insert all config entries into sys.argv (read by
         # argparse later)
         with open(path_to_config_file) as json_file:
-            dic = json.load(json_file)
+            dic = ph.read_dictionary_from_json(json_file)
 
             # Insert all config entries into sys.argv
             for k, v in six.iteritems(dic):

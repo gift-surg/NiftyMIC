@@ -48,8 +48,7 @@ def main():
         "this region will then be reconstructed by the SRR algorithm which "
         "can substantially reduce the computational time.",
     )
-    input_parser.add_dir_input()
-    input_parser.add_filenames()
+    input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
@@ -103,28 +102,10 @@ def main():
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
-
-    # Neither '--dir-input' nor '--filenames' was specified
-    if args.filenames is not None and args.dir_input is not None:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames' "
-            "but not both together")
-
-    # '--dir-input' specified
-    elif args.dir_input is not None:
-        data_reader = dr.ImageDirectoryReader(
-            args.dir_input, suffix_mask=args.suffix_mask)
-
-    # '--filenames' specified
-    elif args.filenames is not None:
-        data_reader = dr.MultipleImagesReader(
-            file_paths=args.filenames,
-            file_paths_masks=args.filenames_masks,
-            suffix_mask=args.suffix_mask)
-
-    else:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames'")
+    data_reader = dr.MultipleImagesReader(
+        file_paths=args.filenames,
+        file_paths_masks=args.filenames_masks,
+        suffix_mask=args.suffix_mask)
 
     if len(args.boundary_stacks) is not 3:
         raise IOError(
@@ -352,12 +333,25 @@ def main():
             stack.write(
                 os.path.join(args.dir_output,
                              args.subfolder_motion_correction),
-                write_mask=True,
-                write_slices=True,
+                write_stack=False,
+                write_mask=False,
+                write_slices=False,
                 write_transforms=True,
-                suffix_mask=args.suffix_mask,
             )
 
+        if args.outlier_rejection:
+            deleted_slices_dic = {}
+            for i, stack in enumerate(stacks):
+                deleted_slices = stack.get_deleted_slice_numbers()
+                deleted_slices_dic[stack.get_filename()] = deleted_slices
+            ph.write_dictionary_to_json(
+                deleted_slices_dic,
+                os.path.join(
+                    args.dir_output,
+                    args.subfolder_motion_correction,
+                    "rejected_slices.json"
+                )
+            )
     # ------------------Final Super-Resolution Reconstruction------------------
     ph.print_title("Final Super-Resolution Reconstruction")
     if args.reconstruction_type in ["TVL2", "HuberL2"]:
@@ -403,8 +397,7 @@ def main():
                           segmentation=HR_volume,
                           show_comparison_file=args.provide_comparison,
                           dir_output=os.path.join(
-                              args.dir_output,
-                              args.subfolder_comparison),
+                              args.dir_output, args.subfolder_comparison),
                           )
 
     # Summary
