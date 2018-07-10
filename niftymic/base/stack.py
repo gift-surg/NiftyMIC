@@ -382,6 +382,16 @@ class Stack:
 
         return self._slices[index]
 
+    ##
+    # Gets the deleted slice numbers, i.e. misregistered slice numbers detected
+    # by robust outlier algorithm. Indices refer to slice numbers within
+    # original stack
+    # \date       2018-07-08 23:06:24-0600
+    #
+    # \param      self  The object
+    #
+    # \return     The deleted slice numbers as list of integers.
+    #
     def get_deleted_slice_numbers(self):
         return list(self._deleted_slices)
 
@@ -414,8 +424,6 @@ class Stack:
     #
     # \param      self   The object
     # \param      index  The index
-    #
-    # \return     
     #
     def delete_slice(self, index):
         # delete slice at given index
