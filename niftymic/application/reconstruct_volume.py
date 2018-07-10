@@ -358,6 +358,20 @@ def main():
                 suffix_mask=args.suffix_mask,
             )
 
+        if args.outlier_rejection:
+            deleted_slices_dic = {}
+            for i, stack in enumerate(stacks):
+                deleted_slices = stack.get_deleted_slice_numbers()
+                deleted_slices_dic[stack.get_filename()] = deleted_slices
+            ph.write_dictionary_to_json(
+                deleted_slices_dic,
+                os.path.join(
+                    args.dir_output,
+                    args.subfolder_motion_correction,
+                    "rejected_slices.json"
+                )
+            )
+
     # ------------------Final Super-Resolution Reconstruction------------------
     ph.print_title("Final Super-Resolution Reconstruction")
     if args.reconstruction_type in ["TVL2", "HuberL2"]:

@@ -327,6 +327,7 @@ class Stack:
         else:
             stack._filename = filename
         stack._dir = stack_to_copy.get_directory()
+        stack._deleted_slices = stack_to_copy.get_deleted_slice_numbers()
 
         # Extract all slices and their masks from the stack and store them if
         # given
@@ -415,6 +416,11 @@ class Stack:
         else:
             raise RuntimeError(
                 "Slice number must be between 0 and %d" % self._N_slices)
+
+
+    def get_deleted_slice_numbers(self):
+        return list(self._deleted_slices)
+
 
     # Get name of directory where nifti was read from
     #  \return string of directory wher nifti was read from
