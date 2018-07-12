@@ -11,3 +11,4 @@ data/
 *.egg-info
 *.idea
 *.wiki
+/.project
