@@ -90,6 +90,8 @@ class InputArgparser(object):
                     print("\t%s" % val)
             else:
                 print(vals)
+        ph.print_line_separator(add_newline=False)
+        print("")
 
     ##
     # Writes a performed script execution.
@@ -100,9 +102,9 @@ class InputArgparser(object):
     #                     os.path.abspath(__file__)
     # \param      prefix  filename prefix
     #
-    def write_performed_script_execution(self,
-                                         file,
-                                         prefix="config"):
+    def log_config(self,
+                   file,
+                   prefix="config"):
 
         # parser returns options with underscores, e.g. 'dir_output'
         dic_with_underscores = vars(self._parser.parse_args())
@@ -747,11 +749,11 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
-    def add_log_script_execution(
+    def add_log_config(
         self,
-        option_string="--log-script-execution",
+        option_string="--log-config",
         type=int,
-        help="Turn on/off log for script execution.",
+        help="Turn on/off configuration of executed script.",
         default=0,
     ):
         self._add_argument(dict(locals()))

@@ -36,7 +36,7 @@ def main():
         "an isotropic, high-resolution 3D volume from multiple "
         "motion-corrected (or static) stacks of low-resolution slices.",
     )
-    input_parser.add_dir_input(option_string="--dir-motion-correction")
+    input_parser.add_dir_input(option_string="--dir-input-mc")
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
     input_parser.add_image_selection()
@@ -62,17 +62,15 @@ def main():
     input_parser.add_iterations(default=15)
     input_parser.add_subfolder_comparison()
     input_parser.add_provide_comparison(default=0)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_use_masks_srr(default=0)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -81,7 +79,7 @@ def main():
         file_paths=args.filenames,
         file_paths_masks=args.filenames_masks,
         suffix_mask=args.suffix_mask,
-        dir_motion_correction=args.dir_motion_correction,
+        dir_motion_correction=args.dir_input_mc,
     )
 
     if args.reconstruction_type not in ["TK1L2", "TVL2", "HuberL2"]:

@@ -67,9 +67,9 @@ def main():
     input_parser.add_dilation_radius(default=3)
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_bias_field_correction(default=0)
-    input_parser.add_intensity_correction(default=0)
+    input_parser.add_intensity_correction(default=1)
     input_parser.add_isotropic_resolution(default=None)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_subfolder_motion_correction()
     input_parser.add_provide_comparison(default=0)
     input_parser.add_subfolder_comparison()
@@ -92,13 +92,11 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # Use FLIRT for volume-to-volume reg. step. Otherwise, RegAladin is used.
-    use_flirt_for_v2v_registration = 0
+    use_flirt_for_v2v_registration = 1
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")

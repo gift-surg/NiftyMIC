@@ -63,7 +63,7 @@ def main():
         help="Choose the interpolator type to propagate the reconstruction "
         "mask (%s)." % (INTERPOLATOR_TYPES),
         default="NearestNeighbor")
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
@@ -74,10 +74,8 @@ def main():
             "Unknown interpolator provided. Possible choices are %s" % (
                 INTERPOLATOR_TYPES))
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # Read motion corrected data
     data_reader = dr.ImageSlicesDirectoryReader(

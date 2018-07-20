@@ -56,16 +56,14 @@ def main():
         "the width of the Gaussian deconvolution.",
         default=0.15,
     )
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # Read data
     data_reader = dr.MultipleImagesReader(

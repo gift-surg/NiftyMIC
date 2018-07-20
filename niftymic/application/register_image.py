@@ -7,6 +7,7 @@
 # \date       October 2017
 #
 
+import re
 import os
 import numpy as np
 import SimpleITK as sitk
@@ -21,6 +22,8 @@ import niftymic.registration.niftyreg as niftyreg
 import niftymic.validation.image_similarity_evaluator as ise
 from niftymic.utilities.input_arparser import InputArgparser
 
+from niftymic.definitions import REGEX_FILENAMES, DIR_TMP
+
 
 ##
 # Gets the ap flip transform in case the 'stack' physical coordinate is aligned
@@ -32,10 +35,11 @@ from niftymic.utilities.input_arparser import InputArgparser
 #
 # \return     The ap flip transform.
 #
-def get_ap_flip_transform(stack, initializer_type="GEOMETRY"):
+def get_ap_flip_transform(path_to_image, initializer_type="GEOMETRY"):
+    image_sitk = sitk.ReadImage(path_to_image)
     initial_transform = sitk.CenteredTransformInitializer(
-        stack.sitk,
-        stack.sitk,
+        image_sitk,
+        image_sitk,
         sitk.Euler3DTransform(),
         eval("sitk.CenteredTransformInitializerFilter.%s" % (
             initializer_type)))
@@ -77,47 +81,17 @@ def main():
         "defined by the fixed.",
     )
     input_parser.add_fixed(required=True)
-    input_parser.add_moving(
-        required=True,
-        nargs="+",
-        help="Specify moving image to be warped to fixed space. "
-        "If multiple images are provided, all images will be transformed "
-        "uniformly according to the registration obtained for the first one."
-    )
+    input_parser.add_moving(required=True)
+    input_parser.add_fixed_mask()
+    input_parser.add_moving_mask()
     input_parser.add_dir_output(required=True)
-    input_parser.add_dir_input()
-    input_parser.add_suffix_mask(default="_mask")
+    input_parser.add_dir_input(option_string="--dir-input-mc")
     input_parser.add_search_angle(default=180)
-    input_parser.add_option(
-        option_string="--transform-only",
-        type=int,
-        help="Turn on/off functionality to transform moving image(s) to fixed "
-        "image only, i.e. no resampling to fixed image space",
-        default=0)
     input_parser.add_option(
         option_string="--initial-transform",
         type=str,
         help="Set initial transform to be used.",
         default=None)
-    input_parser.add_option(
-        option_string="--write-transform",
-        type=int,
-        help="Turn on/off functionality to write registration transform",
-        default=1)
-    input_parser.add_option(
-        option_string="--use-fixed-mask",
-        type=int,
-        help="Turn on/off functionality to use fixed image mask during "
-        "registration. It is defined via 'mask-suffix' and must be in the "
-        "same directory as the fixed image.",
-        default=0)
-    input_parser.add_option(
-        option_string="--use-moving-mask",
-        type=int,
-        help="Turn on/off functionality to use moving image mask during "
-        "registration. It is defined via 'mask-suffix' and must be in the "
-        "same directory as the moving image(s).",
-        default=0)
     input_parser.add_option(
         option_string="--test-ap-flip",
         type=int,
@@ -137,123 +111,166 @@ def main():
         "registration.",
         default=1)
     input_parser.add_verbose(default=0)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    debug = 0
+    debug = 1
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     if not args.use_regaladin and not args.use_flirt:
         raise IOError("Either RegAladin or FLIRT must be activated.")
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
-    data_reader = dr.MultipleImagesReader(args.moving, suffix_mask="_mask")
-    data_reader.read_data()
-    moving = data_reader.get_data()
+    fixed = st.Stack.from_filename(
+        file_path=args.fixed,
+        file_path_mask=args.fixed_mask,
+        extract_slices=False)
+    moving = st.Stack.from_filename(
+        file_path=args.moving,
+        file_path_mask=args.moving_mask,
+        extract_slices=False)
 
-    data_reader = dr.MultipleImagesReader([args.fixed], suffix_mask="_mask")
-    data_reader.read_data()
-    fixed = data_reader.get_data()[0]
+    if args.fixed_mask is not None:
+        use_fixed_mask = True
+    if args.moving_mask is not None:
+        use_moving_mask = True
 
+    path_to_transform = os.path.join(
+        args.dir_output, "registration_transform_sitk.tfm")
     if args.initial_transform is not None:
-        data_reader = dr.MultipleTransformationsReader(
-            [args.initial_transform])
-        data_reader.read_data()
-        transform_sitk = data_reader.get_data()[0]
-        moving[0].update_motion_correction(transform_sitk)
+        transform_sitk = sitkh.read_transform_sitk(args.initial_transform)
     else:
         transform_sitk = sitk.AffineTransform(fixed.sitk.GetDimension())
+    sitk.WriteTransform(transform_sitk, path_to_transform)
+
+    path_to_output = os.path.join(
+        args.dir_output,
+        ph.append_to_filename(os.path.basename(args.moving),
+                              "ResamplingToTemplateSpace"))
 
     # -------------------Register Reconstruction to Template-------------------
     ph.print_title("Register Reconstruction to Template")
 
     if args.use_flirt:
+        path_to_transform_flirt = os.path.join(DIR_TMP, "transform_flirt.txt")
+
+        # Convert SimpleITK into FLIRT transform
+        cmd = "simplereg_transform -sitk2flirt %s %s %s %s" % (
+            path_to_transform, args.fixed, args.moving, path_to_transform_flirt)
+        ph.execute_command(cmd, verbose=False)
+
         # Define search angle ranges for FLIRT in all three dimensions
         search_angles = ["-searchr%s -%d %d" %
                          (x, args.search_angle, args.search_angle)
                          for x in ["x", "y", "z"]]
-        search_angles = (" ").join(search_angles)
-        options_args = []
-        options_args.append(search_angles)
-        # cost = "mutualinfo"
-        # options_args.append("-cost %s" % (cost))
-        registration = regflirt.FLIRT(
-            fixed=moving[0],
-            moving=fixed,
-            use_fixed_mask=args.use_fixed_mask,
-            use_moving_mask=args.use_moving_mask,
-            registration_type="Rigid",
-            use_verbose=False,
-            options=(" ").join(options_args),
-        )
-        ph.print_info("Run Registration (FLIRT) ... ", newline=False)
-        registration.run()
-        print("done")
-        transform2_sitk = registration.get_registration_transform_sitk()
-        moving[0].update_motion_correction(transform2_sitk)
 
-        transform_sitk = sitkh.get_composite_sitk_affine_transform(
-            transform2_sitk, transform_sitk)
+        cmd_args = ["flirt"]
+        cmd_args.append("-in %s" % args.moving)
+        cmd_args.append("-ref %s" % args.fixed)
+        cmd_args.append("-init %s" % path_to_transform_flirt)
+        cmd_args.append("-omat %s" % path_to_transform_flirt)
+        cmd_args.append("-out %s" % path_to_output)
+        cmd_args.append("-dof 6")
+        # cmd_args.append((" ").join(search_angles))
+        if args.moving_mask is not None:
+            cmd_args.append("-inweight %s" % args.moving_mask)
+        if args.fixed_mask is not None:
+            cmd_args.append("-refweight %s" % args.fixed_mask)
+        ph.print_info("Run Registration (FLIRT) ... ", newline=False)
+        ph.execute_command(" ".join(cmd_args), verbose=1)
+        print("done")
+
+        # Convert FLIRT to SimpleITK transform
+        cmd = "simplereg_transform -flirt2sitk %s %s %s %s" % (
+            path_to_transform_flirt, args.fixed, args.moving, path_to_transform)
+        ph.execute_command(cmd, verbose=False)
 
         if debug:
-            sitkh.show_stacks([fixed, moving[0]], segmentation=fixed)
+            ph.show_niftis([args.fixed, path_to_output])
 
     # Additionally, use RegAladin for more accurate alignment
     # Rationale: FLIRT has better capture range, but RegAladin seems to
     # find better alignment once it is within its capture range.
     if args.use_regaladin:
-        registration = niftyreg.RegAladin(
-            fixed=moving[0],
-            use_fixed_mask=args.use_fixed_mask,
-            use_moving_mask=args.use_moving_mask,
-            moving=fixed,
-            registration_type="Rigid",
-            use_verbose=False,
-        )
+        path_to_transform_regaladin = os.path.join(
+            DIR_TMP, "transform_regaladin.txt")
+
+        # Convert SimpleITK to RegAladin transform
+        cmd = "simplereg_transform -sitk2nreg %s %s" % (
+            path_to_transform, path_to_transform_regaladin)
+        ph.execute_command(cmd, verbose=False)
+
+        cmd_args = ["reg_aladin"]
+        cmd_args.append("-ref %s" % args.fixed)
+        cmd_args.append("-flo %s" % args.moving)
+        cmd_args.append("-res %s" % path_to_output)
+        cmd_args.append("-init %s" % path_to_transform_regaladin)
+        cmd_args.append("-mat %s" % path_to_transform_regaladin)
+        cmd_args.append("-rigOnly")
+        if args.moving_mask is not None:
+            cmd_args.append("-fmask %s" % args.moving_mask)
+        if args.fixed_mask is not None:
+            cmd_args.append("-rmask %s" % args.fixed_mask)
         ph.print_info("Run Registration (RegAladin) ... ", newline=False)
-        registration.run()
+        ph.execute_command(" ".join(cmd_args), verbose=False)
         print("done")
 
-        transform2_sitk = registration.get_registration_transform_sitk()
-        moving[0].update_motion_correction(transform2_sitk)
-        transform_sitk = sitkh.get_composite_sitk_affine_transform(
-            transform2_sitk, transform_sitk)
+        # Convert RegAladin to SimpleITK transform
+        cmd = "simplereg_transform -nreg2sitk %s %s" % (
+            path_to_transform_regaladin, path_to_transform)
+        ph.execute_command(cmd, verbose=False)
 
         if debug:
-            sitkh.show_stacks([fixed, moving[0]], segmentation=fixed)
+            ph.show_niftis([args.fixed, path_to_output])
 
     if args.test_ap_flip:
-        moving0_flipped = st.Stack.from_stack(moving[0])
-        moving0_flipped.set_filename("%s_flipped" % moving[0].get_filename())
+        path_to_transform_flip = os.path.join(DIR_TMP, "transform_flip.txt")
+        path_to_output_flip = os.path.join(DIR_TMP, "output_flip.nii.gz")
 
-        transform_ap_flip_sitk = get_ap_flip_transform(moving0_flipped)
+        # Get AP-flip transform
+        transform_ap_flip_sitk = get_ap_flip_transform(args.fixed)
+        path_to_transform_flip_regaladin = os.path.join(
+            DIR_TMP, "transform_flip_regaladin.txt")
+        sitk.WriteImage(transform_ap_flip_sitk, path_to_transform_flip)
 
-        moving0_flipped.update_motion_correction(transform_ap_flip_sitk)
-        registration = niftyreg.RegAladin(
-            fixed=moving0_flipped,
-            use_fixed_mask=args.use_fixed_mask,
-            use_moving_mask=args.use_moving_mask,
-            moving=fixed,
-            registration_type="Rigid",
-            use_verbose=False,
-        )
+        # Compose current transform with AP flip transform
+        cmd = "simplereg_transform -c %s %s %s" % (
+            path_to_transform, path_to_transform_flip, path_to_transform_flip)
+        ph.execute_command(cmd, verbose=False)
+
+        # Convert SimpleITK to RegAladin transform
+        cmd = "simplereg_transform -sitk2nreg %s %s" % (
+            path_to_transform_flip, path_to_transform_flip_regaladin)
+        ph.execute_command(cmd, verbose=False)
+
+        cmd_args = ["reg_aladin"]
+        cmd_args.append("-ref %s" % args.fixed)
+        cmd_args.append("-flo %s" % args.moving)
+        cmd_args.append("-res %s" % path_to_output_flip)
+        cmd_args.append("-init %s" % path_to_transform_flip_regaladin)
+        cmd_args.append("-mat %s" % path_to_transform_flip_regaladin)
+        cmd_args.append("-rigOnly")
+        if args.moving_mask is not None:
+            cmd_args.append("-fmask %s" % args.moving_mask)
+        if args.fixed_mask is not None:
+            cmd_args.append("-rmask %s" % args.fixed_mask)
         ph.print_info("Run Registration AP-flipped (RegAladin) ... ",
                       newline=False)
-        registration.run()
+        ph.execute_command(" ".join(cmd_args), verbose=False)
         print("done")
 
-        transform2_sitk = registration.get_registration_transform_sitk()
-        moving0_flipped.update_motion_correction(transform2_sitk)
+        warped_moving = st.Stack.from_filename(
+            path_to_output, extract_slices=False)
+        warped_moving_flip = st.Stack.from_filename(
+            path_to_output_flip, extract_slices=False)
+        fixed = st.Stack.from_filename(args.fixed, args.fixed_mask)
 
-        stacks = [s.get_resampled_stack(fixed.sitk)
-                  for s in [moving[0], moving0_flipped]]
+        stacks = [warped_moving, warped_moving_flip]
         image_similarity_evaluator = ise.ImageSimilarityEvaluator(
             stacks=stacks, reference=fixed)
         image_similarity_evaluator.compute_similarities()
@@ -261,66 +278,34 @@ def main():
 
         if similarities["NMI"][1] > similarities["NMI"][0]:
             ph.print_info("AP-flipped outcome better")
-            transform_update_sitk = sitkh.get_composite_sitk_affine_transform(
-                transform2_sitk, transform_ap_flip_sitk)
-            moving[0].update_motion_correction(transform_update_sitk)
 
-            transform_sitk = sitkh.get_composite_sitk_affine_transform(
-                transform_update_sitk, transform_sitk)
+            # Convert RegAladin to SimpleITK transform
+            cmd = "simplereg_transform -nreg2sitk %s %s" % (
+                path_to_transform_flip_regaladin, path_to_transform)
+            ph.execute_command(cmd, verbose=False)
+
+            # Copy better outcome
+            cmd = "cp -p %s %s" % (path_to_output_flip, path_to_output)
+            ph.execute_command(cmd, verbose=False)
+
         else:
             ph.print_info("AP-flip does not improve outcome")
 
-    if args.write_transform:
-        path_to_transform = os.path.join(
-            args.dir_output, "registration_transform_sitk.txt")
-        sitk.WriteTransform(transform_sitk, path_to_transform)
-        ph.print_info("Registration transform written to '%s'" %
-                      path_to_transform)
+    if args.dir_input_mc is not None:
+        transform_sitk = sitkh.read_transform_sitk(path_to_transform)
+        dir_output_mc = os.path.join(args.dir_output, "motion_correction")
 
-    # Apply rigidly transform to align reconstruction (moving) with template
-    # (fixed)
-    for m in moving[1:]:
-        m.update_motion_correction(transform_sitk)
-
-    if args.transform_only:
-        for m in moving:
-            m.write(args.dir_output, write_mask=False)
-        ph.exit()
-
-    # Resample reconstruction (moving) to template space (fixed)
-    warped_moving = [m.get_resampled_stack(fixed.sitk, interpolator="Linear")
-                     for m in moving]
-
-    for wm in warped_moving:
-        wm.set_filename(
-            wm.get_filename() + "ResamplingToTemplateSpace")
-
-        if args.verbose:
-            sitkh.show_stacks([fixed, wm], segmentation=fixed)
-
-        # Write resampled reconstruction (moving)
-        wm.write(args.dir_output, write_mask=False)
-
-    if args.dir_input is not None:
-        data_reader = dr.ImageSlicesDirectoryReader(
-            path_to_directory=args.dir_input,
-            suffix_mask=args.suffix_mask)
-        data_reader.read_data()
-        stacks = data_reader.get_data()
-
-        for i, stack in enumerate(stacks):
-            stack.update_motion_correction(transform_sitk)
-            ph.print_info("Stack %d/%d: All slice transforms updated" %
-                          (i + 1, len(stacks)))
-
-            # Write transformed slices
-            stack.write(
-                os.path.join(args.dir_output, "motion_correction"),
-                write_mask=True,
-                write_slices=True,
-                write_transforms=True,
-                suffix_mask=args.suffix_mask,
-            )
+        ph.create_directory(dir_output_mc)
+        pattern = REGEX_FILENAMES + "[.]tfm"
+        p = re.compile(pattern)
+        trafos = [t for t in os.listdir(args.dir_input_mc) if p.match(t)]
+        for t in trafos:
+            path_to_transform = os.path.join(args.dir_input_mc, t)
+            t_sitk = sitkh.read_transform_sitk(path_to_transform)
+            t_sitk = sitkh.get_composite_sitk_affine_transform(
+                transform_sitk, t_sitk)
+            path_to_output = os.path.join(dir_output_mc, t)
+            sitk.WriteTransform(t_sitk, path_to_output)
 
     elapsed_time_total = ph.stop_timing(time_start)
 
