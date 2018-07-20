@@ -141,7 +141,7 @@ def main():
         use_moving_mask = True
 
     path_to_transform = os.path.join(
-        args.dir_output, "registration_transform_sitk.tfm")
+        args.dir_output, "registration_transform_sitk.txt")
     if args.initial_transform is not None:
         transform_sitk = sitkh.read_transform_sitk(args.initial_transform)
     else:
@@ -172,7 +172,8 @@ def main():
         cmd_args = ["flirt"]
         cmd_args.append("-in %s" % args.moving)
         cmd_args.append("-ref %s" % args.fixed)
-        cmd_args.append("-init %s" % path_to_transform_flirt)
+        if args.initial_transform is not None:
+            cmd_args.append("-init %s" % path_to_transform_flirt)
         cmd_args.append("-omat %s" % path_to_transform_flirt)
         cmd_args.append("-out %s" % path_to_output)
         cmd_args.append("-dof 6")
@@ -182,7 +183,7 @@ def main():
         if args.fixed_mask is not None:
             cmd_args.append("-refweight %s" % args.fixed_mask)
         ph.print_info("Run Registration (FLIRT) ... ", newline=False)
-        ph.execute_command(" ".join(cmd_args), verbose=1)
+        ph.execute_command(" ".join(cmd_args), verbose=False)
         print("done")
 
         # Convert FLIRT to SimpleITK transform
@@ -209,9 +210,10 @@ def main():
         cmd_args.append("-ref %s" % args.fixed)
         cmd_args.append("-flo %s" % args.moving)
         cmd_args.append("-res %s" % path_to_output)
-        cmd_args.append("-init %s" % path_to_transform_regaladin)
-        cmd_args.append("-mat %s" % path_to_transform_regaladin)
+        cmd_args.append("-inaff %s" % path_to_transform_regaladin)
+        cmd_args.append("-aff %s" % path_to_transform_regaladin)
         cmd_args.append("-rigOnly")
+        cmd_args.append("-voff")
         if args.moving_mask is not None:
             cmd_args.append("-fmask %s" % args.moving_mask)
         if args.fixed_mask is not None:
@@ -252,9 +254,10 @@ def main():
         cmd_args.append("-ref %s" % args.fixed)
         cmd_args.append("-flo %s" % args.moving)
         cmd_args.append("-res %s" % path_to_output_flip)
-        cmd_args.append("-init %s" % path_to_transform_flip_regaladin)
-        cmd_args.append("-mat %s" % path_to_transform_flip_regaladin)
+        cmd_args.append("-inaff %s" % path_to_transform_flip_regaladin)
+        cmd_args.append("-aff %s" % path_to_transform_flip_regaladin)
         cmd_args.append("-rigOnly")
+        cmd_args.append("-voff")
         if args.moving_mask is not None:
             cmd_args.append("-fmask %s" % args.moving_mask)
         if args.fixed_mask is not None:
