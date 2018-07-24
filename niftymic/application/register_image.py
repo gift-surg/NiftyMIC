@@ -116,7 +116,7 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    debug = 1
+    debug = 0
 
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
@@ -238,7 +238,7 @@ def main():
         transform_ap_flip_sitk = get_ap_flip_transform(args.fixed)
         path_to_transform_flip_regaladin = os.path.join(
             DIR_TMP, "transform_flip_regaladin.txt")
-        sitk.WriteImage(transform_ap_flip_sitk, path_to_transform_flip)
+        sitk.WriteTransform(transform_ap_flip_sitk, path_to_transform_flip)
 
         # Compose current transform with AP flip transform
         cmd = "simplereg_transform -c %s %s %s" % (
@@ -266,6 +266,9 @@ def main():
                       newline=False)
         ph.execute_command(" ".join(cmd_args), verbose=False)
         print("done")
+
+        if debug:
+            ph.show_niftis([args.fixed, path_to_output, path_to_output_flip])
 
         warped_moving = st.Stack.from_filename(
             path_to_output, extract_slices=False)
