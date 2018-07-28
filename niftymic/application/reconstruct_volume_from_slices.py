@@ -36,10 +36,9 @@ def main():
         "an isotropic, high-resolution 3D volume from multiple "
         "motion-corrected (or static) stacks of low-resolution slices.",
     )
-    input_parser.add_dir_input(option_string="--dir-input-mc")
+    input_parser.add_dir_input_mc()
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
-    input_parser.add_image_selection()
     input_parser.add_dir_output(required=True)
     input_parser.add_prefix_output(default="SRR_")
     input_parser.add_suffix_mask(default="_mask")
@@ -53,7 +52,7 @@ def main():
     input_parser.add_data_loss(default="linear")
     input_parser.add_data_loss_scale(default=1)
     input_parser.add_alpha(
-        default=0.02  # TK1L2
+        default=0.01  # TK1L2
         # default=0.006  #TVL2, HuberL2
     )
     input_parser.add_rho(default=0.5)

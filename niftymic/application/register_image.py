@@ -11,6 +11,8 @@ import re
 import os
 import numpy as np
 import SimpleITK as sitk
+# import nipype.interfaces.fsl
+# import nipype.interfaces.niftyreg
 
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
@@ -85,7 +87,7 @@ def main():
     input_parser.add_fixed_mask()
     input_parser.add_moving_mask()
     input_parser.add_dir_output(required=True)
-    input_parser.add_dir_input(option_string="--dir-input-mc")
+    input_parser.add_dir_input_mc()
     input_parser.add_search_angle(default=180)
     input_parser.add_option(
         option_string="--initial-transform",
@@ -169,6 +171,24 @@ def main():
                          (x, args.search_angle, args.search_angle)
                          for x in ["x", "y", "z"]]
 
+        # flt = nipype.interfaces.fsl.FLIRT()
+        # flt.inputs.in_file = args.moving
+        # flt.inputs.reference = args.fixed
+        # if args.initial_transform is not None:
+        #     flt.inputs.in_matrix_file = path_to_transform_flirt
+        # flt.inputs.out_matrix_file = path_to_transform_flirt
+        # # flt.inputs.output_type = "NIFTI_GZ"
+        # flt.inputs.out_file = path_to_output
+        # flt.inputs.args = "-dof 6"
+        # flt.inputs.args += " %s" % " ".join(search_angles)
+        # if args.moving_mask is not None:
+        #     flt.inputs.in_weight = args.moving_mask
+        # if args.fixed_mask is not None:
+        #     flt.inputs.ref_weight = args.fixed_mask
+        # ph.print_info("Run Registration (FLIRT) ... ", newline=False)
+        # flt.run()
+        # print("done")
+
         cmd_args = ["flirt"]
         cmd_args.append("-in %s" % args.moving)
         cmd_args.append("-ref %s" % args.fixed)
@@ -177,7 +197,7 @@ def main():
         cmd_args.append("-omat %s" % path_to_transform_flirt)
         cmd_args.append("-out %s" % path_to_output)
         cmd_args.append("-dof 6")
-        # cmd_args.append((" ").join(search_angles))
+        cmd_args.append((" ").join(search_angles))
         if args.moving_mask is not None:
             cmd_args.append("-inweight %s" % args.moving_mask)
         if args.fixed_mask is not None:
@@ -205,6 +225,21 @@ def main():
         cmd = "simplereg_transform -sitk2nreg %s %s" % (
             path_to_transform, path_to_transform_regaladin)
         ph.execute_command(cmd, verbose=False)
+
+        # nreg = nipype.interfaces.niftyreg.RegAladin()
+        # nreg.inputs.ref_file = args.fixed
+        # nreg.inputs.flo_file = args.moving
+        # nreg.inputs.res_file = path_to_output
+        # nreg.inputs.in_aff_file = path_to_transform_regaladin
+        # nreg.inputs.aff_file = path_to_transform_regaladin
+        # nreg.inputs.args = "-rigOnly -voff"
+        # if args.moving_mask is not None:
+        #     nreg.inputs.fmask_file = args.moving_mask
+        # if args.fixed_mask is not None:
+        #     nreg.inputs.rmask_file = args.fixed_mask
+        # ph.print_info("Run Registration (RegAladin) ... ", newline=False)
+        # nreg.run()
+        # print("done")
 
         cmd_args = ["reg_aladin"]
         cmd_args.append("-ref %s" % args.fixed)
@@ -249,6 +284,22 @@ def main():
         cmd = "simplereg_transform -sitk2nreg %s %s" % (
             path_to_transform_flip, path_to_transform_flip_regaladin)
         ph.execute_command(cmd, verbose=False)
+
+        # nreg = nipype.interfaces.niftyreg.RegAladin()
+        # nreg.inputs.ref_file = args.fixed
+        # nreg.inputs.flo_file = args.moving
+        # nreg.inputs.res_file = path_to_output_flip
+        # nreg.inputs.in_aff_file = path_to_transform_flip_regaladin
+        # nreg.inputs.aff_file = path_to_transform_flip_regaladin
+        # nreg.inputs.args = "-rigOnly -voff"
+        # if args.moving_mask is not None:
+        #     nreg.inputs.fmask_file = args.moving_mask
+        # if args.fixed_mask is not None:
+        #     nreg.inputs.rmask_file = args.fixed_mask
+        # ph.print_info("Run Registration AP-flipped (RegAladin) ... ",
+        #               newline=False)
+        # nreg.run()
+        # print("done")
 
         cmd_args = ["reg_aladin"]
         cmd_args.append("-ref %s" % args.fixed)
@@ -298,20 +349,29 @@ def main():
             ph.print_info("AP-flip does not improve outcome")
 
     if args.dir_input_mc is not None:
-        transform_sitk = sitkh.read_transform_sitk(path_to_transform)
-        dir_output_mc = os.path.join(args.dir_output, "motion_correction")
+        transform_sitk = sitkh.read_transform_sitk(
+            path_to_transform, inverse=1)
+
+        if args.dir_input_mc.endswith("/"):
+            subdir_mc = args.dir_input_mc.split("/")[-2]
+        else:
+            subdir_mc = args.dir_input_mc.split("/")[-1]
+        dir_output_mc = os.path.join(args.dir_output, subdir_mc)
 
         ph.create_directory(dir_output_mc)
         pattern = REGEX_FILENAMES + "[.]tfm"
         p = re.compile(pattern)
         trafos = [t for t in os.listdir(args.dir_input_mc) if p.match(t)]
         for t in trafos:
-            path_to_transform = os.path.join(args.dir_input_mc, t)
-            t_sitk = sitkh.read_transform_sitk(path_to_transform)
+            path_to_input_transform = os.path.join(args.dir_input_mc, t)
+            path_to_output_transform = os.path.join(dir_output_mc, t)
+            t_sitk = sitkh.read_transform_sitk(path_to_input_transform)
             t_sitk = sitkh.get_composite_sitk_affine_transform(
                 transform_sitk, t_sitk)
-            path_to_output = os.path.join(dir_output_mc, t)
-            sitk.WriteTransform(t_sitk, path_to_output)
+            sitk.WriteTransform(t_sitk, path_to_output_transform)
+
+    if args.verbose:
+        ph.show_niftis([args.fixed, path_to_output])
 
     elapsed_time_total = ph.stop_timing(time_start)
 

@@ -350,6 +350,7 @@ def main():
                     "rejected_slices.json"
                 )
             )
+
     # ------------------Final Super-Resolution Reconstruction------------------
     ph.print_title("Final Super-Resolution Reconstruction")
     if args.reconstruction_type in ["TVL2", "HuberL2"]:

@@ -164,6 +164,17 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_dir_input_mc(
+        self,
+        option_string="--dir-input-mc",
+        type=str,
+        help="Input directory where transformation files (.tfm) for "
+        "motion-corrected slices are stored.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_subfolder_motion_correction(
         self,
         option_string="--subfolder-motion-correction",
