@@ -82,7 +82,7 @@ def main():
     input_parser.add_metric_radius(default=10)
     input_parser.add_reference()
     input_parser.add_reference_mask()
-    input_parser.add_outlier_rejection(default=0)
+    input_parser.add_outlier_rejection(default=1)
     input_parser.add_threshold_first(default=0.6)
     input_parser.add_threshold(default=0.7)
     input_parser.add_use_robust_registration(default=0)
