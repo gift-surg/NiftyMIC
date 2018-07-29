@@ -209,7 +209,7 @@ class MultipleImagesReader(ImageDataReader):
 
         self._check_input()
 
-        self._stacks = [None] * len(self._file_paths)
+        stacks = [None] * len(self._file_paths)
 
         for i, file_path in enumerate(self._file_paths):
 
@@ -221,7 +221,7 @@ class MultipleImagesReader(ImageDataReader):
                 else:
                     file_path_mask = None
 
-            self._stacks[i] = st.Stack.from_filename(
+            stacks[i] = st.Stack.from_filename(
                 file_path,
                 file_path_mask,
                 extract_slices=self._extract_slices)
@@ -243,22 +243,22 @@ class MultipleImagesReader(ImageDataReader):
                         abs_path_to_directory, p.match(f).group(0))
                     for f in os.listdir(abs_path_to_directory) if p.match(f)
                 }
-                slices = self._stacks[i].get_slices()
-                for i_slice in range(self._stacks[i].get_number_of_slices()):
+                slices = stacks[i].get_slices()
+                for i_slice in range(stacks[i].get_number_of_slices()):
                     if i_slice in dic_slice_transforms.keys():
                         transform_slice_sitk = sitkh.read_transform_sitk(
                             dic_slice_transforms[i_slice])
                         slices[i_slice].update_motion_correction(
                             transform_slice_sitk)
                     else:
-                        self._stacks[i].delete_slice(i_slice)
-                if self._stacks[i].get_number_of_slices() == 0:
+                        stacks[i].delete_slice(i_slice)
+                if stacks[i].get_number_of_slices() == 0:
                     ph.print_info(
                         "Stack '%s' removed as all slices were deleted" %
                         stack_name)
-                    self._stacks[i] = None
+                    stacks[i] = None
 
-        self._stacks = [s for s in self._stacks if s is not None]
+        self._stacks = [s for s in stacks if s is not None]
 
     def _check_input(self):
         if type(self._file_paths) is not list:
