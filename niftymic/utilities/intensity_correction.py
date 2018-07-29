@@ -262,7 +262,7 @@ class IntensityCorrection(object):
             for i in range(0, N_slices):
                 if self._use_verbose:
                     sys.stdout.write("Slice %2d/%d: " %
-                                     (i, self._stack.get_number_of_slices()-1))
+                                     (i, self._stack.get_number_of_slices() - 1))
                     sys.stdout.flush()
                 if self._additional_stack is None:
                     nda[i, :, :], correction_coefficients[i, :] = self._apply_intensity_correction[
@@ -322,9 +322,9 @@ class IntensityCorrection(object):
             ph.print_info("(c1, c0) = (%.3f, %.3f)" % (c1, c0))
 
         if nda_additional_stack is None:
-            return nda*c1 + c0, np.array([c1, c0])
+            return nda * c1 + c0, np.array([c1, c0])
         else:
-            return nda*c1 + c0, np.array([c1, c0]), nda_additional_stack*c1 + c0
+            return nda * c1 + c0, np.array([c1, c0]), nda_additional_stack * c1 + c0
 
     ##
     #       Perform linear intensity correction via normal equations
@@ -349,15 +349,15 @@ class IntensityCorrection(object):
 
         # ph.show_2D_array_list([nda, nda_reference])
         # Solve via normal equations: c1 = x'y/(x'x)
-        c1 = x.dot(y)/x.dot(x)
+        c1 = x.dot(y) / x.dot(x)
 
         if self._use_verbose:
             ph.print_info("c1 = %.3f" % (c1))
 
         if nda_additional_stack is None:
-            return nda*c1, c1
+            return nda * c1, c1
         else:
-            return nda*c1, c1, nda_additional_stack*c1
+            return nda * c1, c1, nda_additional_stack * c1
 
     ##
     #       Gets the data arrays prior to intensity correction.
@@ -403,4 +403,13 @@ class IntensityCorrection(object):
         image_sitk = sitk.GetImageFromArray(nda)
         image_sitk.CopyInformation(stack.sitk)
 
-        return st.Stack.from_sitk_image(image_sitk, stack.get_filename(), stack.sitk_mask)
+        # Update registration history
+        stack_ic = st.Stack.from_sitk_image(
+            image_sitk, stack.get_filename(), stack.sitk_mask)
+        slices_ic = stack_ic.get_slices()
+        slices = stack.get_slices()
+        for i in range(len(slices)):
+            slices_ic[i].set_registration_history(
+                slices[i].get_registration_history())
+
+        return stack_ic

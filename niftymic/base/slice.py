@@ -279,6 +279,10 @@ class Slice:
         motion_corrections = list(self._history_motion_corrections)
         return affine_transforms, motion_corrections
 
+    def set_registration_history(self, registration_history):
+        self._history_affine_transforms = list(registration_history[0])
+        self._history_motion_corrections = list(registration_history[1])
+
     # Display slice with external viewer (ITK-Snap)
     #  \param[in] show_segmentation display slice with or without associated segmentation (default=0)
     def show(self, show_segmentation=0, label=None, viewer=VIEWER, verbose=True):
