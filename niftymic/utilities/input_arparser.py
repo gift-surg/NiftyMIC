@@ -818,6 +818,13 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_argument(
+        self,
+        *a,
+        **k
+    ):
+        self._parser.add_argument(*a, **k)
+
     def add_psf_aware(
         self,
         option_string='--psf-aware',
