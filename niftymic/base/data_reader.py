@@ -186,7 +186,10 @@ class MultipleImagesReader(ImageDataReader):
                  file_paths,
                  file_paths_masks=None,
                  suffix_mask="_mask",
-                 extract_slices=True):
+                 extract_slices=True,
+                 dir_motion_correction=None,
+                 prefix_slice="_slice",
+                 ):
 
         super(self.__class__, self).__init__()
 
@@ -194,7 +197,9 @@ class MultipleImagesReader(ImageDataReader):
         self._file_paths = file_paths
         self._file_paths_masks = file_paths_masks
         self._suffix_mask = suffix_mask
+        self._dir_motion_correction = dir_motion_correction
         self._extract_slices = extract_slices
+        self._prefix_slice = prefix_slice
 
     ##
     # Reads the data of multiple images.
@@ -204,7 +209,7 @@ class MultipleImagesReader(ImageDataReader):
 
         self._check_input()
 
-        self._stacks = [None] * len(self._file_paths)
+        stacks = [None] * len(self._file_paths)
 
         for i, file_path in enumerate(self._file_paths):
 
@@ -216,10 +221,44 @@ class MultipleImagesReader(ImageDataReader):
                 else:
                     file_path_mask = None
 
-            self._stacks[i] = st.Stack.from_filename(
+            stacks[i] = st.Stack.from_filename(
                 file_path,
                 file_path_mask,
                 extract_slices=self._extract_slices)
+
+            if self._dir_motion_correction is not None:
+                if not ph.directory_exists(self._dir_motion_correction):
+                    raise exceptions.DirectoryNotExistent(
+                        self._dir_motion_correction)
+                abs_path_to_directory = os.path.abspath(
+                    self._dir_motion_correction)
+                stack_name = ph.strip_filename_extension(
+                    os.path.basename(file_path))[0]
+
+                pattern_trafo_slices = stack_name + self._prefix_slice + \
+                    "([0-9]+)[.]tfm"
+                p = re.compile(pattern_trafo_slices)
+                dic_slice_transforms = {
+                    int(p.match(f).group(1)): os.path.join(
+                        abs_path_to_directory, p.match(f).group(0))
+                    for f in os.listdir(abs_path_to_directory) if p.match(f)
+                }
+                slices = stacks[i].get_slices()
+                for i_slice in range(stacks[i].get_number_of_slices()):
+                    if i_slice in dic_slice_transforms.keys():
+                        transform_slice_sitk = sitkh.read_transform_sitk(
+                            dic_slice_transforms[i_slice])
+                        slices[i_slice].update_motion_correction(
+                            transform_slice_sitk)
+                    else:
+                        stacks[i].delete_slice(i_slice)
+                if stacks[i].get_number_of_slices() == 0:
+                    ph.print_info(
+                        "Stack '%s' removed as all slices were deleted" %
+                        stack_name)
+                    stacks[i] = None
+
+        self._stacks = [s for s in stacks if s is not None]
 
     def _check_input(self):
         if type(self._file_paths) is not list:

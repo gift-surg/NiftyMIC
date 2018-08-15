@@ -36,10 +36,9 @@ def main():
         "an isotropic, high-resolution 3D volume from multiple "
         "motion-corrected (or static) stacks of low-resolution slices.",
     )
-    input_parser.add_dir_input()
-    input_parser.add_filenames()
+    input_parser.add_dir_input_mc()
+    input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
-    input_parser.add_image_selection()
     input_parser.add_dir_output(required=True)
     input_parser.add_prefix_output(default="SRR_")
     input_parser.add_suffix_mask(default="_mask")
@@ -53,7 +52,7 @@ def main():
     input_parser.add_data_loss(default="linear")
     input_parser.add_data_loss_scale(default=1)
     input_parser.add_alpha(
-        default=0.02  # TK1L2
+        default=0.01  # TK1L2
         # default=0.006  #TVL2, HuberL2
     )
     input_parser.add_rho(default=0.5)
@@ -62,44 +61,25 @@ def main():
     input_parser.add_iterations(default=15)
     input_parser.add_subfolder_comparison()
     input_parser.add_provide_comparison(default=0)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_use_masks_srr(default=0)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
 
-    # Neither '--dir-input' nor '--filenames' was specified
-    if args.filenames is not None and args.dir_input is not None:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames' "
-            "but not both together")
-
-    # '--dir-input' specified
-    elif args.dir_input is not None:
-        data_reader = dr.ImageSlicesDirectoryReader(
-            path_to_directory=args.dir_input,
-            suffix_mask=args.suffix_mask,
-            image_selection=args.image_selection)
-
-    # '--filenames' specified
-    elif args.filenames is not None:
-        data_reader = dr.MultipleImagesReader(
-            file_paths=args.filenames,
-            file_paths_masks=args.filenames_masks,
-            suffix_mask=args.suffix_mask)
-
-    else:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames'")
+    data_reader = dr.MultipleImagesReader(
+        file_paths=args.filenames,
+        file_paths_masks=args.filenames_masks,
+        suffix_mask=args.suffix_mask,
+        dir_motion_correction=args.dir_input_mc,
+    )
 
     if args.reconstruction_type not in ["TK1L2", "TVL2", "HuberL2"]:
         raise IOError("Reconstruction type unknown")
@@ -107,7 +87,7 @@ def main():
     data_reader.read_data()
     stacks = data_reader.get_data()
     ph.print_info("%d input stacks read for further processing" % len(stacks))
-
+    
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:
         recon0 = \

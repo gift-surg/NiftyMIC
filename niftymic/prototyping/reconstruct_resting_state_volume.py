@@ -65,7 +65,7 @@ def main():
     input_parser.add_bias_field_correction(default=0)
     input_parser.add_intensity_correction(default=0)
     input_parser.add_isotropic_resolution(default=1)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_write_motion_correction(default=1)
     input_parser.add_provide_comparison(default=1)
     input_parser.add_verbose(default=1)
@@ -84,14 +84,8 @@ def main():
     input_parser.print_arguments(args)
 
     # Write script execution call
-    if args.log_script_execution:
-        performed_script_execution = ph.get_performed_script_execution(
-            os.path.basename(__file__), args)
-        ph.write_performed_script_execution_to_executable_file(
-            performed_script_execution,
-            os.path.join(args.dir_output,
-                         "log_%s_script_execution.sh" % (
-                             os.path.basename(__file__).split(".")[0])))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")

@@ -57,7 +57,7 @@ def main():
     input_parser.add_alpha(default=0.01)
     input_parser.add_data_loss(default="linear")
     input_parser.add_data_loss_scale(default=1)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_verbose(default=1)
 
     # Range for parameter sweeps
@@ -77,10 +77,8 @@ def main():
         raise IOError("Either reference (--reference) or reconstruction space "
                       "(--reconstruction-space) must be provided.")
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")

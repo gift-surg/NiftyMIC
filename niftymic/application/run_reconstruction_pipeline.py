@@ -45,7 +45,7 @@ def main():
     input_parser.add_prefix_output(default="")
     input_parser.add_search_angle(default=180)
     input_parser.add_multiresolution(default=0)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_dir_input_templates(default=DIR_TEMPLATES)
     input_parser.add_isotropic_resolution()
     input_parser.add_reference()
@@ -55,30 +55,37 @@ def main():
     input_parser.add_iter_max(default=10)
     input_parser.add_two_step_cycles(default=3)
     input_parser.add_option(
+        option_string="--run-bias-field-correction",
+        type=int,
+        help="Turn on/off bias field correction. "
+        "If off, it is assumed that this step was already performed",
+        default=1)
+    input_parser.add_option(
         option_string="--run-recon-subject-space",
         type=int,
-        help="Turn on/off reconstruction in subject space",
+        help="Turn on/off reconstruction in subject space. "
+        "If off, it is assumed that this step was already performed",
         default=1)
     input_parser.add_option(
         option_string="--run-recon-template-space",
         type=int,
-        help="Turn on/off reconstruction in template space",
+        help="Turn on/off reconstruction in template space. "
+        "If off, it is assumed that this step was already performed",
         default=1)
     input_parser.add_option(
         option_string="--run-data-vs-simulated-data",
         type=int,
         help="Turn on/off comparison of data vs data simulated from the "
-        "obtained volumetric reconstruction",
+        "obtained volumetric reconstruction. "
+        "If off, it is assumed that this step was already performed",
         default=1)
     input_parser.add_outlier_rejection(default=1)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     prefix_bias = "N4ITK_"
     prefix_ic = "IC_"
@@ -100,7 +107,7 @@ def main():
     else:
         target_stack = args.target_stack
 
-    if args.bias_field_correction:
+    if args.bias_field_correction and args.run_bias_field_correction:
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(args.filenames))
         cmd_args.append("--dir-output %s" % dir_output_preprocessing)
@@ -113,6 +120,11 @@ def main():
         if exit_code != 0:
             raise RuntimeError("Bias field correction failed")
         elapsed_time_bias = ph.stop_timing(time_start_bias)
+        filenames = [os.path.join(dir_output_preprocessing, "%s%s" % (
+            prefix_bias, os.path.basename(f)))
+            for f in args.filenames]
+    elif args.bias_field_correction and not args.run_bias_field_correction:
+        elapsed_time_bias = ph.get_zero_time()
         filenames = [os.path.join(dir_output_preprocessing, "%s%s" % (
             prefix_bias, os.path.basename(f)))
             for f in args.filenames]
@@ -169,15 +181,18 @@ def main():
                 dir_output_recon_subject_space, p.match(f).group(0))
             for f in os.listdir(dir_output_recon_subject_space)
             if p.match(f)][0]
+        reconstruction = re.sub(
+            "%s.nii.gz" % args.suffix_mask, ".nii.gz", reconstruction)
         cmd_args = []
-        cmd_args.append("--moving %s" % reconstruction)
         cmd_args.append("--fixed %s" % template)
-        # cmd_args.append("--template-mask %s" % template_mask)
-        cmd_args.append("--dir-input %s" % os.path.join(
+        cmd_args.append("--moving %s" % reconstruction)
+        cmd_args.append("--fixed-mask %s" % template_mask)
+        cmd_args.append("--moving-mask %s" %
+                        ph.append_to_filename(reconstruction, args.suffix_mask))
+        cmd_args.append("--dir-input-mc %s" % os.path.join(
             dir_output_recon_subject_space,
             "motion_correction"))
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
         cmd = "niftymic_register_image %s" % (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
@@ -192,10 +207,11 @@ def main():
         #     for f in os.listdir(dir_output_recon_template_space)
         #     if p.match(f)][0]
 
-        dir_input = os.path.join(
+        dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
         cmd_args = []
-        cmd_args.append("--dir-input %s" % dir_input)
+        cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--dir-input-mc %s" % dir_input_mc)
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
         cmd_args.append("--reconstruction-space %s" % template)
         cmd_args.append("--iter-max %d" % args.iter_max)
@@ -219,6 +235,8 @@ def main():
                 "ResamplingToTemplateSpace.nii.gz")}
         key = reconstruction.keys()[0]
         path_to_recon = reconstruction[key]
+        path_to_recon = re.sub(
+            "%s.nii.gz" % args.suffix_mask, ".nii.gz", path_to_recon)
 
         # Copy SRR to output directory
         output = "%sSRR_%s_GW%d.nii.gz" % (
@@ -246,7 +264,7 @@ def main():
 
     if args.run_data_vs_simulated_data:
 
-        dir_input = os.path.join(
+        dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
 
         pattern = "[a-zA-Z0-9_.]+(stacks[0-9]+).*(.nii.gz)"
@@ -261,10 +279,13 @@ def main():
                 "ResamplingToTemplateSpace.nii.gz")}
         key = reconstruction.keys()[0]
         path_to_recon = reconstruction[key]
+        path_to_recon = re.sub(
+            "%s.nii.gz" % args.suffix_mask, ".nii.gz", path_to_recon)
 
         # Get simulated/projected slices
         cmd_args = []
-        cmd_args.append("--dir-input %s" % dir_input)
+        cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--dir-input-mc %s" % dir_input_mc)
         cmd_args.append("--dir-output %s" % dir_output_data_vs_simulatd_data)
         cmd_args.append("--reconstruction %s" % path_to_recon)
         cmd_args.append("--copy-data 1")
