@@ -989,7 +989,11 @@ class InputArgparser(object):
         # Add information on default value in case provided
         if 'default' in kwargs.keys():
 
-            txt_default = " [default: %s]" % (str(kwargs['default']))
+            if type(kwargs['default']) == list:
+                txt = " ".join([str(i) for i in kwargs['default']])
+            else:
+                txt = str(kwargs['default'])
+            txt_default = " [default: %s]" % txt
 
             # Case where 'required' key is given:
             if 'required' in kwargs.keys():
