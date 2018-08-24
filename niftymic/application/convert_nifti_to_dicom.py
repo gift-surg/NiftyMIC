@@ -8,7 +8,7 @@
 
 # NOTES (quite some candidates were tried to get a working solution):
 #
-# - nifti2dicom:
+# - nifti2dicom (https://packages.ubuntu.com/xenial/science/nifti2dicom; tested version 0.4.11):
 #   Although nifti2dicom allows the import of a DICOM header from a template
 #   (-d) not all tags would be set correctly. E.g. if DOB is not given at
 #   template, it would just be set to 01.01.1990 which would prevent the
@@ -19,13 +19,13 @@
 #   However, it does a good job in creating a series of 2D DICOM slices from a
 #   NIfTI file (including correct image orientation!).
 #
-# - medcon:
+# - medcon (https://packages.ubuntu.com/xenial/medcon; tested version 0.14.1):
 #   A single 3D dcm file can be created but image orientation is flawed
 #   when created from a nifti file directly.
 #   However, if a 3D stack is created from a set of 2D dicoms, the orientation
 #   stays correct.
 #
-# - pydicom:
+# - pydicom (https://github.com/pydicom/pydicom; tested version 1.0.2):
 #   Can only read a single 3D dcm file. In particular, it is not possible
 #   to read a set of 2D slices unless a DICOMDIR is provided which is not
 #   always guaranteed to exist (I tried to create it from 2D slices using
@@ -93,17 +93,16 @@ def main():
     # Create set of 2D DICOM slices from 3D NIfTI image
     # (correct image orientation!)
     ph.print_title("Create set of 2D DICOM slices from 3D NIfTI image")
-    cmd_args = []
+    cmd_args = ["nifti2dicom"]
     cmd_args.append("-i %s" % args.filename)
     cmd_args.append("-o %s" % dir_output_2d_slices)
     cmd_args.append("-y")
-    cmd = "nifti2dicom %s" % " ".join(cmd_args)
-    ph.execute_command(cmd)
+    ph.execute_command(" ".join(cmd_args))
 
     # Combine set of 2D DICOM slices to form 3D DICOM image
     # (image orientation stays correct)
     ph.print_title("Combine set of 2D DICOM slices to form 3D DICOM image")
-    cmd_args = []
+    cmd_args = ["medcon"]
     cmd_args.append("-f %s/*.dcm" % dir_output_2d_slices)
     cmd_args.append("-o %s" % path_to_output)
     cmd_args.append("-c dicom")
@@ -111,8 +110,7 @@ def main():
     cmd_args.append("-n")
     cmd_args.append("-qc")
     cmd_args.append("-w")
-    cmd = "medcon %s" % " ".join(cmd_args)
-    ph.execute_command(cmd)
+    ph.execute_command(" ".join(cmd_args))
 
     # Update all relevant DICOM tags accordingly
     ph.print_title("Update all relevant DICOM tags accordingly")
