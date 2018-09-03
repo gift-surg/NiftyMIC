@@ -15,6 +15,7 @@ import os
 import pysitk.simple_itk_helper as sitkh
 import niftymic.base.stack as st
 import niftymic.registration.simple_itk_registration as regsitk
+import niftymic.registration.niftyreg as nreg
 import niftymic.utilities.segmentation_propagation as segprop
 from niftymic.definitions import DIR_TEST
 
@@ -33,7 +34,8 @@ class SegmentationPropagationTest(unittest.TestCase):
 
         filename = "fetal_brain_0"
 
-        parameters_gd = (0.1, 0.2, -0.3, 0, -4, 10)
+        parameters_gd = (0.1, 0.2, -0.3, 0, 0, 0)
+        # parameters_gd = np.zeros(6)
 
         template = st.Stack.from_filename(
             os.path.join(self.dir_test_data, filename + ".nii.gz"),
@@ -49,8 +51,6 @@ class SegmentationPropagationTest(unittest.TestCase):
         stack = st.Stack.from_sitk_image(stack_sitk,
                                          filename="stack")
 
-        # sitkh.show_sitk_image([template.sitk, stack_sitk])
-
         optimizer = "RegularStepGradientDescent"
         optimizer_params = {
             'learningRate': 1,
@@ -58,19 +58,14 @@ class SegmentationPropagationTest(unittest.TestCase):
             'numberOfIterations': 300
         }
 
-        # optimizer="ConjugateGradientLineSearch"
-        # optimizer_params="{'learningRate': 1, 'numberOfIterations': 100}"
-
         registration = regsitk.SimpleItkRegistration(
-            initializer_type="MOMENTS",
+            initializer_type="SelfGEOMETRY",
             use_verbose=True,
             metric="MeanSquares",
             optimizer=optimizer,
             optimizer_params=optimizer_params,
-            use_multiresolution_framework=True,
+            use_multiresolution_framework=False,
         )
-        # registration = regitk.CppItkRegistration()
-        # registration = regniftyreg.RegAladin()
 
         segmentation_propagation = segprop.SegmentationPropagation(
             stack=stack,
@@ -80,14 +75,13 @@ class SegmentationPropagationTest(unittest.TestCase):
         )
         segmentation_propagation.run_segmentation_propagation()
         foo = segmentation_propagation.get_segmented_stack()
-        # sitkh.show_stacks(
-        #     [template, foo, stack],
-        #     label=["template", "stack_prop", "stack_orig"]
-        # )
 
+        # Get transform and force center = 0
         transform = segmentation_propagation.get_registration_transform_sitk()
+        transform = sitkh.get_composite_sitk_euler_transform(
+            transform, sitk.Euler3DTransform())
         parameters = sitk.Euler3DTransform(
             transform.GetInverse()).GetParameters()
 
         self.assertEqual(np.round(
-            np.linalg.norm(np.array(parameters) - parameters_gd), decimals=0), 0)
+            np.linalg.norm(np.array(parameters) - parameters_gd), decimals=4), 0)
