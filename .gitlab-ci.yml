@@ -1,6 +1,6 @@
 # -----------------------------------Set Up------------------------------------
 variables:
-    PY_VERSION: 2
+    PY_VERSION: 3
     PRIVATE: 0
     TMPDIR: ./tmp
     DATADIR: /home/mebner/data/ci/FetalBrain
