@@ -124,7 +124,8 @@ reconstruct_volume_from_slices:
   script:    
     - >
       niftymic_reconstruct_volume_from_slices
-      --dir-input ${DATADIR}/motion_correction_oriented
+      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
+      --suffix-mask _mask
       --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
       --dir-output ${TMPDIR} 
       --verbose 0
