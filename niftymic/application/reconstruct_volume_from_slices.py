@@ -111,12 +111,11 @@ def main():
                 stacks[args.target_stack_index].get_resampled_stack(
                     resampling_grid=stack.sitk,
                     interpolator="NearestNeighbor",
-                    ))
+                ))
             intensity_corrector.run_linear_intensity_correction()
             stacks[i] = intensity_corrector.get_intensity_corrected_stack()
             print("done (c1 = %g) " %
                   intensity_corrector.get_intensity_correction_coefficients())
-
 
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:
@@ -124,6 +123,12 @@ def main():
             stacks[args.target_stack_index].get_isotropically_resampled_stack(
                 resolution=args.isotropic_resolution,
                 extra_frame=args.extra_frame_target)
+        recon0 = recon0.get_cropped_stack_based_on_mask(
+            boundary_i=args.extra_frame_target,
+            boundary_j=args.extra_frame_target,
+            boundary_k=args.extra_frame_target,
+            unit="mm",
+        )
 
     # Reconstruction space was provided by user
     else:
