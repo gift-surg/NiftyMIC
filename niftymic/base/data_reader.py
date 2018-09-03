@@ -235,6 +235,15 @@ class MultipleImagesReader(ImageDataReader):
                 stack_name = ph.strip_filename_extension(
                     os.path.basename(file_path))[0]
 
+                path_to_stack_transform = os.path.join(
+                    abs_path_to_directory, "%s.tfm" % stack_name)
+                if ph.file_exists(path_to_stack_transform):
+                    transform_stack_sitk = sitkh.read_transform_sitk(path_to_stack_transform)
+                    transform_stack_sitk_inv = sitkh.read_transform_sitk(path_to_stack_transform, inverse=True)
+                    stacks[i].update_motion_correction(transform_stack_sitk)
+                else:
+                    transform_stack_sitk_inv = sitk.Euler3DTransform()
+
                 pattern_trafo_slices = stack_name + self._prefix_slice + \
                     "([0-9]+)[.]tfm"
                 p = re.compile(pattern_trafo_slices)
@@ -248,6 +257,8 @@ class MultipleImagesReader(ImageDataReader):
                     if i_slice in dic_slice_transforms.keys():
                         transform_slice_sitk = sitkh.read_transform_sitk(
                             dic_slice_transforms[i_slice])
+                        transform_slice_sitk = sitkh.get_composite_sitk_affine_transform(
+                            transform_slice_sitk, transform_stack_sitk_inv)
                         slices[i_slice].update_motion_correction(
                             transform_slice_sitk)
                     else:

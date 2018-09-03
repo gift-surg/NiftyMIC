@@ -280,8 +280,11 @@ class Slice:
         return affine_transforms, motion_corrections
 
     def set_registration_history(self, registration_history):
-        self._history_affine_transforms = list(registration_history[0])
-        self._history_motion_corrections = list(registration_history[1])
+        affine_transform_sitk = registration_history[0][-1]
+        self._update_affine_transform(affine_transform_sitk)
+
+        self._history_affine_transforms = [a for a in registration_history[0]]
+        self._history_motion_corrections = [t for t in registration_history[1]]
 
     # Display slice with external viewer (ITK-Snap)
     #  \param[in] show_segmentation display slice with or without associated segmentation (default=0)
@@ -335,7 +338,8 @@ class Slice:
                 image_sitk = sitk.Cast(self.sitk, sitk.sitkFloat32)
             else:
                 image_sitk = self.sitk
-            sitkh.write_nifti_image_sitk(image_sitk, full_file_name + ".nii.gz")
+            sitkh.write_nifti_image_sitk(
+                image_sitk, full_file_name + ".nii.gz")
 
             # Write mask to specified location if given
             if self.sitk_mask is not None:
@@ -350,7 +354,6 @@ class Slice:
                 # self.get_affine_transform(),
                 self.get_motion_correction_transform(),
                 full_file_name + ".tfm")
-
 
         # print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
         # print("Transformation of slice %r of stack %s was successfully

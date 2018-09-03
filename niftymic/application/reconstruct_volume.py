@@ -196,6 +196,7 @@ def main():
         intensity_corrector = ic.IntensityCorrection()
         intensity_corrector.use_individual_slice_correction(False)
         intensity_corrector.use_reference_mask(True)
+        intensity_corrector.use_stack_mask(True)
         intensity_corrector.use_verbose(False)
 
         for i, stack in enumerate(stacks):
@@ -208,7 +209,9 @@ def main():
             intensity_corrector.set_stack(stack)
             intensity_corrector.set_reference(
                 stacks[args.target_stack_index].get_resampled_stack(
-                    resampling_grid=stack.sitk))
+                    resampling_grid=stack.sitk,
+                    interpolator="NearestNeighbor",
+                ))
             intensity_corrector.run_linear_intensity_correction()
             stacks[i] = intensity_corrector.get_intensity_corrected_stack()
             print("done (c1 = %g) " %
