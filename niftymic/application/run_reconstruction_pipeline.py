@@ -233,7 +233,7 @@ def main():
             for f in os.listdir(dir_output_recon_template_space)
             if p.match(f) and not p.match(f).group(0).endswith(
                 "ResamplingToTemplateSpace.nii.gz")}
-        key = reconstruction.keys()[0]
+        key = list(reconstruction.keys())[0]
         path_to_recon = reconstruction[key]
         path_to_recon = re.sub(
             "%s.nii.gz" % args.suffix_mask, ".nii.gz", path_to_recon)
@@ -277,7 +277,7 @@ def main():
             for f in os.listdir(dir_output_recon_template_space)
             if p.match(f) and not p.match(f).group(0).endswith(
                 "ResamplingToTemplateSpace.nii.gz")}
-        key = reconstruction.keys()[0]
+        key = list(reconstruction.keys())[0]
         path_to_recon = reconstruction[key]
         path_to_recon = re.sub(
             "%s.nii.gz" % args.suffix_mask, ".nii.gz", path_to_recon)
