@@ -1,7 +1,7 @@
 # -----------------------------------Set Up------------------------------------
 variables:
     PY_VERSION: 2
-    CMICLAB: 1
+    PRIVATE: 0
     TMPDIR: ./tmp
     DATADIR: /home/mebner/data/ci/FetalBrain
     VENV: pysitk-test-py${PY_VERSION}
@@ -42,12 +42,12 @@ before_script:
     - cp -v ${ITK_DIR}/Wrapping/Generators/Python/WrapITK.pth ${py_sitepkg}
 
     - cd $cwd_dir
-    # If cmiclab is used:
+    # If PRIVATE is used:
     # add CI_JOB_TOKEN for cloning dependent repositories in requirements.txt
     # (https://docs.gitlab.com/ee/user/project/new_ci_build_permissions_model.html#dependent-repositories)
     - >
-      (if [ ${CMICLAB} == 1 ];
-      then sed -i -- "s#github.com/gift-surg#gitlab-ci-token:${CI_JOB_TOKEN}@cmiclab.cs.ucl.ac.uk/GIFT-Surg#g" requirements.txt;
+      (if [ ${PRIVATE} == 1 ];
+      then sed -i -- "s#github.com/gift-surg#gitlab-ci-token:${CI_JOB_TOKEN}@PRIVATE.cs.ucl.ac.uk/GIFT-Surg#g" requirements.txt;
       fi);
     # install requirements
     - pip install -r requirements.txt
@@ -106,7 +106,7 @@ run_reconstruction_pipeline:
       --filenames ${DATADIR}/input_data/axial.nii.gz
       --dir-input-templates ${DATADIR}/templates
       --dir-output ${TMPDIR} 
-      --gestational-age 33
+      --gestational-age 28
       --bias-field-correction 1
       --two-step-cycles 0
       --iter-max 1
