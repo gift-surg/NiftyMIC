@@ -277,7 +277,7 @@ class SliceAcqusition:
         resampler.SetDefaultPixelValue(0.0)
 
         # Set output image information
-        resampler.SetSize((self._output_size[0], self._output_size[1], 1))
+        resampler.SetSize((int(self._output_size[0]), int(self._output_size[1]), 1))
         resampler.SetOutputSpacing(self._output_spacing)
         resampler.SetOutputDirection(
             sitkh.get_itk_from_sitk_direction(output_direction_sitk))
