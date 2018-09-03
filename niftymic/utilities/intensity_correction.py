@@ -275,7 +275,6 @@ class IntensityCorrection(object):
                 else:
                     nda[i, :, :], correction_coefficients[i, :], nda_additional_stack[i, :, :] = self._apply_intensity_correction[
                         correction_model](nda[i, :, :], nda_reference[i, :, :], nda_mask[i, :, :], nda_additional_stack[i, :, :])
-            correction_coefficients[:, ] = np.tile(cc, (N_slices, 1))
         else:
             if self._use_verbose:
                 ph.print_info("Run " + correction_model +
