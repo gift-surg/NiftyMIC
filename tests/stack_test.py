@@ -143,19 +143,19 @@ class StackTest(unittest.TestCase):
         for i in range(stack.get_number_of_slices()):
             # print ("----")
             slice_numbers = [s.get_slice_number() for s in stack.get_slices()]
-            # print slice_numbers
+            # print(slice_numbers)
             indices = np.arange(len(slice_numbers))
             random.shuffle(indices)
-            index = indices[0]
-            # print index
+            index = slice_numbers[indices[0]]
+            # print(index)
             stack.delete_slice(index)
-            # print stack.get_number_of_slices()
+            # print(stack.get_number_of_slices())
 
         # No slice left at the end of the loop
         self.assertEqual(stack.get_number_of_slices(), 0)
 
         # No slice left for deletion
-        self.assertRaises(RuntimeError, lambda: stack.delete_slice(-1))
+        self.assertRaises(ValueError, lambda: stack.delete_slice(-1))
 
     def test_update_write_transform(self):
 

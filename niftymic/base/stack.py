@@ -474,7 +474,7 @@ class Stack:
             self._deleted_slices = sorted(list(set(self._deleted_slices)))
             self._slices[index] = None
         else:
-            raise RuntimeError(
+            raise ValueError(
                 "Slice number must be between 0 and %d" % self._N_slices)
 
 
