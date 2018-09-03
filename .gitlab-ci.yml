@@ -86,32 +86,15 @@ reconstruct_volume_tk1l2:
   script:
     - >
       niftymic_reconstruct_volume
-      --dir-input ${DATADIR}/input_data 
+      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz
       --dir-output ${TMPDIR} 
+      --suffix-mask _mask
       --verbose 0 
       --isotropic-resolution 2
       --reconstruction-type TK1L2
       --two-step-cycles 1
       --iter-max 2
       --iter-max-first 2
-  tags:
-    - gift-adelie
-
-run_reconstruction_pipeline:
-  # only:
-  #   - master
-  script:
-    - >
-      niftymic_run_reconstruction_pipeline
-      --filenames ${DATADIR}/input_data/axial.nii.gz
-      --dir-input-templates ${DATADIR}/templates
-      --dir-output ${TMPDIR} 
-      --gestational-age 28
-      --bias-field-correction 1
-      --two-step-cycles 0
-      --iter-max 1
-      --run-data-vs-simulated-data 1
-      --verbose 0 
   tags:
     - gift-adelie
 
@@ -122,8 +105,9 @@ reconstruct_volume_huberl2:
   script:
     - >
       niftymic_reconstruct_volume
-      --dir-input ${DATADIR}/input_data 
+      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
       --dir-output ${TMPDIR} 
+      --suffix-mask _mask
       --verbose 0 
       --isotropic-resolution 2
       --reconstruction-type HuberL2
@@ -148,6 +132,25 @@ reconstruct_volume_from_slices:
       --iter-max 2
   tags:
     - gift-adelie  
+
+run_reconstruction_pipeline:
+  # only:
+  #   - master
+  script:
+    - >
+      niftymic_run_reconstruction_pipeline
+      --filenames ${DATADIR}/input_data/axial.nii.gz
+      --dir-input-templates ${DATADIR}/templates
+      --dir-output ${TMPDIR} 
+      --suffix-mask _mask
+      --gestational-age 28
+      --bias-field-correction 1
+      --two-step-cycles 0
+      --iter-max 1
+      --run-data-vs-simulated-data 1
+      --verbose 0 
+  tags:
+    - gift-adelie
 
 param_study_huberl2:
   # only:
