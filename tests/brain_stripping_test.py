@@ -58,7 +58,7 @@ class BrainStrippingTest(unittest.TestCase):
 
     def test_02_brain_mask(self):
         path_to_reference = os.path.join(
-            self.dir_data, "brain_stripping", "axial_seg.nii.gz")
+            DIR_TEST, "case-studies", "fetal-brain", "brain_stripping", "axial_seg.nii.gz")
 
         brain_stripping = bs.BrainStripping.from_filename(
             self.dir_data, self.filename)
