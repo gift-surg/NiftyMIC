@@ -98,22 +98,26 @@ def main():
 
         # initialize image data array(s)
         nda = np.zeros_like(sitk.GetArrayFromImage(stack.sitk))
+        nda[:] = np.nan
 
         if args.reconstruction_mask:
             nda_mask = np.zeros_like(sitk.GetArrayFromImage(stack.sitk_mask))
 
-        # Simulate slices at estimated positions within reconstructed volume
-        simulated_slices = [
-            linear_operators.A(
-                reconstruction, s, interpolator_mask=args.interpolator_mask)
-            for s in stack.get_slices()
-        ]
+        slices = stack.get_slices()
+        kept_indices = [s.get_slice_number() for s in slices]
 
         # Fill stack information "as if slice was acquired consecutively"
         # Therefore, simulated stack slices correspond to acquired slices
         # (in case motion correction was correct)
-        for j, simulated_slice in enumerate(simulated_slices):
-            nda[j, :, :] = sitk.GetArrayFromImage(simulated_slice.sitk)
+        for j in range(nda.shape[0]):
+            if j in kept_indices:
+                index = kept_indices.index(j)
+                simulated_slice = linear_operators.A(
+                    reconstruction,
+                    slices[index],
+                    interpolator_mask=args.interpolator_mask
+                )
+                nda[j, :, :] = sitk.GetArrayFromImage(simulated_slice.sitk)
 
             if args.reconstruction_mask:
                 nda_mask[j, :, :] = sitk.GetArrayFromImage(
