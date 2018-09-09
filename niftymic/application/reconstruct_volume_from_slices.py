@@ -37,9 +37,9 @@ def main():
         "an isotropic, high-resolution 3D volume from multiple "
         "motion-corrected (or static) stacks of low-resolution slices.",
     )
-    input_parser.add_dir_input_mc()
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
+    input_parser.add_dir_input_mc()
     input_parser.add_dir_output(required=True)
     input_parser.add_prefix_output(default="SRR_")
     input_parser.add_suffix_mask(default="_mask")
@@ -73,6 +73,9 @@ def main():
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
+    if args.reconstruction_type not in ["TK1L2", "TVL2", "HuberL2"]:
+        raise IOError("Reconstruction type unknown")
+
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
 
@@ -82,9 +85,6 @@ def main():
         suffix_mask=args.suffix_mask,
         dir_motion_correction=args.dir_input_mc,
     )
-
-    if args.reconstruction_type not in ["TK1L2", "TVL2", "HuberL2"]:
-        raise IOError("Reconstruction type unknown")
 
     data_reader.read_data()
     stacks = data_reader.get_data()
