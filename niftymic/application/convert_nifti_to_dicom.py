@@ -70,7 +70,7 @@ IMAGE_COMMENTS = "*** NOT APPROVED ***"
 def main():
 
     input_parser = InputArgparser(
-        description="Convert obtained SRR from nifti to dicom format",
+        description="Convert NIfTI to DICOM image",
     )
     input_parser.add_filename(required=True)
     input_parser.add_option(
@@ -86,7 +86,7 @@ def main():
     input_parser.add_argument(
         "--volume", "-volume",
         action='store_true',
-        help="If given, the DICOM file is combined as 3D volume"
+        help="If given, the output DICOM file is combined as 3D volume"
     )
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
