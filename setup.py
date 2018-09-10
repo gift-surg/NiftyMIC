@@ -105,7 +105,6 @@ setup(name='NiftyMIC',
       entry_points={
           'console_scripts': [
               'niftymic_correct_bias_field = niftymic.application.correct_bias_field:main',
-              'niftymic_correct_intensities = niftymic.application.correct_intensities:main',
               'niftymic_reconstruct_volume = niftymic.application.reconstruct_volume:main',
               'niftymic_reconstruct_volume_from_slices = niftymic.application.reconstruct_volume_from_slices:main',
               'niftymic_register_image = niftymic.application.register_image:main',
