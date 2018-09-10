@@ -34,11 +34,11 @@ def main():
         description="Script to study reconstruction parameters and their "
         "impact on the volumetric reconstruction quality.",
     )
-    input_parser.add_dir_input()
-    input_parser.add_filenames()
-    input_parser.add_image_selection()
-    input_parser.add_dir_output(required=True)
+    input_parser.add_filenames(required=True)
+    input_parser.add_filenames_masks()
     input_parser.add_suffix_mask(default="_mask")
+    input_parser.add_dir_input_mc()
+    input_parser.add_dir_output(required=True)
     input_parser.add_reconstruction_space()
     input_parser.add_reference(
         help="Path to reference NIfTI image file. If given the volumetric "
@@ -57,7 +57,7 @@ def main():
     input_parser.add_alpha(default=0.01)
     input_parser.add_data_loss(default="linear")
     input_parser.add_data_loss_scale(default=1)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_verbose(default=1)
 
     # Range for parameter sweeps
@@ -77,35 +77,18 @@ def main():
         raise IOError("Either reference (--reference) or reconstruction space "
                       "(--reconstruction-space) must be provided.")
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
 
-    # Neither '--dir-input' nor '--filenames' was specified
-    if args.filenames is not None and args.dir_input is not None:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames' "
-            "but not both together")
-
-    # '--dir-input' specified
-    elif args.dir_input is not None:
-        data_reader = dr.ImageSlicesDirectoryReader(
-            path_to_directory=args.dir_input,
-            suffix_mask=args.suffix_mask,
-            image_selection=args.image_selection)
-
-    # '--filenames' specified
-    elif args.filenames is not None:
-        data_reader = dr.MultipleImagesReader(
-            args.filenames, suffix_mask=args.suffix_mask)
-
-    else:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames'")
+    data_reader = dr.MultipleImagesReader(
+        file_paths=args.filenames,
+        file_paths_masks=args.filenames_masks,
+        suffix_mask=args.suffix_mask,
+        dir_motion_correction=args.dir_input_mc,
+    )
 
     data_reader.read_data()
     stacks = data_reader.get_data()

@@ -6,13 +6,11 @@
 #  \date Nov 2016
 
 
-# Import libraries
-import SimpleITK as sitk
-import itk
-import numpy as np
-import unittest
+import os
 import sys
-from scipy.ndimage import imread
+import unittest
+import numpy as np
+import SimpleITK as sitk
 
 # Import modules
 import pysitk.simple_itk_helper as sitkh
@@ -43,9 +41,9 @@ class ParameterNormalizationTest(unittest.TestCase):
         filename_stack_corrupted = "FetalBrain_reconstruction_3stacks_myAlg_corrupted_inplane"
 
         stack_sitk = sitk.ReadImage(
-            self.dir_test_data + filename_stack + ".nii.gz")
+            os.path.join(self.dir_test_data, filename_stack + ".nii.gz"))
         stack_corrupted_sitk = sitk.ReadImage(
-            self.dir_test_data + filename_stack_corrupted + ".nii.gz")
+            os.path.join(self.dir_test_data, filename_stack_corrupted + ".nii.gz"))
 
         stack_corrupted = st.Stack.from_sitk_image(
             stack_corrupted_sitk, "stack_corrupted")
@@ -108,7 +106,7 @@ class ParameterNormalizationTest(unittest.TestCase):
 
             # Check mean
             self.assertEqual(np.round(
-                abs(mean-coefficients[0, i]), decimals=self.accuracy), 0)
+                abs(mean - coefficients[0, i]), decimals=self.accuracy), 0)
 
             # Check standard deviation
             if abs(std) > 1e-8:
@@ -117,4 +115,4 @@ class ParameterNormalizationTest(unittest.TestCase):
 
             # Check parameter values
             self.assertEqual(np.round(
-                np.linalg.norm(parameters_tmp-parameters), decimals=self.accuracy), 0)
+                np.linalg.norm(parameters_tmp - parameters), decimals=self.accuracy), 0)

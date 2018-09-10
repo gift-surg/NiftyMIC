@@ -48,8 +48,7 @@ def main():
         "this region will then be reconstructed by the SRR algorithm which "
         "can substantially reduce the computational time.",
     )
-    input_parser.add_dir_input()
-    input_parser.add_filenames()
+    input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
@@ -68,9 +67,9 @@ def main():
     input_parser.add_dilation_radius(default=3)
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_bias_field_correction(default=0)
-    input_parser.add_intensity_correction(default=0)
+    input_parser.add_intensity_correction(default=1)
     input_parser.add_isotropic_resolution(default=None)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_subfolder_motion_correction()
     input_parser.add_provide_comparison(default=0)
     input_parser.add_subfolder_comparison()
@@ -83,7 +82,7 @@ def main():
     input_parser.add_metric_radius(default=10)
     input_parser.add_reference()
     input_parser.add_reference_mask()
-    input_parser.add_outlier_rejection(default=0)
+    input_parser.add_outlier_rejection(default=1)
     input_parser.add_threshold_first(default=0.6)
     input_parser.add_threshold(default=0.7)
     input_parser.add_use_robust_registration(default=0)
@@ -93,38 +92,18 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # Use FLIRT for volume-to-volume reg. step. Otherwise, RegAladin is used.
-    use_flirt_for_v2v_registration = 0
+    use_flirt_for_v2v_registration = 1
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
-
-    # Neither '--dir-input' nor '--filenames' was specified
-    if args.filenames is not None and args.dir_input is not None:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames' "
-            "but not both together")
-
-    # '--dir-input' specified
-    elif args.dir_input is not None:
-        data_reader = dr.ImageDirectoryReader(
-            args.dir_input, suffix_mask=args.suffix_mask)
-
-    # '--filenames' specified
-    elif args.filenames is not None:
-        data_reader = dr.MultipleImagesReader(
-            file_paths=args.filenames,
-            file_paths_masks=args.filenames_masks,
-            suffix_mask=args.suffix_mask)
-
-    else:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames'")
+    data_reader = dr.MultipleImagesReader(
+        file_paths=args.filenames,
+        file_paths_masks=args.filenames_masks,
+        suffix_mask=args.suffix_mask)
 
     if len(args.boundary_stacks) is not 3:
         raise IOError(
@@ -217,6 +196,7 @@ def main():
         intensity_corrector = ic.IntensityCorrection()
         intensity_corrector.use_individual_slice_correction(False)
         intensity_corrector.use_reference_mask(True)
+        intensity_corrector.use_stack_mask(True)
         intensity_corrector.use_verbose(False)
 
         for i, stack in enumerate(stacks):
@@ -229,7 +209,9 @@ def main():
             intensity_corrector.set_stack(stack)
             intensity_corrector.set_reference(
                 stacks[args.target_stack_index].get_resampled_stack(
-                    resampling_grid=stack.sitk))
+                    resampling_grid=stack.sitk,
+                    interpolator="NearestNeighbor",
+                ))
             intensity_corrector.run_linear_intensity_correction()
             stacks[i] = intensity_corrector.get_intensity_corrected_stack()
             print("done (c1 = %g) " %
@@ -352,10 +334,24 @@ def main():
             stack.write(
                 os.path.join(args.dir_output,
                              args.subfolder_motion_correction),
-                write_mask=True,
-                write_slices=True,
+                write_stack=False,
+                write_mask=False,
+                write_slices=False,
                 write_transforms=True,
-                suffix_mask=args.suffix_mask,
+            )
+
+        if args.outlier_rejection:
+            deleted_slices_dic = {}
+            for i, stack in enumerate(stacks):
+                deleted_slices = stack.get_deleted_slice_numbers()
+                deleted_slices_dic[stack.get_filename()] = deleted_slices
+            ph.write_dictionary_to_json(
+                deleted_slices_dic,
+                os.path.join(
+                    args.dir_output,
+                    args.subfolder_motion_correction,
+                    "rejected_slices.json"
+                )
             )
 
         if args.outlier_rejection:
@@ -417,8 +413,7 @@ def main():
                           segmentation=HR_volume,
                           show_comparison_file=args.provide_comparison,
                           dir_output=os.path.join(
-                              args.dir_output,
-                              args.subfolder_comparison),
+                              args.dir_output, args.subfolder_comparison),
                           )
 
     # Summary

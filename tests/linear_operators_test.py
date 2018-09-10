@@ -22,31 +22,23 @@ import niftymic.validation.simulate_stacks_from_reconstruction as \
     simulate_stacks_from_reconstruction
 from niftymic.definitions import DIR_TMP, DIR_TEST
 
+
 class LinearOperatorsTest(unittest.TestCase):
 
     def setUp(self):
         self.precision = 7
         self.dir_output = os.path.join(DIR_TMP, "reconstruction")
 
-        self.dir_data = os.path.join(DIR_TEST, "reconstruction")
-        self.filenames = [
-            "IC_N4ITK_HASTE_exam_3.5mm_800ms_3",
-            # "IC_N4ITK_HASTE_exam_3.5mm_800ms_4",
-            # "IC_N4ITK_HASTE_exam_3.5mm_800ms_5",
-            # "IC_N4ITK_HASTE_exam_3.5mm_800ms_6",
-            # "IC_N4ITK_HASTE_exam_3.5mm_800ms_7",
-        ]
-        self.filename_recon = "SRR_stacks5_alpha0p01"
-
-        self.suffix_mask = "_brain"
-        self.paths_to_filenames = [
-            os.path.join(self.dir_data, "motion_correction", f + ".nii.gz")
-            for f in self.filenames]
-
+        self.dir_data = os.path.join(DIR_TEST, "case-studies", "fetal-brain")
+        self.filename = "axial"
+        self.suffix_mask = "_mask"
+        self.path_to_file = os.path.join(
+            self.dir_data, "input-data", "%s.nii.gz" % self.filename)
+        self.filename_recon = "SRR_stacks3_TK1_lsmr_alpha0p02_itermax5.nii.gz"
         self.path_to_recon = os.path.join(
-            self.dir_data, self.filename_recon + ".nii.gz")
-        self.path_to_recon_mask = os.path.join(
-            self.dir_data, self.filename_recon + self.suffix_mask + ".nii.gz")
+            self.dir_data, "recon_projections", self.filename_recon)
+        self.path_to_recon_mask = ph.append_to_filename(
+            self.path_to_recon, self.suffix_mask)
 
     ##
     # Test forward simulation of stack and associated propagation of
@@ -55,12 +47,7 @@ class LinearOperatorsTest(unittest.TestCase):
     #
     def test_forward_operator_stack(self):
 
-        data_reader = dr.MultipleImagesReader(
-            self.paths_to_filenames, suffix_mask=self.suffix_mask)
-        data_reader.read_data()
-        stacks = data_reader.get_data()
-        stack = stacks[0]
-
+        stack = st.Stack.from_filename(self.path_to_file)
         reconstruction = st.Stack.from_filename(
             self.path_to_recon, self.path_to_recon_mask)
 
@@ -69,22 +56,22 @@ class LinearOperatorsTest(unittest.TestCase):
             reconstruction, stack, interpolator_mask="Linear")
         simulated_stack.set_filename(stack.get_filename() + "_sim")
 
-        # sitkh.show_stacks([stack, simulated_stack])
-        # simulated_stack.show(1)
-        # reconstruction.show(1)
-        # stack.show(1)
+        # sitkh.show_stacks(
+        #     [stack, simulated_stack], segmentation=simulated_stack)
 
-        filename_reference = "IC_N4ITK_HASTE_exam_3.5mm_800ms_3_simulated"
+        filename_reference = os.path.join(
+            self.dir_data,
+            "recon_projections",
+            "stack",
+            "%s_sim.nii.gz" % self.filename)
+        filename_reference_mask = os.path.join(
+            self.dir_data,
+            "recon_projections",
+            "stack",
+            "%s_sim%s.nii.gz" % (self.filename, self.suffix_mask))
+
         reference_simulated_stack = st.Stack.from_filename(
-            os.path.join(
-                self.dir_data,
-                "result-comparison",
-                filename_reference + ".nii.gz"),
-            os.path.join(
-                self.dir_data,
-                "result-comparison",
-                filename_reference + self.suffix_mask + ".nii.gz")
-        )
+            filename_reference, filename_reference_mask)
 
         # Error simulated stack
         difference_sitk = simulated_stack.sitk - \
@@ -107,15 +94,49 @@ class LinearOperatorsTest(unittest.TestCase):
     def test_simulate_stacks_from_slices(self):
 
         cmd_args = []
-        cmd_args.append("--dir-input %s" %
-                        os.path.join(self.dir_data, "motion_correction"))
+        cmd_args.append("--filenames %s" % self.path_to_file)
+        cmd_args.append("--dir-input-mc %s" %
+                        os.path.join(
+                            self.dir_data,
+                            "recon_projections",
+                            "motion_correction"))
         cmd_args.append("--reconstruction %s" % self.path_to_recon)
         cmd_args.append("--reconstruction-mask %s" % self.path_to_recon_mask)
         cmd_args.append("--copy-data 1")
-        cmd_args.append("--suffix-mask _brain")
-        # cmd_args.append("--verbose 1")
+        cmd_args.append("--suffix-mask %s" % self.suffix_mask)
         cmd_args.append("--dir-output %s" % self.dir_output)
 
         exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
         self.assertEqual(ph.execute_command(cmd), 0)
+
+        path_orig = os.path.join(self.dir_output, "%s.nii.gz" % self.filename)
+        path_sim = os.path.join(
+            self.dir_output, "Simulated_%s.nii.gz" % self.filename)
+        path_sim_mask = os.path.join(
+            self.dir_output, "Simulated_%s%s.nii.gz" % (self.filename, self.suffix_mask))
+
+        path_orig_ref = os.path.join(self.dir_data,
+                                     "recon_projections",
+                                     "slices",
+                                     "%s.nii.gz" % self.filename)
+        path_sim_ref = os.path.join(self.dir_data,
+                                    "recon_projections",
+                                    "slices",
+                                    "Simulated_%s.nii.gz" % self.filename)
+        path_sim_mask_ref = os.path.join(self.dir_data,
+                                         "recon_projections",
+                                         "slices",
+                                         "Simulated_%s%s.nii.gz" % (
+                                             self.filename, self.suffix_mask))
+
+        for res, ref in zip(
+                [path_orig, path_sim, path_sim_mask],
+                [path_orig_ref, path_sim_ref, path_sim_mask_ref]):
+            res_sitk = sitk.ReadImage(res)
+            ref_sitk = sitk.ReadImage(ref)
+
+            nda_diff = np.nan_to_num(
+                sitk.GetArrayFromImage(res_sitk - ref_sitk))
+            self.assertAlmostEqual(np.linalg.norm(
+                nda_diff), 0, places=self.precision)

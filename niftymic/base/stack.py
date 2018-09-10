@@ -7,11 +7,12 @@
 #
 
 
-import SimpleITK as sitk
-import numpy as np
-# Import libraries
 import os
 import re
+import numpy as np
+import SimpleITK as sitk
+
+import simplereg.resampler
 
 import niftymic.base.slice as sl
 import pysitk.python_helper as ph
@@ -30,6 +31,8 @@ class Stack:
     def __init__(self):
         self._is_unity_mask = True
         self._deleted_slices = []
+        self._history_affine_transforms = []
+        self._history_motion_corrections = []
 
     ##
     # Create Stack instance from file and add corresponding mask. Mask is
@@ -91,6 +94,19 @@ class Stack:
 
         # Append itk object
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
+
+        # Store current affine transform of image
+        stack._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(
+            stack.sitk)
+
+        # Prepare history of affine transforms, i.e. encoded spatial
+        #  position+orientation of stack, and motion estimates of stack
+        #  obtained in the course of the registration/reconstruction process
+        stack._history_affine_transforms = []
+        stack._history_affine_transforms.append(stack._affine_transform_sitk)
+
+        stack._history_motion_corrections = []
+        stack._history_motion_corrections.append(sitk.Euler3DTransform())
 
         # Extract all slices and their masks from the stack and store them
         if extract_slices:
@@ -235,6 +251,17 @@ class Stack:
             stack.sitk = stack_sitk
             stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
+            # Store current affine transform of image
+            stack._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(
+                stack.sitk)
+
+            stack._history_affine_transforms = []
+            stack._history_affine_transforms.append(
+                stack._affine_transform_sitk)
+
+            stack._history_motion_corrections = []
+            stack._history_motion_corrections.append(sitk.Euler3DTransform())
+
         stack._N_slices = len(slices)
         stack._slices = slices
 
@@ -263,7 +290,9 @@ class Stack:
                         image_sitk,
                         filename="unknown",
                         image_sitk_mask=None,
-                        extract_slices=True):
+                        extract_slices=True,
+                        slice_numbers=None,
+                        ):
         stack = cls()
 
         stack.sitk = sitk.Image(image_sitk)
@@ -295,10 +324,20 @@ class Stack:
         # Extract all slices and their masks from the stack and store them
         if extract_slices:
             stack._N_slices = stack.sitk.GetSize()[-1]
-            stack._slices = stack._extract_slices()
+            stack._slices = stack._extract_slices(slice_numbers=slice_numbers)
         else:
             stack._N_slices = 0
             stack._slices = None
+
+        # Store current affine transform of image
+        stack._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(
+            stack.sitk)
+
+        stack._history_affine_transforms = []
+        stack._history_affine_transforms.append(stack._affine_transform_sitk)
+
+        stack._history_motion_corrections = []
+        stack._history_motion_corrections.append(sitk.Euler3DTransform())
 
         return stack
 
@@ -328,6 +367,10 @@ class Stack:
             stack._filename = filename
         stack._dir = stack_to_copy.get_directory()
         stack._deleted_slices = stack_to_copy.get_deleted_slice_numbers()
+
+        # Store current affine transform of image
+        stack.set_registration_history(
+            stack_to_copy.get_registration_history())
 
         # Extract all slices and their masks from the stack and store them if
         # given
@@ -381,6 +424,19 @@ class Stack:
         return self._slices[index]
 
     ##
+    # Gets the deleted slice numbers, i.e. misregistered slice numbers detected
+    # by robust outlier algorithm. Indices refer to slice numbers within
+    # original stack
+    # \date       2018-07-08 23:06:24-0600
+    #
+    # \param      self  The object
+    #
+    # \return     The deleted slice numbers as list of integers.
+    #
+    def get_deleted_slice_numbers(self):
+        return list(self._deleted_slices)
+
+    ##
     # Sets the slice.
     # \date       2018-04-18 22:05:28-0600
     #
@@ -404,17 +460,21 @@ class Stack:
     # Delete slice at given index
     # \date       2017-12-01 00:38:56+0000
     #
+    # Note that index refers to list index of slices (0 ... N_slices) whereas
+    # "deleted slice index" refers to actual slice number within original stack
+    #
     # \param      self   The object
     # \param      index  The index
     #
     def delete_slice(self, index):
         # delete slice at given index
         if index in range(self._N_slices):
-            self._slices[index] = None
-            self._deleted_slices.append(index)
+            slice_number = self._slices[index].get_slice_number()
+            self._deleted_slices.append(slice_number)
             self._deleted_slices = sorted(list(set(self._deleted_slices)))
+            self._slices[index] = None
         else:
-            raise RuntimeError(
+            raise ValueError(
                 "Slice number must be between 0 and %d" % self._N_slices)
 
 
@@ -436,6 +496,22 @@ class Stack:
     #  \return string of filename
     def get_filename(self):
         return self._filename
+
+    # Get history history of affine transforms, i.e. encoded spatial
+    #  position+orientation of slice, and rigid motion estimates of slice
+    #  obtained in the course of the registration/reconstruction process
+    #  \return list of sitk.AffineTransform and sitk.Euler3DTransform objects
+    def get_registration_history(self):
+        affine_transforms = list(self._history_affine_transforms)
+        motion_corrections = list(self._history_motion_corrections)
+        return affine_transforms, motion_corrections
+
+    def set_registration_history(self, registration_history):
+        affine_transform_sitk = registration_history[0][-1]
+        self._update_affine_transform(affine_transform_sitk)
+
+        self._history_affine_transforms = [a for a in registration_history[0]]
+        self._history_motion_corrections = [t for t in registration_history[1]]
 
     # Get number of slices of stack
     #  \return number of slices of stack
@@ -474,7 +550,15 @@ class Stack:
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifying the filename. If not given the assigned one within Stack will be chosen.
     #  \param[in] write_slices boolean indicating whether each Slice of the stack shall be written (default=False)
-    def write(self, directory, filename=None, write_mask=False, write_slices=False, write_transforms=False, suffix_mask="_mask"):
+    def write(self,
+              directory,
+              filename=None,
+              write_stack=True,
+              write_mask=False,
+              write_slices=False,
+              write_transforms=False,
+              suffix_mask="_mask",
+              use_float32=True):
 
         # Create directory if not existing
         ph.create_directory(directory)
@@ -486,10 +570,16 @@ class Stack:
         full_file_name = os.path.join(directory, filename)
 
         # Write file to specified location
-        ph.print_info("Write image stack to %s.nii.gz ... " %
-                      (full_file_name), newline=False)
-        sitkh.write_nifti_image_sitk(self.sitk, full_file_name + ".nii.gz")
-        print("done")
+        if write_stack:
+            ph.print_info("Write image stack to %s.nii.gz ... " %
+                          (full_file_name), newline=False)
+            if use_float32:
+                image_sitk = sitk.Cast(self.sitk, sitk.sitkFloat32)
+            else:
+                image_sitk = self.sitk
+            sitkh.write_nifti_image_sitk(
+                image_sitk, full_file_name + ".nii.gz")
+            print("done")
 
         # Write mask to specified location if given
         if self.sitk_mask is not None:
@@ -504,11 +594,15 @@ class Stack:
                         suffix_mask))
                 print("done")
 
-        # print("Stack was successfully written to %s.nii.gz"
-        # %(full_file_name))
+        if write_transforms:
+            stack_transform_sitk = self._history_motion_corrections[-1]
+            sitk.WriteTransform(
+                stack_transform_sitk,
+                os.path.join(directory, self.get_filename() + ".tfm")
+            )
 
         # Write each separate Slice of stack (if they exist)
-        if write_slices:
+        if write_slices or write_transforms:
             try:
                 # Check whether variable exists
                 # if 'self._slices' not in locals() or all(i is None for i in
@@ -521,9 +615,13 @@ class Stack:
 
                 # Write slices
                 else:
-                    if write_transforms:
+                    if write_transforms and write_slices:
                         ph.print_info(
-                            "Write image slices + transforms to %s ... " %
+                            "Write image slices and slice transforms to %s ... " %
+                            directory, newline=False)
+                    elif write_transforms and not write_slices:
+                        ph.print_info(
+                            "Write slice transforms to %s ... " %
                             directory, newline=False)
                     else:
                         ph.print_info(
@@ -534,6 +632,7 @@ class Stack:
                             directory=directory,
                             filename=filename,
                             write_transform=write_transforms,
+                            write_slice=write_slices,
                             suffix_mask=suffix_mask)
                     print("done")
 
@@ -549,8 +648,18 @@ class Stack:
     #
     def update_motion_correction(self, affine_transform_sitk):
 
-        # Update sitk and itk stack position
-        self._update_sitk_and_itk_stack_position(affine_transform_sitk)
+        # Update rigid motion estimate
+        current_rigid_motion_estimate = sitkh.get_composite_sitk_affine_transform(
+            affine_transform_sitk, self._history_motion_corrections[-1])
+        self._history_motion_corrections.append(current_rigid_motion_estimate)
+
+        # New affine transform of slice after rigid motion correction
+        affine_transform = sitkh.get_composite_sitk_affine_transform(
+            affine_transform_sitk, self._affine_transform_sitk)
+
+        # Update affine transform of stack, i.e. change image origin and
+        # direction in physical space
+        self._update_affine_transform(affine_transform)
 
         # Update slices
         if self.get_slices() is not None:
@@ -576,15 +685,25 @@ class Stack:
             raise ValueError("Number of affine transforms does not match the "
                              "number of slices")
 
-    def _update_sitk_and_itk_stack_position(self, affine_transform_sitk):
+    def _update_affine_transform(self, affine_transform_sitk):
 
-        # Apply transform to 3D image / stack of slices
-        self.sitk = sitkh.get_transformed_sitk_image(
-            self.sitk, affine_transform_sitk)
+        # Ensure correct object type
+        self._affine_transform_sitk = sitk.AffineTransform(
+            affine_transform_sitk)
 
-        # Update header information of other associated images
-        origin = self.sitk.GetOrigin()
-        direction = self.sitk.GetDirection()
+        # Append transform to registration history
+        self._history_affine_transforms.append(affine_transform_sitk)
+
+        # Get origin and direction of transformed 3D slice given the new
+        # spatial transform
+        origin = sitkh.get_sitk_image_origin_from_sitk_affine_transform(
+            affine_transform_sitk, self.sitk)
+        direction = sitkh.get_sitk_image_direction_from_sitk_affine_transform(
+            affine_transform_sitk, self.sitk)
+
+        # Update image objects
+        self.sitk.SetOrigin(origin)
+        self.sitk.SetDirection(direction)
 
         self.sitk_mask.SetOrigin(origin)
         self.sitk_mask.SetDirection(direction)
@@ -757,35 +876,27 @@ class Stack:
                 self.sitk_mask,
                 resampling_grid,
                 sitk.Euler3DTransform(),
-                interpolator,
+                sitk.sitkNearestNeighbor,
                 0,
                 self.sitk_mask.GetPixelIDValue())
         else:
-            spacing0 = np.array(self.sitk.GetSpacing())
-            size0 = np.array(self.sitk.GetSize())
-            size = np.round(size0 * spacing0 / spacing).astype("int")
-
-            resampled_stack_sitk = sitk.Resample(
-                self.sitk,
-                size,
-                sitk.Euler3DTransform(),
-                interpolator,
-                self.sitk.GetOrigin(),
-                spacing,
-                self.sitk.GetDirection(),
-                default_pixel_value,
-                self.sitk.GetPixelIDValue())
-
-            resampled_stack_sitk_mask = sitk.Resample(
-                self.sitk_mask,
-                size,
-                sitk.Euler3DTransform(),
-                interpolator,
-                self.sitk.GetOrigin(),
-                spacing,
-                self.sitk.GetDirection(),
-                0,
-                self.sitk_mask.GetPixelIDValue())
+            resampler = simplereg.resampler.Resampler
+            resampled_stack_sitk = resampler.get_resampled_image_sitk(
+                image_sitk=self.sitk,
+                spacing=spacing,
+                interpolator=interpolator,
+                padding=default_pixel_value,
+                add_to_grid=extra_frame,
+                add_to_grid_unit="mm",
+            )
+            resampled_stack_sitk_mask = resampler.get_resampled_image_sitk(
+                image_sitk=self.sitk_mask,
+                spacing=spacing,
+                interpolator=sitk.sitkNearestNeighbor,
+                padding=0,
+                add_to_grid=extra_frame,
+                add_to_grid_unit="mm",
+            )
 
         # Create Stack instance
         if filename is None:
@@ -849,6 +960,9 @@ class Stack:
             spacing_new = np.ones(3) * resolution
             size_new = np.round(spacing / spacing_new * size).astype("int")
 
+        # For Python3: sitk.Resample in Python3 does not like np.int types!
+        size_new = [int(i) for i in size_new]
+
         # Resample image and its mask to isotropic grid
         isotropic_resampled_stack_sitk = sitk.Resample(
             resampled_stack.sitk,
@@ -906,70 +1020,29 @@ class Stack:
         except:
             raise ValueError("Error: interpolator is not known")
 
-        # Read original spacing (voxel dimension) and size of target stack:
-        spacing = np.array(self.sitk.GetSpacing())
-        size = np.array(self.sitk.GetSize()).astype("int")
-        origin = np.array(self.sitk.GetOrigin())
-        direction = self.sitk.GetDirection()
-
         if resolution is None:
-            size_new = size
-            spacing_new = spacing
-            # Update information according to isotropic resolution
-            size_new[2] = np.round(
-                spacing[2] / spacing[0] * size[2]).astype("int")
-            spacing_new[2] = spacing[0]
+            spacing = self.sitk.GetSpacing()[0]
         else:
-            spacing_new = np.ones(3) * resolution
-            size_new = np.round(spacing / spacing_new * size).astype("int")
-
-        if extra_frame is not 0:
-
-            # Get extra_frame in voxel space
-            extra_frame_vox = np.round(
-                extra_frame / spacing_new[0]).astype("int")
-
-            # Compute size of resampled stack by considering additional
-            # extra_frame
-            size_new = size_new + 2 * extra_frame_vox
-
-            # Compute origin of resampled stack by considering additional
-            # extra_frame
-            a_x = self.sitk.TransformIndexToPhysicalPoint((1, 0, 0)) - origin
-            a_y = self.sitk.TransformIndexToPhysicalPoint((0, 1, 0)) - origin
-            a_z = self.sitk.TransformIndexToPhysicalPoint((0, 0, 1)) - origin
-            e_x = a_x / np.linalg.norm(a_x)
-            e_y = a_y / np.linalg.norm(a_y)
-            e_z = a_z / np.linalg.norm(a_z)
-
-            translation = (e_x + e_y + e_z) * extra_frame_vox * spacing_new
-
-            origin = origin - translation
+            spacing = resolution
 
         # Resample image and its mask to isotropic grid
-        default_pixel_value = 0.0
-
-        isotropic_resampled_stack_sitk = sitk.Resample(
-            self.sitk,
-            size_new,
-            sitk.Euler3DTransform(),
-            interpolator,
-            origin,
-            spacing_new,
-            direction,
-            default_pixel_value,
-            self.sitk.GetPixelIDValue())
-
-        isotropic_resampled_stack_sitk_mask = sitk.Resample(
-            self.sitk_mask,
-            size_new,
-            sitk.Euler3DTransform(),
-            sitk.sitkNearestNeighbor,
-            origin,
-            spacing_new,
-            direction,
-            0,
-            self.sitk_mask.GetPixelIDValue())
+        resampler = simplereg.resampler.Resampler
+        isotropic_resampled_stack_sitk = resampler.get_resampled_image_sitk(
+            image_sitk=self.sitk,
+            spacing=spacing,
+            interpolator=interpolator,
+            padding=0.0,
+            add_to_grid=extra_frame,
+            add_to_grid_unit="mm",
+        )
+        isotropic_resampled_stack_sitk_mask = resampler.get_resampled_image_sitk(
+            image_sitk=self.sitk_mask,
+            spacing=spacing,
+            interpolator=sitk.sitkNearestNeighbor,
+            padding=0,
+            add_to_grid=extra_frame,
+            add_to_grid_unit="mm",
+        )
 
         if mask_dilation_radius > 0:
             dilater = sitk.BinaryDilateImageFilter()
@@ -1045,34 +1118,32 @@ class Stack:
         if x_range is None:
             return None
 
+        if unit == "mm":
+            spacing = self.sitk.GetSpacing()
+            boundary_i = np.round(boundary_i / float(spacing[0]))
+            boundary_j = np.round(boundary_j / float(spacing[1]))
+            boundary_k = np.round(boundary_k / float(spacing[2]))
+
+        shape = self.sitk.GetSize()
+        x_range[0] = np.max([0, x_range[0] - boundary_i])
+        x_range[1] = np.min([shape[0], x_range[1] + boundary_i])
+
+        y_range[0] = np.max([0, y_range[0] - boundary_j])
+        y_range[1] = np.min([shape[1], y_range[1] + boundary_j])
+
+        z_range[0] = np.max([0, z_range[0] - boundary_k])
+        z_range[1] = np.min([shape[2], z_range[1] + boundary_k])
+
         # Crop to image region defined by rectangular mask
-        stack_crop_sitk = self._crop_image_to_region(
+        image_crop_sitk = self._crop_image_to_region(
             self.sitk, x_range, y_range, z_range)
+        mask_crop_sitk = self._crop_image_to_region(
+            self.sitk_mask, x_range, y_range, z_range)
 
-        # Increase image region
-        stack_crop_sitk = sitkh.get_altered_field_of_view_sitk_image(
-            stack_crop_sitk, boundary_i, boundary_j, boundary_k, unit=unit)
-
-        # Resample original image and mask to specified image region
-        image_crop_sitk = sitk.Resample(
-            self.sitk,
-            stack_crop_sitk,
-            sitk.Euler3DTransform(),
-            sitk.sitkNearestNeighbor,
-            0,
-            self.sitk.GetPixelIDValue(),
-        )
-        mask_crop_sitk = sitk.Resample(
-            self.sitk_mask,
-            stack_crop_sitk,
-            sitk.Euler3DTransform(),
-            sitk.sitkNearestNeighbor,
-            0,
-            self.sitk_mask.GetPixelIDValue(),
-        )
-
+        slice_numbers = range(z_range[0], z_range[1])
         stack = self.from_sitk_image(
-            image_crop_sitk, self._filename, mask_crop_sitk)
+            image_crop_sitk, self._filename, mask_crop_sitk,
+            slice_numbers=slice_numbers)
 
         return stack
 
@@ -1141,16 +1212,19 @@ class Stack:
 
     # Burst the stack into its slices and return all slices of the stack
     #  return list of Slice objects
-    def _extract_slices(self):
+    def _extract_slices(self, slice_numbers=None):
 
         slices = [None] * self._N_slices
+
+        if slice_numbers is None:
+            slice_numbers = range(0, self._N_slices)
 
         # Extract slices and add masks
         for i in range(0, self._N_slices):
             slices[i] = sl.Slice.from_sitk_image(
                 slice_sitk=self.sitk[:, :, i:i + 1],
                 filename=self._filename,
-                slice_number=i,
+                slice_number=slice_numbers[i],
                 slice_sitk_mask=self.sitk_mask[:, :, i:i + 1])
 
         return slices

@@ -51,6 +51,7 @@ class IntensityCorrection(object):
     def __init__(self,
                  stack=None,
                  reference=None,
+                 use_stack_mask=True,
                  use_reference_mask=True,
                  use_individual_slice_correction=False,
                  use_verbose=False,
@@ -87,6 +88,7 @@ class IntensityCorrection(object):
 
         self._use_verbose = use_verbose
         self._use_reference_mask = use_reference_mask
+        self._use_stack_mask = use_stack_mask
         self._use_individual_slice_correction = use_individual_slice_correction
         self._prefix_corrected = prefix_corrected
 
@@ -134,6 +136,9 @@ class IntensityCorrection(object):
 
     def use_reference_mask(self, use_reference_mask):
         self._use_reference_mask = use_reference_mask
+
+    def use_stack_mask(self, use_stack_mask):
+        self._use_stack_mask = use_stack_mask
 
     ##
     # Sets the use individual slice correction.
@@ -262,7 +267,7 @@ class IntensityCorrection(object):
             for i in range(0, N_slices):
                 if self._use_verbose:
                     sys.stdout.write("Slice %2d/%d: " %
-                                     (i, self._stack.get_number_of_slices()-1))
+                                     (i, self._stack.get_number_of_slices() - 1))
                     sys.stdout.flush()
                 if self._additional_stack is None:
                     nda[i, :, :], correction_coefficients[i, :] = self._apply_intensity_correction[
@@ -270,7 +275,6 @@ class IntensityCorrection(object):
                 else:
                     nda[i, :, :], correction_coefficients[i, :], nda_additional_stack[i, :, :] = self._apply_intensity_correction[
                         correction_model](nda[i, :, :], nda_reference[i, :, :], nda_mask[i, :, :], nda_additional_stack[i, :, :])
-            correction_coefficients[:, ] = np.tile(cc, (N_slices, 1))
         else:
             if self._use_verbose:
                 ph.print_info("Run " + correction_model +
@@ -322,9 +326,9 @@ class IntensityCorrection(object):
             ph.print_info("(c1, c0) = (%.3f, %.3f)" % (c1, c0))
 
         if nda_additional_stack is None:
-            return nda*c1 + c0, np.array([c1, c0])
+            return nda * c1 + c0, np.array([c1, c0])
         else:
-            return nda*c1 + c0, np.array([c1, c0]), nda_additional_stack*c1 + c0
+            return nda * c1 + c0, np.array([c1, c0]), nda_additional_stack * c1 + c0
 
     ##
     #       Perform linear intensity correction via normal equations
@@ -349,15 +353,15 @@ class IntensityCorrection(object):
 
         # ph.show_2D_array_list([nda, nda_reference])
         # Solve via normal equations: c1 = x'y/(x'x)
-        c1 = x.dot(y)/x.dot(x)
+        c1 = x.dot(y) / x.dot(x)
 
         if self._use_verbose:
             ph.print_info("c1 = %.3f" % (c1))
 
         if nda_additional_stack is None:
-            return nda*c1, c1
+            return nda * c1, c1
         else:
-            return nda*c1, c1, nda_additional_stack*c1
+            return nda * c1, c1, nda_additional_stack * c1
 
     ##
     #       Gets the data arrays prior to intensity correction.
@@ -374,9 +378,15 @@ class IntensityCorrection(object):
         nda_reference = sitk.GetArrayFromImage(self._reference.sitk)
 
         if self._use_reference_mask:
-            nda_mask = sitk.GetArrayFromImage(self._reference.sitk_mask)
+            nda_mask_ref = sitk.GetArrayFromImage(self._reference.sitk_mask)
         else:
-            nda_mask = np.ones_like(nda)
+            nda_mask_ref = np.ones_like(nda)
+
+        if self._use_stack_mask:
+            nda_mask_stack = sitk.GetArrayFromImage(self._stack.sitk_mask)
+        else:
+            nda_mask_stack = np.ones_like(nda)
+        nda_mask = nda_mask_ref * nda_mask_stack
 
         if self._additional_stack is None:
             nda_additional_stack = None
@@ -403,4 +413,25 @@ class IntensityCorrection(object):
         image_sitk = sitk.GetImageFromArray(nda)
         image_sitk.CopyInformation(stack.sitk)
 
-        return st.Stack.from_sitk_image(image_sitk, stack.get_filename(), stack.sitk_mask)
+        # Update registration history of stack
+        stack_ic = st.Stack.from_sitk_image(
+            image_sitk, stack.get_filename(), stack.sitk_mask)
+
+        stack_ic.set_registration_history(
+            stack.get_registration_history())
+
+        # Update registration history of slices
+        slices = stack.get_slices()
+        slices_ic = stack_ic.get_slices()
+        kept_slice_numbers = [s.get_slice_number() for s in slices]
+        for i in range(len(slices_ic)):
+            # Update registration of kept slice
+            if i in kept_slice_numbers:
+                index = kept_slice_numbers.index(i)
+                slices_ic[i].set_registration_history(
+                    slices[index].get_registration_history())
+            # Otherwise, delete slices
+            else:
+                stack_ic.delete_slice(i)
+
+        return stack_ic

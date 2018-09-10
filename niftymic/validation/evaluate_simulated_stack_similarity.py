@@ -106,9 +106,13 @@ def main():
         text += "\n"
         ph.write_to_file(path_to_file, text, "w")
         for k in range(nda_3D_original.shape[0]):
-            x_2D_original = nda_3D_original[k, :, :].flatten()
-            x_2D_simulated = nda_3D_simulated[k, :, :].flatten()
-            x_2D_mask = nda_3D_mask[k, :, :].flatten()
+            x_2D_original = nda_3D_original[k, :, :]
+            x_2D_simulated = nda_3D_simulated[k, :, :]
+
+            # zero slice, i.e. rejected during motion correction
+            if np.abs(x_2D_simulated).sum() < 1e-6:
+                x_2D_simulated[:] = np.nan
+            x_2D_mask = nda_3D_mask[k, :, :]
 
             indices = np.where(x_2D_mask > 0)
 
@@ -117,7 +121,7 @@ def main():
                     similarities[m] = similarity_measures[measure](
                         x_2D_original[indices], x_2D_simulated[indices])
                 else:
-                    similarities[m] = np.inf
+                    similarities[m] = np.nan
             ph.write_array_to_file(path_to_file, similarities.reshape(1, -1))
 
     return 0

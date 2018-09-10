@@ -5,19 +5,18 @@
 #  \date May 2016
 
 
-import unittest
 
-# Import libraries
-import SimpleITK as sitk
-import itk
-import numpy as np
 import os
+import itk
+import unittest
+import numpy as np
+import SimpleITK as sitk
+
+import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.psf as psf
-# Import modules
 import niftymic.base.stack as st
 import niftymic.prototyping.simulator_slice_acqusition as sa
-import pysitk.simple_itk_helper as sitkh
 from niftymic.definitions import DIR_TEST
 
 # Pixel type of used 3D ITK image

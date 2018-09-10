@@ -91,7 +91,8 @@ class BrainStripping(object):
                    compute_skull_image=compute_skull_image,
                    dir_tmp=dir_tmp)
         self._sitk = sitkh.read_nifti_image_sitk(
-            dir_input + filename + ".nii.gz", sitk.sitkFloat64)
+            os.path.join(dir_input, "%s.nii.gz" % filename),
+            sitk.sitkFloat64)
 
         return self
 
@@ -223,7 +224,6 @@ class BrainStripping(object):
             raise ValueError("Input image was not read yet.")
 
         return sitk.Image(self._sitk)
-
 
     ##
     # Gets the brain masked stack.
@@ -380,7 +380,7 @@ class BrainStripping(object):
 
         # Go slice by slice
         for i in range(0, shape[0]):
-            slice_mask_sitk = mask_sitk[:, :, i:i+1]
+            slice_mask_sitk = mask_sitk[:, :, i:i + 1]
 
             # Dilate mask of slice
             if dilate_radius > 0:

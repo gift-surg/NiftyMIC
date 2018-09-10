@@ -71,15 +71,14 @@ if __name__ == '__main__':
     input_parser.add_iterations(default=15)
     input_parser.add_subfolder_comparison()
     input_parser.add_provide_comparison(default=0)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_verbose(default=0)
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
     # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")

@@ -41,7 +41,9 @@ def main():
         "correct, the resulting stack of such obtained projected slices, "
         "corresponds to the originally acquired (motion corrupted) data.",
     )
-    input_parser.add_dir_input(required=True)
+    input_parser.add_filenames(required=True)
+    input_parser.add_filenames_masks()
+    input_parser.add_dir_input_mc(required=True)
     input_parser.add_reconstruction(required=True)
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
@@ -63,7 +65,7 @@ def main():
         help="Choose the interpolator type to propagate the reconstruction "
         "mask (%s)." % (INTERPOLATOR_TYPES),
         default="NearestNeighbor")
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
@@ -74,15 +76,16 @@ def main():
             "Unknown interpolator provided. Possible choices are %s" % (
                 INTERPOLATOR_TYPES))
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # Read motion corrected data
-    data_reader = dr.ImageSlicesDirectoryReader(
-        path_to_directory=args.dir_input,
-        suffix_mask=args.suffix_mask)
+    data_reader = dr.MultipleImagesReader(
+        file_paths=args.filenames,
+        file_paths_masks=args.filenames_masks,
+        suffix_mask=args.suffix_mask,
+        dir_motion_correction=args.dir_input_mc,
+    )
     data_reader.read_data()
     stacks = data_reader.get_data()
 
@@ -95,22 +98,26 @@ def main():
 
         # initialize image data array(s)
         nda = np.zeros_like(sitk.GetArrayFromImage(stack.sitk))
+        nda[:] = np.nan
 
         if args.reconstruction_mask:
             nda_mask = np.zeros_like(sitk.GetArrayFromImage(stack.sitk_mask))
 
-        # Simulate slices at estimated positions within reconstructed volume
-        simulated_slices = [
-            linear_operators.A(
-                reconstruction, s, interpolator_mask=args.interpolator_mask)
-            for s in stack.get_slices()
-        ]
+        slices = stack.get_slices()
+        kept_indices = [s.get_slice_number() for s in slices]
 
         # Fill stack information "as if slice was acquired consecutively"
         # Therefore, simulated stack slices correspond to acquired slices
         # (in case motion correction was correct)
-        for j, simulated_slice in enumerate(simulated_slices):
-            nda[j, :, :] = sitk.GetArrayFromImage(simulated_slice.sitk)
+        for j in range(nda.shape[0]):
+            if j in kept_indices:
+                index = kept_indices.index(j)
+                simulated_slice = linear_operators.A(
+                    reconstruction,
+                    slices[index],
+                    interpolator_mask=args.interpolator_mask
+                )
+                nda[j, :, :] = sitk.GetArrayFromImage(simulated_slice.sitk)
 
             if args.reconstruction_mask:
                 nda_mask[j, :, :] = sitk.GetArrayFromImage(

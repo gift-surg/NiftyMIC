@@ -22,6 +22,14 @@ class DataReaderTest(unittest.TestCase):
 
     def setUp(self):
         self.precision = 7
+        self.dir_data = os.path.join(DIR_TEST, "case-studies", "fetal-brain")
+        self.filenames = [
+            os.path.join(self.dir_data,
+                         "input-data",
+                         "%s.nii.gz" % f)
+            for f in ["axial", "coronal", "sagittal"]]
+        self.dir_output = os.path.join(DIR_TMP, "case-studies", "fetal-brain")
+        self.suffix_mask = "_mask"
 
     ##
     # Check that the same number of stacks (and slices therein) are read
@@ -36,12 +44,12 @@ class DataReaderTest(unittest.TestCase):
             "case-studies",
             "fetal-brain",
             "reconstruct_volume",
-            "result-comparison",
             "motion_correction",
         )
 
-        data_reader = dr.ImageSlicesDirectoryReader(
-            directory_motion_correction)
+        data_reader = dr.MultipleImagesReader(
+            file_paths=self.filenames,
+            dir_motion_correction=directory_motion_correction)
         data_reader.read_data()
         stacks = data_reader.get_data()
 

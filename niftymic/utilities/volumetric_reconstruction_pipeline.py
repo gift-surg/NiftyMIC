@@ -265,7 +265,8 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                     robust_motion_estimator.get_robust_transforms_sitk()
 
                 # Export figures
-                title = "%s_Stack%d%s" % (self._print_prefix, i, stack.get_filename())
+                title = "%s_Stack%d%s" % (
+                    self._print_prefix, i, stack.get_filename())
                 title = ph.replace_string_for_print(title)
                 robust_motion_estimator.show_estimated_transform_parameters(
                     dir_output="/tmp/fetal_brain/figs", title=title)
