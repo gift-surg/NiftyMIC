@@ -61,23 +61,10 @@ COPY_DICOM_TAGS = {
     "StudyDescription",
 }
 
-# pydicom to nifti2dicom entries
-# COPY_DICOM_TAGS_DIC = {
-#     # important for grouping
-#     "PatientID": "patientid",
-#     "PatientName": "patientname",
-#     "PatientBirthDate": "patientdob",
-#     "StudyInstanceUID": "studyinstanceuid",
-
-#     # additional information
-#     "StudyID" : "studyid",
-#     "AcquisitionDate": "acquisitiondate",
-#     # "PatientSex": "patientsex",
-#     "Manufacturer": "manufacturer",
-#     "ManufacturerModelName": "manufacturersmodelname",
-#     "Modality" : "modality",
-#     "StudyDescription": "studydescription",
-# }
+INSTITUTION_NAME = "UCL, WEISS"
+ACCESSION_NUMBER = "1"
+SERIES_NUMBER = "0"
+IMAGE_COMMENTS = "*** NOT APPROVED ***"
 
 
 def main():
@@ -121,10 +108,10 @@ def main():
     cmd_args.append("-o %s" % dir_output_2d_slices)
     cmd_args.append("-d %s" % args.template)
     cmd_args.append("--prefix ''")
-    cmd_args.append("--accessionnumber 1")
-    cmd_args.append("--seriesnumber 0")
     cmd_args.append("--seriesdescription '%s'" % args.label)
-    cmd_args.append("--institutionname 'UCL, WEISS'")
+    cmd_args.append("--accessionnumber %s" % ACCESSION_NUMBER)
+    cmd_args.append("--seriesnumber %s" % SERIES_NUMBER)
+    cmd_args.append("--institutionname '%s'" % INSTITUTION_NAME)
     cmd_args.append("-y")
     ph.execute_command(" ".join(cmd_args))
 
@@ -158,11 +145,11 @@ def main():
                 update_dicom_tags[tag] = ""
 
         # Additional tags
-        update_dicom_tags["InstitutionName"] = "UCL, WEISS"
         update_dicom_tags["SeriesDescription"] = args.label
-        update_dicom_tags["ImageComments"] = "*** NOT APPROVED ***"
-        update_dicom_tags["AccessionNumber"] = "1"
-        update_dicom_tags["SeriesNumber"] = "0"
+        update_dicom_tags["InstitutionName"] = INSTITUTION_NAME
+        update_dicom_tags["ImageComments"] = IMAGE_COMMENTS
+        update_dicom_tags["AccessionNumber"] = ACCESSION_NUMBER
+        update_dicom_tags["SeriesNumber"] = SERIES_NUMBER
 
         for tag in sorted(update_dicom_tags.keys()):
             value = update_dicom_tags[tag]
