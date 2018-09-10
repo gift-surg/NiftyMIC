@@ -61,7 +61,7 @@ long_description = "This is a research-focused toolkit developed within the " \
 
 
 setup(name='NiftyMIC',
-      version='0.3rc1',
+      version='0.4rc1',
       description=description,
       long_description=long_description,
       url='https://github.com/gift-surg/NiftyMIC',
