@@ -24,7 +24,7 @@ to obtain the (vectorized) high-resolution 3D MRI volume ![img](http://latex.cod
 for a variety of regularizers ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D) and data loss functions ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho).
 The linear operator ![img](http://latex.codecogs.com/svg.latex?A_k%3A%3DD_kB_kW_k) represents the combined operator describing the (rigid) motion ![img](http://latex.codecogs.com/svg.latex?W_k), the blurring operator ![img](http://latex.codecogs.com/svg.latex?B_k) and the downsampling operator ![img](http://latex.codecogs.com/svg.latex?D_k).
 
-**Complete outlier rejection** of misregistered slices is achieved by solving the SRR problem for a slice-index set 
+The toolkit relies on an iterative motion-correction/reconstruction approach whereby **complete outlier rejection** of misregistered slices is achieved by iteratively solving the SRR problem for a slice-index set 
 ![img](https://latex.codecogs.com/svg.latex?\mathcal{K}_\sigma:=\\{1\le&space;k&space;\le&space;K:&space;\text{Sim}(A_k\vec{\tilde{x}},&space;\vec{y}_k)\ge\sigma\\}\subset&space;\mathcal{K}) containing only slices that are in high agreement with their simulated counterparts projected from a previous high-resolution iterate ![img](http://latex.codecogs.com/svg.latex?\vec{\tilde{x}}) according to a similarity measure ![img](http://latex.codecogs.com/svg.latex?\text{Sim}) and parameter ![img](http://latex.codecogs.com/svg.latex?\sigma>0). In the current implementation, the similarity measure ![img](http://latex.codecogs.com/svg.latex?\text{Sim}) corresponds to Normalized Cross Correlation (NCC).
 
 ---
