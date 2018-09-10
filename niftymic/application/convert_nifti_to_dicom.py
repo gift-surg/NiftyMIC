@@ -112,6 +112,12 @@ def main():
     cmd_args.append("--accessionnumber %s" % ACCESSION_NUMBER)
     cmd_args.append("--seriesnumber %s" % SERIES_NUMBER)
     cmd_args.append("--institutionname '%s'" % INSTITUTION_NAME)
+
+    # Overwrite default "nifti2dicom" tags which would be added otherwise
+    # (no deletion/update with empty '' sufficient to overwrite them)
+    cmd_args.append("--manufacturersmodelname '%s'" % IMAGE_COMMENTS)
+    cmd_args.append("--protocolname '%s'" % IMAGE_COMMENTS)
+
     cmd_args.append("-y")
     ph.execute_command(" ".join(cmd_args))
 
