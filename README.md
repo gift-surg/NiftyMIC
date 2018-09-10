@@ -87,6 +87,17 @@ whose installation requirements need to be met. Therefore, the installation come
 
 Provided the input MR image data in NIfTI format (`nii` or `nii.gz`), NiftyMIC can reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices.
 
+A recommended workflow is [associated applications in square brackets]
+
+1. Bias-field correction [`niftymic_correct_bias_field`]
+1. Volumetric reconstruction in subject space using two-step iterative approach based on rigid slice-to-volume registration and SRR cycles [`niftymic_reconstruct_volume`]
+
+In case reconstruction in a template space is desired (like for fetal MRI) additional steps could be:
+1. Register obtained SRR to template and update respective slice motion corrections [`niftymic_register_image`]
+1. Volumetric reconstruction in template space [`niftymic_reconstruct_volume_from_slices`]
+
+Additional information on how to use NiftyMIC and its applications is provided in the following.
+
 ### Volumetric MR Reconstruction from Motion Corrupted 2D Slices
 Leveraging a two-step registration-reconstruction approach an isotropic, high-resolution 3D volume can be generated from multiple stacks of low-resolution slices.
 
@@ -98,6 +109,22 @@ niftymic_reconstruct_volume \
 --suffix-mask _mask
 ```
 whereby complete outlier removal during SRR is activated by default (`--outlier-rejection 1`).
+
+A more elaborate example could be
+```
+niftymic_reconstruct_volume \
+--filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--dir-output output-dir \
+--suffix-mask _mask \
+--alpha 0.01 \
+--outlier-rejection 1 \
+--threshold-first 0.6 \
+--threshold 0.8 \
+--intensity-correction 1 \
+--isotropic-resolution 0.8 \
+--two-step-cycles 3 \
+--verbose 1
+```
 
 The obtained motion-correction transformations can be used for further processing, e.g. by using `niftymic_reconstruct_volume_from_slices.py` to solve the SRR problem for a variety of different regularization and data loss function types. 
 
@@ -117,7 +144,7 @@ niftymic_reconstruct_volume_from_slices \
 --dir-input-mc dir-to-motion_correction \
 --dir-output output-dir \
 --reconstruction-type TK1L2 \
---alpha 0.03
+--alpha 0.01
 ```
 ```
 niftymic_reconstruct_volume_from_slices \
