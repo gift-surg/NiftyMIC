@@ -2,8 +2,6 @@
 
 NiftyMIC is a Python-based open-source toolkit for research developed within the [GIFT-Surg][giftsurg] project to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
 
-It was developed in Ubuntu 16.04 and Mac OS X 10.12 and tested for Python 2.7.12 and 3.5.2.
-
 The algorithm and software were developed by [Michael Ebner][mebner] at the [Translational Imaging Group][tig] in the [Centre for Medical Image Computing][cmic] at [University College London (UCL)][ucl].
 
 If you have any questions or comments, please drop an email to `michael.ebner.14@ucl.ac.uk`.
