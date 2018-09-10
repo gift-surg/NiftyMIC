@@ -244,7 +244,7 @@ class MultipleImagesReader(ImageDataReader):
                         path_to_stack_transform, inverse=True)
                     stacks[i].update_motion_correction(transform_stack_sitk)
                     ph.print_info(
-                        "Stack %s: Stack position updated" % stack_name)
+                        "Stack '%s': Stack position updated" % stack_name)
                 else:
                     transform_stack_sitk_inv = sitk.Euler3DTransform()
 
@@ -272,7 +272,7 @@ class MultipleImagesReader(ImageDataReader):
                         "Stack '%s' removed as all slices were deleted" %
                         stack_name)
                     stacks[i] = None
-                ph.print_info("Stack %s: Slice positions updated" % stack_name)
+                ph.print_info("Stack '%s': Slice positions updated" % stack_name)
 
         self._stacks = [s for s in stacks if s is not None]
 

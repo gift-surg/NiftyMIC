@@ -6,9 +6,11 @@
 # \date       October 2017
 #
 
-import numpy as np
 import os
 import re
+import numpy as np
+
+import pysitk.python_helper as ph
 
 import niftymic.validation.simulate_stacks_from_reconstruction as \
     simulate_stacks_from_reconstruction
@@ -18,9 +20,10 @@ import niftymic.validation.show_evaluated_simulated_stack_similarity as \
     show_evaluated_simulated_stack_similarity
 import niftymic.validation.export_side_by_side_simulated_vs_original_slice_comparison as \
     export_side_by_side_simulated_vs_original_slice_comparison
-import pysitk.python_helper as ph
-from niftymic.definitions import DIR_TEMPLATES
 from niftymic.utilities.input_arparser import InputArgparser
+
+from niftymic.definitions import DIR_TEMPLATES
+
 
 
 def main():

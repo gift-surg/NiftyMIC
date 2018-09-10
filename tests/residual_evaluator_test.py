@@ -24,6 +24,7 @@ class ResidualEvaluatorTest(unittest.TestCase):
 
     def setUp(self):
         self.precision = 7
+        self.dir_tmp = os.path.join(DIR_TMP, "residual_evaluator")
 
     def test_compute_write_read_slice_similarities(self):
 
@@ -44,11 +45,11 @@ class ResidualEvaluatorTest(unittest.TestCase):
         residual_evaluator = res_ev.ResidualEvaluator(stacks, reference)
         residual_evaluator.compute_slice_projections()
         residual_evaluator.evaluate_slice_similarities()
-        residual_evaluator.write_slice_similarities(DIR_TMP)
+        residual_evaluator.write_slice_similarities(self.dir_tmp)
         slice_similarities = residual_evaluator.get_slice_similarities()
 
         residual_evaluator1 = res_ev.ResidualEvaluator()
-        residual_evaluator1.read_slice_similarities(DIR_TMP)
+        residual_evaluator1.read_slice_similarities(self.dir_tmp)
         slice_similarities1 = residual_evaluator1.get_slice_similarities()
 
         for stack_name in slice_similarities.keys():
