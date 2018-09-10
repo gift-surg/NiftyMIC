@@ -37,7 +37,7 @@ def main():
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_search_angle(default=180)
     input_parser.add_prefix_output(default="IC_")
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_option(
         option_string="--registration",
         type=int,
@@ -49,10 +49,8 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     if args.reference in args.filenames:
         args.filenames.remove(args.reference)

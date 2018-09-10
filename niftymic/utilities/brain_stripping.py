@@ -18,6 +18,7 @@ import nipype.interfaces.fsl
 import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
 
+import niftymic.base.stack as st
 from niftymic.definitions import DIR_TMP
 
 
@@ -58,6 +59,8 @@ class BrainStripping(object):
         self._sitk_brain_mask = None
         self._sitk_skull_image = None
 
+        self._stack = None
+
     ##
     # Initialize brain stripping class based on image to be read
     # \date       2016-10-12 12:19:18+0100
@@ -87,8 +90,9 @@ class BrainStripping(object):
                    compute_brain_mask=compute_brain_mask,
                    compute_skull_image=compute_skull_image,
                    dir_tmp=dir_tmp)
-        self._sitk = sitk.ReadImage(
-            dir_input + filename + ".nii.gz", sitk.sitkFloat64)
+        self._sitk = sitkh.read_nifti_image_sitk(
+            os.path.join(dir_input, "%s.nii.gz" % filename),
+            sitk.sitkFloat64)
 
         return self
 
@@ -120,6 +124,39 @@ class BrainStripping(object):
                    compute_skull_image=compute_skull_image,
                    dir_tmp=dir_tmp)
         self._sitk = sitk.Image(sitk_image)
+
+        return self
+
+    ##
+    # Initialize brain stripping class based on given Stack object
+    # \date       2018-01-18 00:38:53+0000
+    #
+    # \param      cls                  The cls
+    # \param      stack                image as Stack object
+    # \param      compute_brain_image  Boolean flag for computing brain image
+    # \param      compute_brain_mask   Boolean flag for computing brain image
+    #                                  mask
+    # \param      compute_skull_image  Boolean flag for computing skull mask
+    # \param      dir_tmp              Directory where temporary results are
+    #                                  written to, string
+    #
+    # \return     object
+    #
+    @classmethod
+    def from_stack(cls,
+                   stack,
+                   compute_brain_image=False,
+                   compute_brain_mask=True,
+                   compute_skull_image=False,
+                   dir_tmp=os.path.join(DIR_TMP, "BrainExtractionTool")):
+
+        self = cls(compute_brain_image=compute_brain_image,
+                   compute_brain_mask=compute_brain_mask,
+                   compute_skull_image=compute_skull_image,
+                   dir_tmp=dir_tmp)
+
+        self._stack = stack
+        self._sitk = sitk.Image(stack.sitk)
 
         return self
 
@@ -187,6 +224,32 @@ class BrainStripping(object):
             raise ValueError("Input image was not read yet.")
 
         return sitk.Image(self._sitk)
+
+    ##
+    # Gets the brain masked stack.
+    # \date       2018-01-18 00:44:49+0000
+    #
+    # \param      self            The object
+    # \param      filename        The filename
+    # \param      extract_slices  Extract slices of stack; boolean
+    #
+    # \return     Returns image as Stack object holding obtained brain mask
+    #
+    def get_brain_masked_stack(self, filename="Unknown", extract_slices=False):
+        if self._sitk_brain_mask is None:
+            raise ValueError("Brain mask was not asked for. "
+                             "Set option '-m' and run again.")
+
+        if self._stack is not None:
+            filename = self._stack.get_filename()
+
+        stack = st.Stack.from_sitk_image(
+            image_sitk=self._sitk,
+            image_sitk_mask=self._sitk_brain_mask,
+            filename=filename,
+            extract_slices=extract_slices
+        )
+        return stack
 
     ##
     #       Get computed brain image
@@ -317,7 +380,7 @@ class BrainStripping(object):
 
         # Go slice by slice
         for i in range(0, shape[0]):
-            slice_mask_sitk = mask_sitk[:, :, i:i+1]
+            slice_mask_sitk = mask_sitk[:, :, i:i + 1]
 
             # Dilate mask of slice
             if dilate_radius > 0:
@@ -397,12 +460,13 @@ class BrainStripping(object):
         bet.run()
 
         if self._compute_brain_image:
-            self._sitk_brain_image = sitk.ReadImage(
+            self._sitk_brain_image = sitkh.read_nifti_image_sitk(
                 path_to_res, sitk.sitkFloat64)
 
         if self._compute_brain_mask:
-            self._sitk_brain_mask = sitk.ReadImage(
+            self._sitk_brain_mask = sitkh.read_nifti_image_sitk(
                 path_to_res_mask, sitk.sitkUInt8)
 
         if self._compute_skull_image:
-            self._sitk_skull_image = sitk.ReadImage(path_to_res_skull)
+            self._sitk_skull_image = sitkh.read_nifti_image_sitk(
+                path_to_res_skull)

@@ -9,3 +9,6 @@ data/
 *.pyc
 *iterate.dat
 *.egg-info
+*.idea
+*.wiki
+/.project

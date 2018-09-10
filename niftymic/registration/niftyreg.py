@@ -31,7 +31,7 @@ class RegAladin(AffineRegistrationMethod):
                  use_fixed_mask=False,
                  use_moving_mask=False,
                  use_verbose=False,
-                 options="",
+                 options="-voff",
                  registration_type="Rigid",
                  ):
 
@@ -86,15 +86,13 @@ class RegAladin(AffineRegistrationMethod):
         if self.get_registration_type() == "Rigid":
             options += " -rigOnly"
 
-        if not self._use_verbose:
-            options += " -voff"
-
         self._registration_method = simplereg.niftyreg.RegAladin(
             fixed_sitk=self._fixed.sitk,
             moving_sitk=self._moving.sitk,
             fixed_sitk_mask=fixed_sitk_mask,
             moving_sitk_mask=moving_sitk_mask,
             options=options,
+            verbose=self._use_verbose,
         )
         self._registration_method.run()
 
@@ -113,7 +111,7 @@ class RegF3D(RegistrationMethod):
                  use_fixed_mask=False,
                  use_moving_mask=False,
                  use_verbose=False,
-                 options="",
+                 options="-voff",
                  ):
 
         RegistrationMethod.__init__(self,
@@ -160,15 +158,13 @@ class RegF3D(RegistrationMethod):
 
         options = self._options
 
-        if not self._use_verbose:
-            options += " -voff"
-
         self._registration_method = simplereg.niftyreg.RegF3D(
             fixed_sitk=self._fixed.sitk,
             moving_sitk=self._moving.sitk,
             fixed_sitk_mask=fixed_sitk_mask,
             moving_sitk_mask=moving_sitk_mask,
-            options=options
+            options=options,
+            verbose=self._use_verbose,
         )
         self._registration_method.run()
 

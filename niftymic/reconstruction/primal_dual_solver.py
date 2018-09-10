@@ -50,6 +50,7 @@ class PrimalDualSolver(Solver):
                  reg_huber_gamma=0.05,
                  iterations=10,
                  alg_type="ALG2",
+                 use_masks=1,
                  verbose=0,
                  ):
 
@@ -66,6 +67,7 @@ class PrimalDualSolver(Solver):
             huber_gamma=huber_gamma,
             deconvolution_mode=deconvolution_mode,
             predefined_covariance=predefined_covariance,
+            use_masks=use_masks,
             verbose=verbose,
         )
 
@@ -142,6 +144,7 @@ class PrimalDualSolver(Solver):
             x_scale=x_scale,
             data_loss=self._data_loss,
             data_loss_scale=self._data_loss_scale,
+            minimizer=self._minimizer,
             verbose=self._verbose)
 
         if self._reg_type == "TV":

@@ -24,6 +24,7 @@ import niftymic.registration.flirt as regflirt
 import niftymic.registration.niftyreg as niftyreg
 import niftymic.registration.simple_itk_registration as regsitk
 import niftymic.utilities.data_preprocessing as dp
+import niftymic.utilities.intensity_correction as ic
 import niftymic.utilities.segmentation_propagation as segprop
 import niftymic.utilities.volumetric_reconstruction_pipeline as pipeline
 import niftymic.utilities.joint_image_mask_builder as imb
@@ -37,7 +38,6 @@ def main():
     # Set print options for numpy
     np.set_printoptions(precision=3)
 
-    # Read input
     input_parser = InputArgparser(
         description="Volumetric MRI reconstruction framework to reconstruct "
         "an isotropic, high-resolution 3D volume from multiple stacks of 2D "
@@ -48,12 +48,12 @@ def main():
         "this region will then be reconstructed by the SRR algorithm which "
         "can substantially reduce the computational time.",
     )
-    input_parser.add_dir_input()
-    input_parser.add_filenames()
+    input_parser.add_filenames(required=True)
+    input_parser.add_filenames_masks()
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
-    input_parser.add_search_angle(default=90)
+    input_parser.add_search_angle(default=45)
     input_parser.add_multiresolution(default=0)
     input_parser.add_shrink_factors(default=[2, 1])
     input_parser.add_smoothing_sigmas(default=[1, 0])
@@ -67,53 +67,40 @@ def main():
     input_parser.add_dilation_radius(default=3)
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_bias_field_correction(default=0)
-    input_parser.add_intensity_correction(default=0)
+    input_parser.add_intensity_correction(default=1)
     input_parser.add_isotropic_resolution(default=None)
-    input_parser.add_log_script_execution(default=1)
+    input_parser.add_log_config(default=1)
     input_parser.add_subfolder_motion_correction()
     input_parser.add_provide_comparison(default=0)
     input_parser.add_subfolder_comparison()
     input_parser.add_write_motion_correction(default=1)
     input_parser.add_verbose(default=0)
     input_parser.add_two_step_cycles(default=3)
-    input_parser.add_use_masks_srr(default=1)
+    input_parser.add_use_masks_srr(default=0)
     input_parser.add_boundary_stacks(default=[10, 10, 0])
+    input_parser.add_metric(default="Correlation")
+    input_parser.add_metric_radius(default=10)
     input_parser.add_reference()
     input_parser.add_reference_mask()
-
+    input_parser.add_outlier_rejection(default=1)
+    input_parser.add_threshold_first(default=0.6)
+    input_parser.add_threshold(default=0.7)
+    
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    # Write script execution call
-    if args.log_script_execution:
-        input_parser.write_performed_script_execution(
-            os.path.abspath(__file__))
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
     # Use FLIRT for volume-to-volume reg. step. Otherwise, RegAladin is used.
-    use_flirt_for_v2v_registration = True
+    use_flirt_for_v2v_registration = 1
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
-
-    # Neither '--dir-input' nor '--filenames' was specified
-    if args.filenames is not None and args.dir_input is not None:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames' "
-            "but not both together")
-
-    # '--dir-input' specified
-    elif args.dir_input is not None:
-        data_reader = dr.ImageDirectoryReader(
-            args.dir_input, suffix_mask=args.suffix_mask)
-
-    # '--filenames' specified
-    elif args.filenames is not None:
-        data_reader = dr.MultipleImagesReader(
-            args.filenames, suffix_mask=args.suffix_mask)
-
-    else:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames'")
+    data_reader = dr.MultipleImagesReader(
+        file_paths=args.filenames,
+        file_paths_masks=args.filenames_masks,
+        suffix_mask=args.suffix_mask)
 
     if len(args.boundary_stacks) is not 3:
         raise IOError(
@@ -142,7 +129,6 @@ def main():
         segmentation_propagator=segmentation_propagator,
         use_cropping_to_mask=True,
         use_N4BiasFieldCorrector=args.bias_field_correction,
-        use_intensity_correction=args.intensity_correction,
         target_stack_index=args.target_stack_index,
         boundary_i=args.boundary_stacks[0],
         boundary_j=args.boundary_stacks[1],
@@ -184,8 +170,8 @@ def main():
         else:
             vol_registration = niftyreg.RegAladin(
                 registration_type="Rigid",
-                use_fixed_mask=True,
-                use_moving_mask=True,
+                # use_fixed_mask=True,
+                # use_moving_mask=True,
                 use_verbose=False,
             )
         v2vreg = pipeline.VolumeToVolumeRegistration(
@@ -200,6 +186,33 @@ def main():
 
     else:
         time_registration = ph.get_zero_time()
+
+    # ---------------------------Intensity Correction--------------------------
+    if args.intensity_correction:
+        ph.print_title("Intensity Correction")
+        intensity_corrector = ic.IntensityCorrection()
+        intensity_corrector.use_individual_slice_correction(False)
+        intensity_corrector.use_reference_mask(True)
+        intensity_corrector.use_stack_mask(True)
+        intensity_corrector.use_verbose(False)
+
+        for i, stack in enumerate(stacks):
+            if i == args.target_stack_index:
+                ph.print_info("Stack %d: Reference image. Skipped." % (i + 1))
+                continue
+            else:
+                ph.print_info("Stack %d: Intensity Correction ... " % (i + 1),
+                              newline=False)
+            intensity_corrector.set_stack(stack)
+            intensity_corrector.set_reference(
+                stacks[args.target_stack_index].get_resampled_stack(
+                    resampling_grid=stack.sitk,
+                    interpolator="NearestNeighbor",
+                ))
+            intensity_corrector.run_linear_intensity_correction()
+            stacks[i] = intensity_corrector.get_intensity_corrected_stack()
+            print("done (c1 = %g) " %
+                  intensity_corrector.get_intensity_correction_coefficients())
 
     # ---------------------------Create first volume---------------------------
     time_tmp = ph.start_timing()
@@ -254,12 +267,17 @@ def main():
         reg_type="TK1",
         minimizer="lsmr",
         alpha=args.alpha_first,
-        iter_max=args.iter_max_first,
+        iter_max=np.min([args.iter_max_first, args.iter_max]),
         verbose=True,
         use_masks=args.use_masks_srr,
     )
 
     if args.two_step_cycles > 0:
+
+        if args.metric == "ANTSNeighborhoodCorrelation":
+            metric_params = {"radius": args.metric_radius}
+        else:
+            metric_params = None
 
         registration = regsitk.SimpleItkRegistration(
             moving=HR_volume,
@@ -267,7 +285,8 @@ def main():
             use_moving_mask=True,
             use_verbose=args.verbose,
             interpolator="Linear",
-            metric="Correlation",
+            metric=args.metric,
+            metric_params=metric_params,
             use_multiresolution_framework=args.multiresolution,
             shrink_factors=args.shrink_factors,
             smoothing_sigmas=args.smoothing_sigmas,
@@ -289,6 +308,8 @@ def main():
                 cycles=args.two_step_cycles,
                 alpha_range=[args.alpha_first, args.alpha],
                 verbose=args.verbose,
+                outlier_rejection=args.outlier_rejection,
+                threshold_range=[args.threshold_first, args.threshold],
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
@@ -297,6 +318,7 @@ def main():
             two_step_s2v_reg_recon.get_computational_time_registration()
         time_reconstruction += \
             two_step_s2v_reg_recon.get_computational_time_reconstruction()
+        stacks = two_step_s2v_reg_recon.get_stacks()
     else:
         HR_volume_iterations = []
 
@@ -306,10 +328,38 @@ def main():
             stack.write(
                 os.path.join(args.dir_output,
                              args.subfolder_motion_correction),
-                write_mask=True,
-                write_slices=True,
+                write_stack=False,
+                write_mask=False,
+                write_slices=False,
                 write_transforms=True,
-                suffix_mask=args.suffix_mask,
+            )
+
+        if args.outlier_rejection:
+            deleted_slices_dic = {}
+            for i, stack in enumerate(stacks):
+                deleted_slices = stack.get_deleted_slice_numbers()
+                deleted_slices_dic[stack.get_filename()] = deleted_slices
+            ph.write_dictionary_to_json(
+                deleted_slices_dic,
+                os.path.join(
+                    args.dir_output,
+                    args.subfolder_motion_correction,
+                    "rejected_slices.json"
+                )
+            )
+
+        if args.outlier_rejection:
+            deleted_slices_dic = {}
+            for i, stack in enumerate(stacks):
+                deleted_slices = stack.get_deleted_slice_numbers()
+                deleted_slices_dic[stack.get_filename()] = deleted_slices
+            ph.write_dictionary_to_json(
+                deleted_slices_dic,
+                os.path.join(
+                    args.dir_output,
+                    args.subfolder_motion_correction,
+                    "rejected_slices.json"
+                )
             )
 
     # ------------------Final Super-Resolution Reconstruction------------------
@@ -357,8 +407,7 @@ def main():
                           segmentation=HR_volume,
                           show_comparison_file=args.provide_comparison,
                           dir_output=os.path.join(
-                              args.dir_output,
-                              args.subfolder_comparison),
+                              args.dir_output, args.subfolder_comparison),
                           )
 
     # Summary

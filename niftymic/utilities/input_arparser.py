@@ -9,8 +9,8 @@
 
 import os
 import re
+import six
 import sys
-import json
 import argparse
 
 import pysitk.python_helper as ph
@@ -78,7 +78,20 @@ class InputArgparser(object):
         ph.print_title(title)
         for arg in sorted(vars(args)):
             ph.print_info("%s: " % (arg), newline=False)
-            print(getattr(args, arg))
+            vals = getattr(args, arg)
+
+            if type(vals) is list:
+                # print list element in new lines, unless only one entry in list
+                # if len(vals) == 1:
+                #     print(vals[0])
+                # else:
+                print("")
+                for val in vals:
+                    print("\t%s" % val)
+            else:
+                print(vals)
+        ph.print_line_separator(add_newline=False)
+        print("")
 
     ##
     # Writes a performed script execution.
@@ -89,15 +102,18 @@ class InputArgparser(object):
     #                     os.path.abspath(__file__)
     # \param      prefix  filename prefix
     #
-    def write_performed_script_execution(self,
-                                         file,
-                                         prefix="config"):
+    def log_config(self,
+                   file,
+                   prefix="config"):
 
         # parser returns options with underscores, e.g. 'dir_output'
         dic_with_underscores = vars(self._parser.parse_args())
 
         # get output directory to write log/config file
-        dir_output = dic_with_underscores["dir_output"]
+        try:
+            dir_output = dic_with_underscores["dir_output"]
+        except KeyError:
+            dir_output = os.path.dirname(dic_with_underscores["output"])
 
         # build output file name
         name = os.path.basename(file).split(".")[0]
@@ -113,14 +129,10 @@ class InputArgparser(object):
         # e.g. "dir-output" instead of "dir_output"
         dic = {
             re.sub("_", "-", k): v
-            for k, v in dic_with_underscores.iteritems()}
+            for k, v in six.iteritems(dic_with_underscores)}
 
         # write config file to output
-        ph.create_directory(dir_output)
-        with open(path_to_config_file, "w") as fp:
-            json.dump(dic, fp, sort_keys=True, indent=4)
-            ph.print_info(
-                "Configuration written to '%s'." % path_to_config_file)
+        ph.write_dictionary_to_json(dic, path_to_config_file, verbose=True)
 
     def add_filename(
         self,
@@ -147,6 +159,17 @@ class InputArgparser(object):
         option_string="--dir-input",
         type=str,
         help="Input directory with NIfTI files %s." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_dir_input_mc(
+        self,
+        option_string="--dir-input-mc",
+        type=str,
+        help="Input directory where transformation files (.tfm) for "
+        "motion-corrected slices are stored.",
         default=None,
         required=False,
     ):
@@ -189,7 +212,17 @@ class InputArgparser(object):
         self,
         option_string="--filenames",
         nargs="+",
-        help="Filenames.",
+        help="Paths to NIfTI file images %s." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_filenames_masks(
+        self,
+        option_string="--filenames-masks",
+        nargs="+",
+        help="Paths to NIfTI file image masks %s." % (IMAGE_TYPES),
         default=None,
         required=False,
     ):
@@ -256,6 +289,16 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_metric_radius(
+        self,
+        option_string="--metric-radius",
+        type=int,
+        help="Radius in case metric 'ANTSNeighborhoodCorrelation' is chosen.",
+        default=10,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_labels(
         self,
         option_string="--labels",
@@ -297,6 +340,16 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_output(
+        self,
+        option_string="--output",
+        type=str,
+        help="Path to output image file %s." % (IMAGE_TYPES),
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_dir_output(
         self,
         option_string="--dir-output",
@@ -328,6 +381,27 @@ class InputArgparser(object):
         help="Use masks in SRR step to confine volumetric reconstruction only "
         "to the masked slice regions.",
         default=1,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_outlier_rejection(
+        self,
+        option_string="--outlier-rejection",
+        type=int,
+        help="Turn on/off use of outlier rejection mechanism to eliminate "
+        "misregistered slices.",
+        default=0,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_use_robust_registration(
+        self,
+        option_string="--use-robust-registration",
+        type=int,
+        help="Turn on/off use of robust slice-to-volume registration.",
+        default=0,
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -513,6 +587,44 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_threshold(
+        self,
+        option_string="--threshold",
+        type=float,
+        help="Threshold between 0 and 1 to detect misregistered slices based "
+        "on NCC in final cycle.",
+        default=0.7,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_threshold_first(
+        self,
+        option_string="--threshold-first",
+        type=float,
+        help="Threshold between 0 and 1 to detect misregistered slices based "
+        "on NCC in first cycle.",
+        default=0.6,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_s2v_smoothing(
+        self,
+        option_string="--s2v-smoothing",
+        type=float,
+        help="Value for Gaussian process parameter smoothing.",
+        default=0.5,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_interleave(
+        self,
+        option_string="--interleave",
+        type=int,
+        help="Interleave used for slice acquisition",
+        default=2,
+    ):
+        self._add_argument(dict(locals()))
+
     def add_iter_max(
         self,
         option_string="--iter-max",
@@ -586,7 +698,7 @@ class InputArgparser(object):
 
     def add_pd_alg_type(
             self,
-            option_string="-pd_alg_type",
+            option_string="--pd-alg-type",
             type=str,
             help="Algorithm used to dynamically update parameters for each "
             "iteration of the dual algorithm. "
@@ -648,11 +760,11 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
-    def add_log_script_execution(
+    def add_log_config(
         self,
-        option_string="--log-script-execution",
+        option_string="--log-config",
         type=int,
-        help="Turn on/off log for script execution.",
+        help="Turn on/off configuration of executed script.",
         default=0,
     ):
         self._add_argument(dict(locals()))
@@ -705,6 +817,13 @@ class InputArgparser(object):
         required=False,
     ):
         self._add_argument(dict(locals()))
+
+    def add_argument(
+        self,
+        *a,
+        **k
+    ):
+        self._parser.add_argument(*a, **k)
 
     def add_psf_aware(
         self,
@@ -823,10 +942,10 @@ class InputArgparser(object):
         # Read config file and insert all config entries into sys.argv (read by
         # argparse later)
         with open(path_to_config_file) as json_file:
-            dic = json.load(json_file)
+            dic = ph.read_dictionary_from_json(json_file)
 
             # Insert all config entries into sys.argv
-            for k, v in dic.iteritems():
+            for k, v in six.iteritems(dic):
 
                 # A 'None' entry should be ignored
                 if v is None:
@@ -864,13 +983,17 @@ class InputArgparser(object):
 
         # Build dictionary for additional, optional parameters
         kwargs = {}
-        for key, value in allvars.iteritems():
+        for key, value in six.iteritems(allvars):
             kwargs[key] = value
 
         # Add information on default value in case provided
         if 'default' in kwargs.keys():
 
-            txt_default = " [default: %s]" % (str(kwargs['default']))
+            if type(kwargs['default']) == list:
+                txt = " ".join([str(i) for i in kwargs['default']])
+            else:
+                txt = str(kwargs['default'])
+            txt_default = " [default: %s]" % txt
 
             # Case where 'required' key is given:
             if 'required' in kwargs.keys():

@@ -43,7 +43,7 @@ def export_comparison_to_file(nda_original,
     dir_tmp = os.path.join(DIR_TMP, "ImageMagick")
     ph.clear_directory(dir_tmp, verbose=False)
     for k in range(nda_original.shape[0]):
-        ctr = k+1
+        ctr = k + 1
 
         # Export as individual image side-by-side
         _export_image_side_by_side(
@@ -94,6 +94,8 @@ def _export_image_side_by_side(
     path_to_left = os.path.join(dir_output, "left.%s" % extension)
     path_to_right = os.path.join(dir_output, "right.%s" % extension)
 
+    nda_left = np.round(np.array(nda_left)).astype(np.uint8)
+    nda_right = np.round(np.array(nda_right)).astype(np.uint8)
     ph.write_image(nda_left, path_to_left, verbose=False)
     ph.write_image(nda_right, path_to_right, verbose=False)
 
@@ -224,7 +226,7 @@ def main():
     intensity_max = 255
     intensity_min = 0
     for i in range(len(stacks_original)):
-        ph.print_subtitle("Stack %d/%d" % (i+1, len(stacks_original)))
+        ph.print_subtitle("Stack %d/%d" % (i + 1, len(stacks_original)))
         nda_3D_original = sitk.GetArrayFromImage(stacks_original[i].sitk)
         nda_3D_simulated = sitk.GetArrayFromImage(stacks_simulated[i].sitk)
 

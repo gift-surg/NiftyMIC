@@ -1,7 +1,7 @@
 # -----------------------------------Set Up------------------------------------
 variables:
-    PY_VERSION: 2
-    CMICLAB: 0
+    PY_VERSION: 3
+    PRIVATE: 0
     TMPDIR: ./tmp
     DATADIR: /home/mebner/data/ci/FetalBrain
     VENV: pysitk-test-py${PY_VERSION}
@@ -42,12 +42,12 @@ before_script:
     - cp -v ${ITK_DIR}/Wrapping/Generators/Python/WrapITK.pth ${py_sitepkg}
 
     - cd $cwd_dir
-    # If cmiclab is used:
+    # If PRIVATE is used:
     # add CI_JOB_TOKEN for cloning dependent repositories in requirements.txt
     # (https://docs.gitlab.com/ee/user/project/new_ci_build_permissions_model.html#dependent-repositories)
     - >
-      (if [ ${CMICLAB} == 1 ];
-      then sed -i -- "s#github.com/gift-surg#gitlab-ci-token:${CI_JOB_TOKEN}@cmiclab.cs.ucl.ac.uk/GIFT-Surg#g" requirements.txt;
+      (if [ ${PRIVATE} == 1 ];
+      then sed -i -- "s#github.com/gift-surg#gitlab-ci-token:${CI_JOB_TOKEN}@PRIVATE.cs.ucl.ac.uk/GIFT-Surg#g" requirements.txt;
       fi);
     # install requirements
     - pip install -r requirements.txt
@@ -85,9 +85,10 @@ reconstruct_volume_tk1l2:
   #   - master
   script:
     - >
-      python niftymic_reconstruct_volume.py 
-      --dir-input ${DATADIR}/input_data 
+      niftymic_reconstruct_volume
+      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz
       --dir-output ${TMPDIR} 
+      --suffix-mask _mask
       --verbose 0 
       --isotropic-resolution 2
       --reconstruction-type TK1L2
@@ -97,14 +98,16 @@ reconstruct_volume_tk1l2:
   tags:
     - gift-adelie
 
+
 reconstruct_volume_huberl2:
   # only:
   #   - master
   script:
     - >
-      python niftymic_reconstruct_volume.py 
-      --dir-input ${DATADIR}/input_data 
+      niftymic_reconstruct_volume
+      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
       --dir-output ${TMPDIR} 
+      --suffix-mask _mask
       --verbose 0 
       --isotropic-resolution 2
       --reconstruction-type HuberL2
@@ -120,8 +123,10 @@ reconstruct_volume_from_slices:
   #   - master
   script:    
     - >
-      python niftymic_reconstruct_volume_from_slices.py
-      --dir-input ${DATADIR}/motion_correction_oriented
+      niftymic_reconstruct_volume_from_slices
+      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
+      --dir-input-mc ${DATADIR}/motion_correction_oriented
+      --suffix-mask _mask
       --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
       --dir-output ${TMPDIR} 
       --verbose 0
@@ -130,14 +135,35 @@ reconstruct_volume_from_slices:
   tags:
     - gift-adelie  
 
+run_reconstruction_pipeline:
+  # only:
+  #   - master
+  script:
+    - >
+      python niftymic/application/run_reconstruction_pipeline.py
+      --filenames ${DATADIR}/input_data/axial.nii.gz
+      --dir-input-templates ${DATADIR}/templates
+      --dir-output ${TMPDIR} 
+      --suffix-mask _mask
+      --gestational-age 28
+      --bias-field-correction 1
+      --two-step-cycles 0
+      --iter-max 1
+      --run-data-vs-simulated-data 1
+      --verbose 0 
+  tags:
+    - gift-adelie
+
 param_study_huberl2:
   # only:
   #   - master
   script:
     - recon_type=HuberL2
     - >
-      python niftymic_run_reconstruction_parameter_study.py
-      --dir-input ${DATADIR}/motion_correction_oriented 
+      niftymic_run_reconstruction_parameter_study
+      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
+      --dir-input-mc ${DATADIR}/motion_correction_oriented
+      --suffix-mask _mask
       --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
       --dir-output ${TMPDIR}/param_study 
       --alpha-range 0.01 0.05 2 

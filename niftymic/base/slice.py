@@ -51,7 +51,14 @@ class Slice:
         # Append masks (if provided)
         if slice_sitk_mask is not None:
             slice.sitk_mask = slice_sitk_mask
-            slice.itk_mask = sitkh.get_itk_from_sitk_image(slice_sitk_mask)
+            try:
+                # ensure mask occupies the same physical space
+                slice.sitk_mask.CopyInformation(slice.sitk)
+            except RuntimeError as e:
+                raise IOError(
+                    "Given image and its mask do not occupy the same space: %s" %
+                    e.message)
+            slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
         else:
             slice.sitk_mask = slice._generate_identity_mask()
             slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
@@ -61,7 +68,8 @@ class Slice:
         # HACK (for current Slice-to-Volume Registration)
         #  See class SliceToVolumeRegistration
         # slice._sitk_upsampled = slice._get_upsampled_isotropic_resolution_slice(slice_sitk)
-        # slice._itk_upsampled = sitkh.get_itk_from_sitk_image(slice._sitk_upsampled)
+        # slice._itk_upsampled =
+        # sitkh.get_itk_from_sitk_image(slice._sitk_upsampled)
 
         # if slice_sitk_mask is not None:
         #     slice._sitk_mask_upsampled = slice._get_upsampled_isotropic_resolution_slice(slice_sitk_mask)
@@ -107,7 +115,7 @@ class Slice:
         slice._slice_number = slice_number
 
         # Append stacks as SimpleITK and ITK Image objects
-        slice.sitk = sitk.ReadImage(file_path, sitk.sitkFloat64)
+        slice.sitk = sitkh.read_nifti_image_sitk(file_path, sitk.sitkFloat64)
         slice.itk = sitkh.get_itk_from_sitk_image(slice.sitk)
 
         # Append masks (if provided)
@@ -120,7 +128,15 @@ class Slice:
         else:
             if not ph.file_exists(file_path_mask):
                 raise exceptions.FileNotExistent(file_path_mask)
-            slice.sitk_mask = sitk.ReadImage(file_path_mask, sitk.sitkUInt8)
+            slice.sitk_mask = sitkh.read_nifti_image_sitk(
+                file_path_mask, sitk.sitkUInt8)
+            try:
+                # ensure mask occupies the same physical space
+                slice.sitk_mask.CopyInformation(slice.sitk)
+            except RuntimeError as e:
+                raise IOError(
+                    "Given image and its mask do not occupy the same space: %s" %
+                    e.message)
 
         slice.itk_mask = sitkh.get_itk_from_sitk_image(slice.sitk_mask)
 
@@ -162,7 +178,8 @@ class Slice:
         slice._slice_number = slice_to_copy.get_slice_number()
         slice._dir_input = slice_to_copy.get_directory()
 
-        # slice._history_affine_transforms, slice._history_motion_corrections = slice_to_copy.get_registration_history()
+        # slice._history_affine_transforms, slice._history_motion_corrections =
+        # slice_to_copy.get_registration_history()
 
         # Store current affine transform of image
         slice._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(
@@ -214,7 +231,9 @@ class Slice:
     #     self._history_rigid_motion_estimates.append(current_rigid_motion_estimate)
 
     #     ## New affine transform of slice after rigid motion correction
-    #     affine_transform = sitkh.get_composite_sitk_affine_transform(rigid_transform_sitk, self._affine_transform_sitk)
+    # affine_transform =
+    # sitkh.get_composite_sitk_affine_transform(rigid_transform_sitk,
+    # self._affine_transform_sitk)
 
     #     ## Update affine transform of slice, i.e. change image origin and direction in physical space
     #     self._update_affine_transform(affine_transform)
@@ -260,6 +279,13 @@ class Slice:
         motion_corrections = list(self._history_motion_corrections)
         return affine_transforms, motion_corrections
 
+    def set_registration_history(self, registration_history):
+        affine_transform_sitk = registration_history[0][-1]
+        self._update_affine_transform(affine_transform_sitk)
+
+        self._history_affine_transforms = [a for a in registration_history[0]]
+        self._history_motion_corrections = [t for t in registration_history[1]]
+
     # Display slice with external viewer (ITK-Snap)
     #  \param[in] show_segmentation display slice with or without associated segmentation (default=0)
     def show(self, show_segmentation=0, label=None, viewer=VIEWER, verbose=True):
@@ -284,7 +310,15 @@ class Slice:
     #  - affine transformation describing physical space position of slice
     #  \param[in] directory string specifying where the output will be written to (default="/tmp/")
     #  \param[in] filename string specifyig the filename. If not given, filename of parent stack is used
-    def write(self, directory, filename=None, write_transform=False, suffix_mask="_mask", prefix_slice="_slice"):
+    def write(self,
+              directory,
+              filename=None,
+              write_slice=True,
+              write_transform=True,
+              suffix_mask="_mask",
+              prefix_slice="_slice",
+              use_float32=True,
+              ):
 
         # Create directory if not existing
         ph.create_directory(directory)
@@ -299,24 +333,31 @@ class Slice:
         full_file_name = os.path.join(directory, filename_out)
 
         # Write slice and affine transform
-        sitkh.write_nifti_image_sitk(self.sitk, full_file_name + ".nii.gz")
+        if write_slice:
+            if use_float32:
+                image_sitk = sitk.Cast(self.sitk, sitk.sitkFloat32)
+            else:
+                image_sitk = self.sitk
+            sitkh.write_nifti_image_sitk(
+                image_sitk, full_file_name + ".nii.gz")
+
+            # Write mask to specified location if given
+            if self.sitk_mask is not None:
+                nda = sitk.GetArrayFromImage(self.sitk_mask)
+
+                # Write mask if it does not consist of only ones
+                if not np.all(nda):
+                    sitkh.write_nifti_image_sitk(self.sitk_mask, full_file_name +
+                                                 "%s.nii.gz" % (suffix_mask))
         if write_transform:
             sitk.WriteTransform(
                 # self.get_affine_transform(),
                 self.get_motion_correction_transform(),
                 full_file_name + ".tfm")
 
-        # Write mask to specified location if given
-        if self.sitk_mask is not None:
-            nda = sitk.GetArrayFromImage(self.sitk_mask)
-
-            # Write mask if it does not consist of only ones
-            if not np.all(nda):
-                sitkh.write_nifti_image_sitk(self.sitk_mask, full_file_name +
-                                             "%s.nii.gz" % (suffix_mask))
-
         # print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
-        # print("Transformation of slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
+        # print("Transformation of slice %r of stack %s was successfully
+        # written to %s" %(self._slice_number, self._filename, full_file_name))
 
     # Update slice with new affine transform, specifying updated spatial
     #  position of slice in physical space. The transform is obtained via

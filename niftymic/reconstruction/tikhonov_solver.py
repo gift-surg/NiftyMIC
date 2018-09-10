@@ -102,8 +102,8 @@ class TikhonovSolver(Solver):
                  data_loss_scale=1,
                  huber_gamma=1.345,
                  predefined_covariance=None,
-                 verbose=1,
                  use_masks=True,
+                 verbose=1,
                  ):
 
         # Run constructor of superclass

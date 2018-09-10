@@ -12,7 +12,7 @@ import unittest
 import sys
 import os
 
-# Import modules
+import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 import niftymic.registration.niftyreg as nreg
@@ -37,9 +37,10 @@ class NiftyRegTest(unittest.TestCase):
         filename_fixed = "stack1_rotated_angle_z_is_pi_over_10.nii.gz"
         filename_moving = "FetalBrain_reconstruction_3stacks_myAlg.nii.gz"
 
+        diff_ref = os.path.join(
+            DIR_TEST,  "stack1_rotated_angle_z_is_pi_over_10_nreg_diff.nii.gz")
         moving = st.Stack.from_filename(
             os.path.join(self.dir_test_data, filename_moving),
-            # os.path.join(self.dir_test_data, filename_moving + "_mask.nii.gz")
         )
         fixed = st.Stack.from_filename(
             os.path.join(self.dir_test_data, filename_fixed)
@@ -57,33 +58,18 @@ class NiftyRegTest(unittest.TestCase):
 
         # Get associated results
         affine_transform_sitk = nifty_reg.get_registration_transform_sitk()
-        moving_warped = nifty_reg.get_transformed_fixed()
+        moving_warped = nifty_reg.get_warped_moving()
 
         # Get SimpleITK result with "similar" interpolator (NiftyReg does not
         # state what interpolator is used but it seems to be BSpline)
         moving_warped_sitk = sitk.Resample(
             moving.sitk, fixed.sitk, affine_transform_sitk, sitk.sitkBSpline, 0.0, moving.sitk.GetPixelIDValue())
 
-        # Check alignment of images
-        nda_NiftyReg = sitk.GetArrayFromImage(moving_warped.sitk)
-        nda_SimpleITK = sitk.GetArrayFromImage(moving_warped_sitk)
-        diff = nda_NiftyReg - nda_SimpleITK
-        abs_diff = abs(diff)
+        diff_res_sitk = moving_warped.sitk - moving_warped_sitk
+        sitkh.write_nifti_image_sitk(diff_res_sitk, diff_ref)
+        diff_ref_sitk = sitk.ReadImage(diff_ref)
 
-        try:
-            self.assertEqual(np.round(
-                np.linalg.norm(diff), decimals=self.accuracy), 0)
+        res_diff_nda = sitk.GetArrayFromImage(diff_res_sitk - diff_ref_sitk)
 
-        except Exception as e:
-            print("FAIL: " + self.id() + " failed given norm of difference = %.2e > 1e-%s" %
-                  (np.linalg.norm(diff), self.accuracy))
-            print(
-                "\tCheck statistics of difference: (Maximum absolute difference per voxel might be acceptable)")
-            print("\tMaximum absolute difference per voxel: %s" % abs_diff.max())
-            print("\tMean absolute difference per voxel: %s" % abs_diff.mean())
-            print("\tMinimum absolute difference per voxel: %s" % abs_diff.min())
-
-            # Show results (difficult to compare directly given the different interpolators of NiftyReg and SimpleITK)
-            # sitkh.show_sitk_image(moving_warped.sitk, overlay=fixed.sitk, title="warpedMoving_fixed")
-            # sitkh.show_sitk_image(moving_warped.sitk, overlay=moving_warped_sitk, title="warpedMovingNiftyReg_warpedMovingSimpleITK")
-            # sitkh.show_sitk_image(moving_warped.sitk-moving_warped_sitk, title="difference_NiftyReg_SimpleITK")
+        self.assertAlmostEqual(
+            np.linalg.norm(res_diff_nda), 0, places=self.accuracy)
