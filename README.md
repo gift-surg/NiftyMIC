@@ -87,6 +87,17 @@ whose installation requirements need to be met. Therefore, the installation come
 
 Provided the input MR image data in NIfTI format (`nii` or `nii.gz`), NiftyMIC can reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices.
 
+A recommended workflow is [associated applications in square brackets]
+
+1. Bias-field correction [`niftymic_correct_bias_field`]
+1. Volumetric reconstruction in subject space using two-step iterative approach based on rigid slice-to-volume registration and SRR cycles [`niftymic_reconstruct_volume`]
+
+In case reconstruction in a template space is desired (like for fetal MRI) additional steps could be:
+1. Register obtained SRR to template and update respective slice motion corrections [`niftymic_register_image`]
+1. Volumetric reconstruction in template space [`niftymic_reconstruct_volume_from_slices`]
+
+Additional information on how to use NiftyMIC and its applications is provided in the following.
+
 ### Volumetric MR Reconstruction from Motion Corrupted 2D Slices
 Leveraging a two-step registration-reconstruction approach an isotropic, high-resolution 3D volume can be generated from multiple stacks of low-resolution slices.
 
@@ -99,25 +110,56 @@ niftymic_reconstruct_volume \
 ```
 whereby complete outlier removal during SRR is activated by default (`--outlier-rejection 1`).
 
-The obtained motion-correction transformations can be used for further processing, e.g. by using `niftymic_reconstruct_volume_from_slices.py` to solve the SRR problem for a variety of different regularization and data loss function types. 
+A more elaborate example could be
+```
+niftymic_reconstruct_volume \
+--filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--suffix-mask _mask \
+--alpha 0.01 \
+--outlier-rejection 1 \
+--threshold-first 0.6 \
+--threshold 0.8 \
+--intensity-correction 1 \
+--isotropic-resolution 0.8 \
+--two-step-cycles 3 \
+--dir-output output-dir \
+--subfolder-motion-correction motion_correction \ # created in 'output-dir'
+--verbose 1
+```
+
+The obtained motion-correction transformations in `motion_correction` can be used for further processing, e.g. by using `niftymic_reconstruct_volume_from_slices.py` to solve the SRR problem for a variety of different regularization and data loss function types. 
+
+### Transformation to Template Space
+If a template is available, it is possible to obtain a SRR in its associated standard anatomical space. Using the subject-space SRR outcome of `niftymic_reconstruct_volume` a rigid alignment step maps all slice motion correction transformations accordingly using
+```
+niftymic_register_image \
+--fixed path-to-template.nii.gz \
+--moving path-to-subject-space-srr.nii.gz \
+--dir-input-mc dir-to-motion_correction \
+--dir-output output-dir
+```
+
 
 ### SRR Methods for Motion Corrected (or Static) Data
 
-After performed motion correction (or having static data in the first place),
+After performed/updated motion correction (or having static data in the first place) several options are available:
 
-1. different solvers and regularizers can be used to solve the SRR problem for comparison, and
-1. parameter studies can be performed to find optimal reconstruction parameters.
+* Volumetric reconstruction in template space
+* Parameter tuning for SRR:
+    * different solvers and regularizers can be used to solve the SRR problem for comparison
+    * parameter studies can be performed to find optimal reconstruction parameters.
 
-#### 1. SRR from Motion Corrected (or Static) Slice Acquisitions
+#### SRR from Motion Corrected (or Static) Slice Acquisitions
 
 Solve the SRR problem for motion corrected data (or static data if `--dir-input-mc` is omitted):
 ```
 niftymic_reconstruct_volume_from_slices \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---dir-input-mc dir-to-motion_correction \
+--dir-input-mc dir-to-motion_correction \ # optional
 --dir-output output-dir \
 --reconstruction-type TK1L2 \
---alpha 0.03
+--reconstruction-space path-to-template.nii.gz \ # optional
+--alpha 0.01
 ```
 ```
 niftymic_reconstruct_volume_from_slices \
@@ -131,7 +173,7 @@ niftymic_reconstruct_volume_from_slices \
 Slices that were rejected during the `niftymic_reconstruct_volume` run are recognized as outliers based on the content of `dir-input-mc` and will not be incorporated during the volumetric reconstruction.
 
 
-#### 2. Parameter Studies to Determine Optimal SRR Parameters
+#### Parameter Studies to Determine Optimal SRR Parameters
 The optimal choice for reconstruction parameters like the regularization parameter or data loss function can be found by running parameter studies. This includes L-curve studies and direct comparison against a reference volume for various cost functions.
 
 Example are:
