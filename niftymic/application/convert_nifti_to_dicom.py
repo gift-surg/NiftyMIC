@@ -61,11 +61,16 @@ COPY_DICOM_TAGS = {
     "StudyDescription",
 }
 
+INSTITUTION_NAME = "UCL, WEISS"
+ACCESSION_NUMBER = "1"
+SERIES_NUMBER = "0"
+IMAGE_COMMENTS = "*** NOT APPROVED ***"
+
 
 def main():
 
     input_parser = InputArgparser(
-        description="Convert obtained SRR from nifti to dicom format",
+        description="Convert NIfTI to DICOM image",
     )
     input_parser.add_filename(required=True)
     input_parser.add_option(
@@ -78,16 +83,21 @@ def main():
     input_parser.add_label(
         help="Label used for series description of DICOM output.",
         default="SRR")
-
+    input_parser.add_argument(
+        "--volume", "-volume",
+        action='store_true',
+        help="If given, the output DICOM file is combined as 3D volume"
+    )
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
     # Prepare for final DICOM output
     ph.create_directory(args.dir_output)
-    path_to_output = os.path.join(args.dir_output, "%s.dcm" % args.label)
 
-    # Prepare for intermediate output
-    dir_output_2d_slices = os.path.join(DIR_TMP, "dicom_slices")
+    if args.volume:
+        dir_output_2d_slices = os.path.join(DIR_TMP, "dicom_slices")
+    else:
+        dir_output_2d_slices = os.path.join(args.dir_output, args.label)
     ph.create_directory(dir_output_2d_slices, delete_files=True)
 
     # Create set of 2D DICOM slices from 3D NIfTI image
@@ -96,51 +106,62 @@ def main():
     cmd_args = ["nifti2dicom"]
     cmd_args.append("-i %s" % args.filename)
     cmd_args.append("-o %s" % dir_output_2d_slices)
+    cmd_args.append("-d %s" % args.template)
+    cmd_args.append("--prefix ''")
+    cmd_args.append("--seriesdescription '%s'" % args.label)
+    cmd_args.append("--accessionnumber %s" % ACCESSION_NUMBER)
+    cmd_args.append("--seriesnumber %s" % SERIES_NUMBER)
+    cmd_args.append("--institutionname '%s'" % INSTITUTION_NAME)
     cmd_args.append("-y")
     ph.execute_command(" ".join(cmd_args))
 
-    # Combine set of 2D DICOM slices to form 3D DICOM image
-    # (image orientation stays correct)
-    ph.print_title("Combine set of 2D DICOM slices to form 3D DICOM image")
-    cmd_args = ["medcon"]
-    cmd_args.append("-f %s/*.dcm" % dir_output_2d_slices)
-    cmd_args.append("-o %s" % path_to_output)
-    cmd_args.append("-c dicom")
-    cmd_args.append("-stack3d")
-    cmd_args.append("-n")
-    cmd_args.append("-qc")
-    cmd_args.append("-w")
-    ph.execute_command(" ".join(cmd_args))
+    if args.volume:
+        path_to_output = os.path.join(args.dir_output, "%s.dcm" % args.label)
+        # Combine set of 2D DICOM slices to form 3D DICOM image
+        # (image orientation stays correct)
+        ph.print_title("Combine set of 2D DICOM slices to form 3D DICOM image")
+        cmd_args = ["medcon"]
+        cmd_args.append("-f %s/*.dcm" % dir_output_2d_slices)
+        cmd_args.append("-o %s" % path_to_output)
+        cmd_args.append("-c dicom")
+        cmd_args.append("-stack3d")
+        cmd_args.append("-n")
+        cmd_args.append("-qc")
+        cmd_args.append("-w")
+        ph.execute_command(" ".join(cmd_args))
 
-    # Update all relevant DICOM tags accordingly
-    ph.print_title("Update all relevant DICOM tags accordingly")
-    print("")
-    dataset = pydicom.dcmread(path_to_output)
-    dataset_template = pydicom.dcmread(args.template)
+        # Update all relevant DICOM tags accordingly
+        ph.print_title("Update all relevant DICOM tags accordingly")
+        print("")
+        dataset_template = pydicom.dcmread(args.template)
+        dataset = pydicom.dcmread(path_to_output)
 
-    # Copy tags from template (to guarantee grouping with original data)
-    update_dicom_tags = {}
-    for tag in COPY_DICOM_TAGS:
-        try:
-            update_dicom_tags[tag] = getattr(dataset_template, tag)
-        except:
-            update_dicom_tags[tag] = ""
+        # Copy tags from template (to guarantee grouping with original data)
+        update_dicom_tags = {}
+        for tag in COPY_DICOM_TAGS:
+            try:
+                update_dicom_tags[tag] = getattr(dataset_template, tag)
+            except:
+                update_dicom_tags[tag] = ""
 
-    # Additional tags
-    update_dicom_tags["InstitutionName"] = "UCL, WEISS"
-    update_dicom_tags["SeriesDescription"] = args.label
-    update_dicom_tags["ImageComments"] = "*** NOT APPROVED ***"
-    update_dicom_tags["AccessionNumber"] = "1"
-    update_dicom_tags["SeriesNumber"] = "0"
+        # Additional tags
+        update_dicom_tags["SeriesDescription"] = args.label
+        update_dicom_tags["InstitutionName"] = INSTITUTION_NAME
+        update_dicom_tags["ImageComments"] = IMAGE_COMMENTS
+        update_dicom_tags["AccessionNumber"] = ACCESSION_NUMBER
+        update_dicom_tags["SeriesNumber"] = SERIES_NUMBER
 
-    for tag in sorted(update_dicom_tags.keys()):
-        value = update_dicom_tags[tag]
-        setattr(dataset, tag, value)
-        ph.print_info("%s: %s" % (tag, value))
+        for tag in sorted(update_dicom_tags.keys()):
+            value = update_dicom_tags[tag]
+            setattr(dataset, tag, value)
+            ph.print_info("%s: %s" % (tag, value))
 
-    dataset.save_as(path_to_output)
-    print("")
-    ph.print_info("3D DICOM image written to %s" % path_to_output)
+        dataset.save_as(path_to_output)
+        print("")
+        ph.print_info("3D DICOM image written to %s" % path_to_output)
+
+    else:
+        ph.print_info("DICOM images written to %s" % dir_output_2d_slices)
 
     return 0
 
