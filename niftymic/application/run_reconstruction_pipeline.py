@@ -21,6 +21,9 @@ import niftymic.validation.show_evaluated_simulated_stack_similarity as \
 import niftymic.validation.export_side_by_side_simulated_vs_original_slice_comparison as \
     export_side_by_side_simulated_vs_original_slice_comparison
 from niftymic.utilities.input_arparser import InputArgparser
+import niftymic.utilities.template_stack_estimator as tse
+
+from niftymic.definitions import DIR_TEMPLATES
 
 from niftymic.definitions import DIR_TEMPLATES
 
@@ -100,10 +103,6 @@ def main():
     dir_output_data_vs_simulatd_data = os.path.join(
         args.dir_output, "data_vs_simulated_data")
 
-    if args.run_recon_template_space and args.gestational_age is None:
-        raise IOError("Gestational age must be set in order to pick the "
-                      "right template")
-
     if args.target_stack is None:
         target_stack = args.filenames[0]
     else:
@@ -169,13 +168,8 @@ def main():
         elapsed_time_volrec = ph.get_zero_time()
 
     if args.run_recon_template_space:
+
         # register recon to template space
-        template = os.path.join(
-            args.dir_input_templates,
-            "STA%d.nii.gz" % args.gestational_age)
-        template_mask = os.path.join(
-            args.dir_input_templates,
-            "STA%d_mask.nii.gz" % args.gestational_age)
         pattern = "[a-zA-Z0-9_]+(stacks)[a-zA-Z0-9_]+(.nii.gz)"
         p = re.compile(pattern)
         reconstruction = [
@@ -185,6 +179,23 @@ def main():
             if p.match(f)][0]
         reconstruction = re.sub(
             "%s.nii.gz" % args.suffix_mask, ".nii.gz", reconstruction)
+
+        if args.gestational_age is None:
+            template_stack_estimator = \
+                tse.TemplateStackEstimator.from_mask(
+                    ph.append_to_filename(reconstruction, args.suffix_mask))
+            gestational_age = template_stack_estimator.get_estimated_gw()
+            ph.print_info("Estimated gestational age: %d" % gestational_age)
+        else:
+            gestational_age = args.gestational_age
+
+        template = os.path.join(
+            args.dir_input_templates,
+            "STA%d.nii.gz" % gestational_age)
+        template_mask = os.path.join(
+            args.dir_input_templates,
+            "STA%d_mask.nii.gz" % gestational_age)
+
         cmd_args = []
         cmd_args.append("--fixed %s" % template)
         cmd_args.append("--moving %s" % reconstruction)
@@ -196,6 +207,8 @@ def main():
             "motion_correction"))
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
         cmd_args.append("--verbose %s" % args.verbose)
+        # cmd_args.append("--test-ap-flip 0")
+        # cmd_args.append("--use-flirt 0")
         cmd = "niftymic_register_image %s" % (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:

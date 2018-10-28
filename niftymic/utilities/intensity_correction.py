@@ -288,6 +288,21 @@ class IntensityCorrection(object):
                     correction_model](nda, nda_reference, nda_mask, nda_additional_stack)
             correction_coefficients = cc
 
+        # debug
+        # tmp_corr = sitk.GetImageFromArray(nda)
+        # tmp_corr.CopyInformation(self._stack.sitk)
+        # tmp_mask = sitk.GetImageFromArray(nda_mask)
+        # tmp_mask.CopyInformation(self._stack.sitk_mask)
+        # sitkh.show_sitk_image(
+        #     [
+        #         tmp_corr,
+        #         self._stack.sitk,
+        #         self._reference.sitk,
+        #     ],
+        #     segmentation=tmp_mask,
+        #     label=["corr", "orig", "ref"]
+        # )
+
         # Create Stack instance with correct image header information
         if self._additional_stack is None:
             return self._create_stack_from_corrected_intensity_array(nda, self._stack), correction_coefficients, None
@@ -394,6 +409,18 @@ class IntensityCorrection(object):
             nda_additional_stack = sitk.GetArrayFromImage(
                 self._additional_stack.sitk)
 
+        # debug
+        # tmp_mask = sitk.GetImageFromArray(nda_mask)
+        # tmp_mask.CopyInformation(self._stack.sitk_mask)
+        # sitkh.show_sitk_image(
+        #     [
+        #         self._stack.sitk_mask,
+        #         self._reference.sitk_mask,
+        #     ],
+        #     segmentation=tmp_mask,
+        #     label=["orig", "ref"]
+        # )
+
         return nda, nda_reference, nda_mask, nda_additional_stack
 
     ##
@@ -413,25 +440,41 @@ class IntensityCorrection(object):
         image_sitk = sitk.GetImageFromArray(nda)
         image_sitk.CopyInformation(stack.sitk)
 
-        # Update registration history of stack
-        stack_ic = st.Stack.from_sitk_image(
-            image_sitk, stack.get_filename(), stack.sitk_mask)
+        # Potentially, #slices < #slices_ic as some slices might have been
+        # deleted.
+        slices = stack.get_slices()
 
+        helper_slice_numbers = stack.get_deleted_slice_numbers()
+        helper_slice_numbers.append(slices[0].get_slice_number())
+        helper_slice_numbers.append(slices[-1].get_slice_number())
+        slice_numbers = np.arange(np.min(helper_slice_numbers),
+                                  np.max(helper_slice_numbers) + 1)
+
+        stack_ic = st.Stack.from_sitk_image(
+            image_sitk,
+            stack.get_filename(),
+            stack.sitk_mask,
+            slice_numbers=slice_numbers,
+        )
+
+        # Update registration history of stack
         stack_ic.set_registration_history(
             stack.get_registration_history())
 
-        # Update registration history of slices
-        slices = stack.get_slices()
-        slices_ic = stack_ic.get_slices()
+        # Update registration history of (kept) slices
         kept_slice_numbers = [s.get_slice_number() for s in slices]
-        for i in range(len(slices_ic)):
+        slices_ic = stack_ic.get_slices()
+        for slice_ic in slices_ic:
+            slice_number = slice_ic.get_slice_number()
+
             # Update registration of kept slice
-            if i in kept_slice_numbers:
-                index = kept_slice_numbers.index(i)
-                slices_ic[i].set_registration_history(
+            if slice_number in kept_slice_numbers:
+                index = kept_slice_numbers.index(slice_number)
+                slice_ic.set_registration_history(
                     slices[index].get_registration_history())
+
             # Otherwise, delete slices
             else:
-                stack_ic.delete_slice(i)
+                stack_ic.delete_slice(slice_ic)
 
         return stack_ic

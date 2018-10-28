@@ -52,7 +52,15 @@ def get_ap_flip_transform(path_to_image, initializer_type="GEOMETRY"):
     transform_sitk1.SetTranslation(-translation)
 
     transform_sitk2 = sitk.Euler3DTransform()
+
+    # AP 'flip', i.e. associated rotation
     transform_sitk2.SetRotation(0, 0, np.pi)
+
+    # # SI 'flip', i.e. associated rotation
+    # transform_sitk2.SetRotation(0, np.pi, 0)
+
+    # # AP+SI 'flip', i.e. associated rotation
+    # transform_sitk2.SetRotation(0, np.pi, np.pi)
 
     transform_sitk3 = sitk.Euler3DTransform(transform_sitk1.GetInverse())
 
@@ -136,11 +144,6 @@ def main():
         file_path=args.moving,
         file_path_mask=args.moving_mask,
         extract_slices=False)
-
-    if args.fixed_mask is not None:
-        use_fixed_mask = True
-    if args.moving_mask is not None:
-        use_moving_mask = True
 
     path_to_transform = os.path.join(
         args.dir_output, "registration_transform_sitk.txt")
@@ -247,6 +250,7 @@ def main():
         cmd_args.append("-res %s" % path_to_output)
         cmd_args.append("-inaff %s" % path_to_transform_regaladin)
         cmd_args.append("-aff %s" % path_to_transform_regaladin)
+        # cmd_args.append("-ln 2")
         cmd_args.append("-rigOnly")
         cmd_args.append("-voff")
         if args.moving_mask is not None:
@@ -308,6 +312,7 @@ def main():
         cmd_args.append("-inaff %s" % path_to_transform_flip_regaladin)
         cmd_args.append("-aff %s" % path_to_transform_flip_regaladin)
         cmd_args.append("-rigOnly")
+        # cmd_args.append("-ln 2")
         cmd_args.append("-voff")
         if args.moving_mask is not None:
             cmd_args.append("-fmask %s" % args.moving_mask)
@@ -358,7 +363,7 @@ def main():
             subdir_mc = args.dir_input_mc.split("/")[-1]
         dir_output_mc = os.path.join(args.dir_output, subdir_mc)
 
-        ph.create_directory(dir_output_mc)
+        ph.create_directory(dir_output_mc, delete_files=True)
         pattern = REGEX_FILENAMES + "[.]tfm"
         p = re.compile(pattern)
         trafos = [t for t in os.listdir(args.dir_input_mc) if p.match(t)]

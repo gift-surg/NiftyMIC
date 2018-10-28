@@ -37,12 +37,13 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         filename_reference = "SRR_stacks3_TK1_lsmr_alpha0p02_itermax5.nii.gz"
         path_to_reference = os.path.join(dir_reference, filename_reference)
         path_to_reference_mask = ph.append_to_filename(
-    os.path.join(dir_reference, filename_reference), self.suffix_mask)
+            os.path.join(dir_reference, filename_reference), self.suffix_mask)
 
         two_step_cycles = 1
         iter_max = 5
-        threshold = 0.8
+        threshold = 0.84
         alpha = 0.02
+        intensity_correction = 1
 
         cmd_args = []
         cmd_args.append("--filenames %s" % " ".join(self.filenames))
@@ -52,6 +53,7 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         cmd_args.append("--iter-max %d" % iter_max)
         cmd_args.append("--threshold-first %f" % threshold)
         cmd_args.append("--threshold %f" % threshold)
+        cmd_args.append("--intensity-correction %d" % intensity_correction)
         cmd_args.append("--alpha %f" % alpha)
 
         cmd = "niftymic_reconstruct_volume %s" % (
@@ -105,12 +107,14 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
 
         iter_max = 5
         alpha = 0.02
+        intensity_correction = 1
 
         cmd_args = []
         cmd_args.append("--filenames %s" % " ".join(self.filenames))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
         cmd_args.append("--dir-output %s" % self.dir_output)
         cmd_args.append("--iter-max %d" % iter_max)
+        cmd_args.append("--intensity-correction %d" % intensity_correction)
         cmd_args.append("--alpha %f" % alpha)
         cmd_args.append("--reconstruction-space %s" % path_to_reference)
 

@@ -23,17 +23,21 @@ import niftymic.validation.motion_evaluator as me
 import niftymic.validation.residual_evaluator as re
 import niftymic.utilities.robust_motion_estimator as rme
 
+from niftymic.definitions import VIEWER
 
 ##
 # Class which holds basic interface for all modules
 # \date       2017-08-08 02:20:40+0100
 #
+
+
 class Pipeline(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, stacks, verbose):
+    def __init__(self, stacks, verbose, viewer):
         self._stacks = stacks
         self._verbose = verbose
+        self._viewer = viewer
 
         self._computational_time = ph.get_zero_time()
 
@@ -87,9 +91,9 @@ class RegistrationPipeline(Pipeline):
     # \param      registration_method  Registration method, e.g.
     #                                  CppItkRegistration
     #
-    def __init__(self, verbose, stacks, reference, registration_method):
+    def __init__(self, verbose, stacks, reference, registration_method, viewer):
 
-        Pipeline.__init__(self, stacks=stacks, verbose=verbose)
+        Pipeline.__init__(self, stacks=stacks, verbose=verbose, viewer=viewer)
 
         self._reference = reference
         self._registration_method = registration_method
@@ -122,13 +126,16 @@ class VolumeToVolumeRegistration(RegistrationPipeline):
                  reference,
                  registration_method,
                  verbose=1,
+                 viewer=VIEWER,
                  ):
         RegistrationPipeline.__init__(
             self,
             stacks=stacks,
             reference=reference,
             registration_method=registration_method,
-            verbose=verbose)
+            viewer=viewer,
+            verbose=verbose,
+        )
 
     def _run(self):
 
@@ -185,13 +192,16 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                  threshold_measure="NCC",
                  s2v_smoothing=None,
                  interleave=2,
+                 viewer=VIEWER,
                  ):
         RegistrationPipeline.__init__(
             self,
             stacks=stacks,
             reference=reference,
             registration_method=registration_method,
-            verbose=verbose)
+            verbose=verbose,
+            viewer=viewer,
+        )
         self._print_prefix = print_prefix
         self._threshold = threshold
         self._threshold_measure = threshold_measure
@@ -265,11 +275,11 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                     robust_motion_estimator.get_robust_transforms_sitk()
 
                 # Export figures
-                title = "%s_Stack%d%s" % (
-                    self._print_prefix, i, stack.get_filename())
-                title = ph.replace_string_for_print(title)
-                robust_motion_estimator.show_estimated_transform_parameters(
-                    dir_output="/tmp/fetal_brain/figs", title=title)
+                # title = "%s_Stack%d%s" % (
+                #     self._print_prefix, i, stack.get_filename())
+                # title = ph.replace_string_for_print(title)
+                # robust_motion_estimator.show_estimated_transform_parameters(
+                #     dir_output="/tmp/fetal_brain/figs", title=title)
 
             # dir_output = "/tmp/fetal/figs"
             # motion_evaluator = me.MotionEvaluator(transforms_sitk)
@@ -307,17 +317,25 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                 nda_sim = np.nan_to_num(
                     slice_sim[stack.get_filename()][self._threshold_measure])
                 indices = np.where(nda_sim < self._threshold)[0]
-                N_slices = len(stack.get_slices())
-                for j in indices:
-                    stack.delete_slice(j)
+                slices = stack.get_slices()
 
-                ph.print_info("Stack %d/%d: %d/%d slices deleted (%s)" % (
+                for j in indices:
+                    stack.delete_slice(slices[j])
+
+                ph.print_info("Stack %d/%d: Slices %d/%d %s (%s)" % (
                     i + 1,
                     len(self._stacks),
-                    len(indices),
-                    N_slices,
+                    len(stack.get_deleted_slice_numbers()),
+                    stack.sitk.GetSize()[-1],
+                    stack.get_deleted_slice_numbers(),
                     stack.get_filename(),
                 ))
+                if len(indices) > 0:
+                    slice_indices = [slices[j].get_slice_number()
+                                     for j in indices]
+                    res_values = nda_sim[indices]
+                    print("    Latest rejections: %s | %s: %s" % (
+                        slice_indices, self._threshold_measure, res_values))
 
                 # Log stack where all slices were rejected
                 if stack.get_number_of_slices() == 0:
@@ -362,13 +380,16 @@ class SliceSetToVolumeRegistration(RegistrationPipeline):
                  slice_index_sets_of_stacks,
                  verbose=1,
                  print_prefix="",
+                 viewer=VIEWER,
                  ):
         RegistrationPipeline.__init__(
             self,
             stacks=stacks,
             reference=reference,
             registration_method=registration_method,
-            verbose=verbose)
+            verbose=verbose,
+            viewer=viewer,
+        )
 
         self._print_prefix = print_prefix
         self._slice_index_sets_of_stacks = slice_index_sets_of_stacks
@@ -501,6 +522,7 @@ class ReconstructionRegistrationPipeline(RegistrationPipeline):
                  registration_method,
                  reconstruction_method,
                  alpha_range,
+                 viewer,
                  ):
 
         RegistrationPipeline.__init__(
@@ -508,7 +530,9 @@ class ReconstructionRegistrationPipeline(RegistrationPipeline):
             verbose=verbose,
             stacks=stacks,
             reference=reference,
-            registration_method=registration_method)
+            registration_method=registration_method,
+            viewer=viewer,
+        )
 
         self._reconstruction_method = reconstruction_method
         self._alpha_range = alpha_range
@@ -567,6 +591,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                  use_robust_registration=False,
                  s2v_smoothing=0.5,
                  interleave=2,
+                 viewer=VIEWER,
                  ):
 
         ReconstructionRegistrationPipeline.__init__(
@@ -576,7 +601,9 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             registration_method=registration_method,
             reconstruction_method=reconstruction_method,
             alpha_range=alpha_range,
-            verbose=verbose)
+            viewer=viewer,
+            verbose=verbose,
+        )
 
         self._cycles = cycles
         self._outlier_rejection = outlier_rejection
@@ -648,7 +675,8 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
                 if self._verbose:
                     sitkh.show_stacks(self._reconstructions,
-                                      segmentation=self._reference)
+                                      segmentation=self._reference,
+                                      viewer=self._viewer)
 
 
 ##
@@ -684,6 +712,7 @@ class HieararchicalSliceSetRegistrationReconstruction(
                  alpha_range,
                  interleave,
                  verbose=1,
+                 viewer=VIEWER,
                  ):
 
         ReconstructionRegistrationPipeline.__init__(
@@ -693,7 +722,9 @@ class HieararchicalSliceSetRegistrationReconstruction(
             registration_method=registration_method,
             reconstruction_method=reconstruction_method,
             alpha_range=alpha_range,
-            verbose=verbose)
+            verbose=verbose,
+            viewer=VIEWER,
+        )
         self._interleave = interleave
 
     def _run(self, debug=1):
@@ -878,9 +909,11 @@ class MultiComponentReconstruction(Pipeline):
                  stacks,
                  reconstruction_method,
                  suffix="_recon",
-                 verbose=0):
+                 verbose=0,
+                 viewer=VIEWER,
+                 ):
 
-        Pipeline.__init__(self, stacks=stacks, verbose=verbose)
+        Pipeline.__init__(self, stacks=stacks, verbose=verbose, viewer=viewer)
 
         self._reconstruction_method = reconstruction_method
         self._reconstructions = None

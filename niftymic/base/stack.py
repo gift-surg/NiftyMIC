@@ -460,27 +460,26 @@ class Stack:
     # Delete slice at given index
     # \date       2017-12-01 00:38:56+0000
     #
-    # Note that index refers to list index of slices (0 ... N_slices) whereas
+    # Note that index refers to list index of slices (0 ... N_slices_current) whereas
     # "deleted slice index" refers to actual slice number within original stack
     #
     # \param      self   The object
-    # \param      index  The index
+    # \param      index  slice as Slice object to be deleted
     #
-    def delete_slice(self, index):
-        # delete slice at given index
-        if index in range(self._N_slices):
-            slice_number = self._slices[index].get_slice_number()
-            self._deleted_slices.append(slice_number)
-            self._deleted_slices = sorted(list(set(self._deleted_slices)))
-            self._slices[index] = None
-        else:
-            raise ValueError(
-                "Slice number must be between 0 and %d" % self._N_slices)
+    def delete_slice(self, slice):
+        if not isinstance(slice, sl.Slice):
+            raise IOError("Input must be of type Slice")
 
+        # keep slice number (w.r.t. original stack)
+        self._deleted_slices.append(int(slice.get_slice_number()))
+        self._deleted_slices = sorted((self._deleted_slices))
+
+        # delete slice
+        index = self._slices.index(slice)
+        self._slices[index] = None
 
     def get_deleted_slice_numbers(self):
         return list(self._deleted_slices)
-
 
     # Get name of directory where nifti was read from
     #  \return string of directory wher nifti was read from
@@ -1218,6 +1217,11 @@ class Stack:
 
         if slice_numbers is None:
             slice_numbers = range(0, self._N_slices)
+
+        if len(slice_numbers) != self._N_slices:
+            raise ValueError(
+                "slice_numbers must correspond to the number of slices "
+                "of the image volume")
 
         # Extract slices and add masks
         for i in range(0, self._N_slices):
