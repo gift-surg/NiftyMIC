@@ -26,6 +26,7 @@ class TemplateStackEstimator(object):
 
     def __init__(self):
         self._template_path = None
+        self._estimated_gw = None
 
     ##
     # Gets the path to estimated template.
@@ -37,6 +38,9 @@ class TemplateStackEstimator(object):
     #
     def get_path_to_template(self):
         return self._template_path
+
+    def get_estimated_gw(self):
+        return self._estimated_gw
 
     ##
     # Select template with similar brain volume
@@ -84,11 +88,15 @@ class TemplateStackEstimator(object):
         for k in gestational_ages:
             if dic[str(k)]["volume_mask_dil"] > volume:
                 key = str(np.max([gestational_ages[0], k - 1]))
+                template_stack_estimator._estimated_gw = int(key)
+
                 template_stack_estimator._template_path = os.path.join(
                     DIR_TEMPLATES, dic[key]["image"])
                 return template_stack_estimator
 
         # Otherwise, return path to oldest template image available
+        template_stack_estimator._estimated_gw = int(gestational_ages[-1])
+
         template_stack_estimator._template_path = os.path.join(
             DIR_TEMPLATES, dic[str(gestational_ages[-1])]["image"])
         return template_stack_estimator
