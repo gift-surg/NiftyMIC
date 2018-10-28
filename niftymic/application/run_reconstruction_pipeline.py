@@ -25,6 +25,8 @@ import niftymic.utilities.template_stack_estimator as tse
 
 from niftymic.definitions import DIR_TEMPLATES
 
+from niftymic.definitions import DIR_TEMPLATES
+
 
 def main():
 
@@ -34,7 +36,7 @@ def main():
 
     input_parser = InputArgparser(
         description="Run reconstruction pipeline including "
-        "(i) preprocessing (bias field correction + intensity correction), "
+        "(i) bias field correction, "
         "(ii) volumetric reconstruction in subject space, "
         "and (iii) volumetric reconstruction in template space.",
     )
@@ -91,7 +93,6 @@ def main():
         input_parser.log_config(os.path.abspath(__file__))
 
     prefix_bias = "N4ITK_"
-    prefix_ic = "IC_"
     dir_output_preprocessing = os.path.join(
         args.dir_output, "preprocessing")
     dir_output_recon_subject_space = os.path.join(

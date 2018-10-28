@@ -140,7 +140,7 @@ run_reconstruction_pipeline:
   #   - master
   script:
     - >
-      niftymic_run_reconstruction_pipeline
+      python niftymic/application/run_reconstruction_pipeline.py
       --filenames ${DATADIR}/input_data/axial.nii.gz
       --dir-input-templates ${DATADIR}/templates
       --dir-output ${TMPDIR} 

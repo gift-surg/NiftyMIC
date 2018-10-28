@@ -60,7 +60,7 @@ def main():
     input_parser.add_sigma(default=0.6)
     input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_iterations(default=15)
-    input_parser.add_alpha(default=0.02)
+    input_parser.add_alpha(default=0.01)
     input_parser.add_alpha_first(default=0.05)
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)
@@ -217,7 +217,6 @@ def main():
                     interpolator="NearestNeighbor",
                 ))
             intensity_corrector.run_linear_intensity_correction()
-            # intensity_corrector.run_affine_intensity_correction()
             stacks[i] = intensity_corrector.get_intensity_corrected_stack()
             print("done (c1 = %g) " %
                   intensity_corrector.get_intensity_correction_coefficients())
