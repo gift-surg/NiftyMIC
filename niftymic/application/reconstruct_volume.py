@@ -55,9 +55,9 @@ def main():
     input_parser.add_target_stack_index(default=0)
     input_parser.add_search_angle(default=45)
     input_parser.add_multiresolution(default=0)
-    input_parser.add_shrink_factors(default=[2, 1])
-    input_parser.add_smoothing_sigmas(default=[1, 0])
-    input_parser.add_sigma(default=0.9)
+    input_parser.add_shrink_factors(default=[3, 2, 1])
+    input_parser.add_smoothing_sigmas(default=[1.5, 1, 0])
+    input_parser.add_sigma(default=0.6)
     input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_iterations(default=15)
     input_parser.add_alpha(default=0.02)
@@ -83,8 +83,8 @@ def main():
     input_parser.add_reference()
     input_parser.add_reference_mask()
     input_parser.add_outlier_rejection(default=1)
-    input_parser.add_threshold_first(default=0.6)
-    input_parser.add_threshold(default=0.7)
+    input_parser.add_threshold_first(default=0.5)
+    input_parser.add_threshold(default=0.8)
     input_parser.add_use_robust_registration(default=0)
     input_parser.add_s2v_smoothing(default=0.5)
     input_parser.add_interleave(default=2)
@@ -97,6 +97,8 @@ def main():
 
     # Use FLIRT for volume-to-volume reg. step. Otherwise, RegAladin is used.
     use_flirt_for_v2v_registration = 1
+    viewer = "itksnap"
+    # viewer = "fsleyes"
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -160,21 +162,23 @@ def main():
         search_angles = ["-searchr%s -%d %d" %
                          (x, args.search_angle, args.search_angle)
                          for x in ["x", "y", "z"]]
-        search_angles = (" ").join(search_angles)
+        options = (" ").join(search_angles)
+        # options += " -noresample"
 
         if use_flirt_for_v2v_registration:
             vol_registration = regflirt.FLIRT(
                 registration_type="Rigid",
                 use_fixed_mask=True,
                 use_moving_mask=True,
-                options=search_angles,
+                options=options,
                 use_verbose=False,
             )
         else:
             vol_registration = niftyreg.RegAladin(
                 registration_type="Rigid",
-                # use_fixed_mask=True,
-                # use_moving_mask=True,
+                use_fixed_mask=True,
+                use_moving_mask=True,
+                # options="-ln 2",
                 use_verbose=False,
             )
         v2vreg = pipeline.VolumeToVolumeRegistration(
@@ -213,6 +217,7 @@ def main():
                     interpolator="NearestNeighbor",
                 ))
             intensity_corrector.run_linear_intensity_correction()
+            # intensity_corrector.run_affine_intensity_correction()
             stacks[i] = intensity_corrector.get_intensity_corrected_stack()
             print("done (c1 = %g) " %
                   intensity_corrector.get_intensity_correction_coefficients())
@@ -261,7 +266,7 @@ def main():
     if args.verbose:
         tmp = list(stacks)
         tmp.insert(0, HR_volume)
-        sitkh.show_stacks(tmp, segmentation=HR_volume)
+        sitkh.show_stacks(tmp, segmentation=HR_volume, viewer=viewer)
 
     # ----------------Two-step Slice-to-Volume Registration SRR----------------
     SRR = tk.TikhonovSolver(
@@ -316,6 +321,7 @@ def main():
                 use_robust_registration=args.use_robust_registration,
                 s2v_smoothing=args.s2v_smoothing,
                 interleave=args.interleave,
+                viewer=viewer,
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
@@ -330,10 +336,13 @@ def main():
 
     # Write motion-correction results
     if args.write_motion_correction:
+        dir_output_mc = os.path.join(
+            args.dir_output, args.subfolder_motion_correction)
+        ph.clear_directory(dir_output_mc)
+
         for stack in stacks:
             stack.write(
-                os.path.join(args.dir_output,
-                             args.subfolder_motion_correction),
+                dir_output_mc,
                 write_stack=False,
                 write_mask=False,
                 write_slices=False,
@@ -354,19 +363,6 @@ def main():
                 )
             )
 
-        if args.outlier_rejection:
-            deleted_slices_dic = {}
-            for i, stack in enumerate(stacks):
-                deleted_slices = stack.get_deleted_slice_numbers()
-                deleted_slices_dic[stack.get_filename()] = deleted_slices
-            ph.write_dictionary_to_json(
-                deleted_slices_dic,
-                os.path.join(
-                    args.dir_output,
-                    args.subfolder_motion_correction,
-                    "rejected_slices.json"
-                )
-            )
 
     # ------------------Final Super-Resolution Reconstruction------------------
     ph.print_title("Final Super-Resolution Reconstruction")
@@ -403,7 +399,10 @@ def main():
         HR_volume_iterations.append(stack)
 
     if args.verbose and not args.provide_comparison:
-        sitkh.show_stacks(HR_volume_iterations, segmentation=HR_volume)
+        sitkh.show_stacks(
+            HR_volume_iterations,
+            segmentation=HR_volume,
+            viewer=viewer)
     # HR_volume_final.show()
 
     # Show SRR together with linearly resampled input data.

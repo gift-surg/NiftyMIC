@@ -124,39 +124,6 @@ class StackTest(unittest.TestCase):
         nda_mask = sitk.GetArrayFromImage(stack.sitk_mask)
         self.assertEqual(nda_mask.prod(), 0)
 
-    def test_delete_slices(self):
-        filename = "stack0"
-        stack = st.Stack.from_filename(
-            os.path.join(self.dir_test_data, filename + ".nii.gz"),
-            os.path.join(self.dir_test_data, filename + "_mask.nii.gz")
-        )
-
-        # Throw error in case slice at non-existent index shall be deleted
-        self.assertRaises(
-            ValueError,
-            lambda: stack.delete_slice(stack.get_number_of_slices()))
-        self.assertRaises(
-            ValueError,
-            lambda: stack.delete_slice(-stack.get_number_of_slices()))
-
-        # Delete randomly slice indices
-        for i in range(stack.get_number_of_slices()):
-            # print ("----")
-            slice_numbers = [s.get_slice_number() for s in stack.get_slices()]
-            # print(slice_numbers)
-            indices = np.arange(len(slice_numbers))
-            random.shuffle(indices)
-            index = slice_numbers[indices[0]]
-            # print(index)
-            stack.delete_slice(index)
-            # print(stack.get_number_of_slices())
-
-        # No slice left at the end of the loop
-        self.assertEqual(stack.get_number_of_slices(), 0)
-
-        # No slice left for deletion
-        self.assertRaises(ValueError, lambda: stack.delete_slice(-1))
-
     def test_update_write_transform(self):
 
         motion_simulator = ms.RandomRigidMotionSimulator(

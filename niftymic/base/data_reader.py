@@ -266,13 +266,23 @@ class MultipleImagesReader(ImageDataReader):
                         slices[i_slice].update_motion_correction(
                             transform_slice_sitk)
                     else:
-                        stacks[i].delete_slice(i_slice)
+                        stacks[i].delete_slice(slices[i_slice])
                 if stacks[i].get_number_of_slices() == 0:
                     ph.print_info(
                         "Stack '%s' removed as all slices were deleted" %
                         stack_name)
                     stacks[i] = None
-                ph.print_info("Stack '%s': Slice positions updated" % stack_name)
+                ph.print_info(
+                    "Stack '%s': Slice positions updated "
+                    "(%d slices rejected)" % (
+                        stack_name,
+                        len(stacks[i].get_deleted_slice_numbers())))
+
+                # print(stacks[i].get_filename())
+                # for s in stacks[i].get_slices():
+                #     print(s.get_slice_number())
+                #     # print(s.get_motion_correction_transform())
+                #     print(s.get_affine_transform())
 
         self._stacks = [s for s in stacks if s is not None]
 
