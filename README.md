@@ -7,7 +7,7 @@ The algorithm and software were developed by [Michael Ebner][mebner] at the [Tra
 If you have any questions or comments, please drop an email to `michael.ebner.14@ucl.ac.uk`.
 
 ## NiftyMIC applied to fetal brain MRI
-Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using [fetal_brain_seg][fetal_brain_seg].
+Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg].
 
 <p align="center">
    <img src="./data/demo/NiftyMIC_Algorithm.png" align="center" width="700">
