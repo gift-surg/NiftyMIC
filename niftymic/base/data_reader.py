@@ -275,7 +275,7 @@ class MultipleImagesReader(ImageDataReader):
 
                 ph.print_info(
                     "Stack '%s': Slice positions updated "
-                    "(%d/%d slices rejected)" % (
+                    "(%d/%d slices deleted)" % (
                         stack_name,
                         len(stacks[i].get_deleted_slice_numbers()),
                         stacks[i].sitk.GetSize()[-1],
