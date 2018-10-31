@@ -146,6 +146,10 @@ def main():
             stacks[args.target_stack_index].get_resampled_stack(recon0.sitk)
         recon0 = recon0.get_stack_multiplied_with_mask()
 
+    ph.print_info(
+        "Isotropic reconstruction space defined with %g mm resolution" %
+        recon0.sitk.GetSpacing()[0])
+
     if args.reconstruction_type in ["TVL2", "HuberL2"]:
         ph.print_title("Compute Initial value for %s" %
                        args.reconstruction_type)
