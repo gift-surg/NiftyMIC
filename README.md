@@ -41,7 +41,7 @@ The toolkit relies on an iterative motion-correction/reconstruction approach whe
 
 ---
 
-The provided **data loss functions** ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho) are motivated by [SciPy](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and allow for robust outlier rejection. Implemented data loss functions are:
+The provided **data loss functions** ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho) are motivated by [SciPy](https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.least_squares.html) and allow for additional robust outlier handling during the SRR step. Implemented data loss functions are:
 <!--$`\varrho(e)=e`$-->
 <!--$`\varrho(e)=2(\sqrt{1+e}-1)`$ -->
 <!--$`\varrho(e)=|e|_\gamma=\begin{cases}e,&e<\gamma^2\\2\gamma\sqrt{e}-\gamma^2,&e\ge\gamma^2\end{cases}`$-->
@@ -100,9 +100,9 @@ whose installation requirements need to be met. Therefore, the installation come
 
 Provided the input MR image data in NIfTI format (`nii` or `nii.gz`), NiftyMIC can reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices.
 
-A recommended workflow is [associated applications in square brackets]
+A recommended workflow is [associated applications in square brackets]:
 
-1. Segmentation of the anatomy of interest for all input images. For fetal brain MRI reconstructions, we recommend the use of the fully automatic segmentation tool [fetal_brain_seg][fetal_brain_seg].
+1. Segmentation of the anatomy of interest for all input images. For fetal brain MRI reconstructions, we recommend the use of the fully automatic segmentation tool [fetal_brain_seg][fetal_brain_seg] for this step.
 1. Bias-field correction [`niftymic_correct_bias_field`]
 1. Volumetric reconstruction in subject space using two-step iterative approach based on rigid slice-to-volume registration and SRR cycles [`niftymic_reconstruct_volume`]
 
