@@ -6,7 +6,21 @@ The algorithm and software were developed by [Michael Ebner][mebner] at the [Tra
 
 If you have any questions or comments, please drop an email to `michael.ebner.14@ucl.ac.uk`.
 
-## Features
+## NiftyMIC applied to fetal brain MRI
+Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg].
+
+<p align="center">
+   <img src="./data/demo/NiftyMIC_Algorithm.png" align="center" width="700">
+</p>
+<p align="center">Figure 1. NiftyMIC - a volumetric reconstruction tool based on rigid slice-to-volume registration and outlier-robust super-resolution reconstruction steps - applied to fetal brain MRI.<p align="center">
+
+
+<p align="center">
+   <img src="./data/demo/NiftyMIC_VolumetricReconstructionOutput.png" align="center" width="1000">
+</p>
+<p align="center">Figure 2. Qualitative comparison of the original low-resolution input data and the obtained high-resolution volumetric reconstructions in both the original subject and standard anatomical spaces. Five input stacks (two axial, one coronal and two sagittal) were used. <p align="center">
+
+## Algorithm
 Several methods have been implemented to solve the **Robust Super-Resolution Reconstruction (SRR)** problem 
 <!-- ```math -->
 <!-- \vec{x}^* := \text{argmin}_{\vec{x}\ge 0} \Big[\sum_{k\in\mathcal{K}_\sigma} \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big] -->
@@ -54,7 +68,6 @@ The **available regularizers** include
 
 Additionally, the choice of finding **optimal reconstruction parameters** is facilitated by the [Numerical Solver Library (NSoL)][nsol].
 
-
 ## Disclaimer
 NiftyMIC supports medical image registration and volumetric reconstruction for ultra-fast 2D MRI. It has not been tested on larger cohort data yet.
 **NiftyMIC is not intended for clinical use**.
@@ -89,6 +102,7 @@ Provided the input MR image data in NIfTI format (`nii` or `nii.gz`), NiftyMIC c
 
 A recommended workflow is [associated applications in square brackets]
 
+1. Segmentation of the anatomy of interest for all input images. For fetal brain MRI reconstructions, we recommend the use of the fully automatic segmentation tool [fetal_brain_seg][fetal_brain_seg].
 1. Bias-field correction [`niftymic_correct_bias_field`]
 1. Volumetric reconstruction in subject space using two-step iterative approach based on rigid slice-to-volume registration and SRR cycles [`niftymic_reconstruct_volume`]
 
@@ -253,3 +267,4 @@ Associated publications are
 [simplereg]: https://github.com/gift-surg/SimpleReg
 [simplereg-dependencies]: https://github.com/gift-surg/SimpleReg/wikis/simplereg-dependencies
 [pysitk]: https://github.com/gift-surg/PySiTK
+[fetal_brain_seg]: https://github.com/gift-surg/fetal_brain_seg

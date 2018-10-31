@@ -1,10 +1,10 @@
 build/
 html/
 latex/
-data/
+data/templates
+data/tests
 *.nii
 *.nii.gz
-*.png
 *.zip
 *.pyc
 *iterate.dat

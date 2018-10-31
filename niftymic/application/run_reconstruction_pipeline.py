@@ -28,7 +28,6 @@ from niftymic.definitions import DIR_TEMPLATES
 from niftymic.definitions import DIR_TEMPLATES
 
 
-
 def main():
 
     time_start = ph.start_timing()
