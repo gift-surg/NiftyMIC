@@ -249,7 +249,7 @@ Associated publications are
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., and Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
 
 
-[mebner]: http://cmictig.cs.ucl.ac.uk/people/phd-students/michael-ebner
+[mebner]: https://www.linkedin.com/in/ebnermichael
 [tig]: http://cmictig.cs.ucl.ac.uk
 [bsd]: https://opensource.org/licenses/BSD-3-Clause
 [giftsurg]: http://www.gift-surg.ac.uk
