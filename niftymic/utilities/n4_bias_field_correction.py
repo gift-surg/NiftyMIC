@@ -87,7 +87,8 @@ class N4BiasFieldCorrection(object):
         self._stack_corrected = st.Stack.from_sitk_image(
             image_sitk=image_sitk,
             image_sitk_mask=stack_corrected_sitk_mask,
-            filename=self._prefix_corrected+self._stack.get_filename(),
+            filename=self._prefix_corrected + self._stack.get_filename(),
+            slice_thickness=self._stack.get_slice_thickness(),
         )
 
         # Get computational time
