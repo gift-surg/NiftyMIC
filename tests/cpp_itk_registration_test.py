@@ -66,7 +66,11 @@ class CppItkRegistrationTest(unittest.TestCase):
 
         # Created corrupted stack
         stack_corrupted = st.Stack.from_sitk_image(
-            stack_corrupted_sitk, stack.get_filename()+"_corrupted", stack_corrupted_sitk_mask)
+            image_sitk=stack_corrupted_sitk,
+            filename=stack.get_filename() + "_corrupted",
+            image_sitk_mask=stack_corrupted_sitk_mask,
+            slice_thickness=stack.get_slice_thickness(),
+            )
 
         # Perform in-plane 3D similarity registration
         registration = regitk.CppItkRegistration(
@@ -84,7 +88,7 @@ class CppItkRegistrationTest(unittest.TestCase):
         scale_est = registration.get_parameters()[6]
 
         self.assertEqual(np.round(
-            abs(scale-scale_est), decimals=self.accuracy), 0)
+            abs(scale - scale_est), decimals=self.accuracy), 0)
 
         # Get uniformly, in-plane scaled, rigidly aligned stack of slices
         stack_inplaneSimilar = registration.get_stack_with_similarity_inplane_transformed_slices(
@@ -99,7 +103,7 @@ class CppItkRegistrationTest(unittest.TestCase):
             stack_corrupted.sitk_mask, stack_inplaneSimilar.sitk_mask, transform_update.GetInverse(), sitk.sitkNearestNeighbor)
         # sitkh.show_sitk_image(mask_transformed_resampled_sitk-stack_inplaneSimilar.sitk_mask)
         nda_diff = sitk.GetArrayFromImage(
-            mask_transformed_resampled_sitk-stack_inplaneSimilar.sitk_mask)
+            mask_transformed_resampled_sitk - stack_inplaneSimilar.sitk_mask)
 
         self.assertEqual(np.round(
             np.linalg.norm(nda_diff), decimals=self.accuracy), 0)

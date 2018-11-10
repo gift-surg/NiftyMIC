@@ -189,9 +189,18 @@ class MultipleImagesReader(ImageDataReader):
                  extract_slices=True,
                  dir_motion_correction=None,
                  prefix_slice="_slice",
+                 stacks_slice_thicknesses=None,
                  ):
 
         super(self.__class__, self).__init__()
+
+        if stacks_slice_thicknesses is not None:
+            if len(stacks_slice_thicknesses) is not len(file_paths):
+                raise IOError("Number of given slice thicknesses must "
+                              "correspond to the number of input images.")
+            self._stacks_slice_thicknesses = stacks_slice_thicknesses
+        else:
+            self._stacks_slice_thicknesses = [None] * len(file_paths)
 
         # Get list of paths to image
         self._file_paths = file_paths
@@ -224,7 +233,9 @@ class MultipleImagesReader(ImageDataReader):
             stacks[i] = st.Stack.from_filename(
                 file_path,
                 file_path_mask,
-                extract_slices=self._extract_slices)
+                slice_thickness=self._stacks_slice_thicknesses[i],
+                extract_slices=self._extract_slices,
+            )
 
             if self._dir_motion_correction is not None:
                 if not ph.directory_exists(self._dir_motion_correction):

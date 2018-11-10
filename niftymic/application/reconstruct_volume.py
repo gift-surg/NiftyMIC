@@ -88,6 +88,7 @@ def main():
     input_parser.add_use_robust_registration(default=0)
     input_parser.add_s2v_smoothing(default=0.5)
     input_parser.add_interleave(default=2)
+    input_parser.add_slice_thicknesses(default=None)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -105,7 +106,9 @@ def main():
     data_reader = dr.MultipleImagesReader(
         file_paths=args.filenames,
         file_paths_masks=args.filenames_masks,
-        suffix_mask=args.suffix_mask)
+        suffix_mask=args.suffix_mask,
+        stacks_slice_thicknesses=args.slice_thicknesses,
+    )
 
     if len(args.boundary_stacks) is not 3:
         raise IOError(
@@ -334,6 +337,7 @@ def main():
         HR_volume_iterations = []
 
     # Write motion-correction results
+    ph.print_title("Write Motion Correction Results")
     if args.write_motion_correction:
         dir_output_mc = os.path.join(
             args.dir_output, args.subfolder_motion_correction)
@@ -361,7 +365,6 @@ def main():
                     "rejected_slices.json"
                 )
             )
-
 
     # ------------------Final Super-Resolution Reconstruction------------------
     ph.print_title("Final Super-Resolution Reconstruction")

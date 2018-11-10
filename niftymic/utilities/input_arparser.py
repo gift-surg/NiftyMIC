@@ -922,6 +922,19 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_slice_thicknesses(
+        self,
+        option_string="--slice-thicknesses",
+        nargs="+",
+        type=float,
+        help="Manually specify slice thicknesses of input image stacks. "
+        "If not provided, the slice thicknesses of each acquired stack "
+        "is assumed to be the image spacing in through-plane direction.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
     ##
     # Parse the provided configuration file
     #

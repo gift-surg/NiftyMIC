@@ -255,9 +255,9 @@ class SliceAcqusition:
         size_HR_volume = np.array(self._HR_volume.sitk.GetSize())
 
         # Use maximal edge length of stack
-        length = np.max(size_HR_volume*spacing_HR_volume)
+        length = np.max(size_HR_volume * spacing_HR_volume)
 
-        return np.round(np.ones(3)*length / spacing).astype("int")
+        return np.round(np.ones(3) * length / spacing).astype("int")
 
     # Run slice acquisition in desired direction based on specified origin
     #  \param[in] output_direction_sitk direction as 9D tuple specifying the slice acquisition
@@ -277,7 +277,8 @@ class SliceAcqusition:
         resampler.SetDefaultPixelValue(0.0)
 
         # Set output image information
-        resampler.SetSize((int(self._output_size[0]), int(self._output_size[1]), 1))
+        resampler.SetSize(
+            (int(self._output_size[0]), int(self._output_size[1]), 1))
         resampler.SetOutputSpacing(self._output_spacing)
         resampler.SetOutputDirection(
             sitkh.get_itk_from_sitk_direction(output_direction_sitk))
@@ -291,7 +292,7 @@ class SliceAcqusition:
 
             # Shift origin along slice-select direction
             origin = self._output_origin_ref + i * \
-                self._output_spacing[2]*dir_slice_select
+                self._output_spacing[2] * dir_slice_select
 
             # Update origin based on slice-select direction
             resampler.SetOutputOrigin(tuple(origin))
@@ -366,8 +367,14 @@ class SliceAcqusition:
             stack_simulated_sitk_mask)[2]
 
         # Create Stack object
-        stack = st.Stack.from_sitk_image(stack_simulated_sitk[:, :, slice_range[0]:slice_range[
-                                         1]], filename=title, image_sitk_mask=stack_simulated_sitk_mask[:, :, slice_range[0]:slice_range[1]])
+        stack = st.Stack.from_sitk_image(
+            image_sitk=stack_simulated_sitk[
+                :, :, slice_range[0]:slice_range[1]],
+            filename=title,
+            image_sitk_mask=stack_simulated_sitk_mask[
+                :, :, slice_range[0]:slice_range[1]],
+            slice_thickness=stack_simulated_sitk.GetSpacing()[-1],
+        )
 
         # Append results
         self._stacks_simulated.append(stack)
@@ -448,12 +455,12 @@ class SliceAcqusition:
 
         # Create random translation \f$\in\f$ [\p -translation_max, \p
         # translation_max]
-        translation = 2*np.random.rand(3)*translation_max - translation_max
+        translation = 2 * np.random.rand(3) * translation_max - translation_max
 
         # Create random rotation \f$\in\f$ [\p -angle_deg_max, \p
         # angle_deg_max]
         angle_rad_x, angle_rad_y, angle_rad_z = (
-            2*np.random.rand(3)*angle_deg_max - angle_deg_max)/180*np.pi
+            2 * np.random.rand(3) * angle_deg_max - angle_deg_max) / 180 * np.pi
 
         # Set resulting rigid motion transform
         transform.SetTranslation(translation)
@@ -499,9 +506,9 @@ class SliceAcqusition:
         shape = nda.shape
 
         # Set additional offset around identified masked region in voxels
-        offset_x = np.round(boundary/spacing[2])
-        offset_y = np.round(boundary/spacing[1])
-        offset_z = np.round(boundary/spacing[0])
+        offset_x = np.round(boundary / spacing[2])
+        offset_y = np.round(boundary / spacing[1])
+        offset_z = np.round(boundary / spacing[0])
 
         # Compute sum of pixels of each slice along specified directions
         sum_xy = np.sum(nda, axis=(0, 1))  # sum within x-y-plane
@@ -515,18 +522,18 @@ class SliceAcqusition:
 
         # Non-zero elements of numpy array nda defining x_range
         ran = np.nonzero(sum_yz)[0]
-        range_x[0] = np.max([0,         ran[0]-offset_x])
-        range_x[1] = np.min([shape[0], ran[-1]+offset_x+1])
+        range_x[0] = np.max([0,         ran[0] - offset_x])
+        range_x[1] = np.min([shape[0], ran[-1] + offset_x + 1])
 
         # Non-zero elements of numpy array nda defining y_range
         ran = np.nonzero(sum_xz)[0]
-        range_y[0] = np.max([0,         ran[0]-offset_y])
-        range_y[1] = np.min([shape[1], ran[-1]+offset_y+1])
+        range_y[0] = np.max([0,         ran[0] - offset_y])
+        range_y[1] = np.min([shape[1], ran[-1] + offset_y + 1])
 
         # Non-zero elements of numpy array nda defining z_range
         ran = np.nonzero(sum_xy)[0]
-        range_z[0] = np.max([0,         ran[0]-offset_z])
-        range_z[1] = np.min([shape[2], ran[-1]+offset_z+1])
+        range_z[0] = np.max([0,         ran[0] - offset_z])
+        range_z[1] = np.min([shape[2], ran[-1] + offset_z + 1])
 
         # Numpy reads the array as z,y,x coordinates! So swap them accordingly
         return range_z.astype(int), range_y.astype(int), range_x.astype(int)

@@ -451,9 +451,10 @@ class IntensityCorrection(object):
                                   np.max(helper_slice_numbers) + 1)
 
         stack_ic = st.Stack.from_sitk_image(
-            image_sitk,
-            stack.get_filename(),
-            stack.sitk_mask,
+            image_sitk=image_sitk,
+            slice_thickness=stack.get_slice_thickness(),
+            filename=stack.get_filename(),
+            image_sitk_mask=stack.sitk_mask,
             slice_numbers=slice_numbers,
         )
 

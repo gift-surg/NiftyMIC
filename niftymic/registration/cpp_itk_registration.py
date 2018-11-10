@@ -165,18 +165,18 @@ class CppItkRegistration(SimpleItkRegistration):
         # Write images to HDD
         # if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
         sitkh.write_nifti_image_sitk(self._moving.sitk, self._dir_tmp +
-                                  moving_str + ".nii.gz")
+                                     moving_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + fixed_str + ".nii.gz"):
         sitkh.write_nifti_image_sitk(self._fixed.sitk, self._dir_tmp +
-                                  fixed_str + ".nii.gz")
+                                     fixed_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz")
         # and self._use_moving_mask:
         sitkh.write_nifti_image_sitk(self._moving.sitk_mask,
-                                  self._dir_tmp + moving_mask_str + ".nii.gz")
+                                     self._dir_tmp + moving_mask_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz") and
         # self._use_fixed_mask:
         sitkh.write_nifti_image_sitk(self._fixed.sitk_mask, self._dir_tmp +
-                                  fixed_mask_str + ".nii.gz")
+                                     fixed_mask_str + ".nii.gz")
 
         # Prepare command for execution
         # cmd =  "/Users/mebner/UCL/UCL/Software/Volumetric\ Reconstruction/build/cpp/bin/itkReg "
@@ -257,18 +257,18 @@ class CppItkRegistration(SimpleItkRegistration):
         # Write images to HDD
         # if not os.path.isfile(self._dir_tmp + moving_str + ".nii.gz"):
         sitkh.write_nifti_image_sitk(self._moving.sitk, self._dir_tmp +
-                                  moving_str + ".nii.gz")
+                                     moving_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + fixed_str + ".nii.gz"):
         sitkh.write_nifti_image_sitk(self._fixed.sitk, self._dir_tmp +
-                                  fixed_str + ".nii.gz")
+                                     fixed_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + moving_mask_str + ".nii.gz")
         # and self._use_moving_mask:
         sitkh.write_nifti_image_sitk(self._moving.sitk_mask,
-                                  self._dir_tmp + moving_mask_str + ".nii.gz")
+                                     self._dir_tmp + moving_mask_str + ".nii.gz")
         # if not os.path.isfile(self._dir_tmp + fixed_mask_str + ".nii.gz") and
         # self._use_fixed_mask:
         sitkh.write_nifti_image_sitk(self._fixed.sitk_mask, self._dir_tmp +
-                                  fixed_mask_str + ".nii.gz")
+                                     fixed_mask_str + ".nii.gz")
 
         # Prepare command for execution
         cmd = DIR_CPP_BUILD + "/bin/itkInplaneSimilarity3DReg" + endl
@@ -416,7 +416,7 @@ class CppItkRegistration(SimpleItkRegistration):
         rigid_sitk.SetParameters(self._parameters[0:6])
         R = np.array(rigid_sitk.GetMatrix()).reshape(3, 3)
         rigid_sitk.SetTranslation(R.dot(D).dot(Lambda).dot(D_inv).dot(
-            origin-center) - R.dot(origin) + translation + center)
+            origin - center) - R.dot(origin) + translation + center)
 
         return rigid_sitk, scale
 
@@ -450,7 +450,11 @@ class CppItkRegistration(SimpleItkRegistration):
         stack_inplaneSimilar_sitk.SetSpacing(spacing_scaled)
         stack_inplaneSimilar_sitk_mask.SetSpacing(spacing_scaled)
         stack_inplaneSimilar = st.Stack.from_sitk_image(
-            stack_inplaneSimilar_sitk, filename=stack.get_filename(), image_sitk_mask=stack_inplaneSimilar_sitk_mask)
+            image_sitk=stack_inplaneSimilar_sitk,
+            filename=stack.get_filename(),
+            image_sitk_mask=stack_inplaneSimilar_sitk_mask,
+            slice_thickness=stack.get_slice_thickness(),
+        )
 
         # Update all its slices based on the obtained (in-plane) similarity
         # transform
@@ -467,10 +471,12 @@ class CppItkRegistration(SimpleItkRegistration):
             slice_sitk_mask.SetSpacing(spacing_scaled)
 
             slice = sl.Slice.from_sitk_image(
-                slice_sitk,
+                slice_sitk=slice_sitk,
                 filename=slices_stack[i].get_filename(),
                 slice_number=slices_stack[i].get_slice_number(),
-                slice_sitk_mask=slice_sitk_mask)
+                slice_sitk_mask=slice_sitk_mask,
+                slice_thickness=slices_stack[i].get_slice_thickness(),
+            )
             slice.update_motion_correction(rigid_sitk)
 
             slices_stack_inplaneSimilar[i] = slice

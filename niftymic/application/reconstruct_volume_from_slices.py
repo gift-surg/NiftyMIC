@@ -65,6 +65,7 @@ def main():
     input_parser.add_provide_comparison(default=0)
     input_parser.add_log_config(default=1)
     input_parser.add_use_masks_srr(default=0)
+    input_parser.add_slice_thicknesses(default=None)
     input_parser.add_verbose(default=0)
 
     args = input_parser.parse_args()
@@ -84,6 +85,7 @@ def main():
         file_paths_masks=args.filenames_masks,
         suffix_mask=args.suffix_mask,
         dir_motion_correction=args.dir_input_mc,
+        stacks_slice_thicknesses=args.slice_thicknesses,
     )
 
     data_reader.read_data()

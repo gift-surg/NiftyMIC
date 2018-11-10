@@ -402,13 +402,18 @@ class Solver(object):
     #
     def _Mk_Ak(self, reconstruction_itk, slice_k):
 
+        # Get slice spacing relevant for Gaussian blurring estimate
+        in_plane_res = slice_k.get_inplane_resolution()
+        slice_thickness = slice_k.get_slice_thickness()
+        slice_spacing = np.array([in_plane_res, in_plane_res, slice_thickness])
+
         # Compute A_k x
         Ak_reconstruction_itk = self._linear_operators.A_itk(
-            reconstruction_itk, slice_k.itk)
+            reconstruction_itk, slice_k.itk, slice_spacing)
 
         if not self._use_masks:
             return Ak_reconstruction_itk
-        
+
         # Compute M_k A_k x
         Ak_reconstruction_itk = self._linear_operators.M_itk(
             Ak_reconstruction_itk, slice_k.itk_mask)
@@ -435,9 +440,14 @@ class Solver(object):
         else:
             Mk_slice_itk = slice_itk
 
+        # Get slice spacing relevant for Gaussian blurring estimate
+        in_plane_res = slice_k.get_inplane_resolution()
+        slice_thickness = slice_k.get_slice_thickness()
+        slice_spacing = np.array([in_plane_res, in_plane_res, slice_thickness])
+
         # Compute A_k^* M_k y_k
         Mk_slice_itk = self._linear_operators.A_adj_itk(
-            Mk_slice_itk, self._reconstruction.itk)
+            Mk_slice_itk, self._reconstruction.itk, slice_spacing)
 
         return Mk_slice_itk
 

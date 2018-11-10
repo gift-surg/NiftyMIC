@@ -458,7 +458,8 @@ class IntraStackRegistration(StackRegistrationBase):
         self._print_into_text_common()
 
     def _print_info_text_minimize(self):
-        print("Minimization via %s solver (scipy.optimize.minimize)" % (self._optimizer))
+        print("Minimization via %s solver (scipy.optimize.minimize)" %
+              (self._optimizer))
         print("\tLoss: " + self._optimizer_loss)
         print("\tMaximum number of iterations: " +
               str(self._optimizer_iter_max))
@@ -593,7 +594,7 @@ class IntraStackRegistration(StackRegistrationBase):
                         self._stack.sitk)
                 self._init_stack = st.Stack.from_sitk_image(
                     gradient_magnitude_stack_sitk,
-                    "GradMagn_"+self._stack.get_filename(),
+                    "GradMagn_" + self._stack.get_filename(),
                     self._stack.sitk_mask)
                 gradient_magnitude_reference_sitk = \
                     self._gradient_magnitude_filter_sitk.Execute(
@@ -701,7 +702,7 @@ class IntraStackRegistration(StackRegistrationBase):
             else:
                 residual = lambda x: np.concatenate((
                     self._get_residual_slice_neighbours_fit(x),
-                    alpha_parameter/alpha_neighbour *
+                    alpha_parameter / alpha_neighbour *
                     self._get_residual_parameters(x)
                 ))
         else:
@@ -748,23 +749,23 @@ class IntraStackRegistration(StackRegistrationBase):
             elif alpha_neighbour > self._ZERO and alpha_parameter < self._ZERO:
                 residual = lambda x: np.concatenate((
                     self._get_residual_reference_fit_total(x),
-                    alpha_neighbour/alpha_reference *
+                    alpha_neighbour / alpha_reference *
                     self._get_residual_slice_neighbours_fit(x)
                 ))
 
             elif alpha_neighbour < self._ZERO and alpha_parameter > self._ZERO:
                 residual = lambda x: np.concatenate((
                     self._get_residual_reference_fit_total(x),
-                    alpha_parameter/alpha_reference *
+                    alpha_parameter / alpha_reference *
                     self._get_residual_parameters(x)
                 ))
 
             elif alpha_neighbour > self._ZERO and alpha_parameter > self._ZERO:
                 residual = lambda x: np.concatenate((
                     self._get_residual_reference_fit_total(x),
-                    alpha_neighbour/alpha_reference *
+                    alpha_neighbour / alpha_reference *
                     self._get_residual_slice_neighbours_fit(x),
-                    alpha_parameter/alpha_reference *
+                    alpha_parameter / alpha_reference *
                     self._get_residual_parameters(x)
                 ))
 
@@ -1080,7 +1081,7 @@ class IntraStackRegistration(StackRegistrationBase):
     def _get_residual_slice_neighbours_fit(self, parameters_vec):
 
         # Allocate memory for residual
-        residual = np.zeros((self._N_slices-1, self._N_slice_voxels))
+        residual = np.zeros((self._N_slices - 1, self._N_slice_voxels))
 
         # Reshape parameters for easier access
         parameters = parameters_vec.reshape(-1, self._optimization_dofs)
@@ -1112,24 +1113,25 @@ class IntraStackRegistration(StackRegistrationBase):
             slice_i_nda_mask = sitk.GetArrayFromImage(slice_i_sitk_mask)
 
         # Compute residuals for neighbouring slices
-        for i in range(0, self._N_slices-1):
+        for i in range(0, self._N_slices - 1):
 
             # Update transform
-            parameters_slice_ip1 = parameters[i+1, 0:self._transform_type_dofs]
-            self._transforms_2D_sitk[i+1].SetParameters(parameters_slice_ip1)
+            parameters_slice_ip1 = parameters[
+                i + 1, 0:self._transform_type_dofs]
+            self._transforms_2D_sitk[i + 1].SetParameters(parameters_slice_ip1)
 
             # Get slice_{i+1}(T(theta_{i+1}, x))
             slice_ip1_sitk = sitk.Resample(
-                self._slices_2D[i+1].sitk,
+                self._slices_2D[i + 1].sitk,
                 self._slice_grid_2D_sitk,
-                self._transforms_2D_sitk[i+1],
+                self._transforms_2D_sitk[i + 1],
                 self._interpolator_sitk)
             slice_ip1_nda = sitk.GetArrayFromImage(slice_ip1_sitk)
 
             # Correct intensities according to chosen model
             slice_ip1_nda = self._apply_intensity_correction[
                 self._intensity_correction_type_slice_neighbour_fit](
-                slice_ip1_nda, parameters[i+1, self._transform_type_dofs:])
+                slice_ip1_nda, parameters[i + 1, self._transform_type_dofs:])
 
             # Compute residual slice_i(T(theta_i, x)) -
             # slice_{i+1}(T(theta_{i+1}, x))
@@ -1138,9 +1140,9 @@ class IntraStackRegistration(StackRegistrationBase):
             # Eliminate residual for non-masked regions
             if self._use_stack_mask_neighbour_fit_term:
                 slice_ip1_sitk_mask = sitk.Resample(
-                    self._slices_2D[i+1].sitk_mask,
+                    self._slices_2D[i + 1].sitk_mask,
                     self._slice_grid_2D_sitk,
-                    self._transforms_2D_sitk[i+1],
+                    self._transforms_2D_sitk[i + 1],
                     sitk.sitkNearestNeighbor)
                 slice_ip1_nda_mask = sitk.GetArrayFromImage(
                     slice_ip1_sitk_mask)
@@ -1174,8 +1176,8 @@ class IntraStackRegistration(StackRegistrationBase):
 
         # Allocate memory for Jacobian of residual
         jacobian = np.zeros((
-            (self._N_slices-1)*self._N_slice_voxels,
-            self._optimization_dofs*self._N_slices))
+            (self._N_slices - 1) * self._N_slice_voxels,
+            self._optimization_dofs * self._N_slices))
 
         # Reshape parameters for easier access
         parameters = parameters_vec.reshape(-1, self._optimization_dofs)
@@ -1194,20 +1196,21 @@ class IntraStackRegistration(StackRegistrationBase):
             self._transforms_2D_itk[i])
 
         # Compute Jacobian of residuals
-        for i in range(0, self._N_slices-1):
+        for i in range(0, self._N_slices - 1):
 
             # Update transforms
-            parameters_slice_ip1 = parameters[i+1, 0:self._transform_type_dofs]
-            self._transforms_2D_sitk[i+1].SetParameters(parameters_slice_ip1)
-            self._transforms_2D_itk[i+1].SetParameters(
+            parameters_slice_ip1 = parameters[
+                i + 1, 0:self._transform_type_dofs]
+            self._transforms_2D_sitk[i + 1].SetParameters(parameters_slice_ip1)
+            self._transforms_2D_itk[i + 1].SetParameters(
                 itk.OptimizerParameters[itk.D](parameters_slice_ip1))
 
             # Get d[slice_{i+1}(T(theta_{i+1}, x))]/dtheta_{i+1}
             jacobian_slice_ip1 = \
                 self._get_jacobian_slice_in_slice_neighbours_fit(
-                    self._slices_2D[i+1],
-                    self._transforms_2D_sitk[i+1],
-                    self._transforms_2D_itk[i+1])
+                    self._slices_2D[i + 1],
+                    self._transforms_2D_sitk[i + 1],
+                    self._transforms_2D_itk[i + 1])
 
             # Set elements in Jacobian for entire stack
             jacobian[i * self._N_slice_voxels:
@@ -1313,7 +1316,7 @@ class IntraStackRegistration(StackRegistrationBase):
 
         # Compute Jacobian for slice as (N_slice_voxels x
         # transform_type_dofs)-array
-        jacobian_slice = np.sum(dslice_nda[:, :, np.newaxis]*dT_nda, axis=1)
+        jacobian_slice = np.sum(dslice_nda[:, :, np.newaxis] * dT_nda, axis=1)
 
         return jacobian_slice
 
@@ -1387,10 +1390,10 @@ class IntraStackRegistration(StackRegistrationBase):
     def _get_jacobian_residual_scale(self, parameters_vec):
 
         jacobian = np.zeros(
-            (self._N_slices, self._N_slices*self._optimization_dofs))
+            (self._N_slices, self._N_slices * self._optimization_dofs))
 
         for i in range(0, self._N_slices):
-            jacobian[i, i*self._optimization_dofs] = 1
+            jacobian[i, i * self._optimization_dofs] = 1
 
         return jacobian
 
@@ -1409,7 +1412,7 @@ class IntraStackRegistration(StackRegistrationBase):
 
     def _get_jacobian_residual_intensity_coefficients_None(self,
                                                            parameters_vec):
-        return np.zeros((1, self._N_slices*self._optimization_dofs))
+        return np.zeros((1, self._N_slices * self._optimization_dofs))
 
     def _get_residual_intensity_coefficients_linear(self, parameters_vec):
 
@@ -1425,7 +1428,7 @@ class IntraStackRegistration(StackRegistrationBase):
                                                              parameters_vec):
 
         jacobian = np.zeros(
-            (self._N_slices, self._N_slices*self._optimization_dofs))
+            (self._N_slices, self._N_slices * self._optimization_dofs))
 
         for i in range(0, self._N_slices):
             jacobian[i, self._transform_type_dofs +
@@ -1447,13 +1450,13 @@ class IntraStackRegistration(StackRegistrationBase):
                                                              parameters_vec):
 
         jacobian = np.zeros(
-            (2*self._N_slices, self._N_slices*self._optimization_dofs))
+            (2 * self._N_slices, self._N_slices * self._optimization_dofs))
 
         for i in range(0, self._N_slices):
-            jacobian[2*i, self._transform_type_dofs +
-                     i*self._optimization_dofs] = 1
-            jacobian[2*i+1, self._transform_type_dofs +
-                     i*self._optimization_dofs+1] = 1
+            jacobian[2 * i, self._transform_type_dofs +
+                     i * self._optimization_dofs] = 1
+            jacobian[2 * i + 1, self._transform_type_dofs +
+                     i * self._optimization_dofs + 1] = 1
 
         return jacobian
 
@@ -1594,10 +1597,10 @@ class IntraStackRegistration(StackRegistrationBase):
             for i in range(1, self._N_slices):
 
                 # Take into account the initialization of slice i-1
-                slice_im1_sitk = sitk.Image(self._slices_2D[i-1].sitk)
+                slice_im1_sitk = sitk.Image(self._slices_2D[i - 1].sitk)
                 if self._use_stack_mask_neighbour_fit_term:
                     slice_im1_sitk *= sitk.Cast(
-                        self._slices_2D[i-1].sitk_mask,
+                        self._slices_2D[i - 1].sitk_mask,
                         slice_im1_sitk.GetPixelIDValue())
                 slice_im1_sitk = sitkh.get_transformed_sitk_image(
                     slice_im1_sitk, compensation_transform_sitk)
@@ -1621,7 +1624,7 @@ class IntraStackRegistration(StackRegistrationBase):
                     initial_transform_sitk = sitk.CenteredTransformInitializer(
                         fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
                 except:
-                    print("WARNING: Slice %d/%d" % (i, self._N_slices-1))
+                    print("WARNING: Slice %d/%d" % (i, self._N_slices - 1))
                     print("\tsitk.CenteredTransformInitializerFilter with " +
                           transform_initializer_type_sitk +
                           " does not work. Identity transform is used instead for initialization")
@@ -1674,7 +1677,7 @@ class IntraStackRegistration(StackRegistrationBase):
                     initial_transform_sitk = sitk.CenteredTransformInitializer(
                         fixed_sitk, moving_sitk, initial_transform_sitk, operation_mode_sitk)
                 except:
-                    print("WARNING: Slice %d/%d" % (i, self._N_slices-1))
+                    print("WARNING: Slice %d/%d" % (i, self._N_slices - 1))
                     print("\tsitk.CenteredTransformInitializerFilter with " +
                           transform_initializer_type_sitk +
                           " does not work. Identity transform is used instead for initialization")
@@ -1849,10 +1852,10 @@ class IntraStackRegistration(StackRegistrationBase):
                                           registration_image_type="identity"):
 
         slices_3D = stack.get_slices()
-        slices_2D = [None]*self._N_slices
+        slices_2D = [None] * self._N_slices
 
         if registration_image_type in ["partial_derivative"]:
-            dy_slices_2D = [None]*self._N_slices
+            dy_slices_2D = [None] * self._N_slices
 
         for i in range(0, self._N_slices):
 
@@ -1894,10 +1897,12 @@ class IntraStackRegistration(StackRegistrationBase):
             if registration_image_type in ["identity"]:
 
                 slices_2D[i] = sl.Slice.from_sitk_image(
-                    slice_2D_sitk,
+                    slice_sitk=slice_2D_sitk,
                     filename=filename,
                     slice_number=slice_number,
-                    slice_sitk_mask=slice_2D_sitk_mask)
+                    slice_sitk_mask=slice_2D_sitk_mask,
+                    slice_thickness=slice_3D.get_slice_thickness(),
+                )
 
             elif registration_image_type in ["gradient_magnitude"]:
                 # print("Gradient magnitude of image")
@@ -1905,10 +1910,12 @@ class IntraStackRegistration(StackRegistrationBase):
                     self._gradient_magnitude_filter_sitk.Execute(slice_2D_sitk)
 
                 slices_2D[i] = sl.Slice.from_sitk_image(
-                    gradient_magnitude_slice_2D_sitk,
-                    filename="GradMagn_"+filename,
+                    slice_sitk=gradient_magnitude_slice_2D_sitk,
+                    filename="GradMagn_" + filename,
                     slice_number=slice_number,
-                    slice_sitk_mask=slice_2D_sitk_mask)
+                    slice_sitk_mask=slice_2D_sitk_mask,
+                    slice_thickness=slice_3D.get_slice_thickness(),
+                )
 
             elif registration_image_type in ["partial_derivative"]:
                 # print("Partial derivatives of image")
@@ -1917,17 +1924,21 @@ class IntraStackRegistration(StackRegistrationBase):
                 dy_slice_2D_sitk = self._get_dy_image_sitk(slice_2D_sitk)
 
                 slices_2D[i] = sl.Slice.from_sitk_image(
-                    dx_slice_2D_sitk,
+                    slice_sitk=dx_slice_2D_sitk,
                     dir_input=None,
-                    filename="dx_"+filename,
+                    filename="dx_" + filename,
                     slice_number=slice_number,
-                    slice_sitk_mask=slice_2D_sitk_mask)
+                    slice_sitk_mask=slice_2D_sitk_mask,
+                    slice_thickness=slice_3D.get_slice_thickness(),
+                )
                 dy_slices_2D[i] = sl.Slice.from_sitk_image(
-                    dy_slice_2D_sitk,
+                    slice_sitk=dy_slice_2D_sitk,
                     dir_input=None,
-                    filename="dy_"+filename,
+                    filename="dy_" + filename,
                     slice_number=slice_number,
-                    slice_sitk_mask=slice_2D_sitk_mask)
+                    slice_sitk_mask=slice_2D_sitk_mask,
+                    slice_thickness=slice_3D.get_slice_thickness(),
+                )
 
                 # Debug
                 # sitkh.show_sitk_image([slice_3D.sitk[:,:,0],slice_2D_sitk], title=["standard_slice"+str(i), "gradient_magnitude_slice"+str(i)])
@@ -2085,7 +2096,7 @@ class IntraStackRegistration(StackRegistrationBase):
             center = np.array(similarity_2D_sitk.GetCenter())
             angle = similarity_2D_sitk.GetAngle()
             translation = np.array(similarity_2D_sitk.GetTranslation())
-            R = np.array(similarity_2D_sitk.GetMatrix()).reshape(2, 2)/scale
+            R = np.array(similarity_2D_sitk.GetMatrix()).reshape(2, 2) / scale
 
             # if self._use_verbose:
             #     print("Slice %2d/%d: in-plane scaling factor = %.3f" %(i, self._N_slices-1, 1/scale))
@@ -2093,7 +2104,7 @@ class IntraStackRegistration(StackRegistrationBase):
             rigid_2D_sitk = sitk.Euler2DTransform()
             rigid_2D_sitk.SetAngle(angle)
             rigid_2D_sitk.SetTranslation(
-                scale*R.dot(origin-center) - R.dot(origin) + translation + center)
+                scale * R.dot(origin - center) - R.dot(origin) + translation + center)
 
             # Expand to 3D rigid transform
             rigid_3D_sitk = self._get_3D_from_2D_rigid_transform_sitk(

@@ -88,7 +88,11 @@ class SegmentationPropagation(object):
 
         # Create new Stack instance
         stack_aligned_masked = st.Stack.from_sitk_image(
-            self._stack_sitk, self._stack.get_filename(), self._stack_sitk_mask)
+            image_sitk=self._stack_sitk,
+            filename=self._stack.get_filename(),
+            image_sitk_mask=self._stack_sitk_mask,
+            slice_thickness=self._stack.get_slice_thickness(),
+        )
 
         return stack_aligned_masked
 
