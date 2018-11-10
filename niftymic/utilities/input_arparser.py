@@ -433,8 +433,8 @@ class InputArgparser(object):
         self,
         option_string="--target-stack-index",
         type=int,
-        help="Index according to alphabetical order of stacks (images) "
-        "which defines physical space for SRR. First index is 0.",
+        help="Index of input image stack that defines physical space for SRR. "
+        "First index is 0.",
         default=0,
         required=False,
     ):
