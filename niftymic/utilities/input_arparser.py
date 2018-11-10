@@ -940,8 +940,8 @@ class InputArgparser(object):
         self,
         option_string="--viewer",
         type=str,
-        help="Viewer to be used for visualizations during verbose output (%s)"
-        ", ".join(VIEWER_OPTIONS),
+        help="Viewer to be used for visualizations during verbose output "
+        "(%s)" % ", ".join(VIEWER_OPTIONS),
         default="itksnap",
         required=False,
     ):
