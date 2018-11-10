@@ -46,9 +46,15 @@ class ParameterNormalizationTest(unittest.TestCase):
             os.path.join(self.dir_test_data, filename_stack_corrupted + ".nii.gz"))
 
         stack_corrupted = st.Stack.from_sitk_image(
-            stack_corrupted_sitk, "stack_corrupted")
-        stack = st.Stack.from_sitk_image(sitk.Resample(
-            stack_sitk, stack_corrupted.sitk), "stack")
+            image_sitk=stack_corrupted_sitk,
+            filename="stack_corrupted",
+            slice_thickness=stack_corrupted_sitk.GetSpacing()[-1],
+        )
+        stack = st.Stack.from_sitk_image(
+            image_sitk=sitk.Resample(stack_sitk, stack_corrupted.sitk),
+            filename="stack",
+            slice_thickness=stack_corrupted.get_slice_thickness(),
+        )
 
         # sitkh.show_stacks([stack, stack_corrupted])
 

@@ -23,6 +23,7 @@ from nsol.loss_functions import LossFunctions as \
 
 from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import ALLOWED_INTERPOLATORS
+from niftymic.definitions import VIEWER_OPTIONS
 
 # Allowed image types
 IMAGE_TYPES = "(" + (", or ").join(ALLOWED_EXTENSIONS) + ")"
@@ -433,8 +434,8 @@ class InputArgparser(object):
         self,
         option_string="--target-stack-index",
         type=int,
-        help="Index according to alphabetical order of stacks (images) "
-        "which defines physical space for SRR. First index is 0.",
+        help="Index of input image stack that defines physical space for SRR. "
+        "First index is 0.",
         default=0,
         required=False,
     ):
@@ -918,6 +919,30 @@ class InputArgparser(object):
         type=str,
         help="Choose type of interpolator %s." % (INTERPOLATOR_TYPES),
         default="Linear",
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_slice_thicknesses(
+        self,
+        option_string="--slice-thicknesses",
+        nargs="+",
+        type=float,
+        help="Manually specify slice thicknesses of input image stacks. "
+        "If not provided, the slice thicknesses of each acquired stack "
+        "is assumed to be the image spacing in through-plane direction.",
+        default=None,
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_viewer(
+        self,
+        option_string="--viewer",
+        type=str,
+        help="Viewer to be used for visualizations during verbose output (%s)"
+        ", ".join(VIEWER_OPTIONS),
+        default="itksnap",
         required=False,
     ):
         self._add_argument(dict(locals()))

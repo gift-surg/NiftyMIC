@@ -85,24 +85,33 @@ def main():
     input_parser.add_outlier_rejection(default=1)
     input_parser.add_threshold_first(default=0.5)
     input_parser.add_threshold(default=0.8)
+    input_parser.add_slice_thicknesses(default=None)
+    input_parser.add_viewer(default="itksnap")
+    input_parser.add_option(
+        option_string="--v2v-method",
+        type=str,
+        help="Registration method used for first rigid volume-to-volume "
+        "registration step. Input must be either 'FLIRT' or 'RegAladin'",
+        default="FLIRT",
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
+    if args.v2v_method.lower() not in ["flirt", "regaladin"]:
+        raise IOError("v2v-method must be either 'FLIRT' or 'RegAladin'")
+
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
-
-    # Use FLIRT for volume-to-volume reg. step. Otherwise, RegAladin is used.
-    use_flirt_for_v2v_registration = 1
-    viewer = "itksnap"
-    # viewer = "fsleyes"
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
     data_reader = dr.MultipleImagesReader(
         file_paths=args.filenames,
         file_paths_masks=args.filenames_masks,
-        suffix_mask=args.suffix_mask)
+        suffix_mask=args.suffix_mask,
+        stacks_slice_thicknesses=args.slice_thicknesses,
+    )
 
     if len(args.boundary_stacks) is not 3:
         raise IOError(
@@ -162,7 +171,7 @@ def main():
         options = (" ").join(search_angles)
         # options += " -noresample"
 
-        if use_flirt_for_v2v_registration:
+        if args.v2v_method.lower() == "flirt":
             vol_registration = regflirt.FLIRT(
                 registration_type="Rigid",
                 use_fixed_mask=True,
@@ -262,7 +271,7 @@ def main():
     if args.verbose:
         tmp = list(stacks)
         tmp.insert(0, HR_volume)
-        sitkh.show_stacks(tmp, segmentation=HR_volume, viewer=viewer)
+        sitkh.show_stacks(tmp, segmentation=HR_volume, viewer=args.viewer)
 
     # ----------------Two-step Slice-to-Volume Registration SRR----------------
     SRR = tk.TikhonovSolver(
@@ -314,7 +323,7 @@ def main():
                 verbose=args.verbose,
                 outlier_rejection=args.outlier_rejection,
                 threshold_range=[args.threshold_first, args.threshold],
-                viewer=viewer,
+                viewer=args.viewer,
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
@@ -328,6 +337,7 @@ def main():
         HR_volume_iterations = []
 
     # Write motion-correction results
+    ph.print_title("Write Motion Correction Results")
     if args.write_motion_correction:
         dir_output_mc = os.path.join(
             args.dir_output, args.subfolder_motion_correction)
@@ -394,7 +404,7 @@ def main():
         sitkh.show_stacks(
             HR_volume_iterations,
             segmentation=HR_volume,
-            viewer=viewer)
+            viewer=args.viewer)
     # HR_volume_final.show()
 
     # Show SRR together with linearly resampled input data.

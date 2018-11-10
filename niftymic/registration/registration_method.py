@@ -278,13 +278,15 @@ class AffineRegistrationMethod(RegistrationMethod):
             warped_moving = st.Stack.from_sitk_image(
                 image_sitk=self._get_warped_moving_sitk(),
                 filename=self._moving.get_filename(),
-                image_sitk_mask=warped_moving_sitk_mask
+                image_sitk_mask=warped_moving_sitk_mask,
+                slice_thickness=self._fixed.get_slice_thickness(),
             )
         else:
             warped_moving = sl.Slice.from_sitk_image(
                 image_sitk=self._get_warped_moving_sitk(),
                 filename=self._moving.get_filename(),
-                image_sitk_mask=warped_moving_sitk_mask
+                image_sitk_mask=warped_moving_sitk_mask,
+                slice_thickness=self._fixed.get_slice_thickness(),
             )
         return warped_moving
 

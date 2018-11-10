@@ -40,7 +40,11 @@ class IntensityCorrectionTest(unittest.TestCase):
 
         nda_3D = np.tile(nda_2D, (shape_z, 1, 1)).astype('double')
         stack_sitk = sitk.GetImageFromArray(nda_3D)
-        stack = st.Stack.from_sitk_image(stack_sitk, "Lena")
+        stack = st.Stack.from_sitk_image(
+            image_sitk=stack_sitk,
+            filename="Lena",
+            slice_thickness=stack_sitk.GetSpacing()[-1],
+        )
 
         # 1) Create linearly corrupted intensity stack
         nda_3D_corruped = np.zeros_like(nda_3D)
@@ -48,7 +52,10 @@ class IntensityCorrectionTest(unittest.TestCase):
             nda_3D_corruped[i, :, :] = nda_3D[i, :, :] / (i + 1.)
         stack_corrupted_sitk = sitk.GetImageFromArray(nda_3D_corruped)
         stack_corrupted = st.Stack.from_sitk_image(
-            stack_corrupted_sitk, "stack_corrupted")
+            image_sitk=stack_corrupted_sitk,
+            filename="stack_corrupted",
+            slice_thickness=stack_corrupted_sitk.GetSpacing()[-1],
+        )
         # stack_corrupted.show_slices()
         # sitkh.show_stacks([stack, stack_corrupted])
 
@@ -79,7 +86,11 @@ class IntensityCorrectionTest(unittest.TestCase):
             os.path.join(self.dir_test_data, "2D_Lena_256.png"))
         nda_3D = np.tile(nda_2D, (shape_z, 1, 1)).astype('double')
         stack_sitk = sitk.GetImageFromArray(nda_3D)
-        stack = st.Stack.from_sitk_image(stack_sitk, "Lena")
+        stack = st.Stack.from_sitk_image(
+            image_sitk=stack_sitk,
+            filename="Lena",
+            slice_thickness=stack_sitk.GetSpacing()[-1],
+        )
 
         # 1) Create linearly corrupted intensity stack
         nda_3D_corruped = np.zeros_like(nda_3D)
@@ -87,7 +98,10 @@ class IntensityCorrectionTest(unittest.TestCase):
             nda_3D_corruped[i, :, :] = (nda_3D[i, :, :] - 10 * i) / (i + 1.)
         stack_corrupted_sitk = sitk.GetImageFromArray(nda_3D_corruped)
         stack_corrupted = st.Stack.from_sitk_image(
-            stack_corrupted_sitk, "stack_corrupted")
+            image_sitk=stack_corrupted_sitk,
+            filename="stack_corrupted",
+            slice_thickness=stack_corrupted_sitk.GetSpacing()[-1],
+        )
         # stack_corrupted.show_slices()
         # sitkh.show_stacks([stack, stack_corrupted])
 
@@ -103,7 +117,7 @@ class IntensityCorrectionTest(unittest.TestCase):
             use_verbose=self.use_verbose)
         intensity_correction.run_affine_intensity_correction()
         ic_values_est = intensity_correction.get_intensity_correction_coefficients()
-        
+
         nda_diff = ic_values - ic_values_est
         self.assertEqual(np.round(
             np.linalg.norm(nda_diff), decimals=self.accuracy), 0)

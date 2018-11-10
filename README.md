@@ -6,7 +6,7 @@ The algorithm and software were developed by [Michael Ebner][mebner] at the [Tra
 
 If you have any questions or comments, please drop an email to `michael.ebner.14@ucl.ac.uk`.
 
-## NiftyMIC applied to fetal brain MRI
+## NiftyMIC applied to Fetal Brain MRI
 Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg].
 
 <p align="center">
@@ -32,7 +32,7 @@ Several methods have been implemented to solve the **Robust Super-Resolution Rec
 <!--to obtain the (vectorized) high-resolution 3D MRI volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D MR slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$-->
 <!--for a variety of regularizers $`\text{Reg}`$ and data loss functions $`\varrho`$.-->
 <!--The linear operator $`A_k := D_k B_k W_k`$ represents the comd operator descri the (rigid) motion $`W_k`$, the blurring operator $`B_k`$ and the downsampling operator $`D_k`$.-->
-to obtain the (vectorized) high-resolution 3D MRI volume ![img](http://latex.codecogs.com/svg.latex?%5Cvec%7Bx%7D%5Cin%5Cmathbb%7BR%7D%5EN) from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D MR slices ![img](http://latex.codecogs.com/svg.latex?%5Cvec%7By%7D_k%5Cin%5Cmathbb%7BR%7D%5E%7BN_k%7D) with ![img](http://latex.codecogs.com/svg.latex?N_k%5Cll%7BN%7D) for ![img](https://latex.codecogs.com/svg.latex?k\in\mathcal{K}=\\{1,\dots,K\\})
+to obtain the (vectorized) high-resolution 3D MRI volume ![img](http://latex.codecogs.com/svg.latex?%5Cvec%7Bx%7D%5Cin%5Cmathbb%7BR%7D%5EN) from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D MR slices ![img](http://latex.codecogs.com/svg.latex?%5Cvec%7By%7D_k%5Cin%5Cmathbb%7BR%7D%5E%7BN_k%7D) with ![img](http://latex.codecogs.com/svg.latex?N_k%5Cll%7BN%7D) for ![img](https://latex.codecogs.com/svg.latex?k\in\mathcal{K}:=\\{1,\dots,K\\})
 for a variety of regularizers ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D) and data loss functions ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho).
 The linear operator ![img](http://latex.codecogs.com/svg.latex?A_k%3A%3DD_kB_kW_k) represents the combined operator describing the (rigid) motion ![img](http://latex.codecogs.com/svg.latex?W_k), the blurring operator ![img](http://latex.codecogs.com/svg.latex?B_k) and the downsampling operator ![img](http://latex.codecogs.com/svg.latex?D_k).
 
@@ -49,7 +49,7 @@ The provided **data loss functions** ![img](http://latex.codecogs.com/svg.latex?
 <!--$`\varrho(e)=\ln(1 + e)`$-->
 * `linear`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3De)
 * `soft_l1`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D2%28%5Csqrt%7B1%2Be%7D-1%29)
-* `huber`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%7Ce%7C_%5Cgamma%3D%5Cbegin%7Bcases%7De%2C%26e%3C%5Cgamma%5E2%5C%5C2%5Cgamma%5Csqrt%7Be%7D-%5Cgamma%5E2%2C%26e%5Cge%5Cgamma%5E2%5Cend%7Bcases%7D)
+* `huber`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%7Ce%7C_%5Cgamma:%3D%5Cbegin%7Bcases%7De%2C%26e%3C%5Cgamma%5E2%5C%5C2%5Cgamma%5Csqrt%7Be%7D-%5Cgamma%5E2%2C%26e%5Cge%5Cgamma%5E2%5Cend%7Bcases%7D)
 * `arctan`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%5Carctan%28e%29)
 * `cauchy`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%5Cln%281%2Be%29)
 
@@ -62,7 +62,7 @@ The **available regularizers** include
 <!-- * Huber Function: $`\text{Reg}(\vec{x}) = \frac{1}{2\gamma} \big| |\nabla \vec{x}| \big|_{\gamma}`$ -->
 * Zeroth-order Tikhonov (TK0): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%7D%5CVert%5Cvec%7Bx%7D%5CVert_%7B%5Cell%5E2%7D%5E2)
 * First-order Tikhonov (TK1): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%7D%5CVert%5Cnabla%5Cvec%7Bx%7D%5CVert_%7B%5Cell%5E2%7D%5E2)
-* Isotropic Total Variation (TV): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Ctext%7BTV%7D_%5Ctext%7Biso%7D%28%5Cvec%7Bx%7D%29%3D%5Cbig%5CVert%7C%5Cnabla%5Cvec%7Bx%7D%7C%5Cbig%5CVert_%7B%5Cell%5E1%7D)
+* Isotropic Total Variation (TV): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Ctext%7BTV%7D_%5Ctext%7Biso%7D%28%5Cvec%7Bx%7D%29:%3D%5Cbig%5CVert%7C%5Cnabla%5Cvec%7Bx%7D%7C%5Cbig%5CVert_%7B%5Cell%5E1%7D)
 * Huber Function: ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%5Cgamma%7D%5Cbig%7C%7C%5Cnabla%5Cvec%7Bx%7D%7C%5Cbig%7C_%7B%5Cgamma%7D)
 ---
 

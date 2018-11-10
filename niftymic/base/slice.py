@@ -30,7 +30,13 @@ class Slice:
     #  \param[in] slice_number number of slice within parent stack, integer
     #  \param[in] slice_sitk_mask associated mask of slice, sitk.Image object (optional)
     @classmethod
-    def from_sitk_image(cls, slice_sitk, slice_number, filename="unknown", slice_sitk_mask=None):
+    def from_sitk_image(cls,
+                        slice_sitk,
+                        slice_number,
+                        slice_thickness,
+                        filename="unknown",
+                        slice_sitk_mask=None,
+                        ):
 
         slice = cls()
 
@@ -43,6 +49,7 @@ class Slice:
         slice._dir_input = None
         slice._filename = filename
         slice._slice_number = slice_number
+        slice._slice_thickness = slice_thickness
 
         # Append stacks as SimpleITK and ITK Image objects
         slice.sitk = slice_sitk
@@ -103,7 +110,13 @@ class Slice:
     #  \param[in] suffix_mask extension of slice filename which indicates associated mask
     #  \return Stack object including its slices with corresponding masks
     @classmethod
-    def from_filename(cls, file_path, slice_number, file_path_mask=None, verbose=False):
+    def from_filename(cls,
+                      file_path,
+                      slice_number,
+                      slice_thickness,
+                      file_path_mask=None,
+                      verbose=False,
+                      ):
 
         slice = cls()
 
@@ -113,6 +126,7 @@ class Slice:
         slice._dir_input = os.path.dirname(file_path)
         slice._filename = os.path.basename(file_path).split(".")[0]
         slice._slice_number = slice_number
+        slice._slice_thickness = slice_thickness
 
         # Append stacks as SimpleITK and ITK Image objects
         slice.sitk = sitkh.read_nifti_image_sitk(file_path, sitk.sitkFloat64)
@@ -177,6 +191,7 @@ class Slice:
         slice._filename = slice_to_copy.get_filename()
         slice._slice_number = slice_to_copy.get_slice_number()
         slice._dir_input = slice_to_copy.get_directory()
+        slice._slice_thickness = slice_to_copy.get_slice_thickness()
 
         # slice._history_affine_transforms, slice._history_motion_corrections =
         # slice_to_copy.get_registration_history()
@@ -247,6 +262,12 @@ class Slice:
     #  \return slice number, integer
     def get_slice_number(self):
         return self._slice_number
+
+    def get_slice_thickness(self):
+        return float(self._slice_thickness)
+
+    def get_inplane_resolution(self):
+        return float(self.sitk.GetSpacing()[0])
 
     # Get directory where parent stack is stored
     #  \return directory, string

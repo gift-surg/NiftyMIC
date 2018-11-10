@@ -40,7 +40,8 @@ class SegmentationPropagationTest(unittest.TestCase):
         template = st.Stack.from_filename(
             os.path.join(self.dir_test_data, filename + ".nii.gz"),
             os.path.join(self.dir_test_data, filename + "_mask.nii.gz"),
-            extract_slices=False)
+            extract_slices=False,
+        )
 
         transform_sitk_gd = sitk.Euler3DTransform()
         transform_sitk_gd.SetParameters(parameters_gd)
@@ -48,8 +49,11 @@ class SegmentationPropagationTest(unittest.TestCase):
         stack_sitk = sitkh.get_transformed_sitk_image(
             template.sitk, transform_sitk_gd)
 
-        stack = st.Stack.from_sitk_image(stack_sitk,
-                                         filename="stack")
+        stack = st.Stack.from_sitk_image(
+            image_sitk=stack_sitk,
+            filename="stack",
+            slice_thickness=template.get_slice_thickness(),
+        )
 
         optimizer = "RegularStepGradientDescent"
         optimizer_params = {

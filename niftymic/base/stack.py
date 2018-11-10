@@ -49,7 +49,9 @@ class Stack:
                       file_path,
                       file_path_mask=None,
                       extract_slices=True,
-                      verbose=False):
+                      verbose=False,
+                      slice_thickness=None,
+                      ):
 
         stack = cls()
 
@@ -70,6 +72,12 @@ class Stack:
         # Append stacks as SimpleITK and ITK Image objects
         stack.sitk = sitkh.read_nifti_image_sitk(file_path, sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
+
+        # Set slice thickness of acquisition
+        if slice_thickness is None:
+            stack._slice_thickness = stack.sitk.GetSpacing()[-1]
+        else:
+            stack._slice_thickness = slice_thickness
 
         # Append masks (either provided or binary mask)
         if file_path_mask is None:
@@ -113,7 +121,8 @@ class Stack:
             dimenson = stack.sitk.GetDimension()
             if dimenson == 3:
                 stack._N_slices = stack.sitk.GetSize()[-1]
-                stack._slices = stack._extract_slices()
+                stack._slices = stack._extract_slices(
+                    slice_thickness=stack.get_slice_thickness())
             elif dimenson == 2:
                 stack._N_slices = 1
                 stack._slices = [stack.sitk[:, :]]
@@ -155,7 +164,9 @@ class Stack:
                              prefix_stack,
                              suffix_mask=None,
                              dic_slice_filenames=None,
-                             prefix_slice="_slice"):
+                             prefix_slice="_slice",
+                             slice_thickness=None,
+                             ):
 
         stack = cls()
 
@@ -169,6 +180,12 @@ class Stack:
         stack.sitk = sitkh.read_nifti_image_sitk(
             dir_input + prefix_stack + ".nii.gz", sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
+
+        # Set slice thickness of acquisition
+        if slice_thickness is None:
+            stack._slice_thickness = stack.sitk.GetSpacing()[-1]
+        else:
+            stack._slice_thickness = slice_thickness
 
         # Append masks (either provided or binary mask)
         if suffix_mask is not None and \
@@ -223,57 +240,15 @@ class Stack:
                     stack._slices[i] = sl.Slice.from_filename(
                         file_path=path_to_slice,
                         slice_number=slice_number,
-                        file_path_mask=path_to_slice_mask)
+                        file_path_mask=path_to_slice_mask,
+                        slice_thickness=stack.get_slice_thickness(),
+                    )
                 else:
                     stack._slices[i] = sl.Slice.from_filename(
                         file_path=path_to_slice,
-                        slice_number=slice_number)
-
-        return stack
-
-    # Create Stack instance from a bundle of Slice objects.
-    #  \param[in] slices list of Slice objects
-    #  \param[in] stack_sitk optional volumetric stack as sitk.Image object
-    #  \param[in] mask_sitk optional associated mask of volumetric stack as sitk.Image object
-    #  \return Stack object based on Slice objects
-    @classmethod
-    def from_slices(cls, slices, stack_sitk=None, mask_sitk=None):
-
-        stack = cls()
-
-        stack._dir = slices[0].get_directory()
-        stack._filename = slices[0].get_filename()
-
-        if stack_sitk is None:
-            stack.sitk = None
-            stack.itk = None
-        else:
-            stack.sitk = stack_sitk
-            stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
-
-            # Store current affine transform of image
-            stack._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(
-                stack.sitk)
-
-            stack._history_affine_transforms = []
-            stack._history_affine_transforms.append(
-                stack._affine_transform_sitk)
-
-            stack._history_motion_corrections = []
-            stack._history_motion_corrections.append(sitk.Euler3DTransform())
-
-        stack._N_slices = len(slices)
-        stack._slices = slices
-
-        # Append masks (if provided)
-        if mask_sitk is not None:
-            stack.sitk_mask = mask_sitk
-            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
-            stack._is_unity_mask = False
-        else:
-            stack.sitk_mask = stack._generate_identity_mask()
-            stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
-            stack._is_unity_mask = True
+                        slice_number=slice_number,
+                        slice_thickness=stack.get_slice_thickness(),
+                    )
 
         return stack
 
@@ -288,6 +263,7 @@ class Stack:
     @classmethod
     def from_sitk_image(cls,
                         image_sitk,
+                        slice_thickness,
                         filename="unknown",
                         image_sitk_mask=None,
                         extract_slices=True,
@@ -297,6 +273,11 @@ class Stack:
 
         stack.sitk = sitk.Image(image_sitk)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
+
+        # Set slice thickness of acquisition
+        if type(slice_thickness) is not float:
+            raise ValueError("Slice thickness must be of type float")
+        stack._slice_thickness = slice_thickness
 
         stack._filename = filename
         stack._dir = None
@@ -324,7 +305,10 @@ class Stack:
         # Extract all slices and their masks from the stack and store them
         if extract_slices:
             stack._N_slices = stack.sitk.GetSize()[-1]
-            stack._slices = stack._extract_slices(slice_numbers=slice_numbers)
+            stack._slices = stack._extract_slices(
+                slice_numbers=slice_numbers,
+                slice_thickness=slice_thickness,
+            )
         else:
             stack._N_slices = 0
             stack._slices = None
@@ -356,6 +340,8 @@ class Stack:
         # Copy image stack and mask
         stack.sitk = sitk.Image(stack_to_copy.sitk)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
+
+        stack._slice_thickness = stack_to_copy.get_slice_thickness()
 
         stack.sitk_mask = sitk.Image(stack_to_copy.sitk_mask)
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
@@ -422,6 +408,12 @@ class Stack:
                 (self._N_slices - 1, self._N_slices - 1, index))
 
         return self._slices[index]
+
+    def get_slice_thickness(self):
+        return float(self._slice_thickness)
+
+    def get_inplane_resolution(self):
+        return float(self.sitk.GetSpacing()[0])
 
     ##
     # Gets the deleted slice numbers, i.e. misregistered slice numbers detected
@@ -743,7 +735,10 @@ class Stack:
 
         # Use resampling grid defined by original volumetric image
         if resampling_grid is None:
-            resampling_grid = Stack.from_sitk_image(self.sitk)
+            resampling_grid = Stack.from_sitk_image(
+                image_sitk=self.sitk,
+                slice_thickness=self.get_slice_thickness(),
+            )
 
         else:
             # Use resampling grid defined by first slice (which might be
@@ -829,7 +824,11 @@ class Stack:
             filename = self._filename + "_" + interpolator_str
 
         stack = self.from_sitk_image(
-            stack_resampled_sitk, filename, stack_resampled_sitk_mask)
+            image_sitk=stack_resampled_sitk,
+            filename=filename,
+            image_sitk_mask=stack_resampled_sitk_mask,
+            slice_thickness=stack_resampled_sitk.GetSpacing()[-1],
+        )
 
         return stack
 
@@ -901,7 +900,11 @@ class Stack:
         if filename is None:
             filename = self._filename + "_" + interpolator_str
         stack = self.from_sitk_image(
-            resampled_stack_sitk, filename, resampled_stack_sitk_mask)
+            image_sitk=resampled_stack_sitk,
+            slice_thickness=resampled_stack_sitk.GetSpacing()[-1],
+            filename=filename,
+            image_sitk_mask=resampled_stack_sitk_mask,
+        )
 
         return stack
 
@@ -928,7 +931,12 @@ class Stack:
         if filename is None:
             filename = self.get_filename()
 
-        return Stack.from_sitk_image(image_sitk, filename=filename, image_sitk_mask=mask_sitk)
+        return Stack.from_sitk_image(
+            image_sitk=image_sitk,
+            filename=filename,
+            image_sitk_mask=mask_sitk,
+            slice_thickness=self.get_slice_thickness(),
+        )
 
     # Get stack resampled on isotropic grid based on the actual position of
     #  its slices
@@ -1054,7 +1062,11 @@ class Stack:
         if filename is None:
             filename = self._filename + "_" + interpolator_str + "Iso"
         stack = self.from_sitk_image(
-            isotropic_resampled_stack_sitk, filename, isotropic_resampled_stack_sitk_mask)
+            image_sitk=isotropic_resampled_stack_sitk,
+            filename=filename,
+            slice_thickness=isotropic_resampled_stack_sitk.GetSpacing()[-1],
+            image_sitk_mask=isotropic_resampled_stack_sitk_mask,
+        )
 
         return stack
 
@@ -1141,7 +1153,10 @@ class Stack:
 
         slice_numbers = range(z_range[0], z_range[1])
         stack = self.from_sitk_image(
-            image_crop_sitk, self._filename, mask_crop_sitk,
+            image_sitk=image_crop_sitk,
+            slice_thickness=self.get_slice_thickness(),
+            filename=self._filename,
+            image_sitk_mask=mask_crop_sitk,
             slice_numbers=slice_numbers)
 
         return stack
@@ -1211,7 +1226,7 @@ class Stack:
 
     # Burst the stack into its slices and return all slices of the stack
     #  return list of Slice objects
-    def _extract_slices(self, slice_numbers=None):
+    def _extract_slices(self, slice_thickness, slice_numbers=None):
 
         slices = [None] * self._N_slices
 
@@ -1229,7 +1244,9 @@ class Stack:
                 slice_sitk=self.sitk[:, :, i:i + 1],
                 filename=self._filename,
                 slice_number=slice_numbers[i],
-                slice_sitk_mask=self.sitk_mask[:, :, i:i + 1])
+                slice_sitk_mask=self.sitk_mask[:, :, i:i + 1],
+                slice_thickness=slice_thickness,
+            )
 
         return slices
 

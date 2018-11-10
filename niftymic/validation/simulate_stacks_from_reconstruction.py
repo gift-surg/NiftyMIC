@@ -67,6 +67,7 @@ def main():
         default="NearestNeighbor")
     input_parser.add_log_config(default=1)
     input_parser.add_verbose(default=0)
+    input_parser.add_slice_thicknesses(default=None)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -85,6 +86,7 @@ def main():
         file_paths_masks=args.filenames_masks,
         suffix_mask=args.suffix_mask,
         dir_motion_correction=args.dir_input_mc,
+        stacks_slice_thicknesses=args.slice_thicknesses,
     )
     data_reader.read_data()
     stacks = data_reader.get_data()
@@ -137,7 +139,9 @@ def main():
             image_sitk=simulated_stack_sitk,
             image_sitk_mask=simulated_stack_sitk_mask,
             filename=args.prefix_output + stack.get_filename(),
-            extract_slices=False)
+            extract_slices=False,
+            slice_thickness=stack.get_slice_thickness(),
+        )
 
         if args.verbose:
             sitkh.show_stacks([

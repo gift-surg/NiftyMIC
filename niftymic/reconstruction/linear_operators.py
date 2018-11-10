@@ -46,7 +46,8 @@ class LinearOperators(object):
                  predefined_covariance=None,
                  alpha_cut=3,
                  image_type=itk.Image.D3,
-                 default_pixel_type=0.0):
+                 default_pixel_type=0.0,
+                 ):
 
         self._deconvolution_mode = deconvolution_mode
 
@@ -100,15 +101,19 @@ class LinearOperators(object):
     # \param      slice_itk           Slice image as itk.Image object. Required
     #                                 to define output space and orientation
     #                                 for PSF.
+    # \param      slice_spacing       Slice spacing as list/array that holds
+    #                                 [in-plane x, in-plane y, slice-thickness]
+    #                                 resolution information. Required to
+    #                                 estimate Gaussian blurring.
     #
     # \return     Image A(x) as itk.Image object in slice_itk image space
     #
-    def A_itk(self, reconstruction_itk, slice_itk):
+    def A_itk(self, reconstruction_itk, slice_itk, slice_spacing):
 
         # Get covariance describing PSF orientation of slice in reconstruction
         # space
         cov = self._get_covariance[self._deconvolution_mode](
-            reconstruction_itk, slice_itk)
+            reconstruction_itk, slice_itk, slice_spacing)
 
         reconstruction_itk.Update()
         self._filter_oriented_gaussian.SetCovariance(cov.flatten())
@@ -144,7 +149,16 @@ class LinearOperators(object):
     #
     def A(self, reconstruction, stack_slice, interpolator_mask="Linear"):
 
-        simulated_itk = self.A_itk(reconstruction.itk, stack_slice.itk)
+        # Get slice spacing relevant for Gaussian blurring estimate
+        in_plane_res = stack_slice.get_inplane_resolution()
+        slice_thickness = stack_slice.get_slice_thickness()
+        slice_spacing = np.array([in_plane_res, in_plane_res, slice_thickness])
+
+        simulated_itk = self.A_itk(
+            reconstruction_itk=reconstruction.itk,
+            slice_itk=stack_slice.itk,
+            slice_spacing=slice_spacing,
+        )
         simulated_sitk = sitkh.get_sitk_from_itk_image(simulated_itk)
 
         # Update stack/slice mask, in case provided for reconstruction
@@ -167,12 +181,14 @@ class LinearOperators(object):
                 slice_number=stack_slice.get_slice_number(),
                 filename=stack_slice.get_filename(),
                 slice_sitk_mask=simulated_sitk_mask,
+                slice_thickness=stack_slice.get_slice_thickness(),
             )
         elif isinstance(stack_slice, st.Stack):
             simulated = st.Stack.from_sitk_image(
                 image_sitk=simulated_sitk,
                 image_sitk_mask=simulated_sitk_mask,
                 filename=stack_slice.get_filename(),
+                slice_thickness=stack_slice.get_slice_thickness(),
             )
 
         return simulated
@@ -192,16 +208,20 @@ class LinearOperators(object):
     # \param      reconstruction_itk  Reconstruction image as itk.Image object.
     #                                 Required to define output space and
     #                                 orientation for PSF
+    # \param      slice_spacing       Slice spacing as list/array that holds
+    #                                 [in-plane x, in-plane y, slice-thickness]
+    #                                 resolution information. Required to
+    #                                 estimate Gaussian blurring.
     #
     # \return     Image A^*(y) as itk.Image object in reconstruction_itk image
     #             space
     #
-    def A_adj_itk(self, slice_itk, reconstruction_itk):
+    def A_adj_itk(self, slice_itk, reconstruction_itk, slice_spacing):
 
         # Get covariance describing PSF orientation of slice in reconstruction
         # space
         cov = self._get_covariance[self._deconvolution_mode](
-            reconstruction_itk, slice_itk)
+            reconstruction_itk, slice_itk, slice_spacing)
 
         reconstruction_itk.Update()
         self._filter_adjoint_oriented_gaussian.SetCovariance(cov.flatten())
@@ -238,15 +258,17 @@ class LinearOperators(object):
 
         return Mk_slice_itk
 
-    def _get_covariance_full_3d(self,
-                                reconstruction_itk,
-                                slice_itk):
+    def _get_covariance_full_3d(
+        self,
+        reconstruction_itk,
+        slice_itk,
+        slice_spacing,
+    ):
 
         reconstruction_direction_sitk = sitkh.get_sitk_from_itk_direction(
             reconstruction_itk.GetDirection())
         slice_direction_sitk = sitkh.get_sitk_from_itk_direction(
             slice_itk.GetDirection())
-        slice_spacing = np.array(slice_itk.GetSpacing())
 
         cov = self._psf.get_covariance_matrix_in_reconstruction_space_sitk(
             reconstruction_direction_sitk=reconstruction_direction_sitk,
@@ -255,14 +277,16 @@ class LinearOperators(object):
 
         return cov
 
-    def _get_covariance_only_in_plane(self,
-                                      reconstruction_itk,
-                                      slice_itk):
+    def _get_covariance_only_in_plane(
+        self,
+        reconstruction_itk,
+        slice_itk,
+        slice_spacing,
+    ):
         reconstruction_direction_sitk = sitkh.get_sitk_from_itk_direction(
             reconstruction_itk.GetDirection())
         slice_direction_sitk = sitkh.get_sitk_from_itk_direction(
             slice_itk.GetDirection())
-        slice_spacing = np.array(slice_itk.GetSpacing())
 
         # Get spacing of slice and set it very small so that the corresponding
         # covariance is negligibly small in through-plane direction. Hence,
@@ -276,9 +300,16 @@ class LinearOperators(object):
 
         return cov
 
-    def _get_covariance_predefined(self,
-                                   reconstruction_itk,
-                                   slice_itk):
+    def _get_covariance_predefined(
+        self,
+        reconstruction_itk,
+        slice_itk,
+        slice_spacing=None,
+    ):
+        if slice_spacing is not None:
+            raise ValueError(
+                "Slice spacing cannot be specified for predefined covariance "
+                "use.")
         reconstruction_direction_sitk = sitkh.get_sitk_from_itk_direction(
             reconstruction_itk.GetDirection())
         slice_direction_sitk = sitkh.get_sitk_from_itk_direction(

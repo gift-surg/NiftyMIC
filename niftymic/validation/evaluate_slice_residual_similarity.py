@@ -32,15 +32,17 @@ def main():
     input_parser = InputArgparser(
         description=".",
     )
-    input_parser.add_dir_input()
     input_parser.add_filenames()
     input_parser.add_filenames_masks()
+    input_parser.add_dir_input_mc()
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_reference(required=True)
     input_parser.add_reference_mask()
     input_parser.add_dir_output(required=False)
+    input_parser.add_log_config(default=1)
     input_parser.add_measures(default=["PSNR", "RMSE", "SSIM", "NCC", "NMI"])
     input_parser.add_verbose(default=0)
+    input_parser.add_slice_thicknesses(default=None)
     input_parser.add_option(
         option_string="--use-reference-mask", type=int, default=1)
     input_parser.add_option(
@@ -49,34 +51,27 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    # Neither '--dir-input' nor '--filenames' was specified
-    if args.filenames is not None and args.dir_input is not None:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames' "
-            "but not both together")
+    if args.log_config:
+        input_parser.log_config(os.path.abspath(__file__))
 
-    # '--dir-input' specified
-    elif args.dir_input is not None:
-        data_reader = dr.ImageSlicesDirectoryReader(
-            args.dir_input, suffix_mask=args.suffix_mask)
+    # --------------------------------Read Data--------------------------------
+    ph.print_title("Read Data")
 
-    # '--filenames' specified
-    elif args.filenames is not None:
-        data_reader = dr.MultipleImagesReader(
-            file_paths=args.filenames,
-            file_paths_masks=args.filenames_masks,
-            suffix_mask=args.suffix_mask)
+    data_reader = dr.MultipleImagesReader(
+        file_paths=args.filenames,
+        file_paths_masks=args.filenames_masks,
+        suffix_mask=args.suffix_mask,
+        dir_motion_correction=args.dir_input_mc,
+        stacks_slice_thicknesses=args.slice_thicknesses,
+    )
 
-    else:
-        raise IOError(
-            "Provide input by either '--dir-input' or '--filenames'")
-
-    ph.print_title("Slice Residual Similarity")
     data_reader.read_data()
     stacks = data_reader.get_data()
-
+    ph.print_info("%d input stacks read for further processing" % len(stacks))
+    
     reference = st.Stack.from_filename(args.reference, args.reference_mask)
 
+    ph.print_title("Slice Residual Similarity")
     residual_evaluator = res_ev.ResidualEvaluator(
         stacks=stacks,
         reference=reference,

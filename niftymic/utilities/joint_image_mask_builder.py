@@ -61,6 +61,7 @@ class JointImageMaskBuilder(object):
             image_sitk=recon_space.sitk,
             image_sitk_mask=mask_sitk,
             filename=self._target.get_filename(),
+            slice_thickness=recon_space.get_slice_thickness(),
         )
 
     def get_stack(self):

@@ -108,7 +108,7 @@ class StackMaskMorphologicalOperations(object):
 
             shape = self._mask_sitk.GetSize()
             N_slices = shape[2]
-            nda_mask = np.zeros(shape[::-1], dtype=np.uint16)
+            nda_mask = np.zeros(shape[::-1], dtype=np.uint8)
 
             for i in range(0, N_slices):
                 slice_mask_sitk = self._mask_sitk[:,:,i:i+1]

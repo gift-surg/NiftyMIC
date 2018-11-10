@@ -65,6 +65,7 @@ class ResidualEvaluator(object):
         self._slice_projections = None
         self._similarities = None
         self._slice_similarities = None
+        self._init_value = np.nan
 
     ##
     # Sets the stacks.
@@ -136,7 +137,8 @@ class ResidualEvaluator(object):
 
         for i_stack, stack in enumerate(self._stacks):
             slices = stack.get_slices()
-            self._slice_projections[i_stack] = [None] * len(slices)
+            N_slices = stack.sitk.GetSize()[-1]
+            self._slice_projections[i_stack] = [self._init_value] * N_slices
 
             if self._verbose:
                 ph.print_info(
@@ -146,7 +148,8 @@ class ResidualEvaluator(object):
 
             # Compute slice projections based on assumed slice acquisition
             # protocol
-            for i_slice, slice in enumerate(slices):
+            for slice in slices:
+                i_slice = slice.get_slice_number()
                 self._slice_projections[i_stack][i_slice] = linear_operators.A(
                     self._reference, slice)
 
@@ -175,9 +178,10 @@ class ResidualEvaluator(object):
 
         for i_stack, stack in enumerate(self._stacks):
             slices = stack.get_slices()
+            N_slices = stack.sitk.GetSize()[-1]
             stack_name = stack.get_filename()
             self._slice_similarities[stack_name] = {
-                m: np.zeros(len(slices)) for m in self._measures
+                m: np.ones(N_slices) * self._init_value for m in self._measures
             }
             if self._verbose:
                 ph.print_info(
@@ -185,8 +189,8 @@ class ResidualEvaluator(object):
                         i_stack + 1, len(self._stacks)),
                     newline=False)
 
-            for i_slice, slice in enumerate(slices):
-
+            for slice in slices:
+                i_slice = slice.get_slice_number()
                 slice_nda = np.squeeze(sitk.GetArrayFromImage(slice.sitk))
                 slice_proj_nda = np.squeeze(sitk.GetArrayFromImage(
                     self._slice_projections[i_stack][i_slice].sitk))
@@ -244,8 +248,9 @@ class ResidualEvaluator(object):
             ph.write_to_file(path_to_file, header, verbose=self._verbose)
 
             # Write array information
-            array = np.zeros(
-                (stack.get_number_of_slices(), len(self._measures)))
+            N_slices = stack.sitk.GetSize()[-1]
+            array = np.ones(
+                (N_slices, len(self._measures))) * self._init_value
             for i_m, m in enumerate(self._measures):
                 array[:, i_m] = self._slice_similarities[stack_name][m]
             ph.write_array_to_file(path_to_file, array, verbose=self._verbose)
@@ -314,7 +319,7 @@ class ResidualEvaluator(object):
             title=None,
             measures=["NCC"],
             threshold=0.8,
-            ):
+    ):
 
         for i_m, measure in enumerate(measures):
             fig = plt.figure(measure)
@@ -337,21 +342,21 @@ class ResidualEvaluator(object):
                 indices_out = np.where(nda < threshold)
 
                 plt.plot(x, nda,
-                    color=ph.COLORS_TABLEAU20[0],
-                    markerfacecolor="w",
-                    marker=ph.MARKERS[0],
-                    linestyle=":",
-                    )
+                         color=ph.COLORS_TABLEAU20[0],
+                         markerfacecolor="w",
+                         marker=ph.MARKERS[0],
+                         linestyle=":",
+                         )
                 plt.plot(indices_out[0], nda[indices_out],
-                    color=ph.COLORS_TABLEAU20[6],
-                    # markerfacecolor="w",
-                    marker=ph.MARKERS[0],
-                    linestyle="",
-                    )
+                         color=ph.COLORS_TABLEAU20[6],
+                         # markerfacecolor="w",
+                         marker=ph.MARKERS[0],
+                         linestyle="",
+                         )
                 plt.plot([x[0], x[-1]], np.ones(2) * threshold,
-                    color=ph.COLORS_TABLEAU20[6],
-                    linestyle="-.",
-                    )
+                         color=ph.COLORS_TABLEAU20[6],
+                         linestyle="-.",
+                         )
 
                 plt.xlabel("Slice")
                 # plt.ylabel(measure)
