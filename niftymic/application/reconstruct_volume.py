@@ -8,26 +8,25 @@
 # \date       March 2017
 #
 
-# Import libraries
 import os
 import numpy as np
 
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
-import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
-import niftymic.reconstruction.primal_dual_solver as pd
-import niftymic.reconstruction.scattered_data_approximation as sda
-import niftymic.reconstruction.tikhonov_solver as tk
+import niftymic.base.data_reader as dr
 import niftymic.registration.flirt as regflirt
 import niftymic.registration.niftyreg as niftyreg
 import niftymic.registration.simple_itk_registration as regsitk
+import niftymic.reconstruction.tikhonov_solver as tk
+import niftymic.reconstruction.primal_dual_solver as pd
+import niftymic.reconstruction.scattered_data_approximation as sda
 import niftymic.utilities.data_preprocessing as dp
 import niftymic.utilities.intensity_correction as ic
+import niftymic.utilities.joint_image_mask_builder as imb
 import niftymic.utilities.segmentation_propagation as segprop
 import niftymic.utilities.volumetric_reconstruction_pipeline as pipeline
-import niftymic.utilities.joint_image_mask_builder as imb
 from niftymic.utilities.input_arparser import InputArgparser
 
 

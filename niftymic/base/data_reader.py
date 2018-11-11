@@ -15,10 +15,12 @@ import re
 import six
 from abc import ABCMeta, abstractmethod
 
-import niftymic.base.stack as st
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
+
+import niftymic.base.stack as st
 import niftymic.base.exceptions as exceptions
+import niftymic.utilities.motion_updater as mu
 from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import REGEX_FILENAMES
 from niftymic.definitions import REGEX_FILENAME_EXTENSIONS
@@ -218,7 +220,7 @@ class MultipleImagesReader(ImageDataReader):
 
         self._check_input()
 
-        stacks = [None] * len(self._file_paths)
+        self._stacks = [None] * len(self._file_paths)
 
         for i, file_path in enumerate(self._file_paths):
 
@@ -230,70 +232,19 @@ class MultipleImagesReader(ImageDataReader):
                 else:
                     file_path_mask = None
 
-            stacks[i] = st.Stack.from_filename(
+            self._stacks[i] = st.Stack.from_filename(
                 file_path,
                 file_path_mask,
                 slice_thickness=self._stacks_slice_thicknesses[i],
                 extract_slices=self._extract_slices,
             )
 
-            if self._dir_motion_correction is not None:
-                if not ph.directory_exists(self._dir_motion_correction):
-                    raise exceptions.DirectoryNotExistent(
-                        self._dir_motion_correction)
-                abs_path_to_directory = os.path.abspath(
-                    self._dir_motion_correction)
-                stack_name = ph.strip_filename_extension(
-                    os.path.basename(file_path))[0]
-
-                path_to_stack_transform = os.path.join(
-                    abs_path_to_directory, "%s.tfm" % stack_name)
-                if ph.file_exists(path_to_stack_transform):
-                    transform_stack_sitk = sitkh.read_transform_sitk(
-                        path_to_stack_transform)
-                    transform_stack_sitk_inv = sitkh.read_transform_sitk(
-                        path_to_stack_transform, inverse=True)
-                    stacks[i].update_motion_correction(transform_stack_sitk)
-                    ph.print_info(
-                        "Stack '%s': Stack position updated" % stack_name)
-                else:
-                    transform_stack_sitk_inv = sitk.Euler3DTransform()
-
-                pattern_trafo_slices = stack_name + self._prefix_slice + \
-                    "([0-9]+)[.]tfm"
-                p = re.compile(pattern_trafo_slices)
-                dic_slice_transforms = {
-                    int(p.match(f).group(1)): os.path.join(
-                        abs_path_to_directory, p.match(f).group(0))
-                    for f in os.listdir(abs_path_to_directory) if p.match(f)
-                }
-                slices = stacks[i].get_slices()
-                for i_slice in range(stacks[i].get_number_of_slices()):
-                    if i_slice in dic_slice_transforms.keys():
-                        transform_slice_sitk = sitkh.read_transform_sitk(
-                            dic_slice_transforms[i_slice])
-                        transform_slice_sitk = sitkh.get_composite_sitk_affine_transform(
-                            transform_slice_sitk, transform_stack_sitk_inv)
-                        slices[i_slice].update_motion_correction(
-                            transform_slice_sitk)
-                    else:
-                        stacks[i].delete_slice(slices[i_slice])
-                if stacks[i].get_number_of_slices() == 0:
-                    ph.print_info(
-                        "Stack '%s' removed as all slices were deleted" %
-                        stack_name)
-                    stacks[i] = None
-
-                ph.print_info(
-                    "Stack '%s': Slice positions updated "
-                    "(%d/%d slices deleted)" % (
-                        stack_name,
-                        len(stacks[i].get_deleted_slice_numbers()),
-                        stacks[i].sitk.GetSize()[-1],
-                    )
-                )
-
-        self._stacks = [s for s in stacks if s is not None]
+        if self._dir_motion_correction is not None:
+            motion_updater = mu.MotionUpdater(
+                stacks=self._stacks,
+                dir_motion_correction=self._dir_motion_correction)
+            motion_updater.run()
+            self._stacks = motion_updater.get_data()
 
     def _check_input(self):
         if type(self._file_paths) is not list:
@@ -499,7 +450,9 @@ class MultiComponentImageReader(ImageDataReader):
             self._stacks[i] = st.Stack.from_sitk_image(
                 image_sitk=image_sitk,
                 filename=filename,
-                image_sitk_mask=image_sitk_mask)
+                image_sitk_mask=image_sitk_mask,
+                slice_thickness=image_sitk.GetSpacing()[-1],
+            )
 
 
 class TransformationDataReader(DataReader):

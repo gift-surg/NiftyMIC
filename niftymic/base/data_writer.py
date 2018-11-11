@@ -66,7 +66,8 @@ class MultiComponentImageWriter(DataWriter):
                  stacks,
                  filename=None,
                  write_mask=False,
-                 suffix_mask="_mask"):
+                 suffix_mask="_mask",
+                 ):
 
         DataWriter.__init__(self, stacks=stacks)
         self._filename = filename
@@ -80,6 +81,8 @@ class MultiComponentImageWriter(DataWriter):
 
         if self._filename is None:
             raise ValueError("Filename is not set")
+
+        ph.create_directory(os.path.dirname(self._filename))
 
         vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
             [stack.sitk for stack in self._stacks])
