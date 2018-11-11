@@ -49,7 +49,7 @@ class ScatteredDataApproximation:
 
         # Define sigma for recursive smoothing filter
         if sigma_array is None:
-            self._sigma_array = np.ones(3)*sigma
+            self._sigma_array = np.ones(3) * sigma
         elif len(sigma_array) is not 3:
             raise ValueError("Error: Sigma array must contain 3 elements")
         else:
@@ -67,7 +67,7 @@ class ScatteredDataApproximation:
     #  in the units of image spacing.
     #  \param[in] sigma, scalar
     def set_sigma(self, sigma):
-        self._sigma_array = np.ones(3)*sigma
+        self._sigma_array = np.ones(3) * sigma
 
     # ## Get sigma used for recursive Gaussian smoothing.
     # #  \return sigma array, numpy array
@@ -188,7 +188,11 @@ class ScatteredDataApproximation:
             HR_volume_mask_sitk = dilater.Execute(HR_volume_mask_sitk)
 
         self._HR_volume = st.Stack.from_sitk_image(
-            self._HR_volume.sitk, self._HR_volume.get_filename(), HR_volume_mask_sitk)
+            image_sitk=self._HR_volume.sitk,
+            filename=self._HR_volume.get_filename(),
+            image_sitk_mask=HR_volume_mask_sitk,
+            slice_thickness=self._HR_volume.get_slice_thickness(),
+        )
 
     ##
     # Add mask based on union of intersection of masks
@@ -239,7 +243,11 @@ class ScatteredDataApproximation:
             HR_volume_mask_sitk = dilater.Execute(HR_volume_mask_sitk)
 
         self._HR_volume = st.Stack.from_sitk_image(
-            self._HR_volume.sitk, self._HR_volume.get_filename(), HR_volume_mask_sitk)
+            image_sitk=self._HR_volume.sitk,
+            filename=self._HR_volume.get_filename(),
+            image_sitk_mask=HR_volume_mask_sitk,
+            slice_thickness=self._HR_volume.get_slice_thickness(),
+        )
 
     # Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19).
     #  The computation here is based on the YVV variant of Recursive Gaussian Filter and executed
@@ -254,7 +262,7 @@ class ScatteredDataApproximation:
         default_pixel_value = 0.0
 
         for i in range(0, self._N_stacks):
-            ph.print_info("Stack %s/%s" % (i+1, self._N_stacks))
+            ph.print_info("Stack %s/%s" % (i + 1, self._N_stacks))
             stack = self._stacks[i]
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
@@ -342,7 +350,7 @@ class ScatteredDataApproximation:
 
         # Compute data array of HR volume:
         # nda_D[nda_D==0]=1
-        nda = nda_N/nda_D.astype(float)
+        nda = nda_N / nda_D.astype(float)
 
         # Update HR volume image file within Stack-object HR_volume
         HR_volume_update = sitk.GetImageFromArray(nda)
@@ -365,7 +373,7 @@ class ScatteredDataApproximation:
         default_pixel_value = 0.0
 
         for i in range(0, self._N_stacks):
-            ph.print_info("Stack %s/%s" % (i+1, self._N_stacks))
+            ph.print_info("Stack %s/%s" % (i + 1, self._N_stacks))
             stack = self._stacks[i]
             slices = stack.get_slices()
             N_slices = stack.get_number_of_slices()
@@ -446,7 +454,7 @@ class ScatteredDataApproximation:
 
         # Compute HR volume based on scattered data approximation with correct
         # header (might be redundant):
-        HR_volume_update = HR_volume_update_N/HR_volume_update_D
+        HR_volume_update = HR_volume_update_N / HR_volume_update_D
         HR_volume_update.CopyInformation(self._HR_volume.sitk)
 
         # Update HR volume image file within Stack-object HR_volume
