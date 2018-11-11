@@ -49,7 +49,7 @@ class CustomInstallCommand(install):
 
 description = "Motion Correction and Volumetric Image Reconstruction of 2D " \
     "Ultra-fast MRI"
-long_description = "This is a research-focused toolkit developed within the " \
+long_description = "NiftyMIC is a research-focused toolkit developed within the " \
     "[GIFT-Surg](http://www.gift-surg.ac.uk/) project to reconstruct an " \
     "isotropic, high-resolution volume from multiple, possibly " \
     "motion-corrupted, stacks of low-resolution 2D slices. The framework " \
