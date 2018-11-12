@@ -194,7 +194,7 @@ reconstruct_rsfmri:
       --verbose 0 
       --reconstruction-type ${recon_type} 
       --reconstruction-spacing 2 2 5
-      --use-masks 1
+      --use-masks-srr 1
       --prototyping
   tags:
     - gift-adelie
