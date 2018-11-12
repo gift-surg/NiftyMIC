@@ -884,7 +884,6 @@ class Stack:
                 spacing=spacing,
                 interpolator=interpolator,
                 padding=default_pixel_value,
-                add_to_grid=extra_frame,
                 add_to_grid_unit="mm",
             )
             resampled_stack_sitk_mask = resampler.get_resampled_image_sitk(
@@ -892,7 +891,6 @@ class Stack:
                 spacing=spacing,
                 interpolator=sitk.sitkNearestNeighbor,
                 padding=0,
-                add_to_grid=extra_frame,
                 add_to_grid_unit="mm",
             )
 
