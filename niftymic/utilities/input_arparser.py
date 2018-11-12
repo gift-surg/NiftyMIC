@@ -23,7 +23,7 @@ from nsol.loss_functions import LossFunctions as \
 
 from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import ALLOWED_INTERPOLATORS
-from niftymic.definitions import VIEWER_OPTIONS
+from niftymic.definitions import VIEWER_OPTIONS, V2V_METHOD_OPTIONS
 
 # Allowed image types
 IMAGE_TYPES = "(" + (", or ").join(ALLOWED_EXTENSIONS) + ")"
@@ -941,8 +941,20 @@ class InputArgparser(object):
         option_string="--viewer",
         type=str,
         help="Viewer to be used for visualizations during verbose output "
-        "(%s)" % ", ".join(VIEWER_OPTIONS),
+        "(%s)." % ", ".join(VIEWER_OPTIONS),
         default="itksnap",
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_v2v_method(
+        self,
+        option_string="--v2v-method",
+        type=str,
+        help="Registration method used for first rigid volume-to-volume "
+        "registration step "
+        "(%s)." % ", ".join(V2V_METHOD_OPTIONS),
+        default="FLIRT",
         required=False,
     ):
         self._add_argument(dict(locals()))

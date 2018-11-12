@@ -29,6 +29,8 @@ import niftymic.utilities.segmentation_propagation as segprop
 import niftymic.utilities.volumetric_reconstruction_pipeline as pipeline
 from niftymic.utilities.input_arparser import InputArgparser
 
+from niftymic.definitions import V2V_METHOD_OPTIONS
+
 
 def main():
 
@@ -89,19 +91,14 @@ def main():
     input_parser.add_interleave(default=2)
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_viewer(default="itksnap")
-    input_parser.add_option(
-        option_string="--v2v-method",
-        type=str,
-        help="Registration method used for first rigid volume-to-volume "
-        "registration step. Input must be either 'FLIRT' or 'RegAladin'",
-        default="FLIRT",
-    )
+    input_parser.add_v2v_method(default="FLIRT")
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    if args.v2v_method.lower() not in ["flirt", "regaladin"]:
-        raise IOError("v2v-method must be either 'FLIRT' or 'RegAladin'")
+    if args.v2v_method not in V2V_METHOD_OPTIONS:
+        raise ValueError("v2v-method must be in {%s}" % (
+            ", ".join(V2V_METHOD_OPTIONS)))
 
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
@@ -173,7 +170,7 @@ def main():
         options = (" ").join(search_angles)
         # options += " -noresample"
 
-        if args.v2v_method.lower() == "flirt":
+        if args.v2v_method == "FLIRT":
             vol_registration = regflirt.FLIRT(
                 registration_type="Rigid",
                 use_fixed_mask=True,
