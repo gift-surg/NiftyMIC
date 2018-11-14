@@ -30,8 +30,8 @@ def main():
     # Read input
     input_parser = InputArgparser(
         description="Export image that illustrates the estimated "
-        "intra-stack motion by showing the mean displacements per slice for "
-        "all individual slice voxels in millimetre.",
+        "intra-stack motion by showing the mean voxel displacements for "
+        "all individual slices in millimetre.",
     )
 
     input_parser.add_filenames(required=True)
