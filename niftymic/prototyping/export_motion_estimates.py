@@ -44,8 +44,7 @@ def main():
     input_parser.add_argument(
         "--multi-component", "-multi-component",
         action='store_true',
-        help="If given, the input image filename is interpreted as "
-        "multi-component."
+        help="If given, the input image is interpreted as multi-component."
     )
 
     args = input_parser.parse_args()
