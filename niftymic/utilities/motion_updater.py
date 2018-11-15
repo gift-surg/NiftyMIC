@@ -128,5 +128,11 @@ class MotionUpdater(object):
         # only return maintained stacks
         self._stacks = [s for s in self._stacks if s is not None]
 
+        if len(self._stacks) == 0:
+            raise RuntimeError(
+                "All stacks removed. "
+                "Did you check that the correct motion-correction directory "
+                "was provided?")
+
     def get_data(self):
         return self._stacks
