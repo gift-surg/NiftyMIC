@@ -6,7 +6,8 @@
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       Nov 2018
-#
+# \todo Currently obsolete
+
 
 import os
 import re
@@ -46,7 +47,7 @@ class StackMotionImageBuilder(object):
                 raise ValueError(
                     "Provided stacks must have identical data array sizes")
 
-    def get_mean_displacement_image(self):
+    def get_voxel_displacements_image(self):
         self._check_inputs()
 
         shape = self._stack.sitk.GetSize()[::-1]
@@ -60,7 +61,7 @@ class StackMotionImageBuilder(object):
 
             i = slice.get_slice_number()
             nda[i, :, :] = \
-                simplereg.utilities.get_mean_displacement_between_images(
+                simplereg.utilities.get_voxel_displacements(
                     slice.sitk, slices_ref_dic[i].sitk
             )
 
