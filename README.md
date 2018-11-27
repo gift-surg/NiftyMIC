@@ -12,13 +12,13 @@ Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, N
 <p align="center">
    <img src="./data/demo/NiftyMIC_Algorithm.png" align="center" width="700">
 </p>
-<p align="center">Figure 1. NiftyMIC - a volumetric reconstruction tool based on rigid slice-to-volume registration and outlier-robust super-resolution reconstruction steps - applied to fetal brain MRI.<p align="center">
+<p align="center">Figure 1. NiftyMIC - a volumetric MRI reconstruction tool based on rigid slice-to-volume registration and outlier-robust super-resolution reconstruction steps - applied to fetal brain MRI.<p align="center">
 
 
 <p align="center">
    <img src="./data/demo/NiftyMIC_VolumetricReconstructionOutput.png" align="center" width="1000">
 </p>
-<p align="center">Figure 2. Qualitative comparison of the original low-resolution input data and the obtained high-resolution volumetric reconstructions in both the original subject and standard anatomical spaces. Five input stacks (two axial, one coronal and two sagittal) were used. <p align="center">
+<p align="center">Figure 2. Qualitative comparison of the original low-resolution input data and the obtained high-resolution volumetric reconstructions in both the original patient-specific and standard anatomical orientations. Five input stacks (two axial, one coronal and two sagittal) were used. <p align="center">
 
 ## Algorithm
 Several methods have been implemented to solve the **Robust Super-Resolution Reconstruction (SRR)** problem 
