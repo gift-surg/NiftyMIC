@@ -36,8 +36,11 @@ class ScatteredDataApproximation:
     # \param[in,out] HR_volume    Stack object containing the current estimate
     #                             of the HR volume (required for defining HR
     #                             space)
-    # \param         sigma        The sigma
-    # \param         sigma_array  The sigma array
+    # \param         sigma        Sigma is measured in the units of image
+    #                             spacing
+    # \param         sigma_array  Sigma is measured in the units of image
+    #                             spacing; set sigma_array if you need
+    #                             different values along each axis
     # \post          HR_volume is updated with current volumetric estimate
     #
     def __init__(self, stacks, HR_volume, sigma=1, sigma_array=None):
