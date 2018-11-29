@@ -61,7 +61,7 @@ def main():
     input_parser.add_sigma(default=1)
     input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_iterations(default=15)
-    input_parser.add_alpha(default=0.01)
+    input_parser.add_alpha(default=0.015)
     input_parser.add_alpha_first(default=0.05)
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)

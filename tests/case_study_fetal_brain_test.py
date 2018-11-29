@@ -43,7 +43,9 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         iter_max = 5
         threshold = 0.84
         alpha = 0.02
+        sigma = 0.6
         intensity_correction = 1
+        isotropic_resolution = 1.02
 
         cmd_args = []
         cmd_args.append("--filenames %s" % " ".join(self.filenames))
@@ -52,8 +54,10 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         cmd_args.append("--two-step-cycles %s" % two_step_cycles)
         cmd_args.append("--iter-max %d" % iter_max)
         cmd_args.append("--threshold-first %f" % threshold)
+        cmd_args.append("--sigma %f" % sigma)
         cmd_args.append("--threshold %f" % threshold)
         cmd_args.append("--intensity-correction %d" % intensity_correction)
+        cmd_args.append("--isotropic-resolution %s" % isotropic_resolution)
         cmd_args.append("--alpha %f" % alpha)
 
         cmd = "niftymic_reconstruct_volume %s" % (
@@ -101,7 +105,7 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         dir_reference = os.path.join(
             self.dir_data, "reconstruct_volume_from_slices")
         dir_input_mc = os.path.join(
-            self.dir_data, "reconstruct_volume", "motion_correction")
+            self.dir_data, "reconstruct_volume_from_slices", "motion_correction")
         filename_reference = "SRR_stacks3_TK1_lsmr_alpha0p02_itermax5.nii.gz"
         path_to_reference = os.path.join(dir_reference, filename_reference)
 
@@ -137,9 +141,9 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
     def test_register_image(self):
         filename_reference = "SRR_stacks3_TK1_lsmr_alpha0p02_itermax5.nii.gz"
         path_to_recon = os.path.join(
-            self.dir_data, "reconstruct_volume", filename_reference)
+            self.dir_data, "register_image", filename_reference)
         dir_input_mc = os.path.join(
-            self.dir_data, "reconstruct_volume", "motion_correction")
+            self.dir_data, "register_image", "motion_correction")
         gestational_age = 28
 
         path_to_transform_ref = os.path.join(
