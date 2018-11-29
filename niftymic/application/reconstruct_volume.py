@@ -58,7 +58,7 @@ def main():
     input_parser.add_multiresolution(default=0)
     input_parser.add_shrink_factors(default=[3, 2, 1])
     input_parser.add_smoothing_sigmas(default=[1.5, 1, 0])
-    input_parser.add_sigma(default=0.6)
+    input_parser.add_sigma(default=1)
     input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_iterations(default=15)
     input_parser.add_alpha(default=0.01)
@@ -69,7 +69,7 @@ def main():
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_bias_field_correction(default=0)
     input_parser.add_intensity_correction(default=1)
-    input_parser.add_isotropic_resolution(default=None)
+    input_parser.add_isotropic_resolution(default=1)
     input_parser.add_log_config(default=1)
     input_parser.add_subfolder_motion_correction()
     input_parser.add_provide_comparison(default=0)
@@ -124,6 +124,10 @@ def main():
     if all(s.is_unity_mask() is True for s in stacks):
         ph.print_warning("No mask is provided! "
                          "Generated reconstruction space may be very big!")
+        ph.print_warning("Consider using a mask to speed up computations")
+
+        # args.extra_frame_target = 0
+        # ph.wrint_warning("Overwritten: extra-frame-target set to 0")
 
     # ---------------------------Data Preprocessing---------------------------
     ph.print_title("Data Preprocessing")
@@ -162,15 +166,16 @@ def main():
         reference = st.Stack.from_stack(stacks[args.target_stack_index])
 
     # ------------------------Volume-to-Volume Registration--------------------
-    if args.two_step_cycles > 0:
-        # Define search angle ranges for FLIRT in all three dimensions
-        search_angles = ["-searchr%s -%d %d" %
-                         (x, args.search_angle, args.search_angle)
-                         for x in ["x", "y", "z"]]
-        options = (" ").join(search_angles)
-        # options += " -noresample"
+    if args.two_step_cycles > 0 and len(stacks) > 1:
 
         if args.v2v_method == "FLIRT":
+            # Define search angle ranges for FLIRT in all three dimensions
+            search_angles = ["-searchr%s -%d %d" %
+                             (x, args.search_angle, args.search_angle)
+                             for x in ["x", "y", "z"]]
+            options = (" ").join(search_angles)
+            # options += " -noresample"
+
             vol_registration = regflirt.FLIRT(
                 registration_type="Rigid",
                 use_fixed_mask=True,
@@ -264,6 +269,7 @@ def main():
             stacks, HR_volume, sigma=args.sigma)
         SDA.run()
         HR_volume = SDA.get_reconstruction()
+        HR_volume.set_filename("%s_isoSDA" % reference.get_filename())
 
     time_reconstruction = ph.stop_timing(time_tmp)
 
