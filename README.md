@@ -89,12 +89,13 @@ It builds on a couple of additional libraries developed within the [GIFT-Surg][g
 * [PySiTK][pysitk]
 * [ITK_NiftyMIC][itkniftymic]
 
-whose installation requirements need to be met. Therefore, the installation comes in three steps:
+whose installation requirements need to be met. Therefore, the local installation comes in three steps:
 
 1. [Installation of ITK_NiftyMIC][itkniftymic]
 1. [Installation of SimpleReg dependencies][simplereg-dependencies]
 1. [Installation of NiftyMIC][niftymic-install]
 
+Alternatively, NiftyMIC can also be used as virtual machine via VirtualBox without having to go through all the manual installation steps. The respective information can be found [here][niftymic-vm].
 
 ## Usage
 
@@ -263,6 +264,7 @@ Associated publications are
 [nihr]: http://www.nihr.ac.uk/research
 [itkniftymic]: https://github.com/gift-surg/ITK_NiftyMIC/wikis/home
 [niftymic-install]: https://github.com/gift-surg/NiftyMIC/wikis/niftymic-installation
+[niftymic-vm]: https://github.com/gift-surg/NiftyMIC/wiki/niftymic-virtualbox
 [nsol]: https://github.com/gift-surg/NSoL
 [simplereg]: https://github.com/gift-surg/SimpleReg
 [simplereg-dependencies]: https://github.com/gift-surg/SimpleReg/wikis/simplereg-dependencies
