@@ -258,6 +258,9 @@ class Slice:
     def get_filename(self):
         return self._filename
 
+    def set_filename(self, filename):
+        self._filename = filename
+
     # Get number of slice within parent stack
     #  \return slice number, integer
     def get_slice_number(self):
