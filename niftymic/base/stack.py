@@ -325,10 +325,16 @@ class Stack:
 
         return stack
 
+    ##
     # Copy constructor
-    #  \param[in] stack_to_copy Stack object to be copied
-    #  \return copied Stack object
-    # TODO: That's not really well done
+    # \date       2019-01-15 16:55:09+0000
+    #
+    # \param      cls            The cls
+    # \param      stack_to_copy  Stack object to be copied
+    # \param      filename       The filename
+    #
+    # \return     copied Stack object TODO: That's not really well done
+    #
     @classmethod
     def from_stack(cls, stack_to_copy, filename=None):
         stack = cls()
@@ -388,7 +394,10 @@ class Stack:
     # Get all slices of current stack
     #  \return Array of sitk.Images containing slices in 3D space
     def get_slices(self):
-        return [s for s in self._slices if s is not None]
+        if self._slices is None:
+            return None
+        else:
+            return [s for s in self._slices if s is not None]
 
     ##
     # Get one particular slice of current stack
@@ -479,9 +488,13 @@ class Stack:
     def get_directory(self):
         return self._dir
 
-    #  \return string of filename
     def set_filename(self, filename):
         self._filename = filename
+
+        slices = self.get_slices()
+        if slices is not None:
+            for s in slices:
+                s.set_filename(filename)
 
     # Get filename of read/assigned nifti file (Stack.from_filename vs Stack.from_sitk_image)
     #  \return string of filename
