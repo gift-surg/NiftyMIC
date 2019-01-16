@@ -91,7 +91,7 @@ def main():
     input_parser.add_interleave(default=2)
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_viewer(default="itksnap")
-    input_parser.add_v2v_method(default="FLIRT")
+    input_parser.add_v2v_method(default="RegAladin")
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
