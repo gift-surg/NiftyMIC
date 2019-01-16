@@ -46,6 +46,7 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         sigma = 0.6
         intensity_correction = 1
         isotropic_resolution = 1.02
+        v2v_method = "FLIRT"
 
         cmd_args = []
         cmd_args.append("--filenames %s" % " ".join(self.filenames))
@@ -59,6 +60,7 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         cmd_args.append("--intensity-correction %d" % intensity_correction)
         cmd_args.append("--isotropic-resolution %s" % isotropic_resolution)
         cmd_args.append("--alpha %f" % alpha)
+        cmd_args.append("--v2v-method %s" % v2v_method)
 
         cmd = "niftymic_reconstruct_volume %s" % (
             " ").join(cmd_args)
