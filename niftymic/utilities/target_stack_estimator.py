@@ -7,13 +7,13 @@
 #
 
 
-# Import libraries
 import os
 import re
 import numpy as np
 import SimpleITK as sitk
 
 import pysitk.simple_itk_helper as sitkh
+
 
 ##
 # Class to estimate target stack automatically

@@ -71,6 +71,9 @@ setup(name='NiftyMIC',
       license='BSD-3-Clause',
       packages=find_packages(),
       install_requires=install_requires(),
+      # data_files=[(d, [os.path.join(d, f) for f in files])
+      #             for d, folders, files
+      #             in os.walk(os.path.join("data", "demo"))],
       zip_safe=False,
       keywords='development numericalsolver convexoptimisation',
       classifiers=[
