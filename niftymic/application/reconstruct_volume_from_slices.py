@@ -8,9 +8,9 @@
 # \date       March 2017
 #
 
-# Import libraries
-import numpy as np
 import os
+import numpy as np
+import SimpleITK as sitk
 
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
@@ -21,6 +21,7 @@ import niftymic.reconstruction.admm_solver as admm
 import niftymic.utilities.intensity_correction as ic
 import niftymic.reconstruction.primal_dual_solver as pd
 import niftymic.reconstruction.tikhonov_solver as tk
+import niftymic.utilities.binary_mask_from_mask_srr_estimator as bm
 from niftymic.utilities.input_arparser import InputArgparser
 
 
@@ -68,6 +69,7 @@ def main():
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_verbose(default=0)
     input_parser.add_viewer(default="itksnap")
+    input_parser.add_srr_mask(default=0)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -81,9 +83,14 @@ def main():
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
 
+    if args.srr_mask:
+        filenames_masks = args.filenames
+    else:
+        filenames_masks = args.filenames_masks
+
     data_reader = dr.MultipleImagesReader(
         file_paths=args.filenames,
-        file_paths_masks=args.filenames_masks,
+        file_paths_masks=filenames_masks,
         suffix_mask=args.suffix_mask,
         dir_motion_correction=args.dir_input_mc,
         stacks_slice_thicknesses=args.slice_thicknesses,
@@ -94,7 +101,7 @@ def main():
     ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     # ---------------------------Intensity Correction--------------------------
-    if args.intensity_correction:
+    if args.intensity_correction and not args.srr_mask:
         ph.print_title("Intensity Correction")
         intensity_corrector = ic.IntensityCorrection()
         intensity_corrector.use_individual_slice_correction(False)
@@ -183,8 +190,23 @@ def main():
     SRR0.run()
 
     recon = SRR0.get_reconstruction()
-    recon.set_filename(SRR0.get_setting_specific_filename(args.prefix_output))
-    recon.write(args.dir_output)
+    filename = SRR0.get_setting_specific_filename(args.prefix_output)
+    recon.set_filename(filename)
+
+    if args.srr_mask:
+
+        mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon)
+        mask_estimator.run()
+        mask_sitk = mask_estimator.get_mask_sitk()
+
+        sitkh.write_nifti_image_sitk(
+            mask_sitk, os.path.join(args.dir_output, "%s.nii.gz" % filename),
+            verbose=1)
+
+        # Only for further processing
+        recon = mask_estimator.get_mask()
+    else:
+        recon.write(args.dir_output)
 
     # List to store SRRs
     recons = []
@@ -207,13 +229,6 @@ def main():
                 use_masks=args.use_masks_srr,
                 verbose=args.verbose,
             )
-            SRR.run()
-            recon = SRR.get_reconstruction()
-            recon.set_filename(
-                SRR.get_setting_specific_filename(args.prefix_output))
-            recons.insert(0, recon)
-
-            recon.write(args.dir_output)
 
         else:
             SRR = pd.PrimalDualSolver(
@@ -228,13 +243,27 @@ def main():
                 data_loss=args.data_loss,
                 verbose=args.verbose,
             )
-            SRR.run()
-            recon = SRR.get_reconstruction()
-            recon.set_filename(
-                SRR.get_setting_specific_filename(args.prefix_output))
-            recons.insert(0, recon)
+        SRR.run()
+        recon = SRR.get_reconstruction()
+        filename = SRR.get_setting_specific_filename(args.prefix_output)
+        recon.set_filename(filename)
 
+        if args.srr_mask:
+            mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon)
+            mask_estimator.run()
+            mask_sitk = mask_estimator.get_mask_sitk()
+            sitkh.write_nifti_image_sitk(
+                mask_sitk, os.path.join(
+                    args.dir_output, "%s.nii.gz" % filename),
+                verbose=1)
+
+            # Only for further processing
+            recon = mask_estimator.get_mask()
+        else:
             recon.write(args.dir_output)
+        recons.insert(0, recon)
+
+        recon.write(args.dir_output)
 
     if args.verbose and not args.provide_comparison:
         sitkh.show_stacks(recons, viewer=args.viewer)

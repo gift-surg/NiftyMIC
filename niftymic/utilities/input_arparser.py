@@ -959,6 +959,16 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
+    def add_srr_mask(
+        self,
+        option_string="--srr-mask",
+        type=int,
+        help="Turn on/off SRR for masks. "
+        "If on, input images are interpreted as binary masks",
+        default=0,
+    ):
+        self._add_argument(dict(locals()))
+
     ##
     # Parse the provided configuration file
     #

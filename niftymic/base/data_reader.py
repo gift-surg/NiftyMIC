@@ -239,6 +239,14 @@ class MultipleImagesReader(ImageDataReader):
                 extract_slices=self._extract_slices,
             )
 
+            # if given image is actually a mask, update the filename so that
+            # subsequent MotionUpdater can associate the slice transformation
+            # files
+            if file_path == file_path_mask:
+                filename = self._stacks[i].get_filename()
+                filename = re.sub(self._suffix_mask, "", filename)
+                self._stacks[i].set_filename(filename)
+
         if self._dir_motion_correction is not None:
             motion_updater = mu.MotionUpdater(
                 stacks=self._stacks,
