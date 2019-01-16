@@ -978,26 +978,25 @@ class InputArgparser(object):
 
         # Read config file and insert all config entries into sys.argv (read by
         # argparse later)
-        with open(path_to_config_file) as json_file:
-            dic = ph.read_dictionary_from_json(json_file)
+        dic = ph.read_dictionary_from_json(path_to_config_file)
 
-            # Insert all config entries into sys.argv
-            for k, v in six.iteritems(dic):
+        # Insert all config entries into sys.argv
+        for k, v in six.iteritems(dic):
 
-                # A 'None' entry should be ignored
-                if v is None:
-                    continue
+            # A 'None' entry should be ignored
+            if v is None:
+                continue
 
-                # Insert values as string right at the beginning of arguments
-                # Rationale: Later options, outside of the config file, will
-                # overwrite the config values
-                if type(v) is list:
-                    for vi in reversed(v):
-                        sys.argv.insert(1, str(vi))
-                else:
-                    sys.argv.insert(1, str(v))
+            # Insert values as string right at the beginning of arguments
+            # Rationale: Later options, outside of the config file, will
+            # overwrite the config values
+            if type(v) is list:
+                for vi in reversed(v):
+                    sys.argv.insert(1, str(vi))
+            else:
+                sys.argv.insert(1, str(v))
 
-                sys.argv.insert(1, "--%s" % k)
+            sys.argv.insert(1, "--%s" % k)
 
     ##
     # Adds an argument to argument parser.

@@ -1,8 +1,9 @@
 build/
 html/
 latex/
-data/templates
-data/tests
+data/templates/
+data/tests/
+dist/
 *.nii
 *.nii.gz
 *.zip

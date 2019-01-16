@@ -16,7 +16,7 @@
 import re
 import os
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 
@@ -47,42 +47,30 @@ class CustomInstallCommand(install):
         install.run(self)
 
 
-description = "Motion Correction and Volumetric Image Reconstruction of 2D " \
-    "Ultra-fast MRI"
-long_description = "NiftyMIC is a research-focused toolkit developed within the " \
-    "[GIFT-Surg](http://www.gift-surg.ac.uk/) project to reconstruct an " \
-    "isotropic, high-resolution volume from multiple, possibly " \
-    "motion-corrupted, stacks of low-resolution 2D slices. The framework " \
-    "relies on slice-to-volume registration algorithms for motion " \
-    "correction and reconstruction-based Super-Resolution(SR) techniques " \
-    "for the volumetric reconstruction." \
-    "The entire reconstruction pipeline is programmed in Python by using a " \
-    "mix of SimpleITK, WrapITK and standard C++ITK."
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+
+def install_requires(fname="requirements.txt"):
+    with open(fname) as f:
+        content = f.readlines()
+    content = [x.strip() for x in content]
+    return content
 
 
 setup(name='NiftyMIC',
       version='0.5rc1',
-      description=description,
+      description="NiftyMIC is a research-focused toolkit for "
+      "motion-correction and volumetric image reconstruction of "
+      "2D ultra-fast MRI.",
       long_description=long_description,
+      long_description_content_type="text/markdown",
       url='https://github.com/gift-surg/NiftyMIC',
       author='Michael Ebner',
       author_email='michael.ebner.14@ucl.ac.uk',
       license='BSD-3-Clause',
-      packages=['niftymic'],
-      install_requires=[
-          'pysitk>=0.2',
-          'nsol>=0.1.5',
-          'simplereg>=0.2',
-          'scikit_image>=0.12.3',
-          'scipy>=0.19.1',
-          'natsort>=5.0.3',
-          'numpy>=1.13.1',
-          'SimpleITK>=1.0.1',
-          'pymc3>=3.3',
-          'theano>=1.0.1',
-          "six>=1.10.0",
-          'pydicom>=1.2.0',
-      ],
+      packages=find_packages(),
+      install_requires=install_requires(),
       zip_safe=False,
       keywords='development numericalsolver convexoptimisation',
       classifiers=[

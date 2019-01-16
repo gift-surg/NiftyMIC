@@ -12,7 +12,7 @@ Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, N
 <p align="center">
    <img src="./data/demo/NiftyMIC_Algorithm.png" align="center" width="700">
 </p>
-<p align="center">Figure 1. NiftyMIC - a volumetric MRI reconstruction tool based on rigid slice-to-volume registration and outlier-robust super-resolution reconstruction steps - applied to fetal brain MRI.<p align="center">
+<p align="center">Figure 1. NiftyMIC -- a volumetric MRI reconstruction tool based on rigid slice-to-volume registration and outlier-robust super-resolution reconstruction steps -- applied to fetal brain MRI.<p align="center">
 
 
 <p align="center">
