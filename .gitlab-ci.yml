@@ -60,7 +60,7 @@ before_script:
     - pip install -e .
 
     # replace TEST_DIR in niftymic/definitions.py file
-    - sed -i -- 's:DIR_TEST = os.path.join(DIR_ROOT, "data", "tests"):TEST_DIR = "'"$TEST_DIR"'":g' niftymic/definitions.py && cat niftymic/definitions.py
+    - sed -i -- 's:DIR_TEST = os.path.join(DIR_ROOT, "data", "tests"):DIR_TEST = "'"$TEST_DIR"'":g' niftymic/definitions.py && cat niftymic/definitions.py
     - cat niftymic/definitions.py
 
 after_script:
@@ -208,5 +208,6 @@ unit_tests:
   #   - master
   script:
     - python -m nose tests/case_study_fetal_brain_test.py
+    - python -m nose tests/brain_stripping_test.py
   tags:
     - gift-adelie
