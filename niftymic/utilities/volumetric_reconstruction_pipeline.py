@@ -319,8 +319,15 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                 indices = np.where(nda_sim < self._threshold)[0]
                 slices = stack.get_slices()
 
-                for j in indices:
-                    stack.delete_slice(slices[j])
+                # only those indices that match the available slice numbers
+                rejections = [
+                    j for j in [s.get_slice_number() for s in slices]
+                    if j in indices
+                ]
+
+                for slice in slices:
+                    if slice.get_slice_number() in rejections:
+                        stack.delete_slice(slice)
 
                 ph.print_info("Stack %d/%d: Slices %d/%d %s (%s)" % (
                     i + 1,
@@ -330,12 +337,10 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                     stack.get_deleted_slice_numbers(),
                     stack.get_filename(),
                 ))
-                if len(indices) > 0:
-                    slice_indices = [slices[j].get_slice_number()
-                                     for j in indices]
-                    res_values = nda_sim[indices]
+                if len(rejections) > 0:
+                    res_values = nda_sim[rejections]
                     print("    Latest rejections: %s | %s: %s" % (
-                        slice_indices, self._threshold_measure, res_values))
+                        rejections, self._threshold_measure, res_values))
 
                 # Log stack where all slices were rejected
                 if stack.get_number_of_slices() == 0:
