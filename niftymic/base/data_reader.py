@@ -477,7 +477,9 @@ class TransformationDataReader(DataReader):
 
         # Convert transform to respective type, e.g. Euler, Affine etc
         # Third line in *.tfm file contains information on the transform type
-        transform_type = open(path_to_sitk_transform).readlines()[2]
+        with open(path_to_sitk_transform) as f:
+            content = f.readlines()
+        transform_type = content[2]
         transform_type = re.sub("\n", "", transform_type)
         transform_type = transform_type.split(" ")[1]
         transform_sitk = self._transform_type[transform_type](transform_sitk)
