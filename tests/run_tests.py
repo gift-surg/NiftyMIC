@@ -31,4 +31,3 @@ from stack_test import *
 if __name__ == '__main__':
     print("\nUnit tests:\n--------------")
     unittest.main()
-sed -i -- "s#DIR_TEST = os.path.join(DIR_ROOT, "data", "tests")# 
