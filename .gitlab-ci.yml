@@ -7,6 +7,7 @@ variables:
     VENV: pysitk-test-py${PY_VERSION}
     ITK_DIR: /mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-python${PY_VERSION}-build
     FSL_DIR: /mnt/shared/mebner/environment/FSL/fsl
+    TEST_DIR: /home/mebner/Development/NiftyMIC/data/tests
     NIFTYREG_INSTALL: /mnt/shared/mebner/environment/NiftyReg/NiftyReg-master-install
     CONVERT3D_INSTALL: /mnt/shared/mebner/environment/Convert3D/c3d-git-install
 
@@ -58,143 +59,154 @@ before_script:
     # run installation
     - pip install -e .
 
+    # replace TEST_DIR in niftymic/definitions.py file
+    - sed -i -- 's:DIR_TEST = os.path.join(DIR_ROOT, "data", "tests"):TEST_DIR = "'"$TEST_DIR"'":g' niftymic/definitions.py && cat niftymic/definitions.py
+    - cat niftymic/definitions.py
+
 after_script:
     # delete tmp-directory
     - rm -rfv ${TMPDIR}
 
-# ----------------------------------Test Jobs----------------------------------
-builddocs:
+# # ----------------------------------Test Jobs----------------------------------
+# builddocs:
+#   # only:
+#   #   - master
+#   script:
+#     - cd doc
+#     - doxygen doxyfile
+#   tags:
+#     - gift-adelie
+
+# installation:
+#   # only:
+#   #   - master
+#   script:
+#     - python -m nose tests/installation_test.py
+#   tags:
+#     - gift-adelie
+
+# reconstruct_volume_tk1l2:
+#   # only:
+#   #   - master
+#   script:
+#     - >
+#       niftymic_reconstruct_volume
+#       --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz
+#       --dir-output ${TMPDIR} 
+#       --suffix-mask _mask
+#       --verbose 0 
+#       --isotropic-resolution 2
+#       --reconstruction-type TK1L2
+#       --two-step-cycles 1
+#       --iter-max 2
+#       --iter-max-first 2
+#   tags:
+#     - gift-adelie
+
+
+# reconstruct_volume_huberl2:
+#   # only:
+#   #   - master
+#   script:
+#     - >
+#       niftymic_reconstruct_volume
+#       --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
+#       --dir-output ${TMPDIR} 
+#       --suffix-mask _mask
+#       --verbose 0 
+#       --isotropic-resolution 2
+#       --reconstruction-type HuberL2
+#       --two-step-cycles 1
+#       --iter-max 2
+#       --iter-max-first 2
+#       --iterations 1
+#   tags:
+#     - gift-adelie
+
+# reconstruct_volume_from_slices:
+#   # only:
+#   #   - master
+#   script:    
+#     - >
+#       niftymic_reconstruct_volume_from_slices
+#       --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
+#       --dir-input-mc ${DATADIR}/motion_correction_oriented
+#       --suffix-mask _mask
+#       --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
+#       --dir-output ${TMPDIR} 
+#       --verbose 0
+#       --isotropic-resolution 2
+#       --iter-max 2
+#   tags:
+#     - gift-adelie  
+
+# run_reconstruction_pipeline:
+#   # only:
+#   #   - master
+#   script:
+#     - >
+#       python niftymic/application/run_reconstruction_pipeline.py
+#       --filenames ${DATADIR}/input_data/axial.nii.gz
+#       --dir-input-templates ${DATADIR}/templates
+#       --dir-output ${TMPDIR} 
+#       --suffix-mask _mask
+#       --gestational-age 28
+#       --bias-field-correction 1
+#       --two-step-cycles 0
+#       --iter-max 1
+#       --run-data-vs-simulated-data 1
+#       --verbose 0 
+#   tags:
+#     - gift-adelie
+
+# param_study_huberl2:
+#   # only:
+#   #   - master
+#   script:
+#     - recon_type=HuberL2
+#     - >
+#       niftymic_run_reconstruction_parameter_study
+#       --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
+#       --dir-input-mc ${DATADIR}/motion_correction_oriented
+#       --suffix-mask _mask
+#       --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
+#       --dir-output ${TMPDIR}/param_study 
+#       --alpha-range 0.01 0.05 2 
+#       --iter-max 2 
+#       --verbose 0 
+#       --iterations 2
+#       --reconstruction-type ${recon_type} 
+#   tags:
+#     - gift-adelie
+
+# reconstruct_rsfmri:
+#   # only:
+#   #   - master
+#   script:
+#     - recon_type=HuberL2
+#     - >
+#       python niftymic/prototyping/reconstruct_resting_state_volume.py
+#       --filename ${DATADIR}/rsfmri/bold.nii.gz
+#       --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
+#       --dir-output ${TMPDIR}/rsfmri 
+#       --alpha-first 0.05
+#       --alpha 0.03
+#       --alpha-rsfmri 0.05
+#       --two-step-cycles 1
+#       --iterations 2
+#       --iter-max 2 
+#       --verbose 0 
+#       --reconstruction-type ${recon_type} 
+#       --reconstruction-spacing 2 2 5
+#       --use-masks-srr 1
+#       --prototyping
+#   tags:
+#     - gift-adelie
+
+unit_tests:
   # only:
   #   - master
   script:
-    - cd doc
-    - doxygen doxyfile
-  tags:
-    - gift-adelie
-
-installation:
-  # only:
-  #   - master
-  script:
-    - python -m nose tests/installation_test.py
-  tags:
-    - gift-adelie
-
-reconstruct_volume_tk1l2:
-  # only:
-  #   - master
-  script:
-    - >
-      niftymic_reconstruct_volume
-      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz
-      --dir-output ${TMPDIR} 
-      --suffix-mask _mask
-      --verbose 0 
-      --isotropic-resolution 2
-      --reconstruction-type TK1L2
-      --two-step-cycles 1
-      --iter-max 2
-      --iter-max-first 2
-  tags:
-    - gift-adelie
-
-
-reconstruct_volume_huberl2:
-  # only:
-  #   - master
-  script:
-    - >
-      niftymic_reconstruct_volume
-      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
-      --dir-output ${TMPDIR} 
-      --suffix-mask _mask
-      --verbose 0 
-      --isotropic-resolution 2
-      --reconstruction-type HuberL2
-      --two-step-cycles 1
-      --iter-max 2
-      --iter-max-first 2
-      --iterations 1
-  tags:
-    - gift-adelie
-
-reconstruct_volume_from_slices:
-  # only:
-  #   - master
-  script:    
-    - >
-      niftymic_reconstruct_volume_from_slices
-      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
-      --dir-input-mc ${DATADIR}/motion_correction_oriented
-      --suffix-mask _mask
-      --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
-      --dir-output ${TMPDIR} 
-      --verbose 0
-      --isotropic-resolution 2
-      --iter-max 2
-  tags:
-    - gift-adelie  
-
-run_reconstruction_pipeline:
-  # only:
-  #   - master
-  script:
-    - >
-      python niftymic/application/run_reconstruction_pipeline.py
-      --filenames ${DATADIR}/input_data/axial.nii.gz
-      --dir-input-templates ${DATADIR}/templates
-      --dir-output ${TMPDIR} 
-      --suffix-mask _mask
-      --gestational-age 28
-      --bias-field-correction 1
-      --two-step-cycles 0
-      --iter-max 1
-      --run-data-vs-simulated-data 1
-      --verbose 0 
-  tags:
-    - gift-adelie
-
-param_study_huberl2:
-  # only:
-  #   - master
-  script:
-    - recon_type=HuberL2
-    - >
-      niftymic_run_reconstruction_parameter_study
-      --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
-      --dir-input-mc ${DATADIR}/motion_correction_oriented
-      --suffix-mask _mask
-      --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
-      --dir-output ${TMPDIR}/param_study 
-      --alpha-range 0.01 0.05 2 
-      --iter-max 2 
-      --verbose 0 
-      --iterations 2
-      --reconstruction-type ${recon_type} 
-  tags:
-    - gift-adelie
-
-
-reconstruct_rsfmri:
-  # only:
-  #   - master
-  script:
-    - recon_type=HuberL2
-    - >
-      python niftymic/prototyping/reconstruct_resting_state_volume.py
-      --filename ${DATADIR}/rsfmri/bold.nii.gz
-      --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
-      --dir-output ${TMPDIR}/rsfmri 
-      --alpha-first 0.05
-      --alpha 0.03
-      --alpha-rsfmri 0.05
-      --two-step-cycles 1
-      --iterations 2
-      --iter-max 2 
-      --verbose 0 
-      --reconstruction-type ${recon_type} 
-      --reconstruction-spacing 2 2 5
-      --use-masks-srr 1
-      --prototyping
+    - python -m nose tests/case_study_fetal_brain_test.py
   tags:
     - gift-adelie
