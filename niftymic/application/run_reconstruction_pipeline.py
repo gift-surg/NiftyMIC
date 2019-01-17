@@ -41,6 +41,7 @@ def main():
         "and (iii) volumetric reconstruction in template space.",
     )
     input_parser.add_filenames(required=True)
+    input_parser.add_filenames_masks(required=False)
     input_parser.add_target_stack(required=False)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_dir_output(required=True)
@@ -84,6 +85,11 @@ def main():
         "obtained volumetric reconstruction. "
         "If off, it is assumed that this step was already performed",
         default=1)
+    input_parser.add_option(
+        option_string="--initial-transform",
+        type=str,
+        help="Set initial transform to be used for register_image.",
+        default=None)
     input_parser.add_outlier_rejection(default=1)
 
     args = input_parser.parse_args()
@@ -138,6 +144,9 @@ def main():
 
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(filenames))
+        if args.filenames_masks is not None:
+            cmd_args.append("--filenames-masks %s" %
+                            (" ").join(args.filenames_masks))
         cmd_args.append("--multiresolution %d" % args.multiresolution)
         cmd_args.append("--target-stack-index %d" % target_stack_index)
         cmd_args.append("--dir-output %s" % dir_output_recon_subject_space)
@@ -199,15 +208,17 @@ def main():
         cmd_args.append("--fixed %s" % template)
         cmd_args.append("--moving %s" % reconstruction)
         cmd_args.append("--fixed-mask %s" % template_mask)
-        cmd_args.append("--moving-mask %s" %
-                        ph.append_to_filename(reconstruction, args.suffix_mask))
+        cmd_args.append("--moving-mask %s" % (
+            ph.append_to_filename(reconstruction, args.suffix_mask)))
         cmd_args.append("--dir-input-mc %s" % os.path.join(
             dir_output_recon_subject_space,
             "motion_correction"))
         cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
         cmd_args.append("--verbose %s" % args.verbose)
-        # cmd_args.append("--test-ap-flip 0")
-        # cmd_args.append("--use-flirt 0")
+        if args.initial_transform is not None:
+            cmd_args.append("--initial-transform %s" % args.initial_transform)
+            cmd_args.append("--use-flirt 0")
+            cmd_args.append("--test-ap-flip 0")
         cmd = "niftymic_register_image %s" % (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
@@ -299,6 +310,9 @@ def main():
         # Get simulated/projected slices
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(filenames))
+        if args.filenames_masks is not None:
+            cmd_args.append("--filenames-masks %s" %
+                            (" ").join(args.filenames_masks))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
         cmd_args.append("--dir-output %s" % dir_output_data_vs_simulatd_data)
         cmd_args.append("--reconstruction %s" % path_to_recon)
@@ -325,6 +339,9 @@ def main():
         # Evaluate slice similarities to ground truth
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
+        if args.filenames_masks is not None:
+            cmd_args.append("--filenames-masks %s" %
+                            (" ").join(args.filenames_masks))
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
         cmd_args.append("--measures NCC SSIM")
         cmd_args.append("--dir-output %s" % dir_output_evaluation)
