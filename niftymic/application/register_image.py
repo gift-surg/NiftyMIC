@@ -248,8 +248,10 @@ def main():
         cmd_args.append("-ref %s" % args.fixed)
         cmd_args.append("-flo %s" % args.moving)
         cmd_args.append("-res %s" % path_to_output)
-        cmd_args.append("-inaff %s" % path_to_transform_regaladin)
+        if args.initial_transform is not None or args.use_flirt == 1:
+            cmd_args.append("-inaff %s" % path_to_transform_regaladin)
         cmd_args.append("-aff %s" % path_to_transform_regaladin)
+        # cmd_args.append("-cog")
         # cmd_args.append("-ln 2")
         cmd_args.append("-rigOnly")
         cmd_args.append("-voff")
