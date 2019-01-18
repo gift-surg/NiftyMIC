@@ -25,8 +25,8 @@ class BinaryMaskFromMaskSRREstimator(object):
     def __init__(self,
                  srr_mask,
                  suffix="_mask",
-                 sigma=1,
-                 lower=0.9,
+                 sigma=2,
+                 lower=0.5,
                  upper=100,
                  ):
 
