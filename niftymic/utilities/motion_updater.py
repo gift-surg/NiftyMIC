@@ -105,6 +105,31 @@ class MotionUpdater(object):
                             transform_slice_sitk, transform_stack_sitk_inv)
                     slices[i_slice].update_motion_correction(
                         transform_slice_sitk)
+
+                    # # ------------------------- HACK -------------------------
+                    # # 18 Jan 2019
+                    # # HACK to use results of a previous version where image
+                    # # slices were still exported
+                    # # (Bug was that after stack intensity correction, the
+                    # # previous v2v-reg was not passed on to the final 
+                    # # registration transform):
+                    # import niftymic.base.slice as sl
+                    # path_to_slice = re.sub(
+                    #     ".tfm", ".nii.gz", dic_slice_transforms[i_slice])
+                    # path_to_slice_mask = re.sub(
+                    #     ".tfm", "_mask.nii.gz", dic_slice_transforms[i_slice])
+                    # slice_sitk = sitk.ReadImage(path_to_slice)
+                    # slice_sitk_mask = sitk.ReadImage(path_to_slice_mask)
+                    # hack = sl.Slice.from_sitk_image(
+                    #     # slice_sitk=slice_sitk,
+                    #     slice_sitk=slice_sitk_mask,  # mask for Mask-SRR!
+                    #     slice_sitk_mask=slice_sitk_mask,
+                    #     slice_number=slices[i_slice].get_slice_number(),
+                    #     slice_thickness=slices[i_slice].get_slice_thickness(),
+                    # )
+                    # self._stacks[i]._slices[i_slice] = hack
+                    # # --------------------------------------------------------
+
                 else:
                     self._stacks[i].delete_slice(slices[i_slice])
 
