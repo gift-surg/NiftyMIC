@@ -48,7 +48,18 @@ class TargetStackEstimator(object):
             spacing = np.array(mask_sitk.GetSpacing())
             volumes[i] = np.sum(mask_nda) * spacing.prod()
 
+        # find index to smallest "valid" volume, i.e. volume > q * median
+        index = np.argmax(
+            volumes[np.argsort(volumes)] > 0.7 * np.median(volumes))
+        index = np.argsort(volumes)[index]
+
         # Get index corresponding to maximum volume stack mask
-        target_stack_estimator._target_stack_index = np.argmax(volumes)
+        # index = np.argmax(volumes)
+        # index = np.argmin(volumes)
+
+        # Get index corresponding to median volume stack mask
+        # index = np.argsort(volumes)[len(volumes)//2]
+
+        target_stack_estimator._target_stack_index = index
 
         return target_stack_estimator
