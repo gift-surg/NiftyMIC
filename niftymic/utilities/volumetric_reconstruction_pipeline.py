@@ -20,17 +20,16 @@ import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
 import niftymic.validation.motion_evaluator as me
-import niftymic.validation.residual_evaluator as re
+import niftymic.utilities.outlier_rejector as outre
 import niftymic.utilities.robust_motion_estimator as rme
 
 from niftymic.definitions import VIEWER
+
 
 ##
 # Class which holds basic interface for all modules
 # \date       2017-08-08 02:20:40+0100
 #
-
-
 class Pipeline(object):
     __metaclass__ = ABCMeta
 
@@ -296,61 +295,15 @@ class SliceToVolumeRegistration(RegistrationPipeline):
             ph.print_subtitle(
                 "Slice Outlier Rejection (Threshold = %g @ %s)" % (
                     self._threshold, self._threshold_measure))
-            residual_evaluator = re.ResidualEvaluator(
+            outlier_rejector = outre.OutlierRejector(
                 stacks=self._stacks,
-                reference=self._reference,
-                use_slice_masks=False,
-                use_reference_mask=True,
-                verbose=False,
+                hr_volume=self._reference,
+                threshold=self._threshold,
+                measure=self._threshold_measure,
+                verbose=True,
             )
-            residual_evaluator.compute_slice_projections()
-            residual_evaluator.evaluate_slice_similarities()
-            slice_sim = residual_evaluator.get_slice_similarities()
-            # residual_evaluator.show_slice_similarities(
-            #     threshold=self._threshold,
-            #     measures=[self._threshold_measure],
-            #     directory="/tmp/spina/figs%s" % self._print_prefix[0:7],
-            # )
-
-            remove_stacks = []
-            for i, stack in enumerate(self._stacks):
-                nda_sim = np.nan_to_num(
-                    slice_sim[stack.get_filename()][self._threshold_measure])
-                indices = np.where(nda_sim < self._threshold)[0]
-                slices = stack.get_slices()
-
-                # only those indices that match the available slice numbers
-                rejections = [
-                    j for j in [s.get_slice_number() for s in slices]
-                    if j in indices
-                ]
-
-                for slice in slices:
-                    if slice.get_slice_number() in rejections:
-                        stack.delete_slice(slice)
-
-                ph.print_info("Stack %d/%d: Slices %d/%d %s (%s)" % (
-                    i + 1,
-                    len(self._stacks),
-                    len(stack.get_deleted_slice_numbers()),
-                    stack.sitk.GetSize()[-1],
-                    stack.get_deleted_slice_numbers(),
-                    stack.get_filename(),
-                ))
-                if len(rejections) > 0:
-                    res_values = nda_sim[rejections]
-                    print("    Latest rejections: %s | %s: %s" % (
-                        rejections, self._threshold_measure, res_values))
-
-                # Log stack where all slices were rejected
-                if stack.get_number_of_slices() == 0:
-                    remove_stacks.append(stack)
-
-            # Remove stacks where all slices where rejected
-            for stack in remove_stacks:
-                self._stacks.remove(stack)
-                ph.print_info("Stack '%s' removed entirely." %
-                              stack.get_filename())
+            outlier_rejector.run()
+            self._stacks = outlier_rejector.get_stacks()
 
             if len(self._stacks) == 0:
                 raise RuntimeError(
