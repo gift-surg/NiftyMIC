@@ -23,6 +23,7 @@ import niftymic.reconstruction.tikhonov_solver as tk
 import niftymic.reconstruction.primal_dual_solver as pd
 import niftymic.reconstruction.scattered_data_approximation as sda
 import niftymic.utilities.data_preprocessing as dp
+import niftymic.utilities.outlier_rejector as outre
 import niftymic.utilities.intensity_correction as ic
 import niftymic.utilities.joint_image_mask_builder as imb
 import niftymic.utilities.segmentation_propagation as segprop
@@ -263,13 +264,32 @@ def main():
             unit="mm",
         )
 
-        # Scattered Data Approximation to get first estimate of HR volume
+        # Create first volume
+        # If outlier rejection is activated, eliminate obvious outliers early
+        # from stack and re-run SDA to get initial volume without them
         ph.print_title("First Estimate of HR Volume")
-        SDA = sda.ScatteredDataApproximation(
-            stacks, HR_volume, sigma=args.sigma)
-        SDA.run()
-        HR_volume = SDA.get_reconstruction()
-        HR_volume.set_filename("%s_isoSDA" % reference.get_filename())
+        for reject_outliers in range(0, args.outlier_rejection + 1):
+            if reject_outliers:
+                # Identify and reject outliers
+                threshold = 0.4
+                ph.print_info("Eliminate obvious slice outliers: %g @ NCC" % (
+                    threshold))
+                outlier_rejector = outre.OutlierRejector(
+                    stacks=stacks,
+                    hr_volume=HR_volume,
+                    threshold=threshold,
+                    measure="NCC",
+                    verbose=True,
+                )
+                outlier_rejector.run()
+                stacks = outlier_rejector.get_stacks()
+
+            # Scattered Data Approximation to get first estimate of HR volume
+            SDA = sda.ScatteredDataApproximation(
+                stacks, HR_volume, sigma=args.sigma)
+            SDA.run()
+            HR_volume = SDA.get_reconstruction()
+            HR_volume.set_filename("%s_isoSDA" % reference.get_filename())
 
     time_reconstruction = ph.stop_timing(time_tmp)
 
@@ -327,6 +347,7 @@ def main():
                 alpha_range=[args.alpha_first, args.alpha],
                 verbose=args.verbose,
                 outlier_rejection=args.outlier_rejection,
+                threshold_measure="NCC",
                 threshold_range=[args.threshold_first, args.threshold],
                 use_robust_registration=args.use_robust_registration,
                 s2v_smoothing=args.s2v_smoothing,
