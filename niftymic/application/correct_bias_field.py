@@ -10,12 +10,14 @@
 import numpy as np
 import os
 
-# Import modules
-import niftymic.base.data_reader as dr
+import niftymic.base.stack as st
+import niftymic.base.data_writer as dw
 import niftymic.utilities.n4_bias_field_correction as n4itk
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
+
+from niftymic.definitions import ALLOWED_EXTENSIONS
 
 
 def main():
@@ -25,12 +27,11 @@ def main():
     np.set_printoptions(precision=3)
 
     input_parser = InputArgparser(
-        description="Perform Bias Field correction on images based on N4ITK.",
+        description="Perform Bias Field correction using N4ITK.",
     )
-    input_parser.add_filenames(required=True)
-    input_parser.add_dir_output(required=True)
-    input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_prefix_output(default="N4ITK_")
+    input_parser.add_filename(required=True)
+    input_parser.add_output(required=True)
+    input_parser.add_filename_mask()
     input_parser.add_option(
         option_string="--convergence-threshold",
         type=float,
@@ -62,47 +63,42 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
+    if np.alltrue([not args.output.endswith(t) for t in ALLOWED_EXTENSIONS]):
+        raise ValueError(
+            "output filename invalid; allowed extensions are: %s" %
+            ", ".join(ALLOWED_EXTENSIONS))
+
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
     # Read data
-    data_reader = dr.MultipleImagesReader(
-        args.filenames, suffix_mask=args.suffix_mask)
-    data_reader.read_data()
-    stacks = data_reader.get_data()
+    stack = st.Stack.from_filename(
+        file_path=args.filename,
+        file_path_mask=args.filename_mask,
+        extract_slices=False,
+    )
 
     # Perform Bias Field Correction
     ph.print_title("Perform Bias Field Correction")
     bias_field_corrector = n4itk.N4BiasFieldCorrection(
+        stack=stack,
+        use_mask=True if args.filename_mask is not None else False,
         convergence_threshold=args.convergence_threshold,
         spline_order=args.spline_order,
         wiener_filter_noise=args.wiener_filter_noise,
         bias_field_fwhm=args.bias_field_fwhm,
-        prefix_corrected=args.prefix_output,
     )
-    stacks_corrected = [None] * len(stacks)
-    for i, stack in enumerate(stacks):
-        ph.print_info("Image %d/%d: N4ITK Bias Field Correction ... "
-                      % (i+1, len(stacks)), newline=False)
-        bias_field_corrector.set_stack(stack)
-        bias_field_corrector.run_bias_field_correction()
-        stacks_corrected[i] = \
-            bias_field_corrector.get_bias_field_corrected_stack()
-        print("done")
-        ph.print_info("Image %d/%d: Computational time = %s"
-                      % (i+1,
-                         len(stacks),
-                         bias_field_corrector.get_computational_time()))
+    ph.print_info("N4ITK Bias Field Correction ... ", newline=False)
+    bias_field_corrector.run_bias_field_correction()
+    stack_corrected = bias_field_corrector.get_bias_field_corrected_stack()
+    print("done")
 
-        # Write Data
-        stacks_corrected[i].write(
-            args.dir_output, write_mask=True, suffix_mask=args.suffix_mask)
-
-        if args.verbose:
-            sitkh.show_stacks([stacks[i], stacks_corrected[i]],
-                              segmentation=stacks[i])
+    dw.DataWriter.write_image(stack_corrected.sitk, args.output)
 
     elapsed_time = ph.stop_timing(time_start)
+
+    if args.verbose:
+        ph.show_niftis([args.filename, args.output])
 
     ph.print_title("Summary")
     print("Computational Time for Bias Field Correction(s): %s" %
