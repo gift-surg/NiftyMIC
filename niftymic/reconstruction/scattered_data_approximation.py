@@ -43,12 +43,18 @@ class ScatteredDataApproximation:
     #                             different values along each axis
     # \post          HR_volume is updated with current volumetric estimate
     #
-    def __init__(self, stacks, HR_volume, sigma=1, sigma_array=None):
+    def __init__(self, stacks, HR_volume, sigma=1, sigma_array=None, use_masks=False):
 
         # Initialize variables
         self._stacks = stacks
         self._N_stacks = len(stacks)
         self._HR_volume = HR_volume
+        self._use_masks = use_masks
+
+        self._apply_mask = {
+            True: self._apply_mask_true,
+            False: self._apply_mask_false,
+        }
 
         # Define sigma for recursive smoothing filter
         if sigma_array is None:
@@ -252,6 +258,16 @@ class ScatteredDataApproximation:
             slice_thickness=self._HR_volume.get_slice_thickness(),
         )
 
+    @staticmethod
+    def _apply_mask_false(slice):
+        return slice.sitk
+
+    @staticmethod
+    def _apply_mask_true(slice):
+        slice_sitk = slice.sitk * \
+            sitk.Cast(slice.sitk_mask, slice.sitk.GetPixelIDValue())
+        return slice_sitk
+
     # Recontruct volume based on discrete Shepard's like method, cf. Vercauteren2006, equation (19).
     #  The computation here is based on the YVV variant of Recursive Gaussian Filter and executed
     #  via ITK
@@ -274,9 +290,8 @@ class ScatteredDataApproximation:
             for j in range(0, N_slices):
                 # print("\t\tSlice %s/%s" %(j,N_slices-1))
                 slice = slices[j]
-                slice_masked_sitk = slice.sitk
-                # slice_masked_sitk = slice.sitk * \
-                #     sitk.Cast(slice.sitk_mask, slice.sitk.GetPixelIDValue())
+                slice_masked_sitk = self._apply_mask[bool(self._use_masks)](
+                    slice)
 
                 # Nearest neighbour resampling of slice to target space (HR
                 # volume)
