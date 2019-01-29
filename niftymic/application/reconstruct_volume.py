@@ -96,6 +96,9 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
+    rejection_measure = "NCC"
+    threshold_v2v = 0.3
+
     if args.v2v_method not in V2V_METHOD_OPTIONS:
         raise ValueError("v2v-method must be in {%s}" % (
             ", ".join(V2V_METHOD_OPTIONS)))
@@ -273,28 +276,31 @@ def main():
         # If outlier rejection is activated, eliminate obvious outliers early
         # from stack and re-run SDA to get initial volume without them
         ph.print_title("First Estimate of HR Volume")
-        for reject_outliers in range(0, args.outlier_rejection + 1):
-            if reject_outliers:
-                # Identify and reject outliers
-                threshold = 0.4
-                ph.print_info("Eliminate obvious slice outliers: %g @ NCC" % (
-                    threshold))
-                outlier_rejector = outre.OutlierRejector(
-                    stacks=stacks,
-                    reference=HR_volume,
-                    threshold=threshold,
-                    measure="NCC",
-                    verbose=True,
-                )
-                outlier_rejector.run()
-                stacks = outlier_rejector.get_stacks()
-
-            # Scattered Data Approximation to get first estimate of HR volume
+        if args.outlier_rejection:
+            ph.print_subtitle("SDA Approximation")
             SDA = sda.ScatteredDataApproximation(
-                stacks, HR_volume, sigma=args.sigma)
+                stacks, HR_volume, sigma=5)
             SDA.run()
             HR_volume = SDA.get_reconstruction()
-            HR_volume.set_filename("%s_isoSDA" % reference.get_filename())
+
+            # Identify and reject outliers
+            ph.print_subtitle("Eliminate slice outliers (%s < %g)" % (
+                rejection_measure, threshold_v2v))
+            outlier_rejector = outre.OutlierRejector(
+                stacks=stacks,
+                reference=HR_volume,
+                threshold=threshold_v2v,
+                measure=rejection_measure,
+                verbose=True,
+            )
+            outlier_rejector.run()
+            stacks = outlier_rejector.get_stacks()
+        ph.print_subtitle("SDA Approximation")
+        SDA = sda.ScatteredDataApproximation(
+            stacks, HR_volume, sigma=args.sigma)
+        SDA.run()
+        HR_volume = SDA.get_reconstruction()
+        HR_volume.set_filename(SDA.get_setting_specific_filename())
 
     time_reconstruction = ph.stop_timing(time_tmp)
 
@@ -352,7 +358,7 @@ def main():
                 alpha_range=[args.alpha_first, args.alpha],
                 verbose=args.verbose,
                 outlier_rejection=args.outlier_rejection,
-                threshold_measure="NCC",
+                threshold_measure=rejection_measure,
                 threshold_range=[args.threshold_first, args.threshold],
                 use_robust_registration=args.use_robust_registration,
                 s2v_smoothing=args.s2v_smoothing,
@@ -408,6 +414,7 @@ def main():
             reconstruction=HR_volume,
             reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
             iterations=args.iterations,
+            use_masks=args.use_masks_srr,
         )
     else:
         SRR = tk.TikhonovSolver(
