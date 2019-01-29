@@ -18,6 +18,33 @@ import pysitk.simple_itk_helper as sitkh
 
 
 class DataWriter(object):
+
+    @staticmethod
+    def write_image(image_sitk, path_to_file, compress=True, verbose=True):
+        info = "Write image to %s" % path_to_file
+        if compress:
+            image_sitk = sitk.Cast(image_sitk, sitk.sitkFloat32)
+            info += " (float32)"
+        if verbose:
+            ph.print_info("%s ... " % info, newline=False)
+        sitkh.write_nifti_image_sitk(image_sitk, path_to_file)
+        if verbose:
+            print("done")
+
+    @staticmethod
+    def write_mask(mask_sitk, path_to_file, compress=True, verbose=True):
+        info = "Write mask to %s" % path_to_file
+        if compress:
+            mask_sitk = sitk.Cast(mask_sitk, sitk.sitkUInt8)
+            info += " (uint8)"
+        if verbose:
+            ph.print_info("%s ... " % info, newline=False)
+        sitkh.write_nifti_image_sitk(mask_sitk, path_to_file)
+        if verbose:
+            print("done")
+
+
+class StacksWriter(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, stacks):
@@ -31,7 +58,7 @@ class DataWriter(object):
         pass
 
 
-class MultipleStacksWriter(DataWriter):
+class MultipleStacksWriter(StacksWriter):
 
     def __init__(self,
                  stacks,
@@ -41,7 +68,7 @@ class MultipleStacksWriter(DataWriter):
                  write_transforms=False,
                  suffix_mask="_mask"):
 
-        DataWriter.__init__(self, stacks=stacks)
+        StacksWriter.__init__(self, stacks=stacks)
         self._directory = directory
         self._write_mask = write_mask
         self._write_slices = write_slices
@@ -60,7 +87,7 @@ class MultipleStacksWriter(DataWriter):
                         suffix_mask=self._suffix_mask)
 
 
-class MultiComponentImageWriter(DataWriter):
+class MultiComponentImageWriter(StacksWriter):
 
     def __init__(self,
                  stacks,
@@ -69,7 +96,7 @@ class MultiComponentImageWriter(DataWriter):
                  suffix_mask="_mask",
                  ):
 
-        DataWriter.__init__(self, stacks=stacks)
+        StacksWriter.__init__(self, stacks=stacks)
         self._filename = filename
         self._write_mask = write_mask
         self._suffix_mask = suffix_mask

@@ -12,14 +12,15 @@ import re
 import numpy as np
 import SimpleITK as sitk
 
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 import simplereg.resampler
 
 import niftymic.base.slice as sl
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
-from niftymic.definitions import ALLOWED_EXTENSIONS
 import niftymic.base.exceptions as exceptions
-from niftymic.definitions import VIEWER
+import niftymic.base.data_writer as dw
+
+from niftymic.definitions import ALLOWED_EXTENSIONS, VIEWER
 
 
 ##
@@ -562,7 +563,7 @@ class Stack:
               write_slices=False,
               write_transforms=False,
               suffix_mask="_mask",
-              use_float32=True):
+              ):
 
         # Create directory if not existing
         ph.create_directory(directory)
@@ -575,15 +576,7 @@ class Stack:
 
         # Write file to specified location
         if write_stack:
-            ph.print_info("Write image stack to %s.nii.gz ... " %
-                          (full_file_name), newline=False)
-            if use_float32:
-                image_sitk = sitk.Cast(self.sitk, sitk.sitkFloat32)
-            else:
-                image_sitk = self.sitk
-            sitkh.write_nifti_image_sitk(
-                image_sitk, full_file_name + ".nii.gz")
-            print("done")
+            dw.DataWriter.write_image(self.sitk, "%s.nii.gz" % full_file_name)
 
         # Write mask to specified location if given
         if self.sitk_mask is not None:
@@ -591,12 +584,8 @@ class Stack:
 
             # Write mask if it does not consist of only ones
             if not self._is_unity_mask and write_mask:
-                ph.print_info("Write image stack mask to %s%s.nii.gz ... " % (
-                    full_file_name, suffix_mask), newline=False)
-                sitkh.write_nifti_image_sitk(
-                    self.sitk_mask, full_file_name + "%s.nii.gz" % (
-                        suffix_mask))
-                print("done")
+                dw.DataWriter.write_mask(
+                    self.sitk_mask, "%s%s.nii.gz" % (full_file_name, suffix_mask))
 
         if write_transforms:
             stack_transform_sitk = self._history_motion_corrections[-1]
