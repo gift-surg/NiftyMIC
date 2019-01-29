@@ -279,7 +279,7 @@ def main():
         if args.outlier_rejection:
             ph.print_subtitle("SDA Approximation")
             SDA = sda.ScatteredDataApproximation(
-                stacks, HR_volume, sigma=5)
+                stacks, HR_volume, sigma=args.sigma)
             SDA.run()
             HR_volume = SDA.get_reconstruction()
 
