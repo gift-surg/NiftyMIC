@@ -292,9 +292,8 @@ class SliceToVolumeRegistration(RegistrationPipeline):
 
         # Reject misregistered slices
         if self._threshold is not None:
-            ph.print_subtitle(
-                "Slice Outlier Rejection (Threshold = %g @ %s)" % (
-                    self._threshold, self._threshold_measure))
+            ph.print_subtitle("Slice Outlier Rejection (%s < %g)" % (
+                self._threshold_measure, self._threshold))
             outlier_rejector = outre.OutlierRejector(
                 stacks=self._stacks,
                 reference=self._reference,
