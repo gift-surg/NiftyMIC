@@ -29,7 +29,7 @@ class OutlierRejector(object):
                  stacks,
                  reference,
                  threshold,
-                 use_slice_masks=True,
+                 use_slice_masks=False,
                  use_reference_mask=True,
                  measure="NCC",
                  verbose=True,
@@ -82,7 +82,7 @@ class OutlierRejector(object):
                     stack.delete_slice(slice)
 
             if self._verbose:
-                ph.print_info("Stack %d/%d: Slices %d/%d %s (%s)" % (
+                ph.print_info("Stack %d/%d: Slice rejections %d/%d %s (%s)" % (
                     i + 1,
                     len(self._stacks),
                     len(stack.get_deleted_slice_numbers()),
@@ -92,8 +92,9 @@ class OutlierRejector(object):
                 ))
                 if len(rejections) > 0:
                     res_values = nda_sim[rejections]
-                    print("    Latest rejections: %s | %s: %s" % (
-                        rejections, self._measure, res_values))
+                    print("    Latest rejections: %s (%s < %g): %s" % (
+                        rejections, self._measure, self._threshold, res_values)
+                    )
 
             # Log stack where all slices were rejected
             if stack.get_number_of_slices() == 0:
