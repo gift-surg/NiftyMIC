@@ -58,14 +58,13 @@ class BinaryMaskFromMaskSRREstimator(object):
         return mask
 
     def run(self):
+        mask_sitk = self._srr_mask.sitk
+
         # Smooth mask
-        mask_sitk = sitk.SmoothingRecursiveGaussian(
-            self._srr_mask.sitk, self._sigma)
+        mask_sitk = sitk.SmoothingRecursiveGaussian(mask_sitk, self._sigma)
 
         # Binarize images given thresholds
         mask_sitk = sitk.BinaryThreshold(
-            mask_sitk,
-            lowerThreshold=self._lower,
-            upperThreshold=self._upper,
-        )
+            mask_sitk, lowerThreshold=self._lower, upperThreshold=self._upper)
+
         self._mask_sitk = mask_sitk
