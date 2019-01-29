@@ -137,8 +137,8 @@ niftymic_reconstruct_volume \
 --intensity-correction 1 \
 --isotropic-resolution 0.8 \
 --two-step-cycles 3 \
---output path-to-srr.nii.gz \
---subfolder-motion-correction motion_correction \ # created in 'output-dir'
+--output path-to-output-dir/srr.nii.gz \
+--subfolder-motion-correction motion_correction \ # created in 'path-to-output-dir'
 --verbose 1
 ```
 
