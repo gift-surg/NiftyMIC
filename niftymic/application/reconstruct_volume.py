@@ -276,7 +276,7 @@ def main():
                     threshold))
                 outlier_rejector = outre.OutlierRejector(
                     stacks=stacks,
-                    hr_volume=HR_volume,
+                    reference=HR_volume,
                     threshold=threshold,
                     measure="NCC",
                     verbose=True,

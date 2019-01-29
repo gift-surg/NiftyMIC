@@ -27,16 +27,20 @@ class OutlierRejector(object):
 
     def __init__(self,
                  stacks,
-                 hr_volume,
+                 reference,
                  threshold,
+                 use_slice_masks=True,
+                 use_reference_mask=True,
                  measure="NCC",
-                 verbose=1,
+                 verbose=True,
                  ):
 
         self._stacks = stacks
-        self._hr_volume = hr_volume
+        self._reference = reference
         self._threshold = threshold
         self._measure = measure
+        self._use_slice_masks = use_slice_masks
+        self._use_reference_mask = use_reference_mask
         self._verbose = verbose
 
     def get_stacks(self):
@@ -45,9 +49,9 @@ class OutlierRejector(object):
     def run(self):
         residual_evaluator = re.ResidualEvaluator(
             stacks=self._stacks,
-            reference=self._hr_volume,
-            use_slice_masks=False,
-            use_reference_mask=True,
+            reference=self._reference,
+            use_slice_masks=self._use_slice_masks,
+            use_reference_mask=self._use_reference_mask,
             verbose=False,
             measures=[self._measure],
         )

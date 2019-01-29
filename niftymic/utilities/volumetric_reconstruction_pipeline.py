@@ -297,7 +297,7 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                     self._threshold, self._threshold_measure))
             outlier_rejector = outre.OutlierRejector(
                 stacks=self._stacks,
-                hr_volume=self._reference,
+                reference=self._reference,
                 threshold=self._threshold,
                 measure=self._threshold_measure,
                 verbose=True,
