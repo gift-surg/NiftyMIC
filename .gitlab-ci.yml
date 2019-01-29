@@ -112,7 +112,7 @@ reconstruct_volume_huberl2:
     - >
       niftymic_reconstruct_volume
       --filenames ${DATADIR}/input_data/axial.nii.gz ${DATADIR}/input_data/coronal.nii.gz ${DATADIR}/input_data/sagittal.nii.gz 
-      --dir-output ${TMPDIR} 
+      --output ${TMPDIR}/srr_from_slices.nii.gz
       --suffix-mask _mask
       --verbose 0 
       --isotropic-resolution 2
@@ -134,7 +134,7 @@ reconstruct_volume_from_slices:
       --dir-input-mc ${DATADIR}/motion_correction_oriented
       --suffix-mask _mask
       --reconstruction-space ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
-      --dir-output ${TMPDIR} 
+      --output ${TMPDIR}/srr_from_slices.nii.gz
       --verbose 0
       --isotropic-resolution 2
       --iter-max 2

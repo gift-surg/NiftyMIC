@@ -17,12 +17,15 @@ import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
 import niftymic.base.data_reader as dr
+import niftymic.base.data_writer as dw
 import niftymic.reconstruction.admm_solver as admm
 import niftymic.utilities.intensity_correction as ic
 import niftymic.reconstruction.primal_dual_solver as pd
 import niftymic.reconstruction.tikhonov_solver as tk
 import niftymic.utilities.binary_mask_from_mask_srr_estimator as bm
 from niftymic.utilities.input_arparser import InputArgparser
+
+from niftymic.definitions import ALLOWED_EXTENSIONS
 
 
 def main():
@@ -41,8 +44,7 @@ def main():
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
     input_parser.add_dir_input_mc()
-    input_parser.add_dir_output(required=True)
-    input_parser.add_prefix_output(default="SRR_")
+    input_parser.add_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
     input_parser.add_extra_frame_target(default=10)
@@ -62,8 +64,6 @@ def main():
     input_parser.add_tv_solver(default="PD")
     input_parser.add_pd_alg_type(default="ALG2")
     input_parser.add_iterations(default=15)
-    input_parser.add_subfolder_comparison()
-    input_parser.add_provide_comparison(default=0)
     input_parser.add_log_config(default=1)
     input_parser.add_use_masks_srr(default=0)
     input_parser.add_slice_thicknesses(default=None)
@@ -74,11 +74,21 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
+    if args.reconstruction_type not in ["TK1L2", "TVL2", "HuberL2"]:
+        raise IOError("Reconstruction type unknown")
+
+    if np.alltrue([not args.output.endswith(t) for t in ALLOWED_EXTENSIONS]):
+        raise ValueError(
+            "output filename invalid; allowed extensions are: %s" %
+            ", ".join(ALLOWED_EXTENSIONS))
+    dir_output = os.path.dirname(args.output)
+
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
-    if args.reconstruction_type not in ["TK1L2", "TVL2", "HuberL2"]:
-        raise IOError("Reconstruction type unknown")
+    if args.verbose:
+        show_niftis = []
+        # show_niftis = [f for f in args.filenames]
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -190,29 +200,22 @@ def main():
     SRR0.run()
 
     recon = SRR0.get_reconstruction()
-    filename = SRR0.get_setting_specific_filename(args.prefix_output)
-    recon.set_filename(filename)
+
+    if args.reconstruction_type in ["TVL2", "HuberL2"]:
+        output = ph.append_to_filename(args.output, "_initTK1L2")
+    else:
+        output = args.output
 
     if args.srr_mask:
-
         mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon)
         mask_estimator.run()
         mask_sitk = mask_estimator.get_mask_sitk()
-
-        sitkh.write_nifti_image_sitk(
-            mask_sitk, os.path.join(args.dir_output, "%s.nii.gz" % filename),
-            verbose=1)
-
-        # Only for further processing
-        recon = mask_estimator.get_mask()
+        dw.DataWriter.write_mask(mask_sitk, output)
     else:
-        recon.write(args.dir_output)
+        dw.DataWriter.write_image(recon.sitk, output)
 
-    # List to store SRRs
-    recons = []
-    for i in range(0, len(stacks)):
-        recons.append(stacks[i])
-    recons.insert(0, recon)
+    if args.verbose:
+        show_niftis.insert(0, output)
 
     if args.reconstruction_type in ["TVL2", "HuberL2"]:
         ph.print_title("Compute %s reconstruction" % args.reconstruction_type)
@@ -241,43 +244,25 @@ def main():
                 alg_type=args.pd_alg_type,
                 reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
                 data_loss=args.data_loss,
+                use_masks=args.use_masks_srr,
                 verbose=args.verbose,
             )
         SRR.run()
         recon = SRR.get_reconstruction()
-        filename = SRR.get_setting_specific_filename(args.prefix_output)
-        recon.set_filename(filename)
 
         if args.srr_mask:
             mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon)
             mask_estimator.run()
             mask_sitk = mask_estimator.get_mask_sitk()
-            sitkh.write_nifti_image_sitk(
-                mask_sitk, os.path.join(
-                    args.dir_output, "%s.nii.gz" % filename),
-                verbose=1)
+            dw.DataWriter.write_mask(mask_sitk, args.output)
 
-            # Only for further processing
-            recon = mask_estimator.get_mask()
         else:
-            recon.write(args.dir_output)
-        recons.insert(0, recon)
+            dw.DataWriter.write_image(recon.sitk, args.output)
 
-        recon.write(args.dir_output)
+    if args.verbose:
+        show_niftis.insert(0, args.output)
+        ph.show_niftis(show_niftis, viewer=args.viewer)
 
-    if args.verbose and not args.provide_comparison:
-        sitkh.show_stacks(recons, viewer=args.viewer)
-
-    # Show SRR together with linearly resampled input data.
-    # Additionally, a script is generated to open files
-    if args.provide_comparison:
-        sitkh.show_stacks(recons,
-                          show_comparison_file=args.provide_comparison,
-                          dir_output=os.path.join(
-                              args.dir_output,
-                              args.subfolder_comparison),
-                          viewer=args.viewer,
-                          )
 
     ph.print_line_separator()
 

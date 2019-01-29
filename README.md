@@ -120,7 +120,7 @@ An example for a basic usage reads
 ```
 niftymic_reconstruct_volume \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---dir-output output-dir \
+--output path-to-srr.nii.gz \
 --suffix-mask _mask
 ```
 whereby complete outlier removal during SRR is activated by default (`--outlier-rejection 1`).
@@ -137,7 +137,7 @@ niftymic_reconstruct_volume \
 --intensity-correction 1 \
 --isotropic-resolution 0.8 \
 --two-step-cycles 3 \
---dir-output output-dir \
+--output path-to-srr.nii.gz \
 --subfolder-motion-correction motion_correction \ # created in 'output-dir'
 --verbose 1
 ```
@@ -151,7 +151,7 @@ niftymic_register_image \
 --fixed path-to-template.nii.gz \
 --moving path-to-subject-space-srr.nii.gz \
 --dir-input-mc dir-to-motion_correction \
---dir-output output-dir
+--output path-to-registration-transform.txt \
 ```
 
 
@@ -171,7 +171,7 @@ Solve the SRR problem for motion corrected data (or static data if `--dir-input-
 niftymic_reconstruct_volume_from_slices \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
 --dir-input-mc dir-to-motion_correction \ # optional
---dir-output output-dir \
+--output path-to-srr.nii.gz \
 --reconstruction-type TK1L2 \
 --reconstruction-space path-to-template.nii.gz \ # optional
 --alpha 0.01
@@ -180,7 +180,7 @@ niftymic_reconstruct_volume_from_slices \
 niftymic_reconstruct_volume_from_slices \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
 --dir-input-mc dir-to-motion_correction \
---dir-output output-dir \
+--output path-to-srr.nii.gz \
 --reconstruction-type HuberL2 \
 --alpha 0.003
 ```

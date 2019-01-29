@@ -16,6 +16,7 @@ import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
 import niftymic.base.data_reader as dr
+import niftymic.base.data_writer as dw
 import niftymic.registration.flirt as regflirt
 import niftymic.registration.niftyreg as niftyreg
 import niftymic.registration.simple_itk_registration as regsitk
@@ -30,7 +31,7 @@ import niftymic.utilities.segmentation_propagation as segprop
 import niftymic.utilities.volumetric_reconstruction_pipeline as pipeline
 from niftymic.utilities.input_arparser import InputArgparser
 
-from niftymic.definitions import V2V_METHOD_OPTIONS
+from niftymic.definitions import V2V_METHOD_OPTIONS, ALLOWED_EXTENSIONS
 
 
 def main():
@@ -52,7 +53,7 @@ def main():
     )
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
-    input_parser.add_dir_output(required=True)
+    input_parser.add_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
     input_parser.add_search_angle(default=45)
@@ -73,8 +74,6 @@ def main():
     input_parser.add_isotropic_resolution(default=1)
     input_parser.add_log_config(default=1)
     input_parser.add_subfolder_motion_correction()
-    input_parser.add_provide_comparison(default=0)
-    input_parser.add_subfolder_comparison()
     input_parser.add_write_motion_correction(default=1)
     input_parser.add_verbose(default=0)
     input_parser.add_two_step_cycles(default=3)
@@ -100,6 +99,12 @@ def main():
     if args.v2v_method not in V2V_METHOD_OPTIONS:
         raise ValueError("v2v-method must be in {%s}" % (
             ", ".join(V2V_METHOD_OPTIONS)))
+
+    if np.alltrue([not args.output.endswith(t) for t in ALLOWED_EXTENSIONS]):
+        raise ValueError(
+            "output filename invalid; allowed extensions are: %s" %
+            ", ".join(ALLOWED_EXTENSIONS))
+    dir_output = os.path.dirname(args.output)
 
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
@@ -369,7 +374,7 @@ def main():
     ph.print_title("Write Motion Correction Results")
     if args.write_motion_correction:
         dir_output_mc = os.path.join(
-            args.dir_output, args.subfolder_motion_correction)
+            dir_output, args.subfolder_motion_correction)
         ph.clear_directory(dir_output_mc)
 
         for stack in stacks:
@@ -389,7 +394,7 @@ def main():
             ph.write_dictionary_to_json(
                 deleted_slices_dic,
                 os.path.join(
-                    args.dir_output,
+                    dir_output,
                     args.subfolder_motion_correction,
                     "rejected_slices.json"
                 )
@@ -422,29 +427,15 @@ def main():
     # Write SRR result
     HR_volume_final = SRR.get_reconstruction()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
-    HR_volume_final.write(
-        args.dir_output, write_mask=True, suffix_mask=args.suffix_mask)
+    dw.DataWriter.write_image(HR_volume_final.sitk, args.output)
 
     HR_volume_iterations.insert(0, HR_volume_final)
     for stack in stacks:
         HR_volume_iterations.append(stack)
 
-    if args.verbose and not args.provide_comparison:
+    if args.verbose:
         sitkh.show_stacks(
-            HR_volume_iterations,
-            segmentation=HR_volume,
-            viewer=args.viewer)
-    # HR_volume_final.show()
-
-    # Show SRR together with linearly resampled input data.
-    # Additionally, a script is generated to open files
-    if args.provide_comparison:
-        sitkh.show_stacks(HR_volume_iterations,
-                          segmentation=HR_volume,
-                          show_comparison_file=args.provide_comparison,
-                          dir_output=os.path.join(
-                              args.dir_output, args.subfolder_comparison),
-                          )
+            HR_volume_iterations, segmentation=HR_volume, viewer=args.viewer)
 
     # Summary
     ph.print_title("Summary")
