@@ -259,8 +259,10 @@ def main():
         else:
             dw.DataWriter.write_image(recon.sitk, args.output)
 
+        if args.verbose:
+            show_niftis.insert(0, args.output)
+
     if args.verbose:
-        show_niftis.insert(0, args.output)
         ph.show_niftis(show_niftis, viewer=args.viewer)
 
 
