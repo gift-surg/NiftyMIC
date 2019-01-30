@@ -187,14 +187,11 @@ def main():
     if args.sda:
         ph.print_title("Compute SDA reconstruction")
         SDA = sda.ScatteredDataApproximation(
-            stacks, recon0, sigma=args.alpha)
+            stacks, recon0, sigma=args.alpha, sda_mask=args.mask)
         SDA.run()
         recon = SDA.get_reconstruction()
         if args.mask:
-            mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
-            mask_estimator.run()
-            mask_sitk = mask_estimator.get_mask_sitk()
-            dw.DataWriter.write_mask(mask_sitk, args.output)
+            dw.DataWriter.write_mask(recon.sitk_mask, args.output)
         else:
             dw.DataWriter.write_image(recon.sitk, args.output)
 
