@@ -71,7 +71,14 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         # Check SRR volume
         res_sitk = sitkh.read_nifti_image_sitk(output)
         ref_sitk = sitkh.read_nifti_image_sitk(path_to_reference)
+        diff_sitk = res_sitk - ref_sitk
+        error = np.linalg.norm(sitk.GetArrayFromImage(diff_sitk))
+        self.assertAlmostEqual(error, 0, places=self.precision)
 
+        # Check SRR mask volume
+        res_sitk = sitkh.read_nifti_image_sitk(
+            ph.append_to_filename(output, "_mask"))
+        ref_sitk = sitkh.read_nifti_image_sitk(path_to_reference_mask)
         diff_sitk = res_sitk - ref_sitk
         error = np.linalg.norm(sitk.GetArrayFromImage(diff_sitk))
         self.assertAlmostEqual(error, 0, places=self.precision)

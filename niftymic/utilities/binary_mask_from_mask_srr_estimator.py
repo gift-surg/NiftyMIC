@@ -23,17 +23,17 @@ import pysitk.simple_itk_helper as sitkh
 class BinaryMaskFromMaskSRREstimator(object):
 
     def __init__(self,
-                 srr_mask,
+                 srr_mask_sitk,
                  suffix="_mask",
                  sigma=2,
                  lower=0.5,
                  upper=100,
                  ):
 
-        if not isinstance(srr_mask, st.Stack):
-            raise ValueError("Input must be of type Stack")
+        if not isinstance(srr_mask_sitk, sitk.Image):
+            raise ValueError("Input must be of type sitk.Image")
 
-        self._srr_mask = srr_mask
+        self._srr_mask_sitk = srr_mask_sitk
         self._suffix = suffix
         self._sigma = sigma
         self._lower = lower
@@ -45,20 +45,8 @@ class BinaryMaskFromMaskSRREstimator(object):
     def get_mask_sitk(self):
         return sitk.Image(self._mask_sitk)
 
-    def get_mask(self):
-        mask = st.Stack.from_sitk_image(
-            image_sitk=self._mask_sitk,
-            image_sitk_mask=self._mask_sitk,
-            slice_thickness=self._srr_mask.get_slice_thickness(),
-            extract_slices=False,
-        )
-        mask.set_filename("%s%s" % (
-            self._srr_mask.get_filename(), self._suffix))
-
-        return mask
-
     def run(self):
-        mask_sitk = self._srr_mask.sitk
+        mask_sitk = self._srr_mask_sitk
 
         # Smooth mask
         mask_sitk = sitk.SmoothingRecursiveGaussian(mask_sitk, self._sigma)

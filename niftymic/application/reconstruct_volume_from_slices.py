@@ -207,7 +207,7 @@ def main():
         output = args.output
 
     if args.srr_mask:
-        mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon)
+        mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
         mask_estimator.run()
         mask_sitk = mask_estimator.get_mask_sitk()
         dw.DataWriter.write_mask(mask_sitk, output)
@@ -251,7 +251,7 @@ def main():
         recon = SRR.get_reconstruction()
 
         if args.srr_mask:
-            mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon)
+            mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
             mask_estimator.run()
             mask_sitk = mask_estimator.get_mask_sitk()
             dw.DataWriter.write_mask(mask_sitk, args.output)

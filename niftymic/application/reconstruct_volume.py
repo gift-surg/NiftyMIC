@@ -295,11 +295,20 @@ def main():
             )
             outlier_rejector.run()
             stacks = outlier_rejector.get_stacks()
-        ph.print_subtitle("SDA Approximation")
+
+        ph.print_subtitle("SDA Approximation Image")
         SDA = sda.ScatteredDataApproximation(
             stacks, HR_volume, sigma=args.sigma)
         SDA.run()
         HR_volume = SDA.get_reconstruction()
+
+        ph.print_subtitle("SDA Approximation Image Mask")
+        SDA = sda.ScatteredDataApproximation(
+            stacks, HR_volume, sigma=args.sigma, sda_mask=True)
+        SDA.run()
+        # HR volume contains updated mask based on SDA
+        HR_volume = SDA.get_reconstruction()
+
         HR_volume.set_filename(SDA.get_setting_specific_filename())
 
     time_reconstruction = ph.stop_timing(time_tmp)
@@ -427,14 +436,23 @@ def main():
     SRR.set_iter_max(args.iter_max)
     SRR.set_verbose(True)
     SRR.run()
-    time_reconstruction += SRR.get_computational_time()
+    HR_volume_final = SRR.get_reconstruction()
 
+    ph.print_subtitle("Final SDA Approximation Image Mask")
+    SDA = sda.ScatteredDataApproximation(
+        stacks, HR_volume_final, sigma=args.sigma, sda_mask=True)
+    SDA.run()
+    # HR volume contains updated mask based on SDA
+    HR_volume_final = SDA.get_reconstruction()
+
+    time_reconstruction += SRR.get_computational_time()
     elapsed_time_total = ph.stop_timing(time_start)
 
     # Write SRR result
-    HR_volume_final = SRR.get_reconstruction()
     HR_volume_final.set_filename(SRR.get_setting_specific_filename())
     dw.DataWriter.write_image(HR_volume_final.sitk, args.output)
+    dw.DataWriter.write_mask(
+        HR_volume_final.sitk_mask, ph.append_to_filename(args.output, "_mask"))
 
     HR_volume_iterations.insert(0, HR_volume_final)
     for stack in stacks:
@@ -442,7 +460,10 @@ def main():
 
     if args.verbose:
         sitkh.show_stacks(
-            HR_volume_iterations, segmentation=HR_volume, viewer=args.viewer)
+            HR_volume_iterations,
+            segmentation=HR_volume_final,
+            viewer=args.viewer,
+        )
 
     # Summary
     ph.print_title("Summary")

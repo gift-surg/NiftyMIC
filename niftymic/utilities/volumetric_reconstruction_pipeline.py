@@ -22,6 +22,8 @@ import niftymic.base.stack as st
 import niftymic.validation.motion_evaluator as me
 import niftymic.utilities.outlier_rejector as outre
 import niftymic.utilities.robust_motion_estimator as rme
+import niftymic.utilities.binary_mask_from_mask_srr_estimator as bm
+import niftymic.reconstruction.scattered_data_approximation as sda
 
 from niftymic.definitions import VIEWER
 
@@ -549,6 +551,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                  s2v_smoothing=0.5,
                  interleave=2,
                  viewer=VIEWER,
+                 sigma_sda_mask=1.,
                  ):
 
         ReconstructionRegistrationPipeline.__init__(
@@ -561,6 +564,8 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             viewer=viewer,
             verbose=verbose,
         )
+
+        self._sigma_sda_mask = sigma_sda_mask
 
         self._cycles = cycles
         self._outlier_rejection = outlier_rejection
@@ -614,6 +619,8 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
             # SRR step
             if cycle < self._cycles - 1:
+
+                # --------------------- Perform Image SRR ---------------------
                 self._reconstruction_method.set_alpha(alphas[cycle])
                 self._reconstruction_method.run()
 
@@ -622,7 +629,19 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
                 reference = self._reconstruction_method.get_reconstruction()
 
-                # Store SRR
+                # ------------------ Perform Image Mask SDA -------------------
+                SDA = sda.ScatteredDataApproximation(
+                    self._stacks,
+                    reference,
+                    sigma=self._sigma_sda_mask,
+                    sda_mask=True,
+                )
+                SDA.run()
+
+                # reference contains updated mask based on SDA
+                reference = SDA.get_reconstruction()
+
+                # ------------------------- Store SRR -------------------------
                 filename = "Iter%d_%s" % (
                     cycle + 1,
                     self._reconstruction_method.get_setting_specific_filename()
