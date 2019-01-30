@@ -993,6 +993,12 @@ class InputArgparser(object):
             if type(v) is list:
                 for vi in reversed(v):
                     sys.argv.insert(1, str(vi))
+            # 'store_true' values are converted to True/False; ignore the value
+            # of this key as the existence of the key indicates 'True'
+            elif type(v) is bool:
+                if v == True:
+                    sys.argv.insert(1, "--%s" % k)
+                continue
             else:
                 sys.argv.insert(1, str(v))
 
