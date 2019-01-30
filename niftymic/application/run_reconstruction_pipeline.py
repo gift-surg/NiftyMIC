@@ -82,13 +82,21 @@ def main():
         help="Turn on/off comparison of data vs data simulated from the "
         "obtained volumetric reconstruction. "
         "If off, it is assumed that this step was already performed",
-        default=1)
+        default=0)
     input_parser.add_option(
         option_string="--initial-transform",
         type=str,
         help="Set initial transform to be used for register_image.",
         default=None)
     input_parser.add_outlier_rejection(default=1)
+    input_parser.add_argument(
+        "--sda", "-sda",
+        action='store_true',
+        help="If given, the volume is reconstructed using "
+        "Scattered Data Approximation (Vercauteren et al., 2006). "
+        "--alpha is considered the value for the standard deviation then. "
+        "Recommended value is, e.g., --alpha 0.8"
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -107,10 +115,11 @@ def main():
         args.dir_output, "data_vs_simulated_data")
 
     srr_subject = os.path.join(
-        dir_output_recon_subject_space, "%s_subj.nii.gz" % filename_srr)
+        dir_output_recon_subject_space, "%s_subject.nii.gz" % filename_srr)
     srr_subject_mask = ph.append_to_filename(srr_subject, "_mask")
     srr_template = os.path.join(
         dir_output_recon_template_space, "%s_template.nii.gz" % filename_srr)
+    srr_template_mask = ph.append_to_filename(srr_template, "_mask")
     trafo_template = os.path.join(
         dir_output_recon_template_space, "registration_transform_sitk.txt")
 
@@ -170,6 +179,8 @@ def main():
             cmd_args.append("--reference %s" % args.reference)
         if args.reference_mask is not None:
             cmd_args.append("--reference-mask %s" % args.reference_mask)
+        if args.sda:
+            cmd_args.append("--sda")
         cmd = "niftymic_reconstruct_volume %s" % (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
         exit_code = ph.execute_command(cmd)
@@ -177,20 +188,25 @@ def main():
             raise RuntimeError("Reconstruction in subject space failed")
 
         # Compute SRR mask in subject space
-        dir_motion_correction = os.path.join(
-            dir_output_recon_subject_space, "motion_correction")
-        cmd_args = ["niftymic_reconstruct_volume_from_slices"]
-        cmd_args.append("--filenames %s" % (" ").join(args.filenames_masks))
-        cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
-        cmd_args.append("--output %s" % srr_subject_mask)
-        cmd_args.append("--reconstruction-space %s" % srr_subject)
-        cmd_args.append("--srr-mask 1")
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
-        cmd_args.append("--alpha %g" % 0.1)
-        cmd_args.append("--iter-max %d" % 5)
-        # cmd_args.append("--verbose %d" % verbose)
-        cmd = (" ").join(cmd_args)
-        ph.execute_command(cmd)
+        # (Approximated using SDA within reconstruct_volume)
+        if 0:
+            dir_motion_correction = os.path.join(
+                dir_output_recon_subject_space, "motion_correction")
+            cmd_args = ["niftymic_reconstruct_volume_from_slices"]
+            cmd_args.append("--filenames %s" % (" ").join(args.filenames_masks))
+            cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
+            cmd_args.append("--output %s" % srr_subject_mask)
+            cmd_args.append("--reconstruction-space %s" % srr_subject)
+            cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+            cmd_args.append("--mask")
+            if args.sda:
+                cmd_args.append("--sda")
+                cmd_args.append("--alpha 1")
+            else:
+                cmd_args.append("--alpha 0.1")
+                cmd_args.append("--iter-max 5")
+            cmd = (" ").join(cmd_args)
+            ph.execute_command(cmd)
 
         elapsed_time_volrec = ph.stop_timing(time_start_volrec)
     else:
@@ -242,7 +258,7 @@ def main():
 
         dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
-        cmd_args = []
+        cmd_args = ["niftymic_reconstruct_volume_from_slices"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
         cmd_args.append("--output %s" % srr_template)
@@ -250,16 +266,38 @@ def main():
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--verbose %s" % args.verbose)
+        if args.sda:
+            cmd_args.append("--sda")
 
-        cmd = "niftymic_reconstruct_volume_from_slices %s" % \
-            (" ").join(cmd_args)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Reconstruction in template space failed")
 
+        # Compute SRR mask in template space
+        if 1:
+            dir_motion_correction = os.path.join(
+                dir_output_recon_template_space, "motion_correction")
+            cmd_args = ["niftymic_reconstruct_volume_from_slices"]
+            cmd_args.append("--filenames %s" % (" ").join(args.filenames_masks))
+            cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
+            cmd_args.append("--output %s" % srr_template_mask)
+            cmd_args.append("--reconstruction-space %s" % srr_template)
+            cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+            cmd_args.append("--mask")
+            if args.sda:
+                cmd_args.append("--sda")
+                cmd_args.append("--alpha 1")
+            else:
+                cmd_args.append("--alpha 0.1")
+                cmd_args.append("--iter-max 5")
+            cmd = (" ").join(cmd_args)
+            ph.execute_command(cmd)
+
         # Copy SRR to output directory
         output = "%sSRR_Stacks%d_GW%d.nii.gz" % (
-            args.prefix_output, len(args.filenames), args.gestational_age)
+            args.prefix_output, len(args.filenames), gestational_age)
         path_to_output = os.path.join(args.dir_output, output)
         cmd = "cp -p %s %s" % (srr_template, path_to_output)
         exit_code = ph.execute_command(cmd)
@@ -269,7 +307,7 @@ def main():
         # Multiply template mask with reconstruction
         cmd_args = []
         cmd_args.append("--filename %s" % path_to_output)
-        cmd_args.append("--gestational-age %s" % args.gestational_age)
+        cmd_args.append("--gestational-age %d" % gestational_age)
         cmd_args.append("--verbose %s" % args.verbose)
         cmd_args.append("--dir-input-templates %s " % args.dir_input_templates)
         cmd = "niftymic_multiply_stack_with_mask %s" % (
