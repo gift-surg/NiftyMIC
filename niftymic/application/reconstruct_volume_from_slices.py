@@ -22,6 +22,7 @@ import niftymic.reconstruction.admm_solver as admm
 import niftymic.utilities.intensity_correction as ic
 import niftymic.reconstruction.primal_dual_solver as pd
 import niftymic.reconstruction.tikhonov_solver as tk
+import niftymic.reconstruction.scattered_data_approximation as sda
 import niftymic.utilities.binary_mask_from_mask_srr_estimator as bm
 from niftymic.utilities.input_arparser import InputArgparser
 
@@ -69,7 +70,20 @@ def main():
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_verbose(default=0)
     input_parser.add_viewer(default="itksnap")
-    input_parser.add_srr_mask(default=0)
+    input_parser.add_argument(
+        "--mask", "-mask",
+        action='store_true',
+        help="If given, input images are interpreted as image masks. "
+        "Obtained volumetric reconstruction will be exported in uint8 format."
+    )
+    input_parser.add_argument(
+        "--sda", "-sda",
+        action='store_true',
+        help="If given, the volume is reconstructed using "
+        "Scattered Data Approximation (Vercauteren et al., 2006). "
+        "--alpha is considered the value for the standard deviation then. "
+        "Recommended value is, e.g., --alpha 0.8"
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -93,7 +107,7 @@ def main():
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
 
-    if args.srr_mask:
+    if args.mask:
         filenames_masks = args.filenames
     else:
         filenames_masks = args.filenames_masks
@@ -111,7 +125,7 @@ def main():
     ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     # ---------------------------Intensity Correction--------------------------
-    if args.intensity_correction and not args.srr_mask:
+    if args.intensity_correction and not args.mask:
         ph.print_title("Intensity Correction")
         intensity_corrector = ic.IntensityCorrection()
         intensity_corrector.use_individual_slice_correction(False)
@@ -170,97 +184,115 @@ def main():
         "Isotropic reconstruction space defined with %g mm resolution" %
         recon0.sitk.GetSpacing()[0])
 
-    if args.reconstruction_type in ["TVL2", "HuberL2"]:
-        ph.print_title("Compute Initial value for %s" %
-                       args.reconstruction_type)
-        SRR0 = tk.TikhonovSolver(
-            stacks=stacks,
-            reconstruction=recon0,
-            alpha=args.alpha,
-            iter_max=np.min([5, args.iter_max]),
-            reg_type="TK1",
-            minimizer="lsmr",
-            data_loss="linear",
-            use_masks=args.use_masks_srr,
-            # verbose=args.verbose,
-        )
-    else:
-        SRR0 = tk.TikhonovSolver(
-            stacks=stacks,
-            reconstruction=recon0,
-            alpha=args.alpha,
-            iter_max=args.iter_max,
-            reg_type="TK1",
-            minimizer=args.minimizer,
-            data_loss=args.data_loss,
-            data_loss_scale=args.data_loss_scale,
-            use_masks=args.use_masks_srr,
-            # verbose=args.verbose,
-        )
-    SRR0.run()
-
-    recon = SRR0.get_reconstruction()
-
-    if args.reconstruction_type in ["TVL2", "HuberL2"]:
-        output = ph.append_to_filename(args.output, "_initTK1L2")
-    else:
-        output = args.output
-
-    if args.srr_mask:
-        mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
-        mask_estimator.run()
-        mask_sitk = mask_estimator.get_mask_sitk()
-        dw.DataWriter.write_mask(mask_sitk, output)
-    else:
-        dw.DataWriter.write_image(recon.sitk, output)
-
-    if args.verbose:
-        show_niftis.insert(0, output)
-
-    if args.reconstruction_type in ["TVL2", "HuberL2"]:
-        ph.print_title("Compute %s reconstruction" % args.reconstruction_type)
-        if args.tv_solver == "ADMM":
-            SRR = admm.ADMMSolver(
-                stacks=stacks,
-                reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
-                minimizer=args.minimizer,
-                alpha=args.alpha,
-                iter_max=args.iter_max,
-                rho=args.rho,
-                data_loss=args.data_loss,
-                iterations=args.iterations,
-                use_masks=args.use_masks_srr,
-                verbose=args.verbose,
-            )
-
-        else:
-            SRR = pd.PrimalDualSolver(
-                stacks=stacks,
-                reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
-                minimizer=args.minimizer,
-                alpha=args.alpha,
-                iter_max=args.iter_max,
-                iterations=args.iterations,
-                alg_type=args.pd_alg_type,
-                reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
-                data_loss=args.data_loss,
-                use_masks=args.use_masks_srr,
-                verbose=args.verbose,
-            )
-        SRR.run()
-        recon = SRR.get_reconstruction()
-
-        if args.srr_mask:
+    if args.sda:
+        ph.print_title("Compute SDA reconstruction")
+        SDA = sda.ScatteredDataApproximation(
+            stacks, recon0, sigma=args.alpha)
+        SDA.run()
+        recon = SDA.get_reconstruction()
+        if args.mask:
             mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
             mask_estimator.run()
             mask_sitk = mask_estimator.get_mask_sitk()
             dw.DataWriter.write_mask(mask_sitk, args.output)
-
         else:
             dw.DataWriter.write_image(recon.sitk, args.output)
 
         if args.verbose:
             show_niftis.insert(0, args.output)
+
+    else:
+        if args.reconstruction_type in ["TVL2", "HuberL2"]:
+            ph.print_title("Compute Initial value for %s" %
+                           args.reconstruction_type)
+            SRR0 = tk.TikhonovSolver(
+                stacks=stacks,
+                reconstruction=recon0,
+                alpha=args.alpha,
+                iter_max=np.min([5, args.iter_max]),
+                reg_type="TK1",
+                minimizer="lsmr",
+                data_loss="linear",
+                use_masks=args.use_masks_srr,
+                # verbose=args.verbose,
+            )
+        else:
+            SRR0 = tk.TikhonovSolver(
+                stacks=stacks,
+                reconstruction=recon0,
+                alpha=args.alpha,
+                iter_max=args.iter_max,
+                reg_type="TK1",
+                minimizer=args.minimizer,
+                data_loss=args.data_loss,
+                data_loss_scale=args.data_loss_scale,
+                use_masks=args.use_masks_srr,
+                # verbose=args.verbose,
+            )
+        SRR0.run()
+
+        recon = SRR0.get_reconstruction()
+
+        if args.reconstruction_type in ["TVL2", "HuberL2"]:
+            output = ph.append_to_filename(args.output, "_initTK1L2")
+        else:
+            output = args.output
+
+        if args.mask:
+            mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
+            mask_estimator.run()
+            mask_sitk = mask_estimator.get_mask_sitk()
+            dw.DataWriter.write_mask(mask_sitk, output)
+        else:
+            dw.DataWriter.write_image(recon.sitk, output)
+
+        if args.verbose:
+            show_niftis.insert(0, output)
+
+        if args.reconstruction_type in ["TVL2", "HuberL2"]:
+            ph.print_title("Compute %s reconstruction" % args.reconstruction_type)
+            if args.tv_solver == "ADMM":
+                SRR = admm.ADMMSolver(
+                    stacks=stacks,
+                    reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+                    minimizer=args.minimizer,
+                    alpha=args.alpha,
+                    iter_max=args.iter_max,
+                    rho=args.rho,
+                    data_loss=args.data_loss,
+                    iterations=args.iterations,
+                    use_masks=args.use_masks_srr,
+                    verbose=args.verbose,
+                )
+
+            else:
+                SRR = pd.PrimalDualSolver(
+                    stacks=stacks,
+                    reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+                    minimizer=args.minimizer,
+                    alpha=args.alpha,
+                    iter_max=args.iter_max,
+                    iterations=args.iterations,
+                    alg_type=args.pd_alg_type,
+                    reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
+                    data_loss=args.data_loss,
+                    use_masks=args.use_masks_srr,
+                    verbose=args.verbose,
+                )
+            SRR.run()
+            recon = SRR.get_reconstruction()
+
+            if args.mask:
+                mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
+                mask_estimator.run()
+                mask_sitk = mask_estimator.get_mask_sitk()
+                dw.DataWriter.write_mask(mask_sitk, args.output)
+
+            else:
+                dw.DataWriter.write_image(recon.sitk, args.output)
+
+            if args.verbose:
+                show_niftis.insert(0, args.output)
 
     if args.verbose:
         ph.show_niftis(show_niftis, viewer=args.viewer)

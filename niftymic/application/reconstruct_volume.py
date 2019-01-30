@@ -92,6 +92,15 @@ def main():
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_viewer(default="itksnap")
     input_parser.add_v2v_method(default="RegAladin")
+    input_parser.add_argument(
+        "--sda", "-sda",
+        action='store_true',
+        help="If given, the volumetric reconstructions are performed using "
+        "Scattered Data Approximation (Vercauteren et al., 2006). "
+        "'alpha' is considered the final 'sigma' for the "
+        "iterative adjustment. "
+        "Recommended value is, e.g., --alpha 0.8"
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -318,17 +327,27 @@ def main():
         tmp.insert(0, HR_volume)
         sitkh.show_stacks(tmp, segmentation=HR_volume, viewer=args.viewer)
 
-    # ----------------Two-step Slice-to-Volume Registration SRR----------------
-    SRR = tk.TikhonovSolver(
-        stacks=stacks,
-        reconstruction=HR_volume,
-        reg_type="TK1",
-        minimizer="lsmr",
-        alpha=args.alpha_first,
-        iter_max=np.min([args.iter_max_first, args.iter_max]),
-        verbose=True,
-        use_masks=args.use_masks_srr,
-    )
+    # -----------Two-step Slice-to-Volume Registration-Reconstruction----------
+    if args.sda:
+        recon_method = sda.ScatteredDataApproximation(
+            stacks,
+            HR_volume,
+            sigma=args.sigma,
+            use_masks=args.use_masks_srr,
+        )
+        param_range = [args.sigma, args.alpha]
+    else:
+        recon_method = tk.TikhonovSolver(
+            stacks=stacks,
+            reconstruction=HR_volume,
+            reg_type="TK1",
+            minimizer="lsmr",
+            alpha=args.alpha_first,
+            iter_max=np.min([args.iter_max_first, args.iter_max]),
+            verbose=True,
+            use_masks=args.use_masks_srr,
+        )
+        param_range = [args.alpha_first, args.alpha]
 
     if args.two_step_cycles > 0:
 
@@ -362,9 +381,9 @@ def main():
                 stacks=stacks,
                 reference=HR_volume,
                 registration_method=registration,
-                reconstruction_method=SRR,
+                reconstruction_method=recon_method,
                 cycles=args.two_step_cycles,
-                alpha_range=[args.alpha_first, args.alpha],
+                alpha_range=param_range,
                 verbose=args.verbose,
                 outlier_rejection=args.outlier_rejection,
                 threshold_measure=rejection_measure,
@@ -415,28 +434,37 @@ def main():
                 )
             )
 
-    # ------------------Final Super-Resolution Reconstruction------------------
-    ph.print_title("Final Super-Resolution Reconstruction")
-    if args.reconstruction_type in ["TVL2", "HuberL2"]:
-        SRR = pd.PrimalDualSolver(
-            stacks=stacks,
-            reconstruction=HR_volume,
-            reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
-            iterations=args.iterations,
+    # ---------------------Final Volumetric Reconstruction---------------------
+    ph.print_title("Final Volumetric Reconstruction")
+    if args.sda:
+        recon_method = sda.ScatteredDataApproximation(
+            stacks,
+            HR_volume,
+            sigma=args.alpha,
             use_masks=args.use_masks_srr,
         )
     else:
-        SRR = tk.TikhonovSolver(
-            stacks=stacks,
-            reconstruction=HR_volume,
-            reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
-            use_masks=args.use_masks_srr,
-        )
-    SRR.set_alpha(args.alpha)
-    SRR.set_iter_max(args.iter_max)
-    SRR.set_verbose(True)
-    SRR.run()
-    HR_volume_final = SRR.get_reconstruction()
+        if args.reconstruction_type in ["TVL2", "HuberL2"]:
+            recon_method = pd.PrimalDualSolver(
+                stacks=stacks,
+                reconstruction=HR_volume,
+                reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
+                iterations=args.iterations,
+                use_masks=args.use_masks_srr,
+            )
+        else:
+            recon_method = tk.TikhonovSolver(
+                stacks=stacks,
+                reconstruction=HR_volume,
+                reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
+                use_masks=args.use_masks_srr,
+            )
+        recon_method.set_alpha(args.alpha)
+        recon_method.set_iter_max(args.iter_max)
+        recon_method.set_verbose(True)
+    recon_method.run()
+    time_reconstruction += recon_method.get_computational_time()
+    HR_volume_final = recon_method.get_reconstruction()
 
     ph.print_subtitle("Final SDA Approximation Image Mask")
     SDA = sda.ScatteredDataApproximation(
@@ -444,12 +472,12 @@ def main():
     SDA.run()
     # HR volume contains updated mask based on SDA
     HR_volume_final = SDA.get_reconstruction()
+    time_reconstruction += SDA.get_computational_time()
 
-    time_reconstruction += SRR.get_computational_time()
     elapsed_time_total = ph.stop_timing(time_start)
 
     # Write SRR result
-    HR_volume_final.set_filename(SRR.get_setting_specific_filename())
+    HR_volume_final.set_filename(recon_method.get_setting_specific_filename())
     dw.DataWriter.write_image(HR_volume_final.sitk, args.output)
     dw.DataWriter.write_mask(
         HR_volume_final.sitk_mask, ph.append_to_filename(args.output, "_mask"))

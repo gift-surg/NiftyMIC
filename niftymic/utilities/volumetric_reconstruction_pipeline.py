@@ -619,9 +619,15 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
             # SRR step
             if cycle < self._cycles - 1:
-
-                # --------------------- Perform Image SRR ---------------------
-                self._reconstruction_method.set_alpha(alphas[cycle])
+                # ---------------- Perform Image Reconstruction ---------------
+                ph.print_subtitle("Volumetric Image Reconstruction")
+                if isinstance(
+                    self._reconstruction_method,
+                    sda.ScatteredDataApproximation
+                ):
+                    self._reconstruction_method.set_sigma(alphas[cycle])
+                else:
+                    self._reconstruction_method.set_alpha(alphas[cycle])
                 self._reconstruction_method.run()
 
                 self._computational_time_reconstruction += \
@@ -630,6 +636,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                 reference = self._reconstruction_method.get_reconstruction()
 
                 # ------------------ Perform Image Mask SDA -------------------
+                ph.print_subtitle("Volumetric Image Mask Reconstruction")
                 SDA = sda.ScatteredDataApproximation(
                     self._stacks,
                     reference,
@@ -641,7 +648,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                 # reference contains updated mask based on SDA
                 reference = SDA.get_reconstruction()
 
-                # ------------------------- Store SRR -------------------------
+                # -------------------- Store Reconstruction -------------------
                 filename = "Iter%d_%s" % (
                     cycle + 1,
                     self._reconstruction_method.get_setting_specific_filename()
