@@ -193,7 +193,7 @@ def main():
             dir_motion_correction = os.path.join(
                 dir_output_recon_subject_space, "motion_correction")
             cmd_args = ["niftymic_reconstruct_volume_from_slices"]
-            cmd_args.append("--filenames %s" % (" ").join(args.filenames_masks))
+            cmd_args.append("--filenames %s" % " ".join(args.filenames_masks))
             cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
             cmd_args.append("--output %s" % srr_subject_mask)
             cmd_args.append("--reconstruction-space %s" % srr_subject)
@@ -280,7 +280,7 @@ def main():
             dir_motion_correction = os.path.join(
                 dir_output_recon_template_space, "motion_correction")
             cmd_args = ["niftymic_reconstruct_volume_from_slices"]
-            cmd_args.append("--filenames %s" % (" ").join(args.filenames_masks))
+            cmd_args.append("--filenames %s" % " ".join(args.filenames_masks))
             cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
             cmd_args.append("--output %s" % srr_template_mask)
             cmd_args.append("--reconstruction-space %s" % srr_template)
@@ -305,13 +305,16 @@ def main():
             raise RuntimeError("Copy of SRR to output directory failed")
 
         # Multiply template mask with reconstruction
-        cmd_args = []
-        cmd_args.append("--filename %s" % path_to_output)
-        cmd_args.append("--gestational-age %d" % gestational_age)
-        cmd_args.append("--verbose %s" % args.verbose)
-        cmd_args.append("--dir-input-templates %s " % args.dir_input_templates)
-        cmd = "niftymic_multiply_stack_with_mask %s" % (
-            " ").join(cmd_args)
+        cmd_args = ["niftymic_multiply"]
+        fnames = [
+            srr_template,
+            srr_template_mask,
+        ]
+        output_masked = "Masked_%s" % output
+        path_to_output_masked = os.path.join(args.dir_output, output_masked)
+        cmd_args.append("--filenames %s" % " ".join(fnames))
+        cmd_args.append("--output %s" % path_to_output_masked)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("SRR brain masking failed")
