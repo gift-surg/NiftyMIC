@@ -163,7 +163,7 @@ def main():
         cmd_args.append("--multiresolution %d" % args.multiresolution)
         cmd_args.append("--target-stack-index %d" % target_stack_index)
         cmd_args.append("--output %s" % srr_subject)
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--intensity-correction %d" %
                         args.intensity_correction)
         cmd_args.append("--alpha %s" % args.alpha)
@@ -197,7 +197,7 @@ def main():
             cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
             cmd_args.append("--output %s" % srr_subject_mask)
             cmd_args.append("--reconstruction-space %s" % srr_subject)
-            cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+            cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
             if args.sda:
                 cmd_args.append("--sda")
@@ -265,7 +265,7 @@ def main():
         cmd_args.append("--reconstruction-space %s" % template)
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--alpha %s" % args.alpha)
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
         if args.sda:
             cmd_args.append("--sda")
@@ -284,7 +284,7 @@ def main():
             cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
             cmd_args.append("--output %s" % srr_template_mask)
             cmd_args.append("--reconstruction-space %s" % srr_template)
-            cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+            cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
             if args.sda:
                 cmd_args.append("--sda")
@@ -337,7 +337,7 @@ def main():
         cmd_args.append("--dir-output %s" % dir_output_data_vs_simulatd_data)
         cmd_args.append("--reconstruction %s" % srr_template)
         cmd_args.append("--copy-data 1")
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         # cmd_args.append("--verbose %s" % args.verbose)
         exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
@@ -362,7 +362,7 @@ def main():
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
                             (" ").join(args.filenames_masks))
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--measures NCC SSIM")
         cmd_args.append("--dir-output %s" % dir_output_evaluation)
         exe = os.path.abspath(evaluate_simulated_stack_similarity.__file__)
