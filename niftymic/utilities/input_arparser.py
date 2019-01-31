@@ -21,6 +21,7 @@ from nsol.similarity_measures import SimilarityMeasures as \
 from nsol.loss_functions import LossFunctions as \
     LossFunctions
 
+import niftymic
 from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import ALLOWED_INTERPOLATORS
 from niftymic.definitions import VIEWER_OPTIONS, V2V_METHOD_OPTIONS
@@ -131,6 +132,8 @@ class InputArgparser(object):
         dic = {
             re.sub("_", "-", k): v
             for k, v in six.iteritems(dic_with_underscores)}
+
+        dic["version"] = niftymic.__version__
 
         # write config file to output
         ph.write_dictionary_to_json(dic, path_to_config_file, verbose=True)
@@ -982,6 +985,9 @@ class InputArgparser(object):
 
         # Insert all config entries into sys.argv
         for k, v in six.iteritems(dic):
+
+            if k == "version":
+                continue
 
             # A 'None' entry should be ignored
             if v is None:
