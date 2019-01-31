@@ -23,6 +23,11 @@ from setuptools.command.install import install
 from install_cli import main as install_command_line_interfaces
 
 
+about = {}
+with open(os.path.join("niftymic", "__about__.py")) as fp:
+    exec(fp.read(), about)
+
+
 ##
 # Post-installation to build additionally required command line interface tools
 # located in niftymic/cli.
@@ -59,16 +64,14 @@ def install_requires(fname="requirements.txt"):
 
 
 setup(name='NiftyMIC',
-      version='0.5rc1',
-      description="NiftyMIC is a research-focused toolkit for "
-      "motion-correction and volumetric image reconstruction of "
-      "2D ultra-fast MRI.",
+      version=about["__version__"],
+      description=about["__summary__"],
       long_description=long_description,
       long_description_content_type="text/markdown",
       url='https://github.com/gift-surg/NiftyMIC',
-      author='Michael Ebner',
-      author_email='michael.ebner.14@ucl.ac.uk',
-      license='BSD-3-Clause',
+      author=about["__author__"],
+      author_email=about["__email__"],
+      license=about["__license__"],
       packages=find_packages(),
       install_requires=install_requires(),
       # data_files=[(d, [os.path.join(d, f) for f in files])
