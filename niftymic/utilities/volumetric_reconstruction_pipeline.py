@@ -20,17 +20,18 @@ import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
 import niftymic.validation.motion_evaluator as me
-import niftymic.validation.residual_evaluator as re
+import niftymic.utilities.outlier_rejector as outre
 import niftymic.utilities.robust_motion_estimator as rme
+import niftymic.utilities.binary_mask_from_mask_srr_estimator as bm
+import niftymic.reconstruction.scattered_data_approximation as sda
 
 from niftymic.definitions import VIEWER
+
 
 ##
 # Class which holds basic interface for all modules
 # \date       2017-08-08 02:20:40+0100
 #
-
-
 class Pipeline(object):
     __metaclass__ = ABCMeta
 
@@ -293,59 +294,17 @@ class SliceToVolumeRegistration(RegistrationPipeline):
 
         # Reject misregistered slices
         if self._threshold is not None:
-            ph.print_subtitle(
-                "Slice Outlier Rejection (Threshold = %g @ %s)" % (
-                    self._threshold, self._threshold_measure))
-            residual_evaluator = re.ResidualEvaluator(
+            ph.print_subtitle("Slice Outlier Rejection (%s < %g)" % (
+                self._threshold_measure, self._threshold))
+            outlier_rejector = outre.OutlierRejector(
                 stacks=self._stacks,
                 reference=self._reference,
-                use_slice_masks=False,
-                use_reference_mask=True,
-                verbose=False,
+                threshold=self._threshold,
+                measure=self._threshold_measure,
+                verbose=True,
             )
-            residual_evaluator.compute_slice_projections()
-            residual_evaluator.evaluate_slice_similarities()
-            slice_sim = residual_evaluator.get_slice_similarities()
-            # residual_evaluator.show_slice_similarities(
-            #     threshold=self._threshold,
-            #     measures=[self._threshold_measure],
-            #     directory="/tmp/spina/figs%s" % self._print_prefix[0:7],
-            # )
-
-            remove_stacks = []
-            for i, stack in enumerate(self._stacks):
-                nda_sim = np.nan_to_num(
-                    slice_sim[stack.get_filename()][self._threshold_measure])
-                indices = np.where(nda_sim < self._threshold)[0]
-                slices = stack.get_slices()
-
-                for j in indices:
-                    stack.delete_slice(slices[j])
-
-                ph.print_info("Stack %d/%d: Slices %d/%d %s (%s)" % (
-                    i + 1,
-                    len(self._stacks),
-                    len(stack.get_deleted_slice_numbers()),
-                    stack.sitk.GetSize()[-1],
-                    stack.get_deleted_slice_numbers(),
-                    stack.get_filename(),
-                ))
-                if len(indices) > 0:
-                    slice_indices = [slices[j].get_slice_number()
-                                     for j in indices]
-                    res_values = nda_sim[indices]
-                    print("    Latest rejections: %s | %s: %s" % (
-                        slice_indices, self._threshold_measure, res_values))
-
-                # Log stack where all slices were rejected
-                if stack.get_number_of_slices() == 0:
-                    remove_stacks.append(stack)
-
-            # Remove stacks where all slices where rejected
-            for stack in remove_stacks:
-                self._stacks.remove(stack)
-                ph.print_info("Stack '%s' removed entirely." %
-                              stack.get_filename())
+            outlier_rejector.run()
+            self._stacks = outlier_rejector.get_stacks()
 
             if len(self._stacks) == 0:
                 raise RuntimeError(
@@ -592,6 +551,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                  s2v_smoothing=0.5,
                  interleave=2,
                  viewer=VIEWER,
+                 sigma_sda_mask=1.,
                  ):
 
         ReconstructionRegistrationPipeline.__init__(
@@ -604,6 +564,8 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             viewer=viewer,
             verbose=verbose,
         )
+
+        self._sigma_sda_mask = sigma_sda_mask
 
         self._cycles = cycles
         self._outlier_rejection = outlier_rejection
@@ -657,7 +619,15 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
             # SRR step
             if cycle < self._cycles - 1:
-                self._reconstruction_method.set_alpha(alphas[cycle])
+                # ---------------- Perform Image Reconstruction ---------------
+                ph.print_subtitle("Volumetric Image Reconstruction")
+                if isinstance(
+                    self._reconstruction_method,
+                    sda.ScatteredDataApproximation
+                ):
+                    self._reconstruction_method.set_sigma(alphas[cycle])
+                else:
+                    self._reconstruction_method.set_alpha(alphas[cycle])
                 self._reconstruction_method.run()
 
                 self._computational_time_reconstruction += \
@@ -665,7 +635,20 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
                 reference = self._reconstruction_method.get_reconstruction()
 
-                # Store SRR
+                # ------------------ Perform Image Mask SDA -------------------
+                ph.print_subtitle("Volumetric Image Mask Reconstruction")
+                SDA = sda.ScatteredDataApproximation(
+                    self._stacks,
+                    reference,
+                    sigma=self._sigma_sda_mask,
+                    sda_mask=True,
+                )
+                SDA.run()
+
+                # reference contains updated mask based on SDA
+                reference = SDA.get_reconstruction()
+
+                # -------------------- Store Reconstruction -------------------
                 filename = "Iter%d_%s" % (
                     cycle + 1,
                     self._reconstruction_method.get_setting_specific_filename()

@@ -157,6 +157,17 @@ class Solver(object):
             N_stack_voxels = np.array(self._stacks[i].sitk.GetSize()).prod()
             self._N_total_slice_voxels += N_stack_voxels
 
+    ##
+    # Specify whether masks shall be used during reconstruction, i.e. whether
+    # masking operator is applied (and, thus, zeros everything outside it).
+    # \date       2018-11-12 11:26:58+0000
+    #
+    # \param      self       The object
+    # \param      use_masks  boolean
+    #
+    def set_use_masks(self, use_masks):
+        self._use_masks = use_masks
+
     def set_reconstruction(self, reconstruction):
         self._reconstruction = reconstruction
 

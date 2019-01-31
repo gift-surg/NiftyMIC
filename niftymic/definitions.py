@@ -22,3 +22,4 @@ TEMPLATES_INFO = "templates_info.json"
 # Set default viewer
 VIEWER = ITKSNAP_EXE
 VIEWER_OPTIONS = ["itksnap", "fsleyes"]
+V2V_METHOD_OPTIONS = ["FLIRT", "RegAladin"]

@@ -25,8 +25,6 @@ import niftymic.utilities.template_stack_estimator as tse
 
 from niftymic.definitions import DIR_TEMPLATES
 
-from niftymic.definitions import DIR_TEMPLATES
-
 
 def main():
 
@@ -41,8 +39,9 @@ def main():
         "and (iii) volumetric reconstruction in template space.",
     )
     input_parser.add_filenames(required=True)
+    input_parser.add_filenames_masks(required=True)
     input_parser.add_target_stack(required=False)
-    input_parser.add_suffix_mask(default="_mask")
+    input_parser.add_suffix_mask(default="''")
     input_parser.add_dir_output(required=True)
     input_parser.add_alpha(default=0.01)
     input_parser.add_verbose(default=0)
@@ -83,8 +82,21 @@ def main():
         help="Turn on/off comparison of data vs data simulated from the "
         "obtained volumetric reconstruction. "
         "If off, it is assumed that this step was already performed",
-        default=1)
+        default=0)
+    input_parser.add_option(
+        option_string="--initial-transform",
+        type=str,
+        help="Set initial transform to be used for register_image.",
+        default=None)
     input_parser.add_outlier_rejection(default=1)
+    input_parser.add_argument(
+        "--sda", "-sda",
+        action='store_true',
+        help="If given, the volume is reconstructed using "
+        "Scattered Data Approximation (Vercauteren et al., 2006). "
+        "--alpha is considered the value for the standard deviation then. "
+        "Recommended value is, e.g., --alpha 0.8"
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -92,9 +104,9 @@ def main():
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
-    prefix_bias = "N4ITK_"
+    filename_srr = "srr"
     dir_output_preprocessing = os.path.join(
-        args.dir_output, "preprocessing")
+        args.dir_output, "preprocessing_n4itk")
     dir_output_recon_subject_space = os.path.join(
         args.dir_output, "recon_subject_space")
     dir_output_recon_template_space = os.path.join(
@@ -102,46 +114,56 @@ def main():
     dir_output_data_vs_simulatd_data = os.path.join(
         args.dir_output, "data_vs_simulated_data")
 
+    srr_subject = os.path.join(
+        dir_output_recon_subject_space, "%s_subject.nii.gz" % filename_srr)
+    srr_subject_mask = ph.append_to_filename(srr_subject, "_mask")
+    srr_template = os.path.join(
+        dir_output_recon_template_space, "%s_template.nii.gz" % filename_srr)
+    srr_template_mask = ph.append_to_filename(srr_template, "_mask")
+    trafo_template = os.path.join(
+        dir_output_recon_template_space, "registration_transform_sitk.txt")
+
     if args.target_stack is None:
         target_stack = args.filenames[0]
     else:
         target_stack = args.target_stack
 
     if args.bias_field_correction and args.run_bias_field_correction:
-        cmd_args = []
-        cmd_args.append("--filenames %s" % (" ").join(args.filenames))
-        cmd_args.append("--dir-output %s" % dir_output_preprocessing)
-        cmd_args.append("--prefix-output %s" % prefix_bias)
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
-        # cmd_args.append("--verbose %d" % args.verbose)
-        cmd = "niftymic_correct_bias_field %s" % (" ").join(cmd_args)
-        time_start_bias = ph.start_timing()
-        exit_code = ph.execute_command(cmd)
-        if exit_code != 0:
-            raise RuntimeError("Bias field correction failed")
+        for f in args.filenames:
+            output = os.path.join(
+                dir_output_preprocessing, os.path.basename(f))
+            cmd_args = []
+            cmd_args.append("--filename %s" % f)
+            cmd_args.append("--output %s" % output)
+            # cmd_args.append("--verbose %d" % args.verbose)
+            cmd = "niftymic_correct_bias_field %s" % (" ").join(cmd_args)
+            time_start_bias = ph.start_timing()
+            exit_code = ph.execute_command(cmd)
+            if exit_code != 0:
+                raise RuntimeError("Bias field correction failed")
         elapsed_time_bias = ph.stop_timing(time_start_bias)
-        filenames = [os.path.join(dir_output_preprocessing, "%s%s" % (
-            prefix_bias, os.path.basename(f)))
-            for f in args.filenames]
+        filenames = [os.path.join(dir_output_preprocessing, os.path.basename(f))
+                     for f in args.filenames]
     elif args.bias_field_correction and not args.run_bias_field_correction:
         elapsed_time_bias = ph.get_zero_time()
-        filenames = [os.path.join(dir_output_preprocessing, "%s%s" % (
-            prefix_bias, os.path.basename(f)))
-            for f in args.filenames]
+        filenames = [os.path.join(dir_output_preprocessing, os.path.basename(f))
+                     for f in args.filenames]
     else:
         elapsed_time_bias = ph.get_zero_time()
         filenames = args.filenames
 
     if args.run_recon_subject_space:
-
         target_stack_index = args.filenames.index(target_stack)
 
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(filenames))
+        if args.filenames_masks is not None:
+            cmd_args.append("--filenames-masks %s" %
+                            (" ").join(args.filenames_masks))
         cmd_args.append("--multiresolution %d" % args.multiresolution)
         cmd_args.append("--target-stack-index %d" % target_stack_index)
-        cmd_args.append("--dir-output %s" % dir_output_recon_subject_space)
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--output %s" % srr_subject)
+        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--intensity-correction %d" %
                         args.intensity_correction)
         cmd_args.append("--alpha %s" % args.alpha)
@@ -157,32 +179,44 @@ def main():
             cmd_args.append("--reference %s" % args.reference)
         if args.reference_mask is not None:
             cmd_args.append("--reference-mask %s" % args.reference_mask)
+        if args.sda:
+            cmd_args.append("--sda")
         cmd = "niftymic_reconstruct_volume %s" % (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Reconstruction in subject space failed")
+
+        # Compute SRR mask in subject space
+        # (Approximated using SDA within reconstruct_volume)
+        if 0:
+            dir_motion_correction = os.path.join(
+                dir_output_recon_subject_space, "motion_correction")
+            cmd_args = ["niftymic_reconstruct_volume_from_slices"]
+            cmd_args.append("--filenames %s" % " ".join(args.filenames_masks))
+            cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
+            cmd_args.append("--output %s" % srr_subject_mask)
+            cmd_args.append("--reconstruction-space %s" % srr_subject)
+            cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
+            cmd_args.append("--mask")
+            if args.sda:
+                cmd_args.append("--sda")
+                cmd_args.append("--alpha 1")
+            else:
+                cmd_args.append("--alpha 0.1")
+                cmd_args.append("--iter-max 5")
+            cmd = (" ").join(cmd_args)
+            ph.execute_command(cmd)
+
         elapsed_time_volrec = ph.stop_timing(time_start_volrec)
     else:
         elapsed_time_volrec = ph.get_zero_time()
 
     if args.run_recon_template_space:
 
-        # register recon to template space
-        pattern = "[a-zA-Z0-9_]+(stacks)[a-zA-Z0-9_]+(.nii.gz)"
-        p = re.compile(pattern)
-        reconstruction = [
-            os.path.join(
-                dir_output_recon_subject_space, p.match(f).group(0))
-            for f in os.listdir(dir_output_recon_subject_space)
-            if p.match(f)][0]
-        reconstruction = re.sub(
-            "%s.nii.gz" % args.suffix_mask, ".nii.gz", reconstruction)
-
         if args.gestational_age is None:
             template_stack_estimator = \
-                tse.TemplateStackEstimator.from_mask(
-                    ph.append_to_filename(reconstruction, args.suffix_mask))
+                tse.TemplateStackEstimator.from_mask(srr_subject_mask)
             gestational_age = template_stack_estimator.get_estimated_gw()
             ph.print_info("Estimated gestational age: %d" % gestational_age)
         else:
@@ -197,17 +231,18 @@ def main():
 
         cmd_args = []
         cmd_args.append("--fixed %s" % template)
-        cmd_args.append("--moving %s" % reconstruction)
+        cmd_args.append("--moving %s" % srr_subject)
         cmd_args.append("--fixed-mask %s" % template_mask)
-        cmd_args.append("--moving-mask %s" %
-                        ph.append_to_filename(reconstruction, args.suffix_mask))
+        cmd_args.append("--moving-mask %s" % srr_subject_mask)
         cmd_args.append("--dir-input-mc %s" % os.path.join(
             dir_output_recon_subject_space,
             "motion_correction"))
-        cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
+        cmd_args.append("--output %s" % trafo_template)
         cmd_args.append("--verbose %s" % args.verbose)
-        # cmd_args.append("--test-ap-flip 0")
-        # cmd_args.append("--use-flirt 0")
+        if args.initial_transform is not None:
+            cmd_args.append("--initial-transform %s" % args.initial_transform)
+            cmd_args.append("--use-flirt 0")
+            cmd_args.append("--test-ap-flip 0")
         cmd = "niftymic_register_image %s" % (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
@@ -223,52 +258,63 @@ def main():
 
         dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
-        cmd_args = []
+        cmd_args = ["niftymic_reconstruct_volume_from_slices"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
-        cmd_args.append("--dir-output %s" % dir_output_recon_template_space)
+        cmd_args.append("--output %s" % srr_template)
         cmd_args.append("--reconstruction-space %s" % template)
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--alpha %s" % args.alpha)
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
+        cmd_args.append("--verbose %s" % args.verbose)
+        if args.sda:
+            cmd_args.append("--sda")
 
-        cmd = "niftymic_reconstruct_volume_from_slices %s" % \
-            (" ").join(cmd_args)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Reconstruction in template space failed")
 
-        pattern = "[a-zA-Z0-9_.]+(stacks[0-9]+).*(.nii.gz)"
-        p = re.compile(pattern)
-        reconstruction = {
-            p.match(f).group(1):
-            os.path.join(
-                dir_output_recon_template_space, p.match(f).group(0))
-            for f in os.listdir(dir_output_recon_template_space)
-            if p.match(f) and not p.match(f).group(0).endswith(
-                "ResamplingToTemplateSpace.nii.gz")}
-        key = list(reconstruction.keys())[0]
-        path_to_recon = reconstruction[key]
-        path_to_recon = re.sub(
-            "%s.nii.gz" % args.suffix_mask, ".nii.gz", path_to_recon)
+        # Compute SRR mask in template space
+        if 1:
+            dir_motion_correction = os.path.join(
+                dir_output_recon_template_space, "motion_correction")
+            cmd_args = ["niftymic_reconstruct_volume_from_slices"]
+            cmd_args.append("--filenames %s" % " ".join(args.filenames_masks))
+            cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
+            cmd_args.append("--output %s" % srr_template_mask)
+            cmd_args.append("--reconstruction-space %s" % srr_template)
+            cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
+            cmd_args.append("--mask")
+            if args.sda:
+                cmd_args.append("--sda")
+                cmd_args.append("--alpha 1")
+            else:
+                cmd_args.append("--alpha 0.1")
+                cmd_args.append("--iter-max 5")
+            cmd = (" ").join(cmd_args)
+            ph.execute_command(cmd)
 
         # Copy SRR to output directory
-        output = "%sSRR_%s_GW%d.nii.gz" % (
-            args.prefix_output, key, args.gestational_age)
+        output = "%sSRR_Stacks%d_GW%d.nii.gz" % (
+            args.prefix_output, len(args.filenames), gestational_age)
         path_to_output = os.path.join(args.dir_output, output)
-        cmd = "cp -p %s %s" % (path_to_recon, path_to_output)
+        cmd = "cp -p %s %s" % (srr_template, path_to_output)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Copy of SRR to output directory failed")
 
         # Multiply template mask with reconstruction
-        cmd_args = []
-        cmd_args.append("--filename %s" % path_to_output)
-        cmd_args.append("--gestational-age %s" % args.gestational_age)
-        cmd_args.append("--verbose %s" % args.verbose)
-        cmd_args.append("--dir-input-templates %s " % args.dir_input_templates)
-        cmd = "niftymic_multiply_stack_with_mask %s" % (
-            " ").join(cmd_args)
+        cmd_args = ["niftymic_multiply"]
+        fnames = [
+            srr_template,
+            srr_template_mask,
+        ]
+        output_masked = "Masked_%s" % output
+        path_to_output_masked = os.path.join(args.dir_output, output_masked)
+        cmd_args.append("--filenames %s" % " ".join(fnames))
+        cmd_args.append("--output %s" % path_to_output_masked)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("SRR brain masking failed")
@@ -281,29 +327,17 @@ def main():
         dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
 
-        pattern = "[a-zA-Z0-9_.]+(stacks[0-9]+).*(.nii.gz)"
-        # pattern = "Masked_[a-zA-Z0-9_.]+(stacks[0-9]+).*(.nii.gz)"
-        p = re.compile(pattern)
-        reconstruction = {
-            p.match(f).group(1):
-            os.path.join(
-                dir_output_recon_template_space, p.match(f).group(0))
-            for f in os.listdir(dir_output_recon_template_space)
-            if p.match(f) and not p.match(f).group(0).endswith(
-                "ResamplingToTemplateSpace.nii.gz")}
-        key = list(reconstruction.keys())[0]
-        path_to_recon = reconstruction[key]
-        path_to_recon = re.sub(
-            "%s.nii.gz" % args.suffix_mask, ".nii.gz", path_to_recon)
-
         # Get simulated/projected slices
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(filenames))
+        if args.filenames_masks is not None:
+            cmd_args.append("--filenames-masks %s" %
+                            (" ").join(args.filenames_masks))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
         cmd_args.append("--dir-output %s" % dir_output_data_vs_simulatd_data)
-        cmd_args.append("--reconstruction %s" % path_to_recon)
+        cmd_args.append("--reconstruction %s" % srr_template)
         cmd_args.append("--copy-data 1")
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         # cmd_args.append("--verbose %s" % args.verbose)
         exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
@@ -325,7 +359,10 @@ def main():
         # Evaluate slice similarities to ground truth
         cmd_args = []
         cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
-        cmd_args.append("--suffix-mask %s" % args.suffix_mask)
+        if args.filenames_masks is not None:
+            cmd_args.append("--filenames-masks %s" %
+                            (" ").join(args.filenames_masks))
+        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--measures NCC SSIM")
         cmd_args.append("--dir-output %s" % dir_output_evaluation)
         exe = os.path.abspath(evaluate_simulated_stack_similarity.__file__)

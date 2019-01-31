@@ -12,14 +12,15 @@ import re
 import numpy as np
 import SimpleITK as sitk
 
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 import simplereg.resampler
 
 import niftymic.base.slice as sl
-import pysitk.python_helper as ph
-import pysitk.simple_itk_helper as sitkh
-from niftymic.definitions import ALLOWED_EXTENSIONS
 import niftymic.base.exceptions as exceptions
-from niftymic.definitions import VIEWER
+import niftymic.base.data_writer as dw
+
+from niftymic.definitions import ALLOWED_EXTENSIONS, VIEWER
 
 
 ##
@@ -325,10 +326,16 @@ class Stack:
 
         return stack
 
+    ##
     # Copy constructor
-    #  \param[in] stack_to_copy Stack object to be copied
-    #  \return copied Stack object
-    # TODO: That's not really well done
+    # \date       2019-01-15 16:55:09+0000
+    #
+    # \param      cls            The cls
+    # \param      stack_to_copy  Stack object to be copied
+    # \param      filename       The filename
+    #
+    # \return     copied Stack object TODO: That's not really well done
+    #
     @classmethod
     def from_stack(cls, stack_to_copy, filename=None):
         stack = cls()
@@ -388,7 +395,10 @@ class Stack:
     # Get all slices of current stack
     #  \return Array of sitk.Images containing slices in 3D space
     def get_slices(self):
-        return [s for s in self._slices if s is not None]
+        if self._slices is None:
+            return None
+        else:
+            return [s for s in self._slices if s is not None]
 
     ##
     # Get one particular slice of current stack
@@ -479,9 +489,13 @@ class Stack:
     def get_directory(self):
         return self._dir
 
-    #  \return string of filename
     def set_filename(self, filename):
         self._filename = filename
+
+        slices = self.get_slices()
+        if slices is not None:
+            for s in slices:
+                s.set_filename(filename)
 
     # Get filename of read/assigned nifti file (Stack.from_filename vs Stack.from_sitk_image)
     #  \return string of filename
@@ -549,7 +563,7 @@ class Stack:
               write_slices=False,
               write_transforms=False,
               suffix_mask="_mask",
-              use_float32=True):
+              ):
 
         # Create directory if not existing
         ph.create_directory(directory)
@@ -562,15 +576,7 @@ class Stack:
 
         # Write file to specified location
         if write_stack:
-            ph.print_info("Write image stack to %s.nii.gz ... " %
-                          (full_file_name), newline=False)
-            if use_float32:
-                image_sitk = sitk.Cast(self.sitk, sitk.sitkFloat32)
-            else:
-                image_sitk = self.sitk
-            sitkh.write_nifti_image_sitk(
-                image_sitk, full_file_name + ".nii.gz")
-            print("done")
+            dw.DataWriter.write_image(self.sitk, "%s.nii.gz" % full_file_name)
 
         # Write mask to specified location if given
         if self.sitk_mask is not None:
@@ -578,12 +584,8 @@ class Stack:
 
             # Write mask if it does not consist of only ones
             if not self._is_unity_mask and write_mask:
-                ph.print_info("Write image stack mask to %s%s.nii.gz ... " % (
-                    full_file_name, suffix_mask), newline=False)
-                sitkh.write_nifti_image_sitk(
-                    self.sitk_mask, full_file_name + "%s.nii.gz" % (
-                        suffix_mask))
-                print("done")
+                dw.DataWriter.write_mask(
+                    self.sitk_mask, "%s%s.nii.gz" % (full_file_name, suffix_mask))
 
         if write_transforms:
             stack_transform_sitk = self._history_motion_corrections[-1]
@@ -884,7 +886,6 @@ class Stack:
                 spacing=spacing,
                 interpolator=interpolator,
                 padding=default_pixel_value,
-                add_to_grid=extra_frame,
                 add_to_grid_unit="mm",
             )
             resampled_stack_sitk_mask = resampler.get_resampled_image_sitk(
@@ -892,7 +893,6 @@ class Stack:
                 spacing=spacing,
                 interpolator=sitk.sitkNearestNeighbor,
                 padding=0,
-                add_to_grid=extra_frame,
                 add_to_grid_unit="mm",
             )
 

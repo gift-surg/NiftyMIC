@@ -8,27 +8,30 @@
 # \date       March 2017
 #
 
-# Import libraries
 import os
 import numpy as np
 
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
-import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
-import niftymic.reconstruction.primal_dual_solver as pd
-import niftymic.reconstruction.scattered_data_approximation as sda
-import niftymic.reconstruction.tikhonov_solver as tk
+import niftymic.base.data_reader as dr
+import niftymic.base.data_writer as dw
 import niftymic.registration.flirt as regflirt
 import niftymic.registration.niftyreg as niftyreg
 import niftymic.registration.simple_itk_registration as regsitk
+import niftymic.reconstruction.tikhonov_solver as tk
+import niftymic.reconstruction.primal_dual_solver as pd
+import niftymic.reconstruction.scattered_data_approximation as sda
 import niftymic.utilities.data_preprocessing as dp
+import niftymic.utilities.outlier_rejector as outre
 import niftymic.utilities.intensity_correction as ic
+import niftymic.utilities.joint_image_mask_builder as imb
 import niftymic.utilities.segmentation_propagation as segprop
 import niftymic.utilities.volumetric_reconstruction_pipeline as pipeline
-import niftymic.utilities.joint_image_mask_builder as imb
 from niftymic.utilities.input_arparser import InputArgparser
+
+from niftymic.definitions import V2V_METHOD_OPTIONS, ALLOWED_EXTENSIONS
 
 
 def main():
@@ -50,17 +53,17 @@ def main():
     )
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
-    input_parser.add_dir_output(required=True)
+    input_parser.add_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack_index(default=0)
     input_parser.add_search_angle(default=45)
     input_parser.add_multiresolution(default=0)
     input_parser.add_shrink_factors(default=[3, 2, 1])
     input_parser.add_smoothing_sigmas(default=[1.5, 1, 0])
-    input_parser.add_sigma(default=0.6)
+    input_parser.add_sigma(default=1)
     input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_iterations(default=15)
-    input_parser.add_alpha(default=0.01)
+    input_parser.add_alpha(default=0.015)
     input_parser.add_alpha_first(default=0.05)
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)
@@ -68,11 +71,9 @@ def main():
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_bias_field_correction(default=0)
     input_parser.add_intensity_correction(default=1)
-    input_parser.add_isotropic_resolution(default=None)
+    input_parser.add_isotropic_resolution(default=1)
     input_parser.add_log_config(default=1)
     input_parser.add_subfolder_motion_correction()
-    input_parser.add_provide_comparison(default=0)
-    input_parser.add_subfolder_comparison()
     input_parser.add_write_motion_correction(default=1)
     input_parser.add_verbose(default=0)
     input_parser.add_two_step_cycles(default=3)
@@ -87,19 +88,32 @@ def main():
     input_parser.add_threshold(default=0.8)
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_viewer(default="itksnap")
-    input_parser.add_option(
-        option_string="--v2v-method",
-        type=str,
-        help="Registration method used for first rigid volume-to-volume "
-        "registration step. Input must be either 'FLIRT' or 'RegAladin'",
-        default="FLIRT",
+    input_parser.add_v2v_method(default="RegAladin")
+    input_parser.add_argument(
+        "--sda", "-sda",
+        action='store_true',
+        help="If given, the volumetric reconstructions are performed using "
+        "Scattered Data Approximation (Vercauteren et al., 2006). "
+        "'alpha' is considered the final 'sigma' for the "
+        "iterative adjustment. "
+        "Recommended value is, e.g., --alpha 0.8"
     )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    if args.v2v_method.lower() not in ["flirt", "regaladin"]:
-        raise IOError("v2v-method must be either 'FLIRT' or 'RegAladin'")
+    rejection_measure = "NCC"
+    threshold_v2v = 0.3
+
+    if args.v2v_method not in V2V_METHOD_OPTIONS:
+        raise ValueError("v2v-method must be in {%s}" % (
+            ", ".join(V2V_METHOD_OPTIONS)))
+
+    if np.alltrue([not args.output.endswith(t) for t in ALLOWED_EXTENSIONS]):
+        raise ValueError(
+            "output filename invalid; allowed extensions are: %s" %
+            ", ".join(ALLOWED_EXTENSIONS))
+    dir_output = os.path.dirname(args.output)
 
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
@@ -125,6 +139,10 @@ def main():
     if all(s.is_unity_mask() is True for s in stacks):
         ph.print_warning("No mask is provided! "
                          "Generated reconstruction space may be very big!")
+        ph.print_warning("Consider using a mask to speed up computations")
+
+        # args.extra_frame_target = 0
+        # ph.wrint_warning("Overwritten: extra-frame-target set to 0")
 
     # ---------------------------Data Preprocessing---------------------------
     ph.print_title("Data Preprocessing")
@@ -163,15 +181,16 @@ def main():
         reference = st.Stack.from_stack(stacks[args.target_stack_index])
 
     # ------------------------Volume-to-Volume Registration--------------------
-    if args.two_step_cycles > 0:
-        # Define search angle ranges for FLIRT in all three dimensions
-        search_angles = ["-searchr%s -%d %d" %
-                         (x, args.search_angle, args.search_angle)
-                         for x in ["x", "y", "z"]]
-        options = (" ").join(search_angles)
-        # options += " -noresample"
+    if args.two_step_cycles > 0 and len(stacks) > 1:
 
-        if args.v2v_method.lower() == "flirt":
+        if args.v2v_method == "FLIRT":
+            # Define search angle ranges for FLIRT in all three dimensions
+            search_angles = ["-searchr%s -%d %d" %
+                             (x, args.search_angle, args.search_angle)
+                             for x in ["x", "y", "z"]]
+            options = (" ").join(search_angles)
+            # options += " -noresample"
+
             vol_registration = regflirt.FLIRT(
                 registration_type="Rigid",
                 use_fixed_mask=True,
@@ -259,12 +278,44 @@ def main():
             unit="mm",
         )
 
-        # Scattered Data Approximation to get first estimate of HR volume
+        # Create first volume
+        # If outlier rejection is activated, eliminate obvious outliers early
+        # from stack and re-run SDA to get initial volume without them
         ph.print_title("First Estimate of HR Volume")
+        if args.outlier_rejection:
+            ph.print_subtitle("SDA Approximation")
+            SDA = sda.ScatteredDataApproximation(
+                stacks, HR_volume, sigma=args.sigma)
+            SDA.run()
+            HR_volume = SDA.get_reconstruction()
+
+            # Identify and reject outliers
+            ph.print_subtitle("Eliminate slice outliers (%s < %g)" % (
+                rejection_measure, threshold_v2v))
+            outlier_rejector = outre.OutlierRejector(
+                stacks=stacks,
+                reference=HR_volume,
+                threshold=threshold_v2v,
+                measure=rejection_measure,
+                verbose=True,
+            )
+            outlier_rejector.run()
+            stacks = outlier_rejector.get_stacks()
+
+        ph.print_subtitle("SDA Approximation Image")
         SDA = sda.ScatteredDataApproximation(
             stacks, HR_volume, sigma=args.sigma)
         SDA.run()
         HR_volume = SDA.get_reconstruction()
+
+        ph.print_subtitle("SDA Approximation Image Mask")
+        SDA = sda.ScatteredDataApproximation(
+            stacks, HR_volume, sigma=args.sigma, sda_mask=True)
+        SDA.run()
+        # HR volume contains updated mask based on SDA
+        HR_volume = SDA.get_reconstruction()
+
+        HR_volume.set_filename(SDA.get_setting_specific_filename())
 
     time_reconstruction = ph.stop_timing(time_tmp)
 
@@ -273,17 +324,27 @@ def main():
         tmp.insert(0, HR_volume)
         sitkh.show_stacks(tmp, segmentation=HR_volume, viewer=args.viewer)
 
-    # ----------------Two-step Slice-to-Volume Registration SRR----------------
-    SRR = tk.TikhonovSolver(
-        stacks=stacks,
-        reconstruction=HR_volume,
-        reg_type="TK1",
-        minimizer="lsmr",
-        alpha=args.alpha_first,
-        iter_max=np.min([args.iter_max_first, args.iter_max]),
-        verbose=True,
-        use_masks=args.use_masks_srr,
-    )
+    # -----------Two-step Slice-to-Volume Registration-Reconstruction----------
+    if args.sda:
+        recon_method = sda.ScatteredDataApproximation(
+            stacks,
+            HR_volume,
+            sigma=args.sigma,
+            use_masks=args.use_masks_srr,
+        )
+        param_range = [args.sigma, args.alpha]
+    else:
+        recon_method = tk.TikhonovSolver(
+            stacks=stacks,
+            reconstruction=HR_volume,
+            reg_type="TK1",
+            minimizer="lsmr",
+            alpha=args.alpha_first,
+            iter_max=np.min([args.iter_max_first, args.iter_max]),
+            verbose=True,
+            use_masks=args.use_masks_srr,
+        )
+        param_range = [args.alpha_first, args.alpha]
 
     if args.two_step_cycles > 0:
 
@@ -317,11 +378,12 @@ def main():
                 stacks=stacks,
                 reference=HR_volume,
                 registration_method=registration,
-                reconstruction_method=SRR,
+                reconstruction_method=recon_method,
                 cycles=args.two_step_cycles,
-                alpha_range=[args.alpha_first, args.alpha],
+                alpha_range=param_range,
                 verbose=args.verbose,
                 outlier_rejection=args.outlier_rejection,
+                threshold_measure=rejection_measure,
                 threshold_range=[args.threshold_first, args.threshold],
                 viewer=args.viewer,
             )
@@ -340,7 +402,7 @@ def main():
     ph.print_title("Write Motion Correction Results")
     if args.write_motion_correction:
         dir_output_mc = os.path.join(
-            args.dir_output, args.subfolder_motion_correction)
+            dir_output, args.subfolder_motion_correction)
         ph.clear_directory(dir_output_mc)
 
         for stack in stacks:
@@ -360,62 +422,70 @@ def main():
             ph.write_dictionary_to_json(
                 deleted_slices_dic,
                 os.path.join(
-                    args.dir_output,
+                    dir_output,
                     args.subfolder_motion_correction,
                     "rejected_slices.json"
                 )
             )
 
-    # ------------------Final Super-Resolution Reconstruction------------------
-    ph.print_title("Final Super-Resolution Reconstruction")
-    if args.reconstruction_type in ["TVL2", "HuberL2"]:
-        SRR = pd.PrimalDualSolver(
-            stacks=stacks,
-            reconstruction=HR_volume,
-            reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
-            iterations=args.iterations,
-        )
-    else:
-        SRR = tk.TikhonovSolver(
-            stacks=stacks,
-            reconstruction=HR_volume,
-            reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
+    # ---------------------Final Volumetric Reconstruction---------------------
+    ph.print_title("Final Volumetric Reconstruction")
+    if args.sda:
+        recon_method = sda.ScatteredDataApproximation(
+            stacks,
+            HR_volume,
+            sigma=args.alpha,
             use_masks=args.use_masks_srr,
         )
-    SRR.set_alpha(args.alpha)
-    SRR.set_iter_max(args.iter_max)
-    SRR.set_verbose(True)
-    SRR.run()
-    time_reconstruction += SRR.get_computational_time()
+    else:
+        if args.reconstruction_type in ["TVL2", "HuberL2"]:
+            recon_method = pd.PrimalDualSolver(
+                stacks=stacks,
+                reconstruction=HR_volume,
+                reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
+                iterations=args.iterations,
+                use_masks=args.use_masks_srr,
+            )
+        else:
+            recon_method = tk.TikhonovSolver(
+                stacks=stacks,
+                reconstruction=HR_volume,
+                reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
+                use_masks=args.use_masks_srr,
+            )
+        recon_method.set_alpha(args.alpha)
+        recon_method.set_iter_max(args.iter_max)
+        recon_method.set_verbose(True)
+    recon_method.run()
+    time_reconstruction += recon_method.get_computational_time()
+    HR_volume_final = recon_method.get_reconstruction()
+
+    ph.print_subtitle("Final SDA Approximation Image Mask")
+    SDA = sda.ScatteredDataApproximation(
+        stacks, HR_volume_final, sigma=args.sigma, sda_mask=True)
+    SDA.run()
+    # HR volume contains updated mask based on SDA
+    HR_volume_final = SDA.get_reconstruction()
+    time_reconstruction += SDA.get_computational_time()
 
     elapsed_time_total = ph.stop_timing(time_start)
 
     # Write SRR result
-    HR_volume_final = SRR.get_reconstruction()
-    HR_volume_final.set_filename(SRR.get_setting_specific_filename())
-    HR_volume_final.write(
-        args.dir_output, write_mask=True, suffix_mask=args.suffix_mask)
+    HR_volume_final.set_filename(recon_method.get_setting_specific_filename())
+    dw.DataWriter.write_image(HR_volume_final.sitk, args.output)
+    dw.DataWriter.write_mask(
+        HR_volume_final.sitk_mask, ph.append_to_filename(args.output, "_mask"))
 
     HR_volume_iterations.insert(0, HR_volume_final)
     for stack in stacks:
         HR_volume_iterations.append(stack)
 
-    if args.verbose and not args.provide_comparison:
+    if args.verbose:
         sitkh.show_stacks(
             HR_volume_iterations,
-            segmentation=HR_volume,
-            viewer=args.viewer)
-    # HR_volume_final.show()
-
-    # Show SRR together with linearly resampled input data.
-    # Additionally, a script is generated to open files
-    if args.provide_comparison:
-        sitkh.show_stacks(HR_volume_iterations,
-                          segmentation=HR_volume,
-                          show_comparison_file=args.provide_comparison,
-                          dir_output=os.path.join(
-                              args.dir_output, args.subfolder_comparison),
-                          )
+            segmentation=HR_volume_final,
+            viewer=args.viewer,
+        )
 
     # Summary
     ph.print_title("Summary")

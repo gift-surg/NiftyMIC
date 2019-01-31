@@ -23,7 +23,7 @@ from nsol.loss_functions import LossFunctions as \
 
 from niftymic.definitions import ALLOWED_EXTENSIONS
 from niftymic.definitions import ALLOWED_INTERPOLATORS
-from niftymic.definitions import VIEWER_OPTIONS
+from niftymic.definitions import VIEWER_OPTIONS, V2V_METHOD_OPTIONS
 
 # Allowed image types
 IMAGE_TYPES = "(" + (", or ").join(ALLOWED_EXTENSIONS) + ")"
@@ -941,8 +941,20 @@ class InputArgparser(object):
         option_string="--viewer",
         type=str,
         help="Viewer to be used for visualizations during verbose output "
-        "(%s)" % ", ".join(VIEWER_OPTIONS),
+        "(%s)." % ", ".join(VIEWER_OPTIONS),
         default="itksnap",
+        required=False,
+    ):
+        self._add_argument(dict(locals()))
+
+    def add_v2v_method(
+        self,
+        option_string="--v2v-method",
+        type=str,
+        help="Registration method used for first rigid volume-to-volume "
+        "registration step "
+        "(%s)." % ", ".join(V2V_METHOD_OPTIONS),
+        default="FLIRT",
         required=False,
     ):
         self._add_argument(dict(locals()))
@@ -966,26 +978,31 @@ class InputArgparser(object):
 
         # Read config file and insert all config entries into sys.argv (read by
         # argparse later)
-        with open(path_to_config_file) as json_file:
-            dic = ph.read_dictionary_from_json(json_file)
+        dic = ph.read_dictionary_from_json(path_to_config_file)
 
-            # Insert all config entries into sys.argv
-            for k, v in six.iteritems(dic):
+        # Insert all config entries into sys.argv
+        for k, v in six.iteritems(dic):
 
-                # A 'None' entry should be ignored
-                if v is None:
-                    continue
+            # A 'None' entry should be ignored
+            if v is None:
+                continue
 
-                # Insert values as string right at the beginning of arguments
-                # Rationale: Later options, outside of the config file, will
-                # overwrite the config values
-                if type(v) is list:
-                    for vi in reversed(v):
-                        sys.argv.insert(1, str(vi))
-                else:
-                    sys.argv.insert(1, str(v))
+            # Insert values as string right at the beginning of arguments
+            # Rationale: Later options, outside of the config file, will
+            # overwrite the config values
+            if type(v) is list:
+                for vi in reversed(v):
+                    sys.argv.insert(1, str(vi))
+            # 'store_true' values are converted to True/False; ignore the value
+            # of this key as the existence of the key indicates 'True'
+            elif type(v) is bool:
+                if v == True:
+                    sys.argv.insert(1, "--%s" % k)
+                continue
+            else:
+                sys.argv.insert(1, str(v))
 
-                sys.argv.insert(1, "--%s" % k)
+            sys.argv.insert(1, "--%s" % k)
 
     ##
     # Adds an argument to argument parser.

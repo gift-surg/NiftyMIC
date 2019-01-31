@@ -104,13 +104,13 @@ def main():
     # (correct image orientation!)
     ph.print_title("Create set of 2D DICOM slices from 3D NIfTI image")
     cmd_args = ["nifti2dicom"]
-    cmd_args.append("-i %s" % args.filename)
-    cmd_args.append("-o %s" % dir_output_2d_slices)
-    cmd_args.append("-d %s" % args.template)
+    cmd_args.append("-i '%s'" % args.filename)
+    cmd_args.append("-o '%s'" % dir_output_2d_slices)
+    cmd_args.append("-d '%s'" % args.template)
     cmd_args.append("--prefix ''")
     cmd_args.append("--seriesdescription '%s'" % args.label)
-    cmd_args.append("--accessionnumber %s" % ACCESSION_NUMBER)
-    cmd_args.append("--seriesnumber %s" % SERIES_NUMBER)
+    cmd_args.append("--accessionnumber '%s'" % ACCESSION_NUMBER)
+    cmd_args.append("--seriesnumber '%s'" % SERIES_NUMBER)
     cmd_args.append("--institutionname '%s'" % INSTITUTION_NAME)
 
     # Overwrite default "nifti2dicom" tags which would be added otherwise
@@ -127,8 +127,8 @@ def main():
         # (image orientation stays correct)
         ph.print_title("Combine set of 2D DICOM slices to form 3D DICOM image")
         cmd_args = ["medcon"]
-        cmd_args.append("-f %s/*.dcm" % dir_output_2d_slices)
-        cmd_args.append("-o %s" % path_to_output)
+        cmd_args.append("-f '%s'/*.dcm" % dir_output_2d_slices)
+        cmd_args.append("-o '%s'" % path_to_output)
         cmd_args.append("-c dicom")
         cmd_args.append("-stack3d")
         cmd_args.append("-n")
@@ -160,14 +160,14 @@ def main():
         for tag in sorted(update_dicom_tags.keys()):
             value = update_dicom_tags[tag]
             setattr(dataset, tag, value)
-            ph.print_info("%s: %s" % (tag, value))
+            ph.print_info("%s: '%s'" % (tag, value))
 
         dataset.save_as(path_to_output)
         print("")
-        ph.print_info("3D DICOM image written to %s" % path_to_output)
+        ph.print_info("3D DICOM image written to '%s'" % path_to_output)
 
     else:
-        ph.print_info("DICOM images written to %s" % dir_output_2d_slices)
+        ph.print_info("DICOM images written to '%s'" % dir_output_2d_slices)
 
     return 0
 

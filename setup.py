@@ -16,7 +16,7 @@
 import re
 import os
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 
@@ -47,41 +47,33 @@ class CustomInstallCommand(install):
         install.run(self)
 
 
-description = "Motion Correction and Volumetric Image Reconstruction of 2D " \
-    "Ultra-fast MRI"
-long_description = "This is a research-focused toolkit developed within the" \
-    " [GIFT-Surg](http: // www.gift-surg.ac.uk/) project to reconstruct an " \
-    "isotropic, high-resolution volume from multiple, possibly " \
-    "motion-corrupted, stacks of low-resolution 2D slices. The framework " \
-    "relies on slice-to-volume registration algorithms for motion " \
-    "correction and reconstruction-based Super-Resolution(SR) techniques " \
-    "for the volumetric reconstruction." \
-    "The entire reconstruction pipeline is programmed in Python by using a " \
-    "mix of SimpleITK, WrapITK and standard C++ITK."
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+
+def install_requires(fname="requirements.txt"):
+    with open(fname) as f:
+        content = f.readlines()
+    content = [x.strip() for x in content]
+    return content
 
 
 setup(name='NiftyMIC',
-      version='0.4',
-      description=description,
+      version='0.5',
+      description="NiftyMIC is a research-focused toolkit for "
+      "motion-correction and volumetric image reconstruction of "
+      "2D ultra-fast MRI.",
       long_description=long_description,
+      long_description_content_type="text/markdown",
       url='https://github.com/gift-surg/NiftyMIC',
       author='Michael Ebner',
       author_email='michael.ebner.14@ucl.ac.uk',
       license='BSD-3-Clause',
-      packages=['niftymic'],
-      install_requires=[
-          'pysitk>=0.2',
-          'nsol>=0.1.5',
-          'simplereg>=0.2',
-          'scikit_image>=0.12.3',
-          'scipy>=0.19.1',
-          'natsort>=5.0.3',
-          'numpy>=1.13.1',
-          'SimpleITK>=1.0.1',
-          'pymc3>=3.3',
-          'theano>=1.0.1',
-          "six>=1.10.0",
-      ],
+      packages=find_packages(),
+      install_requires=install_requires(),
+      # data_files=[(d, [os.path.join(d, f) for f in files])
+      #             for d, folders, files
+      #             in os.walk(os.path.join("data", "demo"))],
       zip_safe=False,
       keywords='development numericalsolver convexoptimisation',
       classifiers=[
@@ -108,9 +100,10 @@ setup(name='NiftyMIC',
               'niftymic_reconstruct_volume = niftymic.application.reconstruct_volume:main',
               'niftymic_reconstruct_volume_from_slices = niftymic.application.reconstruct_volume_from_slices:main',
               'niftymic_register_image = niftymic.application.register_image:main',
-              'niftymic_multiply_stack_with_mask = niftymic.application.multiply_stack_with_mask:main',
+              'niftymic_multiply = niftymic.application.multiply:main',
               'niftymic_run_reconstruction_parameter_study = niftymic.application.run_reconstruction_parameter_study:main',
               'niftymic_run_reconstruction_pipeline = niftymic.application.run_reconstruction_pipeline:main',
+              'niftymic_nifti2dicom = niftymic.application.nifti2dicom:main',
               'niftymic_show_reconstruction_parameter_study = nsol.application.show_parameter_study:main',
           ],
       },

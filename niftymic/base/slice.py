@@ -6,22 +6,21 @@
 # \date       September 2015
 #
 
-import SimpleITK as sitk
-import numpy as np
-# Import libraries
 import os
+import numpy as np
+import SimpleITK as sitk
 
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
+import niftymic.base.data_writer as dw
 import niftymic.base.exceptions as exceptions
 from niftymic.definitions import VIEWER
+
 
 # In addition to the nifti-image as being stored as sitk.Image for a single
 #  3D slice \f$ \in R^3 \times R^3 \times 1\f$ the class Slice
 #  also contains additional variables helpful to work with the data
-
-
 class Slice:
 
     # Create Slice instance with additional information to actual slice
@@ -258,6 +257,9 @@ class Slice:
     def get_filename(self):
         return self._filename
 
+    def set_filename(self, filename):
+        self._filename = filename
+
     # Get number of slice within parent stack
     #  \return slice number, integer
     def get_slice_number(self):
@@ -338,7 +340,6 @@ class Slice:
               write_transform=True,
               suffix_mask="_mask",
               prefix_slice="_slice",
-              use_float32=True,
               ):
 
         # Create directory if not existing
@@ -355,12 +356,8 @@ class Slice:
 
         # Write slice and affine transform
         if write_slice:
-            if use_float32:
-                image_sitk = sitk.Cast(self.sitk, sitk.sitkFloat32)
-            else:
-                image_sitk = self.sitk
-            sitkh.write_nifti_image_sitk(
-                image_sitk, full_file_name + ".nii.gz")
+            dw.DataWriter.write_image(self.sitk, "%s.nii.gz" % full_file_name,
+                verbose=False)
 
             # Write mask to specified location if given
             if self.sitk_mask is not None:
@@ -368,8 +365,12 @@ class Slice:
 
                 # Write mask if it does not consist of only ones
                 if not np.all(nda):
-                    sitkh.write_nifti_image_sitk(self.sitk_mask, full_file_name +
-                                                 "%s.nii.gz" % (suffix_mask))
+                    dw.DataWriter.write_mask(
+                        self.sitk_mask,
+                        "%s%s.nii.gz" % (full_file_name, suffix_mask),
+                        verbose=False,
+                    )
+
         if write_transform:
             sitk.WriteTransform(
                 # self.get_affine_transform(),

@@ -32,6 +32,7 @@ def main():
         "simulate_stacks_from_reconstruction.py as input.",
     )
     input_parser.add_filenames(required=True)
+    input_parser.add_filenames_masks()
     input_parser.add_dir_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_measures(default=["NCC", "SSIM"])
@@ -50,6 +51,7 @@ def main():
         "as the original ones.",
         default=None
     )
+    input_parser.add_slice_thicknesses(default=None)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -60,7 +62,11 @@ def main():
     # Read original data
     filenames_original = args.filenames
     data_reader = dr.MultipleImagesReader(
-        filenames_original, suffix_mask=args.suffix_mask)
+        file_paths=filenames_original,
+        file_paths_masks=args.filenames_masks,
+        suffix_mask=args.suffix_mask,
+        stacks_slice_thicknesses=args.slice_thicknesses,
+    )
     data_reader.read_data()
     stacks_original = data_reader.get_data()
 

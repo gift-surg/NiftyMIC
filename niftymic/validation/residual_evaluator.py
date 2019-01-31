@@ -67,6 +67,20 @@ class ResidualEvaluator(object):
         self._slice_similarities = None
         self._init_value = np.nan
 
+    @staticmethod
+    def _get_original_number_of_slices(stack):
+        slices = stack.get_slices()
+
+        # Make sure that number of slices are either given by the stack-z-dim
+        # or, in case it was cropped at some point, at least comprises as
+        # many slices (whereby original slice number counts!)
+        N_slices = np.max([
+            stack.sitk.GetSize()[-1],
+            np.max([s.get_slice_number() + 1 for s in slices])
+        ])
+
+        return N_slices
+
     ##
     # Sets the stacks.
     # \date       2018-01-19 17:26:04+0000
@@ -137,7 +151,9 @@ class ResidualEvaluator(object):
 
         for i_stack, stack in enumerate(self._stacks):
             slices = stack.get_slices()
-            N_slices = stack.sitk.GetSize()[-1]
+
+            N_slices = self._get_original_number_of_slices(stack)
+
             self._slice_projections[i_stack] = [self._init_value] * N_slices
 
             if self._verbose:
@@ -178,7 +194,7 @@ class ResidualEvaluator(object):
 
         for i_stack, stack in enumerate(self._stacks):
             slices = stack.get_slices()
-            N_slices = stack.sitk.GetSize()[-1]
+            N_slices = self._get_original_number_of_slices(stack)
             stack_name = stack.get_filename()
             self._slice_similarities[stack_name] = {
                 m: np.ones(N_slices) * self._init_value for m in self._measures
@@ -248,7 +264,7 @@ class ResidualEvaluator(object):
             ph.write_to_file(path_to_file, header, verbose=self._verbose)
 
             # Write array information
-            N_slices = stack.sitk.GetSize()[-1]
+            N_slices = self._get_original_number_of_slices(stack)
             array = np.ones(
                 (N_slices, len(self._measures))) * self._init_value
             for i_m, m in enumerate(self._measures):

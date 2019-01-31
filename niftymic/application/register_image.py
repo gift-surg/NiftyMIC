@@ -92,15 +92,17 @@ def main():
     )
     input_parser.add_fixed(required=True)
     input_parser.add_moving(required=True)
+    input_parser.add_output(
+        help="Path to registration transform (.txt)",
+        required=True)
     input_parser.add_fixed_mask()
     input_parser.add_moving_mask()
-    input_parser.add_dir_output(required=True)
     input_parser.add_dir_input_mc()
     input_parser.add_search_angle(default=180)
     input_parser.add_option(
         option_string="--initial-transform",
         type=str,
-        help="Set initial transform to be used.",
+        help="Path to initial transform.",
         default=None)
     input_parser.add_option(
         option_string="--test-ap-flip",
@@ -134,6 +136,11 @@ def main():
     if not args.use_regaladin and not args.use_flirt:
         raise IOError("Either RegAladin or FLIRT must be activated.")
 
+    if not args.output.endswith(".txt"):
+        raise IOError("output transformation path must end in '.txt'")
+
+    dir_output = os.path.dirname(args.output)
+
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
     fixed = st.Stack.from_filename(
@@ -145,18 +152,15 @@ def main():
         file_path_mask=args.moving_mask,
         extract_slices=False)
 
-    path_to_transform = os.path.join(
-        args.dir_output, "registration_transform_sitk.txt")
     if args.initial_transform is not None:
         transform_sitk = sitkh.read_transform_sitk(args.initial_transform)
     else:
         transform_sitk = sitk.AffineTransform(fixed.sitk.GetDimension())
-    sitk.WriteTransform(transform_sitk, path_to_transform)
+    sitk.WriteTransform(transform_sitk, args.output)
 
-    path_to_output = os.path.join(
-        args.dir_output,
-        ph.append_to_filename(os.path.basename(args.moving),
-                              "ResamplingToTemplateSpace"))
+    path_to_tmp_output = os.path.join(
+        DIR_TMP,
+        ph.append_to_filename(os.path.basename(args.moving), "_warped"))
 
     # -------------------Register Reconstruction to Template-------------------
     ph.print_title("Register Reconstruction to Template")
@@ -166,7 +170,7 @@ def main():
 
         # Convert SimpleITK into FLIRT transform
         cmd = "simplereg_transform -sitk2flirt %s %s %s %s" % (
-            path_to_transform, args.fixed, args.moving, path_to_transform_flirt)
+            args.output, args.fixed, args.moving, path_to_transform_flirt)
         ph.execute_command(cmd, verbose=False)
 
         # Define search angle ranges for FLIRT in all three dimensions
@@ -181,7 +185,7 @@ def main():
         #     flt.inputs.in_matrix_file = path_to_transform_flirt
         # flt.inputs.out_matrix_file = path_to_transform_flirt
         # # flt.inputs.output_type = "NIFTI_GZ"
-        # flt.inputs.out_file = path_to_output
+        # flt.inputs.out_file = path_to_tmp_output
         # flt.inputs.args = "-dof 6"
         # flt.inputs.args += " %s" % " ".join(search_angles)
         # if args.moving_mask is not None:
@@ -198,7 +202,7 @@ def main():
         if args.initial_transform is not None:
             cmd_args.append("-init %s" % path_to_transform_flirt)
         cmd_args.append("-omat %s" % path_to_transform_flirt)
-        cmd_args.append("-out %s" % path_to_output)
+        cmd_args.append("-out %s" % path_to_tmp_output)
         cmd_args.append("-dof 6")
         cmd_args.append((" ").join(search_angles))
         if args.moving_mask is not None:
@@ -211,11 +215,11 @@ def main():
 
         # Convert FLIRT to SimpleITK transform
         cmd = "simplereg_transform -flirt2sitk %s %s %s %s" % (
-            path_to_transform_flirt, args.fixed, args.moving, path_to_transform)
+            path_to_transform_flirt, args.fixed, args.moving, args.output)
         ph.execute_command(cmd, verbose=False)
 
         if debug:
-            ph.show_niftis([args.fixed, path_to_output])
+            ph.show_niftis([args.fixed, path_to_tmp_output])
 
     # Additionally, use RegAladin for more accurate alignment
     # Rationale: FLIRT has better capture range, but RegAladin seems to
@@ -226,13 +230,13 @@ def main():
 
         # Convert SimpleITK to RegAladin transform
         cmd = "simplereg_transform -sitk2nreg %s %s" % (
-            path_to_transform, path_to_transform_regaladin)
+            args.output, path_to_transform_regaladin)
         ph.execute_command(cmd, verbose=False)
 
         # nreg = nipype.interfaces.niftyreg.RegAladin()
         # nreg.inputs.ref_file = args.fixed
         # nreg.inputs.flo_file = args.moving
-        # nreg.inputs.res_file = path_to_output
+        # nreg.inputs.res_file = path_to_tmp_output
         # nreg.inputs.in_aff_file = path_to_transform_regaladin
         # nreg.inputs.aff_file = path_to_transform_regaladin
         # nreg.inputs.args = "-rigOnly -voff"
@@ -247,9 +251,11 @@ def main():
         cmd_args = ["reg_aladin"]
         cmd_args.append("-ref %s" % args.fixed)
         cmd_args.append("-flo %s" % args.moving)
-        cmd_args.append("-res %s" % path_to_output)
-        cmd_args.append("-inaff %s" % path_to_transform_regaladin)
+        cmd_args.append("-res %s" % path_to_tmp_output)
+        if args.initial_transform is not None or args.use_flirt == 1:
+            cmd_args.append("-inaff %s" % path_to_transform_regaladin)
         cmd_args.append("-aff %s" % path_to_transform_regaladin)
+        # cmd_args.append("-cog")
         # cmd_args.append("-ln 2")
         cmd_args.append("-rigOnly")
         cmd_args.append("-voff")
@@ -263,15 +269,15 @@ def main():
 
         # Convert RegAladin to SimpleITK transform
         cmd = "simplereg_transform -nreg2sitk %s %s" % (
-            path_to_transform_regaladin, path_to_transform)
+            path_to_transform_regaladin, args.output)
         ph.execute_command(cmd, verbose=False)
 
         if debug:
-            ph.show_niftis([args.fixed, path_to_output])
+            ph.show_niftis([args.fixed, path_to_tmp_output])
 
     if args.test_ap_flip:
         path_to_transform_flip = os.path.join(DIR_TMP, "transform_flip.txt")
-        path_to_output_flip = os.path.join(DIR_TMP, "output_flip.nii.gz")
+        path_to_tmp_output_flip = os.path.join(DIR_TMP, "output_flip.nii.gz")
 
         # Get AP-flip transform
         transform_ap_flip_sitk = get_ap_flip_transform(args.fixed)
@@ -281,7 +287,7 @@ def main():
 
         # Compose current transform with AP flip transform
         cmd = "simplereg_transform -c %s %s %s" % (
-            path_to_transform, path_to_transform_flip, path_to_transform_flip)
+            args.output, path_to_transform_flip, path_to_transform_flip)
         ph.execute_command(cmd, verbose=False)
 
         # Convert SimpleITK to RegAladin transform
@@ -292,7 +298,7 @@ def main():
         # nreg = nipype.interfaces.niftyreg.RegAladin()
         # nreg.inputs.ref_file = args.fixed
         # nreg.inputs.flo_file = args.moving
-        # nreg.inputs.res_file = path_to_output_flip
+        # nreg.inputs.res_file = path_to_tmp_output_flip
         # nreg.inputs.in_aff_file = path_to_transform_flip_regaladin
         # nreg.inputs.aff_file = path_to_transform_flip_regaladin
         # nreg.inputs.args = "-rigOnly -voff"
@@ -308,7 +314,7 @@ def main():
         cmd_args = ["reg_aladin"]
         cmd_args.append("-ref %s" % args.fixed)
         cmd_args.append("-flo %s" % args.moving)
-        cmd_args.append("-res %s" % path_to_output_flip)
+        cmd_args.append("-res %s" % path_to_tmp_output_flip)
         cmd_args.append("-inaff %s" % path_to_transform_flip_regaladin)
         cmd_args.append("-aff %s" % path_to_transform_flip_regaladin)
         cmd_args.append("-rigOnly")
@@ -324,12 +330,13 @@ def main():
         print("done")
 
         if debug:
-            ph.show_niftis([args.fixed, path_to_output, path_to_output_flip])
+            ph.show_niftis(
+                [args.fixed, path_to_tmp_output, path_to_tmp_output_flip])
 
         warped_moving = st.Stack.from_filename(
-            path_to_output, extract_slices=False)
+            path_to_tmp_output, extract_slices=False)
         warped_moving_flip = st.Stack.from_filename(
-            path_to_output_flip, extract_slices=False)
+            path_to_tmp_output_flip, extract_slices=False)
         fixed = st.Stack.from_filename(args.fixed, args.fixed_mask)
 
         stacks = [warped_moving, warped_moving_flip]
@@ -343,11 +350,11 @@ def main():
 
             # Convert RegAladin to SimpleITK transform
             cmd = "simplereg_transform -nreg2sitk %s %s" % (
-                path_to_transform_flip_regaladin, path_to_transform)
+                path_to_transform_flip_regaladin, args.output)
             ph.execute_command(cmd, verbose=False)
 
             # Copy better outcome
-            cmd = "cp -p %s %s" % (path_to_output_flip, path_to_output)
+            cmd = "cp -p %s %s" % (path_to_tmp_output_flip, path_to_tmp_output)
             ph.execute_command(cmd, verbose=False)
 
         else:
@@ -355,13 +362,13 @@ def main():
 
     if args.dir_input_mc is not None:
         transform_sitk = sitkh.read_transform_sitk(
-            path_to_transform, inverse=1)
+            args.output, inverse=1)
 
         if args.dir_input_mc.endswith("/"):
             subdir_mc = args.dir_input_mc.split("/")[-2]
         else:
             subdir_mc = args.dir_input_mc.split("/")[-1]
-        dir_output_mc = os.path.join(args.dir_output, subdir_mc)
+        dir_output_mc = os.path.join(dir_output, subdir_mc)
 
         ph.create_directory(dir_output_mc, delete_files=True)
         pattern = REGEX_FILENAMES + "[.]tfm"
@@ -376,7 +383,7 @@ def main():
             sitk.WriteTransform(t_sitk, path_to_output_transform)
 
     if args.verbose:
-        ph.show_niftis([args.fixed, path_to_output])
+        ph.show_niftis([args.fixed, path_to_tmp_output])
 
     elapsed_time_total = ph.stop_timing(time_start)
 
