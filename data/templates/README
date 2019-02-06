@@ -106,7 +106,10 @@ Label key (all images):
   124 CSF
   125 Misc
 
+# # # # # # # # # # # # # # # # # # # # # # 
+
 Michael Ebner, Feb 16, 2018:
 - All image headers have been updated using fslreorient2std using `for i in *.nii.gz; do echo $i; fslreorient2std $i $i; done`
 - _mask: binarized image labels
+- _mask_dil: dilated binary masks; applied to SRR it approximates brain tissue only
 - templates_info.json: Additional information on templates like volume
