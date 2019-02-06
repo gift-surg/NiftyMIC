@@ -157,7 +157,7 @@ For fetal brain template space alignment, a [spatio-temporal atlas][gholipour_at
 
 * Gholipour, A., Rollins, C. K., Velasco-Annis, C., Ouaalam, A., Akhondi-Asl, A., Afacan, O., Ortinau, C. M., Clancy, S., Limperopoulos, C., Yang, E., Estroff, J. A. & Warfield, S. K. (2017). A normative spatiotemporal MRI atlas of the fetal brain for automatic segmentation and analysis of early brain growth. Scientific Reports 7, 476.
 
-and follow the license agreement as described in [`data/templates/LICENSE`](data/templates/LICENSE).
+and abide by the license agreement as described in [`data/templates/LICENSE`](data/templates/LICENSE).
 
 ### SRR Methods for Motion Corrected (or Static) Data
 
