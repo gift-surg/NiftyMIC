@@ -294,8 +294,8 @@ def main():
             ph.execute_command(cmd)
 
         # Copy SRR to output directory
-        output = "%sSRR_Stacks%d_GW%d.nii.gz" % (
-            args.prefix_output, len(args.filenames), gestational_age)
+        output = "%sSRR_Stacks%d.nii.gz" % (
+            args.prefix_output, len(args.filenames))
         path_to_output = os.path.join(args.dir_output, output)
         cmd = "cp -p %s %s" % (srr_template, path_to_output)
         exit_code = ph.execute_command(cmd)
