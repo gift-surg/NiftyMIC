@@ -76,7 +76,7 @@ class InputArgparser(object):
 
         return self._parser.parse_args()
 
-    def print_arguments(self, args, title="Input Parameters:"):
+    def print_arguments(self, args, title="Configuration:"):
         ph.print_title(title)
         for arg in sorted(vars(args)):
             ph.print_info("%s: " % (arg), newline=False)
@@ -92,6 +92,7 @@ class InputArgparser(object):
                     print("\t%s" % val)
             else:
                 print(vals)
+        print("\nNiftyMIC version: %s" % niftymic.__version__)
         ph.print_line_separator(add_newline=False)
         print("")
 
