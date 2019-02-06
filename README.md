@@ -153,7 +153,11 @@ niftymic_register_image \
 --dir-input-mc dir-to-motion_correction \
 --output path-to-registration-transform.txt \
 ```
+For fetal brain template space alignment, a [spatio-temporal atlas][gholipour_atlas] is provided in [`data/templates`](data/templates). If you make use of it, please cite
 
+* Gholipour, A., Rollins, C. K., Velasco-Annis, C., Ouaalam, A., Akhondi-Asl, A., Afacan, O., Ortinau, C. M., Clancy, S., Limperopoulos, C., Yang, E., Estroff, J. A. & Warfield, S. K. (2017). A normative spatiotemporal MRI atlas of the fetal brain for automatic segmentation and analysis of early brain growth. Scientific Reports 7, 476.
+
+and follow the license agreement as described in [`data/templates/LICENSE`](data/templates/LICENSE).
 
 ### SRR Methods for Motion Corrected (or Static) Data
 
@@ -270,3 +274,4 @@ Associated publications are
 [simplereg-dependencies]: https://github.com/gift-surg/SimpleReg/wikis/simplereg-dependencies
 [pysitk]: https://github.com/gift-surg/PySiTK
 [fetal_brain_seg]: https://github.com/gift-surg/fetal_brain_seg
+[gholipour_atlas]: https://www.nature.com/articles/s41598-017-00525-w
