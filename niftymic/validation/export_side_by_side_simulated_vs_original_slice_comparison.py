@@ -84,7 +84,6 @@ def _export_image_side_by_side(
         background="black",
         fill_ctr="orange",
         fill_label="white",
-        font="Arial",
         pointsize=12,
 ):
 
@@ -105,7 +104,6 @@ def _export_image_side_by_side(
     cmd_args = []
     cmd_args.append("-geometry +%d+%d" % (border, border))
     cmd_args.append("-background %s" % background)
-    cmd_args.append("-font %s" % font)
     cmd_args.append("-pointsize %s" % pointsize)
     cmd_args.append("-fill %s" % fill_ctr)
     cmd_args.append("-gravity SouthWest -draw \"text 0,0 '%d'\"" % ctr)
