@@ -1,0 +1,121 @@
+{
+    "21": {
+        "image": "STA21.nii.gz", 
+        "mask": "STA21_mask.nii.gz", 
+        "mask_dil": "STA21_mask_dil.nii.gz", 
+        "volume_mask": 89246.38487071976, 
+        "volume_mask_dil": 120038.46124333153
+    }, 
+    "22": {
+        "image": "STA22.nii.gz", 
+        "mask": "STA22_mask.nii.gz", 
+        "mask_dil": "STA22_mask_dil.nii.gz", 
+        "volume_mask": 101490.30689354343, 
+        "volume_mask_dil": 134909.44540126887
+    }, 
+    "23": {
+        "image": "STA23.nii.gz", 
+        "mask": "STA23_mask.nii.gz", 
+        "mask_dil": "STA23_mask_dil.nii.gz", 
+        "volume_mask": 106235.50507484014, 
+        "volume_mask_dil": 140715.503598928
+    }, 
+    "24": {
+        "image": "STA24.nii.gz", 
+        "mask": "STA24_mask.nii.gz", 
+        "mask_dil": "STA24_mask_dil.nii.gz", 
+        "volume_mask": 130878.99653601555, 
+        "volume_mask_dil": 170357.1202916332
+    }, 
+    "25": {
+        "image": "STA25.nii.gz", 
+        "mask": "STA25_mask.nii.gz", 
+        "mask_dil": "STA25_mask_dil.nii.gz", 
+        "volume_mask": 178492.25774336213, 
+        "volume_mask_dil": 227175.59493246424
+    }, 
+    "26": {
+        "image": "STA26.nii.gz", 
+        "mask": "STA26_mask.nii.gz", 
+        "mask_dil": "STA26_mask_dil.nii.gz", 
+        "volume_mask": 201635.08283969283, 
+        "volume_mask_dil": 253806.15093200956
+    }, 
+    "27": {
+        "image": "STA27.nii.gz", 
+        "mask": "STA27_mask.nii.gz", 
+        "mask_dil": "STA27_mask_dil.nii.gz", 
+        "volume_mask": 210435.81779203523, 
+        "volume_mask_dil": 263941.1528740433
+    }, 
+    "28": {
+        "image": "STA28.nii.gz", 
+        "mask": "STA28_mask.nii.gz", 
+        "mask_dil": "STA28_mask_dil.nii.gz", 
+        "volume_mask": 233175.18840337868, 
+        "volume_mask_dil": 290329.5337829808
+    }, 
+    "29": {
+        "image": "STA29.nii.gz", 
+        "mask": "STA29_mask.nii.gz", 
+        "mask_dil": "STA29_mask_dil.nii.gz", 
+        "volume_mask": 257051.194746539, 
+        "volume_mask_dil": 317684.56706204003
+    }, 
+    "30": {
+        "image": "STA30.nii.gz", 
+        "mask": "STA30_mask.nii.gz", 
+        "mask_dil": "STA30_mask_dil.nii.gz", 
+        "volume_mask": 282285.5319890282, 
+        "volume_mask_dil": 346364.6513653975
+    }, 
+    "31": {
+        "image": "STA31.nii.gz", 
+        "mask": "STA31_mask.nii.gz", 
+        "mask_dil": "STA31_mask_dil.nii.gz", 
+        "volume_mask": 312587.62620157294, 
+        "volume_mask_dil": 380993.6413300073
+    }, 
+    "32": {
+        "image": "STA32.nii.gz", 
+        "mask": "STA32_mask.nii.gz", 
+        "mask_dil": "STA32_mask_dil.nii.gz", 
+        "volume_mask": 340744.4484698328, 
+        "volume_mask_dil": 413634.54276009236
+    }, 
+    "33": {
+        "image": "STA33.nii.gz", 
+        "mask": "STA33_mask.nii.gz", 
+        "mask_dil": "STA33_mask_dil.nii.gz", 
+        "volume_mask": 356126.40670901025, 
+        "volume_mask_dil": 430765.4864316511
+    }, 
+    "34": {
+        "image": "STA34.nii.gz", 
+        "mask": "STA34_mask.nii.gz", 
+        "mask_dil": "STA34_mask_dil.nii.gz", 
+        "volume_mask": 392819.77292167663, 
+        "volume_mask_dil": 472869.6483262277
+    }, 
+    "35": {
+        "image": "STA35.nii.gz", 
+        "mask": "STA35_mask.nii.gz", 
+        "mask_dil": "STA35_mask_dil.nii.gz", 
+        "volume_mask": 418491.86852033855, 
+        "volume_mask_dil": 502023.33085117553
+    }, 
+    "36": {
+        "image": "STA36.nii.gz", 
+        "mask": "STA36_mask.nii.gz", 
+        "mask_dil": "STA36_mask_dil.nii.gz", 
+        "volume_mask": 422497.7414778769, 
+        "volume_mask_dil": 506874.512634493
+    }, 
+    "37": {
+        "image": "STA37.nii.gz", 
+        "mask": "STA37_mask.nii.gz", 
+        "mask_dil": "STA37_mask_dil.nii.gz", 
+        "volume_mask": 390531.14151572104, 
+        "volume_mask_dil": 470833.9439705052
+    }
+}

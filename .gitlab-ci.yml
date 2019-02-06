@@ -8,7 +8,6 @@ variables:
     ITK_DIR: /mnt/shared/mebner/environment/ITK/ITK_NiftyMIC-python${PY_VERSION}-build
     FSL_DIR: /mnt/shared/mebner/environment/FSL/fsl
     TEST_DIR: /home/mebner/Development/NiftyMIC/data/tests
-    TEMPLATES_DIR: /home/mebner/Development/NiftyMIC/data/templates
     NIFTYREG_INSTALL: /mnt/shared/mebner/environment/NiftyReg/NiftyReg-master-install
     CONVERT3D_INSTALL: /mnt/shared/mebner/environment/Convert3D/c3d-git-install
 
@@ -59,9 +58,6 @@ before_script:
 
     # run installation
     - pip install -e .
-
-    # copy templates to NiftyMIC
-    - cp -r ${TEMPLATES_DIR} ${cwd_dir}/data/
 
     # replace TEST_DIR in niftymic/definitions.py file
     - sed -i -- 's:DIR_TEST = os.path.join(DIR_ROOT, "data", "tests"):DIR_TEST = "'"$TEST_DIR"'":g' niftymic/definitions.py
