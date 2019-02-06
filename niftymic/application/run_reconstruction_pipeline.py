@@ -50,7 +50,6 @@ def main():
     input_parser.add_search_angle(default=180)
     input_parser.add_multiresolution(default=0)
     input_parser.add_log_config(default=1)
-    input_parser.add_dir_input_templates(default=DIR_TEMPLATES)
     input_parser.add_isotropic_resolution()
     input_parser.add_reference()
     input_parser.add_reference_mask()
@@ -129,11 +128,12 @@ def main():
         target_stack = args.target_stack
 
     if args.bias_field_correction and args.run_bias_field_correction:
-        for f in args.filenames:
+        for i, f in enumerate(args.filenames):
             output = os.path.join(
                 dir_output_preprocessing, os.path.basename(f))
             cmd_args = []
             cmd_args.append("--filename %s" % f)
+            cmd_args.append("--filename-mask %s" % args.filenames_masks[i])
             cmd_args.append("--output %s" % output)
             # cmd_args.append("--verbose %d" % args.verbose)
             cmd = "niftymic_correct_bias_field %s" % (" ").join(cmd_args)
@@ -223,11 +223,9 @@ def main():
             gestational_age = args.gestational_age
 
         template = os.path.join(
-            args.dir_input_templates,
-            "STA%d.nii.gz" % gestational_age)
+            DIR_TEMPLATES, "STA%d.nii.gz" % gestational_age)
         template_mask = os.path.join(
-            args.dir_input_templates,
-            "STA%d_mask.nii.gz" % gestational_age)
+            DIR_TEMPLATES, "STA%d_mask.nii.gz" % gestational_age)
 
         cmd_args = []
         cmd_args.append("--fixed %s" % template)

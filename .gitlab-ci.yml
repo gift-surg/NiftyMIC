@@ -60,9 +60,11 @@ before_script:
     # run installation
     - pip install -e .
 
-    # replace TEST_DIR and TEMPLATE_DIR in niftymic/definitions.py file
+    # copy templates to NiftyMIC
+    - cp -r ${TEMPLATES_DIR} ${cwd_dir}/data/
+
+    # replace TEST_DIR in niftymic/definitions.py file
     - sed -i -- 's:DIR_TEST = os.path.join(DIR_ROOT, "data", "tests"):DIR_TEST = "'"$TEST_DIR"'":g' niftymic/definitions.py
-    - sed -i -- 's:DIR_TEMPLATES = os.path.join(DIR_ROOT, "data", "templates"):DIR_TEMPLATES = "'"$TEMPLATES_DIR"'":g' niftymic/definitions.py
     - cat niftymic/definitions.py
 
 after_script:
@@ -149,7 +151,6 @@ run_reconstruction_pipeline:
       python niftymic/application/run_reconstruction_pipeline.py
       --filenames ${DATADIR}/input_data/axial.nii.gz
       --filenames-masks ${DATADIR}/input_data/axial_mask.nii.gz
-      --dir-input-templates ${DATADIR}/templates
       --dir-output ${TMPDIR} 
       --suffix-mask _mask
       --gestational-age 28

@@ -488,16 +488,6 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
-    def add_dir_input_templates(
-        self,
-        option_string="--dir-input-templates",
-        type=str,
-        help="Input directory holding the fetal brain templates.",
-        default=None,
-        required=False,
-    ):
-        self._add_argument(dict(locals()))
-
     def add_search_angle(
         self,
         option_string="--search-angle",
