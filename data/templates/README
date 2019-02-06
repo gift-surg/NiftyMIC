@@ -1,0 +1,112 @@
+2016 Fetal Brain Atlas
+Copyright 2016, Computational Radiology Lab, Boston Childrens Hospital
+
+Contact:
+Ali Gholipour: Ali.Gholipour@childrens.harvard.edu
+Clemente Velasco-Annis: Clemente.Velasco-Annis@childrens.harvard.edu
+
+This version of the Spatio-Temporal Atlas (STA) was last edited on 11/21/16
+
+This spatio-temporal atlas and the included parcellations are not intended for medical use and have no warranty. Structures received varying amounts of attention and refinement based on the research goals at the time of creation and thus no guarantees can be made regarding the accuracy or precision of the segmentations, nor the withholding to any particular labeling convention or protocol between structures. Any output derived from the use of these atlases or parcellations shouled be checked in order to validate the accuracy of the results.
+
+# # # # # # # # # # # # # # # # # # # # # #
+New to this update (11/21/16) "Olympic edition":
+
+CHANGES TO LABELING SCHEME:
+	The parcellation scheme (label numbers) has been reorganized
+		All atlas images now share the same label key
+		The full key can be found below
+	Left and right white matter have been separated into separate labels
+	Labels for left and right internal capsule have been added to all images
+	
+REFINEMENT TO PARCELLATIONS:
+	"Miscellanous_brain_tissue" has been mostly removed as most of the label was internal capsule
+	Developing white matter zones (SP, IZ & VZ) have been removed from STA31-33 because they were not felt to be accurate (differentiation between layers was arbitrary)
+		*There are two versions of the STA30 parcellation, one with developing white matter zones, one without*
+	Cortical plate was reduced in the region anterior to the corpus callosum (reduced the portion "wrapping" into hemisphere)
+	Subplate has been expanded to the appropriate width as per reviewer feedback
+	The intermediate zone/ventricular zone has been edited to shrink the ventricular zone in line with reviewer feedback
+	Deep gray matter structures have been edited to increase segmentation consistency between gestational ages
+
+# # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # #
+New to this update (06/07/16):
+
+	White and gray cerebellum have been recombined because we could not ensure the accuracy of the delineation (very little refinement had been done since initial propagation of the parcellation scheme to this atlas).
+	
+	The files have been renamed slightly.
+
+# # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # #
+New to this update (03/30/16):
+
+ADDED TEMPLATES:
+	There are now atlas images and labels for gestational age (GA) weeks 21-37.
+
+DEVELOPING WHITE MATTER ZONES:
+	Labels for developing white matter zones have been added for GA 21-33
+	This includes left and right "ventricular zone", "intermediate zone" (similar to subventricular zone), and "subplate"
+	In these images, label 51 is now "miscellaneous brain tissue", mostly deep gray matter found between the larger subcortical structures
+	Images with the labeling convention are marked with "wmz"; for example, STA27_WMZparc.nii.gz
+
+	There are two versions of labels for STA31, STA32, and STA33
+	STA31_parc.nii.gz = All white matter is label 51
+	STA31_WMZparc.nii.gz = Developing white matter layers have been separated into miscellaneous brain tissue (#51), subplate (#73,74), intermediate zone (#75,76), and ventricular zone (#77,78)
+
+	Note: As the white matter homogenizes in composition during development, the visual differentiation between the layers also decreases. Because of this the accuracy of the developmental layers may not be great for the older brains (i.e. STA30-33). This primarily pertains to the border between intermediate zone and subplate.
+
+ADDITIONAL ADDED LABELS:
+	#5: Hippocampal commisure
+	#6: Fornix
+
+LABEL REFINEMENTS:
+	Many of the labels have been refined to increase accuracy, in particular:
+		hippocampus
+		caudate
+		thalamus
+		lentiform
+		corpus callosum
+		cortical plate
+# # # # # # # # # # # # # # # # # # # # # # 
+
+Label key (all images):
+
+   37 Hippocampus_L
+   38 Hippocampus_R
+   41 Amygdala_L
+   42 Amygdala_R
+   71 Caudate_L
+   72 Caudate_R
+   73 Lentiform_L
+   74 Lentiform_R
+   77 Thalamus_L
+   78 Thalamus_R
+   91 CorpusCallosum
+   92 Lateral_Ventricle_L
+   93 Lateral_Ventricle_R
+   94 Brainstem
+  100 Cerebellum_L
+  101 Cerebellum_R
+  108 Subthalamic_Nuc_L
+  109 Subthalamic_Nuc_R
+  110 Hippocampal_Comm
+  111 Fornix
+  112 Cortical_Plate_L
+  113 Cortical_Plate_R
+  114 Subplate_L
+  115 Subplate_R
+  116 Inter_Zone_L
+  117 Inter_Zone_R
+  118 Vent_Zone_L
+  119 Vent_Zone_R
+  120 White_Matter_L
+  121 White_Matter_R
+  122 Internal_Capsule_L
+  123 Internal_Capsule_R
+  124 CSF
+  125 Misc
+
+Michael Ebner, Feb 16, 2018:
+- All image headers have been updated using fslreorient2std using `for i in *.nii.gz; do echo $i; fslreorient2std $i $i; done`
+- _mask: binarized image labels
+- templates_info.json: Additional information on templates like volume
