@@ -37,7 +37,7 @@ from niftymic.definitions import REGEX_FILENAMES, DIR_TMP
 #
 # \return     The ap flip transform.
 #
-def get_ap_flip_transform(path_to_image, initializer_type="GEOMETRY"):
+def get_flip_transform(path_to_image, initializer_type="GEOMETRY", flip="AP"):
     image_sitk = sitk.ReadImage(path_to_image)
     initial_transform = sitk.CenteredTransformInitializer(
         image_sitk,
@@ -54,13 +54,20 @@ def get_ap_flip_transform(path_to_image, initializer_type="GEOMETRY"):
     transform_sitk2 = sitk.Euler3DTransform()
 
     # AP 'flip', i.e. associated rotation
-    transform_sitk2.SetRotation(0, 0, np.pi)
+    if flip == "AP":
+        transform_sitk2.SetRotation(0, 0, np.pi)
 
-    # # SI 'flip', i.e. associated rotation
-    # transform_sitk2.SetRotation(0, np.pi, 0)
+    # SI 'flip', i.e. associated rotation
+    elif flip == "SI":
+        transform_sitk2.SetRotation(0, np.pi, 0)
 
-    # # AP+SI 'flip', i.e. associated rotation
-    # transform_sitk2.SetRotation(0, np.pi, np.pi)
+    # SI 'flip', i.e. associated rotation
+    elif flip == "RL":
+        transform_sitk2.SetRotation(np.pi, 0, 0)
+
+    # AP+SI 'flip', i.e. associated rotation
+    else:
+        transform_sitk2.SetRotation(0, np.pi, np.pi)
 
     transform_sitk3 = sitk.Euler3DTransform(transform_sitk1.GetInverse())
 
@@ -69,9 +76,11 @@ def get_ap_flip_transform(path_to_image, initializer_type="GEOMETRY"):
     transform_sitk = sitkh.get_composite_sitk_euler_transform(
         transform_sitk3, transform_sitk)
 
+    # image = sitk.ReadImage(path_to_image)
     # sitkh.show_sitk_image((
-    #     [stack.sitk,
-    #     sitkh.get_transformed_sitk_image(stack.sitk, transform_sitk)]))
+    #     [image, sitkh.get_transformed_sitk_image(image, transform_sitk)]),
+    #     label=["orig", "%s-flipped" % flip]
+    # )
 
     return transform_sitk
 
@@ -279,86 +288,93 @@ def main():
         path_to_transform_flip = os.path.join(DIR_TMP, "transform_flip.txt")
         path_to_tmp_output_flip = os.path.join(DIR_TMP, "output_flip.nii.gz")
 
-        # Get AP-flip transform
-        transform_ap_flip_sitk = get_ap_flip_transform(args.fixed)
-        path_to_transform_flip_regaladin = os.path.join(
-            DIR_TMP, "transform_flip_regaladin.txt")
-        sitk.WriteTransform(transform_ap_flip_sitk, path_to_transform_flip)
+        for flip in [
+            "AP",
+            "SI",
+            # "RL",
+        ]:
 
-        # Compose current transform with AP flip transform
-        cmd = "simplereg_transform -c %s %s %s" % (
-            args.output, path_to_transform_flip, path_to_transform_flip)
-        ph.execute_command(cmd, verbose=False)
+            # Get AP-flip transform
+            transform_flip_sitk = get_flip_transform(args.fixed, flip=flip)
+            path_to_transform_flip_regaladin = os.path.join(
+                DIR_TMP, "transform_flip_regaladin.txt")
+            sitk.WriteTransform(transform_flip_sitk, path_to_transform_flip)
 
-        # Convert SimpleITK to RegAladin transform
-        cmd = "simplereg_transform -sitk2nreg %s %s" % (
-            path_to_transform_flip, path_to_transform_flip_regaladin)
-        ph.execute_command(cmd, verbose=False)
-
-        # nreg = nipype.interfaces.niftyreg.RegAladin()
-        # nreg.inputs.ref_file = args.fixed
-        # nreg.inputs.flo_file = args.moving
-        # nreg.inputs.res_file = path_to_tmp_output_flip
-        # nreg.inputs.in_aff_file = path_to_transform_flip_regaladin
-        # nreg.inputs.aff_file = path_to_transform_flip_regaladin
-        # nreg.inputs.args = "-rigOnly -voff"
-        # if args.moving_mask is not None:
-        #     nreg.inputs.fmask_file = args.moving_mask
-        # if args.fixed_mask is not None:
-        #     nreg.inputs.rmask_file = args.fixed_mask
-        # ph.print_info("Run Registration AP-flipped (RegAladin) ... ",
-        #               newline=False)
-        # nreg.run()
-        # print("done")
-
-        cmd_args = ["reg_aladin"]
-        cmd_args.append("-ref %s" % args.fixed)
-        cmd_args.append("-flo %s" % args.moving)
-        cmd_args.append("-res %s" % path_to_tmp_output_flip)
-        cmd_args.append("-inaff %s" % path_to_transform_flip_regaladin)
-        cmd_args.append("-aff %s" % path_to_transform_flip_regaladin)
-        cmd_args.append("-rigOnly")
-        # cmd_args.append("-ln 2")
-        cmd_args.append("-voff")
-        if args.moving_mask is not None:
-            cmd_args.append("-fmask %s" % args.moving_mask)
-        if args.fixed_mask is not None:
-            cmd_args.append("-rmask %s" % args.fixed_mask)
-        ph.print_info("Run Registration AP-flipped (RegAladin) ... ",
-                      newline=False)
-        ph.execute_command(" ".join(cmd_args), verbose=False)
-        print("done")
-
-        if debug:
-            ph.show_niftis(
-                [args.fixed, path_to_tmp_output, path_to_tmp_output_flip])
-
-        warped_moving = st.Stack.from_filename(
-            path_to_tmp_output, extract_slices=False)
-        warped_moving_flip = st.Stack.from_filename(
-            path_to_tmp_output_flip, extract_slices=False)
-        fixed = st.Stack.from_filename(args.fixed, args.fixed_mask)
-
-        stacks = [warped_moving, warped_moving_flip]
-        image_similarity_evaluator = ise.ImageSimilarityEvaluator(
-            stacks=stacks, reference=fixed)
-        image_similarity_evaluator.compute_similarities()
-        similarities = image_similarity_evaluator.get_similarities()
-
-        if similarities["NMI"][1] > similarities["NMI"][0]:
-            ph.print_info("AP-flipped outcome better")
-
-            # Convert RegAladin to SimpleITK transform
-            cmd = "simplereg_transform -nreg2sitk %s %s" % (
-                path_to_transform_flip_regaladin, args.output)
+            # Compose current transform with AP flip transform
+            cmd = "simplereg_transform -c %s %s %s" % (
+                args.output, path_to_transform_flip, path_to_transform_flip)
             ph.execute_command(cmd, verbose=False)
 
-            # Copy better outcome
-            cmd = "cp -p %s %s" % (path_to_tmp_output_flip, path_to_tmp_output)
+            # Convert SimpleITK to RegAladin transform
+            cmd = "simplereg_transform -sitk2nreg %s %s" % (
+                path_to_transform_flip, path_to_transform_flip_regaladin)
             ph.execute_command(cmd, verbose=False)
 
-        else:
-            ph.print_info("AP-flip does not improve outcome")
+            # nreg = nipype.interfaces.niftyreg.RegAladin()
+            # nreg.inputs.ref_file = args.fixed
+            # nreg.inputs.flo_file = args.moving
+            # nreg.inputs.res_file = path_to_tmp_output_flip
+            # nreg.inputs.in_aff_file = path_to_transform_flip_regaladin
+            # nreg.inputs.aff_file = path_to_transform_flip_regaladin
+            # nreg.inputs.args = "-rigOnly -voff"
+            # if args.moving_mask is not None:
+            #     nreg.inputs.fmask_file = args.moving_mask
+            # if args.fixed_mask is not None:
+            #     nreg.inputs.rmask_file = args.fixed_mask
+            # ph.print_info("Run Registration AP-flipped (RegAladin) ... ",
+            #               newline=False)
+            # nreg.run()
+            # print("done")
+
+            cmd_args = ["reg_aladin"]
+            cmd_args.append("-ref %s" % args.fixed)
+            cmd_args.append("-flo %s" % args.moving)
+            cmd_args.append("-res %s" % path_to_tmp_output_flip)
+            cmd_args.append("-inaff %s" % path_to_transform_flip_regaladin)
+            cmd_args.append("-aff %s" % path_to_transform_flip_regaladin)
+            cmd_args.append("-rigOnly")
+            # cmd_args.append("-ln 2")
+            cmd_args.append("-voff")
+            if args.moving_mask is not None:
+                cmd_args.append("-fmask %s" % args.moving_mask)
+            if args.fixed_mask is not None:
+                cmd_args.append("-rmask %s" % args.fixed_mask)
+            ph.print_info("Run Registration %s-flipped (RegAladin) ... " %
+                          flip, newline=False)
+            ph.execute_command(" ".join(cmd_args), verbose=False)
+            print("done")
+
+            if debug:
+                ph.show_niftis(
+                    [args.fixed, path_to_tmp_output, path_to_tmp_output_flip])
+
+            warped_moving = st.Stack.from_filename(
+                path_to_tmp_output, extract_slices=False)
+            warped_moving_flip = st.Stack.from_filename(
+                path_to_tmp_output_flip, extract_slices=False)
+            fixed = st.Stack.from_filename(args.fixed, args.fixed_mask)
+
+            stacks = [warped_moving, warped_moving_flip]
+            image_similarity_evaluator = ise.ImageSimilarityEvaluator(
+                stacks=stacks, reference=fixed)
+            image_similarity_evaluator.compute_similarities()
+            similarities = image_similarity_evaluator.get_similarities()
+
+            if similarities["NMI"][1] > similarities["NMI"][0]:
+                ph.print_info("%s-flipped outcome better" % flip)
+
+                # Convert RegAladin to SimpleITK transform
+                cmd = "simplereg_transform -nreg2sitk %s %s" % (
+                    path_to_transform_flip_regaladin, args.output)
+                ph.execute_command(cmd, verbose=False)
+
+                # Copy better outcome
+                cmd = "cp -p %s %s" % (path_to_tmp_output_flip,
+                                       path_to_tmp_output)
+                ph.execute_command(cmd, verbose=False)
+
+            else:
+                ph.print_info("%s-flip does not improve outcome" % flip)
 
     if args.dir_input_mc is not None:
         transform_sitk = sitkh.read_transform_sitk(
