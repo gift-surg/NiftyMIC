@@ -48,7 +48,10 @@ def main():
     input_parser.add_option(
         option_string="--initial-transform",
         type=str,
-        help="Path to initial transform.",
+        help="Path to initial transform. "
+        "If not provided, registration will be initialized based on "
+        "rigid alignment of eigenbasis of the fixed/moving image masks "
+        "using principal component analysis",
         default=None)
     input_parser.add_v2v_method(
         option_string="--method",

@@ -134,6 +134,7 @@ class InputArgparser(object):
             re.sub("_", "-", k): v
             for k, v in six.iteritems(dic_with_underscores)}
 
+        # add version number to config file
         dic["version"] = niftymic.__version__
 
         # write config file to output
