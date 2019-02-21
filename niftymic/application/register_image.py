@@ -101,7 +101,7 @@ def main():
         transform_initializer.run()
         transform_init_sitk = transform_initializer.get_transform_sitk()
     else:
-        transform_init_sitk = sitk.AffineTransform(fixed.sitk.GetDimension())
+        transform_init_sitk = sitkh.read_transform_sitk(args.initial_transform)
     sitk.WriteTransform(transform_init_sitk, args.output)
 
     # -------------------Register Reconstruction to Template-------------------
