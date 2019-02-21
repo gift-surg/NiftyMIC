@@ -227,21 +227,18 @@ def main():
         template_mask = os.path.join(
             DIR_TEMPLATES, "STA%d_mask.nii.gz" % gestational_age)
 
-        cmd_args = []
+        cmd_args = ["niftymic_register_image"]
         cmd_args.append("--fixed %s" % template)
         cmd_args.append("--moving %s" % srr_subject)
         cmd_args.append("--fixed-mask %s" % template_mask)
         cmd_args.append("--moving-mask %s" % srr_subject_mask)
         cmd_args.append("--dir-input-mc %s" % os.path.join(
-            dir_output_recon_subject_space,
-            "motion_correction"))
+            dir_output_recon_subject_space, "motion_correction"))
         cmd_args.append("--output %s" % trafo_template)
         cmd_args.append("--verbose %s" % args.verbose)
         if args.initial_transform is not None:
             cmd_args.append("--initial-transform %s" % args.initial_transform)
-            cmd_args.append("--use-flirt 0")
-            cmd_args.append("--test-ap-flip 0")
-        cmd = "niftymic_register_image %s" % (" ").join(cmd_args)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Registration to template space failed")
