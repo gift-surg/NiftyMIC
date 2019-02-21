@@ -227,6 +227,7 @@ def main():
         template_mask = os.path.join(
             DIR_TEMPLATES, "STA%d_mask.nii.gz" % gestational_age)
 
+        # Register SRR to template space
         cmd_args = ["niftymic_register_image"]
         cmd_args.append("--fixed %s" % template)
         cmd_args.append("--moving %s" % srr_subject)
@@ -243,14 +244,7 @@ def main():
         if exit_code != 0:
             raise RuntimeError("Registration to template space failed")
 
-        # reconstruct volume in template space
-        # pattern = "[a-zA-Z0-9_.]+(ResamplingToTemplateSpace.nii.gz)"
-        # p = re.compile(pattern)
-        # reconstruction_space = [
-        #     os.path.join(dir_output_recon_template_space, p.match(f).group(0))
-        #     for f in os.listdir(dir_output_recon_template_space)
-        #     if p.match(f)][0]
-
+        # Compute SRR in template space
         dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
         cmd_args = ["niftymic_reconstruct_volume_from_slices"]
