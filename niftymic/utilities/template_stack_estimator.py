@@ -67,10 +67,15 @@ class TemplateStackEstimator(object):
         # Get gestational ages as list of integers
         gestational_ages = sorted([int(gw) for gw in dic.keys()])
 
-        # # Get matching gestational age
-        # template_volumes = np.array([dic[str(k)]["volume_mask"]
-        #                              for k in gestational_ages])
-        # index = np.argmin(np.abs(template_volumes - volume))
+        # Get matching gestational age
+        template_volumes = np.array(
+            [dic[str(k)]["volume_mask"] for k in gestational_ages])
+        index = np.argmin(np.abs(template_volumes - volume))
+        template_stack_estimator._estimated_gw = int(gestational_ages[index])
+        template_stack_estimator._template_path = os.path.join(
+            DIR_TEMPLATES, dic[str(gestational_ages[index])]["image"])
+
+        return template_stack_estimator
 
         # # Ensure valid index after correction
         # index = np.max([0, index - 1])
@@ -84,19 +89,19 @@ class TemplateStackEstimator(object):
 
         # return template_stack_estimator
 
-        # Find template which has slightly smaller mask volume
-        for k in gestational_ages:
-            if dic[str(k)]["volume_mask_dil"] > volume:
-                key = str(np.max([gestational_ages[0], k - 1]))
-                template_stack_estimator._estimated_gw = int(key)
+        # # Find template which has slightly smaller mask volume
+        # for k in gestational_ages:
+        #     if dic[str(k)]["volume_mask_dil"] > volume:
+        #         key = str(np.max([gestational_ages[0], k - 1]))
+        #         template_stack_estimator._estimated_gw = int(key)
 
-                template_stack_estimator._template_path = os.path.join(
-                    DIR_TEMPLATES, dic[key]["image"])
-                return template_stack_estimator
+        #         template_stack_estimator._template_path = os.path.join(
+        #             DIR_TEMPLATES, dic[key]["image"])
+        #         return template_stack_estimator
 
-        # Otherwise, return path to oldest template image available
-        template_stack_estimator._estimated_gw = int(gestational_ages[-1])
+        # # Otherwise, return path to oldest template image available
+        # template_stack_estimator._estimated_gw = int(gestational_ages[-1])
 
-        template_stack_estimator._template_path = os.path.join(
-            DIR_TEMPLATES, dic[str(gestational_ages[-1])]["image"])
-        return template_stack_estimator
+        # template_stack_estimator._template_path = os.path.join(
+        #     DIR_TEMPLATES, dic[str(gestational_ages[-1])]["image"])
+        # return template_stack_estimator
