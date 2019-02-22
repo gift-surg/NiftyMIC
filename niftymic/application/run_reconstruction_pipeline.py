@@ -61,26 +61,26 @@ def main():
         option_string="--run-bias-field-correction",
         type=int,
         help="Turn on/off bias field correction. "
-        "If off, it is assumed that this step was already performed",
+        "If off, it is assumed that this step was already performed "
+        "if --bias-field-correction is active.",
         default=1)
     input_parser.add_option(
         option_string="--run-recon-subject-space",
         type=int,
         help="Turn on/off reconstruction in subject space. "
-        "If off, it is assumed that this step was already performed",
+        "If off, it is assumed that this step was already performed.",
         default=1)
     input_parser.add_option(
         option_string="--run-recon-template-space",
         type=int,
         help="Turn on/off reconstruction in template space. "
-        "If off, it is assumed that this step was already performed",
+        "If off, it is assumed that this step was already performed.",
         default=1)
     input_parser.add_option(
-        option_string="--run-data-vs-simulated-data",
+        option_string="--run-diagnostics",
         type=int,
-        help="Turn on/off comparison of data vs data simulated from the "
-        "obtained volumetric reconstruction. "
-        "If off, it is assumed that this step was already performed",
+        help="Turn on/off diagnostics of the obtained volumetric "
+        "reconstruction. ",
         default=0)
     input_parser.add_option(
         option_string="--initial-transform",
@@ -110,8 +110,8 @@ def main():
         args.dir_output, "recon_subject_space")
     dir_output_recon_template_space = os.path.join(
         args.dir_output, "recon_template_space")
-    dir_output_data_vs_simulatd_data = os.path.join(
-        args.dir_output, "data_vs_simulated_data")
+    dir_output_diagnostics = os.path.join(
+        args.dir_output, "diagnostics")
 
     srr_subject = os.path.join(
         dir_output_recon_subject_space, "%s_subject.nii.gz" % filename_srr)
@@ -311,7 +311,7 @@ def main():
     else:
         elapsed_time_template = ph.get_zero_time()
 
-    if args.run_data_vs_simulated_data:
+    if args.run_diagnostics:
 
         dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
@@ -323,7 +323,7 @@ def main():
             cmd_args.append("--filenames-masks %s" %
                             (" ").join(args.filenames_masks))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
-        cmd_args.append("--dir-output %s" % dir_output_data_vs_simulatd_data)
+        cmd_args.append("--dir-output %s" % dir_output_diagnostics)
         cmd_args.append("--reconstruction %s" % srr_template)
         cmd_args.append("--copy-data 1")
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
@@ -335,13 +335,13 @@ def main():
             raise RuntimeError("SRR slice projections failed")
 
         filenames_simulated = [
-            os.path.join(dir_output_data_vs_simulatd_data, os.path.basename(f))
+            os.path.join(dir_output_diagnostics, os.path.basename(f))
             for f in filenames]
 
         dir_output_evaluation = os.path.join(
-            dir_output_data_vs_simulatd_data, "evaluation")
+            dir_output_diagnostics, "evaluation")
         dir_output_figures = os.path.join(
-            dir_output_data_vs_simulatd_data, "figures")
+            dir_output_diagnostics, "figures")
         dir_output_side_by_side = os.path.join(
             dir_output_figures, "side-by-side")
 
