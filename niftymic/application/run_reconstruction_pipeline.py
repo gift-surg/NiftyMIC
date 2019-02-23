@@ -18,6 +18,7 @@ import niftymic.validation.evaluate_simulated_stack_similarity as \
     evaluate_simulated_stack_similarity
 import niftymic.validation.show_evaluated_simulated_stack_similarity as \
     show_evaluated_simulated_stack_similarity
+import niftymic.application.show_slice_coverage as show_slice_coverage
 import niftymic.validation.export_side_by_side_simulated_vs_original_slice_comparison as \
     export_side_by_side_simulated_vs_original_slice_comparison
 from niftymic.utilities.input_arparser import InputArgparser
@@ -121,6 +122,8 @@ def main():
     srr_template_mask = ph.append_to_filename(srr_template, "_mask")
     trafo_template = os.path.join(
         dir_output_recon_template_space, "registration_transform_sitk.txt")
+    srr_slice_coverage = os.path.join(
+        dir_output_diagnostics, "%s_template_slicecoverage.nii.gz" % filename_srr)
 
     if args.target_stack is None:
         target_stack = args.filenames[0]
@@ -315,69 +318,81 @@ def main():
 
         dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
+        dir_output_orig_vs_proj = os.path.join(
+            dir_output_diagnostics, "original_vs_projected")
+        dir_output_selfsimilarity = os.path.join(
+            dir_output_diagnostics, "selfsimilarity")
+        dir_output_orig_vs_proj_pdf = os.path.join(
+            dir_output_orig_vs_proj, "pdf")
+
+        # Show slice coverage over reconstruction space
+        exe = os.path.abspath(show_slice_coverage.__file__)
+        cmd_args = ["python %s" % exe]
+        cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--dir-input-mc %s" % dir_input_mc)
+        cmd_args.append("--reconstruction-space %s" % srr_template)
+        cmd_args.append("--output %s" % srr_slice_coverage)
+        cmd = (" ").join(cmd_args)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Slice coverage visualization failed")
 
         # Get simulated/projected slices
-        cmd_args = []
+        exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
+        cmd_args = ["python %s" % exe]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
                             (" ").join(args.filenames_masks))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
-        cmd_args.append("--dir-output %s" % dir_output_diagnostics)
+        cmd_args.append("--dir-output %s" % dir_output_orig_vs_proj)
         cmd_args.append("--reconstruction %s" % srr_template)
         cmd_args.append("--copy-data 1")
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         # cmd_args.append("--verbose %s" % args.verbose)
-        exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
-        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("SRR slice projections failed")
 
         filenames_simulated = [
-            os.path.join(dir_output_diagnostics, os.path.basename(f))
+            os.path.join(dir_output_orig_vs_proj, os.path.basename(f))
             for f in filenames]
 
-        dir_output_evaluation = os.path.join(
-            dir_output_diagnostics, "evaluation")
-        dir_output_figures = os.path.join(
-            dir_output_diagnostics, "figures")
-        dir_output_side_by_side = os.path.join(
-            dir_output_figures, "side-by-side")
-
         # Evaluate slice similarities to ground truth
-        cmd_args = []
+        exe = os.path.abspath(evaluate_simulated_stack_similarity.__file__)
+        cmd_args = ["python %s" % exe]
         cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
                             (" ").join(args.filenames_masks))
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--measures NCC SSIM")
-        cmd_args.append("--dir-output %s" % dir_output_evaluation)
-        exe = os.path.abspath(evaluate_simulated_stack_similarity.__file__)
-        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        cmd_args.append("--dir-output %s" % dir_output_selfsimilarity)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Evaluation of slice similarities failed")
 
         # Generate figures showing the quantitative comparison
-        cmd_args = []
-        cmd_args.append("--dir-input %s" % dir_output_evaluation)
-        cmd_args.append("--dir-output %s" % dir_output_figures)
         exe = os.path.abspath(
             show_evaluated_simulated_stack_similarity.__file__)
-        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        cmd_args = ["python %s" % exe]
+        cmd_args.append("--dir-input %s" % dir_output_selfsimilarity)
+        cmd_args.append("--dir-output %s" % dir_output_selfsimilarity)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             ph.print_warning("Visualization of slice similarities failed")
 
         # Generate pdfs showing all the side-by-side comparisons
-        cmd_args = []
-        cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
-        cmd_args.append("--dir-output %s" % dir_output_side_by_side)
         exe = os.path.abspath(
             export_side_by_side_simulated_vs_original_slice_comparison.__file__)
+        cmd_args = ["python %s" % exe]
+        cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
+        cmd_args.append("--dir-output %s" % dir_output_orig_vs_proj_pdf)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Generation of PDF overview failed")
