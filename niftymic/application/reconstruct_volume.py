@@ -116,7 +116,9 @@ def main():
         raise ValueError(
             "output filename invalid; allowed extensions are: %s" %
             ", ".join(ALLOWED_EXTENSIONS))
+
     dir_output = os.path.dirname(args.output)
+    ph.create_directory(dir_output)
 
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))

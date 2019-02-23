@@ -74,6 +74,7 @@ def main():
         raise IOError("output transformation path must end in '.txt'")
 
     dir_output = os.path.dirname(args.output)
+    ph.create_directory(dir_output)
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
