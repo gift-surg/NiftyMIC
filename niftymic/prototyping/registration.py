@@ -41,12 +41,11 @@ IMAGE_TYPE_CV183 = itk.Image.CVD183
 # Allowed data loss functions
 DATA_LOSS = ['linear', 'soft_l1', 'huber', 'cauchy', 'arctan']
 
+
 ##
 #       Class for registration in 3D based on least-squares optimization
 # \date       2016-09-21 12:27:13+0100
 #
-
-
 class Registration(AffineRegistrationMethod):
 
     ##
@@ -267,7 +266,7 @@ class Registration(AffineRegistrationMethod):
                 x_scale=self._x_scale,
                 # method=method,
                 loss=self._data_loss,
-                verbose=2*self._use_verbose,
+                verbose=2 * self._use_verbose,
             ).x
 
         else:
@@ -332,7 +331,7 @@ class Registration(AffineRegistrationMethod):
         residual = (nda_fixed - nda_Ak_vol).flatten()
 
         if self._use_fixed_mask:
-            residual = residual*self._nda_mask
+            residual = residual * self._nda_mask
 
         return residual
 
@@ -399,7 +398,7 @@ class Registration(AffineRegistrationMethod):
             # Dimensions for multiplication are (fixed_voxels x DOF) *
             # (fixed_voxels,1)
             # https://mail.scipy.org/pipermail/numpy-discussion/2007-March/026506.html
-            jacobian_nda = jacobian_nda*self._nda_mask[:, np.newaxis]
+            jacobian_nda = jacobian_nda * self._nda_mask[:, np.newaxis]
 
         return -jacobian_nda
 
