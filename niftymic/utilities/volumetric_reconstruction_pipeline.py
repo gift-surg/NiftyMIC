@@ -480,7 +480,7 @@ class ReconstructionRegistrationPipeline(RegistrationPipeline):
                  reference,
                  registration_method,
                  reconstruction_method,
-                 alpha_range,
+                 alphas,
                  viewer,
                  ):
 
@@ -494,7 +494,7 @@ class ReconstructionRegistrationPipeline(RegistrationPipeline):
         )
 
         self._reconstruction_method = reconstruction_method
-        self._alpha_range = alpha_range
+        self._alphas = alphas
 
         self._reconstructions = [st.Stack.from_stack(
             self._reference,
@@ -524,35 +524,53 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
     # Store information to perform the two-step S2V reg and recon
     # \date       2017-08-08 02:31:24+0100
     #
-    # \param      self                   The object
-    # \param      stacks                 The stacks
-    # \param      reference              The reference
-    # \param      registration_method    Registration method, e.g.
-    #                                    CppItkRegistration
-    # \param      reconstruction_method  Reconstruction method, e.g. TK1
-    # \param      alpha_range            Specify regularization parameter range
-    #                                    used for each individual cycle, list
-    #                                    or array
-    # \param      cycles                 Number of cycles, int
-    # \param      verbose                The verbose
+    # \param      self                     The object
+    # \param      stacks                   The stacks
+    # \param      reference                The reference
+    # \param      registration_method      Registration method, e.g.
+    #                                      CppItkRegistration
+    # \param      reconstruction_method    Reconstruction method, e.g. TK1
+    # \param      alphas                   List of alphas (two_step_cycles - 1)
+    #                                      used for each reconstruction step or
+    #                                      array
+    # \param      verbose                  The verbose
+    # \param      cycles                   Number of cycles, int
+    # \param      outlier_rejection        The outlier rejection
+    # \param      threshold_measure        The threshold measure
+    # \param      thresholds               The threshold range
+    # \param      use_robust_registration  The use robust registration
+    # \param      s2v_smoothing            The s 2 v smoothing
+    # \param      interleave               The interleave
+    # \param      viewer                   The viewer
+    # \param      sigma_sda_mask           The sigma sda mask
     #
     def __init__(self,
                  stacks,
                  reference,
                  registration_method,
                  reconstruction_method,
-                 alpha_range,
-                 cycles,
+                 alphas,
                  verbose=1,
+                 cycles=3,
                  outlier_rejection=False,
                  threshold_measure="NCC",
-                 threshold_range=[0.6, 0.7],
+                 thresholds=[0.6, 0.7, 0.8],
                  use_robust_registration=False,
                  s2v_smoothing=0.5,
-                 interleave=2,
+                 interleave=3,
                  viewer=VIEWER,
                  sigma_sda_mask=1.,
                  ):
+
+        # Last volumetric reconstruction step is performed outside
+        if len(alphas) != cycles - 1:
+            raise ValueError(
+                "Elements in alpha list must correspond to cycles-1")
+
+        if len(thresholds) != cycles:
+            raise ValueError(
+                "Elements in outlier rejection threshold list must "
+                "correspond to the number of cycles")
 
         ReconstructionRegistrationPipeline.__init__(
             self,
@@ -560,7 +578,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             reference=reference,
             registration_method=registration_method,
             reconstruction_method=reconstruction_method,
-            alpha_range=alpha_range,
+            alphas=alphas,
             viewer=viewer,
             verbose=verbose,
         )
@@ -570,7 +588,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
         self._cycles = cycles
         self._outlier_rejection = outlier_rejection
         self._threshold_measure = threshold_measure
-        self._threshold_range = threshold_range
+        self._thresholds = thresholds
         self._use_robust_registration = use_robust_registration
         self._s2v_smoothing = s2v_smoothing
         self._interleave = interleave
@@ -578,16 +596,6 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
     def _run(self):
 
         ph.print_title("Two-step S2V-Registration and SRR Reconstruction")
-
-        # Use linear spacing for alphas excluding the last alpha reserved
-        # for the final SRR step
-        alphas = np.linspace(
-            self._alpha_range[0], self._alpha_range[1], self._cycles)
-        alphas = alphas[0:self._cycles]
-
-        thresholds = np.linspace(
-            self._threshold_range[0], self._threshold_range[1], self._cycles)
-        thresholds = thresholds[0:self._cycles]
 
         s2vreg = SliceToVolumeRegistration(
             stacks=self._stacks,
@@ -607,7 +615,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             s2vreg.set_print_prefix("Cycle %d/%d: " %
                                     (cycle + 1, self._cycles))
             if self._outlier_rejection:
-                s2vreg.set_threshold(thresholds[cycle])
+                s2vreg.set_threshold(self._thresholds[cycle])
             if self._use_robust_registration and cycle == 0:
                 s2vreg.set_s2v_smoothing(self._s2v_smoothing)
             else:
@@ -625,9 +633,9 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                     self._reconstruction_method,
                     sda.ScatteredDataApproximation
                 ):
-                    self._reconstruction_method.set_sigma(alphas[cycle])
+                    self._reconstruction_method.set_sigma(self._alphas[cycle])
                 else:
-                    self._reconstruction_method.set_alpha(alphas[cycle])
+                    self._reconstruction_method.set_alpha(self._alphas[cycle])
                 self._reconstruction_method.run()
 
                 self._computational_time_reconstruction += \
@@ -681,18 +689,18 @@ class HieararchicalSliceSetRegistrationReconstruction(
     # \param      reference              Reference image as Stack object.
     # \param      registration_method    method, e.g. CppItkRegistration
     # \param      reconstruction_method  Reconstruction method, e.g. TK1
-    # \param      alpha_range            Specify regularization parameter range
-    #                                    used for each individual cycle, list
-    #                                    or array
+    # \param      alphas                 List of alphas (two_step_cycles - 1)
+    #                                    used for each reconstruction step
     # \param      interleave             Interleave of scans, integer
     # \param      verbose                The verbose
+    # \param      viewer                 The viewer
     #
     def __init__(self,
                  stacks,
                  reference,
                  registration_method,
                  reconstruction_method,
-                 alpha_range,
+                 alphas,
                  interleave,
                  verbose=1,
                  viewer=VIEWER,
@@ -704,7 +712,7 @@ class HieararchicalSliceSetRegistrationReconstruction(
             reference=reference,
             registration_method=registration_method,
             reconstruction_method=reconstruction_method,
-            alpha_range=alpha_range,
+            alphas=alphas,
             verbose=verbose,
             viewer=VIEWER,
         )
@@ -734,9 +742,6 @@ class HieararchicalSliceSetRegistrationReconstruction(
                            for i in range(N_stacks)])
 
         reference = st.Stack.from_stack(self._reference)
-        alphas = np.linspace(
-            self._alpha_range[0], self._alpha_range[1], N_cycles + 1)
-        alphas = alphas[0:N_cycles]
 
         ctr_iter = [0]
         for i_cycle in range(0, N_cycles):
@@ -761,7 +766,7 @@ class HieararchicalSliceSetRegistrationReconstruction(
                 ss2vreg.get_computational_time()
 
             # SRR step
-            self._reconstruction_method.set_alpha(alphas[i_cycle])
+            self._reconstruction_method.set_alpha(self._alphas[i_cycle])
             self._reconstruction_method.run()
 
             self._computational_time_reconstruction += \

@@ -337,7 +337,8 @@ def main():
             sigma=args.sigma,
             use_masks=args.use_masks_srr,
         )
-        param_range = [args.sigma, args.alpha]
+        alpha_range = [args.sigma, args.alpha]
+
     else:
         recon_method = tk.TikhonovSolver(
             stacks=stacks,
@@ -349,7 +350,16 @@ def main():
             verbose=True,
             use_masks=args.use_masks_srr,
         )
-        param_range = [args.alpha_first, args.alpha]
+        alpha_range = [args.alpha_first, args.alpha]
+
+    # Define the regularization parameters for the individual reconstruction 
+    # steps in the two-step cycles
+    alphas = np.linspace(
+        alpha_range[0], alpha_range[1], args.two_step_cycles)
+
+    # Define outlier rejection thresholds for individual S2V-reg steps
+    thresholds = np.linspace(
+        args.threshold_first, args.threshold, args.two_step_cycles)
 
     if args.two_step_cycles > 0:
 
@@ -358,6 +368,7 @@ def main():
         else:
             metric_params = None
 
+        # slice-to-volume registration set-up
         registration = regsitk.SimpleItkRegistration(
             moving=HR_volume,
             use_fixed_mask=True,
@@ -378,6 +389,8 @@ def main():
             },
             scales_estimator="Jacobian",
         )
+
+        # volumetric reconstruction set-up
         two_step_s2v_reg_recon = \
             pipeline.TwoStepSliceToVolumeRegistrationReconstruction(
                 stacks=stacks,
@@ -385,11 +398,11 @@ def main():
                 registration_method=registration,
                 reconstruction_method=recon_method,
                 cycles=args.two_step_cycles,
-                alpha_range=param_range,
+                alphas=alphas[0:args.two_step_cycles - 1],
                 verbose=args.verbose,
                 outlier_rejection=args.outlier_rejection,
                 threshold_measure=rejection_measure,
-                threshold_range=[args.threshold_first, args.threshold],
+                thresholds=thresholds,
                 use_robust_registration=args.use_robust_registration,
                 s2v_smoothing=args.s2v_smoothing,
                 interleave=args.interleave,
@@ -442,7 +455,7 @@ def main():
         recon_method = sda.ScatteredDataApproximation(
             stacks,
             HR_volume,
-            sigma=args.alpha,
+            sigma=alphas[-1],
             use_masks=args.use_masks_srr,
         )
     else:
@@ -461,7 +474,7 @@ def main():
                 reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
                 use_masks=args.use_masks_srr,
             )
-        recon_method.set_alpha(args.alpha)
+        recon_method.set_alpha(alphas[-1])
         recon_method.set_iter_max(args.iter_max)
         recon_method.set_verbose(True)
     recon_method.run()
