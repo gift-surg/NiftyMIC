@@ -117,6 +117,12 @@ def main():
             "output filename invalid; allowed extensions are: %s" %
             ", ".join(ALLOWED_EXTENSIONS))
 
+    if args.alpha_first < args.alpha:
+        raise ValueError("It must hold alpha-first >= alpha")
+
+    if args.threshold_first > args.threshold:
+        raise ValueError("It must hold threshold >= threshold-first")
+
     dir_output = os.path.dirname(args.output)
     ph.create_directory(dir_output)
 
@@ -455,7 +461,7 @@ def main():
         recon_method = sda.ScatteredDataApproximation(
             stacks,
             HR_volume,
-            sigma=alphas[-1],
+            sigma=alpha_range[1],
             use_masks=args.use_masks_srr,
         )
     else:
@@ -474,7 +480,7 @@ def main():
                 reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
                 use_masks=args.use_masks_srr,
             )
-        recon_method.set_alpha(alphas[-1])
+        recon_method.set_alpha(alpha_range[1])
         recon_method.set_iter_max(args.iter_max)
         recon_method.set_verbose(True)
     recon_method.run()
