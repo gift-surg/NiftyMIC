@@ -14,6 +14,7 @@ from nsol.similarity_measures import SimilarityMeasures
 
 import niftymic.base.stack as st
 import niftymic.validation.image_similarity_evaluator as ise
+import niftymic.utilities.template_stack_estimator as tse
 
 
 ##
@@ -34,13 +35,13 @@ class TransformInitializer(object):
 
     def run(self, debug=False):
         # perform PCAs for fixed and moving images
-        pca_fixed = self.get_pca_from_mask(self._fixed.sitk_mask)
-        eigvec_fixed = pca_fixed.get_eigvec()
-        mean_fixed = pca_fixed.get_mean()
-
         pca_moving = self.get_pca_from_mask(self._moving.sitk_mask)
         eigvec_moving = pca_moving.get_eigvec()
         mean_moving = pca_moving.get_mean()
+
+        pca_fixed = self.get_pca_from_mask(self._fixed.sitk_mask)
+        eigvec_fixed = pca_fixed.get_eigvec()
+        mean_fixed = pca_fixed.get_mean()
 
         # test different initializations based on eigenvector orientations
         orientations = [
@@ -70,7 +71,8 @@ class TransformInitializer(object):
             transformations.append(rigid_transform_sitk)
 
         # get best transformation according to selected similarity measure
-        self._initial_transform_sitk = self._get_best_transform(transformations)
+        self._initial_transform_sitk = self._get_best_transform(
+            transformations)
 
         if debug:
             foo = sitk.Resample(
@@ -83,6 +85,10 @@ class TransformInitializer(object):
     @staticmethod
     def get_pca_from_mask(mask_sitk, robust=False):
         mask_nda = sitk.GetArrayFromImage(mask_sitk)
+
+        # get largest connected region (if more than one connected region)
+        mask_nda = tse.TemplateStackEstimator.get_largest_connected_region_mask(
+            mask_nda)
 
         # [z, y, x] x n_points to [x, y, z] x n_points
         points = np.array(np.where(mask_nda > 0))[::-1, :]

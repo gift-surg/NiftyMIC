@@ -9,8 +9,9 @@
 
 import os
 import re
-import numpy as np
 import json
+import numpy as np
+import skimage.measure
 import SimpleITK as sitk
 
 import pysitk.simple_itk_helper as sitkh
@@ -56,6 +57,10 @@ class TemplateStackEstimator(object):
         mask_sitk = sitkh.read_nifti_image_sitk(
             file_path_mask, sitk.sitkUInt8)
         mask_nda = sitk.GetArrayFromImage(mask_sitk)
+
+        # get largest connected region (if more than one connected region)
+        mask_nda = TemplateStackEstimator.get_largest_connected_region_mask(
+            mask_nda)
         spacing = np.array(mask_sitk.GetSpacing())
         volume = len(np.where(mask_nda > 0)[0]) * spacing.prod()
 
@@ -105,3 +110,29 @@ class TemplateStackEstimator(object):
         # template_stack_estimator._template_path = os.path.join(
         #     DIR_TEMPLATES, dic[str(gestational_ages[-1])]["image"])
         # return template_stack_estimator
+
+    ##
+    # Gets the label/mask representing the largest connected region.
+    # \date       2019-02-26 16:30:01+0000
+    #
+    # \param      mask_nda  The mask nda
+    #
+    # \return     The largest connected region as np.array.
+    #
+    @staticmethod
+    def get_largest_connected_region_mask(mask_nda):
+
+        # get label for each connected component
+        labels_nda = skimage.measure.label(mask_nda)
+
+        # only pick largest connected region
+        if labels_nda.max() > 1:
+            volumes = [
+                labels_nda[np.where(labels_nda == i)].sum()
+                for i in range(1, labels_nda.max() + 1)
+            ]
+            label_max = np.argmax(np.array(volumes)) + 1
+            mask_nda = np.zeros_like(mask_nda)
+            mask_nda[np.where(labels_nda == label_max)] = 1
+
+        return mask_nda
