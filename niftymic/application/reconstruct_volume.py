@@ -84,11 +84,11 @@ def main():
     input_parser.add_reference()
     input_parser.add_reference_mask()
     input_parser.add_outlier_rejection(default=1)
-    input_parser.add_threshold_first(default=0.5)
+    input_parser.add_threshold_first(default=0.6)
     input_parser.add_threshold(default=0.8)
     input_parser.add_use_robust_registration(default=0)
     input_parser.add_s2v_smoothing(default=0.5)
-    input_parser.add_interleave(default=2)
+    input_parser.add_interleave(default=3)
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_viewer(default="itksnap")
     input_parser.add_v2v_method(default="RegAladin")
@@ -368,21 +368,21 @@ def main():
         if args.sda:
             recon_method = sda.ScatteredDataApproximation(
                 stacks,
-            HR_volume,
-            sigma=args.sigma,
+                HR_volume,
+                sigma=args.sigma,
                 use_masks=args.use_masks_srr,
             )
             alpha_range = [args.sigma, args.alpha]
         else:
             recon_method = tk.TikhonovSolver(
                 stacks=stacks,
-            reconstruction=HR_volume,
-            reg_type="TK1",
-            minimizer="lsmr",
-            alpha=args.alpha_first,
-            iter_max=np.min([args.iter_max_first, args.iter_max]),
-            verbose=True,
-            use_masks=args.use_masks_srr,
+                reconstruction=HR_volume,
+                reg_type="TK1",
+                minimizer="lsmr",
+                alpha=args.alpha_first,
+                iter_max=np.min([args.iter_max_first, args.iter_max]),
+                verbose=True,
+                use_masks=args.use_masks_srr,
             )
             alpha_range = [args.alpha_first, args.alpha]
 
