@@ -154,6 +154,7 @@ run_reconstruction_pipeline:
       --two-step-cycles 0
       --iter-max 1
       --run-diagnostics 1
+      --slice-thicknesses 3.85
       --verbose 0 
   tags:
     - gift-adelie

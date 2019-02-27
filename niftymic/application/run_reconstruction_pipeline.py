@@ -58,6 +58,7 @@ def main():
     input_parser.add_intensity_correction(default=1)
     input_parser.add_iter_max(default=10)
     input_parser.add_two_step_cycles(default=3)
+    input_parser.add_slice_thicknesses(default=None)
     input_parser.add_option(
         option_string="--run-bias-field-correction",
         type=int,
@@ -158,7 +159,7 @@ def main():
     if args.run_recon_subject_space:
         target_stack_index = args.filenames.index(target_stack)
 
-        cmd_args = []
+        cmd_args = ["niftymic_reconstruct_volume"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
@@ -174,6 +175,9 @@ def main():
         cmd_args.append("--two-step-cycles %d" % args.two_step_cycles)
         cmd_args.append("--outlier-rejection %d" %
                         args.outlier_rejection)
+        if args.slice_thicknesses is not None:
+            cmd_args.append("--slice-thicknesses %s" %
+                            " ".join(args.slice_thicknesses))
         cmd_args.append("--verbose %d" % args.verbose)
         if args.isotropic_resolution is not None:
             cmd_args.append("--isotropic-resolution %f" %
@@ -184,7 +188,7 @@ def main():
             cmd_args.append("--reference-mask %s" % args.reference_mask)
         if args.sda:
             cmd_args.append("--sda")
-        cmd = "niftymic_reconstruct_volume %s" % (" ").join(cmd_args)
+        cmd = (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
@@ -202,6 +206,9 @@ def main():
             cmd_args.append("--reconstruction-space %s" % srr_subject)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
+            if args.slice_thicknesses is not None:
+                cmd_args.append("--slice-thicknesses %s" %
+                                " ".join(args.slice_thicknesses))
             if args.sda:
                 cmd_args.append("--sda")
                 cmd_args.append("--alpha 1")
@@ -259,6 +266,9 @@ def main():
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
+        if args.slice_thicknesses is not None:
+            cmd_args.append("--slice-thicknesses %s" %
+                            " ".join(args.slice_thicknesses))
         if args.sda:
             cmd_args.append("--sda")
 
@@ -278,6 +288,9 @@ def main():
             cmd_args.append("--reconstruction-space %s" % srr_template)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
+            if args.slice_thicknesses is not None:
+                cmd_args.append("--slice-thicknesses %s" %
+                                " ".join(args.slice_thicknesses))
             if args.sda:
                 cmd_args.append("--sda")
                 cmd_args.append("--alpha 1")
@@ -349,6 +362,9 @@ def main():
         cmd_args.append("--reconstruction %s" % srr_template)
         cmd_args.append("--copy-data 1")
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
+        if args.slice_thicknesses is not None:
+            cmd_args.append("--slice-thicknesses %s" %
+                            " ".join(args.slice_thicknesses))
         # cmd_args.append("--verbose %s" % args.verbose)
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
