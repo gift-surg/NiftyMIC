@@ -150,7 +150,7 @@ def main():
 
         simulated_stack.write(
             args.dir_output,
-            write_mask=True,
+            write_mask=False,
             write_slices=False,
             suffix_mask=args.suffix_mask)
 
@@ -159,7 +159,7 @@ def main():
                 args.dir_output,
                 write_mask=True,
                 write_slices=False,
-                suffix_mask=args.suffix_mask)
+                suffix_mask="_mask")
 
     return 0
 
