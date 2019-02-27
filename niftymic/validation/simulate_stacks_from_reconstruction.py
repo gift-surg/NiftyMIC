@@ -65,7 +65,7 @@ def main():
         help="Choose the interpolator type to propagate the reconstruction "
         "mask (%s)." % (INTERPOLATOR_TYPES),
         default="NearestNeighbor")
-    input_parser.add_log_config(default=1)
+    input_parser.add_log_config(default=0)
     input_parser.add_verbose(default=0)
     input_parser.add_slice_thicknesses(default=None)
 

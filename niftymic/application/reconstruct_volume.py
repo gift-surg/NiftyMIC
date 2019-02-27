@@ -84,7 +84,7 @@ def main():
     input_parser.add_reference()
     input_parser.add_reference_mask()
     input_parser.add_outlier_rejection(default=1)
-    input_parser.add_threshold_first(default=0.5)
+    input_parser.add_threshold_first(default=0.6)
     input_parser.add_threshold(default=0.8)
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_viewer(default="itksnap")
@@ -113,7 +113,12 @@ def main():
         raise ValueError(
             "output filename invalid; allowed extensions are: %s" %
             ", ".join(ALLOWED_EXTENSIONS))
+
+    if args.threshold_first > args.threshold:
+        raise ValueError("It must hold threshold-first <= threshold")
+
     dir_output = os.path.dirname(args.output)
+    ph.create_directory(dir_output)
 
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
@@ -325,34 +330,13 @@ def main():
         sitkh.show_stacks(tmp, segmentation=HR_volume, viewer=args.viewer)
 
     # -----------Two-step Slice-to-Volume Registration-Reconstruction----------
-    if args.sda:
-        recon_method = sda.ScatteredDataApproximation(
-            stacks,
-            HR_volume,
-            sigma=args.sigma,
-            use_masks=args.use_masks_srr,
-        )
-        param_range = [args.sigma, args.alpha]
-    else:
-        recon_method = tk.TikhonovSolver(
-            stacks=stacks,
-            reconstruction=HR_volume,
-            reg_type="TK1",
-            minimizer="lsmr",
-            alpha=args.alpha_first,
-            iter_max=np.min([args.iter_max_first, args.iter_max]),
-            verbose=True,
-            use_masks=args.use_masks_srr,
-        )
-        param_range = [args.alpha_first, args.alpha]
-
     if args.two_step_cycles > 0:
 
+        # Slice-to-volume registration set-up
         if args.metric == "ANTSNeighborhoodCorrelation":
             metric_params = {"radius": args.metric_radius}
         else:
             metric_params = None
-
         registration = regsitk.SimpleItkRegistration(
             moving=HR_volume,
             use_fixed_mask=True,
@@ -373,6 +357,38 @@ def main():
             },
             scales_estimator="Jacobian",
         )
+
+        # Volumetric reconstruction set-up
+        if args.sda:
+            recon_method = sda.ScatteredDataApproximation(
+                stacks,
+                HR_volume,
+                sigma=args.sigma,
+                use_masks=args.use_masks_srr,
+            )
+            alpha_range = [args.sigma, args.alpha]
+        else:
+            recon_method = tk.TikhonovSolver(
+                stacks=stacks,
+                reconstruction=HR_volume,
+                reg_type="TK1",
+                minimizer="lsmr",
+                alpha=args.alpha_first,
+                iter_max=np.min([args.iter_max_first, args.iter_max]),
+                verbose=True,
+                use_masks=args.use_masks_srr,
+            )
+            alpha_range = [args.alpha_first, args.alpha]
+
+        # Define the regularization parameters for the individual
+        # reconstruction steps in the two-step cycles
+        alphas = np.linspace(
+            alpha_range[0], alpha_range[1], args.two_step_cycles)
+
+        # Define outlier rejection thresholds for individual S2V-reg steps
+        thresholds = np.linspace(
+            args.threshold_first, args.threshold, args.two_step_cycles)
+
         two_step_s2v_reg_recon = \
             pipeline.TwoStepSliceToVolumeRegistrationReconstruction(
                 stacks=stacks,
@@ -380,11 +396,11 @@ def main():
                 registration_method=registration,
                 reconstruction_method=recon_method,
                 cycles=args.two_step_cycles,
-                alpha_range=param_range,
+                alphas=alphas[0:args.two_step_cycles - 1],
                 verbose=args.verbose,
                 outlier_rejection=args.outlier_rejection,
                 threshold_measure=rejection_measure,
-                threshold_range=[args.threshold_first, args.threshold],
+                thresholds=thresholds,
                 viewer=args.viewer,
             )
         two_step_s2v_reg_recon.run()
@@ -395,6 +411,8 @@ def main():
         time_reconstruction += \
             two_step_s2v_reg_recon.get_computational_time_reconstruction()
         stacks = two_step_s2v_reg_recon.get_stacks()
+
+    # no two-step s2v-registration/reconstruction iterations
     else:
         HR_volume_iterations = []
 

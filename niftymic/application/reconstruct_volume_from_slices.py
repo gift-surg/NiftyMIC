@@ -95,7 +95,9 @@ def main():
         raise ValueError(
             "output filename invalid; allowed extensions are: %s" %
             ", ".join(ALLOWED_EXTENSIONS))
+
     dir_output = os.path.dirname(args.output)
+    ph.create_directory(dir_output)
 
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
@@ -119,9 +121,9 @@ def main():
         dir_motion_correction=args.dir_input_mc,
         stacks_slice_thicknesses=args.slice_thicknesses,
     )
-
     data_reader.read_data()
     stacks = data_reader.get_data()
+
     ph.print_info("%d input stacks read for further processing" % len(stacks))
 
     # ---------------------------Intensity Correction--------------------------
@@ -247,11 +249,13 @@ def main():
             show_niftis.insert(0, output)
 
         if args.reconstruction_type in ["TVL2", "HuberL2"]:
-            ph.print_title("Compute %s reconstruction" % args.reconstruction_type)
+            ph.print_title("Compute %s reconstruction" %
+                           args.reconstruction_type)
             if args.tv_solver == "ADMM":
                 SRR = admm.ADMMSolver(
                     stacks=stacks,
-                    reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+                    reconstruction=st.Stack.from_stack(
+                        SRR0.get_reconstruction()),
                     minimizer=args.minimizer,
                     alpha=args.alpha,
                     iter_max=args.iter_max,
@@ -265,7 +269,8 @@ def main():
             else:
                 SRR = pd.PrimalDualSolver(
                     stacks=stacks,
-                    reconstruction=st.Stack.from_stack(SRR0.get_reconstruction()),
+                    reconstruction=st.Stack.from_stack(
+                        SRR0.get_reconstruction()),
                     minimizer=args.minimizer,
                     alpha=args.alpha,
                     iter_max=args.iter_max,
@@ -293,7 +298,6 @@ def main():
 
     if args.verbose:
         ph.show_niftis(show_niftis, viewer=args.viewer)
-
 
     ph.print_line_separator()
 

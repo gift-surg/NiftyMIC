@@ -148,8 +148,8 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         path_to_transform_res = os.path.join(self.dir_output, filename)
         path_to_transform_ref = os.path.join(
             self.dir_data, "register_image", filename)
-        dir_res_mc = os.path.join(
-            self.dir_data, "register_image", "motion_correction")
+        dir_ref_mc = os.path.join(
+            self.dir_data, "register_image", "motion_correction_ref")
 
         template = os.path.join(
             DIR_TEMPLATES,
@@ -166,9 +166,6 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
                         ph.append_to_filename(path_to_recon, self.suffix_mask))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
         cmd_args.append("--output %s" % path_to_transform_res)
-        cmd_args.append("--use-flirt 1")
-        cmd_args.append("--use-regaladin 1")
-        cmd_args.append("--test-ap-flip 1")
         # cmd_args.append("--verbose 1")
         self.assertEqual(ph.execute_command(" ".join(cmd_args)), 0)
 
@@ -191,7 +188,7 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
             [os.path.join(dir_res_mc, t)
              for t in os.listdir(dir_res_mc) if p.match(t)])
         trafos_ref = sorted(
-            [os.path.join(dir_res_mc, t)
+            [os.path.join(dir_ref_mc, t)
              for t in os.listdir(dir_res_mc) if p.match(t)])
         self.assertEqual(len(trafos_res), len(trafos_ref))
         for i in range(len(trafos_ref)):

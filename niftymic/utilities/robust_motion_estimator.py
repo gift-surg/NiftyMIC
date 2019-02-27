@@ -28,11 +28,12 @@ import pysitk.simple_itk_helper as sitkh
 #
 class RobustMotionEstimator(object):
 
-    def __init__(self, transforms_sitk, interleave=2):
+    def __init__(self, transforms_sitk, interleave, verbose=True):
         self._transforms_sitk = transforms_sitk
         self._interleave = interleave
+        self._verbose = verbose
 
-        self._robust_transforms_sitk = [None] * len(self._transforms_sitk)
+        self._robust_transforms_sitk = {}
 
     ##
     # Gets the robust transforms sitk.
@@ -43,38 +44,39 @@ class RobustMotionEstimator(object):
     # \return     The robust transforms sitk as list of sitk.Transforms
     #
     def get_robust_transforms_sitk(self):
-        robust_transforms_sitk = [
-            sitkh.copy_transform_sitk(t) for t in self._robust_transforms_sitk]
-        return robust_transforms_sitk
+        return self._robust_transforms_sitk
 
-    ##
-    # Run Gaussian process smoothing for each dof individually
-    # \date       2018-03-13 19:31:02+0000
-    # \see http://docs.pymc.io/notebooks/GP-smoothing.html
-    #
-    # \param      self  The object
-    #
-    def run_gaussian_process_smoothing(self, smoothing=0.5):
+    def run(self, parameter):
+        slice_indices, params = self._get_transformation_params_nda(
+            self._transforms_sitk)
 
-        params_nda = self._get_transformation_params_nda(self._transforms_sitk)
+        temporal_packages = self._get_temporal_packages(slice_indices)
+        # print(slice_indices)
+        # for t in temporal_packages:
+        #     print(t)
 
-        # Iterate over each dof
-        for i_dof in range(params_nda.shape[0]):
+        for dof in range(params.shape[0]):
+            if self._verbose:
+                ph.print_info("DOF %d/%d ... " % (
+                    dof + 1, params.shape[0]))
+            for package in temporal_packages:
+                t = sorted(package.keys())
+                slices_package = [slice_indices.index(package[t_i]) for t_i in t]
+                y = params[dof, slices_package]
 
-            # Smooth each interleave package separately
-            for i in range(self._interleave):
-                indices = np.arange(i, params_nda.shape[1], self._interleave)
-                y = params_nda[i_dof, indices]
-                y_smoothed = self._run_gaussian_process_smoothing(
-                    y=y, smoothing=smoothing)
-                params_nda[i_dof, indices] = y_smoothed
+                y_est = self._run_gaussian_process_smoothing(
+                    t, y, smoothing=parameter)
+                # y_est = self._run_robust_gaussian_process_regression_map(t, y)
 
-        self._update_robust_transforms_sitk_from_parameters(params_nda)
+                params[dof, slices_package] = y_est
 
-    def _run_gaussian_process_smoothing(self, y, smoothing):
-        LARGE_NUMBER = 1e5
-        model = pymc3.Model()
-        with model:
+        self._update_robust_transforms_sitk_from_parameters(params)
+
+    @staticmethod
+    def _run_gaussian_process_smoothing(x, y, smoothing):
+
+        LARGE_NUMBER = 1000000
+        with pymc3.Model() as model:
             smoothing_param = theano.shared(smoothing)
             mu = pymc3.Normal("mu", sd=LARGE_NUMBER)
             tau = pymc3.Exponential("tau", 1.0 / LARGE_NUMBER)
@@ -92,6 +94,77 @@ class RobustMotionEstimator(object):
             )
             res = pymc3.find_MAP(vars=[z], method="L-BFGS-B")
             return res['z']
+
+    @staticmethod
+    def _run_robust_gaussian_process_regression_map(x, y):
+        x = np.array(x)
+        with pymc3.Model() as model:
+            ell = pymc3.Gamma("ell", alpha=2, beta=1)
+            eta = pymc3.HalfCauchy("eta", beta=5)
+
+            cov = eta**2 * pymc3.gp.cov.Matern52(1, ell)
+            gp = pymc3.gp.Latent(cov_func=cov)
+
+            f = gp.prior("f", X=x.reshape(-1, 1))
+
+            sigma = pymc3.HalfCauchy("sigma", beta=2)
+            # sigma = pymc3.Normal("sigma")
+            # sigma = 0.1
+            nu = pymc3.Gamma("nu", alpha=2, beta=1)
+            # sigma = 0.01
+            # nu = 0.01
+            # y_ = pymc3.StudentT("y", mu=f, lam=1.0/sigma, nu=nu, observed=y)
+            y_ = pymc3.StudentT("y", mu=f, sd=sigma, nu=nu, observed=y)
+
+            # res = pymc3.find_MAP(model=model, method="L-BFGS-B")
+            res = pymc3.find_MAP(vars=[f], method="L-BFGS-B")
+            return res["f"]
+
+    # ##
+    # # Run Gaussian process smoothing for each dof individually
+    # # \date       2018-03-13 19:31:02+0000
+    # # \see http://docs.pymc.io/notebooks/GP-smoothing.html
+    # #
+    # # \param      self  The object
+    # #
+    # def run_gaussian_process_smoothing(self, smoothing=0.5):
+
+    #     params_nda = self._get_transformation_params_nda(self._transforms_sitk)
+
+    #     # Iterate over each dof
+    #     for i_dof in range(params_nda.shape[0]):
+
+    #         # Smooth each interleave package separately
+    #         for i in range(self._interleave):
+    #             indices = np.arange(i, params_nda.shape[1], self._interleave)
+    #             y = params_nda[i_dof, indices]
+    #             y_smoothed = self._run_gaussian_process_smoothing(
+    #                 y=y, smoothing=smoothing)
+    #             params_nda[i_dof, indices] = y_smoothed
+
+    #     self._update_robust_transforms_sitk_from_parameters(params_nda)
+
+    # def _run_gaussian_process_smoothing(self, y, smoothing):
+    #     LARGE_NUMBER = 1e5
+    #     model = pymc3.Model()
+    #     with model:
+    #         smoothing_param = theano.shared(smoothing)
+    #         mu = pymc3.Normal("mu", sd=LARGE_NUMBER)
+    #         tau = pymc3.Exponential("tau", 1.0 / LARGE_NUMBER)
+    #         z = pymc3.distributions.timeseries.GaussianRandomWalk(
+    #             "z",
+    #             mu=mu,
+    #             tau=tau / (1.0 - smoothing_param),
+    #             shape=y.shape,
+    #         )
+    #         obs = pymc3.Normal(
+    #             "obs",
+    #             mu=z,
+    #             tau=tau / smoothing_param,
+    #             observed=y,
+    #         )
+    #         res = pymc3.find_MAP(vars=[z], method="L-BFGS-B")
+    #         return res['z']
 
     # ##
     # # { function_description }
@@ -154,56 +227,78 @@ class RobustMotionEstimator(object):
     # \param      fullscreen  The fullscreen
     #
     def show_estimated_transform_parameters(
-            self, dir_output=None, title="RobustMotionEstimator", fullscreen=1):
-        params_nda = self._get_transformation_params_nda(self._transforms_sitk)
+        self,
+        path_to_file=None,
+        title="RobustMotionEstimator",
+        fullscreen=1,
+    ):
+        indices, params_nda = self._get_transformation_params_nda(
+            self._transforms_sitk)
         robust_params_nda = self._get_transformation_params_nda(
-            self.get_robust_transforms_sitk())
+            self.get_robust_transforms_sitk())[1]
 
         dof = params_nda.shape[0]
 
         N_rows = np.ceil(dof / 2.)
         i_ref_marker = 0
 
-        fig = plt.figure(title)
-        fig.clf()
+        subpackages = self._get_temporal_packages(indices)
+
+        fig = plt.figure(title, figsize=(15, 10))
         for i_dof in range(dof):
-            x = np.arange(params_nda.shape[1])
             y1 = params_nda[i_dof, :]
             y2 = robust_params_nda[i_dof, :]
 
             ax = plt.subplot(N_rows, 2, i_dof + 1)
-            ax.plot(x, y1,
+            ax.plot(indices, y1,
                     marker=ph.MARKERS[i_ref_marker],
                     color=ph.COLORS_TABLEAU20[0],
-                    linestyle=":",
+                    linestyle="",
+                    # linestyle=":",
                     label="original",
                     markerfacecolor="w",
                     )
-            ax.plot(x, y2,
+
+            # print connecting line between subpackage slices
+            ls = ["--", ":", "-."]
+            for i_p, p in enumerate(subpackages):
+                t = sorted(p.keys())
+
+                slices_package = [indices.index(p[t_i]) for t_i in t]
+                y = y1[slices_package]
+                x = [indices[i] for i in slices_package]
+                ax.plot(x, y,
+                        marker=".",
+                        # color=ph.COLORS_TABLEAU20[2 + i_p],
+                        color=[0.7, 0.7, 0.7],
+                        linestyle=ls[i_p],
+                        )
+            for i in range(len(y1)):
+                ax.plot([indices[i], indices[i]], [y1[i], y2[i]],
+                        linestyle="-",
+                        marker="",
+                        color=ph.COLORS_TABLEAU20[2],
+                        )
+            ax.plot(indices, y2,
                     marker=ph.MARKERS[i_ref_marker],
                     color=ph.COLORS_TABLEAU20[2],
-                    linestyle="-.",
+                    # linestyle="-",
+                    linestyle="",
                     label="robust",
                     )
-            ax.set_xticks(x)
+            ax.set_xticks(indices)
             plt.ylabel(sitkh.TRANSFORM_SITK_DOF_LABELS_LONG[dof][i_dof])
         plt.legend(loc="best")
         plt.xlabel('Slice')
         plt.suptitle(title)
 
-        if fullscreen:
-            try:
-                # Open windows (and also save them) in full screen
-                manager = plt.get_current_fig_manager()
-                manager.full_screen_toggle()
-            except:
-                pass
-
         plt.show(block=False)
 
-        if dir_output is not None:
-            filename = "%s.pdf" % title
-            ph.save_fig(fig, dir_output, filename)
+        if path_to_file is not None:
+            ph.create_directory(os.path.dirname(path_to_file))
+            fig.savefig(path_to_file)
+            ph.print_info("Figure written to %s" % path_to_file)
+        plt.close()
 
     ##
     # Get transformation parameters from sitk transform
@@ -215,16 +310,17 @@ class RobustMotionEstimator(object):
     # \return     The transformation parameters as (dof x #slices)-numpy array
     #
     def _get_transformation_params_nda(self, transforms_sitk):
-        dof = len(transforms_sitk[0].GetParameters())
-        N_transformations = len(transforms_sitk)
+        slice_indices = sorted(transforms_sitk.keys())
+        dof = len(transforms_sitk[slice_indices[0]].GetParameters())
+        N_transformations = len(slice_indices)
 
         params_nda = np.zeros((dof, N_transformations))
-        for i, transform_sitk in enumerate(transforms_sitk):
-            params_nda[:, i] = np.array(transform_sitk.GetParameters())
+        for i, index in enumerate(slice_indices):
+            params_nda[:, i] = np.array(transforms_sitk[index].GetParameters())
 
-        # params_nda = self._apply_interleave(params_nda)
+        # params_nda = self._get_temporal_packages(params_nda)
 
-        return params_nda
+        return slice_indices, params_nda
 
     ##
     # Update robust transformations given parameter estimates
@@ -235,18 +331,31 @@ class RobustMotionEstimator(object):
     #
     def _update_robust_transforms_sitk_from_parameters(self, params_nda):
 
-        # params_nda = self._undo_interleave(params_nda)
+        self._robust_transforms_sitk = {}
+        slice_indices = sorted(self._transforms_sitk.keys())
+        for i, slice_index in enumerate(slice_indices):
+            t_sitk = self._transforms_sitk[slice_index]
+            robust_t_sitk = sitkh.copy_transform_sitk(t_sitk)
+            robust_t_sitk.SetParameters(params_nda[:, i])
 
-        for i, transform_sitk in enumerate(self._transforms_sitk):
-            robust_transforms_sitk = sitkh.copy_transform_sitk(transform_sitk)
-            robust_transforms_sitk.SetParameters(params_nda[:, i])
+            self._robust_transforms_sitk[slice_index] = robust_t_sitk
 
-            self._robust_transforms_sitk[i] = robust_transforms_sitk
+    def _get_temporal_packages(self, slice_indices):
 
-    # def _apply_interleave(self, params_nda):
+        slice_acquisitions = np.arange(
+            np.array(slice_indices).min(), np.array(slice_indices).max() + 1)
 
-    #     indices = []
-    #     for i in range(self._interleave):
-    #         indices.append(np.arange(i, self._interleave, params_nda.shape[1]))
+        n_slice = np.array(slice_indices).max()
+        packages = []
+        for i in range(self._interleave):
+            orig_acquisitions = np.arange(
+                i, n_slice + 1, self._interleave)
 
-    # def _undo_interleave(self, params_nda):
+            dic = {
+                t: index
+                for (t, index) in enumerate(orig_acquisitions)
+                if index in slice_indices
+            }
+            packages.append(dic)
+
+        return packages

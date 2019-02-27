@@ -18,6 +18,7 @@ import niftymic.validation.evaluate_simulated_stack_similarity as \
     evaluate_simulated_stack_similarity
 import niftymic.validation.show_evaluated_simulated_stack_similarity as \
     show_evaluated_simulated_stack_similarity
+import niftymic.application.show_slice_coverage as show_slice_coverage
 import niftymic.validation.export_side_by_side_simulated_vs_original_slice_comparison as \
     export_side_by_side_simulated_vs_original_slice_comparison
 from niftymic.utilities.input_arparser import InputArgparser
@@ -57,30 +58,31 @@ def main():
     input_parser.add_intensity_correction(default=1)
     input_parser.add_iter_max(default=10)
     input_parser.add_two_step_cycles(default=3)
+    input_parser.add_slice_thicknesses(default=None)
     input_parser.add_option(
         option_string="--run-bias-field-correction",
         type=int,
         help="Turn on/off bias field correction. "
-        "If off, it is assumed that this step was already performed",
+        "If off, it is assumed that this step was already performed "
+        "if --bias-field-correction is active.",
         default=1)
     input_parser.add_option(
         option_string="--run-recon-subject-space",
         type=int,
         help="Turn on/off reconstruction in subject space. "
-        "If off, it is assumed that this step was already performed",
+        "If off, it is assumed that this step was already performed.",
         default=1)
     input_parser.add_option(
         option_string="--run-recon-template-space",
         type=int,
         help="Turn on/off reconstruction in template space. "
-        "If off, it is assumed that this step was already performed",
+        "If off, it is assumed that this step was already performed.",
         default=1)
     input_parser.add_option(
-        option_string="--run-data-vs-simulated-data",
+        option_string="--run-diagnostics",
         type=int,
-        help="Turn on/off comparison of data vs data simulated from the "
-        "obtained volumetric reconstruction. "
-        "If off, it is assumed that this step was already performed",
+        help="Turn on/off diagnostics of the obtained volumetric "
+        "reconstruction. ",
         default=0)
     input_parser.add_option(
         option_string="--initial-transform",
@@ -110,8 +112,8 @@ def main():
         args.dir_output, "recon_subject_space")
     dir_output_recon_template_space = os.path.join(
         args.dir_output, "recon_template_space")
-    dir_output_data_vs_simulatd_data = os.path.join(
-        args.dir_output, "data_vs_simulated_data")
+    dir_output_diagnostics = os.path.join(
+        args.dir_output, "diagnostics")
 
     srr_subject = os.path.join(
         dir_output_recon_subject_space, "%s_subject.nii.gz" % filename_srr)
@@ -121,6 +123,8 @@ def main():
     srr_template_mask = ph.append_to_filename(srr_template, "_mask")
     trafo_template = os.path.join(
         dir_output_recon_template_space, "registration_transform_sitk.txt")
+    srr_slice_coverage = os.path.join(
+        dir_output_diagnostics, "%s_template_slicecoverage.nii.gz" % filename_srr)
 
     if args.target_stack is None:
         target_stack = args.filenames[0]
@@ -155,7 +159,7 @@ def main():
     if args.run_recon_subject_space:
         target_stack_index = args.filenames.index(target_stack)
 
-        cmd_args = []
+        cmd_args = ["niftymic_reconstruct_volume"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
@@ -171,6 +175,9 @@ def main():
         cmd_args.append("--two-step-cycles %d" % args.two_step_cycles)
         cmd_args.append("--outlier-rejection %d" %
                         args.outlier_rejection)
+        if args.slice_thicknesses is not None:
+            cmd_args.append("--slice-thicknesses %s" %
+                            " ".join(map(str, args.slice_thicknesses)))
         cmd_args.append("--verbose %d" % args.verbose)
         if args.isotropic_resolution is not None:
             cmd_args.append("--isotropic-resolution %f" %
@@ -181,7 +188,7 @@ def main():
             cmd_args.append("--reference-mask %s" % args.reference_mask)
         if args.sda:
             cmd_args.append("--sda")
-        cmd = "niftymic_reconstruct_volume %s" % (" ").join(cmd_args)
+        cmd = (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
@@ -199,6 +206,9 @@ def main():
             cmd_args.append("--reconstruction-space %s" % srr_subject)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
+            if args.slice_thicknesses is not None:
+                cmd_args.append("--slice-thicknesses %s" %
+                                " ".join(map(str, args.slice_thicknesses)))
             if args.sda:
                 cmd_args.append("--sda")
                 cmd_args.append("--alpha 1")
@@ -227,33 +237,24 @@ def main():
         template_mask = os.path.join(
             DIR_TEMPLATES, "STA%d_mask.nii.gz" % gestational_age)
 
-        cmd_args = []
+        # Register SRR to template space
+        cmd_args = ["niftymic_register_image"]
         cmd_args.append("--fixed %s" % template)
         cmd_args.append("--moving %s" % srr_subject)
         cmd_args.append("--fixed-mask %s" % template_mask)
         cmd_args.append("--moving-mask %s" % srr_subject_mask)
         cmd_args.append("--dir-input-mc %s" % os.path.join(
-            dir_output_recon_subject_space,
-            "motion_correction"))
+            dir_output_recon_subject_space, "motion_correction"))
         cmd_args.append("--output %s" % trafo_template)
         cmd_args.append("--verbose %s" % args.verbose)
         if args.initial_transform is not None:
             cmd_args.append("--initial-transform %s" % args.initial_transform)
-            cmd_args.append("--use-flirt 0")
-            cmd_args.append("--test-ap-flip 0")
-        cmd = "niftymic_register_image %s" % (" ").join(cmd_args)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Registration to template space failed")
 
-        # reconstruct volume in template space
-        # pattern = "[a-zA-Z0-9_.]+(ResamplingToTemplateSpace.nii.gz)"
-        # p = re.compile(pattern)
-        # reconstruction_space = [
-        #     os.path.join(dir_output_recon_template_space, p.match(f).group(0))
-        #     for f in os.listdir(dir_output_recon_template_space)
-        #     if p.match(f)][0]
-
+        # Compute SRR in template space
         dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
         cmd_args = ["niftymic_reconstruct_volume_from_slices"]
@@ -265,6 +266,9 @@ def main():
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
+        if args.slice_thicknesses is not None:
+            cmd_args.append("--slice-thicknesses %s" %
+                            " ".join(map(str, args.slice_thicknesses)))
         if args.sda:
             cmd_args.append("--sda")
 
@@ -284,6 +288,9 @@ def main():
             cmd_args.append("--reconstruction-space %s" % srr_template)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
+            if args.slice_thicknesses is not None:
+                cmd_args.append("--slice-thicknesses %s" %
+                                " ".join(map(str, args.slice_thicknesses)))
             if args.sda:
                 cmd_args.append("--sda")
                 cmd_args.append("--alpha 1")
@@ -320,73 +327,88 @@ def main():
     else:
         elapsed_time_template = ph.get_zero_time()
 
-    if args.run_data_vs_simulated_data:
+    if args.run_diagnostics:
 
         dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
+        dir_output_orig_vs_proj = os.path.join(
+            dir_output_diagnostics, "original_vs_projected")
+        dir_output_selfsimilarity = os.path.join(
+            dir_output_diagnostics, "selfsimilarity")
+        dir_output_orig_vs_proj_pdf = os.path.join(
+            dir_output_orig_vs_proj, "pdf")
+
+        # Show slice coverage over reconstruction space
+        exe = os.path.abspath(show_slice_coverage.__file__)
+        cmd_args = ["python %s" % exe]
+        cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--dir-input-mc %s" % dir_input_mc)
+        cmd_args.append("--reconstruction-space %s" % srr_template)
+        cmd_args.append("--output %s" % srr_slice_coverage)
+        cmd = (" ").join(cmd_args)
+        exit_code = ph.execute_command(cmd)
+        if exit_code != 0:
+            raise RuntimeError("Slice coverage visualization failed")
 
         # Get simulated/projected slices
-        cmd_args = []
+        exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
+        cmd_args = ["python %s" % exe]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
                             (" ").join(args.filenames_masks))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
-        cmd_args.append("--dir-output %s" % dir_output_data_vs_simulatd_data)
+        cmd_args.append("--dir-output %s" % dir_output_orig_vs_proj)
         cmd_args.append("--reconstruction %s" % srr_template)
         cmd_args.append("--copy-data 1")
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
+        if args.slice_thicknesses is not None:
+            cmd_args.append("--slice-thicknesses %s" %
+                            " ".join(map(str, args.slice_thicknesses)))
         # cmd_args.append("--verbose %s" % args.verbose)
-        exe = os.path.abspath(simulate_stacks_from_reconstruction.__file__)
-        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("SRR slice projections failed")
 
         filenames_simulated = [
-            os.path.join(dir_output_data_vs_simulatd_data, os.path.basename(f))
+            os.path.join(dir_output_orig_vs_proj, os.path.basename(f))
             for f in filenames]
 
-        dir_output_evaluation = os.path.join(
-            dir_output_data_vs_simulatd_data, "evaluation")
-        dir_output_figures = os.path.join(
-            dir_output_data_vs_simulatd_data, "figures")
-        dir_output_side_by_side = os.path.join(
-            dir_output_figures, "side-by-side")
-
         # Evaluate slice similarities to ground truth
-        cmd_args = []
+        exe = os.path.abspath(evaluate_simulated_stack_similarity.__file__)
+        cmd_args = ["python %s" % exe]
         cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
                             (" ").join(args.filenames_masks))
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--measures NCC SSIM")
-        cmd_args.append("--dir-output %s" % dir_output_evaluation)
-        exe = os.path.abspath(evaluate_simulated_stack_similarity.__file__)
-        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        cmd_args.append("--dir-output %s" % dir_output_selfsimilarity)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Evaluation of slice similarities failed")
 
         # Generate figures showing the quantitative comparison
-        cmd_args = []
-        cmd_args.append("--dir-input %s" % dir_output_evaluation)
-        cmd_args.append("--dir-output %s" % dir_output_figures)
         exe = os.path.abspath(
             show_evaluated_simulated_stack_similarity.__file__)
-        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        cmd_args = ["python %s" % exe]
+        cmd_args.append("--dir-input %s" % dir_output_selfsimilarity)
+        cmd_args.append("--dir-output %s" % dir_output_selfsimilarity)
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             ph.print_warning("Visualization of slice similarities failed")
 
         # Generate pdfs showing all the side-by-side comparisons
-        cmd_args = []
-        cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
-        cmd_args.append("--dir-output %s" % dir_output_side_by_side)
         exe = os.path.abspath(
             export_side_by_side_simulated_vs_original_slice_comparison.__file__)
+        cmd_args = ["python %s" % exe]
+        cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
+        cmd_args.append("--dir-output %s" % dir_output_orig_vs_proj_pdf)
         cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+        cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Generation of PDF overview failed")
