@@ -177,7 +177,7 @@ def main():
                         args.outlier_rejection)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
-                            " ".join(args.slice_thicknesses))
+                            " ".join(map(str, args.slice_thicknesses)))
         cmd_args.append("--verbose %d" % args.verbose)
         if args.isotropic_resolution is not None:
             cmd_args.append("--isotropic-resolution %f" %
@@ -208,7 +208,7 @@ def main():
             cmd_args.append("--mask")
             if args.slice_thicknesses is not None:
                 cmd_args.append("--slice-thicknesses %s" %
-                                " ".join(args.slice_thicknesses))
+                                " ".join(map(str, args.slice_thicknesses)))
             if args.sda:
                 cmd_args.append("--sda")
                 cmd_args.append("--alpha 1")
@@ -268,7 +268,7 @@ def main():
         cmd_args.append("--verbose %s" % args.verbose)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
-                            " ".join(args.slice_thicknesses))
+                            " ".join(map(str, args.slice_thicknesses)))
         if args.sda:
             cmd_args.append("--sda")
 
@@ -290,7 +290,7 @@ def main():
             cmd_args.append("--mask")
             if args.slice_thicknesses is not None:
                 cmd_args.append("--slice-thicknesses %s" %
-                                " ".join(args.slice_thicknesses))
+                                " ".join(map(str, args.slice_thicknesses)))
             if args.sda:
                 cmd_args.append("--sda")
                 cmd_args.append("--alpha 1")
@@ -364,7 +364,7 @@ def main():
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
-                            " ".join(args.slice_thicknesses))
+                            " ".join(map(str, args.slice_thicknesses)))
         # cmd_args.append("--verbose %s" % args.verbose)
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
