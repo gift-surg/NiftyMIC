@@ -259,6 +259,11 @@ def main():
     # ----------------Two-step Slice-to-Volume Registration SRR-------------
     if args.two_step_cycles > 0:
 
+        # Define the regularization parameters for the individual
+        # reconstruction steps in the two-step cycles
+        alphas = np.linspace(
+            args.alpha_first, args.alpha, args.two_step_cycles)
+
         # Two-step registration reconstruction
         registration = regsitk.SimpleItkRegistration(
             moving=HR_volume,
@@ -305,11 +310,9 @@ def main():
                 registration_method=registration,
                 reconstruction_method=reconstruction_method_srr,
                 cycles=args.two_step_cycles,
-                alpha_range=[args.alpha_first, args.alpha],
+                alphas=alphas[0:args.two_step_cycles - 1],
                 verbose=args.verbose,
                 outlier_rejection=False,
-                threshold_measure="NCC",
-                threshold_range=[0.6, 0.7],
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \

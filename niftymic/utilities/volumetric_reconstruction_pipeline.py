@@ -567,7 +567,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             raise ValueError(
                 "Elements in alpha list must correspond to cycles-1")
 
-        if len(thresholds) != cycles:
+        if outlier_rejection and len(thresholds) != cycles:
             raise ValueError(
                 "Elements in outlier rejection threshold list must "
                 "correspond to the number of cycles")
