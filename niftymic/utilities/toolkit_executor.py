@@ -28,7 +28,7 @@ class ToolkitExecuter(object):
         # separator for command line export
         self._sep = " \\\n"
 
-        self._subdir_temp = "./temp"
+        self._subdir_temp = "temp"
 
     ##
     # Gets the function call for fetalReconstruction toolkit provided by
@@ -48,14 +48,17 @@ class ToolkitExecuter(object):
         exe=None,
         output_name="IRTK_SRR.nii.gz",
         kernel_mask_dilation=None,
+        verbose=False,
     ):
         if exe is None:
             exe = EXE_IRTK["workstation"]
 
+        self._dir_temp = os.path.join(self._dir_output, self._subdir_temp)
+
         cmd_args = []
 
         # store pwd
-        cmd_args.append("PWD=$(pwd)")
+        cmd_args.append("CWD=$(pwd)")
 
         # change to output directory
         cmd_args.append("\necho 'Change to output directory'")
@@ -64,7 +67,8 @@ class ToolkitExecuter(object):
 
         # create temp directory if required
         cmd_args.append("\necho 'Create temp directory'")
-        cmd_args.append("mkdir -p %s" % self._subdir_temp)
+        cmd_args.append("mkdir -p %s" % self._dir_temp)
+        cmd_args.append("cd %s" % self._dir_temp)
 
         # dilate masks
         if kernel_mask_dilation is not None:
@@ -92,11 +96,15 @@ class ToolkitExecuter(object):
         toolkit_execution = "%s" % self._sep.join(exe_args)
         cmd_args.append(toolkit_execution)
 
-        cmd_args.append("\necho 'Delete temp directory'")
-        cmd_args.append("rm -rf %s" % self._subdir_temp)
+        cmd_args.append("cp -p %s %s/" % (output_name, self._dir_output))
+        cmd_args.append("cd %s" % self._dir_output)
+
+        if not verbose:
+            cmd_args.append("\necho 'Delete temp directory'")
+            cmd_args.append("rm -rf %s" % self._dir_temp)
 
         cmd_args.append("\necho 'Change back to original directory'")
-        cmd_args.append("cd ${PWD}")
+        cmd_args.append("cd ${CWD}")
         cmd_args.append("\n")
 
         cmd = (" \n").join(cmd_args)
@@ -153,7 +161,7 @@ class ToolkitExecuter(object):
             directory = os.path.dirname(path_to_mask)
             mask_filename = os.path.basename(path_to_mask)
             path_to_mask_dilated = os.path.join(
-                self._subdir_temp, ph.append_to_filename(mask_filename, "_dil"))
+                self._dir_temp, ph.append_to_filename(mask_filename, "_dil"))
 
             cmd_args = ["c3d"]
             cmd_args.append(path_to_mask)
