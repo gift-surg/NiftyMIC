@@ -37,7 +37,8 @@ def main():
         description="Run reconstruction pipeline including "
         "(i) bias field correction, "
         "(ii) volumetric reconstruction in subject space, "
-        "and (iii) volumetric reconstruction in template space.",
+        "(iii) volumetric reconstruction in template space, "
+        "and (iv) some diagnostics to assess the obtained reconstruction.",
     )
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks(required=True)
@@ -361,7 +362,6 @@ def main():
         cmd_args.append("--dir-output %s" % dir_output_orig_vs_proj)
         cmd_args.append("--reconstruction %s" % srr_template)
         cmd_args.append("--copy-data 1")
-        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
@@ -382,7 +382,6 @@ def main():
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
                             (" ").join(args.filenames_masks))
-        cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--measures NCC SSIM")
         cmd_args.append("--dir-output %s" % dir_output_selfsimilarity)
         cmd = (" ").join(cmd_args)
@@ -402,16 +401,17 @@ def main():
             ph.print_warning("Visualization of slice similarities failed")
 
         # Generate pdfs showing all the side-by-side comparisons
-        exe = os.path.abspath(
-            export_side_by_side_simulated_vs_original_slice_comparison.__file__)
-        cmd_args = ["python %s" % exe]
-        cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
-        cmd_args.append("--dir-output %s" % dir_output_orig_vs_proj_pdf)
-        cmd = "python %s %s" % (exe, (" ").join(cmd_args))
-        cmd = (" ").join(cmd_args)
-        exit_code = ph.execute_command(cmd)
-        if exit_code != 0:
-            raise RuntimeError("Generation of PDF overview failed")
+        if 0:
+            exe = os.path.abspath(
+                export_side_by_side_simulated_vs_original_slice_comparison.__file__)
+            cmd_args = ["python %s" % exe]
+            cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
+            cmd_args.append("--dir-output %s" % dir_output_orig_vs_proj_pdf)
+            cmd = "python %s %s" % (exe, (" ").join(cmd_args))
+            cmd = (" ").join(cmd_args)
+            exit_code = ph.execute_command(cmd)
+            if exit_code != 0:
+                raise RuntimeError("Generation of PDF overview failed")
 
     ph.print_title("Summary")
     print("Computational Time for Bias Field Correction: %s" %
