@@ -238,7 +238,8 @@ class SliceToVolumeRegistration(RegistrationPipeline):
 
         for i, stack in enumerate(self._stacks):
             slices = stack.get_slices()
-            transforms_sitk = [None] * len(slices)
+
+            transforms_sitk = {}
 
             for j, slice_j in enumerate(slices):
 
@@ -257,12 +258,18 @@ class SliceToVolumeRegistration(RegistrationPipeline):
 
                 # Store information on registration transform
                 transform_sitk = \
-                    self._registration_method.\
-                    get_registration_transform_sitk()
-                transforms_sitk[j] = transform_sitk
+                    self._registration_method.get_registration_transform_sitk()
+                transforms_sitk[slice_j.get_slice_number()] = transform_sitk
 
             # Avoid slice misregistrations
             if self._s2v_smoothing is not None:
+                # import os
+                # for slice_number in transforms_sitk.keys():
+                #     path_to_file = os.path.join(
+                #         "/tmp/fetal_brain", "%s_slice%d.tfm" % (
+                #             stack.get_filename(), slice_number))
+                #     sitk.WriteTransform(
+                #         transforms_sitk[slice_number], path_to_file)
                 ph.print_subtitle(
                     "Robust slice motion estimation "
                     "(GP smoothing = %g, interleave = %d)" % (
@@ -270,8 +277,7 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                 robust_motion_estimator = rme.RobustMotionEstimator(
                     transforms_sitk=transforms_sitk,
                     interleave=self._interleave)
-                robust_motion_estimator.run_gaussian_process_smoothing(
-                    self._s2v_smoothing)
+                robust_motion_estimator.run(self._s2v_smoothing)
                 transforms_sitk = \
                     robust_motion_estimator.get_robust_transforms_sitk()
 
@@ -289,8 +295,9 @@ class SliceToVolumeRegistration(RegistrationPipeline):
             # motion_evaluator.show(dir_output=dir_output, title=title)
 
             # Update position of slice
-            for j, slice_j in enumerate(slices):
-                slice_j.update_motion_correction(transforms_sitk[j])
+            for slice in slices:
+                slice_number = slice.get_slice_number()
+                slice.update_motion_correction(transforms_sitk[slice_number])
 
         # Reject misregistered slices
         if self._threshold is not None:
