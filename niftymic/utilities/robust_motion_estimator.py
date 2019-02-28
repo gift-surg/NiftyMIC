@@ -60,6 +60,11 @@ class RobustMotionEstimator(object):
                 ph.print_info("DOF %d/%d ... " % (
                     dof + 1, params.shape[0]))
             for package in temporal_packages:
+
+                # continue in case no slices in subpackage left
+                if len(package.keys()) == 0:
+                    continue
+
                 t = sorted(package.keys())
                 slices_package = [slice_indices.index(
                     package[t_i]) for t_i in t]
