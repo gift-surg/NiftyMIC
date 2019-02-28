@@ -107,6 +107,7 @@ def main():
 
     rejection_measure = "NCC"
     threshold_v2v = 0.3
+    debug = False
 
     if args.v2v_method not in V2V_METHOD_OPTIONS:
         raise ValueError("v2v-method must be in {%s}" % (
@@ -221,7 +222,7 @@ def main():
             stacks=stacks,
             reference=reference,
             registration_method=vol_registration,
-            verbose=args.verbose,
+            verbose=debug,
         )
         v2vreg.run()
         stacks = v2vreg.get_stacks()
@@ -347,7 +348,6 @@ def main():
             moving=HR_volume,
             use_fixed_mask=True,
             use_moving_mask=True,
-            use_verbose=args.verbose,
             interpolator="Linear",
             metric=args.metric,
             metric_params=metric_params,
@@ -362,6 +362,7 @@ def main():
                 "lineSearchUpperLimit": 2,
             },
             scales_estimator="Jacobian",
+            use_verbose=debug,
         )
 
         # Volumetric reconstruction set-up
@@ -391,7 +392,7 @@ def main():
         alphas = np.linspace(
             alpha_range[0], alpha_range[1], args.two_step_cycles)
 
-        # Define outlier rejection thresholds for individual S2V-reg steps
+        # Define outlier rejection threshold after each S2V-reg step
         thresholds = np.linspace(
             args.threshold_first, args.threshold, args.two_step_cycles)
 
@@ -403,7 +404,6 @@ def main():
                 reconstruction_method=recon_method,
                 cycles=args.two_step_cycles,
                 alphas=alphas[0:args.two_step_cycles - 1],
-                verbose=args.verbose,
                 outlier_rejection=args.outlier_rejection,
                 threshold_measure=rejection_measure,
                 thresholds=thresholds,
@@ -411,6 +411,7 @@ def main():
                 s2v_smoothing=args.s2v_smoothing,
                 interleave=args.interleave,
                 viewer=args.viewer,
+                verbose=debug,
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
