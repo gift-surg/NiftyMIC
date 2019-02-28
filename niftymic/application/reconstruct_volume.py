@@ -84,7 +84,7 @@ def main():
     input_parser.add_reference()
     input_parser.add_reference_mask()
     input_parser.add_outlier_rejection(default=1)
-    input_parser.add_threshold_first(default=0.6)
+    input_parser.add_threshold_first(default=0.5)
     input_parser.add_threshold(default=0.8)
     input_parser.add_use_robust_registration(default=0)
     input_parser.add_s2v_smoothing(default=0.5)
@@ -106,7 +106,7 @@ def main():
     input_parser.print_arguments(args)
 
     rejection_measure = "NCC"
-    threshold_v2v = 0.3
+    threshold_v2v = -2
     debug = False
 
     if args.v2v_method not in V2V_METHOD_OPTIONS:
