@@ -281,6 +281,33 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                 transforms_sitk = \
                     robust_motion_estimator.get_robust_transforms_sitk()
 
+                # Update position of slice
+                for slice in slices:
+                    slice_number = slice.get_slice_number()
+                    slice.update_motion_correction(
+                        transforms_sitk[slice_number])
+
+                # Run s2v-reg again
+                for j, slice_j in enumerate(slices):
+                    txt = "%sSlice-to-Volume Registration -- " \
+                        "Stack %d/%d -- Slice %d/%d (after GP init)" % (
+                            self._print_prefix,
+                            i + 1, len(self._stacks),
+                            j + 1, len(slices))
+                    if self._verbose:
+                        ph.print_subtitle(txt)
+                    else:
+                        ph.print_info(txt)
+
+                    self._registration_method.set_fixed(slice_j)
+                    self._registration_method.run()
+
+                    # Store information on registration transform
+                    transform_sitk = \
+                        self._registration_method.get_registration_transform_sitk()
+                    transforms_sitk[
+                        slice_j.get_slice_number()] = transform_sitk
+
                 # Export figures
                 # title = "%s_Stack%d%s" % (
                 #     self._print_prefix, i, stack.get_filename())
@@ -608,7 +635,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             stacks=self._stacks,
             reference=self._reference,
             registration_method=self._registration_method,
-            verbose=self._verbose,
+            verbose=False,
             threshold_measure=self._threshold_measure,
             interleave=self._interleave,
         )
