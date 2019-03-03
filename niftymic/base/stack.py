@@ -563,6 +563,7 @@ class Stack:
               write_slices=False,
               write_transforms=False,
               suffix_mask="_mask",
+              write_transforms_history=False,
               ):
 
         # Create directory if not existing
@@ -626,7 +627,9 @@ class Stack:
                             filename=filename,
                             write_transform=write_transforms,
                             write_slice=write_slices,
-                            suffix_mask=suffix_mask)
+                            suffix_mask=suffix_mask,
+                            write_transforms_history=write_transforms_history,
+                        )
                     print("done")
 
             except ValueError as err:

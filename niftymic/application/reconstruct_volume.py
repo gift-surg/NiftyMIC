@@ -101,6 +101,13 @@ def main():
         "iterative adjustment. "
         "Recommended value is, e.g., --alpha 0.8"
     )
+    input_parser.add_option(
+        option_string="--transforms-history",
+        type=int,
+        help="Write entire history of applied slice motion correction "
+        "transformations to motion correction output directory",
+        default=0,
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -411,7 +418,7 @@ def main():
                 s2v_smoothing=args.s2v_smoothing,
                 interleave=args.interleave,
                 viewer=args.viewer,
-                verbose=debug,
+                verbose=args.verbose,
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
@@ -440,6 +447,7 @@ def main():
                 write_mask=False,
                 write_slices=False,
                 write_transforms=True,
+                write_transforms_history=args.transforms_history,
             )
 
         if args.outlier_rejection:

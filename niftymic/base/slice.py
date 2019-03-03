@@ -340,6 +340,7 @@ class Slice:
               write_transform=True,
               suffix_mask="_mask",
               prefix_slice="_slice",
+              write_transforms_history=False,
               ):
 
         # Create directory if not existing
@@ -356,8 +357,8 @@ class Slice:
 
         # Write slice and affine transform
         if write_slice:
-            dw.DataWriter.write_image(self.sitk, "%s.nii.gz" % full_file_name,
-                verbose=False)
+            dw.DataWriter.write_image(
+                self.sitk, "%s.nii.gz" % full_file_name, verbose=False)
 
             # Write mask to specified location if given
             if self.sitk_mask is not None:
@@ -376,6 +377,15 @@ class Slice:
                 # self.get_affine_transform(),
                 self.get_motion_correction_transform(),
                 full_file_name + ".tfm")
+
+        if write_transforms_history:
+            dir_output = os.path.join(directory, "motion_correction_history")
+            ph.create_directory(dir_output)
+            registration_transforms = self.get_registration_history()[1]
+            for i, transform_sitk in enumerate(registration_transforms):
+                path_to_transform = os.path.join(
+                    dir_output, "%s_%d.tfm" % (filename_out, i))
+                sitk.WriteTransform(transform_sitk, path_to_transform)
 
         # print("Slice %r of stack %s was successfully written to %s" %(self._slice_number, self._filename, full_file_name))
         # print("Transformation of slice %r of stack %s was successfully
