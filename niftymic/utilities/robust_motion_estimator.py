@@ -81,7 +81,7 @@ class RobustMotionEstimator(object):
     @staticmethod
     def _run_gaussian_process_smoothing(x, y, smoothing):
 
-        LARGE_NUMBER = 1000000
+        # LARGE_NUMBER = 1000000
         with pymc3.Model() as model:
             smoothing_param = theano.shared(smoothing)
             # mu = pymc3.Normal("mu", sd=LARGE_NUMBER)
