@@ -611,16 +611,19 @@ class Stack:
                 else:
                     if write_transforms and write_slices:
                         ph.print_info(
-                            "Write image slices and slice transforms to %s ... " %
-                            directory, newline=False)
+                            "Write %s image slices and slice transforms to %s ... " % (
+                                self.get_filename(), directory),
+                            newline=False)
                     elif write_transforms and not write_slices:
                         ph.print_info(
-                            "Write slice transforms to %s ... " %
-                            directory, newline=False)
+                            "Write %s slice transforms to %s ... " % (
+                                self.get_filename(), directory),
+                            newline=False)
                     else:
                         ph.print_info(
-                            "Write image slices to %s ... " %
-                            directory, newline=False)
+                            "Write %s image slices to %s ... " % (
+                                self.get_filename(), directory),
+                            newline=False)
                     for slice in self.get_slices():
                         slice.write(
                             directory=directory,
