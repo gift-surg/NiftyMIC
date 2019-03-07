@@ -226,9 +226,9 @@ class SliceToVolumeRegistration(RegistrationPipeline):
             for j, slice_j in enumerate(slices):
 
                 txt = "%sSlice-to-Volume Registration -- " \
-                    "Stack %d/%d -- Slice %d/%d" % (
+                    "Stack %d/%d (%s) -- Slice %d/%d" % (
                         self._print_prefix,
-                        i + 1, len(self._stacks),
+                        i + 1, len(self._stacks), stack.get_filename(),
                         j + 1, len(slices))
                 if self._verbose:
                     ph.print_subtitle(txt)
@@ -533,25 +533,26 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
     # Store information to perform the two-step S2V reg and recon
     # \date       2017-08-08 02:31:24+0100
     #
-    # \param      self                     The object
-    # \param      stacks                   The stacks
-    # \param      reference                The reference
-    # \param      registration_method      Registration method, e.g.
-    #                                      CppItkRegistration
-    # \param      reconstruction_method    Reconstruction method, e.g. TK1
-    # \param      alphas                   List of alphas (two_step_cycles - 1)
-    #                                      used for each reconstruction step or
-    #                                      array
-    # \param      verbose                  The verbose
-    # \param      cycles                   Number of cycles, int
-    # \param      outlier_rejection        The outlier rejection
-    # \param      threshold_measure        The threshold measure
-    # \param      thresholds               The threshold range
-    # \param      use_robust_registration  The use robust registration
-    # \param      s2v_smoothing            The s 2 v smoothing
-    # \param      interleave               The interleave
-    # \param      viewer                   The viewer
-    # \param      sigma_sda_mask           The sigma sda mask
+    # \param      self                           The object
+    # \param      stacks                         The stacks
+    # \param      reference                      The reference
+    # \param      registration_method            Registration method, e.g.
+    #                                            CppItkRegistration
+    # \param      reconstruction_method          Reconstruction method, e.g.
+    #                                            TK1
+    # \param      alphas                         List of alphas
+    #                                            array
+    # \param      verbose                        The verbose
+    # \param      cycles                         Number of cycles, int
+    # \param      outlier_rejection              The outlier rejection
+    # \param      threshold_measure              The threshold measure
+    # \param      thresholds                     The threshold range
+    # \param      use_robust_registration        The use robust registration
+    # \param      use_hierarchical_registration  The use hierarchical registration
+    # \param      s2v_smoothing                  The s 2 v smoothing
+    # \param      interleave                     The interleave
+    # \param      viewer                         The viewer
+    # \param      sigma_sda_mask                 The sigma sda mask
     #
     def __init__(self,
                  stacks,
@@ -565,7 +566,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                  threshold_measure="NCC",
                  thresholds=[0.6, 0.7, 0.8],
                  use_robust_registration=False,
-                 use_hierarchical_registration=True,
+                 use_hierarchical_registration=False,
                  s2v_smoothing=0.5,
                  interleave=3,
                  viewer=VIEWER,
@@ -627,7 +628,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                     registration_method=self._registration_method,
                     interleave=self._interleave,
                     viewer=self._viewer,
-                    min_slices=4,
+                    min_slices=1,
                     verbose=False,
                 )
                 hs2vreg.run()
@@ -725,13 +726,14 @@ class HieararchicalSliceSetRegistration(RegistrationPipeline):
     # Store relevant variables
     # \date       2017-10-16 10:18:58+0100
     #
-    # \param      self                   The object
-    # \param      stacks                 List of stacks to be registered
-    # \param      reference              Reference image as Stack object.
-    # \param      registration_method    method, e.g. CppItkRegistration
-    # \param      interleave             Interleave of scans, integer
-    # \param      verbose                The verbose
-    # \param      viewer                 The viewer
+    # \param      self                 The object
+    # \param      stacks               List of stacks to be registered
+    # \param      reference            Reference image as Stack object.
+    # \param      registration_method  method, e.g. CppItkRegistration
+    # \param      interleave           Interleave of scans, integer
+    # \param      min_slices           The minimum slices
+    # \param      verbose              The verbose
+    # \param      viewer               The viewer
     #
     def __init__(self,
                  stacks,
@@ -762,7 +764,7 @@ class HieararchicalSliceSetRegistration(RegistrationPipeline):
 
         self._registration_method.set_moving(self._reference)
 
-        for i_stack, stack in enumerate(self._stacks[::-1]):
+        for i_stack, stack in enumerate(self._stacks):
             n_slices = stack.get_number_of_slices()
             for i in range(self._interleave):
                 package = list(np.arange(i, n_slices, self._interleave))
@@ -773,8 +775,8 @@ class HieararchicalSliceSetRegistration(RegistrationPipeline):
                     indices_splits = [package]
 
                 prefix = "Hierarchical S2V-Reg: " \
-                    "Stack %d/%d -- interleave %d/%d --" % (
-                        i_stack + 1, len(self._stacks),
+                    "Stack %d/%d (%s) -- Interleave %d/%d --" % (
+                        i_stack + 1, len(self._stacks), stack.get_filename(),
                         i + 1, self._interleave,
                     )
                 if debug:
@@ -797,10 +799,11 @@ class HieararchicalSliceSetRegistration(RegistrationPipeline):
     # Split list of arrays into halfs.
     # \date       2017-10-16 13:16:50+0100
     #
-    # \param      self        The object
-    # \param      array_list  The array list
-    # \param      N_min       Minimum number of elements at which no further
-    #                         split shall be performed
+    # \param      self           The object
+    # \param      indices        The indices
+    # \param      indices_split  The indices split
+    # \param      N_min          Minimum number of elements at which no further
+    #                            split shall be performed
     #
     # \return     List of arrays holding slice indices.
     #
