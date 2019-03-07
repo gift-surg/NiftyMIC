@@ -606,18 +606,18 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
         for cycle in range(0, self._cycles):
 
-                # Slice-to-volume registration step
-                s2vreg.set_reference(reference)
-                s2vreg.set_print_prefix("Cycle %d/%d: " %
-                                        (cycle + 1, self._cycles))
-                if self._use_robust_registration and cycle == 0:
-                    s2vreg.set_s2v_smoothing(self._s2v_smoothing)
-                else:
+            # Slice-to-volume registration step
+            s2vreg.set_reference(reference)
+            s2vreg.set_print_prefix("Cycle %d/%d: " %
+                                    (cycle + 1, self._cycles))
+            if self._use_robust_registration and cycle == 0:
+                s2vreg.set_s2v_smoothing(self._s2v_smoothing)
+            else:
                 s2vreg.set_s2v_smoothing(None)
             s2vreg.run()
 
-                self._computational_time_registration += \
-                    s2vreg.get_computational_time()
+            self._computational_time_registration += \
+                s2vreg.get_computational_time()
 
             # Reject misregistered slices
             if self._outlier_rejection:
