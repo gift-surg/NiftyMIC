@@ -180,8 +180,6 @@ class SliceToVolumeRegistration(RegistrationPipeline):
     # \param      verbose              The verbose
     # \param      print_prefix         Print at each iteration at the
     #                                  beginning, string
-    # \param      threshold            The threshold
-    # \param      threshold_measure    The threshold measure
     #
     def __init__(self,
                  stacks,
@@ -189,8 +187,6 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                  registration_method,
                  verbose=1,
                  print_prefix="",
-                 threshold=None,
-                 threshold_measure="NCC",
                  s2v_smoothing=None,
                  interleave=2,
                  viewer=VIEWER,
@@ -204,31 +200,17 @@ class SliceToVolumeRegistration(RegistrationPipeline):
             viewer=viewer,
         )
         self._print_prefix = print_prefix
-        self._threshold = threshold
-        self._threshold_measure = threshold_measure
         self._s2v_smoothing = s2v_smoothing
         self._interleave = interleave
 
     def set_print_prefix(self, print_prefix):
         self._print_prefix = print_prefix
 
-    def set_threshold(self, threshold):
-        self._threshold = threshold
-
-    def get_threshold(self):
-        return self._threshold
-
     def set_s2v_smoothing(self, s2v_smoothing):
         self._s2v_smoothing = s2v_smoothing
 
     def get_s2v_smoothing(self):
         return self._s2v_smoothing
-
-    def set_threshold_measure(self, threshold_measure):
-        self._threshold_measure = threshold_measure
-
-    def get_threshold_measure(self):
-        return self._threshold_measure
 
     def _run(self):
 
@@ -325,25 +307,6 @@ class SliceToVolumeRegistration(RegistrationPipeline):
             for slice in slices:
                 slice_number = slice.get_slice_number()
                 slice.update_motion_correction(transforms_sitk[slice_number])
-
-        # Reject misregistered slices
-        if self._threshold is not None:
-            ph.print_subtitle("Slice Outlier Rejection (%s < %g)" % (
-                self._threshold_measure, self._threshold))
-            outlier_rejector = outre.OutlierRejector(
-                stacks=self._stacks,
-                reference=self._reference,
-                threshold=self._threshold,
-                measure=self._threshold_measure,
-                verbose=True,
-            )
-            outlier_rejector.run()
-            self._stacks = outlier_rejector.get_stacks()
-
-            if len(self._stacks) == 0:
-                raise RuntimeError(
-                    "All slices of all stacks were rejected "
-                    "as outliers. Volumetric reconstruction is aborted.")
 
 
 ##
@@ -636,7 +599,6 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
             reference=self._reference,
             registration_method=self._registration_method,
             verbose=False,
-            threshold_measure=self._threshold_measure,
             interleave=self._interleave,
         )
 
@@ -644,20 +606,38 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
 
         for cycle in range(0, self._cycles):
 
-            # Slice-to-volume registration step
-            s2vreg.set_reference(reference)
-            s2vreg.set_print_prefix("Cycle %d/%d: " %
-                                    (cycle + 1, self._cycles))
-            if self._outlier_rejection:
-                s2vreg.set_threshold(self._thresholds[cycle])
-            if self._use_robust_registration and cycle == 0:
-                s2vreg.set_s2v_smoothing(self._s2v_smoothing)
-            else:
+                # Slice-to-volume registration step
+                s2vreg.set_reference(reference)
+                s2vreg.set_print_prefix("Cycle %d/%d: " %
+                                        (cycle + 1, self._cycles))
+                if self._use_robust_registration and cycle == 0:
+                    s2vreg.set_s2v_smoothing(self._s2v_smoothing)
+                else:
                 s2vreg.set_s2v_smoothing(None)
             s2vreg.run()
 
-            self._computational_time_registration += \
-                s2vreg.get_computational_time()
+                self._computational_time_registration += \
+                    s2vreg.get_computational_time()
+
+            # Reject misregistered slices
+            if self._outlier_rejection:
+                ph.print_subtitle("Slice Outlier Rejection (%s < %g)" % (
+                    self._threshold_measure, self._thresholds[cycle]))
+                outlier_rejector = outre.OutlierRejector(
+                    stacks=self._stacks,
+                    reference=self._reference,
+                    threshold=self._thresholds[cycle],
+                    measure=self._threshold_measure,
+                    verbose=True,
+                )
+                outlier_rejector.run()
+                self._reconstruction_method.set_stacks(
+                    outlier_rejector.get_stacks())
+
+                if len(self._stacks) == 0:
+                    raise RuntimeError(
+                        "All slices of all stacks were rejected "
+                        "as outliers. Volumetric reconstruction is aborted.")
 
             # SRR step
             if cycle < self._cycles - 1:

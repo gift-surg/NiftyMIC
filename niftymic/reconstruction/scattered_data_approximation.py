@@ -90,6 +90,10 @@ class ScatteredDataApproximation:
     def set_sigma(self, sigma):
         self._sigma_array = np.ones(3) * sigma
 
+    def set_stacks(self, stacks):
+        self._stacks = stacks
+        self._N_stacks = len(stacks)
+
     # ## Get sigma used for recursive Gaussian smoothing.
     # #  \return sigma array, numpy array
     # def get_sigma(self):
