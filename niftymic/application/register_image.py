@@ -125,6 +125,7 @@ def main():
         cmd_args.append("-inaff %s" % path_to_transform_regaladin)
         cmd_args.append("-aff %s" % path_to_transform_regaladin)
         cmd_args.append("-rigOnly")
+        cmd_args.append("-ln 2")
         cmd_args.append("-voff")
         if args.fixed_mask is not None:
             cmd_args.append("-rmask %s" % args.fixed_mask)
