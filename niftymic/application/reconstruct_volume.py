@@ -113,7 +113,7 @@ def main():
     input_parser.print_arguments(args)
 
     rejection_measure = "NCC"
-    threshold_v2v = -2
+    threshold_v2v = -2  # 0.3
     debug = False
 
     if args.v2v_method not in V2V_METHOD_OPTIONS:
