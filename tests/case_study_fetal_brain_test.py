@@ -44,6 +44,7 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         iter_max = 5
         threshold = 0.84
         alpha = 0.02
+        alpha_first = 0.05
         sigma = 0.6
         intensity_correction = 1
         isotropic_resolution = 1.02
@@ -61,6 +62,7 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
         cmd_args.append("--intensity-correction %d" % intensity_correction)
         cmd_args.append("--isotropic-resolution %s" % isotropic_resolution)
         cmd_args.append("--alpha %f" % alpha)
+        cmd_args.append("--alpha-first %f" % alpha_first)
         cmd_args.append("--v2v-method %s" % v2v_method)
         # cmd_args.append("--verbose 1")
 
