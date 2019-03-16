@@ -377,7 +377,7 @@ def main():
             raise RuntimeError("SRR slice projections failed")
 
         filenames_simulated = [
-            os.path.join(dir_output_orig_vs_proj, os.path.basename(f))
+            "'%s" % os.path.join(dir_output_orig_vs_proj, os.path.basename(f))
             for f in filenames]
 
         # Evaluate slice similarities to ground truth
@@ -392,18 +392,18 @@ def main():
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
-            raise RuntimeError("Evaluation of slice similarities failed")
+            raise RuntimeError("Evaluation of stack similarities failed")
 
         # Generate figures showing the quantitative comparison
         exe = os.path.abspath(
             show_evaluated_simulated_stack_similarity.__file__)
         cmd_args = ["python %s" % exe]
-        cmd_args.append("--dir-input %s" % dir_output_selfsimilarity)
+        cmd_args.append("--dir-input '%s'" % dir_output_selfsimilarity)
         cmd_args.append("--dir-output '%s'" % dir_output_selfsimilarity)
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
-            ph.print_warning("Visualization of slice similarities failed")
+            ph.print_warning("Visualization of stack similarities failed")
 
         # Generate pdfs showing all the side-by-side comparisons
         if 0:
