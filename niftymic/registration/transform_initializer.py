@@ -6,15 +6,20 @@
 # \date       Feb 2019
 #
 
+import os
 import numpy as np
 import SimpleITK as sitk
 
+import pysitk.python_helper as ph
+import pysitk.simple_itk_helper as sitkh
 import nsol.principal_component_analysis as pca
 from nsol.similarity_measures import SimilarityMeasures
 
 import niftymic.base.stack as st
 import niftymic.validation.image_similarity_evaluator as ise
 import niftymic.utilities.template_stack_estimator as tse
+
+from niftymic.definitions import DIR_TMP
 
 
 ##
@@ -23,10 +28,16 @@ import niftymic.utilities.template_stack_estimator as tse
 #
 class TransformInitializer(object):
 
-    def __init__(self, fixed, moving, similarity_measure="NMI"):
+    def __init__(self,
+                 fixed,
+                 moving,
+                 similarity_measure="NMI",
+                 refine_pca_initializations=False,
+                 ):
         self._fixed = fixed
         self._moving = moving
         self._similarity_measure = similarity_measure
+        self._refine_pca_initializations = refine_pca_initializations
 
         self._initial_transform_sitk = None
 
@@ -112,6 +123,10 @@ class TransformInitializer(object):
         return pca_mask
 
     def _get_best_transform(self, transformations, debug=False):
+
+        if self._refine_pca_initializations:
+            transformations = self._run_registrations(transformations)
+
         warps = []
         for transform_sitk in transformations:
             warped_moving_sitk = sitk.Resample(
@@ -148,5 +163,63 @@ class TransformInitializer(object):
             foo.insert(0, self._fixed.sitk)
             labels.insert(0, "fixed")
             sitkh.show_sitk_image(foo, label=labels)
+            for i in range(len(transformations)):
+                print("%s: %.6f" % (
+                    labels[1 + i], similarities[self._similarity_measure][i])
+                )
 
         return transform_init_sitk
+
+    def _run_registrations(self, transformations):
+        path_to_fixed = os.path.join(DIR_TMP, "fixed.nii.gz")
+        path_to_moving = os.path.join(DIR_TMP, "moving.nii.gz")
+        path_to_fixed_mask = os.path.join(DIR_TMP, "fixed_mask.nii.gz")
+        path_to_moving_mask = os.path.join(DIR_TMP, "moving_mask.nii.gz")
+        path_to_tmp_output = os.path.join(DIR_TMP, "foo.nii.gz")
+        path_to_transform_regaladin = os.path.join(
+            DIR_TMP, "transform_regaladin.txt")
+        path_to_transform_sitk = os.path.join(
+            DIR_TMP, "transform_sitk.txt")
+
+        sitkh.write_nifti_image_sitk(self._fixed.sitk, path_to_fixed)
+        sitkh.write_nifti_image_sitk(self._moving.sitk, path_to_moving)
+        sitkh.write_nifti_image_sitk(self._fixed.sitk_mask, path_to_fixed_mask)
+        # sitkh.write_nifti_image_sitk(
+        #     self._moving.sitk_mask, path_to_moving_mask)
+
+        for i in range(len(transformations)):
+            sitk.WriteTransform(transformations[i], path_to_transform_sitk)
+
+            # Convert SimpleITK to RegAladin transform
+            cmd = "simplereg_transform -sitk2nreg %s %s" % (
+                path_to_transform_sitk, path_to_transform_regaladin)
+            ph.execute_command(cmd, verbose=False)
+
+            # Run NiftyReg
+            cmd_args = ["reg_aladin"]
+            cmd_args.append("-ref %s" % path_to_fixed)
+            cmd_args.append("-flo %s" % path_to_moving)
+            cmd_args.append("-res %s" % path_to_tmp_output)
+            cmd_args.append("-inaff %s" % path_to_transform_regaladin)
+            cmd_args.append("-aff %s" % path_to_transform_regaladin)
+            cmd_args.append("-rigOnly")
+            cmd_args.append("-ln 2")
+            cmd_args.append("-voff")
+            cmd_args.append("-rmask %s" % path_to_fixed_mask)
+            # To avoid error "0 correspondences between blocks were found" that can
+            # occur for some cases. Also, disable moving mask, as this would be ignored
+            # anyway
+            cmd_args.append("-noSym")
+            ph.print_info("Run Registration (RegAladin) ... ", newline=False)
+            ph.execute_command(" ".join(cmd_args), verbose=False)
+            print("done")
+
+            # Convert RegAladin to SimpleITK transform
+            cmd = "simplereg_transform -nreg2sitk %s %s" % (
+                path_to_transform_regaladin, path_to_transform_sitk)
+            ph.execute_command(cmd, verbose=False)
+
+            transformations[i] = sitkh.read_transform_sitk(
+                path_to_transform_sitk)
+
+        return transformations

@@ -58,6 +58,12 @@ def main():
         help="Registration method used for the registration.",
         default="RegAladin",
     )
+    input_parser.add_argument(
+        "--refine-pca", "-refine-pca",
+        action='store_true',
+        help="If given, PCA-based initializations will be refined using "
+        "RegAladin registrations."
+    )
     input_parser.add_dir_input_mc()
     input_parser.add_verbose(default=0)
     input_parser.add_log_config(default=1)
@@ -98,7 +104,11 @@ def main():
         if args.moving_mask is None or args.fixed_mask is None:
             ph.print_warning("Fixed and moving masks are strongly encouraged")
         transform_initializer = tinit.TransformInitializer(
-            fixed=fixed, moving=moving, similarity_measure="NMI")
+            fixed=fixed,
+            moving=moving,
+            similarity_measure="NMI",
+            refine_pca_initializations=args.refine_pca,
+        )
         transform_initializer.run()
         transform_init_sitk = transform_initializer.get_transform_sitk()
     else:
@@ -109,6 +119,11 @@ def main():
     ph.print_title("Registration")
 
     if args.method == "RegAladin":
+
+        # # RegAladin registration already performed during PCA init
+        # if args.refine_pca:
+        #     return
+
         path_to_transform_regaladin = os.path.join(
             DIR_TMP, "transform_regaladin.txt")
 
@@ -125,12 +140,12 @@ def main():
         cmd_args.append("-inaff %s" % path_to_transform_regaladin)
         cmd_args.append("-aff %s" % path_to_transform_regaladin)
         cmd_args.append("-rigOnly")
-        cmd_args.append("-ln 2")
+        cmd_args.append("-ln 2")  # seems to perform better for spina bifida
         cmd_args.append("-voff")
         if args.fixed_mask is not None:
             cmd_args.append("-rmask %s" % args.fixed_mask)
 
-        # To avoid error "0 correspondances between blocks were found" that can
+        # To avoid error "0 correspondences between blocks were found" that can
         # occur for some cases. Also, disable moving mask, as this would be ignored
         # anyway
         cmd_args.append("-noSym")
