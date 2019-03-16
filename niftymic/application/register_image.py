@@ -134,30 +134,30 @@ def main():
 
         # Run NiftyReg
         cmd_args = ["reg_aladin"]
-        cmd_args.append("-ref %s" % args.fixed)
-        cmd_args.append("-flo %s" % args.moving)
-        cmd_args.append("-res %s" % path_to_tmp_output)
-        cmd_args.append("-inaff %s" % path_to_transform_regaladin)
-        cmd_args.append("-aff %s" % path_to_transform_regaladin)
+        cmd_args.append("-ref '%s'" % args.fixed)
+        cmd_args.append("-flo '%s'" % args.moving)
+        cmd_args.append("-res '%s'" % path_to_tmp_output)
+        cmd_args.append("-inaff '%s'" % path_to_transform_regaladin)
+        cmd_args.append("-aff '%s'" % path_to_transform_regaladin)
         cmd_args.append("-rigOnly")
         cmd_args.append("-ln 2")  # seems to perform better for spina bifida
         cmd_args.append("-voff")
         if args.fixed_mask is not None:
-            cmd_args.append("-rmask %s" % args.fixed_mask)
+            cmd_args.append("-rmask '%s'" % args.fixed_mask)
 
         # To avoid error "0 correspondences between blocks were found" that can
         # occur for some cases. Also, disable moving mask, as this would be ignored
         # anyway
         cmd_args.append("-noSym")
         # if args.moving_mask is not None:
-        #     cmd_args.append("-fmask %s" % args.moving_mask)
+        #     cmd_args.append("-fmask '%s'" % args.moving_mask)
 
         ph.print_info("Run Registration (RegAladin) ... ", newline=False)
         ph.execute_command(" ".join(cmd_args), verbose=False)
         print("done")
 
         # Convert RegAladin to SimpleITK transform
-        cmd = "simplereg_transform -nreg2sitk %s %s" % (
+        cmd = "simplereg_transform -nreg2sitk '%s' '%s'" % (
             path_to_transform_regaladin, args.output)
         ph.execute_command(cmd, verbose=False)
 
@@ -165,7 +165,7 @@ def main():
         path_to_transform_flirt = os.path.join(DIR_TMP, "transform_flirt.txt")
 
         # Convert SimpleITK into FLIRT transform
-        cmd = "simplereg_transform -sitk2flirt %s %s %s %s" % (
+        cmd = "simplereg_transform -sitk2flirt '%s' '%s' '%s' '%s'" % (
             args.output, args.fixed, args.moving, path_to_transform_flirt)
         ph.execute_command(cmd, verbose=False)
 
@@ -174,24 +174,24 @@ def main():
                          for x in ["x", "y", "z"]]
 
         cmd_args = ["flirt"]
-        cmd_args.append("-in %s" % args.moving)
-        cmd_args.append("-ref %s" % args.fixed)
+        cmd_args.append("-in '%s'" % args.moving)
+        cmd_args.append("-ref '%s'" % args.fixed)
         if args.initial_transform is not None:
-            cmd_args.append("-init %s" % path_to_transform_flirt)
-        cmd_args.append("-omat %s" % path_to_transform_flirt)
-        cmd_args.append("-out %s" % path_to_tmp_output)
+            cmd_args.append("-init '%s'" % path_to_transform_flirt)
+        cmd_args.append("-omat '%s'" % path_to_transform_flirt)
+        cmd_args.append("-out '%s'" % path_to_tmp_output)
         cmd_args.append("-dof 6")
         cmd_args.append((" ").join(search_angles))
         if args.moving_mask is not None:
-            cmd_args.append("-inweight %s" % args.moving_mask)
+            cmd_args.append("-inweight '%s'" % args.moving_mask)
         if args.fixed_mask is not None:
-            cmd_args.append("-refweight %s" % args.fixed_mask)
+            cmd_args.append("-refweight '%s'" % args.fixed_mask)
         ph.print_info("Run Registration (FLIRT) ... ", newline=False)
         ph.execute_command(" ".join(cmd_args), verbose=False)
         print("done")
 
         # Convert FLIRT to SimpleITK transform
-        cmd = "simplereg_transform -flirt2sitk %s %s %s %s" % (
+        cmd = "simplereg_transform -flirt2sitk '%s' '%s' '%s' '%s'" % (
             path_to_transform_flirt, args.fixed, args.moving, args.output)
         ph.execute_command(cmd, verbose=False)
 
