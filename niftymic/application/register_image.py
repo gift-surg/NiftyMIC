@@ -71,8 +71,6 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    debug = 0
-
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
@@ -191,10 +189,8 @@ def main():
             path_to_transform_flirt, args.fixed, args.moving, args.output)
         ph.execute_command(cmd, verbose=False)
 
-    if debug:
-        ph.show_niftis([args.fixed, path_to_tmp_output])
-
     if args.dir_input_mc is not None:
+        ph.print_title("Update Motion-Correction Transformations")
         transform_sitk = sitkh.read_transform_sitk(
             args.output, inverse=1)
 
@@ -215,6 +211,8 @@ def main():
             t_sitk = sitkh.get_composite_sitk_affine_transform(
                 transform_sitk, t_sitk)
             sitk.WriteTransform(t_sitk, path_to_output_transform)
+        ph.print_info("%d transformations written to '%s'" % (
+            len(trafos), dir_output_mc))
 
     if args.verbose:
         ph.show_niftis([args.fixed, path_to_tmp_output])
