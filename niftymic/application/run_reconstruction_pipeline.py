@@ -248,6 +248,7 @@ def main():
             dir_output_recon_subject_space, "motion_correction"))
         cmd_args.append("--output %s" % trafo_template)
         cmd_args.append("--verbose %s" % args.verbose)
+        cmd_args.append("--refine-pca")
         if args.initial_transform is not None:
             cmd_args.append("--initial-transform %s" % args.initial_transform)
         cmd = (" ").join(cmd_args)
