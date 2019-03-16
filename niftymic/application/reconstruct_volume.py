@@ -125,7 +125,7 @@ def main():
             "output filename invalid; allowed extensions are: %s" %
             ", ".join(ALLOWED_EXTENSIONS))
 
-    if args.alpha_first < args.alpha:
+    if args.alpha_first < args.alpha and not args.sda:
         raise ValueError("It must hold alpha-first >= alpha")
 
     if args.threshold_first > args.threshold:
