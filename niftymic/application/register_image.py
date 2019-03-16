@@ -120,10 +120,6 @@ def main():
 
     if args.method == "RegAladin":
 
-        # RegAladin registration already performed during PCA init
-        if args.refine_pca and not args.verbose:
-            return
-
         path_to_transform_regaladin = os.path.join(
             DIR_TMP, "transform_regaladin.txt")
 
