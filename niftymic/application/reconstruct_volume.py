@@ -108,6 +108,14 @@ def main():
         "transformations to motion correction output directory",
         default=0,
     )
+    input_parser.add_argument(
+        "--robust-v2v", "-robust-v2v",
+        action='store_true',
+        help="If given, a more robust volume-to-volume registration step is "
+        "performed, i.e. four rigid registrations are performed using four "
+        "rigid transform initializations based on "
+        "principal component alignment of associated masks."
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -230,6 +238,7 @@ def main():
             reference=reference,
             registration_method=vol_registration,
             verbose=debug,
+            robust=args.robust_v2v,
         )
         v2vreg.run()
         stacks = v2vreg.get_stacks()

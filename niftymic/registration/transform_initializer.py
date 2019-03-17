@@ -210,7 +210,9 @@ class TransformInitializer(object):
             # occur for some cases. Also, disable moving mask, as this would be ignored
             # anyway
             cmd_args.append("-noSym")
-            ph.print_info("Run Registration (RegAladin) ... ", newline=False)
+            ph.print_info(
+                "Run Registration based on PCA-init %d ... " % (i + 1),
+                newline=False)
             ph.execute_command(" ".join(cmd_args), verbose=False)
             print("done")
 

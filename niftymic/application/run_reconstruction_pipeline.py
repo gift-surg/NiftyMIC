@@ -99,6 +99,14 @@ def main():
         "--alpha is considered the value for the standard deviation then. "
         "Recommended value is, e.g., --alpha 0.8"
     )
+    input_parser.add_argument(
+        "--robust-v2v", "-robust-v2v",
+        action='store_true',
+        help="If given, a more robust volume-to-volume registration step is "
+        "performed, i.e. four rigid registrations are performed using four "
+        "rigid transform initializations based on "
+        "principal component alignment of associated masks."
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -193,6 +201,9 @@ def main():
             cmd_args.append("--reference-mask %s" % args.reference_mask)
         if args.sda:
             cmd_args.append("--sda")
+        if args.robust_v2v:
+            cmd_args.append("--robust-v2v")
+
         cmd = (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
         exit_code = ph.execute_command(cmd)
@@ -254,7 +265,8 @@ def main():
         cmd_args.append("--verbose %s" % args.verbose)
         cmd_args.append("--refine-pca")
         if args.initial_transform is not None:
-            cmd_args.append("--initial-transform '%s'" % args.initial_transform)
+            cmd_args.append(
+                "--initial-transform '%s'" % args.initial_transform)
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:

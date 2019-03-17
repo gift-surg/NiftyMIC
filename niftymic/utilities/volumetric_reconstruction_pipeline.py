@@ -22,8 +22,9 @@ import niftymic.base.stack as st
 import niftymic.validation.motion_evaluator as me
 import niftymic.utilities.outlier_rejector as outre
 import niftymic.utilities.robust_motion_estimator as rme
-import niftymic.utilities.binary_mask_from_mask_srr_estimator as bm
+import niftymic.registration.transform_initializer as tinit
 import niftymic.reconstruction.scattered_data_approximation as sda
+import niftymic.utilities.binary_mask_from_mask_srr_estimator as bm
 
 from niftymic.definitions import VIEWER
 
@@ -128,6 +129,7 @@ class VolumeToVolumeRegistration(RegistrationPipeline):
                  registration_method,
                  verbose=1,
                  viewer=VIEWER,
+                 robust=False,
                  ):
         RegistrationPipeline.__init__(
             self,
@@ -137,12 +139,11 @@ class VolumeToVolumeRegistration(RegistrationPipeline):
             viewer=viewer,
             verbose=verbose,
         )
+        self._robust = robust
 
     def _run(self):
 
         ph.print_title("Volume-to-Volume Registration")
-
-        self._registration_method.set_moving(self._reference)
 
         for i in range(0, len(self._stacks)):
             txt = "Volume-to-Volume Registration -- " \
@@ -152,13 +153,25 @@ class VolumeToVolumeRegistration(RegistrationPipeline):
             else:
                 ph.print_info(txt)
 
-            self._registration_method.set_fixed(self._stacks[i])
-            self._registration_method.run()
+            if self._robust:
+                transform_initializer = tinit.TransformInitializer(
+                    fixed=self._reference,
+                    moving=self._stacks[i],
+                    similarity_measure="NCC",
+                    refine_pca_initializations=True,
+                )
+                transform_initializer.run()
+                transform_sitk = transform_initializer.get_transform_sitk()
+                transform_sitk = sitk.AffineTransform(
+                    transform_sitk.GetInverse())
+
+            else:
+                self._registration_method.set_moving(self._reference)
+                self._registration_method.set_fixed(self._stacks[i])
+                self._registration_method.run()
+                transform_sitk = self._registration_method.get_registration_transform_sitk()
 
             # Update position of stack
-            transform_sitk = \
-                self._registration_method.\
-                get_registration_transform_sitk()
             self._stacks[i].update_motion_correction(transform_sitk)
 
 
