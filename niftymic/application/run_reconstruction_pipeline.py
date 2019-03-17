@@ -107,6 +107,16 @@ def main():
         "rigid transform initializations based on "
         "principal component alignment of associated masks."
     )
+    input_parser.add_interleave(default=3)
+    input_parser.add_argument(
+        "--s2v-hierarchical", "-s2v-hierarchical",
+        action='store_true',
+        help="If given, a hierarchical approach for the first slice-to-volume "
+        "registration cycle is used, i.e. sub-packages defined by the "
+        "specified interleave (--interleave) are registered until each "
+        "slice is registered independently."
+    )
+
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -203,6 +213,8 @@ def main():
             cmd_args.append("--sda")
         if args.v2v_robust:
             cmd_args.append("--v2v-robust")
+        if args.s2v_hierarchical:
+            cmd_args.append("--s2v-hierarchical")
 
         cmd = (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()

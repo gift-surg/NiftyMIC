@@ -101,6 +101,14 @@ def main():
         "principal component alignment of associated masks."
     )
     input_parser.add_argument(
+        "--s2v-hierarchical", "-s2v-hierarchical",
+        action='store_true',
+        help="If given, a hierarchical approach for the first slice-to-volume "
+        "registration cycle is used, i.e. sub-packages defined by the "
+        "specified interleave (--interleave) are registered until each "
+        "slice is registered independently."
+    )
+    input_parser.add_argument(
         "--sda", "-sda",
         action='store_true',
         help="If given, the volumetric reconstructions are performed using "
@@ -428,6 +436,7 @@ def main():
                 interleave=args.interleave,
                 viewer=args.viewer,
                 verbose=args.verbose,
+                use_hierarchical_registration=args.s2v_hierarchical,
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
