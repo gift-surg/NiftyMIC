@@ -93,6 +93,14 @@ def main():
     input_parser.add_viewer(default="itksnap")
     input_parser.add_v2v_method(default="RegAladin")
     input_parser.add_argument(
+        "--v2v-robust", "-v2v-robust",
+        action='store_true',
+        help="If given, a more robust volume-to-volume registration step is "
+        "performed, i.e. four rigid registrations are performed using four "
+        "rigid transform initializations based on "
+        "principal component alignment of associated masks."
+    )
+    input_parser.add_argument(
         "--sda", "-sda",
         action='store_true',
         help="If given, the volumetric reconstructions are performed using "
@@ -107,14 +115,6 @@ def main():
         help="Write entire history of applied slice motion correction "
         "transformations to motion correction output directory",
         default=0,
-    )
-    input_parser.add_argument(
-        "--robust-v2v", "-robust-v2v",
-        action='store_true',
-        help="If given, a more robust volume-to-volume registration step is "
-        "performed, i.e. four rigid registrations are performed using four "
-        "rigid transform initializations based on "
-        "principal component alignment of associated masks."
     )
 
     args = input_parser.parse_args()
@@ -238,7 +238,7 @@ def main():
             reference=reference,
             registration_method=vol_registration,
             verbose=debug,
-            robust=args.robust_v2v,
+            robust=args.v2v_robust,
         )
         v2vreg.run()
         stacks = v2vreg.get_stacks()

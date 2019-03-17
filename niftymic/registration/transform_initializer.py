@@ -147,7 +147,11 @@ class TransformInitializer(object):
             reference=self._fixed,
             measures=[self._similarity_measure],
             use_reference_mask=True,
+            verbose=False,
         )
+        ph.print_info(
+            "Find best aligning transform as measured by %s" %
+            self._similarity_measure)
         image_similarity_evaluator.compute_similarities()
         similarities = image_similarity_evaluator.get_similarities()
 
@@ -214,7 +218,6 @@ class TransformInitializer(object):
                 "Run Registration based on PCA-init %d ... " % (i + 1),
                 newline=False)
             ph.execute_command(" ".join(cmd_args), verbose=False)
-            print("done")
 
             # Convert RegAladin to SimpleITK transform
             cmd = "simplereg_transform -nreg2sitk %s %s" % (

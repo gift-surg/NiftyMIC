@@ -100,7 +100,7 @@ def main():
         "Recommended value is, e.g., --alpha 0.8"
     )
     input_parser.add_argument(
-        "--robust-v2v", "-robust-v2v",
+        "--v2v-robust", "-v2v-robust",
         action='store_true',
         help="If given, a more robust volume-to-volume registration step is "
         "performed, i.e. four rigid registrations are performed using four "
@@ -201,8 +201,8 @@ def main():
             cmd_args.append("--reference-mask %s" % args.reference_mask)
         if args.sda:
             cmd_args.append("--sda")
-        if args.robust_v2v:
-            cmd_args.append("--robust-v2v")
+        if args.v2v_robust:
+            cmd_args.append("--v2v-robust")
 
         cmd = (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
