@@ -301,7 +301,7 @@ def main():
         # If outlier rejection is activated, eliminate obvious outliers early
         # from stack and re-run SDA to get initial volume without them
         ph.print_title("First Estimate of HR Volume")
-        if args.outlier_rejection and threshold_v2v > -2:
+        if args.outlier_rejection and threshold_v2v > -1:
             ph.print_subtitle("SDA Approximation")
             SDA = sda.ScatteredDataApproximation(
                 stacks, HR_volume, sigma=args.sigma)
