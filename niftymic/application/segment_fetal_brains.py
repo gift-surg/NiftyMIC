@@ -30,7 +30,8 @@ def main():
         "fetal_brain_seg (https://github.com/gift-surg/fetal_brain_seg). ",
     )
     input_parser.add_filenames(required=True)
-    input_parser.add_dir_output(required=True)
+    input_parser.add_filenames_masks(required=False)
+    input_parser.add_dir_output(required=False)
     input_parser.add_verbose(default=0)
     input_parser.add_log_config(default=0)
 
@@ -48,16 +49,26 @@ def main():
             "'export FETAL_BRAIN_SEG=path_to_fetal_brain_seg_dir' "
             "(in bashrc).")
 
+    if args.filenames_masks is None and args.dir_output is None:
+        raise IOError("Either --filenames-masks or --dir-output must be set")
+
+    if args.dir_output is not None:
+        args.filenames_masks = [
+            os.path.join(args.dir_output, os.path.basename(f))
+            for f in args.filenames
+        ]
+
+    if len(args.filenames) != len(args.filenames_masks):
+        raise IOError("Number of filenames and filenames-masks must match")
+
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
-    ph.create_directory(args.dir_output)
     cd_fetal_brain_seg = "cd %s" % DIR_FETAL_BRAIN_SEG
 
-    for f in args.filenames:
-
-        path_to_output = os.path.join(
-            args.dir_output, os.path.basename(f))
+    for f, m in zip(args.filenames, args.filenames_masks):
+        dir_output = os.path.dirname(m)
+        ph.create_directory(dir_output)
 
         # Change to root directory of fetal_brain_seg
         cmds = [cd_fetal_brain_seg]
@@ -66,7 +77,7 @@ def main():
         # not terminate because of provided 'non-brain images')
         cmd_args = ["python fetal_brain_seg.py"]
         cmd_args.append("--input_names %s" % f)
-        cmd_args.append("--segment_output_names %s" % path_to_output)
+        cmd_args.append("--segment_output_names %s" % m)
         cmds.append(" ".join(cmd_args))
 
         # Execute both steps
@@ -74,13 +85,13 @@ def main():
         flag = ph.execute_command(cmd)
 
         if flag != 0:
-            raise RuntimeError(
+            ph.print_warning(
                 "Error using fetal_brain_seg. \n"
                 "Execute '%s' for further investigation" %
                 cmd)
 
         if args.verbose:
-            ph.show_nifti(f, segmentation=path_to_output)
+            ph.show_nifti(f, segmentation=m)
 
     return 0
 
