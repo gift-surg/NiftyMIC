@@ -760,7 +760,7 @@ class InputArgparser(object):
         self,
         option_string="--log-config",
         type=int,
-        help="Turn on/off configuration of executed script.",
+        help="Turn on/off configuration log of executed script.",
         default=0,
     ):
         self._add_argument(dict(locals()))
