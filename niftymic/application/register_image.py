@@ -100,7 +100,7 @@ def main():
         ph.print_title("Estimate initial transform using PCA")
 
         if args.moving_mask is None or args.fixed_mask is None:
-            ph.print_warning("Fixed and moving masks are strongly encouraged")
+            ph.print_warning("Fixed and moving masks are strongly recommended")
         transform_initializer = tinit.TransformInitializer(
             fixed=fixed,
             moving=moving,
