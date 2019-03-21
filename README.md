@@ -194,6 +194,7 @@ Slices that were rejected during the `niftymic_reconstruct_volume` run are recog
 
 #### Parameter Studies to Determine Optimal SRR Parameters
 The optimal choice for reconstruction parameters like the regularization parameter or data loss function can be found by running parameter studies. This includes L-curve studies and direct comparison against a reference volume for various cost functions.
+In case a reference is available, similarity measures are evaluated against this "ground-truth" as well.
 
 Example are:
 ```
@@ -201,33 +202,22 @@ niftymic_run_reconstruction_parameter_study \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --dir-output dir-to-param-study-output \
---reconstruction-type HuberL2 \
---reference path-to-reference-volume.nii.gz \
---reference-mask path-to-reference-volume_mask.nii.gz \
---measures RMSE PSNR NCC NMI SSIM \
---alpha-range 0.001 0.003 10
-```
-```
-niftymic_run_reconstruction_parameter_study \
---filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---dir-input-mc dir-to-motion_correction \
---dir-output dir-to-param-study-output \
---reconstruction-type TVL2 \
---reference path-to-reference-volume.nii.gz \
---reference-mask path-to-reference-volume_mask.nii.gz \
---measures RMSE PSNR NCC NMI SSIM \
---alpha-range 0.001 0.003 10
-```
-```
-niftymic_run_reconstruction_parameter_study \
---filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---dir-input-mc dir-to-motion_correction \
---dir-output dir-to-param-study-output \
 --reconstruction-type TK1L2 \
---reference path-to-reference-volume.nii.gz \
---reference-mask path-to-reference-volume_mask.nii.gz \
---measures RMSE PSNR NCC NMI SSIM \
---alpha-range 0.001 0.05 20
+--reconstruction-space path-to-reconstruction-space.nii.gz \ # in absence of a reference ("ground-truth")
+--alphas 0.005 0.01 0.02 0.05 0.1 # regularization parameters to sweep through
+--append # if given, append a previously performed parameter study
+```
+```
+niftymic_run_reconstruction_parameter_study \
+--filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--dir-input-mc dir-to-motion_correction \
+--dir-output dir-to-param-study-output \
+--reconstruction-type HuberL2 \
+--reference path-to-reference-volume.nii.gz \ # in case reference is available
+--reference-mask path-to-reference-volume_mask.nii.gz \ # if given, evaluate 'measures' on masked region only
+--measures MAE RMSE PSNR NCC NMI SSIM \
+--alphas 0.001 0.003 0.005 0.001 0.003 \ # regularization parameters to sweep through
+--append # if given, append a previously performed parameter study (if available)
 ```
 
 The results can be assessed by accessing the [NSoL][nsol]-script `show_parameter_study.py` via
