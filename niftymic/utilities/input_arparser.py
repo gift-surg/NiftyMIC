@@ -119,7 +119,8 @@ class InputArgparser(object):
 
         # build output file name
         name = os.path.basename(file).split(".")[0]
-        time_stamp = "%s-%s" % (ph.get_current_date(), ph.get_current_time())
+        now = datetime.datetime.now()
+        time_stamp = now.strftime("%Y%m%d-%H%M%S")
         path_to_config_file = os.path.join(
             dir_output,
             "%s_%s_%s.json" % (prefix, name, time_stamp))
@@ -146,7 +147,6 @@ class InputArgparser(object):
         dic["user"] = user
 
         # add date of execution to config file
-        now = datetime.datetime.now()
         dic["date"] = now.strftime("%Y-%m-%d %H:%M:%S")
 
         # add version number to config file
