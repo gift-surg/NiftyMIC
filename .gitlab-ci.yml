@@ -171,7 +171,7 @@ param_study_huberl2:
       --suffix-mask _mask
       --reference ${DATADIR}/SRR_stacks3_TK1_lsmr_alpha0p03_itermax10_oriented.nii.gz 
       --dir-output ${TMPDIR}/param_study 
-      --alpha-range 0.01 0.05 2 
+      --alphas 0.01 0.05 
       --iter-max 2 
       --verbose 0 
       --iterations 2

@@ -839,13 +839,12 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
-    def add_alpha_range(
+    def add_alphas(
         self,
-        option_string="--alpha-range",
+        option_string="--alphas",
         nargs="+",
         type=float,
-        help="Specify regularization parameters by providing 'First Last Step'"
-        " information.",
+        help="Specify regularization parameters to be looped through.",
         default=None,
         required=False,
     ):
@@ -855,20 +854,18 @@ class InputArgparser(object):
         self,
         option_string="--data-losses",
         nargs="+",
-        help="Specify data losses  'First Last Step'"
-        " information.",
+        help="Specify data losses to be looped through.",
         default=None,
         required=False,
     ):
         self._add_argument(dict(locals()))
 
-    def add_data_loss_scale_range(
+    def add_data_loss_scales(
         self,
-        option_string="--data-loss-scale-range",
+        option_string="--data-loss-scales",
         nargs="+",
         type=float,
-        help="Specify data loss scales by providing 'First Last Step'"
-        " information.",
+        help="Specify data loss scales to be looped through.",
         default=None,
         required=False,
     ):
