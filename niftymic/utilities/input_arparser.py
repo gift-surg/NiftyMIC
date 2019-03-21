@@ -11,15 +11,14 @@ import os
 import re
 import six
 import sys
+import inspect
 import argparse
+import platform
+import datetime
 
 import pysitk.python_helper as ph
-import inspect
-
-from nsol.similarity_measures import SimilarityMeasures as \
-    SimilarityMeasures
-from nsol.loss_functions import LossFunctions as \
-    LossFunctions
+from nsol.similarity_measures import SimilarityMeasures as SimilarityMeasures
+from nsol.loss_functions import LossFunctions as LossFunctions
 
 import niftymic
 from niftymic.definitions import ALLOWED_EXTENSIONS
@@ -133,6 +132,22 @@ class InputArgparser(object):
         dic = {
             re.sub("_", "-", k): v
             for k, v in six.iteritems(dic_with_underscores)}
+
+        # add user info to config file
+        login = os.getlogin()
+        node = platform.node()
+        info_args = []
+        info_args.append(platform.system())
+        info_args.append(platform.release())
+        info_args.append(platform.version())
+        info_args.append(platform.machine())
+        info_args.append(platform.processor())
+        user = "%s @ %s (%s)" % (login, node, ", ".join(info_args))
+        dic["user"] = user
+
+        # add date of execution to config file
+        now = datetime.datetime.now()
+        dic["date"] = now.strftime("%Y-%m-%d %H:%M:%S")
 
         # add version number to config file
         dic["version"] = niftymic.__version__
@@ -975,7 +990,8 @@ class InputArgparser(object):
         # Insert all config entries into sys.argv
         for k, v in six.iteritems(dic):
 
-            if k == "version":
+            # ignore log info in config files
+            if k in ["version", "user", "date"]:
                 continue
 
             # A 'None' entry should be ignored
