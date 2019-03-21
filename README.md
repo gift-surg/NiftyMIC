@@ -205,7 +205,7 @@ niftymic_run_reconstruction_parameter_study \
 --reconstruction-type TK1L2 \
 --reconstruction-space path-to-reconstruction-space.nii.gz \ # in absence of a reference ("ground-truth")
 --alphas 0.005 0.01 0.02 0.05 0.1 # regularization parameters to sweep through
---append # if given, append a previously performed parameter study
+--append # if given, append a previously performed parameter study in output directory (if available)
 ```
 ```
 niftymic_run_reconstruction_parameter_study \
@@ -214,10 +214,10 @@ niftymic_run_reconstruction_parameter_study \
 --dir-output dir-to-param-study-output \
 --reconstruction-type HuberL2 \
 --reference path-to-reference-volume.nii.gz \ # in case reference is available
---reference-mask path-to-reference-volume_mask.nii.gz \ # if given, evaluate 'measures' on masked region only
---measures MAE RMSE PSNR NCC NMI SSIM \
+--measures MAE RMSE PSNR NCC NMI SSIM \ # evaluate reconstruction similarities against reference
+--reference-mask path-to-reference-volume_mask.nii.gz \ # if given, evaluate similarities (--measures) on masked region only
 --alphas 0.001 0.003 0.005 0.001 0.003 \ # regularization parameters to sweep through
---append # if given, append a previously performed parameter study (if available)
+--append # if given, append a previously performed parameter study in output directory (if available)
 ```
 
 The results can be assessed by accessing the [NSoL][nsol]-script `show_parameter_study.py` via
