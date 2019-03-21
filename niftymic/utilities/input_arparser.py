@@ -138,7 +138,7 @@ class InputArgparser(object):
         try:
             login = os.getlogin()
         except OSError as e:
-            login = "unknown_user"
+            login = "unknown_login"
         node = platform.node()
         info_args = []
         info_args.append(platform.system())
