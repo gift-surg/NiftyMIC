@@ -203,7 +203,7 @@ niftymic_run_reconstruction_parameter_study \
 --dir-input-mc dir-to-motion_correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type TK1L2 \
---reconstruction-space path-to-reconstruction-space.nii.gz \ # in absence of a reference ("ground-truth")
+--reconstruction-space path-to-reconstruction-space.nii.gz \ # define reconstruction space
 --alphas 0.005 0.01 0.02 0.05 0.1 # regularization parameters to sweep through
 --append # if given, append a previously performed parameter study in output directory (if available)
 ```
@@ -213,7 +213,7 @@ niftymic_run_reconstruction_parameter_study \
 --dir-input-mc dir-to-motion_correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type HuberL2 \
---reference path-to-reference-volume.nii.gz \ # in case reference is available
+--reference path-to-reference-volume.nii.gz \ # in case reference ("ground-truth") is available (reconstruction space is defined by this reference)
 --measures MAE RMSE PSNR NCC NMI SSIM \ # evaluate reconstruction similarities against reference
 --reference-mask path-to-reference-volume_mask.nii.gz \ # if given, evaluate similarities (--measures) on masked region only
 --alphas 0.001 0.003 0.005 0.001 0.003 \ # regularization parameters to sweep through
