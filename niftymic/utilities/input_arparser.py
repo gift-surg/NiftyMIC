@@ -135,7 +135,10 @@ class InputArgparser(object):
             for k, v in six.iteritems(dic_with_underscores)}
 
         # add user info to config file
-        login = os.getlogin()
+        try:
+            login = os.getlogin()
+        except OSError as e:
+            login = "unknown_user"
         node = platform.node()
         info_args = []
         info_args.append(platform.system())
