@@ -99,6 +99,23 @@ def main():
         "--alpha is considered the value for the standard deviation then. "
         "Recommended value is, e.g., --alpha 0.8"
     )
+    input_parser.add_argument(
+        "--v2v-robust", "-v2v-robust",
+        action='store_true',
+        help="If given, a more robust volume-to-volume registration step is "
+        "performed, i.e. four rigid registrations are performed using four "
+        "rigid transform initializations based on "
+        "principal component alignment of associated masks."
+    )
+    input_parser.add_interleave(default=3)
+    input_parser.add_argument(
+        "--s2v-hierarchical", "-s2v-hierarchical",
+        action='store_true',
+        help="If given, a hierarchical approach for the first slice-to-volume "
+        "registration cycle is used, i.e. sub-packages defined by the "
+        "specified interleave (--interleave) are registered until each "
+        "slice is registered independently."
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -137,9 +154,9 @@ def main():
             output = os.path.join(
                 dir_output_preprocessing, os.path.basename(f))
             cmd_args = []
-            cmd_args.append("--filename %s" % f)
-            cmd_args.append("--filename-mask %s" % args.filenames_masks[i])
-            cmd_args.append("--output %s" % output)
+            cmd_args.append("--filename '%s'" % f)
+            cmd_args.append("--filename-mask '%s'" % args.filenames_masks[i])
+            cmd_args.append("--output '%s'" % output)
             # cmd_args.append("--verbose %d" % args.verbose)
             cmd = "niftymic_correct_bias_field %s" % (" ").join(cmd_args)
             time_start_bias = ph.start_timing()
@@ -157,6 +174,10 @@ def main():
         elapsed_time_bias = ph.get_zero_time()
         filenames = args.filenames
 
+    # Add single quotes around individual filenames to account for whitespaces
+    filenames = ["'" + f + "'" for f in filenames]
+    filenames_masks = ["'" + f + "'" for f in args.filenames_masks]
+
     if args.run_recon_subject_space:
         target_stack_index = args.filenames.index(target_stack)
 
@@ -164,10 +185,10 @@ def main():
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
-                            (" ").join(args.filenames_masks))
+                            (" ").join(filenames_masks))
         cmd_args.append("--multiresolution %d" % args.multiresolution)
         cmd_args.append("--target-stack-index %d" % target_stack_index)
-        cmd_args.append("--output %s" % srr_subject)
+        cmd_args.append("--output '%s'" % srr_subject)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--intensity-correction %d" %
                         args.intensity_correction)
@@ -189,6 +210,11 @@ def main():
             cmd_args.append("--reference-mask %s" % args.reference_mask)
         if args.sda:
             cmd_args.append("--sda")
+        if args.v2v_robust:
+            cmd_args.append("--v2v-robust")
+        if args.s2v_hierarchical:
+            cmd_args.append("--s2v-hierarchical")
+
         cmd = (" ").join(cmd_args)
         time_start_volrec = ph.start_timing()
         exit_code = ph.execute_command(cmd)
@@ -201,10 +227,10 @@ def main():
             dir_motion_correction = os.path.join(
                 dir_output_recon_subject_space, "motion_correction")
             cmd_args = ["niftymic_reconstruct_volume_from_slices"]
-            cmd_args.append("--filenames %s" % " ".join(args.filenames_masks))
-            cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
-            cmd_args.append("--output %s" % srr_subject_mask)
-            cmd_args.append("--reconstruction-space %s" % srr_subject)
+            cmd_args.append("--filenames %s" % " ".join(filenames_masks))
+            cmd_args.append("--dir-input-mc '%s'" % dir_motion_correction)
+            cmd_args.append("--output '%s'" % srr_subject_mask)
+            cmd_args.append("--reconstruction-space '%s'" % srr_subject)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
             if args.slice_thicknesses is not None:
@@ -240,16 +266,18 @@ def main():
 
         # Register SRR to template space
         cmd_args = ["niftymic_register_image"]
-        cmd_args.append("--fixed %s" % template)
-        cmd_args.append("--moving %s" % srr_subject)
-        cmd_args.append("--fixed-mask %s" % template_mask)
-        cmd_args.append("--moving-mask %s" % srr_subject_mask)
-        cmd_args.append("--dir-input-mc %s" % os.path.join(
+        cmd_args.append("--fixed '%s'" % template)
+        cmd_args.append("--moving '%s'" % srr_subject)
+        cmd_args.append("--fixed-mask '%s'" % template_mask)
+        cmd_args.append("--moving-mask '%s'" % srr_subject_mask)
+        cmd_args.append("--dir-input-mc '%s'" % os.path.join(
             dir_output_recon_subject_space, "motion_correction"))
-        cmd_args.append("--output %s" % trafo_template)
+        cmd_args.append("--output '%s'" % trafo_template)
         cmd_args.append("--verbose %s" % args.verbose)
+        cmd_args.append("--refine-pca")
         if args.initial_transform is not None:
-            cmd_args.append("--initial-transform %s" % args.initial_transform)
+            cmd_args.append(
+                "--initial-transform '%s'" % args.initial_transform)
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
@@ -260,9 +288,9 @@ def main():
             dir_output_recon_template_space, "motion_correction")
         cmd_args = ["niftymic_reconstruct_volume_from_slices"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
-        cmd_args.append("--dir-input-mc %s" % dir_input_mc)
-        cmd_args.append("--output %s" % srr_template)
-        cmd_args.append("--reconstruction-space %s" % template)
+        cmd_args.append("--dir-input-mc '%s'" % dir_input_mc)
+        cmd_args.append("--output '%s'" % srr_template)
+        cmd_args.append("--reconstruction-space '%s'" % template)
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
@@ -283,10 +311,10 @@ def main():
             dir_motion_correction = os.path.join(
                 dir_output_recon_template_space, "motion_correction")
             cmd_args = ["niftymic_reconstruct_volume_from_slices"]
-            cmd_args.append("--filenames %s" % " ".join(args.filenames_masks))
-            cmd_args.append("--dir-input-mc %s" % dir_motion_correction)
-            cmd_args.append("--output %s" % srr_template_mask)
-            cmd_args.append("--reconstruction-space %s" % srr_template)
+            cmd_args.append("--filenames %s" % " ".join(filenames_masks))
+            cmd_args.append("--dir-input-mc '%s'" % dir_motion_correction)
+            cmd_args.append("--output '%s'" % srr_template_mask)
+            cmd_args.append("--reconstruction-space '%s'" % srr_template)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
             if args.slice_thicknesses is not None:
@@ -319,7 +347,7 @@ def main():
         output_masked = "Masked_%s" % output
         path_to_output_masked = os.path.join(args.dir_output, output_masked)
         cmd_args.append("--filenames %s" % " ".join(fnames))
-        cmd_args.append("--output %s" % path_to_output_masked)
+        cmd_args.append("--output '%s'" % path_to_output_masked)
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
@@ -343,9 +371,9 @@ def main():
         exe = os.path.abspath(show_slice_coverage.__file__)
         cmd_args = ["python %s" % exe]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
-        cmd_args.append("--dir-input-mc %s" % dir_input_mc)
-        cmd_args.append("--reconstruction-space %s" % srr_template)
-        cmd_args.append("--output %s" % srr_slice_coverage)
+        cmd_args.append("--dir-input-mc '%s'" % dir_input_mc)
+        cmd_args.append("--reconstruction-space '%s'" % srr_template)
+        cmd_args.append("--output '%s'" % srr_slice_coverage)
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
@@ -357,10 +385,10 @@ def main():
         cmd_args.append("--filenames %s" % (" ").join(filenames))
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
-                            (" ").join(args.filenames_masks))
-        cmd_args.append("--dir-input-mc %s" % dir_input_mc)
-        cmd_args.append("--dir-output %s" % dir_output_orig_vs_proj)
-        cmd_args.append("--reconstruction %s" % srr_template)
+                            (" ").join(filenames_masks))
+        cmd_args.append("--dir-input-mc '%s'" % dir_input_mc)
+        cmd_args.append("--dir-output '%s'" % dir_output_orig_vs_proj)
+        cmd_args.append("--reconstruction '%s'" % srr_template)
         cmd_args.append("--copy-data 1")
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
@@ -372,7 +400,7 @@ def main():
             raise RuntimeError("SRR slice projections failed")
 
         filenames_simulated = [
-            os.path.join(dir_output_orig_vs_proj, os.path.basename(f))
+            "'%s" % os.path.join(dir_output_orig_vs_proj, os.path.basename(f))
             for f in filenames]
 
         # Evaluate slice similarities to ground truth
@@ -381,24 +409,24 @@ def main():
         cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
         if args.filenames_masks is not None:
             cmd_args.append("--filenames-masks %s" %
-                            (" ").join(args.filenames_masks))
+                            (" ").join(filenames_masks))
         cmd_args.append("--measures NCC SSIM")
-        cmd_args.append("--dir-output %s" % dir_output_selfsimilarity)
+        cmd_args.append("--dir-output '%s'" % dir_output_selfsimilarity)
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
-            raise RuntimeError("Evaluation of slice similarities failed")
+            raise RuntimeError("Evaluation of stack similarities failed")
 
         # Generate figures showing the quantitative comparison
         exe = os.path.abspath(
             show_evaluated_simulated_stack_similarity.__file__)
         cmd_args = ["python %s" % exe]
-        cmd_args.append("--dir-input %s" % dir_output_selfsimilarity)
-        cmd_args.append("--dir-output %s" % dir_output_selfsimilarity)
+        cmd_args.append("--dir-input '%s'" % dir_output_selfsimilarity)
+        cmd_args.append("--dir-output '%s'" % dir_output_selfsimilarity)
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
-            ph.print_warning("Visualization of slice similarities failed")
+            ph.print_warning("Visualization of stack similarities failed")
 
         # Generate pdfs showing all the side-by-side comparisons
         if 0:
@@ -406,7 +434,7 @@ def main():
                 export_side_by_side_simulated_vs_original_slice_comparison.__file__)
             cmd_args = ["python %s" % exe]
             cmd_args.append("--filenames %s" % (" ").join(filenames_simulated))
-            cmd_args.append("--dir-output %s" % dir_output_orig_vs_proj_pdf)
+            cmd_args.append("--dir-output '%s'" % dir_output_orig_vs_proj_pdf)
             cmd = "python %s %s" % (exe, (" ").join(cmd_args))
             cmd = (" ").join(cmd_args)
             exit_code = ph.execute_command(cmd)

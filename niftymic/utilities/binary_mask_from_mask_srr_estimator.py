@@ -12,8 +12,10 @@ import re
 import numpy as np
 import SimpleITK as sitk
 
-import niftymic.base.stack as st
 import pysitk.simple_itk_helper as sitkh
+
+import niftymic.base.stack as st
+import niftymic.utilities.template_stack_estimator as tse
 
 
 ##
@@ -55,4 +57,9 @@ class BinaryMaskFromMaskSRREstimator(object):
         mask_sitk = sitk.BinaryThreshold(
             mask_sitk, lowerThreshold=self._lower, upperThreshold=self._upper)
 
-        self._mask_sitk = mask_sitk
+        # Keep largest connected region only
+        nda = sitk.GetArrayFromImage(mask_sitk)
+        nda = tse.TemplateStackEstimator.get_largest_connected_region_mask(nda)
+
+        self._mask_sitk = sitk.GetImageFromArray(nda)
+        self._mask_sitk.CopyInformation(mask_sitk)

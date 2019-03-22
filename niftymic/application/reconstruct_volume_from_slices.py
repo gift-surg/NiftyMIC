@@ -183,8 +183,9 @@ def main():
         recon0 = recon0.get_stack_multiplied_with_mask()
 
     ph.print_info(
-        "Isotropic reconstruction space defined with %g mm resolution" %
-        recon0.sitk.GetSpacing()[0])
+        "Reconstruction space defined with %s mm3 resolution" %
+        " x ".join([str(s) for s in recon0.sitk.GetSpacing()])
+    )
 
     if args.sda:
         ph.print_title("Compute SDA reconstruction")

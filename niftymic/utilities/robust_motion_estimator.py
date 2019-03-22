@@ -60,8 +60,14 @@ class RobustMotionEstimator(object):
                 ph.print_info("DOF %d/%d ... " % (
                     dof + 1, params.shape[0]))
             for package in temporal_packages:
+
+                # continue in case no slices in subpackage left
+                if len(package.keys()) == 0:
+                    continue
+
                 t = sorted(package.keys())
-                slices_package = [slice_indices.index(package[t_i]) for t_i in t]
+                slices_package = [slice_indices.index(
+                    package[t_i]) for t_i in t]
                 y = params[dof, slices_package]
 
                 y_est = self._run_gaussian_process_smoothing(
@@ -75,23 +81,41 @@ class RobustMotionEstimator(object):
     @staticmethod
     def _run_gaussian_process_smoothing(x, y, smoothing):
 
-        LARGE_NUMBER = 1000000
+        # LARGE_NUMBER = 1000000
         with pymc3.Model() as model:
             smoothing_param = theano.shared(smoothing)
-            mu = pymc3.Normal("mu", sd=LARGE_NUMBER)
-            tau = pymc3.Exponential("tau", 1.0 / LARGE_NUMBER)
+            # mu = pymc3.Normal("mu", sd=LARGE_NUMBER)
+            # tau = pymc3.Exponential("tau", 1.0 / LARGE_NUMBER)
+            # z = pymc3.distributions.timeseries.GaussianRandomWalk(
+            #     "z",
+            #     mu=mu,
+            #     tau=tau / (1.0 - smoothing_param),
+            #     shape=y.shape,
+            # )
+            # obs = pymc3.Normal(
+            #     "obs",
+            #     mu=z,
+            #     tau=tau / smoothing_param,
+            #     observed=y,
+            # )
+
+            sd = pymc3.Exponential("sd", 1)
             z = pymc3.distributions.timeseries.GaussianRandomWalk(
                 "z",
-                mu=mu,
-                tau=tau / (1.0 - smoothing_param),
+                mu=0,
+                sd=(1.0 - smoothing_param) * sd,
                 shape=y.shape,
             )
-            obs = pymc3.Normal(
+
+            nu = pymc3.Gamma("nu", alpha=2, beta=1)
+            obs = pymc3.StudentT(
                 "obs",
                 mu=z,
-                tau=tau / smoothing_param,
+                sd=sd * smoothing_param,
+                nu=nu,
                 observed=y,
             )
+
             res = pymc3.find_MAP(vars=[z], method="L-BFGS-B")
             return res['z']
 

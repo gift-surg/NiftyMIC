@@ -563,6 +563,7 @@ class Stack:
               write_slices=False,
               write_transforms=False,
               suffix_mask="_mask",
+              write_transforms_history=False,
               ):
 
         # Create directory if not existing
@@ -610,23 +611,28 @@ class Stack:
                 else:
                     if write_transforms and write_slices:
                         ph.print_info(
-                            "Write image slices and slice transforms to %s ... " %
-                            directory, newline=False)
+                            "Write %s image slices and slice transforms to %s ... " % (
+                                self.get_filename(), directory),
+                            newline=False)
                     elif write_transforms and not write_slices:
                         ph.print_info(
-                            "Write slice transforms to %s ... " %
-                            directory, newline=False)
+                            "Write %s slice transforms to %s ... " % (
+                                self.get_filename(), directory),
+                            newline=False)
                     else:
                         ph.print_info(
-                            "Write image slices to %s ... " %
-                            directory, newline=False)
+                            "Write %s image slices to %s ... " % (
+                                self.get_filename(), directory),
+                            newline=False)
                     for slice in self.get_slices():
                         slice.write(
                             directory=directory,
                             filename=filename,
                             write_transform=write_transforms,
                             write_slice=write_slices,
-                            suffix_mask=suffix_mask)
+                            suffix_mask=suffix_mask,
+                            write_transforms_history=write_transforms_history,
+                        )
                     print("done")
 
             except ValueError as err:

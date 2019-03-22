@@ -64,7 +64,7 @@ def main():
     input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_iterations(default=15)
     input_parser.add_alpha(default=0.015)
-    input_parser.add_alpha_first(default=0.05)
+    input_parser.add_alpha_first(default=0.2)
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)
     input_parser.add_dilation_radius(default=3)
@@ -84,11 +84,27 @@ def main():
     input_parser.add_reference()
     input_parser.add_reference_mask()
     input_parser.add_outlier_rejection(default=1)
-    input_parser.add_threshold_first(default=0.6)
+    input_parser.add_threshold_first(default=0.5)
     input_parser.add_threshold(default=0.8)
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_viewer(default="itksnap")
     input_parser.add_v2v_method(default="RegAladin")
+    input_parser.add_argument(
+        "--v2v-robust", "-v2v-robust",
+        action='store_true',
+        help="If given, a more robust volume-to-volume registration step is "
+        "performed, i.e. four rigid registrations are performed using four "
+        "rigid transform initializations based on "
+        "principal component alignment of associated masks."
+    )
+    input_parser.add_argument(
+        "--s2v-hierarchical", "-s2v-hierarchical",
+        action='store_true',
+        help="If given, a hierarchical approach for the first slice-to-volume "
+        "registration cycle is used, i.e. sub-packages defined by the "
+        "specified interleave (--interleave) are registered until each "
+        "slice is registered independently."
+    )
     input_parser.add_argument(
         "--sda", "-sda",
         action='store_true',
@@ -98,12 +114,20 @@ def main():
         "iterative adjustment. "
         "Recommended value is, e.g., --alpha 0.8"
     )
+    input_parser.add_option(
+        option_string="--transforms-history",
+        type=int,
+        help="Write entire history of applied slice motion correction "
+        "transformations to motion correction output directory",
+        default=0,
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
     rejection_measure = "NCC"
-    threshold_v2v = 0.3
+    threshold_v2v = -2  # 0.3
+    debug = False
 
     if args.v2v_method not in V2V_METHOD_OPTIONS:
         raise ValueError("v2v-method must be in {%s}" % (
@@ -113,6 +137,9 @@ def main():
         raise ValueError(
             "output filename invalid; allowed extensions are: %s" %
             ", ".join(ALLOWED_EXTENSIONS))
+
+    if args.alpha_first < args.alpha and not args.sda:
+        raise ValueError("It must hold alpha-first >= alpha")
 
     if args.threshold_first > args.threshold:
         raise ValueError("It must hold threshold-first <= threshold")
@@ -215,7 +242,8 @@ def main():
             stacks=stacks,
             reference=reference,
             registration_method=vol_registration,
-            verbose=args.verbose,
+            verbose=debug,
+            robust=args.v2v_robust,
         )
         v2vreg.run()
         stacks = v2vreg.get_stacks()
@@ -287,7 +315,7 @@ def main():
         # If outlier rejection is activated, eliminate obvious outliers early
         # from stack and re-run SDA to get initial volume without them
         ph.print_title("First Estimate of HR Volume")
-        if args.outlier_rejection:
+        if args.outlier_rejection and threshold_v2v > -1:
             ph.print_subtitle("SDA Approximation")
             SDA = sda.ScatteredDataApproximation(
                 stacks, HR_volume, sigma=args.sigma)
@@ -341,7 +369,6 @@ def main():
             moving=HR_volume,
             use_fixed_mask=True,
             use_moving_mask=True,
-            use_verbose=args.verbose,
             interpolator="Linear",
             metric=args.metric,
             metric_params=metric_params,
@@ -356,6 +383,7 @@ def main():
                 "lineSearchUpperLimit": 2,
             },
             scales_estimator="Jacobian",
+            use_verbose=debug,
         )
 
         # Volumetric reconstruction set-up
@@ -385,7 +413,7 @@ def main():
         alphas = np.linspace(
             alpha_range[0], alpha_range[1], args.two_step_cycles)
 
-        # Define outlier rejection thresholds for individual S2V-reg steps
+        # Define outlier rejection threshold after each S2V-reg step
         thresholds = np.linspace(
             args.threshold_first, args.threshold, args.two_step_cycles)
 
@@ -397,11 +425,12 @@ def main():
                 reconstruction_method=recon_method,
                 cycles=args.two_step_cycles,
                 alphas=alphas[0:args.two_step_cycles - 1],
-                verbose=args.verbose,
                 outlier_rejection=args.outlier_rejection,
                 threshold_measure=rejection_measure,
                 thresholds=thresholds,
                 viewer=args.viewer,
+                verbose=args.verbose,
+                use_hierarchical_registration=args.s2v_hierarchical,
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
@@ -430,6 +459,7 @@ def main():
                 write_mask=False,
                 write_slices=False,
                 write_transforms=True,
+                write_transforms_history=args.transforms_history,
             )
 
         if args.outlier_rejection:

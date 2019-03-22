@@ -82,19 +82,26 @@ class OutlierRejector(object):
                     stack.delete_slice(slice)
 
             if self._verbose:
-                ph.print_info("Stack %d/%d: Slice rejections %d/%d %s (%s)" % (
+                txt = "Stack %d/%d (%s): Slice rejections %d/%d [%s]" % (
                     i + 1,
                     len(self._stacks),
+                    stack.get_filename(),
                     len(stack.get_deleted_slice_numbers()),
                     stack.sitk.GetSize()[-1],
-                    stack.get_deleted_slice_numbers(),
-                    stack.get_filename(),
-                ))
+                    ph.convert_numbers_to_hyphenated_ranges(
+                        stack.get_deleted_slice_numbers()),
+                )
                 if len(rejections) > 0:
                     res_values = nda_sim[rejections]
-                    print("    Latest rejections: %s (%s < %g): %s" % (
-                        rejections, self._measure, self._threshold, res_values)
-                    )
+                    txt += " | Latest rejections: " \
+                        "[%s] (%s < %g): %s" % (
+                            ph.convert_numbers_to_hyphenated_ranges(
+                                rejections),
+                            self._measure,
+                            self._threshold,
+                            np.round(res_values, 2).tolist(),
+                        )
+                ph.print_info(txt)
 
             # Log stack where all slices were rejected
             if stack.get_number_of_slices() == 0:

@@ -108,6 +108,7 @@ setup(name='NiftyMIC',
               'niftymic_run_reconstruction_pipeline = niftymic.application.run_reconstruction_pipeline:main',
               'niftymic_nifti2dicom = niftymic.application.nifti2dicom:main',
               'niftymic_show_reconstruction_parameter_study = nsol.application.show_parameter_study:main',
+              'niftymic_segment_fetal_brains = niftymic.application.segment_fetal_brains:main',
           ],
       },
       )

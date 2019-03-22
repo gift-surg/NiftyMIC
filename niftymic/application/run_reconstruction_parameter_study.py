@@ -32,7 +32,9 @@ def main():
     # Read input
     input_parser = InputArgparser(
         description="Script to study reconstruction parameters and their "
-        "impact on the volumetric reconstruction quality.",
+        "impact on the volumetric reconstruction quality. "
+        "This script can only be used to sweep through one single parameter, "
+        "e.g. the regularization parameter 'alpha'. "
     )
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks()
@@ -48,27 +50,34 @@ def main():
     input_parser.add_reference_mask(default=None)
     input_parser.add_study_name()
     input_parser.add_reconstruction_type(default="TK1L2")
-    input_parser.add_measures(default=["PSNR", "RMSE", "SSIM", "NCC", "NMI"])
+    input_parser.add_measures(
+        default=["PSNR", "MAE", "RMSE", "SSIM", "NCC", "NMI"])
     input_parser.add_tv_solver(default="PD")
     input_parser.add_iterations(default=50)
     input_parser.add_rho(default=0.1)
     input_parser.add_iter_max(default=10)
     input_parser.add_minimizer(default="lsmr")
-    input_parser.add_alpha(default=0.01)
-    input_parser.add_data_loss(default="linear")
-    input_parser.add_data_loss_scale(default=1)
     input_parser.add_log_config(default=1)
+    input_parser.add_use_masks_srr(default=0)
     input_parser.add_verbose(default=1)
     input_parser.add_slice_thicknesses(default=None)
+    input_parser.add_argument(
+        "--append", "-append",
+        action='store_true',
+        help="If given, results are appended to previously executed parameter "
+        "study with identical parameters and study name store in the output "
+        "directory."
+    )
 
     # Range for parameter sweeps
-    input_parser.add_alpha_range(default=[0.001, 0.05, 20])  # TK1L2
-    # input_parser.add_alpha_range(default=[0.001, 0.003, 10])  # TVL2, HuberL2
+    input_parser.add_alphas(default=list(np.linspace(0.01, 0.5, 5)))
     input_parser.add_data_losses(
+        default=["linear"]
         # default=["linear", "arctan"]
     )
-    input_parser.add_data_loss_scale_range(
-        # default=[0.1, 1.5, 2]
+    input_parser.add_data_loss_scales(
+        default=[1]
+        # default=[0.1, 0.5, 1.5]
     )
 
     args = input_parser.parse_args()
@@ -121,15 +130,11 @@ def main():
 
     # ----------------------------Set Up Parameters----------------------------
     parameters = {}
-    parameters["alpha"] = np.linspace(
-        args.alpha_range[0], args.alpha_range[1], int(args.alpha_range[2]))
-    if args.data_losses is not None:
+    parameters["alpha"] = args.alphas
+    if len(args.data_losses) > 1:
         parameters["data_loss"] = args.data_losses
-    if args.data_loss_scale_range is not None:
-        parameters["data_loss_scale"] = np.linspace(
-            args.data_loss_scale_range[0],
-            args.data_loss_scale_range[1],
-            int(args.data_loss_scale_range[2]))
+    if len(args.data_loss_scales) > 1:
+        parameters["data_loss_scale"] = args.data_loss_scales
 
     # --------------------------Set Up Parameter Study-------------------------
     if args.study_name is None:
@@ -149,13 +154,14 @@ def main():
     tmp = tk.TikhonovSolver(
         stacks=stacks,
         reconstruction=reconstruction_space,
-        alpha=args.alpha,
+        alpha=args.alphas[0],
         iter_max=args.iter_max,
-        data_loss=args.data_loss,
-        data_loss_scale=args.data_loss_scale,
+        data_loss=args.data_losses[0],
+        data_loss_scale=args.data_loss_scales[0],
         reg_type="TK1",
         minimizer=args.minimizer,
         verbose=args.verbose,
+        use_masks=args.use_masks_srr,
     )
     solver = tmp.get_solver()
 
@@ -176,7 +182,7 @@ def main():
             iterations=args.iterations,
             measures=args.measures,
             dimension=3,
-            L2=16./reconstruction_space.sitk.GetSpacing()[0]**2,
+            L2=16. / reconstruction_space.sitk.GetSpacing()[0]**2,
             reconstruction_type=args.reconstruction_type,
             rho=args.rho,
             dir_output=args.dir_output,
@@ -187,6 +193,7 @@ def main():
             x_ref_mask=x_ref_mask,
             tv_solver=args.tv_solver,
             verbose=args.verbose,
+            append=args.append,
         )
     parameter_study_interface.set_up_parameter_study()
     parameter_study = parameter_study_interface.get_parameter_study()
