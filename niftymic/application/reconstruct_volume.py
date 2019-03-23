@@ -86,6 +86,7 @@ def main():
     input_parser.add_outlier_rejection(default=1)
     input_parser.add_threshold_first(default=0.5)
     input_parser.add_threshold(default=0.8)
+    input_parser.add_interleave(default=3)
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_viewer(default="itksnap")
     input_parser.add_v2v_method(default="RegAladin")
@@ -428,6 +429,7 @@ def main():
                 outlier_rejection=args.outlier_rejection,
                 threshold_measure=rejection_measure,
                 thresholds=thresholds,
+                interleave=args.interleave,
                 viewer=args.viewer,
                 verbose=args.verbose,
                 use_hierarchical_registration=args.s2v_hierarchical,
