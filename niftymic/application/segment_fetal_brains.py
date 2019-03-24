@@ -67,7 +67,20 @@ def main():
     cd_fetal_brain_seg = "cd %s" % DIR_FETAL_BRAIN_SEG
 
     for f, m in zip(args.filenames, args.filenames_masks):
+
+        if not ph.file_exists(f):
+            raise IOError("File '%s' does not exist" % f)
+
+        # use absolute path for input image
+        f = os.path.abspath(f)
+
+        # use absolute path for output image
         dir_output = os.path.dirname(m)
+        if not os.path.isabs(dir_output):
+            dir_output = os.path.realpath(
+                os.path.join(os.getcwd(), dir_output))
+            m = os.path.join(dir_output, os.path.basename(m))
+
         ph.create_directory(dir_output)
 
         # Change to root directory of fetal_brain_seg
@@ -76,8 +89,8 @@ def main():
         # Run masking independently (Takes longer but ensures that it does
         # not terminate because of provided 'non-brain images')
         cmd_args = ["python fetal_brain_seg.py"]
-        cmd_args.append("--input_names %s" % f)
-        cmd_args.append("--segment_output_names %s" % m)
+        cmd_args.append("--input_names '%s'" % f)
+        cmd_args.append("--segment_output_names '%s'" % m)
         cmds.append(" ".join(cmd_args))
 
         # Execute both steps
@@ -89,6 +102,8 @@ def main():
                 "Error using fetal_brain_seg. \n"
                 "Execute '%s' for further investigation" %
                 cmd)
+
+        ph.print_info("Fetal brain segmentation written to '%s'" % m)
 
         if args.verbose:
             ph.show_nifti(f, segmentation=m)

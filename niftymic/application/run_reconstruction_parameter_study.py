@@ -137,6 +137,7 @@ def main():
         parameters["data_loss_scale"] = args.data_loss_scales
 
     # --------------------------Set Up Parameter Study-------------------------
+    ph.print_title("Run Parameter Study")
     if args.study_name is None:
         name = args.reconstruction_type
     else:
