@@ -43,7 +43,7 @@ def main():
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks(required=True)
     input_parser.add_target_stack(required=False)
-    input_parser.add_suffix_mask(default="''")
+    input_parser.add_suffix_mask(default="")
     input_parser.add_dir_output(required=True)
     input_parser.add_alpha(default=0.01)
     input_parser.add_verbose(default=0)
@@ -116,7 +116,6 @@ def main():
         "specified interleave (--interleave) are registered until each "
         "slice is registered independently."
     )
-
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
