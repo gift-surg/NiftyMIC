@@ -78,7 +78,7 @@ def main():
         dir_output = os.path.dirname(m)
         if not os.path.isabs(dir_output):
             dir_output = os.path.realpath(
-                os.path.join(os.environ["PWD"], dir_output))
+                os.path.join(os.getcwd(), dir_output))
             m = os.path.join(dir_output, os.path.basename(m))
 
         ph.create_directory(dir_output)
