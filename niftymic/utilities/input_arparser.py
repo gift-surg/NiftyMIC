@@ -141,6 +141,7 @@ class InputArgparser(object):
             login = "unknown_login"
         node = platform.node()
         info_args = []
+        info_args.append("Python %s" % platform.python_version())
         info_args.append(platform.system())
         info_args.append(platform.release())
         info_args.append(platform.version())
