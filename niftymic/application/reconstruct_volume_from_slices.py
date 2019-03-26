@@ -153,6 +153,9 @@ def main():
             print("done (c1 = %g) " %
                   intensity_corrector.get_intensity_correction_coefficients())
 
+    # -------------------------Volumetric Reconstruction-----------------------
+    ph.print_title("Volumetric Reconstruction")
+
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:
         recon0 = \
@@ -184,7 +187,7 @@ def main():
 
     ph.print_info(
         "Reconstruction space defined with %s mm3 resolution" %
-        " x ".join([str(s) for s in recon0.sitk.GetSpacing()])
+        " x ".join(["%.2f" % s for s in recon0.sitk.GetSpacing()])
     )
 
     if args.sda:
@@ -203,8 +206,8 @@ def main():
 
     else:
         if args.reconstruction_type in ["TVL2", "HuberL2"]:
-            ph.print_title("Compute Initial value for %s" %
-                           args.reconstruction_type)
+            ph.print_title(
+                "Compute Initial value for %s" % args.reconstruction_type)
             SRR0 = tk.TikhonovSolver(
                 stacks=stacks,
                 reconstruction=recon0,
@@ -217,6 +220,8 @@ def main():
                 # verbose=args.verbose,
             )
         else:
+            ph.print_title(
+                "Compute %s reconstruction" % args.reconstruction_type)
             SRR0 = tk.TikhonovSolver(
                 stacks=stacks,
                 reconstruction=recon0,

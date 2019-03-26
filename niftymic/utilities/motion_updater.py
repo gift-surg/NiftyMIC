@@ -121,8 +121,8 @@ class MotionUpdater(object):
                     # slice_sitk = sitk.ReadImage(path_to_slice)
                     # slice_sitk_mask = sitk.ReadImage(path_to_slice_mask)
                     # hack = sl.Slice.from_sitk_image(
-                    #     # slice_sitk=slice_sitk,
-                    #     slice_sitk=slice_sitk_mask,  # mask for Mask-SRR!
+                    #     slice_sitk=slice_sitk,
+                    #     # slice_sitk=slice_sitk_mask,  # mask for Mask-SRR!
                     #     slice_sitk_mask=slice_sitk_mask,
                     #     slice_number=slices[i_slice].get_slice_number(),
                     #     slice_thickness=slices[i_slice].get_slice_thickness(),
