@@ -91,6 +91,8 @@ def main():
         help="Set initial transform to be used for register_image.",
         default=None)
     input_parser.add_outlier_rejection(default=1)
+    input_parser.add_threshold_first(default=0.5)
+    input_parser.add_threshold(default=0.8)
     input_parser.add_argument(
         "--sda", "-sda",
         action='store_true',
@@ -187,13 +189,10 @@ def main():
     filenames_masks = ["'" + f + "'" for f in args.filenames_masks]
 
     if args.run_recon_subject_space:
-        target_stack_index = args.filenames.index(target_stack)
 
         cmd_args = ["niftymic_reconstruct_volume"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
-        if args.filenames_masks is not None:
-            cmd_args.append("--filenames-masks %s" %
-                            (" ").join(filenames_masks))
+        cmd_args.append("--filenames-masks %s" % (" ").join(filenames_masks))
         cmd_args.append("--multiresolution %d" % args.multiresolution)
         cmd_args.append("--target-stack '%s'" % target_stack)
         cmd_args.append("--output '%s'" % srr_subject)
@@ -203,8 +202,9 @@ def main():
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--two-step-cycles %d" % args.two_step_cycles)
-        cmd_args.append("--outlier-rejection %d" %
-                        args.outlier_rejection)
+        cmd_args.append("--outlier-rejection %d" % args.outlier_rejection)
+        cmd_args.append("--threshold-first %f" % args.threshold_first)
+        cmd_args.append("--threshold %f" % args.threshold)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
