@@ -304,7 +304,8 @@ class MultipleImagesReader(ImageDataReader):
         if len(filename_mask) == 0:
             abs_path_mask = None
         else:
-            # exclude non-integer valued image as candidate
+            # exclude non-integer valued image as candidate (to avoid using 
+            # the same image as mask in case of suffix_mask = '')
             candidate = os.path.join(abs_path_to_directory, filename_mask[0])
             candidate_sitk = sitk.ReadImage(candidate)
             if "int" in candidate_sitk.GetPixelIDTypeAsString():
