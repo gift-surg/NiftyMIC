@@ -300,6 +300,7 @@ def main():
             dir_output_recon_template_space, "motion_correction")
         cmd_args = ["niftymic_reconstruct_volume_from_slices"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--filenames-masks %s" % (" ").join(filenames_masks))
         cmd_args.append("--dir-input-mc '%s'" % dir_input_mc)
         cmd_args.append("--output '%s'" % srr_template)
         cmd_args.append("--reconstruction-space '%s'" % template)
