@@ -47,7 +47,7 @@ def main():
     input_parser.add_dir_input_mc()
     input_parser.add_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_target_stack_index(default=0)
+    input_parser.add_target_stack(default=None)
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_isotropic_resolution(default=None)
     input_parser.add_intensity_correction(default=1)
@@ -126,6 +126,17 @@ def main():
 
     ph.print_info("%d input stacks read for further processing" % len(stacks))
 
+    # Specify target stack for intensity correction and reconstruction space
+    if args.target_stack is None:
+        target_stack_index = 0
+    else:
+        try:
+            target_stack_index = args.filenames.index(args.target_stack)
+        except ValueError as e:
+            raise ValueError(
+                "--target-stack must correspond to an image as provided by "
+                "--filenames")
+
     # ---------------------------Intensity Correction--------------------------
     if args.intensity_correction and not args.mask:
         ph.print_title("Intensity Correction")
@@ -136,7 +147,7 @@ def main():
         intensity_corrector.use_verbose(False)
 
         for i, stack in enumerate(stacks):
-            if i == args.target_stack_index:
+            if i == target_stack_index:
                 ph.print_info("Stack %d: Reference image. Skipped." % (i + 1))
                 continue
             else:
@@ -144,7 +155,7 @@ def main():
                               newline=False)
             intensity_corrector.set_stack(stack)
             intensity_corrector.set_reference(
-                stacks[args.target_stack_index].get_resampled_stack(
+                stacks[target_stack_index].get_resampled_stack(
                     resampling_grid=stack.sitk,
                     interpolator="NearestNeighbor",
                 ))
@@ -158,10 +169,9 @@ def main():
 
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:
-        recon0 = \
-            stacks[args.target_stack_index].get_isotropically_resampled_stack(
-                resolution=args.isotropic_resolution,
-                extra_frame=args.extra_frame_target)
+        recon0 = stacks[target_stack_index].get_isotropically_resampled_stack(
+            resolution=args.isotropic_resolution,
+            extra_frame=args.extra_frame_target)
         recon0 = recon0.get_cropped_stack_based_on_mask(
             boundary_i=args.extra_frame_target,
             boundary_j=args.extra_frame_target,
@@ -181,8 +191,7 @@ def main():
 
         # Use image information of selected target stack as recon0 serves
         # as initial value for reconstruction
-        recon0 = \
-            stacks[args.target_stack_index].get_resampled_stack(recon0.sitk)
+        recon0 = stacks[target_stack_index].get_resampled_stack(recon0.sitk)
         recon0 = recon0.get_stack_multiplied_with_mask()
 
     ph.print_info(

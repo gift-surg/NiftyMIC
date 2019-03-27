@@ -144,11 +144,6 @@ def main():
     srr_slice_coverage = os.path.join(
         dir_output_diagnostics, "%s_template_slicecoverage.nii.gz" % filename_srr)
 
-    if args.target_stack is None:
-        target_stack = args.filenames[0]
-    else:
-        target_stack = args.target_stack
-
     if args.bias_field_correction and args.run_bias_field_correction:
         for i, f in enumerate(args.filenames):
             output = os.path.join(
@@ -175,6 +170,18 @@ def main():
         elapsed_time_bias = ph.get_zero_time()
         filenames = args.filenames
 
+    # Specify target stack for intensity correction and reconstruction space
+    if args.target_stack is None:
+        target_stack = filenames[0]
+    else:
+        try:
+            target_stack_index = args.filenames.index(args.target_stack)
+        except ValueError as e:
+            raise ValueError(
+                "--target-stack must correspond to an image as provided by "
+                "--filenames")
+        target_stack = filenames[target_stack_index]
+
     # Add single quotes around individual filenames to account for whitespaces
     filenames = ["'" + f + "'" for f in filenames]
     filenames_masks = ["'" + f + "'" for f in args.filenames_masks]
@@ -188,7 +195,7 @@ def main():
             cmd_args.append("--filenames-masks %s" %
                             (" ").join(filenames_masks))
         cmd_args.append("--multiresolution %d" % args.multiresolution)
-        cmd_args.append("--target-stack-index %d" % target_stack_index)
+        cmd_args.append("--target-stack '%s'" % target_stack)
         cmd_args.append("--output '%s'" % srr_subject)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--intensity-correction %d" %
@@ -233,6 +240,7 @@ def main():
             cmd_args.append("--dir-input-mc '%s'" % dir_motion_correction)
             cmd_args.append("--output '%s'" % srr_subject_mask)
             cmd_args.append("--reconstruction-space '%s'" % srr_subject)
+            cmd_args.append("--target-stack '%s'" % target_stack)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
             cmd_args.append("--log-config %d" % args.log_config)
@@ -295,6 +303,7 @@ def main():
         cmd_args.append("--dir-input-mc '%s'" % dir_input_mc)
         cmd_args.append("--output '%s'" % srr_template)
         cmd_args.append("--reconstruction-space '%s'" % template)
+        cmd_args.append("--target-stack '%s'" % target_stack)
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
@@ -320,6 +329,7 @@ def main():
             cmd_args.append("--dir-input-mc '%s'" % dir_motion_correction)
             cmd_args.append("--output '%s'" % srr_template_mask)
             cmd_args.append("--reconstruction-space '%s'" % srr_template)
+            cmd_args.append("--target-stack '%s'" % target_stack)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--log-config %d" % args.log_config)
             cmd_args.append("--mask")

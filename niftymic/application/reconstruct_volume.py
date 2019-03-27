@@ -55,7 +55,7 @@ def main():
     input_parser.add_filenames_masks()
     input_parser.add_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_target_stack_index(default=0)
+    input_parser.add_target_stack(default=None)
     input_parser.add_search_angle(default=45)
     input_parser.add_multiresolution(default=0)
     input_parser.add_shrink_factors(default=[3, 2, 1])
@@ -179,6 +179,17 @@ def main():
         # args.extra_frame_target = 0
         # ph.wrint_warning("Overwritten: extra-frame-target set to 0")
 
+    # Specify target stack for intensity correction and reconstruction space
+    if args.target_stack is None:
+        target_stack_index = 0
+    else:
+        try:
+            target_stack_index = args.filenames.index(args.target_stack)
+        except ValueError as e:
+            raise ValueError(
+                "--target-stack must correspond to an image as provided by "
+                "--filenames")
+
     # ---------------------------Data Preprocessing---------------------------
     ph.print_title("Data Preprocessing")
 
@@ -193,7 +204,7 @@ def main():
         segmentation_propagator=segmentation_propagator,
         use_cropping_to_mask=True,
         use_N4BiasFieldCorrector=args.bias_field_correction,
-        target_stack_index=args.target_stack_index,
+        target_stack_index=target_stack_index,
         boundary_i=args.boundary_stacks[0],
         boundary_j=args.boundary_stacks[1],
         boundary_k=args.boundary_stacks[2],
@@ -213,7 +224,7 @@ def main():
             extract_slices=False)
 
     else:
-        reference = st.Stack.from_stack(stacks[args.target_stack_index])
+        reference = st.Stack.from_stack(stacks[target_stack_index])
 
     # ------------------------Volume-to-Volume Registration--------------------
     if args.two_step_cycles > 0 and len(stacks) > 1:
@@ -265,7 +276,7 @@ def main():
         intensity_corrector.use_verbose(False)
 
         for i, stack in enumerate(stacks):
-            if i == args.target_stack_index:
+            if i == target_stack_index:
                 ph.print_info("Stack %d: Reference image. Skipped." % (i + 1))
                 continue
             else:
@@ -273,7 +284,7 @@ def main():
                               newline=False)
             intensity_corrector.set_stack(stack)
             intensity_corrector.set_reference(
-                stacks[args.target_stack_index].get_resampled_stack(
+                stacks[target_stack_index].get_resampled_stack(
                     resampling_grid=stack.sitk,
                     interpolator="NearestNeighbor",
                 ))
