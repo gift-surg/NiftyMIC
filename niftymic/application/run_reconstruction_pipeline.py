@@ -158,6 +158,7 @@ def main():
             cmd_args.append("--filename-mask '%s'" % args.filenames_masks[i])
             cmd_args.append("--output '%s'" % output)
             # cmd_args.append("--verbose %d" % args.verbose)
+            cmd_args.append("--log-config %d" % args.log_config)
             cmd = "niftymic_correct_bias_field %s" % (" ").join(cmd_args)
             time_start_bias = ph.start_timing()
             exit_code = ph.execute_command(cmd)
@@ -201,6 +202,7 @@ def main():
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
         cmd_args.append("--verbose %d" % args.verbose)
+        cmd_args.append("--log-config %d" % args.log_config)
         if args.isotropic_resolution is not None:
             cmd_args.append("--isotropic-resolution %f" %
                             args.isotropic_resolution)
@@ -233,6 +235,7 @@ def main():
             cmd_args.append("--reconstruction-space '%s'" % srr_subject)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
+            cmd_args.append("--log-config %d" % args.log_config)
             if args.slice_thicknesses is not None:
                 cmd_args.append("--slice-thicknesses %s" %
                                 " ".join(map(str, args.slice_thicknesses)))
@@ -274,6 +277,7 @@ def main():
             dir_output_recon_subject_space, "motion_correction"))
         cmd_args.append("--output '%s'" % trafo_template)
         cmd_args.append("--verbose %s" % args.verbose)
+        cmd_args.append("--log-config %d" % args.log_config)
         cmd_args.append("--refine-pca")
         if args.initial_transform is not None:
             cmd_args.append(
@@ -295,6 +299,7 @@ def main():
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
+        cmd_args.append("--log-config %d" % args.log_config)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
@@ -316,6 +321,7 @@ def main():
             cmd_args.append("--output '%s'" % srr_template_mask)
             cmd_args.append("--reconstruction-space '%s'" % srr_template)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
+            cmd_args.append("--log-config %d" % args.log_config)
             cmd_args.append("--mask")
             if args.slice_thicknesses is not None:
                 cmd_args.append("--slice-thicknesses %s" %
