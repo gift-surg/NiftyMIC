@@ -345,28 +345,30 @@ def main():
             ph.execute_command(cmd)
 
         # Copy SRR to output directory
-        output = "%sSRR_Stacks%d.nii.gz" % (
-            args.prefix_output, len(args.filenames))
-        path_to_output = os.path.join(args.dir_output, output)
-        cmd = "cp -p %s %s" % (srr_template, path_to_output)
-        exit_code = ph.execute_command(cmd)
-        if exit_code != 0:
-            raise RuntimeError("Copy of SRR to output directory failed")
+        if 0:
+            output = "%sSRR_Stacks%d.nii.gz" % (
+                args.prefix_output, len(args.filenames))
+            path_to_output = os.path.join(args.dir_output, output)
+            cmd = "cp -p '%s' '%s'" % (srr_template, path_to_output)
+            exit_code = ph.execute_command(cmd)
+            if exit_code != 0:
+                raise RuntimeError("Copy of SRR to output directory failed")
 
         # Multiply template mask with reconstruction
-        cmd_args = ["niftymic_multiply"]
-        fnames = [
-            srr_template,
-            srr_template_mask,
-        ]
-        output_masked = "Masked_%s" % output
-        path_to_output_masked = os.path.join(args.dir_output, output_masked)
-        cmd_args.append("--filenames %s" % " ".join(fnames))
-        cmd_args.append("--output '%s'" % path_to_output_masked)
-        cmd = (" ").join(cmd_args)
-        exit_code = ph.execute_command(cmd)
-        if exit_code != 0:
-            raise RuntimeError("SRR brain masking failed")
+        if 0:
+            cmd_args = ["niftymic_multiply"]
+            fnames = [
+                srr_template,
+                srr_template_mask,
+            ]
+            output_masked = "Masked_%s" % output
+            path_to_output_masked = os.path.join(args.dir_output, output_masked)
+            cmd_args.append("--filenames %s" % " ".join(fnames))
+            cmd_args.append("--output '%s'" % path_to_output_masked)
+            cmd = (" ").join(cmd_args)
+            exit_code = ph.execute_command(cmd)
+            if exit_code != 0:
+                raise RuntimeError("SRR brain masking failed")
 
     else:
         elapsed_time_template = ph.get_zero_time()
