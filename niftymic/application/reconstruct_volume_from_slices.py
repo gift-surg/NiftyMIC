@@ -148,11 +148,12 @@ def main():
 
         for i, stack in enumerate(stacks):
             if i == target_stack_index:
-                ph.print_info("Stack %d: Reference image. Skipped." % (i + 1))
+                ph.print_info("Stack %d (%s): Reference image. Skipped." % (
+                    i + 1, stack.get_filename()))
                 continue
             else:
-                ph.print_info("Stack %d: Intensity Correction ... " % (i + 1),
-                              newline=False)
+                ph.print_info("Stack %d (%s): Intensity Correction ... " % (
+                    i + 1, stack.get_filename()), newline=False)
             intensity_corrector.set_stack(stack)
             intensity_corrector.set_reference(
                 stacks[target_stack_index].get_resampled_stack(
