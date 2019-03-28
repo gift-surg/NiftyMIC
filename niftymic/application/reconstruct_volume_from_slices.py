@@ -130,8 +130,10 @@ def main():
     if args.target_stack is None:
         target_stack_index = 0
     else:
+        filenames = ["%s.nii.gz" % s.get_filename() for s in stacks]
+        filename_target_stack = os.path.basename(args.target_stack)
         try:
-            target_stack_index = args.filenames.index(args.target_stack)
+            target_stack_index = filenames.index(filename_target_stack)
         except ValueError as e:
             raise ValueError(
                 "--target-stack must correspond to an image as provided by "
