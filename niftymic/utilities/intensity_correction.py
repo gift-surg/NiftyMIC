@@ -337,6 +337,11 @@ class IntensityCorrection(object):
         B = np.linalg.pinv(A.transpose().dot(A)).dot(A.transpose())
         c1, c0 = B.dot(y)
 
+        if np.isnan(c1) or np.isnan(c0):
+            raise RuntimeError(
+                "Invalid value encountered during affine intensity correction "
+                "(c1, c0) = (%f, %f)" % (c1, c0))
+
         if self._use_verbose:
             ph.print_info("(c1, c0) = (%.3f, %.3f)" % (c1, c0))
 
@@ -369,6 +374,11 @@ class IntensityCorrection(object):
         # ph.show_2D_array_list([nda, nda_reference])
         # Solve via normal equations: c1 = x'y/(x'x)
         c1 = x.dot(y) / x.dot(x)
+
+        if np.isnan(c1):
+            raise RuntimeError(
+                "Invalid value encountered during linear intensity correction "
+                "(c1 = %f)" % c1)
 
         if self._use_verbose:
             ph.print_info("c1 = %.3f" % (c1))

@@ -608,7 +608,7 @@ class InputArgparser(object):
         type=float,
         help="Threshold between 0 and 1 to detect misregistered slices based "
         "on NCC in final cycle.",
-        default=0.7,
+        default=0.8,
     ):
         self._add_argument(dict(locals()))
 
@@ -618,7 +618,7 @@ class InputArgparser(object):
         type=float,
         help="Threshold between 0 and 1 to detect misregistered slices based "
         "on NCC in first cycle.",
-        default=0.6,
+        default=0.5,
     ):
         self._add_argument(dict(locals()))
 

@@ -91,6 +91,8 @@ def main():
         help="Set initial transform to be used for register_image.",
         default=None)
     input_parser.add_outlier_rejection(default=1)
+    input_parser.add_threshold_first(default=0.5)
+    input_parser.add_threshold(default=0.8)
     input_parser.add_argument(
         "--sda", "-sda",
         action='store_true',
@@ -144,11 +146,6 @@ def main():
     srr_slice_coverage = os.path.join(
         dir_output_diagnostics, "%s_template_slicecoverage.nii.gz" % filename_srr)
 
-    if args.target_stack is None:
-        target_stack = args.filenames[0]
-    else:
-        target_stack = args.target_stack
-
     if args.bias_field_correction and args.run_bias_field_correction:
         for i, f in enumerate(args.filenames):
             output = os.path.join(
@@ -158,6 +155,7 @@ def main():
             cmd_args.append("--filename-mask '%s'" % args.filenames_masks[i])
             cmd_args.append("--output '%s'" % output)
             # cmd_args.append("--verbose %d" % args.verbose)
+            cmd_args.append("--log-config %d" % args.log_config)
             cmd = "niftymic_correct_bias_field %s" % (" ").join(cmd_args)
             time_start_bias = ph.start_timing()
             exit_code = ph.execute_command(cmd)
@@ -174,20 +172,29 @@ def main():
         elapsed_time_bias = ph.get_zero_time()
         filenames = args.filenames
 
+    # Specify target stack for intensity correction and reconstruction space
+    if args.target_stack is None:
+        target_stack = filenames[0]
+    else:
+        try:
+            target_stack_index = args.filenames.index(args.target_stack)
+        except ValueError as e:
+            raise ValueError(
+                "--target-stack must correspond to an image as provided by "
+                "--filenames")
+        target_stack = filenames[target_stack_index]
+
     # Add single quotes around individual filenames to account for whitespaces
     filenames = ["'" + f + "'" for f in filenames]
     filenames_masks = ["'" + f + "'" for f in args.filenames_masks]
 
     if args.run_recon_subject_space:
-        target_stack_index = args.filenames.index(target_stack)
 
         cmd_args = ["niftymic_reconstruct_volume"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
-        if args.filenames_masks is not None:
-            cmd_args.append("--filenames-masks %s" %
-                            (" ").join(filenames_masks))
+        cmd_args.append("--filenames-masks %s" % (" ").join(filenames_masks))
         cmd_args.append("--multiresolution %d" % args.multiresolution)
-        cmd_args.append("--target-stack-index %d" % target_stack_index)
+        cmd_args.append("--target-stack '%s'" % target_stack)
         cmd_args.append("--output '%s'" % srr_subject)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--intensity-correction %d" %
@@ -195,12 +202,14 @@ def main():
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--two-step-cycles %d" % args.two_step_cycles)
-        cmd_args.append("--outlier-rejection %d" %
-                        args.outlier_rejection)
+        cmd_args.append("--outlier-rejection %d" % args.outlier_rejection)
+        cmd_args.append("--threshold-first %f" % args.threshold_first)
+        cmd_args.append("--threshold %f" % args.threshold)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
         cmd_args.append("--verbose %d" % args.verbose)
+        cmd_args.append("--log-config %d" % args.log_config)
         if args.isotropic_resolution is not None:
             cmd_args.append("--isotropic-resolution %f" %
                             args.isotropic_resolution)
@@ -233,6 +242,7 @@ def main():
             cmd_args.append("--reconstruction-space '%s'" % srr_subject)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--mask")
+            cmd_args.append("--log-config %d" % args.log_config)
             if args.slice_thicknesses is not None:
                 cmd_args.append("--slice-thicknesses %s" %
                                 " ".join(map(str, args.slice_thicknesses)))
@@ -274,6 +284,7 @@ def main():
             dir_output_recon_subject_space, "motion_correction"))
         cmd_args.append("--output '%s'" % trafo_template)
         cmd_args.append("--verbose %s" % args.verbose)
+        cmd_args.append("--log-config %d" % args.log_config)
         cmd_args.append("--refine-pca")
         if args.initial_transform is not None:
             cmd_args.append(
@@ -288,13 +299,16 @@ def main():
             dir_output_recon_template_space, "motion_correction")
         cmd_args = ["niftymic_reconstruct_volume_from_slices"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
+        cmd_args.append("--filenames-masks %s" % (" ").join(filenames_masks))
         cmd_args.append("--dir-input-mc '%s'" % dir_input_mc)
         cmd_args.append("--output '%s'" % srr_template)
         cmd_args.append("--reconstruction-space '%s'" % template)
+        cmd_args.append("--target-stack '%s'" % target_stack)
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
+        cmd_args.append("--log-config %d" % args.log_config)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
@@ -316,6 +330,7 @@ def main():
             cmd_args.append("--output '%s'" % srr_template_mask)
             cmd_args.append("--reconstruction-space '%s'" % srr_template)
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
+            cmd_args.append("--log-config %d" % args.log_config)
             cmd_args.append("--mask")
             if args.slice_thicknesses is not None:
                 cmd_args.append("--slice-thicknesses %s" %
@@ -330,28 +345,30 @@ def main():
             ph.execute_command(cmd)
 
         # Copy SRR to output directory
-        output = "%sSRR_Stacks%d.nii.gz" % (
-            args.prefix_output, len(args.filenames))
-        path_to_output = os.path.join(args.dir_output, output)
-        cmd = "cp -p %s %s" % (srr_template, path_to_output)
-        exit_code = ph.execute_command(cmd)
-        if exit_code != 0:
-            raise RuntimeError("Copy of SRR to output directory failed")
+        if 0:
+            output = "%sSRR_Stacks%d.nii.gz" % (
+                args.prefix_output, len(args.filenames))
+            path_to_output = os.path.join(args.dir_output, output)
+            cmd = "cp -p '%s' '%s'" % (srr_template, path_to_output)
+            exit_code = ph.execute_command(cmd)
+            if exit_code != 0:
+                raise RuntimeError("Copy of SRR to output directory failed")
 
         # Multiply template mask with reconstruction
-        cmd_args = ["niftymic_multiply"]
-        fnames = [
-            srr_template,
-            srr_template_mask,
-        ]
-        output_masked = "Masked_%s" % output
-        path_to_output_masked = os.path.join(args.dir_output, output_masked)
-        cmd_args.append("--filenames %s" % " ".join(fnames))
-        cmd_args.append("--output '%s'" % path_to_output_masked)
-        cmd = (" ").join(cmd_args)
-        exit_code = ph.execute_command(cmd)
-        if exit_code != 0:
-            raise RuntimeError("SRR brain masking failed")
+        if 0:
+            cmd_args = ["niftymic_multiply"]
+            fnames = [
+                srr_template,
+                srr_template_mask,
+            ]
+            output_masked = "Masked_%s" % output
+            path_to_output_masked = os.path.join(args.dir_output, output_masked)
+            cmd_args.append("--filenames %s" % " ".join(fnames))
+            cmd_args.append("--output '%s'" % path_to_output_masked)
+            cmd = (" ").join(cmd_args)
+            exit_code = ph.execute_command(cmd)
+            if exit_code != 0:
+                raise RuntimeError("SRR brain masking failed")
 
     else:
         elapsed_time_template = ph.get_zero_time()

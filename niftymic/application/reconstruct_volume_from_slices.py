@@ -47,7 +47,7 @@ def main():
     input_parser.add_dir_input_mc()
     input_parser.add_output(required=True)
     input_parser.add_suffix_mask(default="_mask")
-    input_parser.add_target_stack_index(default=0)
+    input_parser.add_target_stack(default=None)
     input_parser.add_extra_frame_target(default=10)
     input_parser.add_isotropic_resolution(default=None)
     input_parser.add_intensity_correction(default=1)
@@ -126,6 +126,19 @@ def main():
 
     ph.print_info("%d input stacks read for further processing" % len(stacks))
 
+    # Specify target stack for intensity correction and reconstruction space
+    if args.target_stack is None:
+        target_stack_index = 0
+    else:
+        filenames = ["%s.nii.gz" % s.get_filename() for s in stacks]
+        filename_target_stack = os.path.basename(args.target_stack)
+        try:
+            target_stack_index = filenames.index(filename_target_stack)
+        except ValueError as e:
+            raise ValueError(
+                "--target-stack must correspond to an image as provided by "
+                "--filenames")
+
     # ---------------------------Intensity Correction--------------------------
     if args.intensity_correction and not args.mask:
         ph.print_title("Intensity Correction")
@@ -136,15 +149,16 @@ def main():
         intensity_corrector.use_verbose(False)
 
         for i, stack in enumerate(stacks):
-            if i == args.target_stack_index:
-                ph.print_info("Stack %d: Reference image. Skipped." % (i + 1))
+            if i == target_stack_index:
+                ph.print_info("Stack %d (%s): Reference image. Skipped." % (
+                    i + 1, stack.get_filename()))
                 continue
             else:
-                ph.print_info("Stack %d: Intensity Correction ... " % (i + 1),
-                              newline=False)
+                ph.print_info("Stack %d (%s): Intensity Correction ... " % (
+                    i + 1, stack.get_filename()), newline=False)
             intensity_corrector.set_stack(stack)
             intensity_corrector.set_reference(
-                stacks[args.target_stack_index].get_resampled_stack(
+                stacks[target_stack_index].get_resampled_stack(
                     resampling_grid=stack.sitk,
                     interpolator="NearestNeighbor",
                 ))
@@ -153,12 +167,14 @@ def main():
             print("done (c1 = %g) " %
                   intensity_corrector.get_intensity_correction_coefficients())
 
+    # -------------------------Volumetric Reconstruction-----------------------
+    ph.print_title("Volumetric Reconstruction")
+
     # Reconstruction space is given isotropically resampled target stack
     if args.reconstruction_space is None:
-        recon0 = \
-            stacks[args.target_stack_index].get_isotropically_resampled_stack(
-                resolution=args.isotropic_resolution,
-                extra_frame=args.extra_frame_target)
+        recon0 = stacks[target_stack_index].get_isotropically_resampled_stack(
+            resolution=args.isotropic_resolution,
+            extra_frame=args.extra_frame_target)
         recon0 = recon0.get_cropped_stack_based_on_mask(
             boundary_i=args.extra_frame_target,
             boundary_j=args.extra_frame_target,
@@ -178,13 +194,12 @@ def main():
 
         # Use image information of selected target stack as recon0 serves
         # as initial value for reconstruction
-        recon0 = \
-            stacks[args.target_stack_index].get_resampled_stack(recon0.sitk)
+        recon0 = stacks[target_stack_index].get_resampled_stack(recon0.sitk)
         recon0 = recon0.get_stack_multiplied_with_mask()
 
     ph.print_info(
         "Reconstruction space defined with %s mm3 resolution" %
-        " x ".join([str(s) for s in recon0.sitk.GetSpacing()])
+        " x ".join(["%.2f" % s for s in recon0.sitk.GetSpacing()])
     )
 
     if args.sda:
@@ -203,8 +218,8 @@ def main():
 
     else:
         if args.reconstruction_type in ["TVL2", "HuberL2"]:
-            ph.print_title("Compute Initial value for %s" %
-                           args.reconstruction_type)
+            ph.print_title(
+                "Compute Initial value for %s" % args.reconstruction_type)
             SRR0 = tk.TikhonovSolver(
                 stacks=stacks,
                 reconstruction=recon0,
@@ -217,6 +232,8 @@ def main():
                 # verbose=args.verbose,
             )
         else:
+            ph.print_title(
+                "Compute %s reconstruction" % args.reconstruction_type)
             SRR0 = tk.TikhonovSolver(
                 stacks=stacks,
                 reconstruction=recon0,
