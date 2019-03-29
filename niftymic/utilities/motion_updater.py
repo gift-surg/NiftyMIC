@@ -114,10 +114,12 @@ class MotionUpdater(object):
                     # # previous v2v-reg was not passed on to the final 
                     # # registration transform):
                     # import niftymic.base.slice as sl
+                    # # m = "_mask"
+                    # m = "_BiliaryTree"
                     # path_to_slice = re.sub(
                     #     ".tfm", ".nii.gz", dic_slice_transforms[i_slice])
                     # path_to_slice_mask = re.sub(
-                    #     ".tfm", "_mask.nii.gz", dic_slice_transforms[i_slice])
+                    #     ".tfm", "%s.nii.gz" % m, dic_slice_transforms[i_slice])
                     # slice_sitk = sitk.ReadImage(path_to_slice)
                     # slice_sitk_mask = sitk.ReadImage(path_to_slice_mask)
                     # hack = sl.Slice.from_sitk_image(
