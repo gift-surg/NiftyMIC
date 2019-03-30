@@ -111,11 +111,18 @@ class MotionUpdater(object):
                     # HACK to use results of a previous version where image
                     # slices were still exported
                     # (Bug was that after stack intensity correction, the
-                    # previous v2v-reg was not passed on to the final 
+                    # previous v2v-reg was not passed on to the final
                     # registration transform):
                     import niftymic.base.slice as sl
-                    # m = "_mask"
-                    m = "_BiliaryTree"
+                    name = dic_slice_transforms[i_slice]
+                    pattern = stack_name + self._prefix_slice + \
+                        "[0-9]+[_]([a-zA-Z]+)[.]nii.gz"
+                    pm = re.compile(pattern)
+                    matches = list(set([pm.match(f).group(1) for f in os.listdir(
+                        abs_path_to_directory) if pm.match(f)]))
+                    if len(matches) > 1:
+                        raise RuntimeError("Suffix mask cannot be determined")
+                    m = "_%s" % matches[0]
                     path_to_slice = re.sub(
                         ".tfm", ".nii.gz", dic_slice_transforms[i_slice])
                     path_to_slice_mask = re.sub(
