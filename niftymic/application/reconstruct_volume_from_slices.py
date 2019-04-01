@@ -240,14 +240,12 @@ def main():
 
         recon = SRR0.get_reconstruction()
 
-        if args.verbose:
-            if args.reconstruction_type in ["TVL2", "HuberL2"]:
-                output = ph.append_to_filename(args.output, "_init")
-            else:
-                output = args.output
+        if args.verbose and args.reconstruction_type in ["TVL2", "HuberL2"]:
+            output = ph.append_to_filename(args.output, "_init")
 
             if args.mask:
-                mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
+                mask_estimator = bm.BinaryMaskFromMaskSRREstimator(
+                    recon.sitk)
                 mask_estimator.run()
                 mask_sitk = mask_estimator.get_mask_sitk()
                 dw.DataWriter.write_mask(mask_sitk, output)
@@ -292,17 +290,17 @@ def main():
             SRR.run()
             recon = SRR.get_reconstruction()
 
-            if args.mask:
-                mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
-                mask_estimator.run()
-                mask_sitk = mask_estimator.get_mask_sitk()
-                dw.DataWriter.write_mask(mask_sitk, args.output)
+        if args.mask:
+            mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
+            mask_estimator.run()
+            mask_sitk = mask_estimator.get_mask_sitk()
+            dw.DataWriter.write_mask(mask_sitk, args.output)
 
-            else:
-                dw.DataWriter.write_image(recon.sitk, args.output)
+        else:
+            dw.DataWriter.write_image(recon.sitk, args.output)
 
-            if args.verbose:
-                show_niftis.insert(0, args.output)
+        if args.verbose:
+            show_niftis.insert(0, args.output)
 
     if args.verbose:
         ph.show_niftis(show_niftis, viewer=args.viewer)
