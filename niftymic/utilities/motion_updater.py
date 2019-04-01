@@ -71,76 +71,109 @@ class MotionUpdater(object):
         for i in range(len(self._stacks)):
             stack_name = self._stacks[i].get_filename()
 
-            # update stack position
-            path_to_stack_transform = os.path.join(
-                abs_path_to_directory, "%s.tfm" % stack_name)
-            if ph.file_exists(path_to_stack_transform):
-                transform_stack_sitk = sitkh.read_transform_sitk(
-                    path_to_stack_transform)
-                transform_stack_sitk_inv = sitkh.read_transform_sitk(
-                    path_to_stack_transform, inverse=True)
-                self._stacks[i].update_motion_correction(
-                    transform_stack_sitk)
-                ph.print_info(
-                    "Stack '%s': Stack position updated" % stack_name)
-            else:
-                transform_stack_sitk_inv = sitk.Euler3DTransform()
-
-            # update slice positions
-            pattern_trafo_slices = stack_name + self._prefix_slice + \
-                "([0-9]+)[.]tfm"
-            p = re.compile(pattern_trafo_slices)
-            dic_slice_transforms = {
-                int(p.match(f).group(1)): os.path.join(
-                    abs_path_to_directory, p.match(f).group(0))
-                for f in os.listdir(abs_path_to_directory) if p.match(f)
-            }
-            slices = self._stacks[i].get_slices()
-            for i_slice in range(self._stacks[i].get_number_of_slices()):
-                if i_slice in dic_slice_transforms.keys():
-                    transform_slice_sitk = sitkh.read_transform_sitk(
-                        dic_slice_transforms[i_slice])
-                    transform_slice_sitk = \
-                        sitkh.get_composite_sitk_affine_transform(
-                            transform_slice_sitk, transform_stack_sitk_inv)
-                    slices[i_slice].update_motion_correction(
-                        transform_slice_sitk)
-
-                    # ------------------------- HACK -------------------------
-                    # 18 Jan 2019
-                    # HACK to use results of a previous version where image
-                    # slices were still exported
-                    # (Bug was that after stack intensity correction, the
-                    # previous v2v-reg was not passed on to the final
-                    # registration transform):
-                    import niftymic.base.slice as sl
-                    name = dic_slice_transforms[i_slice]
-                    pattern = stack_name + self._prefix_slice + \
-                        "[0-9]+[_]([a-zA-Z]+)[.]nii.gz"
-                    pm = re.compile(pattern)
-                    matches = list(set([pm.match(f).group(1) for f in os.listdir(
-                        abs_path_to_directory) if pm.match(f)]))
-                    if len(matches) > 1:
-                        raise RuntimeError("Suffix mask cannot be determined")
-                    m = "_%s" % matches[0]
-                    path_to_slice = re.sub(
-                        ".tfm", ".nii.gz", dic_slice_transforms[i_slice])
-                    path_to_slice_mask = re.sub(
-                        ".tfm", "%s.nii.gz" % m, dic_slice_transforms[i_slice])
-                    slice_sitk = sitk.ReadImage(path_to_slice)
-                    slice_sitk_mask = sitk.ReadImage(path_to_slice_mask)
-                    hack = sl.Slice.from_sitk_image(
-                        slice_sitk=slice_sitk,
-                        # slice_sitk=slice_sitk_mask,  # mask for Mask-SRR!
-                        slice_sitk_mask=slice_sitk_mask,
-                        slice_number=slices[i_slice].get_slice_number(),
-                        slice_thickness=slices[i_slice].get_slice_thickness(),
-                    )
-                    self._stacks[i]._slices[i_slice] = hack
-                    # --------------------------------------------------------
-
+            if 0:
+                # update stack position
+                path_to_stack_transform = os.path.join(
+                    abs_path_to_directory, "%s.tfm" % stack_name)
+                if ph.file_exists(path_to_stack_transform):
+                    transform_stack_sitk = sitkh.read_transform_sitk(
+                        path_to_stack_transform)
+                    transform_stack_sitk_inv = sitkh.read_transform_sitk(
+                        path_to_stack_transform, inverse=True)
+                    self._stacks[i].update_motion_correction(
+                        transform_stack_sitk)
+                    ph.print_info(
+                        "Stack '%s': Stack position updated" % stack_name)
                 else:
-                    self._stacks[i].delete_slice(slices[i_slice])
+                    transform_stack_sitk_inv = sitk.Euler3DTransform()
+
+                # update slice positions
+                pattern_trafo_slices = stack_name + self._prefix_slice + \
+                    "([0-9]+)[.]tfm"
+                p = re.compile(pattern_trafo_slices)
+                dic_slice_transforms = {
+                    int(p.match(f).group(1)): os.path.join(
+                        abs_path_to_directory, p.match(f).group(0))
+                    for f in os.listdir(abs_path_to_directory) if p.match(f)
+                }
+                slices = self._stacks[i].get_slices()
+                for i_slice in range(self._stacks[i].get_number_of_slices()):
+                    if i_slice in dic_slice_transforms.keys():
+                        transform_slice_sitk = sitkh.read_transform_sitk(
+                            dic_slice_transforms[i_slice])
+                        transform_slice_sitk = \
+                            sitkh.get_composite_sitk_affine_transform(
+                                transform_slice_sitk, transform_stack_sitk_inv)
+                        slices[i_slice].update_motion_correction(
+                            transform_slice_sitk)
+
+                    else:
+                        self._stacks[i].delete_slice(slices[i_slice])
+
+            # ----------------------------- HACK -----------------------------
+            # 18 Jan 2019
+            # HACK to use results of a previous version where image slices were
+            # still exported (Bug was that after stack intensity correction,
+            # the previous v2v-reg was not passed on to the final registration
+            # transform):
+            else:
+                import niftymic.base.slice as sl
+
+                # Recover suffix for mask
+                pattern = stack_name + self._prefix_slice + \
+                    "[0-9]+[_]([a-zA-Z]+)[.]nii.gz"
+                pm = re.compile(pattern)
+                matches = list(set([pm.match(f).group(1) for f in os.listdir(
+                    abs_path_to_directory) if pm.match(f)]))
+                if len(matches) > 1:
+                    raise RuntimeError("Suffix mask cannot be determined")
+                suffix_mask = "_%s" % matches[0]
+
+                # Recover stack
+                path_to_stack = os.path.join(
+                    abs_path_to_directory, "%s.nii.gz" % stack_name)
+                path_to_stack_mask = os.path.join(
+                    abs_path_to_directory, "%s%s.nii.gz" % (
+                        stack_name, suffix_mask))
+                stack = st.Stack.from_filename(
+                    path_to_stack, path_to_stack_mask)
+
+                # Recover slices
+                pattern_trafo_slices = stack_name + self._prefix_slice + \
+                    "([0-9]+)[.]tfm"
+                p = re.compile(pattern_trafo_slices)
+                dic_slice_transforms = {
+                    int(p.match(f).group(1)): os.path.join(
+                        abs_path_to_directory, p.match(f).group(0))
+                    for f in os.listdir(abs_path_to_directory) if p.match(f)
+                }
+                slices = self._stacks[i].get_slices()
+                for i_slice in range(self._stacks[i].get_number_of_slices()):
+                    if i_slice in dic_slice_transforms.keys():
+                        path_to_slice = re.sub(
+                            ".tfm", ".nii.gz", dic_slice_transforms[i_slice])
+                        path_to_slice_mask = re.sub(
+                            ".tfm", "%s.nii.gz" % suffix_mask,
+                            dic_slice_transforms[i_slice])
+                        slice_sitk = sitk.ReadImage(path_to_slice)
+                        slice_sitk_mask = sitk.ReadImage(path_to_slice_mask)
+                        hack = sl.Slice.from_sitk_image(
+                            slice_sitk=slice_sitk,
+                            # slice_sitk=slice_sitk_mask,  # mask for Mask-SRR!
+                            slice_sitk_mask=slice_sitk_mask,
+                            slice_number=slices[i_slice].get_slice_number(),
+                            slice_thickness=slices[
+                                i_slice].get_slice_thickness(),
+                        )
+                        self._stacks[i]._slices[i_slice] = hack
+                    else:
+                        self._stacks[i].delete_slice(slices[i_slice])
+
+                self._stacks[i].sitk = stack.sitk
+                self._stacks[i].sitk_mask = stack.sitk_mask
+                self._stacks[i].iitk = stack.itk
+                self._stacks[i].itk_mask = stack.itk_mask
+            # -----------------------------------------------------------------
 
             # print update information
             ph.print_info(
