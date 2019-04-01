@@ -171,7 +171,7 @@ class MotionUpdater(object):
 
                 self._stacks[i].sitk = stack.sitk
                 self._stacks[i].sitk_mask = stack.sitk_mask
-                self._stacks[i].iitk = stack.itk
+                self._stacks[i].itk = stack.itk
                 self._stacks[i].itk_mask = stack.itk_mask
             # -----------------------------------------------------------------
 
