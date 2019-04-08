@@ -3,7 +3,7 @@
 # \brief      Evaluate similarity to a reference of one or more images
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
-# \date       Feb 1
+# \date       Feb 2018
 #
 
 import os
