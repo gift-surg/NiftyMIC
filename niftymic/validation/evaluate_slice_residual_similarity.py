@@ -3,7 +3,7 @@
 # \brief      Evaluate similarity to a reference of one or more images
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
-# \date       Feb 1
+# \date       Feb 2018
 #
 
 import os
@@ -11,14 +11,15 @@ import numpy as np
 import pandas as pd
 import SimpleITK as sitk
 
-import niftymic.base.stack as st
-import niftymic.base.data_reader as dr
-import niftymic.registration.niftyreg as regniftyreg
-from niftymic.utilities.input_arparser import InputArgparser
-import niftymic.validation.residual_evaluator as res_ev
-
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
+
+import niftymic.base.stack as st
+import niftymic.base.data_reader as dr
+import niftymic.utilities.intensity_correction as ic
+import niftymic.registration.niftyreg as regniftyreg
+import niftymic.validation.residual_evaluator as res_ev
+from niftymic.utilities.input_arparser import InputArgparser
 
 
 def main():
@@ -40,8 +41,11 @@ def main():
     input_parser.add_reference_mask()
     input_parser.add_dir_output(required=False)
     input_parser.add_log_config(default=1)
-    input_parser.add_measures(default=["PSNR", "RMSE", "SSIM", "NCC", "NMI"])
+    input_parser.add_measures(
+        default=["PSNR", "MAE", "RMSE", "SSIM", "NCC", "NMI"])
     input_parser.add_verbose(default=0)
+    input_parser.add_target_stack(default=None)
+    input_parser.add_intensity_correction(default=1)
     input_parser.add_slice_thicknesses(default=None)
     input_parser.add_option(
         option_string="--use-reference-mask", type=int, default=1)
@@ -68,7 +72,49 @@ def main():
     data_reader.read_data()
     stacks = data_reader.get_data()
     ph.print_info("%d input stacks read for further processing" % len(stacks))
-    
+
+    # Specify target stack for intensity correction and reconstruction space
+    if args.target_stack is None:
+        target_stack_index = 0
+    else:
+        filenames = ["%s.nii.gz" % s.get_filename() for s in stacks]
+        filename_target_stack = os.path.basename(args.target_stack)
+        try:
+            target_stack_index = filenames.index(filename_target_stack)
+        except ValueError as e:
+            raise ValueError(
+                "--target-stack must correspond to an image as provided by "
+                "--filenames")
+
+    # ---------------------------Intensity Correction--------------------------
+    if args.intensity_correction:
+        ph.print_title("Intensity Correction")
+        intensity_corrector = ic.IntensityCorrection()
+        intensity_corrector.use_individual_slice_correction(False)
+        intensity_corrector.use_stack_mask(True)
+        intensity_corrector.use_reference_mask(True)
+        intensity_corrector.use_verbose(False)
+
+        for i, stack in enumerate(stacks):
+            if i == target_stack_index:
+                ph.print_info("Stack %d (%s): Reference image. Skipped." % (
+                    i + 1, stack.get_filename()))
+                continue
+            else:
+                ph.print_info("Stack %d (%s): Intensity Correction ... " % (
+                    i + 1, stack.get_filename()), newline=False)
+            intensity_corrector.set_stack(stack)
+            intensity_corrector.set_reference(
+                stacks[target_stack_index].get_resampled_stack(
+                    resampling_grid=stack.sitk,
+                    interpolator="NearestNeighbor",
+                ))
+            intensity_corrector.run_linear_intensity_correction()
+            stacks[i] = intensity_corrector.get_intensity_corrected_stack()
+            print("done (c1 = %g) " %
+                  intensity_corrector.get_intensity_correction_coefficients())
+
+    # ----------------------- Slice Residual Similarity -----------------------
     reference = st.Stack.from_filename(args.reference, args.reference_mask)
 
     ph.print_title("Slice Residual Similarity")
