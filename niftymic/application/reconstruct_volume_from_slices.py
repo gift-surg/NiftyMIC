@@ -93,8 +93,9 @@ def main():
 
     if np.alltrue([not args.output.endswith(t) for t in ALLOWED_EXTENSIONS]):
         raise ValueError(
-            "output filename invalid; allowed extensions are: %s" %
-            ", ".join(ALLOWED_EXTENSIONS))
+            "output filename '%s' invalid; "
+            "allowed image extensions are: %s" % (
+                args.output, ", ".join(ALLOWED_EXTENSIONS)))
 
     dir_output = os.path.dirname(args.output)
     ph.create_directory(dir_output)
