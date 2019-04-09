@@ -139,19 +139,21 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
 
     def test_register_image(self):
         filename = "registration_transform_sitk.txt"
+        gestational_age = 28
 
         path_to_recon = os.path.join(
             self.dir_data, "register_image",
             "SRR_stacks3_TK1_lsmr_alpha0p02_itermax5.nii.gz")
         dir_input_mc = os.path.join(
             self.dir_data, "register_image", "motion_correction")
-        gestational_age = 28
 
         path_to_transform_res = os.path.join(self.dir_output, filename)
         path_to_transform_ref = os.path.join(
             self.dir_data, "register_image", filename)
         dir_ref_mc = os.path.join(
             self.dir_data, "register_image", "motion_correction_ref")
+        path_to_rejected_slices_ref = os.path.join(
+            dir_ref_mc, "rejected_slices.json")
 
         template = os.path.join(
             DIR_TEMPLATES,
@@ -198,3 +200,14 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
             nda_ref = sitkh.read_transform_sitk(trafos_ref[i]).GetParameters()
             nda_diff = np.linalg.norm(np.array(nda_res) - nda_ref)
             self.assertAlmostEqual(nda_diff, 0, places=self.precision)
+
+        # Check rejected_slices.json
+        path_to_rejected_slices_res = os.path.join(
+            dir_res_mc, "rejected_slices.json")
+        self.assertEqual(
+            ph.file_exists(path_to_rejected_slices_res), True)
+        rejected_slices_res = ph.read_dictionary_from_json(
+            path_to_rejected_slices_res)
+        rejected_slices_ref = ph.read_dictionary_from_json(
+            path_to_rejected_slices_ref)
+        self.assertEqual(rejected_slices_res == rejected_slices_ref, True)

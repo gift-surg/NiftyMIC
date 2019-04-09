@@ -217,6 +217,12 @@ def main():
         ph.print_info("%d transformations written to '%s'" % (
             len(trafos), dir_output_mc))
 
+        # Copy rejected_slices.json file
+        path_to_rejected_slices = os.path.join(
+            args.dir_input_mc, "rejected_slices.json")
+        if ph.file_exists(path_to_rejected_slices):
+            ph.copy_file(path_to_rejected_slices, dir_output_mc)
+
     if args.verbose:
         ph.show_niftis([args.fixed, path_to_tmp_output])
 

@@ -61,12 +61,28 @@ class MotionUpdater(object):
         self._dir_motion_correction = dir_motion_correction
         self._prefix_slice = prefix_slice
 
+        self._check_against_json = {
+            True: self._check_against_json_true,
+            False: self._check_against_json_false,
+        }
+        self._rejected_slices = None
+
     def run(self):
         if not ph.directory_exists(self._dir_motion_correction):
             raise exceptions.DirectoryNotExistent(
                 self._dir_motion_correction)
         abs_path_to_directory = os.path.abspath(
             self._dir_motion_correction)
+
+        path_to_rejected_slices = os.path.join(
+            abs_path_to_directory, "rejected_slices.json")
+        if ph.file_exists(path_to_rejected_slices):
+            self._rejected_slices = ph.read_dictionary_from_json(
+                path_to_rejected_slices)
+            bool_check = True
+        else:
+            self._rejected_slices = None
+            bool_check = False
 
         for i in range(len(self._stacks)):
             stack_name = self._stacks[i].get_filename()
@@ -97,7 +113,9 @@ class MotionUpdater(object):
             }
             slices = self._stacks[i].get_slices()
             for i_slice in range(self._stacks[i].get_number_of_slices()):
-                if i_slice in dic_slice_transforms.keys():
+                if i_slice in dic_slice_transforms.keys() and \
+                        self._check_against_json[bool_check](
+                            stack_name, i_slice):
                     transform_slice_sitk = sitkh.read_transform_sitk(
                         dic_slice_transforms[i_slice])
                     transform_slice_sitk = \
@@ -106,12 +124,12 @@ class MotionUpdater(object):
                     slices[i_slice].update_motion_correction(
                         transform_slice_sitk)
 
-                    # # ------------------------- HACK -------------------------
+                    # # ------------------------- HACK ------------------------
                     # # 18 Jan 2019
                     # # HACK to use results of a previous version where image
                     # # slices were still exported
                     # # (Bug was that after stack intensity correction, the
-                    # # previous v2v-reg was not passed on to the final 
+                    # # previous v2v-reg was not passed on to the final
                     # # registration transform):
                     # import niftymic.base.slice as sl
                     # # m = "_mask"
@@ -130,7 +148,7 @@ class MotionUpdater(object):
                     #     slice_thickness=slices[i_slice].get_slice_thickness(),
                     # )
                     # self._stacks[i]._slices[i_slice] = hack
-                    # # --------------------------------------------------------
+                    # # -------------------------------------------------------
 
                 else:
                     self._stacks[i].delete_slice(slices[i_slice])
@@ -163,3 +181,44 @@ class MotionUpdater(object):
 
     def get_data(self):
         return self._stacks
+
+    ##
+    # Check slice_number of stack_name with entries in rejected_slices.json
+    # file. If there is a match, reject the slice
+    #
+    # rejected_slices.json serves as additional means of checking whether a
+    # slice shall be kept.
+    # Rationale: Potentially "old" slice transformations that were not deleted
+    # in the motion_correction folder can be detected here.
+    # \date       2019-04-09 09:55:39+0100
+    #
+    # \param      self          The object
+    # \param      stack_name    The stack name; string
+    # \param      slice_number  The slice number; integer
+    #
+    # \return     False (reject slice) or True (keep it)
+    #
+    def _check_against_json_true(self, stack_name, slice_number):
+
+        # if slice_number of stack_name is in rejected slices, discard it
+        if stack_name in self._rejected_slices.keys():
+            if slice_number in self._rejected_slices[stack_name]:
+                ph.print_warning(
+                    "Reject slice '%s-slice%d' as detected by "
+                    "rejected_slices.json" % (
+                        stack_name, slice_number)
+                )
+                return False
+
+        return True
+
+    ##
+    # Dummy function in case no rejected_slices.json is in directory
+    # \date       2019-04-09 09:58:02+0100
+    #
+    # \param      self          The object
+    # \param      stack_name    The stack name
+    # \param      slice_number  The slice number
+    #
+    def _check_against_json_false(self, stack_name, slice_number):
+        return True
