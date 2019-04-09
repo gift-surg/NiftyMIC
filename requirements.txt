@@ -1,4 +1,4 @@
-pysitk>=0.2.13
+pysitk>=0.2.14
 nsol>=0.1.12
 simplereg>=0.3
 pandas>=0.22.0
