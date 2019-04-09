@@ -75,7 +75,10 @@ def main():
         input_parser.log_config(os.path.abspath(__file__))
 
     if not args.output.endswith(".txt"):
-        raise IOError("output transformation path must end in '.txt'")
+        raise IOError(
+            "output filename '%s' invalid; "
+            "allowed transformation extensions are: '.txt'" % (
+                args.output))
 
     dir_output = os.path.dirname(args.output)
     ph.create_directory(dir_output)
