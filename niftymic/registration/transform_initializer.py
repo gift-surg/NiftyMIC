@@ -34,6 +34,12 @@ class TransformInitializer(object):
                  similarity_measure="NMI",
                  refine_pca_initializations=False,
                  ):
+        if not isinstance(fixed, st.Stack):
+            raise TypeError("Fixed image must be of type 'Stack'.")
+
+        if not isinstance(moving, st.Stack):
+            raise TypeError("Moving image must be of type 'Stack'.")
+
         self._fixed = fixed
         self._moving = moving
         self._similarity_measure = similarity_measure
