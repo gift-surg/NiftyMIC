@@ -170,6 +170,7 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
                         ph.append_to_filename(path_to_recon, self.suffix_mask))
         cmd_args.append("--dir-input-mc %s" % dir_input_mc)
         cmd_args.append("--output %s" % path_to_transform_res)
+        cmd_args.append("--init-pca")
         # cmd_args.append("--verbose 1")
         self.assertEqual(ph.execute_command(" ".join(cmd_args)), 0)
 

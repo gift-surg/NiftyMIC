@@ -221,7 +221,8 @@ class TransformInitializer(object):
             # anyway
             cmd_args.append("-noSym")
             ph.print_info(
-                "Run Registration based on PCA-init %d ... " % (i + 1))
+                "Run Registration (RegAladin) based on PCA-init %d ... "
+                % (i + 1))
             ph.execute_command(" ".join(cmd_args), verbose=False)
 
             # Convert RegAladin to SimpleITK transform
