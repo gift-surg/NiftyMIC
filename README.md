@@ -120,8 +120,8 @@ An example for a basic usage reads
 ```
 niftymic_reconstruct_volume \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --output path-to-srr.nii.gz \
---suffix-mask _mask
 ```
 whereby complete outlier removal during SRR is activated by default (`--outlier-rejection 1`).
 
@@ -129,11 +129,11 @@ A more elaborate example could be
 ```
 niftymic_reconstruct_volume \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---suffix-mask _mask \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --alpha 0.01 \
 --outlier-rejection 1 \
---threshold-first 0.6 \
---threshold 0.8 \
+--threshold-first 0.5 \
+--threshold 0.85 \
 --intensity-correction 1 \
 --isotropic-resolution 0.8 \
 --two-step-cycles 3 \
@@ -149,7 +149,9 @@ If a template is available, it is possible to obtain a SRR in its associated sta
 ```
 niftymic_register_image \
 --fixed path-to-template.nii.gz \
+--fixed-mask path-to-template_mask.nii.gz \
 --moving path-to-subject-space-srr.nii.gz \
+--moving-mask path-to-subject-space-srr_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --output path-to-registration-transform.txt \
 ```
@@ -174,6 +176,7 @@ Solve the SRR problem for motion corrected data (or static data if `--dir-input-
 ```
 niftymic_reconstruct_volume_from_slices \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \ # optional
 --output path-to-srr.nii.gz \
 --reconstruction-type TK1L2 \
@@ -200,6 +203,7 @@ Example are:
 ```
 niftymic_run_reconstruction_parameter_study \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type TK1L2 \
@@ -210,6 +214,7 @@ niftymic_run_reconstruction_parameter_study \
 ```
 niftymic_run_reconstruction_parameter_study \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type HuberL2 \
