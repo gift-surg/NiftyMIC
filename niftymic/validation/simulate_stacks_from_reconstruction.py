@@ -121,9 +121,9 @@ def main():
                 )
                 nda[j, :, :] = sitk.GetArrayFromImage(simulated_slice.sitk)
 
-            if args.reconstruction_mask:
-                nda_mask[j, :, :] = sitk.GetArrayFromImage(
-                    simulated_slice.sitk_mask)
+                if args.reconstruction_mask:
+                    nda_mask[j, :, :] = sitk.GetArrayFromImage(
+                        simulated_slice.sitk_mask)
 
         # Create nifti image with same image header as original stack
         simulated_stack_sitk = sitk.GetImageFromArray(nda)
