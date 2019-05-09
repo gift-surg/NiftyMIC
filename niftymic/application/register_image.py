@@ -59,7 +59,7 @@ def main():
         default="RegAladin",
     )
     input_parser.add_argument(
-        "--refine-pca", "-refine-pca",
+        "--init-pca", "-init-pca",
         action='store_true',
         help="If given, PCA-based initializations will be refined using "
         "RegAladin registrations."
@@ -75,10 +75,20 @@ def main():
         input_parser.log_config(os.path.abspath(__file__))
 
     if not args.output.endswith(".txt"):
-        raise IOError("output transformation path must end in '.txt'")
+        raise IOError(
+            "output filename '%s' invalid; "
+            "allowed transformation extensions are: '.txt'" % (
+                args.output))
+
+    if args.initial_transform is not None and args.init_pca:
+        raise IOError(
+            "Both --initial-transform and --init-pca cannot be activated. "
+            "Choose one.")
 
     dir_output = os.path.dirname(args.output)
     ph.create_directory(dir_output)
+
+    debug = False
 
     # --------------------------------Read Data--------------------------------
     ph.print_title("Read Data")
@@ -96,8 +106,8 @@ def main():
         ph.append_to_filename(os.path.basename(args.moving), "_warped"))
 
     # ---------------------------- Initialization ----------------------------
-    if args.initial_transform is None:
-        ph.print_title("Estimate initial transform using PCA")
+    if args.initial_transform is None and args.init_pca:
+        ph.print_title("Estimate (initial) transformation using PCA")
 
         if args.moving_mask is None or args.fixed_mask is None:
             ph.print_warning("Fixed and moving masks are strongly recommended")
@@ -105,33 +115,42 @@ def main():
             fixed=fixed,
             moving=moving,
             similarity_measure="NMI",
-            refine_pca_initializations=args.refine_pca,
+            refine_pca_initializations=True,
         )
         transform_initializer.run()
         transform_init_sitk = transform_initializer.get_transform_sitk()
-    else:
+
+    elif args.initial_transform is not None:
         transform_init_sitk = sitkh.read_transform_sitk(args.initial_transform)
-    sitk.WriteTransform(transform_init_sitk, args.output)
+
+    else:
+        transform_init_sitk = None
+
+    if transform_init_sitk is not None:
+        sitk.WriteTransform(transform_init_sitk, args.output)
 
     # -------------------Register Reconstruction to Template-------------------
     ph.print_title("Registration")
 
-    if args.method == "RegAladin":
+    # If --init-pca given, RegAladin run already performed
+    if args.method == "RegAladin" and not args.init_pca:
 
         path_to_transform_regaladin = os.path.join(
             DIR_TMP, "transform_regaladin.txt")
 
         # Convert SimpleITK to RegAladin transform
-        cmd = "simplereg_transform -sitk2nreg %s %s" % (
-            args.output, path_to_transform_regaladin)
-        ph.execute_command(cmd, verbose=False)
+        if transform_init_sitk is not None:
+            cmd = "simplereg_transform -sitk2nreg %s %s" % (
+                args.output, path_to_transform_regaladin)
+            ph.execute_command(cmd, verbose=False)
 
         # Run NiftyReg
         cmd_args = ["reg_aladin"]
         cmd_args.append("-ref '%s'" % args.fixed)
         cmd_args.append("-flo '%s'" % args.moving)
         cmd_args.append("-res '%s'" % path_to_tmp_output)
-        cmd_args.append("-inaff '%s'" % path_to_transform_regaladin)
+        if transform_init_sitk is not None:
+            cmd_args.append("-inaff '%s'" % path_to_transform_regaladin)
         cmd_args.append("-aff '%s'" % path_to_transform_regaladin)
         cmd_args.append("-rigOnly")
         cmd_args.append("-ln 2")  # seems to perform better for spina bifida
@@ -147,7 +166,7 @@ def main():
         #     cmd_args.append("-fmask '%s'" % args.moving_mask)
 
         ph.print_info("Run Registration (RegAladin) ... ", newline=False)
-        ph.execute_command(" ".join(cmd_args), verbose=False)
+        ph.execute_command(" ".join(cmd_args), verbose=debug)
         print("done")
 
         # Convert RegAladin to SimpleITK transform
@@ -155,39 +174,41 @@ def main():
             path_to_transform_regaladin, args.output)
         ph.execute_command(cmd, verbose=False)
 
-    else:
+    elif args.method == "FLIRT":
         path_to_transform_flirt = os.path.join(DIR_TMP, "transform_flirt.txt")
 
         # Convert SimpleITK into FLIRT transform
-        cmd = "simplereg_transform -sitk2flirt '%s' '%s' '%s' '%s'" % (
-            args.output, args.fixed, args.moving, path_to_transform_flirt)
-        ph.execute_command(cmd, verbose=False)
+        if transform_init_sitk is not None:
+            cmd = "simplereg_transform -sitk2flirt '%s' '%s' '%s' '%s'" % (
+                args.output, args.fixed, args.moving, path_to_transform_flirt)
+            ph.execute_command(cmd, verbose=False)
 
         # Define search angle ranges for FLIRT in all three dimensions
-        search_angles = ["-searchr%s -%d %d" % (x, 180, 180)
-                         for x in ["x", "y", "z"]]
+        # search_angles = ["-searchr%s -%d %d" % (x, 180, 180)
+        #                  for x in ["x", "y", "z"]]
 
         cmd_args = ["flirt"]
         cmd_args.append("-in '%s'" % args.moving)
         cmd_args.append("-ref '%s'" % args.fixed)
-        if args.initial_transform is not None:
+        if transform_init_sitk is not None:
             cmd_args.append("-init '%s'" % path_to_transform_flirt)
         cmd_args.append("-omat '%s'" % path_to_transform_flirt)
         cmd_args.append("-out '%s'" % path_to_tmp_output)
         cmd_args.append("-dof 6")
-        cmd_args.append((" ").join(search_angles))
+        # cmd_args.append((" ").join(search_angles))
         if args.moving_mask is not None:
             cmd_args.append("-inweight '%s'" % args.moving_mask)
         if args.fixed_mask is not None:
             cmd_args.append("-refweight '%s'" % args.fixed_mask)
         ph.print_info("Run Registration (FLIRT) ... ", newline=False)
-        ph.execute_command(" ".join(cmd_args), verbose=False)
+        ph.execute_command(" ".join(cmd_args), verbose=debug)
         print("done")
 
         # Convert FLIRT to SimpleITK transform
         cmd = "simplereg_transform -flirt2sitk '%s' '%s' '%s' '%s'" % (
             path_to_transform_flirt, args.fixed, args.moving, args.output)
         ph.execute_command(cmd, verbose=False)
+    ph.print_info("Registration transformation written to '%s'" % args.output)
 
     if args.dir_input_mc is not None:
         ph.print_title("Update Motion-Correction Transformations")
@@ -214,7 +235,20 @@ def main():
         ph.print_info("%d transformations written to '%s'" % (
             len(trafos), dir_output_mc))
 
+        # Copy rejected_slices.json file
+        path_to_rejected_slices = os.path.join(
+            args.dir_input_mc, "rejected_slices.json")
+        if ph.file_exists(path_to_rejected_slices):
+            ph.copy_file(path_to_rejected_slices, dir_output_mc)
+
     if args.verbose:
+        cmd_args = ["simplereg_resample"]
+        cmd_args.append("-f %s" % args.fixed)
+        cmd_args.append("-m %s" % args.moving)
+        cmd_args.append("-t %s" % args.output)
+        cmd_args.append("-o %s" % path_to_tmp_output)
+        ph.execute_command(" ".join(cmd_args))
+
         ph.show_niftis([args.fixed, path_to_tmp_output])
 
     elapsed_time_total = ph.stop_timing(time_start)

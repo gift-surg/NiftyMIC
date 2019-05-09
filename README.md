@@ -2,7 +2,7 @@
 
 NiftyMIC is a Python-based open-source toolkit for research developed within the [GIFT-Surg][giftsurg] project to reconstruct an isotropic, high-resolution volume from multiple, possibly motion-corrupted, stacks of low-resolution 2D slices. The framework relies on slice-to-volume registration algorithms for motion correction and reconstruction-based Super-Resolution (SR) techniques for the volumetric reconstruction. 
 
-The algorithm and software were developed by [Michael Ebner][mebner] at the [Translational Imaging Group][tig] in the [Centre for Medical Image Computing][cmic] at [University College London (UCL)][ucl].
+The algorithm and software were developed by [Michael Ebner][mebner] at the [Wellcome/EPSRC Centre for Interventional and Surgical Sciences][weiss], [University College London (UCL)][ucl].
 
 If you have any questions or comments, please drop an email to `michael.ebner.14@ucl.ac.uk`.
 
@@ -120,8 +120,8 @@ An example for a basic usage reads
 ```
 niftymic_reconstruct_volume \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --output path-to-srr.nii.gz \
---suffix-mask _mask
 ```
 whereby complete outlier removal during SRR is activated by default (`--outlier-rejection 1`).
 
@@ -129,11 +129,11 @@ A more elaborate example could be
 ```
 niftymic_reconstruct_volume \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---suffix-mask _mask \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --alpha 0.01 \
 --outlier-rejection 1 \
---threshold-first 0.6 \
---threshold 0.8 \
+--threshold-first 0.5 \
+--threshold 0.85 \
 --intensity-correction 1 \
 --isotropic-resolution 0.8 \
 --two-step-cycles 3 \
@@ -149,7 +149,9 @@ If a template is available, it is possible to obtain a SRR in its associated sta
 ```
 niftymic_register_image \
 --fixed path-to-template.nii.gz \
+--fixed-mask path-to-template_mask.nii.gz \
 --moving path-to-subject-space-srr.nii.gz \
+--moving-mask path-to-subject-space-srr_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --output path-to-registration-transform.txt \
 ```
@@ -174,6 +176,7 @@ Solve the SRR problem for motion corrected data (or static data if `--dir-input-
 ```
 niftymic_reconstruct_volume_from_slices \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \ # optional
 --output path-to-srr.nii.gz \
 --reconstruction-type TK1L2 \
@@ -200,6 +203,7 @@ Example are:
 ```
 niftymic_run_reconstruction_parameter_study \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type TK1L2 \
@@ -210,6 +214,7 @@ niftymic_run_reconstruction_parameter_study \
 ```
 niftymic_run_reconstruction_parameter_study \
 --filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type HuberL2 \
@@ -229,7 +234,7 @@ niftymic_show_parameter_study \
 ```
 
 ## Licensing and Copyright
-Copyright (c) 2018, [University College London][ucl].
+Copyright (c) 2019, [University College London][ucl].
 This framework is made available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
 
 
@@ -245,7 +250,7 @@ Associated publications are
 
 
 [mebner]: https://www.linkedin.com/in/ebnermichael
-[tig]: http://cmictig.cs.ucl.ac.uk
+[weiss]: https://www.ucl.ac.uk/interventional-surgical-sciences
 [bsd]: https://opensource.org/licenses/BSD-3-Clause
 [giftsurg]: http://www.gift-surg.ac.uk
 [cmic]: http://cmic.cs.ucl.ac.uk

@@ -53,17 +53,19 @@ class ToolkitExecuter(object):
         if exe is None:
             exe = EXE_IRTK["workstation"]
 
-        self._dir_temp = os.path.join(self._dir_output, self._subdir_temp)
+        self._dir_temp = os.path.join("${DIR_OUT}", self._subdir_temp)
 
         cmd_args = []
 
         # store pwd
         cmd_args.append("CWD=$(pwd)")
+        cmd_args.append("DIR_OUT=%s" % self._dir_output)
 
         # change to output directory
-        cmd_args.append("\necho 'Change to output directory'")
-        cmd_args.append("mkdir -p %s" % self._dir_output)
-        cmd_args.append("cd %s" % self._dir_output)
+        cmd_args.append("printf 'Change to output directory: %s\n' ${DIR_OUT}")
+        # cmd_args.append("\necho 'Change to output directory'")
+        cmd_args.append("mkdir -p ${DIR_OUT}")
+        cmd_args.append("cd ${DIR_OUT}")
 
         # create temp directory if required
         cmd_args.append("\necho 'Create temp directory'")
@@ -96,14 +98,15 @@ class ToolkitExecuter(object):
         toolkit_execution = "%s" % self._sep.join(exe_args)
         cmd_args.append(toolkit_execution)
 
-        cmd_args.append("cp -p %s %s/" % (output_name, self._dir_output))
-        cmd_args.append("cd %s" % self._dir_output)
+        cmd_args.append("cp -p %s ${DIR_OUT}/" % (output_name))
+        cmd_args.append("cd ${DIR_OUT}")
 
         if not verbose:
             cmd_args.append("\necho 'Delete temp directory'")
             cmd_args.append("rm -rf %s" % self._dir_temp)
 
-        cmd_args.append("\necho 'Change back to original directory'")
+        # cmd_args.append("\necho 'Change back to original directory'")
+        cmd_args.append("printf 'Change back to original directory: %s\n' ${CWD}")
         cmd_args.append("cd ${CWD}")
         cmd_args.append("\n")
 

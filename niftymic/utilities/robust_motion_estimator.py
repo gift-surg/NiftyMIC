@@ -78,6 +78,18 @@ class RobustMotionEstimator(object):
 
         self._update_robust_transforms_sitk_from_parameters(params)
 
+    ##
+    # { function_description }
+    # \date       2019-04-27 17:18:59+0100
+    # \see        https://pymc3-testing.readthedocs.io/en/rtd-docs/notebooks/GP-smoothing.html
+    # \see        https://docs.pymc.io/notebooks/GP-TProcess.html
+    #
+    # \param      x          { parameter_description }
+    # \param      y          { parameter_description }
+    # \param      smoothing  The smoothing
+    #
+    # \return     { description_of_the_return_value }
+    #
     @staticmethod
     def _run_gaussian_process_smoothing(x, y, smoothing):
 
@@ -253,75 +265,115 @@ class RobustMotionEstimator(object):
     def show_estimated_transform_parameters(
         self,
         path_to_file=None,
-        title="RobustMotionEstimator",
-        fullscreen=1,
+        fig_title=None,
     ):
+
+        PARAMS_LABELS = [
+            r"$\alpha_x$ [rad]",
+            r"$\alpha_y$ [rad]",
+            r"$\alpha_z$ [rad]",
+            r"$t_x$ [mm]",
+            r"$t_y$ [mm]",
+            r"$t_z$ [mm]",
+        ]
+
         indices, params_nda = self._get_transformation_params_nda(
             self._transforms_sitk)
         robust_params_nda = self._get_transformation_params_nda(
             self.get_robust_transforms_sitk())[1]
+        subpackages = self._get_temporal_packages(indices)
 
         dof = params_nda.shape[0]
 
-        N_rows = np.ceil(dof / 2.)
         i_ref_marker = 0
 
-        subpackages = self._get_temporal_packages(indices)
-
-        fig = plt.figure(title, figsize=(15, 10))
+        fig, axes = plt.subplots(3, 2, num=fig_title)
+        fig.set_size_inches((8, 6))
+        axes = axes.flatten()
+        dof_to_axes = [0, 2, 4, 1, 3, 5]
+        step = 5
         for i_dof in range(dof):
+            index = dof_to_axes[i_dof]
             y1 = params_nda[i_dof, :]
             y2 = robust_params_nda[i_dof, :]
 
-            ax = plt.subplot(N_rows, 2, i_dof + 1)
-            ax.plot(indices, y1,
-                    marker=ph.MARKERS[i_ref_marker],
-                    color=ph.COLORS_TABLEAU20[0],
-                    linestyle="",
-                    # linestyle=":",
-                    label="original",
-                    markerfacecolor="w",
-                    )
+            axes[index].plot(indices, y1,
+                             marker=ph.MARKERS[i_ref_marker],
+                             color=ph.COLORS_TABLEAU20[0],
+                             linestyle="",
+                             # linestyle=":",
+                             label="S2V-Reg",
+                             markerfacecolor="w",
+                             )
 
             # print connecting line between subpackage slices
-            ls = ["--", ":", "-."]
+            ls = ["--", "-.", ":"]
+            x_min = np.inf
+            x_max = -np.inf
             for i_p, p in enumerate(subpackages):
                 t = sorted(p.keys())
 
                 slices_package = [indices.index(p[t_i]) for t_i in t]
                 y = y1[slices_package]
                 x = [indices[i] for i in slices_package]
-                ax.plot(x, y,
-                        marker=".",
-                        # color=ph.COLORS_TABLEAU20[2 + i_p],
-                        color=[0.7, 0.7, 0.7],
-                        linestyle=ls[i_p],
-                        )
+                axes[index].plot(x, y,
+                                 marker="",
+                                 # color=ph.COLORS_TABLEAU20[2 + i_p],
+                                 color=[0.7, 0.7, 0.7],
+                                 linestyle=ls[i_p],
+                                 label="sub-stack %d" % (i_p + 1)
+                                 )
+                x_min = np.min([np.min(x), x_min])
+                x_max = np.max([np.max(x), x_max])
             for i in range(len(y1)):
-                ax.plot([indices[i], indices[i]], [y1[i], y2[i]],
-                        linestyle="-",
-                        marker="",
-                        color=ph.COLORS_TABLEAU20[2],
-                        )
-            ax.plot(indices, y2,
-                    marker=ph.MARKERS[i_ref_marker],
-                    color=ph.COLORS_TABLEAU20[2],
-                    # linestyle="-",
-                    linestyle="",
-                    label="robust",
-                    )
-            ax.set_xticks(indices)
-            plt.ylabel(sitkh.TRANSFORM_SITK_DOF_LABELS_LONG[dof][i_dof])
-        plt.legend(loc="best")
-        plt.xlabel('Slice')
-        plt.suptitle(title)
+                axes[index].plot([indices[i], indices[i]], [y1[i], y2[i]],
+                                 linestyle="-",
+                                 marker="",
+                                 color=ph.COLORS_TABLEAU20[2],
+                                 )
+            axes[index].plot(indices, y2,
+                             marker=ph.MARKERS[i_ref_marker],
+                             color=ph.COLORS_TABLEAU20[2],
+                             # linestyle="-",
+                             linestyle="",
+                             label="GPR $\circ$ S2V-Reg",
+                             )
+
+            # start minor ticks at x_min but major tick at first 'modulo-step
+            # tick'
+            x_min_step = x_min + \
+                np.argmin(np.mod(np.arange(x_min, x_min + step), step))
+            axes[index].set_xticks(np.arange(x_min_step, x_max + 1, step))
+            axes[index].set_xticks(np.arange(x_min, x_max + 1), minor=True)
+            axes[index].set_ylabel(PARAMS_LABELS[i_dof])
+
+            if index > 3:
+                axes[index].set_xlabel("Slice")
+
+        if fig_title is not None:
+            plt.suptitle(fig_title)
+        plt.tight_layout()
+
+        b_handles, b_labels = axes[0].get_legend_handles_labels()
+
+        # Move GPR to second position in legend
+        b_handles.insert(1, b_handles[-1])
+        b_labels.insert(1, b_labels[-1])
+        b_labels = b_labels[0:-1]
+        b_handles = b_handles[0:-1]
+        plt.subplots_adjust(top=0.95)
+        fig.legend(
+            b_handles, b_labels,
+            loc="upper center",
+            ncol=2 + len(subpackages),
+            borderaxespad=0,
+            frameon=False,
+        )
 
         plt.show(block=False)
 
         if path_to_file is not None:
-            ph.create_directory(os.path.dirname(path_to_file))
-            fig.savefig(path_to_file)
-            ph.print_info("Figure written to %s" % path_to_file)
+            ph.save_fig(fig, path_to_file)
         plt.close()
 
     ##

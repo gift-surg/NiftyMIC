@@ -34,6 +34,12 @@ class TransformInitializer(object):
                  similarity_measure="NMI",
                  refine_pca_initializations=False,
                  ):
+        if not isinstance(fixed, st.Stack):
+            raise TypeError("Fixed image must be of type 'Stack'.")
+
+        if not isinstance(moving, st.Stack):
+            raise TypeError("Moving image must be of type 'Stack'.")
+
         self._fixed = fixed
         self._moving = moving
         self._similarity_measure = similarity_measure
@@ -215,8 +221,8 @@ class TransformInitializer(object):
             # anyway
             cmd_args.append("-noSym")
             ph.print_info(
-                "Run Registration based on PCA-init %d ... " % (i + 1),
-                newline=False)
+                "Run Registration (RegAladin) based on PCA-init %d ... "
+                % (i + 1))
             ph.execute_command(" ".join(cmd_args), verbose=False)
 
             # Convert RegAladin to SimpleITK transform

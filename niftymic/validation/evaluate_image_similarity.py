@@ -3,7 +3,7 @@
 # \brief      Evaluate similarity to a reference of one or more images
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
-# \date       Feb 1
+# \date       Feb 2018
 #
 
 import os
@@ -37,7 +37,8 @@ def main():
     input_parser.add_reference(required=True)
     input_parser.add_reference_mask()
     input_parser.add_dir_output(required=False)
-    input_parser.add_measures(default=["PSNR", "RMSE", "SSIM", "NCC", "NMI"])
+    input_parser.add_measures(
+        default=["PSNR", "RMSE", "MAE", "SSIM", "NCC", "NMI"])
     input_parser.add_verbose(default=0)
     args = input_parser.parse_args()
     input_parser.print_arguments(args)

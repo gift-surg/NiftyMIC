@@ -285,8 +285,9 @@ def main():
         cmd_args.append("--output '%s'" % trafo_template)
         cmd_args.append("--verbose %s" % args.verbose)
         cmd_args.append("--log-config %d" % args.log_config)
-        cmd_args.append("--refine-pca")
-        if args.initial_transform is not None:
+        if args.initial_transform is None:
+            cmd_args.append("--init-pca")
+        else:
             cmd_args.append(
                 "--initial-transform '%s'" % args.initial_transform)
         cmd = (" ").join(cmd_args)
