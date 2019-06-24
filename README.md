@@ -255,7 +255,7 @@ Afterwards, four consecutive steps including
 1. template-space alignment (`niftymic_register_image`), and
 1. template-space reconstruction (`niftymic_reconstruct_volume_from_slices`)
 
-are performed to crate a high-resolution fetal brain MRI reconstruction in the standard anatomical planes:
+are performed to create a high-resolution fetal brain MRI reconstruction in the standard anatomical planes:
 ```
 niftymic_run_reconstruction_pipeline \
 --filenames \
