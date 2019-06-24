@@ -240,13 +240,13 @@ Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic f
 ```
 niftymic_segment_fetal_brains \
 --filenames \
-nifti/name-of-stack1.nii.gz.nii.gz \
-nifti/name-of-stack2.nii.gz.nii.gz \
-nifti/name-of-stackN.nii.gz.nii.gz \
+nifti/name-of-stack1.nii.gz \
+nifti/name-of-stack2.nii.gz \
+nifti/name-of-stackN.nii.gz \
 --filenames-masks \
-seg/name-of-stack1.nii.gz.nii.gz \
-seg/name-of-stack2.nii.gz.nii.gz \
-seg/name-of-stackN.nii.gz.nii.gz \
+seg/name-of-stack1.nii.gz \
+seg/name-of-stack2.nii.gz \
+seg/name-of-stackN.nii.gz \
 ```
 
 Afterwards, four consecutive steps including
@@ -259,13 +259,13 @@ are performed to crate a high-resolution fetal brain MRI reconstruction in the s
 ```
 niftymic_run_reconstruction_pipeline \
 --filenames \
-nifti/name-of-stack1.nii.gz.nii.gz \
-nifti/name-of-stack2.nii.gz.nii.gz \
-nifti/name-of-stackN.nii.gz.nii.gz \
+nifti/name-of-stack1.nii.gz \
+nifti/name-of-stack2.nii.gz \
+nifti/name-of-stackN.nii.gz \
 --filenames-masks \
-seg/name-of-stack1.nii.gz.nii.gz \
-seg/name-of-stack2.nii.gz.nii.gz \
-seg/name-of-stackN.nii.gz.nii.gz \
+seg/name-of-stack1.nii.gz \
+seg/name-of-stack2.nii.gz \
+seg/name-of-stackN.nii.gz \
 --dir-output srr
 ```
 
