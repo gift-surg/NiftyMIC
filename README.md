@@ -7,7 +7,7 @@ The algorithm and software were developed by [Michael Ebner][mebner] at the [Wel
 If you have any questions or comments, please drop an email to `michael.ebner.14@ucl.ac.uk`.
 
 ## NiftyMIC applied to Fetal Brain MRI
-Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg]. A full working example on automated segmentation and high-resolution reconstruction of fetal brain MRI using NiftyMIC is described in the [*Usage*](https://github.com/gift-surg/NiftyMIC#automatic-segmentation-and-high-resolution-reconstruction-of-fetal-brain-mri) section below.
+Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg]. A full working example on automated segmentation and high-resolution reconstruction of fetal brain MRI using NiftyMIC is described in the [Usage](https://github.com/gift-surg/NiftyMIC#automatic-segmentation-and-high-resolution-reconstruction-of-fetal-brain-mri) section below.
 
 <p align="center">
    <img src="./data/demo/NiftyMIC_Algorithm.png" align="center" width="700">
@@ -234,38 +234,38 @@ niftymic_show_parameter_study \
 ```
 
 ### Automatic Segmentation and High-Resolution Reconstruction of Fetal Brain MRI
-Based on the work as described in [EbnerWang2018], an automated framework is implemented in NiftyMIC to obtain a high-resolution rconstruction of fetal brain MRI in the standard anatomical planes (Figure 2).
+Based on the work described in [EbnerWang2018][ebner-wang-2018], an automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2). 
 
-Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic fetal brain masks:
+Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic fetal brain masks of HASTE-like images:
 ```
 niftymic_segment_fetal_brains \
 --filenames \
-nifti/path-to-stack1.nii.gz.nii.gz \
-nifti/path-to-stack2.nii.gz.nii.gz \
-nifti/path-to-stackN.nii.gz.nii.gz \
+nifti/name-of-stack1.nii.gz \
+nifti/name-of-stack2.nii.gz \
+nifti/name-of-stackN.nii.gz \
 --filenames-masks \
-seg/path-to-stack1.nii.gz.nii.gz \
-seg/path-to-stack2.nii.gz.nii.gz \
-seg/path-to-stackN.nii.gz.nii.gz \
+seg/name-of-stack1.nii.gz \
+seg/name-of-stack2.nii.gz \
+seg/name-of-stackN.nii.gz \
 ```
 
-Afterwards, create the high-resolution reconstruction of the fetal brain, which applies
+Afterwards, four consecutive steps including
 1. bias field correction (`niftymic_correct_bias_field`),
 1. subject-space reconstruction (`niftymic_reconstruct_volume`),
 1. template-space alignment (`niftymic_register_image`), and
 1. template-space reconstruction (`niftymic_reconstruct_volume_from_slices`)
 
-automatically as consecutive steps:
+are performed to create a high-resolution fetal brain MRI reconstruction in the standard anatomical planes:
 ```
 niftymic_run_reconstruction_pipeline \
 --filenames \
-nifti/path-to-stack1.nii.gz.nii.gz \
-nifti/path-to-stack2.nii.gz.nii.gz \
-nifti/path-to-stackN.nii.gz.nii.gz \
+nifti/name-of-stack1.nii.gz \
+nifti/name-of-stack2.nii.gz \
+nifti/name-of-stackN.nii.gz \
 --filenames-masks \
-seg/path-to-stack1.nii.gz.nii.gz \
-seg/path-to-stack2.nii.gz.nii.gz \
-seg/path-to-stackN.nii.gz.nii.gz \
+seg/name-of-stack1.nii.gz \
+seg/name-of-stack2.nii.gz \
+seg/name-of-stackN.nii.gz \
 --dir-output srr
 ```
 
@@ -281,12 +281,12 @@ This work is partially funded by the UCL [Engineering and Physical Sciences Rese
 
 ## References
 Associated publications are 
-* [[EbnerWang2018]][EbnerWang2018] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Melbourne, A., Doel, T., David, A. L., Deprest, J., Ourselin, S., & Vercauteren, T. (2018). An Automated Localization, Segmentation and Reconstruction Framework for Fetal Brain MRI. In Medical Image Computing and Computer-Assisted Intervention -- MICCAI 2018 (pp. 313–320). Springer
+* [[EbnerWang2018]][ebner-wang-2018] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Melbourne, A., Doel, T., David, A. L., Deprest, J., Ourselin, S., & Vercauteren, T. (2018). An Automated Localization, Segmentation and Reconstruction Framework for Fetal Brain MRI. In Medical Image Computing and Computer-Assisted Intervention -- MICCAI 2018 (pp. 313–320). Springer
 * [[Ebner2018]](https://www.sciencedirect.com/science/article/pii/S1053811917308042) Ebner, M., Chung, K. K., Prados, F., Cardoso, M. J., Chard, D. T., Vercauteren, T., & Ourselin, S. (2018). Volumetric reconstruction from printed films: Enabling 30 year longitudinal analysis in MR neuroimaging. NeuroImage, 165, 238–250.
 * [[Ranzini2017]](https://mski2017.files.wordpress.com/2017/09/miccai-mski2017.pdf) Ranzini, M. B., Ebner, M., Cardoso, M. J., Fotiadou, A., Vercauteren, T., Henckel, J., Hart, A., Ourselin, S., and Modat, M. (2017). Joint Multimodal Segmentation of Clinical CT and MR from Hip Arthroplasty Patients. MICCAI Workshop on Computational Methods and Clinical Applications in Musculoskeletal Imaging (MSKI) 2017.
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., and Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
 
-[EbnerWang2018]: http://link.springer.com/10.1007/978-3-030-00928-1_36
+[ebner-wang-2018]: http://link.springer.com/10.1007/978-3-030-00928-1_36
 [mebner]: https://www.linkedin.com/in/ebnermichael
 [weiss]: https://www.ucl.ac.uk/interventional-surgical-sciences
 [bsd]: https://opensource.org/licenses/BSD-3-Clause
