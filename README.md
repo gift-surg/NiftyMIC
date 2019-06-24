@@ -7,7 +7,7 @@ The algorithm and software were developed by [Michael Ebner][mebner] at the [Wel
 If you have any questions or comments, please drop an email to `michael.ebner.14@ucl.ac.uk`.
 
 ## NiftyMIC applied to Fetal Brain MRI
-Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg]. A full working example on automated segmentation and high-resolution reconstruction of fetal brain MRI using NiftyMIC is described in the [*Usage*](https://github.com/gift-surg/NiftyMIC#automatic-segmentation-and-high-resolution-reconstruction-of-fetal-brain-mri) section below.
+Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg]. A full working example on automated segmentation and high-resolution reconstruction of fetal brain MRI using NiftyMIC is described in the [Usage](https://github.com/gift-surg/NiftyMIC#automatic-segmentation-and-high-resolution-reconstruction-of-fetal-brain-mri) section below.
 
 <p align="center">
    <img src="./data/demo/NiftyMIC_Algorithm.png" align="center" width="700">
@@ -234,38 +234,38 @@ niftymic_show_parameter_study \
 ```
 
 ### Automatic Segmentation and High-Resolution Reconstruction of Fetal Brain MRI
-Based on the work as described in [EbnerWang2018], an automated framework is implemented in NiftyMIC to obtain a high-resolution rconstruction of fetal brain MRI in the standard anatomical planes (Figure 2).
+Based on the work described in [EbnerWang2018], an automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2). 
 
-Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic fetal brain masks:
+Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic fetal brain masks of HASTE-like images:
 ```
 niftymic_segment_fetal_brains \
 --filenames \
-nifti/path-to-stack1.nii.gz.nii.gz \
-nifti/path-to-stack2.nii.gz.nii.gz \
-nifti/path-to-stackN.nii.gz.nii.gz \
+nifti/name-of-stack1.nii.gz.nii.gz \
+nifti/name-of-stack2.nii.gz.nii.gz \
+nifti/name-of-stackN.nii.gz.nii.gz \
 --filenames-masks \
-seg/path-to-stack1.nii.gz.nii.gz \
-seg/path-to-stack2.nii.gz.nii.gz \
-seg/path-to-stackN.nii.gz.nii.gz \
+seg/name-of-stack1.nii.gz.nii.gz \
+seg/name-of-stack2.nii.gz.nii.gz \
+seg/name-of-stackN.nii.gz.nii.gz \
 ```
 
-Afterwards, create the high-resolution reconstruction of the fetal brain, which applies
+Afterwards, four consecutive steps including
 1. bias field correction (`niftymic_correct_bias_field`),
 1. subject-space reconstruction (`niftymic_reconstruct_volume`),
 1. template-space alignment (`niftymic_register_image`), and
 1. template-space reconstruction (`niftymic_reconstruct_volume_from_slices`)
 
-automatically as consecutive steps:
+are performed to crate a high-resolution fetal brain MRI reconstruction in the standard anatomical planes:
 ```
 niftymic_run_reconstruction_pipeline \
 --filenames \
-nifti/path-to-stack1.nii.gz.nii.gz \
-nifti/path-to-stack2.nii.gz.nii.gz \
-nifti/path-to-stackN.nii.gz.nii.gz \
+nifti/name-of-stack1.nii.gz.nii.gz \
+nifti/name-of-stack2.nii.gz.nii.gz \
+nifti/name-of-stackN.nii.gz.nii.gz \
 --filenames-masks \
-seg/path-to-stack1.nii.gz.nii.gz \
-seg/path-to-stack2.nii.gz.nii.gz \
-seg/path-to-stackN.nii.gz.nii.gz \
+seg/name-of-stack1.nii.gz.nii.gz \
+seg/name-of-stack2.nii.gz.nii.gz \
+seg/name-of-stackN.nii.gz.nii.gz \
 --dir-output srr
 ```
 
