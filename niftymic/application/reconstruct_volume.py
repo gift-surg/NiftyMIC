@@ -537,10 +537,16 @@ def main():
     elapsed_time_total = ph.stop_timing(time_start)
 
     # Write SRR result
-    HR_volume_final.set_filename(recon_method.get_setting_specific_filename())
-    dw.DataWriter.write_image(HR_volume_final.sitk, args.output)
+    filename = recon_method.get_setting_specific_filename()
+    HR_volume_final.set_filename(filename)
+    dw.DataWriter.write_image(
+        HR_volume_final.sitk,
+        args.output,
+        description=filename)
     dw.DataWriter.write_mask(
-        HR_volume_final.sitk_mask, ph.append_to_filename(args.output, "_mask"))
+        HR_volume_final.sitk_mask,
+        ph.append_to_filename(args.output, "_mask"),
+        description=SDA.get_setting_specific_filename())
 
     HR_volume_iterations.insert(0, HR_volume_final)
     for stack in stacks:

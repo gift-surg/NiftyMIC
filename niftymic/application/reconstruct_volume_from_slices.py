@@ -209,10 +209,13 @@ def main():
             stacks, recon0, sigma=args.alpha, sda_mask=args.mask)
         SDA.run()
         recon = SDA.get_reconstruction()
+        filename = SDA.get_setting_specific_filename()
         if args.mask:
-            dw.DataWriter.write_mask(recon.sitk_mask, args.output)
+            dw.DataWriter.write_mask(
+                recon.sitk_mask, args.output, description=filename)
         else:
-            dw.DataWriter.write_image(recon.sitk, args.output)
+            dw.DataWriter.write_image(
+                recon.sitk, args.output, description=filename)
 
         if args.verbose:
             show_niftis.insert(0, args.output)
@@ -250,6 +253,7 @@ def main():
         SRR0.run()
 
         recon = SRR0.get_reconstruction()
+        filename = SRR0.get_setting_specific_filename()
 
         if args.reconstruction_type in ["TVL2", "HuberL2"]:
             output = ph.append_to_filename(args.output, "_initTK1L2")
@@ -260,9 +264,9 @@ def main():
             mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
             mask_estimator.run()
             mask_sitk = mask_estimator.get_mask_sitk()
-            dw.DataWriter.write_mask(mask_sitk, output)
+            dw.DataWriter.write_mask(mask_sitk, output, description=filename)
         else:
-            dw.DataWriter.write_image(recon.sitk, output)
+            dw.DataWriter.write_image(recon.sitk, output, description=filename)
 
         if args.verbose:
             show_niftis.insert(0, output)
@@ -302,15 +306,18 @@ def main():
                 )
             SRR.run()
             recon = SRR.get_reconstruction()
+            filename = SRR.get_setting_specific_filename()
 
             if args.mask:
                 mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
                 mask_estimator.run()
                 mask_sitk = mask_estimator.get_mask_sitk()
-                dw.DataWriter.write_mask(mask_sitk, args.output)
+                dw.DataWriter.write_mask(
+                    mask_sitk, args.output, description=filename)
 
             else:
-                dw.DataWriter.write_image(recon.sitk, args.output)
+                dw.DataWriter.write_image(
+                    recon.sitk, args.output, description=filename)
 
             if args.verbose:
                 show_niftis.insert(0, args.output)
