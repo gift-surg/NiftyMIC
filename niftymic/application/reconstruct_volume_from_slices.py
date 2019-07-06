@@ -61,7 +61,7 @@ def main():
         default=0.01  # TK1L2
         # default=0.006  #TVL2, HuberL2
     )
-    input_parser.add_rho(default=0.5)
+    input_parser.add_rho(default=0.1)
     input_parser.add_tv_solver(default="PD")
     input_parser.add_pd_alg_type(default="ALG2")
     input_parser.add_iterations(default=15)
@@ -224,17 +224,7 @@ def main():
         if args.reconstruction_type in ["TVL2", "HuberL2"]:
             ph.print_title(
                 "Compute Initial value for %s" % args.reconstruction_type)
-            SRR0 = tk.TikhonovSolver(
-                stacks=stacks,
-                reconstruction=recon0,
-                alpha=args.alpha,
-                iter_max=np.min([5, args.iter_max]),
-                reg_type="TK1",
-                minimizer="lsmr",
-                data_loss="linear",
-                use_masks=args.use_masks_srr,
-                # verbose=args.verbose,
-            )
+            SRR0 = sda.ScatteredDataApproximation(stacks, recon0, sigma=0.8)
         else:
             ph.print_title(
                 "Compute %s reconstruction" % args.reconstruction_type)
@@ -255,20 +245,19 @@ def main():
         recon = SRR0.get_reconstruction()
         filename = SRR0.get_setting_specific_filename()
 
-        if args.reconstruction_type in ["TVL2", "HuberL2"]:
-            output = ph.append_to_filename(args.output, "_initTK1L2")
-        else:
-            output = args.output
+        if args.verbose and args.reconstruction_type in ["TVL2", "HuberL2"]:
+            output = ph.append_to_filename(args.output, "_init")
 
-        if args.mask:
-            mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
-            mask_estimator.run()
-            mask_sitk = mask_estimator.get_mask_sitk()
-            dw.DataWriter.write_mask(mask_sitk, output, description=filename)
-        else:
-            dw.DataWriter.write_image(recon.sitk, output, description=filename)
+            if args.mask:
+                mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
+                mask_estimator.run()
+                mask_sitk = mask_estimator.get_mask_sitk()
+                dw.DataWriter.write_mask(
+                    mask_sitk, output, description=filename)
+            else:
+                dw.DataWriter.write_image(
+                    recon.sitk, output, description=filename)
 
-        if args.verbose:
             show_niftis.insert(0, output)
 
         if args.reconstruction_type in ["TVL2", "HuberL2"]:
@@ -308,19 +297,19 @@ def main():
             recon = SRR.get_reconstruction()
             filename = SRR.get_setting_specific_filename()
 
-            if args.mask:
-                mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
-                mask_estimator.run()
-                mask_sitk = mask_estimator.get_mask_sitk()
-                dw.DataWriter.write_mask(
-                    mask_sitk, args.output, description=filename)
+        if args.mask:
+            mask_estimator = bm.BinaryMaskFromMaskSRREstimator(recon.sitk)
+            mask_estimator.run()
+            mask_sitk = mask_estimator.get_mask_sitk()
+            dw.DataWriter.write_mask(
+                mask_sitk, args.output, description=filename)
 
-            else:
-                dw.DataWriter.write_image(
-                    recon.sitk, args.output, description=filename)
+        else:
+            dw.DataWriter.write_image(
+                recon.sitk, args.output, description=filename)
 
-            if args.verbose:
-                show_niftis.insert(0, args.output)
+        if args.verbose:
+            show_niftis.insert(0, args.output)
 
     if args.verbose:
         ph.show_niftis(show_niftis, viewer=args.viewer)
