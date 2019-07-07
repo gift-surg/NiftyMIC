@@ -14,19 +14,43 @@ import niftymic.validation.motion_simulator as ms
 
 def main():
     input_parser = InputArgparser(
-        description="Create and write random motion transforms.",
+        description="Create and write random rigid motion transformations. "
+        "Simulated transformations are exported as (Simple)ITK transforms. "
+        ,
     )
     input_parser.add_dir_output(required=True)
     input_parser.add_option(
-        option_string="--simulations", type=int, required=True)
-    input_parser.add_option(option_string="--angle-max", default=10)
-    input_parser.add_option(option_string="--translation-max", default=10)
-    input_parser.add_option(option_string="--seed", type=int, default=1)
-    input_parser.add_option(option_string="--dimension", type=int, default=3)
+        option_string="--simulations",
+        type=int,
+        required=True,
+        help="Number of simulated motion transformations."
+    )
     input_parser.add_option(
-        option_string="--write-settings", type=int, default=1)
-    input_parser.add_prefix_output(default="Euler3DTransform_")
-    input_parser.add_verbose(default=0)
+        option_string="--angle-max",
+        default=10,
+        help="random angles (in degree) are drawn such "
+        "that |angle| <= angle_max."
+    )
+    input_parser.add_option(
+        option_string="--translation-max",
+        default=10,
+        help="random translations (in millimetre) are drawn such "
+        "that |translation| <= translation_max."
+    )
+    input_parser.add_option(
+        option_string="--seed",
+        type=int,
+        default=1,
+        help="Seed for pseudo-random data generation"
+    )
+    input_parser.add_option(
+        option_string="--dimension",
+        type=int,
+        default=3,
+        help="Spatial dimension for transformations."
+    )
+    input_parser.add_prefix_output(default="EulerTransform_")
+    input_parser.add_verbose(default=1)
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
