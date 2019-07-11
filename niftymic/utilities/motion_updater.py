@@ -129,9 +129,11 @@ class MotionUpdater(object):
             # ----------------------------- HACK -----------------------------
             # 18 Jan 2019
             # HACK to use results of a previous version where image slices were
-            # still exported (Bug was that after stack intensity correction,
-            # the previous v2v-reg was not passed on to the final registration
-            # transform):
+            # still exported.
+            # (There was a bug after stack intensity correction, which resulted
+            # in v2v-reg transforms not being part of in the final registration
+            # transforms; Thus, slice transformations (tfm's) were flawed and
+            # could not be used):
             else:
                 import niftymic.base.slice as sl
 
