@@ -42,7 +42,7 @@ class MotionSimulator(object):
         ph.create_directory(directory)
         for i, transform in enumerate(self._transforms_sitk):
             path_to_file = os.path.join(
-                directory, "%s%d.tfm" % (prefix_filename, i+1))
+                directory, "%s%d.tfm" % (prefix_filename, i))
             sitk.WriteTransform(transform, path_to_file)
             if self._verbose:
                 ph.print_info("Transform written to %s" % path_to_file)
