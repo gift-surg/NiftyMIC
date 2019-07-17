@@ -20,7 +20,6 @@ import niftymic
 
 class DataWriter(object):
 
-
     ##
     # Gets the header update.
     #
@@ -45,7 +44,6 @@ class DataWriter(object):
             header_update["descrip"] = ""
         else:
             header_update["descrip"] = description
-
 
         return header_update
 
@@ -114,7 +112,8 @@ class MultipleStacksWriter(StacksWriter):
                  write_mask=False,
                  write_slices=False,
                  write_transforms=False,
-                 suffix_mask="_mask"):
+                 suffix_mask="_mask",
+                 ):
 
         StacksWriter.__init__(self, stacks=stacks)
         self._directory = directory
@@ -142,12 +141,16 @@ class MultiComponentImageWriter(StacksWriter):
                  filename=None,
                  write_mask=False,
                  suffix_mask="_mask",
+                 compress=True,
+                 description=None,
                  ):
 
         StacksWriter.__init__(self, stacks=stacks)
         self._filename = filename
         self._write_mask = write_mask
         self._suffix_mask = suffix_mask
+        self._compress = compress
+        self._description = description
 
     def set_filename(self, filename):
         self._filename = filename
@@ -158,16 +161,45 @@ class MultiComponentImageWriter(StacksWriter):
             raise ValueError("Filename is not set")
 
         ph.create_directory(os.path.dirname(self._filename))
+        header_update = DataWriter._get_header_update(
+            description=self._description)
 
+        info = "Write image to '%s'" % self._filename
         vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
             [stack.sitk for stack in self._stacks])
-        sitkh.write_sitk_vector_image(vector_image_sitk, self._filename)
+        if self._compress:
+            if not "integer" in vector_image_sitk.GetPixelIDTypeAsString():
+                vector_image_sitk = sitk.Cast(
+                    vector_image_sitk, sitk.sitkVectorFloat32)
+                info += " (float32)"
+
+        ph.print_info("%s ... " % info, newline=False)
+        sitkh.write_sitk_vector_image(
+            vector_image_sitk,
+            self._filename,
+            verbose=False,
+            header_update=header_update,
+        )
+        print("done")
 
         if self._write_mask:
+            info = "Write image mask to '%s'" % self._filename
             filename_split = (self._filename).split(".")
             filename = filename_split[0]
             filename += self._suffix_mask + "." + \
                 (".").join(filename_split[1:])
             vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
                 [stack.sitk_mask for stack in self._stacks])
-            sitkh.write_sitk_vector_image(vector_image_sitk, filename)
+
+            if self._compress:
+                vector_image_sitk = sitk.Cast(
+                    vector_image_sitk, sitk.sitkVectorUInt8)
+                info += " (uint8)"
+            ph.print_info("%s ... " % info, newline=False)
+            sitkh.write_sitk_vector_image(
+                vector_image_sitk,
+                filename,
+                verbose=False,
+                header_update=header_update,
+            )
+            print("done")

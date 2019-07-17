@@ -44,6 +44,9 @@ class MotionUpdater(object):
     # \param      stacks                 Stacks as list of Stack objects
     # \param      dir_motion_correction  Path to motion-correction files
     #                                    [*.tfm]
+    # \param      volume_motion_only     Update only stack/volumetric motion
+    #                                    (and ignore individual slice motion
+    #                                    transforms)
     # \param      prefix_slice           Prefix of slices to indicate slice
     #                                    transformations. E.g. "_slice" refers
     #                                    to filenameA_slice[0-9]+.tfm files as
@@ -54,11 +57,13 @@ class MotionUpdater(object):
         self,
         stacks,
         dir_motion_correction,
+        volume_motion_only=False,
         prefix_slice="_slice",
     ):
 
         self._stacks = [st.Stack.from_stack(s) for s in stacks]
         self._dir_motion_correction = dir_motion_correction
+        self._volume_motion_only = volume_motion_only
         self._prefix_slice = prefix_slice
 
         self._check_against_json = {
@@ -102,6 +107,9 @@ class MotionUpdater(object):
                         "Stack '%s': Stack position updated" % stack_name)
                 else:
                     transform_stack_sitk_inv = sitk.Euler3DTransform()
+
+                if self._volume_motion_only:
+                    continue
 
                 # update slice positions
                 pattern_trafo_slices = stack_name + self._prefix_slice + \

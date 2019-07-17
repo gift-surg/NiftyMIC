@@ -1,5 +1,5 @@
 ##
-# \file reconstruct_resting_state_volume.py
+# \file reconstruct_volume_rsfmri.py
 # \brief      Script to run the slice-based motion-correction algorithm for
 #             resting-state fMRI
 #
@@ -44,6 +44,7 @@ def main():
         "resting-state fMRI using slice-based motion-correction algorithms.",
     )
     input_parser.add_filename(required=True)
+    input_parser.add_filename_mask()
     input_parser.add_dir_output(required=True)
 
     input_parser.add_option(
@@ -57,7 +58,6 @@ def main():
     input_parser.add_data_loss(default="linear")
     input_parser.add_dilation_radius(default=3)
     input_parser.add_extra_frame_target(default=5)
-    input_parser.add_filename_mask()
     input_parser.add_isotropic_resolution(default=1)
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)
@@ -218,11 +218,14 @@ def main():
     time_reconstruction = \
         multi_component_reconstruction.get_computational_time()
     stacks_recon_v2v = multi_component_reconstruction.get_reconstructions()
+    description = multi_component_reconstruction.get_reconstruction_method().\
+        get_setting_specific_filename()
 
     # Write result
     filename = os.path.basename(args.filename).split(".")[0]
     filename = os.path.join(args.dir_output, filename + "_recon_v2v.nii.gz")
-    data_writer = dw.MultiComponentImageWriter(stacks_recon_v2v, filename)
+    data_writer = dw.MultiComponentImageWriter(
+        stacks_recon_v2v, filename, description=description)
     data_writer.write_data()
 
     # ---------------------------Create first volume------------------------
@@ -367,11 +370,14 @@ def main():
         multi_component_reconstruction.get_computational_time()
 
     stacks_recon_s2v = multi_component_reconstruction.get_reconstructions()
+    description = multi_component_reconstruction.get_reconstruction_method().\
+        get_setting_specific_filename()
 
     # -----------------------Write multi-component image-----------------------
     filename = os.path.basename(args.filename).split(".")[0]
     filename = os.path.join(args.dir_output, filename + "_recon_s2v.nii.gz")
-    data_writer = dw.MultiComponentImageWriter(stacks_recon_s2v, filename)
+    data_writer = dw.MultiComponentImageWriter(
+        stacks_recon_s2v, filename, description=description)
     data_writer.write_data()
 
     # if args.verbose:
