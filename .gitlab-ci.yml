@@ -179,13 +179,13 @@ param_study_huberl2:
   tags:
     - gift-adelie
 
-reconstruct_rsfmri:
+reconstruct_volume_rsfmri:
   # only:
   #   - master
   script:
     - recon_type=HuberL2
     - >
-      python niftymic/prototyping/reconstruct_resting_state_volume.py
+      python niftymic/prototyping/reconstruct_volume_rsfmri.py
       --filename ${DATADIR}/rsfmri/bold.nii.gz
       --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
       --dir-output ${TMPDIR}/rsfmri 
@@ -194,6 +194,26 @@ reconstruct_rsfmri:
       --alpha-rsfmri 0.05
       --two-step-cycles 1
       --iterations 2
+      --iter-max 2 
+      --verbose 0 
+      --reconstruction-type ${recon_type} 
+      --reconstruction-spacing 2 2 5
+      --use-masks-srr 1
+      --prototyping
+  tags:
+    - gift-adelie
+
+reconstruct_volume_from_slices_rsfmri:
+  # only:
+  #   - master
+  script:
+    - recon_type=TK1L2
+    - >
+      python niftymic/prototyping/reconstruct_volume_from_slices_rsfmri.py
+      --filename ${DATADIR}/rsfmri/bold.nii.gz
+      --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
+      --output ${TMPDIR}/rsfmri/foo.nii.gz 
+      --alpha-rsfmri 0.05
       --iter-max 2 
       --verbose 0 
       --reconstruction-type ${recon_type} 
