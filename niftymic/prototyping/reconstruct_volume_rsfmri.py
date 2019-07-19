@@ -82,7 +82,7 @@ def main():
     input_parser.add_stack_recon_range(default=15)
     input_parser.add_target_stack_index(default=0)
     input_parser.add_two_step_cycles(default=3)
-    input_parser.add_use_masks_srr(default=True)
+    input_parser.add_use_masks_srr(default=1)
     input_parser.add_verbose(default=0)
     input_parser.add_v2v_method(default="RegAladin")
     input_parser.add_outlier_rejection(default=1)
@@ -365,9 +365,13 @@ def main():
     time_reconstruction += reconstruction_method_srr.get_computational_time()
 
     HR_volume = reconstruction_method_srr.get_reconstruction()
-    HR_volume.set_filename(
-        reconstruction_method_srr.get_setting_specific_filename())
-    HR_volume.write(args.dir_output)
+    description = reconstruction_method_srr.get_setting_specific_filename()
+    HR_volume.set_filename(description)
+    dw.DataWriter.write_image(
+        image_sitk=HR_volume.sitk,
+        path_to_file=os.path.join(args.dir_output, "SRR_reference.nii.gz"),
+        description=description,
+    )
 
     # for stack in HR_volume_iterations:
     #     stack.write(args.dir_output)
