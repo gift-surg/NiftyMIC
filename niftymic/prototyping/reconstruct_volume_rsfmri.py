@@ -57,7 +57,7 @@ def main():
     input_parser.add_alpha_first(default=0.05)
     input_parser.add_data_loss(default="linear")
     input_parser.add_dilation_radius(default=3)
-    input_parser.add_extra_frame_target(default=5)
+    input_parser.add_extra_frame_target(default=0)
     input_parser.add_isotropic_resolution(default=1)
     input_parser.add_iter_max(default=10)
     input_parser.add_iter_max_first(default=5)
@@ -234,9 +234,9 @@ def main():
 
     # Write result
     filename = os.path.basename(args.filename).split(".")[0]
-    filename = os.path.join(args.dir_output, filename + "_recon_v2v.nii.gz")
+    path_to_v2v = os.path.join(args.dir_output, filename + "_recon_v2v.nii.gz")
     data_writer = dw.MultiComponentImageWriter(
-        stacks_recon_v2v, filename, description=description)
+        stacks_recon_v2v, path_to_v2v, description=description)
     data_writer.write_data()
 
     # ---------------------------Create first volume------------------------
@@ -269,6 +269,14 @@ def main():
     joint_image_mask_builder.run()
     HR_volume = joint_image_mask_builder.get_stack()
     HR_volume.set_filename(SDA.get_setting_specific_filename())
+
+    # Crop to space defined by mask (plus extra margin)
+    HR_volume = HR_volume.get_cropped_stack_based_on_mask(
+        boundary_i=args.extra_frame_target,
+        boundary_j=args.extra_frame_target,
+        boundary_k=args.extra_frame_target,
+        unit="mm",
+    )
 
     time_reconstruction += ph.stop_timing(time_tmp)
 
@@ -317,7 +325,7 @@ def main():
             reconstruction=HR_volume,
             reg_type="TK1",
             iter_max=np.min([args.iter_max_first, args.iter_max]),
-            use_masks=args.use_masks_srr,
+            use_masks=False,
         )
 
         # Define outlier rejection threshold after each S2V-reg step
@@ -404,9 +412,9 @@ def main():
 
     # -----------------------Write multi-component image-----------------------
     filename = os.path.basename(args.filename).split(".")[0]
-    filename = os.path.join(args.dir_output, filename + "_recon_s2v.nii.gz")
+    path_to_s2v = os.path.join(args.dir_output, filename + "_recon_s2v.nii.gz")
     data_writer = dw.MultiComponentImageWriter(
-        stacks_recon_s2v, filename, description=description)
+        stacks_recon_s2v, path_to_s2v, description=description)
     data_writer.write_data()
 
     # if args.verbose:
@@ -425,6 +433,13 @@ def main():
     #                       dir_output=os.path.join(
     #                           args.dir_output, "comparison"),
     #                       )
+
+    if args.verbose:
+        ph.show_niftis([
+            args.filename,
+            path_to_v2v,
+            path_to_s2v,
+        ])
 
     # Summary
     ph.print_title("Summary")
