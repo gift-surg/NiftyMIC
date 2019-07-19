@@ -353,7 +353,7 @@ def main():
             two_step_s2v_reg_recon.get_computational_time_reconstruction()
 
         if args.verbose:
-            sitkh.show_stacks(HR_volume_iterations)
+            sitkh.show_stacks(HR_volume_iterations, segmentation=HR_volume)
 
         # # Write to output
         # HR_volume_tmp.write(args.dir_output)
