@@ -56,12 +56,7 @@ def main():
         "for each individual slice for each time point."
     )
     input_parser.add_reconstruction_space(default=None)
-    input_parser.add_option(
-        option_string="--alpha-rsfmri",
-        type=float,
-        help="Regularization parameter used for rsfmri reconstruction",
-        default=0.05,
-    )
+    input_parser.add_alpha(default=0.05)
     input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_data_loss(default="linear")
     input_parser.add_minimizer(default="lsmr")
@@ -79,7 +74,16 @@ def main():
         nargs="+",
         help="Specify spacing of reconstruction space in case a change is desired",
         default=None)
-    input_parser.add_use_masks_srr(default=True)
+    input_parser.add_argument(
+        "--sda", "-sda",
+        action='store_true',
+        help="If given, the volumetric reconstructions are performed using "
+        "Scattered Data Approximation (Vercauteren et al., 2006). "
+        "'alpha' is considered the final 'sigma' for the "
+        "iterative adjustment. "
+        "Recommended value is, e.g., --alpha 0.8"
+    )
+    input_parser.add_use_masks_srr(default=1)
     input_parser.add_log_config(default=1)
     input_parser.add_verbose(default=0)
 
@@ -139,30 +143,37 @@ def main():
     # ------------------------------DELETE LATER------------------------------
 
     # ----Define solver for rsfMRI reconstructions of individual timepoints----
-    if args.reconstruction_type in ["TVL2", "HuberL2"]:
-        reconstruction_method_rsfmri = pd.PrimalDualSolver(
-            stacks=stacks,
-            reconstruction=reconstruction_space,
-            reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
-            iterations=args.iterations,
+    if args.sda:
+        recon_method = sda.ScatteredDataApproximation(
+            stacks,
+            reconstruction_space,
+            sigma=args.alpha,
+            use_masks=args.use_masks_srr,
         )
     else:
-        reconstruction_method_rsfmri = tk.TikhonovSolver(
-            stacks=stacks,
-            reconstruction=reconstruction_space,
-            reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
-        )
-    reconstruction_method_rsfmri.set_alpha(args.alpha_rsfmri)
-    reconstruction_method_rsfmri.set_iter_max(args.iter_max)
-    reconstruction_method_rsfmri.set_verbose(args.verbose)
-    reconstruction_method_rsfmri.set_minimizer(args.minimizer)
-    reconstruction_method_rsfmri.set_data_loss(args.data_loss)
-    reconstruction_method_rsfmri.set_use_masks(args.use_masks_srr)
+        if args.reconstruction_type in ["TVL2", "HuberL2"]:
+            recon_method = pd.PrimalDualSolver(
+                stacks=stacks,
+                reconstruction=reconstruction_space,
+                reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
+                iterations=args.iterations,
+                use_masks=args.use_masks_srr,
+            )
+        else:
+            recon_method = tk.TikhonovSolver(
+                stacks=stacks,
+                reconstruction=reconstruction_space,
+                reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
+                use_masks=args.use_masks_srr,
+            )
+        recon_method.set_alpha(args.alpha)
+        recon_method.set_iter_max(args.iter_max)
+        recon_method.set_verbose(True)
 
     # ------Update individual timepoints based on updated slice positions------
     multi_component_reconstruction = pipeline.MultiComponentReconstruction(
         stacks=stacks,
-        reconstruction_method=reconstruction_method_rsfmri,
+        reconstruction_method=recon_method,
         suffix="_recon_v2v")
     multi_component_reconstruction.run()
     time_reconstruction = \
