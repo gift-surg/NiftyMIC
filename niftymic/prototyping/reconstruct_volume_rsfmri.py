@@ -85,6 +85,9 @@ def main():
     input_parser.add_use_masks_srr(default=True)
     input_parser.add_verbose(default=0)
     input_parser.add_v2v_method(default="RegAladin")
+    input_parser.add_outlier_rejection(default=1)
+    input_parser.add_threshold_first(default=0.5)
+    input_parser.add_threshold(default=0.8)
     input_parser.add_write_motion_correction(default=1)
 
     args = input_parser.parse_args()
@@ -93,6 +96,9 @@ def main():
     if args.v2v_method not in V2V_METHOD_OPTIONS:
         raise ValueError("v2v-method must be in {%s}" % (
             ", ".join(V2V_METHOD_OPTIONS)))
+
+    if args.threshold_first > args.threshold:
+        raise ValueError("It must hold threshold-first <= threshold")
 
     # Write script execution call
     if args.log_config:
@@ -119,6 +125,11 @@ def main():
     if args.prototyping:
         stacks = stacks[0:2]
     # ------------------------------DELETE LATER------------------------------
+
+    # specify stack index range used for intermediate volumetric HR recons
+    i_min = args.target_stack_index
+    i_max = np.min([args.target_stack_index + args.stack_recon_range,
+                    len(stacks)])
 
     # ---------------------------Data Preprocessing---------------------------
     ph.print_title("Data Preprocessing")
@@ -243,13 +254,15 @@ def main():
     # Scattered Data Approximation to get first estimate of HR volume
     ph.print_title("Scattered Data Approximation")
     SDA = sda.ScatteredDataApproximation(
-        stacks[args.target_stack_index: args.stack_recon_range],
-        HR_volume, sigma=args.sigma)
+        stacks=stacks[i_min: i_max],
+        HR_volume=HR_volume,
+        sigma=args.sigma,
+    )
     SDA.run()
     HR_volume = SDA.get_reconstruction()
 
     joint_image_mask_builder = imb.JointImageMaskBuilder(
-        stacks=stacks,
+        stacks=stacks[i_min: i_max],
         target=HR_volume,
         dilation_radius=1,
     )
@@ -261,6 +274,7 @@ def main():
 
     # ----------------Two-step Slice-to-Volume Registration SRR-------------
     if args.two_step_cycles > 0:
+        stacks_srr = [st.Stack.from_stack(s) for s in stacks[i_min: i_max]]
 
         # Define the regularization parameters for the individual
         # reconstruction steps in the two-step cycles
@@ -272,7 +286,7 @@ def main():
             moving=HR_volume,
             use_fixed_mask=True,
             use_moving_mask=True,
-            use_verbose=args.verbose,
+            use_verbose=False,
             interpolator="Linear",
             metric="Correlation",
             # metric="MattesMutualInformation",  # Might cause error messages
@@ -299,23 +313,28 @@ def main():
 
         # Use "standard" SRR algorithm to create SRR reference
         reconstruction_method_srr = tk.TikhonovSolver(
-            stacks=stacks[args.target_stack_index: args.stack_recon_range],
+            stacks=stacks_srr,
             reconstruction=HR_volume,
             reg_type="TK1",
             iter_max=np.min([args.iter_max_first, args.iter_max]),
             use_masks=args.use_masks_srr,
         )
 
+        # Define outlier rejection threshold after each S2V-reg step
+        thresholds = np.linspace(
+            args.threshold_first, args.threshold, args.two_step_cycles)
+
         two_step_s2v_reg_recon = \
             pipeline.TwoStepSliceToVolumeRegistrationReconstruction(
-                stacks=stacks,
+                stacks=stacks_srr,
                 reference=HR_volume,
                 registration_method=registration,
                 reconstruction_method=reconstruction_method_srr,
                 cycles=args.two_step_cycles,
                 alphas=alphas[0:args.two_step_cycles - 1],
                 verbose=args.verbose,
-                outlier_rejection=False,
+                outlier_rejection=args.outlier_rejection,
+                thresholds=thresholds,
             )
         two_step_s2v_reg_recon.run()
         HR_volume_iterations = \
@@ -331,8 +350,32 @@ def main():
         # # Write to output
         # HR_volume_tmp.write(args.dir_output)
 
-    # Write stack and slice motion corrections
-    ph.print_title("Write Motion Correction Results")
+    ph.print_title("Final Super-Resolution Reconstruction")
+    reconstruction_method_srr.set_alpha(args.alpha)
+    reconstruction_method_srr.set_iter_max(args.iter_max)
+    reconstruction_method_srr.run()
+    time_reconstruction += reconstruction_method_srr.get_computational_time()
+
+    HR_volume = reconstruction_method_srr.get_reconstruction()
+    HR_volume.set_filename(
+        reconstruction_method_srr.get_setting_specific_filename())
+    HR_volume.write(args.dir_output)
+
+    # for stack in HR_volume_iterations:
+    #     stack.write(args.dir_output)
+
+    # --------------------Final Slice-to-Volume Registrations-----------------
+    ph.print_title("Final Slice-to-Volume Registrations")
+    s2vreg = pipeline.SliceToVolumeRegistration(
+        stacks=stacks,
+        reference=HR_volume,
+        registration_method=registration,
+        verbose=False,
+    )
+    s2vreg.run()
+
+    # ------------------Write Slice Motion Correction Results------------------
+    ph.print_title("Write Slice Motion Correction Results")
     if args.write_motion_correction:
         dir_output_mc = os.path.join(
             args.dir_output,
@@ -347,20 +390,6 @@ def main():
                 write_slices=False,
                 write_transforms=True,
             )
-
-    ph.print_title("Final Super-Resolution Reconstruction")
-    reconstruction_method_srr.set_alpha(args.alpha)
-    reconstruction_method_srr.set_iter_max(args.iter_max)
-    reconstruction_method_srr.run()
-    time_reconstruction += reconstruction_method_srr.get_computational_time()
-
-    HR_volume = reconstruction_method_srr.get_reconstruction()
-    HR_volume.set_filename(
-        reconstruction_method_srr.get_setting_specific_filename())
-    HR_volume.write(args.dir_output)
-
-    # for stack in HR_volume_iterations:
-    #     stack.write(args.dir_output)
 
     # ------Update individual timepoints based on updated slice positions------
     multi_component_reconstruction.set_suffix("_recon_s2v")
