@@ -144,7 +144,7 @@ run_reconstruction_pipeline:
   #   - master
   script:
     - >
-      python niftymic/application/run_reconstruction_pipeline.py
+      niftymic_run_reconstruction_pipeline
       --filenames ${DATADIR}/input_data/axial.nii.gz
       --filenames-masks ${DATADIR}/input_data/axial_mask.nii.gz
       --dir-output ${TMPDIR} 
