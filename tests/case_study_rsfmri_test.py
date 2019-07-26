@@ -40,7 +40,7 @@ class CaseStudyRestingStateFMRITest(unittest.TestCase):
         path_to_reference_mask = ph.append_to_filename(
             os.path.join(dir_reference, filename), self.suffix_mask)
 
-        two_step_cycles = 0
+        two_step_cycles = 1
         iter_max = 5
 
         exe = os.path.abspath(rsfmri_estimate_motion.__file__)
