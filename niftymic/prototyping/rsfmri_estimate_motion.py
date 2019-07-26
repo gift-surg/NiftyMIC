@@ -413,13 +413,17 @@ def main():
 
     # Summary
     ph.print_title("Summary")
-    print("Computational Time for Data Preprocessing: %s" %
-          time_data_preprocessing)
-    print("Computational Time for Reference (Estimate): %s" %
-          time_ref_estimate)
-    print("Computational Time for V2V-Registration: %s" % time_v2v_reg)
-    print("Computational Time for S2V-Registration: %s" % time_s2v_reg)
-    print("Computational Time for Entire Pipeline: %s" % elapsed_time_total)
+    exe_file_info = os.path.basename(os.path.abspath(__file__)).split(".")[0]
+    print("%s | Computational Time for Data Preprocessing: %s" % (
+        exe_file_info, time_data_preprocessing))
+    print("%s | Computational Time for Reference (Estimate): %s" % (
+        exe_file_info, time_ref_estimate))
+    print("%s | Computational Time for V2V-Registration: %s" % (
+        exe_file_info, time_v2v_reg))
+    print("%s | Computational Time for S2V-Registration: %s" % (
+        exe_file_info, time_s2v_reg))
+    print("%s | Computational Time for Pipeline: %s" % (
+        exe_file_info, elapsed_time_total))
 
     ph.print_line_separator()
 

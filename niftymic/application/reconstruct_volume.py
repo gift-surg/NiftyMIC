@@ -561,14 +561,15 @@ def main():
 
     # Summary
     ph.print_title("Summary")
-    print("Computational Time for Data Preprocessing: %s" %
-          (time_data_preprocessing))
-    print("Computational Time for Registrations: %s" %
-          (time_registration))
-    print("Computational Time for Reconstructions: %s" %
-          (time_reconstruction))
-    print("Computational Time for Entire Reconstruction Pipeline: %s" %
-          (elapsed_time_total))
+    exe_file_info = os.path.basename(os.path.abspath(__file__)).split(".")[0]
+    print("%s | Computational Time for Data Preprocessing: %s" %
+          (exe_file_info, time_data_preprocessing))
+    print("%s | Computational Time for Registrations: %s" %
+          (exe_file_info, time_registration))
+    print("%s | Computational Time for Reconstructions: %s" %
+          (exe_file_info, time_reconstruction))
+    print("%s | Computational Time for Entire Reconstruction Pipeline: %s" %
+          (exe_file_info, elapsed_time_total))
 
     ph.print_line_separator()
 

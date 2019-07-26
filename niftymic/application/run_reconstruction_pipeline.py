@@ -29,7 +29,7 @@ from niftymic.definitions import DIR_TEMPLATES
 
 def main():
 
-    time_start = ph.start_timing()
+    time_start_total = ph.start_timing()
 
     np.set_printoptions(precision=3)
 
@@ -147,6 +147,7 @@ def main():
         dir_output_diagnostics, "%s_template_slicecoverage.nii.gz" % filename_srr)
 
     if args.bias_field_correction and args.run_bias_field_correction:
+        time_start = ph.start_timing()
         for i, f in enumerate(args.filenames):
             output = os.path.join(
                 dir_output_preprocessing, os.path.basename(f))
@@ -157,11 +158,10 @@ def main():
             # cmd_args.append("--verbose %d" % args.verbose)
             cmd_args.append("--log-config %d" % args.log_config)
             cmd = "niftymic_correct_bias_field %s" % (" ").join(cmd_args)
-            time_start_bias = ph.start_timing()
             exit_code = ph.execute_command(cmd)
             if exit_code != 0:
                 raise RuntimeError("Bias field correction failed")
-        elapsed_time_bias = ph.stop_timing(time_start_bias)
+        elapsed_time_bias = ph.stop_timing(time_start)
         filenames = [os.path.join(dir_output_preprocessing, os.path.basename(f))
                      for f in args.filenames]
     elif args.bias_field_correction and not args.run_bias_field_correction:
@@ -189,6 +189,7 @@ def main():
     filenames_masks = ["'" + f + "'" for f in args.filenames_masks]
 
     if args.run_recon_subject_space:
+        time_start = ph.start_timing()
 
         cmd_args = ["niftymic_reconstruct_volume"]
         cmd_args.append("--filenames %s" % (" ").join(filenames))
@@ -225,10 +226,10 @@ def main():
             cmd_args.append("--s2v-hierarchical")
 
         cmd = (" ").join(cmd_args)
-        time_start_volrec = ph.start_timing()
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Reconstruction in subject space failed")
+        elapsed_time_recon_subject_space = ph.stop_timing(time_start)
 
         # Compute SRR mask in subject space
         # (Approximated using SDA within reconstruct_volume)
@@ -255,11 +256,11 @@ def main():
             cmd = (" ").join(cmd_args)
             ph.execute_command(cmd)
 
-        elapsed_time_volrec = ph.stop_timing(time_start_volrec)
     else:
-        elapsed_time_volrec = ph.get_zero_time()
+        elapsed_time_recon_subject_space = ph.get_zero_time()
 
     if args.run_recon_template_space:
+        time_start = ph.start_timing()
 
         if args.gestational_age is None:
             template_stack_estimator = \
@@ -294,6 +295,8 @@ def main():
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Registration to template space failed")
+        elapsed_time_register_image = ph.stop_timing(time_start)
+        time_start = ph.start_timing()
 
         # Compute SRR in template space
         dir_input_mc = os.path.join(
@@ -315,14 +318,15 @@ def main():
                             " ".join(map(str, args.slice_thicknesses)))
         if args.sda:
             cmd_args.append("--sda")
-
         cmd = (" ").join(cmd_args)
         exit_code = ph.execute_command(cmd)
         if exit_code != 0:
             raise RuntimeError("Reconstruction in template space failed")
+        elapsed_time_recon_template_space = ph.stop_timing(time_start)
 
         # Compute SRR mask in template space
         if 1:
+            time_start = ph.start_timing()
             dir_motion_correction = os.path.join(
                 dir_output_recon_template_space, "motion_correction")
             cmd_args = ["niftymic_reconstruct_volume_from_slices"]
@@ -344,6 +348,8 @@ def main():
                 cmd_args.append("--iter-max 5")
             cmd = (" ").join(cmd_args)
             ph.execute_command(cmd)
+            elapsed_time_recon_template_space_mask = ph.stop_timing(
+                time_start)
 
         # Copy SRR to output directory
         if 0:
@@ -363,7 +369,8 @@ def main():
                 srr_template_mask,
             ]
             output_masked = "Masked_%s" % output
-            path_to_output_masked = os.path.join(args.dir_output, output_masked)
+            path_to_output_masked = os.path.join(
+                args.dir_output, output_masked)
             cmd_args.append("--filenames %s" % " ".join(fnames))
             cmd_args.append("--output '%s'" % path_to_output_masked)
             cmd = (" ").join(cmd_args)
@@ -372,9 +379,12 @@ def main():
                 raise RuntimeError("SRR brain masking failed")
 
     else:
-        elapsed_time_template = ph.get_zero_time()
+        elapsed_time_register_image = ph.get_zero_time()
+        elapsed_time_recon_template_space = ph.get_zero_time()
+        elapsed_time_recon_template_space_mask = ph.get_zero_time()
 
     if args.run_diagnostics:
+        time_start = ph.start_timing()
 
         dir_input_mc = os.path.join(
             dir_output_recon_template_space, "motion_correction")
@@ -458,14 +468,25 @@ def main():
             exit_code = ph.execute_command(cmd)
             if exit_code != 0:
                 raise RuntimeError("Generation of PDF overview failed")
+        elapsed_time_diagnostics = ph.stop_timing(time_start)
 
     ph.print_title("Summary")
-    print("Computational Time for Bias Field Correction: %s" %
-          elapsed_time_bias)
-    print("Computational Time for Volumetric Reconstruction: %s" %
-          elapsed_time_volrec)
-    print("Computational Time for Pipeline: %s" %
-          ph.stop_timing(time_start))
+    exe_file_info = os.path.basename(os.path.abspath(__file__)).split(".")[0]
+    print("%s | Computational Time for Bias Field Corrections: %s" % (
+          exe_file_info, elapsed_time_bias))
+    print("%s | Computational Time for Subject Space Reconstruction: %s" % (
+          exe_file_info, elapsed_time_recon_subject_space))
+    print("%s | Computational Time for Template Space Alignment: %s" % (
+          exe_file_info, elapsed_time_register_image))
+    print("%s | Computational Time for Template Space Reconstruction: %s" % (
+          exe_file_info, elapsed_time_recon_template_space))
+    print("%s | Computational Time for Template Space Reconstruction (Mask): %s" % (
+          exe_file_info, elapsed_time_recon_template_space_mask))
+    if args.run_diagnostics:
+        print("%s | Computational Time for Diagnostics: %s" % (
+              exe_file_info, elapsed_time_diagnostics))
+    print("%s | Computational Time for Pipeline: %s" % (
+          exe_file_info, ph.stop_timing(time_start_total)))
 
     return 0
 

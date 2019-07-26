@@ -255,7 +255,8 @@ def main():
 
     # Summary
     ph.print_title("Summary")
-    print("Computational Time: %s" % (elapsed_time_total))
+    exe_file_info = os.path.basename(os.path.abspath(__file__)).split(".")[0]
+    print("%s | Computational Time: %s" % (exe_file_info, elapsed_time_total))
 
     return 0
 

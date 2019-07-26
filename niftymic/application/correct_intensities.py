@@ -137,8 +137,9 @@ def main():
     elapsed_time = ph.stop_timing(time_start)
 
     ph.print_title("Summary")
-    print("Computational Time for Intensity Correction(s): %s" %
-          (elapsed_time))
+    exe_file_info = os.path.basename(os.path.abspath(__file__)).split(".")[0]
+    print("%s | Computational Time for Intensity Correction(s): %s" %
+          (exe_file_info, elapsed_time))
 
     return 0
 
