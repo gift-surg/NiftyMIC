@@ -6,40 +6,86 @@
 # \date       Aug 2017
 #
 
-# Import libraries
-from abc import ABCMeta, abstractmethod
 import os
 import sys
-import SimpleITK as sitk
 import numpy as np
+import SimpleITK as sitk
+from abc import ABCMeta, abstractmethod
 
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
+import niftymic
+
 
 class DataWriter(object):
 
+    ##
+    # Gets the header update.
+    #
+    # aux_file: 23 characters max
+    # descrip: 79 characters max
+    #
+    # \see        https://nifti.nimh.nih.gov/nifti-1/documentation/nifti1fields
+    # \date       2019-07-05 18:09:40+0100
+    #
+    # \param      description  description of NIfTI image (max 79 chars)
+    #
+    # \return     dictionary that carries NIfTI header information updates.
+    #
     @staticmethod
-    def write_image(image_sitk, path_to_file, compress=True, verbose=True):
+    def _get_header_update(description=None):
+
+        header_update = {
+            "aux_file": "NiftyMIC-v%s" % niftymic.__version__
+        }
+
+        if description is None:
+            header_update["descrip"] = ""
+        else:
+            header_update["descrip"] = description
+
+        return header_update
+
+    @staticmethod
+    def write_image(
+        image_sitk,
+        path_to_file,
+        compress=True,
+        verbose=True,
+        description=None,
+    ):
         info = "Write image to %s" % path_to_file
         if compress:
             image_sitk = sitk.Cast(image_sitk, sitk.sitkFloat32)
             info += " (float32)"
         if verbose:
             ph.print_info("%s ... " % info, newline=False)
-        sitkh.write_nifti_image_sitk(image_sitk, path_to_file)
+        header_update = DataWriter._get_header_update(description=description)
+
+        sitkh.write_nifti_image_sitk(
+            image_sitk, path_to_file, header_update=header_update)
         if verbose:
             print("done")
 
     @staticmethod
-    def write_mask(mask_sitk, path_to_file, compress=True, verbose=True):
+    def write_mask(
+        mask_sitk,
+        path_to_file,
+        compress=True,
+        verbose=True,
+        description=None,
+    ):
         info = "Write mask to %s" % path_to_file
         if compress:
             mask_sitk = sitk.Cast(mask_sitk, sitk.sitkUInt8)
             info += " (uint8)"
         if verbose:
             ph.print_info("%s ... " % info, newline=False)
-        sitkh.write_nifti_image_sitk(mask_sitk, path_to_file)
+        header_update = DataWriter._get_header_update(description=description)
+
+        sitkh.write_nifti_image_sitk(
+            mask_sitk, path_to_file, header_update=header_update)
         if verbose:
             print("done")
 
@@ -66,7 +112,8 @@ class MultipleStacksWriter(StacksWriter):
                  write_mask=False,
                  write_slices=False,
                  write_transforms=False,
-                 suffix_mask="_mask"):
+                 suffix_mask="_mask",
+                 ):
 
         StacksWriter.__init__(self, stacks=stacks)
         self._directory = directory
@@ -94,12 +141,16 @@ class MultiComponentImageWriter(StacksWriter):
                  filename=None,
                  write_mask=False,
                  suffix_mask="_mask",
+                 compress=True,
+                 description=None,
                  ):
 
         StacksWriter.__init__(self, stacks=stacks)
         self._filename = filename
         self._write_mask = write_mask
         self._suffix_mask = suffix_mask
+        self._compress = compress
+        self._description = description
 
     def set_filename(self, filename):
         self._filename = filename
@@ -110,16 +161,45 @@ class MultiComponentImageWriter(StacksWriter):
             raise ValueError("Filename is not set")
 
         ph.create_directory(os.path.dirname(self._filename))
+        header_update = DataWriter._get_header_update(
+            description=self._description)
 
+        info = "Write image to '%s'" % self._filename
         vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
             [stack.sitk for stack in self._stacks])
-        sitkh.write_sitk_vector_image(vector_image_sitk, self._filename)
+        if self._compress:
+            if not "integer" in vector_image_sitk.GetPixelIDTypeAsString():
+                vector_image_sitk = sitk.Cast(
+                    vector_image_sitk, sitk.sitkVectorFloat32)
+                info += " (float32)"
+
+        ph.print_info("%s ... " % info, newline=False)
+        sitkh.write_sitk_vector_image(
+            vector_image_sitk,
+            self._filename,
+            verbose=False,
+            header_update=header_update,
+        )
+        print("done")
 
         if self._write_mask:
+            info = "Write image mask to '%s'" % self._filename
             filename_split = (self._filename).split(".")
             filename = filename_split[0]
             filename += self._suffix_mask + "." + \
                 (".").join(filename_split[1:])
             vector_image_sitk = sitkh.get_sitk_vector_image_from_components(
                 [stack.sitk_mask for stack in self._stacks])
-            sitkh.write_sitk_vector_image(vector_image_sitk, filename)
+
+            if self._compress:
+                vector_image_sitk = sitk.Cast(
+                    vector_image_sitk, sitk.sitkVectorUInt8)
+                info += " (uint8)"
+            ph.print_info("%s ... " % info, newline=False)
+            sitkh.write_sitk_vector_image(
+                vector_image_sitk,
+                filename,
+                verbose=False,
+                header_update=header_update,
+            )
+            print("done")

@@ -1,6 +1,6 @@
-pysitk>=0.2.14
-nsol>=0.1.12
-simplereg>=0.3.1
+pysitk>=0.2.18
+nsol>=0.1.13
+simplereg>=0.3.2
 pandas>=0.22.0
 scikit_image>=0.14.1
 scipy>=1.0.1

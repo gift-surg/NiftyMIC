@@ -20,7 +20,7 @@ from linear_operators_test import *
 from niftyreg_test import *
 from residual_evaluator_test import *
 from segmentation_propagation_test import *
-from simulator_slice_acquisition_test import *
+# from simulator_slice_acquisition_test import *  # only in dev branch
 from stack_test import *
 
 # from parameter_normalization_test import *

@@ -533,10 +533,16 @@ def main():
     elapsed_time_total = ph.stop_timing(time_start)
 
     # Write SRR result
-    HR_volume_final.set_filename(recon_method.get_setting_specific_filename())
-    dw.DataWriter.write_image(HR_volume_final.sitk, args.output)
+    filename = recon_method.get_setting_specific_filename()
+    HR_volume_final.set_filename(filename)
+    dw.DataWriter.write_image(
+        HR_volume_final.sitk,
+        args.output,
+        description=filename)
     dw.DataWriter.write_mask(
-        HR_volume_final.sitk_mask, ph.append_to_filename(args.output, "_mask"))
+        HR_volume_final.sitk_mask,
+        ph.append_to_filename(args.output, "_mask"),
+        description=SDA.get_setting_specific_filename())
 
     HR_volume_iterations.insert(0, HR_volume_final)
     for stack in stacks:
@@ -551,14 +557,15 @@ def main():
 
     # Summary
     ph.print_title("Summary")
-    print("Computational Time for Data Preprocessing: %s" %
-          (time_data_preprocessing))
-    print("Computational Time for Registrations: %s" %
-          (time_registration))
-    print("Computational Time for Reconstructions: %s" %
-          (time_reconstruction))
-    print("Computational Time for Entire Reconstruction Pipeline: %s" %
-          (elapsed_time_total))
+    exe_file_info = os.path.basename(os.path.abspath(__file__)).split(".")[0]
+    print("%s | Computational Time for Data Preprocessing: %s" %
+          (exe_file_info, time_data_preprocessing))
+    print("%s | Computational Time for Registrations: %s" %
+          (exe_file_info, time_registration))
+    print("%s | Computational Time for Reconstructions: %s" %
+          (exe_file_info, time_reconstruction))
+    print("%s | Computational Time for Entire Reconstruction Pipeline: %s" %
+          (exe_file_info, elapsed_time_total))
 
     ph.print_line_separator()
 

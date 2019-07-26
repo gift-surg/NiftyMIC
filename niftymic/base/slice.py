@@ -50,13 +50,13 @@ class Slice:
         slice._slice_number = slice_number
         slice._slice_thickness = slice_thickness
 
-        # Append stacks as SimpleITK and ITK Image objects
-        slice.sitk = slice_sitk
-        slice.itk = sitkh.get_itk_from_sitk_image(slice_sitk)
+        # Explicit cast (+ creation of other image instance)
+        slice.sitk = sitk.Cast(slice_sitk, sitk.sitkFloat64)
+        slice.itk = sitkh.get_itk_from_sitk_image(slice.sitk)
 
         # Append masks (if provided)
         if slice_sitk_mask is not None:
-            slice.sitk_mask = slice_sitk_mask
+            slice.sitk_mask = sitk.Cast(slice_sitk_mask, sitk.sitkUInt8)
             try:
                 # ensure mask occupies the same physical space
                 slice.sitk_mask.CopyInformation(slice.sitk)

@@ -272,7 +272,8 @@ class Stack:
                         ):
         stack = cls()
 
-        stack.sitk = sitk.Image(image_sitk)
+        # Explicit cast (+ creation of other image instance)
+        stack.sitk = sitk.Cast(image_sitk, sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         # Set slice thickness of acquisition
@@ -285,7 +286,7 @@ class Stack:
 
         # Append masks (if provided)
         if image_sitk_mask is not None:
-            stack.sitk_mask = image_sitk_mask
+            stack.sitk_mask = sitk.Cast(image_sitk_mask, sitk.sitkUInt8)
             try:
                 # ensure mask occupies the same physical space
                 stack.sitk_mask.CopyInformation(stack.sitk)

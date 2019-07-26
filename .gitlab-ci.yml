@@ -144,7 +144,7 @@ run_reconstruction_pipeline:
   #   - master
   script:
     - >
-      python niftymic/application/run_reconstruction_pipeline.py
+      niftymic_run_reconstruction_pipeline
       --filenames ${DATADIR}/input_data/axial.nii.gz
       --filenames-masks ${DATADIR}/input_data/axial_mask.nii.gz
       --dir-output ${TMPDIR} 
@@ -179,21 +179,36 @@ param_study_huberl2:
   tags:
     - gift-adelie
 
-# reconstruct_rsfmri:
+# rsfmri_estimate_motion:
 #   # only:
 #   #   - master
 #   script:
 #     - recon_type=HuberL2
 #     - >
-#       python niftymic/prototyping/reconstruct_resting_state_volume.py
+#       python niftymic/prototyping/rsfmri_estimate_motion.py
 #       --filename ${DATADIR}/rsfmri/bold.nii.gz
 #       --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
 #       --dir-output ${TMPDIR}/rsfmri 
-#       --alpha-first 0.05
-#       --alpha 0.03
-#       --alpha-rsfmri 0.05
 #       --two-step-cycles 1
 #       --iterations 2
+#       --sda
+#       --alpha 1
+#       --verbose 0 
+#       --prototyping
+#   tags:
+#     - gift-adelie
+
+# rsfmri_reconstruct_volume_from_slices:
+#   # only:
+#   #   - master
+#   script:
+#     - recon_type=TK1L2
+#     - >
+#       python niftymic/prototyping/rsfmri_reconstruct_volume_from_slices.py
+#       --filename ${DATADIR}/rsfmri/bold.nii.gz
+#       --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
+#       --output ${TMPDIR}/rsfmri/foo.nii.gz 
+#       --alpha 0.05
 #       --iter-max 2 
 #       --verbose 0 
 #       --reconstruction-type ${recon_type} 

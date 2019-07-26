@@ -113,8 +113,6 @@ class LinearOperatorsTest(unittest.TestCase):
         path_orig = os.path.join(self.dir_output, "%s.nii.gz" % self.filename)
         path_sim = os.path.join(
             self.dir_output, "Simulated_%s.nii.gz" % self.filename)
-        path_sim_mask = os.path.join(
-            self.dir_output, "Simulated_%s%s.nii.gz" % (self.filename, self.suffix_mask))
 
         path_orig_ref = os.path.join(self.dir_data,
                                      "recon_projections",
@@ -124,15 +122,9 @@ class LinearOperatorsTest(unittest.TestCase):
                                     "recon_projections",
                                     "slices",
                                     "Simulated_%s.nii.gz" % self.filename)
-        path_sim_mask_ref = os.path.join(self.dir_data,
-                                         "recon_projections",
-                                         "slices",
-                                         "Simulated_%s%s.nii.gz" % (
-                                             self.filename, self.suffix_mask))
 
         for res, ref in zip(
-                [path_orig, path_sim, path_sim_mask],
-                [path_orig_ref, path_sim_ref, path_sim_mask_ref]):
+                [path_orig, path_sim], [path_orig_ref, path_sim_ref]):
             res_sitk = sitk.ReadImage(res)
             ref_sitk = sitk.ReadImage(ref)
 

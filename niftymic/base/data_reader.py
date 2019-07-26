@@ -304,7 +304,7 @@ class MultipleImagesReader(ImageDataReader):
         if len(filename_mask) == 0:
             abs_path_mask = None
         else:
-            # exclude non-integer valued image as candidate (to avoid using 
+            # exclude non-integer valued image as candidate (to avoid using
             # the same image as mask in case of suffix_mask = '')
             candidate = os.path.join(abs_path_to_directory, filename_mask[0])
             candidate_sitk = sitk.ReadImage(candidate)
@@ -428,12 +428,21 @@ class ImageSlicesDirectoryReader(ImageDataReader):
 #
 class MultiComponentImageReader(ImageDataReader):
 
-    def __init__(self, path_to_image, path_to_image_mask=None):
+    def __init__(self,
+                 path_to_image,
+                 path_to_image_mask=None,
+                 dir_motion_correction=None,
+                 volume_motion_only=False,
+                 slice_thickness=None,
+                 ):
 
         super(self.__class__, self).__init__()
 
         self._path_to_image = path_to_image
         self._path_to_image_mask = path_to_image_mask
+        self._dir_motion_correction = dir_motion_correction
+        self._volume_motion_only = volume_motion_only
+        self._slice_thickness = slice_thickness
 
     def read_data(self):
         vector_image_sitk = sitkh.read_sitk_vector_image(
@@ -460,13 +469,27 @@ class MultiComponentImageReader(ImageDataReader):
             else:
                 image_sitk_mask = None
 
+            if self._slice_thickness is None:
+                slice_thickness = image_sitk.GetSpacing()[-1]
+            else:
+                slice_thickness = self._slice_thickness
+
             filename = filename_base + "_" + str(i)
             self._stacks[i] = st.Stack.from_sitk_image(
                 image_sitk=image_sitk,
                 filename=filename,
                 image_sitk_mask=image_sitk_mask,
-                slice_thickness=image_sitk.GetSpacing()[-1],
+                slice_thickness=float(slice_thickness),
             )
+
+        if self._dir_motion_correction is not None:
+            motion_updater = mu.MotionUpdater(
+                stacks=self._stacks,
+                dir_motion_correction=self._dir_motion_correction,
+                volume_motion_only=self._volume_motion_only,
+                )
+            motion_updater.run()
+            self._stacks = motion_updater.get_data()
 
 
 class TransformationDataReader(DataReader):

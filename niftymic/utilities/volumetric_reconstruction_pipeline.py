@@ -874,6 +874,9 @@ class MultiComponentReconstruction(Pipeline):
     def set_reconstruction_method(self, reconstruction_method):
         self._reconstruction_method = reconstruction_method
 
+    def get_reconstruction_method(self):
+        return self._reconstruction_method
+
     def set_suffix(self, suffix):
         self._suffix = suffix
 

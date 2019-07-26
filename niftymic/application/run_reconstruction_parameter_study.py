@@ -7,18 +7,17 @@
 # \date       September 2017
 #
 
-# Import libraries
-import SimpleITK as sitk
-import numpy as np
 import os
+import numpy as np
+import SimpleITK as sitk
 
-# Import modules
+import pysitk.python_helper as ph
+import nsol.deconvolution_solver_parameter_study_interface as deconv_interface
+
 import niftymic.base.data_reader as dr
 import niftymic.base.stack as st
 import niftymic.reconstruction.tikhonov_solver as tk
-import nsol.deconvolution_solver_parameter_study_interface as \
-    deconv_interface
-import pysitk.python_helper as ph
+import niftymic.reconstruction.scattered_data_approximation as sda
 from niftymic.utilities.input_arparser import InputArgparser
 
 
@@ -105,28 +104,34 @@ def main():
     stacks = data_reader.get_data()
     ph.print_info("%d input stacks read for further processing" % len(stacks))
 
+    ph.print_title("Compute Initial Value")
     if args.reference is not None:
         reference = st.Stack.from_filename(
             file_path=args.reference,
             file_path_mask=args.reference_mask,
             extract_slices=False)
-
-        reconstruction_space = stacks[0].get_resampled_stack(reference.sitk)
-        reconstruction_space = \
-            reconstruction_space.get_stack_multiplied_with_mask()
         x_ref = sitk.GetArrayFromImage(reference.sitk).flatten()
         x_ref_mask = sitk.GetArrayFromImage(reference.sitk_mask).flatten()
-
     else:
-        reconstruction_space = st.Stack.from_filename(
+        reference = st.Stack.from_filename(
             file_path=args.reconstruction_space,
             extract_slices=False)
-        reconstruction_space = stacks[0].get_resampled_stack(
-            reconstruction_space.sitk)
-        reconstruction_space = \
-            reconstruction_space.get_stack_multiplied_with_mask()
         x_ref = None
         x_ref_mask = None
+
+    SRR0 = sda.ScatteredDataApproximation(stacks, reference, sigma=0.8)
+    SRR0.run()
+    reconstruction_space = SRR0.get_reconstruction()
+
+    if args.use_masks_srr:
+        # Add mask based on SDA
+        SRR0 = sda.ScatteredDataApproximation(
+            stacks, reconstruction_space, sigma=1, sda_mask=True)
+        SRR0.run()
+        reconstruction_space = SRR0.get_reconstruction()
+
+        reconstruction_space = \
+            reconstruction_space.get_stack_multiplied_with_mask()
 
     # ----------------------------Set Up Parameters----------------------------
     parameters = {}

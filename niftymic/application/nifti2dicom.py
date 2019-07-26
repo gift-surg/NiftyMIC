@@ -39,6 +39,7 @@ import pydicom
 
 import pysitk.python_helper as ph
 
+import niftymic
 from niftymic.utilities.input_arparser import InputArgparser
 from niftymic.definitions import DIR_TMP
 
@@ -64,7 +65,8 @@ COPY_DICOM_TAGS = {
 INSTITUTION_NAME = "UCL, WEISS"
 ACCESSION_NUMBER = "1"
 SERIES_NUMBER = "0"
-IMAGE_COMMENTS = "*** NOT APPROVED ***"
+IMAGE_COMMENTS = "NiftyMIC-v%s *** NOT APPROVED FOR CLINICAL USE ***" % (
+    niftymic.__version__)
 
 
 def main():
@@ -82,7 +84,7 @@ def main():
     input_parser.add_dir_output(required=True)
     input_parser.add_label(
         help="Label used for series description of DICOM output.",
-        default="SRR")
+        default="SRR_NiftyMIC")
     input_parser.add_argument(
         "--volume", "-volume",
         action='store_true',
