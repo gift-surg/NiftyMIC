@@ -1,5 +1,5 @@
 __author__ = "Michael Ebner"
-__email__ = "michael.ebner.14@ucl.ac.uk"
+__email__ = "michael.ebner@kcl.ac.uk"
 __license__ = "BSD-3-Clause"
 __version__ = "0.8rc1"
 __summary__ = "NiftyMIC is a research-focused toolkit for " \

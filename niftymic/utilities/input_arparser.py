@@ -40,9 +40,11 @@ class InputArgparser(object):
     def __init__(self,
                  description=None,
                  prog=None,
-                 epilog="NiftyMIC version: %s, "
-                 "Author: Michael Ebner (michael.ebner@kcl.ac.uk)" % 
-                 niftymic.__version__,
+                 epilog="NiftyMIC version: %s, Author: %s (%s)" % (
+                     niftymic.__version__,
+                     niftymic.__author__,
+                     niftymic.__email__
+                 ),
                  config_arg="--config"
                  ):
 
@@ -69,7 +71,7 @@ class InputArgparser(object):
             action="version",
             help="Show NiftyMIC's version number and exit",
             version="%s" % niftymic.__version__,
-            )
+        )
         self._config_arg = config_arg
 
     def get_parser(self):
