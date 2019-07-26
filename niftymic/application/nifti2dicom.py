@@ -84,7 +84,7 @@ def main():
     input_parser.add_dir_output(required=True)
     input_parser.add_label(
         help="Label used for series description of DICOM output.",
-        default="SRR NiftyMIC-v%s" % niftymic.__version__)
+        default="SRR_NiftyMIC")
     input_parser.add_argument(
         "--volume", "-volume",
         action='store_true',
