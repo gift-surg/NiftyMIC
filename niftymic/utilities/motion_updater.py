@@ -17,6 +17,7 @@ import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 import niftymic.base.stack as st
+import niftymic.base.slice as sl
 import niftymic.base.exceptions as exceptions
 
 
@@ -143,8 +144,6 @@ class MotionUpdater(object):
             # transforms; Thus, slice transformations (tfm's) were flawed and
             # could not be used):
             else:
-                import niftymic.base.slice as sl
-
                 # Recover suffix for mask
                 pattern = stack_name + self._prefix_slice + \
                     "[0-9]+[_]([a-zA-Z]+)[.]nii.gz"
