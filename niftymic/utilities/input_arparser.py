@@ -277,7 +277,7 @@ class InputArgparser(object):
         self,
         option_string="--fixed",
         type=str,
-        help="Fixed image to be registered.",
+        help="Path to fixed image %s." % (IMAGE_TYPES),
         default=None,
         required=False,
     ):
@@ -287,7 +287,7 @@ class InputArgparser(object):
         self,
         option_string="--fixed-mask",
         type=str,
-        help="Fixed image mask to be registered.",
+        help="Path to fixed image mask %s." % (IMAGE_TYPES),
         default=None,
         required=False,
     ):
@@ -298,7 +298,7 @@ class InputArgparser(object):
         option_string="--moving",
         nargs=None,
         type=str,
-        help="Moving image to be registered.",
+        help="Path to moving image %s." % (IMAGE_TYPES),
         default=None,
         required=False,
     ):
@@ -308,7 +308,7 @@ class InputArgparser(object):
         self,
         option_string="--moving-mask",
         type=str,
-        help="Moving image mask to be registered.",
+        help="Path to moving image mask %s." % (IMAGE_TYPES),
         default=None,
         required=False,
     ):
