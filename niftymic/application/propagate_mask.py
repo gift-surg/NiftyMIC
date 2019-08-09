@@ -3,7 +3,7 @@
 # \brief      Script to propagate an image mask using rigid registration
 #
 # \author     Michael Ebner (michael.ebner@kcl.ac.uk)
-# \date       October 2017
+# \date       Aug 2019
 #
 
 import os
