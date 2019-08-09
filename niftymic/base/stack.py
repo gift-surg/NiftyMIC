@@ -184,9 +184,9 @@ class Stack:
 
         # Set slice thickness of acquisition
         if slice_thickness is None:
-            stack._slice_thickness = stack.sitk.GetSpacing()[-1]
+            stack._slice_thickness = float(stack.sitk.GetSpacing()[-1])
         else:
-            stack._slice_thickness = slice_thickness
+            stack._slice_thickness = float(slice_thickness)
 
         # Append masks (either provided or binary mask)
         if suffix_mask is not None and \
@@ -277,9 +277,9 @@ class Stack:
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         # Set slice thickness of acquisition
-        if type(slice_thickness) is not float:
+        if not ph.is_float(slice_thickness):
             raise ValueError("Slice thickness must be of type float")
-        stack._slice_thickness = slice_thickness
+        stack._slice_thickness = float(slice_thickness)
 
         stack._filename = filename
         stack._dir = None
