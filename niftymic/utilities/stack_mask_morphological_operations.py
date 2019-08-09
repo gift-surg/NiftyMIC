@@ -7,17 +7,16 @@
 #
 
 
-## Import libraries
 import sys
 import itk
-import SimpleITK as sitk
 import numpy as np
+import SimpleITK as sitk
 
-## Import modules
 import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
 
 import niftymic.base.stack as st
+
 
 ##
 # Class implementing the segmentation propagation from one image to another
@@ -44,7 +43,8 @@ class StackMaskMorphologicalOperations(object):
     @classmethod
     def from_sitk_mask(cls, mask_sitk=None, dilation_radius=0, dilation_kernel="Ball", use_dilation_in_plane_only=True):
 
-        self = cls(dilation_radius=dilation_radius, dilation_kernel=dilation_kernel, use_dilation_in_plane_only=use_dilation_in_plane_only)
+        self = cls(dilation_radius=dilation_radius, dilation_kernel=dilation_kernel,
+                   use_dilation_in_plane_only=use_dilation_in_plane_only)
 
         self._mask_sitk = mask_sitk
         self._stack = None
@@ -54,7 +54,8 @@ class StackMaskMorphologicalOperations(object):
     @classmethod
     def from_stack(cls, stack=None, dilation_radius=0, dilation_kernel="Ball", use_dilation_in_plane_only=True):
 
-        self = cls(dilation_radius=dilation_radius, dilation_kernel=dilation_kernel, use_dilation_in_plane_only=use_dilation_in_plane_only)
+        self = cls(dilation_radius=dilation_radius, dilation_kernel=dilation_kernel,
+                   use_dilation_in_plane_only=use_dilation_in_plane_only)
 
         self._mask_sitk = stack.sitk_mask
         self._stack = stack
@@ -78,7 +79,8 @@ class StackMaskMorphologicalOperations(object):
 
     def set_dilation_kernel(self, dilation_kernel):
         if dilation_kernel not in ['Ball', 'Box', 'Annulus', 'Cross']:
-            raise ValueError("Dilation kernel must be 'Ball', 'Box', 'Annulus' or 'Cross'.")
+            raise ValueError(
+                "Dilation kernel must be 'Ball', 'Box', 'Annulus' or 'Cross'.")
         self._dilation_kernel = dilation_kernel
 
     def get_dilation_kernel(self):
@@ -111,9 +113,9 @@ class StackMaskMorphologicalOperations(object):
             nda_mask = np.zeros(shape[::-1], dtype=np.uint8)
 
             for i in range(0, N_slices):
-                slice_mask_sitk = self._mask_sitk[:,:,i:i+1]
+                slice_mask_sitk = self._mask_sitk[:, :, i:i + 1]
                 mask_sitk = dilater.Execute(slice_mask_sitk)
-                nda_mask[i,:,:] = sitk.GetArrayFromImage(mask_sitk)
+                nda_mask[i, :, :] = sitk.GetArrayFromImage(mask_sitk)
 
             mask_sitk = sitk.GetImageFromArray(nda_mask)
             mask_sitk.CopyInformation(self._mask_sitk)
@@ -126,6 +128,8 @@ class StackMaskMorphologicalOperations(object):
             self._stack = st.Stack.from_sitk_image(
                 self._stack.sitk,
                 image_sitk_mask=self._mask_sitk,
-                filename=self._stack.get_filename())
+                filename=self._stack.get_filename(),
+                slice_thickness=self._stack.get_slice_thickness(),
+            )
 
         self._computational_time = ph.stop_timing(time_start)
