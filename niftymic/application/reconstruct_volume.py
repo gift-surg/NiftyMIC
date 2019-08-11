@@ -247,7 +247,7 @@ def main():
                 registration_type="Rigid",
                 use_fixed_mask=True,
                 use_moving_mask=True,
-                # options="-ln 2",
+                # options="-ln 2 -voff",
                 use_verbose=False,
             )
         v2vreg = pipeline.VolumeToVolumeRegistration(

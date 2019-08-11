@@ -79,7 +79,7 @@ def main():
     )
 
     # Perform Bias Field Correction
-    ph.print_title("Perform Bias Field Correction")
+    # ph.print_title("Perform Bias Field Correction")
     bias_field_corrector = n4itk.N4BiasFieldCorrection(
         stack=stack,
         use_mask=True if args.filename_mask is not None else False,
