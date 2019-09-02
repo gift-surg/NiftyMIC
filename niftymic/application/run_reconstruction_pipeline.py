@@ -48,7 +48,7 @@ def main():
     input_parser.add_alpha(default=0.01)
     input_parser.add_verbose(default=0)
     input_parser.add_gestational_age(required=False)
-    input_parser.add_prefix_output(default="")
+    input_parser.add_prefix_output(default="srr_")
     input_parser.add_search_angle(default=180)
     input_parser.add_multiresolution(default=0)
     input_parser.add_log_config(default=1)
@@ -125,7 +125,6 @@ def main():
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
-    filename_srr = "srr"
     dir_output_preprocessing = os.path.join(
         args.dir_output, "preprocessing_n4itk")
     dir_output_recon_subject_space = os.path.join(
@@ -136,15 +135,19 @@ def main():
         args.dir_output, "diagnostics")
 
     srr_subject = os.path.join(
-        dir_output_recon_subject_space, "%s_subject.nii.gz" % filename_srr)
+        dir_output_recon_subject_space,
+        "%ssubject.nii.gz" % args.prefix_output)
     srr_subject_mask = ph.append_to_filename(srr_subject, "_mask")
     srr_template = os.path.join(
-        dir_output_recon_template_space, "%s_template.nii.gz" % filename_srr)
+        dir_output_recon_template_space,
+        "%stemplate.nii.gz" % args.prefix_output)
     srr_template_mask = ph.append_to_filename(srr_template, "_mask")
     trafo_template = os.path.join(
-        dir_output_recon_template_space, "registration_transform_sitk.txt")
+        dir_output_recon_template_space,
+        "%stemplate_transform_sitk.txt" % args.prefix_output)
     srr_slice_coverage = os.path.join(
-        dir_output_diagnostics, "%s_template_slicecoverage.nii.gz" % filename_srr)
+        dir_output_diagnostics,
+        "%stemplate_slicecoverage.nii.gz" % args.prefix_output)
 
     if args.bias_field_correction and args.run_bias_field_correction:
         time_start = ph.start_timing()
