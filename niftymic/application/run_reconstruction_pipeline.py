@@ -47,7 +47,6 @@ def main():
     input_parser.add_dir_output(required=True)
     input_parser.add_alpha(default=0.01)
     input_parser.add_verbose(default=0)
-    input_parser.add_gestational_age(required=False)
     input_parser.add_prefix_output(default="srr_")
     input_parser.add_search_angle(default=180)
     input_parser.add_multiresolution(default=0)
@@ -60,6 +59,22 @@ def main():
     input_parser.add_iter_max(default=10)
     input_parser.add_two_step_cycles(default=3)
     input_parser.add_slice_thicknesses(default=None)
+    input_parser.add_option(
+        option_string="--template",
+        type=str,
+        required=False,
+        help="Template image used for template space alignment and to define "
+        "the reconstruction space. "
+        "If not given, it is automatically estimated using the fetal brain "
+        "atlas",
+    )
+    input_parser.add_option(
+        option_string="--template-mask",
+        type=str,
+        required=False,
+        help="Template image mask. "
+        "Must be given in case template is specified.",
+    )
     input_parser.add_option(
         option_string="--run-bias-field-correction",
         type=int,
@@ -121,6 +136,12 @@ def main():
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
+
+    if args.template is not None:
+        if args.template_mask is None:
+            raise ValueError(
+                "If template image is given, also its mask needs to be "
+                "provided")
 
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
@@ -265,18 +286,19 @@ def main():
     if args.run_recon_template_space:
         time_start = ph.start_timing()
 
-        if args.gestational_age is None:
+        if args.template is not None:
+            template = args.template
+            template_mask = args.template_mask
+        else:
             template_stack_estimator = \
                 tse.TemplateStackEstimator.from_mask(srr_subject_mask)
             gestational_age = template_stack_estimator.get_estimated_gw()
             ph.print_info("Estimated gestational age: %d" % gestational_age)
-        else:
-            gestational_age = args.gestational_age
 
-        template = os.path.join(
-            DIR_TEMPLATES, "STA%d.nii.gz" % gestational_age)
-        template_mask = os.path.join(
-            DIR_TEMPLATES, "STA%d_mask.nii.gz" % gestational_age)
+            template = os.path.join(
+                DIR_TEMPLATES, "STA%d.nii.gz" % gestational_age)
+            template_mask = os.path.join(
+                DIR_TEMPLATES, "STA%d_mask.nii.gz" % gestational_age)
 
         # Register SRR to template space
         cmd_args = ["niftymic_register_image"]
