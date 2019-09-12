@@ -131,6 +131,7 @@ def main():
     if args.target_stack is None:
         target_stack_index = 0
     else:
+        # TODO: deal with case when target stack got rejected in previous step
         filenames = ["%s.nii.gz" % s.get_filename() for s in stacks]
         filename_target_stack = os.path.basename(args.target_stack)
         try:
@@ -171,11 +172,13 @@ def main():
     # -------------------------Volumetric Reconstruction-----------------------
     ph.print_title("Volumetric Reconstruction")
 
-    # Reconstruction space is given isotropically resampled target stack
+    # Reconstruction space defined by isotropically resampled,
+    # bounding box-cropped target stack
     if args.reconstruction_space is None:
         recon0 = stacks[target_stack_index].get_isotropically_resampled_stack(
             resolution=args.isotropic_resolution,
-            extra_frame=args.extra_frame_target)
+            extra_frame=args.extra_frame_target,
+        )
         recon0 = recon0.get_cropped_stack_based_on_mask(
             boundary_i=args.extra_frame_target,
             boundary_j=args.extra_frame_target,
