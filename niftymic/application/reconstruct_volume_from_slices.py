@@ -49,7 +49,7 @@ def main():
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack(default=None)
     input_parser.add_extra_frame_target(default=10)
-    input_parser.add_isotropic_resolution(default=None)
+    input_parser.add_isotropic_resolution(default=0.8)
     input_parser.add_intensity_correction(default=1)
     input_parser.add_reconstruction_space(default=None)
     input_parser.add_minimizer(default="lsmr")
