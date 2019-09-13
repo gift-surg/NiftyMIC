@@ -100,6 +100,8 @@ def main():
     dir_output = os.path.dirname(args.output)
     ph.create_directory(dir_output)
 
+    debug = 0
+
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
@@ -205,6 +207,12 @@ def main():
         "Reconstruction space defined with %s mm3 resolution" %
         " x ".join(["%.2f" % s for s in recon0.sitk.GetSpacing()])
     )
+
+    if debug:
+        # visualize (intensity corrected) data alongside recon0 init
+        show = [st.Stack.from_stack(s) for s in stacks]
+        show.insert(0, recon0)
+        sitkh.show_stacks(show)
 
     if args.sda:
         ph.print_title("Compute SDA reconstruction")
