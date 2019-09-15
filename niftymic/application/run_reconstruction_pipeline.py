@@ -349,7 +349,7 @@ def main():
             raise RuntimeError("Reconstruction in template space failed")
         elapsed_time_recon_template_space = ph.stop_timing(time_start)
 
-        # Compute SRR mask in template space
+        # Compute mask in template space
         if 1:
             time_start = ph.start_timing()
             dir_motion_correction = os.path.join(
@@ -365,12 +365,15 @@ def main():
             if args.slice_thicknesses is not None:
                 cmd_args.append("--slice-thicknesses %s" %
                                 " ".join(map(str, args.slice_thicknesses)))
-            if args.sda:
-                cmd_args.append("--sda")
-                cmd_args.append("--alpha 1")
-            else:
-                cmd_args.append("--alpha 0.1")
-                cmd_args.append("--iter-max 5")
+
+            # SRR approach
+            # cmd_args.append("--alpha 0.1")
+            # cmd_args.append("--iter-max 5")
+
+            # SDA much faster than SRR and visually barely different for mask
+            cmd_args.append("--sda")
+            cmd_args.append("--alpha 1")
+
             cmd = (" ").join(cmd_args)
             ph.execute_command(cmd)
             elapsed_time_recon_template_space_mask = ph.stop_timing(
