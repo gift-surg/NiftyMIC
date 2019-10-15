@@ -247,7 +247,7 @@ nifti/name-of-stackN.nii.gz \
 --filenames-masks \
 seg/name-of-stack1.nii.gz \
 seg/name-of-stack2.nii.gz \
-seg/name-of-stackN.nii.gz \
+seg/name-of-stackN.nii.gz
 ```
 
 Afterwards, four consecutive steps including
