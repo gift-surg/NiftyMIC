@@ -70,7 +70,8 @@ The **available regularizers** include
 Additionally, the choice of finding **optimal reconstruction parameters** is facilitated by the [Numerical Solver Library (NSoL)][nsol].
 
 ## Disclaimer
-NiftyMIC supports medical image registration and volumetric reconstruction for ultra-fast 2D MRI. It has not been tested on larger cohort data yet.
+NiftyMIC supports medical image registration and volumetric reconstruction for ultra-fast 2D MRI.
+<!-- It has not been tested on larger cohort data yet. -->
 **NiftyMIC is not intended for clinical use**.
 
 ## How to cite
