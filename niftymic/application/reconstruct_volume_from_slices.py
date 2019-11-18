@@ -49,7 +49,7 @@ def main():
     input_parser.add_suffix_mask(default="_mask")
     input_parser.add_target_stack(default=None)
     input_parser.add_extra_frame_target(default=10)
-    input_parser.add_isotropic_resolution(default=0.8)
+    input_parser.add_isotropic_resolution(default=None)
     input_parser.add_intensity_correction(default=1)
     input_parser.add_reconstruction_space(default=None)
     input_parser.add_minimizer(default="lsmr")
@@ -58,8 +58,8 @@ def main():
     input_parser.add_data_loss(default="linear")
     input_parser.add_data_loss_scale(default=1)
     input_parser.add_alpha(
-        default=0.01  # TK1L2
-        # default=0.006  #TVL2, HuberL2
+        default=0.01  # TK1L2 @ isotropic_resolution = 0.8
+        # default=0.006  #TVL2, HuberL2 @ isotropic_resolution = 0.8
     )
     input_parser.add_rho(default=0.1)
     input_parser.add_tv_solver(default="PD")
