@@ -239,9 +239,9 @@ def main():
             cmd_args.append("--isotropic-resolution %f" %
                             args.isotropic_resolution)
         if args.reference is not None:
-            cmd_args.append("--reference %s" % args.reference)
+            cmd_args.append("--reference '%s'" % args.reference)
         if args.reference_mask is not None:
-            cmd_args.append("--reference-mask %s" % args.reference_mask)
+            cmd_args.append("--reference-mask '%s'" % args.reference_mask)
         if args.sda:
             cmd_args.append("--sda")
         if args.v2v_robust:
