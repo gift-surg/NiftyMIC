@@ -78,8 +78,9 @@ builddocs:
     - gift-adelie
 
 installation:
-  # only:
-  #   - master
+  only:
+    - dev
+    # - master
   script:
     - python -m nose tests/installation_test.py
   tags:
@@ -149,7 +150,6 @@ run_reconstruction_pipeline:
       --filenames-masks ${DATADIR}/input_data/axial_mask.nii.gz
       --dir-output ${TMPDIR} 
       --suffix-mask _mask
-      --gestational-age 28
       --bias-field-correction 1
       --two-step-cycles 0
       --iter-max 1

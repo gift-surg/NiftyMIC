@@ -330,6 +330,10 @@ class ScatteredDataApproximation:
                 slice_sitk = self._get_slice[(
                     bool(self._use_masks), bool(self._sda_mask))](slice)
 
+                # Add intensity offset so that a "zero" intensity can be
+                # identified as contribution of image slice (line 353/356)
+                slice_sitk += 1
+
                 # Nearest neighbour resampling of slice to target space (HR
                 # volume)
                 slice_resampled_sitk = sitk.Resample(
@@ -345,11 +349,13 @@ class ScatteredDataApproximation:
                 # Extract array of pixel intensities
                 nda_slice = sitk.GetArrayFromImage(slice_resampled_sitk)
 
-                # Get voxels in HR volume space which are stroke by the slice
+                # Get voxels in HR volume space which are struck by the slice
                 ind_nonzero = nda_slice > 0
 
-                # update arrays of numerator and denominator
-                helper_N_nda[ind_nonzero] += nda_slice[ind_nonzero]
+                # update numerator (correct previous intensity offset)
+                helper_N_nda[ind_nonzero] += nda_slice[ind_nonzero] - 1
+
+                # update denominator
                 helper_D_nda[ind_nonzero] += 1
 
                 # test = sitk.GetImageFromArray(helper_N_nda)

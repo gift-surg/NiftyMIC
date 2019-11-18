@@ -45,7 +45,7 @@ class ImageSimilarityEvaluator(object):
             stacks=None,
             reference=None,
             use_reference_mask=True,
-            measures=["NCC", "NMI", "PSNR", "SSIM", "RMSE"],
+            measures=["NCC", "NMI", "PSNR", "SSIM", "RMSE" ,"MAE"],
             verbose=True,
     ):
         self._stacks = stacks

@@ -5,6 +5,9 @@ NiftyMIC is a Python-based open-source toolkit for research developed within the
 The algorithm and software were developed by [Michael Ebner][mebner]
 at the [Wellcome/EPSRC Centre for Interventional and Surgical Sciences][weiss], [University College London (UCL)][ucl] (2015 -- 2019), and the [Department of Surgical and Interventional Sciences][sie], [King's College London (KCL)][kcl] (since 2019).
 
+A detailed description of the NiftyMIC algorithm is found in [EbnerWang2019][ebner-wang-2019]:
+* Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2019). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 116324.
+
 If you have any questions or comments, please drop an email to `michael.ebner@kcl.ac.uk`.
 
 ## NiftyMIC applied to Fetal Brain MRI
@@ -70,12 +73,14 @@ The **available regularizers** include
 Additionally, the choice of finding **optimal reconstruction parameters** is facilitated by the [Numerical Solver Library (NSoL)][nsol].
 
 ## Disclaimer
-NiftyMIC supports medical image registration and volumetric reconstruction for ultra-fast 2D MRI. It has not been tested on larger cohort data yet.
+NiftyMIC supports medical image registration and volumetric reconstruction for ultra-fast 2D MRI.
+<!-- It has not been tested on larger cohort data yet. -->
 **NiftyMIC is not intended for clinical use**.
 
 ## How to cite
 If you use this software in your work, please cite
 
+* Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2019). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 116324.
 * Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Melbourne, A., Doel, T., David, A. L., Deprest, J., Ourselin, S., & Vercauteren, T. (2018). An Automated Localization, Segmentation and Reconstruction Framework for Fetal Brain MRI. In Medical Image Computing and Computer-Assisted Intervention -- MICCAI 2018 (pp. 313–320). Springer.
 * Ebner, M., Chung, K. K., Prados, F., Cardoso, M. J., Chard, D. T., Vercauteren, T., & Ourselin, S. (2018). Volumetric reconstruction from printed films: Enabling 30 year longitudinal analysis in MR neuroimaging. NeuroImage, 165, 238–250.
 
@@ -247,7 +252,7 @@ nifti/name-of-stackN.nii.gz \
 --filenames-masks \
 seg/name-of-stack1.nii.gz \
 seg/name-of-stack2.nii.gz \
-seg/name-of-stackN.nii.gz \
+seg/name-of-stackN.nii.gz
 ```
 
 Afterwards, four consecutive steps including
@@ -281,13 +286,15 @@ This framework is made available as free open-source software under the [BSD-3-C
 This work is partially funded by the UCL [Engineering and Physical Sciences Research Council (EPSRC)][epsrc] Centre for Doctoral Training in Medical Imaging (EP/L016478/1), the Innovative Engineering for Health award ([Wellcome Trust][wellcometrust] [WT101957] and [EPSRC][epsrc] [NS/A000027/1]), and supported by researchers at the [National Institute for Health Research][nihr] [University College London Hospitals (UCLH)][uclh] Biomedical Research Centre.
 
 ## References
-Associated publications are 
+Selected publications associated with NiftyMIC are 
+* [[EbnerWang2019]][ebner-wang-2019] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2019). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 116324.
 * [[Ebner2019]](https://onlinelibrary.wiley.com/doi/abs/10.1002/mrm.27852) Ebner, M., Patel, P. A., Atkinson, D., Caselton, C., Firmin, F., Amin, Z., Bainbridge, A., De Coppi, P., Taylor, S. A., Ourselin, S., Chouhan, M. D., & Vercauteren, T. (2019). Super‐resolution for upper abdominal MRI: Acquisition and post‐processing protocol optimization using brain MRI control data and expert reader validation. Magnetic Resonance in Medicine.
 * [[EbnerWang2018]][ebner-wang-2018] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Melbourne, A., Doel, T., David, A. L., Deprest, J., Ourselin, S., & Vercauteren, T. (2018). An Automated Localization, Segmentation and Reconstruction Framework for Fetal Brain MRI. In Medical Image Computing and Computer-Assisted Intervention -- MICCAI 2018 (pp. 313–320). Springer
 * [[Ebner2018]](https://www.sciencedirect.com/science/article/pii/S1053811917308042) Ebner, M., Chung, K. K., Prados, F., Cardoso, M. J., Chard, D. T., Vercauteren, T., & Ourselin, S. (2018). Volumetric reconstruction from printed films: Enabling 30 year longitudinal analysis in MR neuroimaging. NeuroImage, 165, 238–250.
 * [[Ranzini2017]](https://mski2017.files.wordpress.com/2017/09/miccai-mski2017.pdf) Ranzini, M. B., Ebner, M., Cardoso, M. J., Fotiadou, A., Vercauteren, T., Henckel, J., Hart, A., Ourselin, S., and Modat, M. (2017). Joint Multimodal Segmentation of Clinical CT and MR from Hip Arthroplasty Patients. MICCAI Workshop on Computational Methods and Clinical Applications in Musculoskeletal Imaging (MSKI) 2017.
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., and Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
 
+[ebner-wang-2019]: https://www.sciencedirect.com/science/article/pii/S1053811919309152
 [ebner-wang-2018]: http://link.springer.com/10.1007/978-3-030-00928-1_36
 [mebner]: https://www.linkedin.com/in/ebnermichael
 [weiss]: https://www.ucl.ac.uk/interventional-surgical-sciences

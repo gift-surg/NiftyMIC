@@ -21,6 +21,7 @@ import niftymic.validation.show_evaluated_simulated_stack_similarity as \
 import niftymic.application.show_slice_coverage as show_slice_coverage
 import niftymic.validation.export_side_by_side_simulated_vs_original_slice_comparison as \
     export_side_by_side_simulated_vs_original_slice_comparison
+import niftymic.utilities.target_stack_estimator as ts_estimator
 from niftymic.utilities.input_arparser import InputArgparser
 import niftymic.utilities.template_stack_estimator as tse
 
@@ -47,8 +48,7 @@ def main():
     input_parser.add_dir_output(required=True)
     input_parser.add_alpha(default=0.01)
     input_parser.add_verbose(default=0)
-    input_parser.add_gestational_age(required=False)
-    input_parser.add_prefix_output(default="")
+    input_parser.add_prefix_output(default="srr_")
     input_parser.add_search_angle(default=180)
     input_parser.add_multiresolution(default=0)
     input_parser.add_log_config(default=1)
@@ -60,6 +60,22 @@ def main():
     input_parser.add_iter_max(default=10)
     input_parser.add_two_step_cycles(default=3)
     input_parser.add_slice_thicknesses(default=None)
+    input_parser.add_option(
+        option_string="--template",
+        type=str,
+        required=False,
+        help="Template image used for template space alignment and to define "
+        "the reconstruction space. "
+        "If not given, it is automatically estimated using the fetal brain "
+        "atlas",
+    )
+    input_parser.add_option(
+        option_string="--template-mask",
+        type=str,
+        required=False,
+        help="Template image mask. "
+        "Must be given in case template is specified.",
+    )
     input_parser.add_option(
         option_string="--run-bias-field-correction",
         type=int,
@@ -118,14 +134,29 @@ def main():
         "specified interleave (--interleave) are registered until each "
         "slice is registered independently."
     )
+    input_parser.add_option(
+        option_string="--automatic-target-stack",
+        type=int,
+        help="If true, and no specific target stack is provided, "
+        "a target stack is automatically estimated. "
+        "A motion score similar to the one presented in Kainz et al. (2015). "
+        "is used to estimate the least motion-affected stack as initial "
+        "reference/target stack.",
+        default=1,
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
+    if args.template is not None:
+        if args.template_mask is None:
+            raise ValueError(
+                "If template image is given, also its mask needs to be "
+                "provided")
+
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
-    filename_srr = "srr"
     dir_output_preprocessing = os.path.join(
         args.dir_output, "preprocessing_n4itk")
     dir_output_recon_subject_space = os.path.join(
@@ -136,15 +167,19 @@ def main():
         args.dir_output, "diagnostics")
 
     srr_subject = os.path.join(
-        dir_output_recon_subject_space, "%s_subject.nii.gz" % filename_srr)
+        dir_output_recon_subject_space,
+        "%ssubject.nii.gz" % args.prefix_output)
     srr_subject_mask = ph.append_to_filename(srr_subject, "_mask")
     srr_template = os.path.join(
-        dir_output_recon_template_space, "%s_template.nii.gz" % filename_srr)
+        dir_output_recon_template_space,
+        "%stemplate.nii.gz" % args.prefix_output)
     srr_template_mask = ph.append_to_filename(srr_template, "_mask")
     trafo_template = os.path.join(
-        dir_output_recon_template_space, "registration_transform_sitk.txt")
+        dir_output_recon_template_space,
+        "%stemplate_transform_sitk.txt" % args.prefix_output)
     srr_slice_coverage = os.path.join(
-        dir_output_diagnostics, "%s_template_slicecoverage.nii.gz" % filename_srr)
+        dir_output_diagnostics,
+        "%stemplate_slicecoverage.nii.gz" % args.prefix_output)
 
     if args.bias_field_correction and args.run_bias_field_correction:
         time_start = ph.start_timing()
@@ -173,8 +208,30 @@ def main():
         filenames = args.filenames
 
     # Specify target stack for intensity correction and reconstruction space
+    elapsed_time_target_stack = ph.get_zero_time()
     if args.target_stack is None:
-        target_stack = filenames[0]
+
+        if args.automatic_target_stack:
+            ph.print_info(
+                "Searching for suitable target stack ... ", newline=False)
+            target_stack_estimator = \
+                ts_estimator.TargetStackEstimator.from_motion_score(
+                    file_paths=filenames,
+                    file_paths_masks=args.filenames_masks,
+                )
+            print("done")
+            elapsed_time_target_stack = \
+                target_stack_estimator.get_computational_time()
+            ph.print_info(
+                "Computational time for target stack selection: %s" % (elapsed_time_target_stack))
+            target_stack_index = \
+                target_stack_estimator.get_target_stack_index()
+            target_stack = filenames[target_stack_index]
+            ph.print_info("Chosen target stack: %s" % target_stack)
+
+        else:
+            target_stack = filenames[0]
+
     else:
         try:
             target_stack_index = args.filenames.index(args.target_stack)
@@ -206,18 +263,25 @@ def main():
         cmd_args.append("--outlier-rejection %d" % args.outlier_rejection)
         cmd_args.append("--threshold-first %f" % args.threshold_first)
         cmd_args.append("--threshold %f" % args.threshold)
+        cmd_args.append("--verbose %d" % args.verbose)
+        cmd_args.append("--log-config %d" % args.log_config)
+
+        if args.isotropic_resolution is not None:
+            isotropic_resolution = args.isotropic_resolution
+        else:
+            # Gholipour et al. (2015) atlas grid spacing (0.7999989986419678)
+            # for comparability
+            isotropic_resolution = 0.8
+        cmd_args.append("--isotropic-resolution %f" % isotropic_resolution)
+
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
-        cmd_args.append("--verbose %d" % args.verbose)
-        cmd_args.append("--log-config %d" % args.log_config)
-        if args.isotropic_resolution is not None:
-            cmd_args.append("--isotropic-resolution %f" %
-                            args.isotropic_resolution)
+
         if args.reference is not None:
-            cmd_args.append("--reference %s" % args.reference)
+            cmd_args.append("--reference '%s'" % args.reference)
         if args.reference_mask is not None:
-            cmd_args.append("--reference-mask %s" % args.reference_mask)
+            cmd_args.append("--reference-mask '%s'" % args.reference_mask)
         if args.sda:
             cmd_args.append("--sda")
         if args.v2v_robust:
@@ -262,18 +326,19 @@ def main():
     if args.run_recon_template_space:
         time_start = ph.start_timing()
 
-        if args.gestational_age is None:
+        if args.template is not None:
+            template = args.template
+            template_mask = args.template_mask
+        else:
             template_stack_estimator = \
                 tse.TemplateStackEstimator.from_mask(srr_subject_mask)
             gestational_age = template_stack_estimator.get_estimated_gw()
             ph.print_info("Estimated gestational age: %d" % gestational_age)
-        else:
-            gestational_age = args.gestational_age
 
-        template = os.path.join(
-            DIR_TEMPLATES, "STA%d.nii.gz" % gestational_age)
-        template_mask = os.path.join(
-            DIR_TEMPLATES, "STA%d_mask.nii.gz" % gestational_age)
+            template = os.path.join(
+                DIR_TEMPLATES, "STA%d.nii.gz" % gestational_age)
+            template_mask = os.path.join(
+                DIR_TEMPLATES, "STA%d_mask.nii.gz" % gestational_age)
 
         # Register SRR to template space
         cmd_args = ["niftymic_register_image"]
@@ -313,6 +378,9 @@ def main():
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
         cmd_args.append("--log-config %d" % args.log_config)
+        if args.isotropic_resolution is not None:
+            cmd_args.append("--isotropic-resolution %f" %
+                            args.isotropic_resolution)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
@@ -324,7 +392,7 @@ def main():
             raise RuntimeError("Reconstruction in template space failed")
         elapsed_time_recon_template_space = ph.stop_timing(time_start)
 
-        # Compute SRR mask in template space
+        # Compute mask in template space
         if 1:
             time_start = ph.start_timing()
             dir_motion_correction = os.path.join(
@@ -337,15 +405,21 @@ def main():
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--log-config %d" % args.log_config)
             cmd_args.append("--mask")
+            if args.isotropic_resolution is not None:
+                cmd_args.append("--isotropic-resolution %f" %
+                                args.isotropic_resolution)
             if args.slice_thicknesses is not None:
                 cmd_args.append("--slice-thicknesses %s" %
                                 " ".join(map(str, args.slice_thicknesses)))
-            if args.sda:
-                cmd_args.append("--sda")
-                cmd_args.append("--alpha 1")
-            else:
-                cmd_args.append("--alpha 0.1")
-                cmd_args.append("--iter-max 5")
+
+            # SRR approach
+            # cmd_args.append("--alpha 0.1")
+            # cmd_args.append("--iter-max 5")
+
+            # SDA much faster than SRR and visually barely different for mask
+            cmd_args.append("--sda")
+            cmd_args.append("--alpha 1")
+
             cmd = (" ").join(cmd_args)
             ph.execute_command(cmd)
             elapsed_time_recon_template_space_mask = ph.stop_timing(
@@ -474,6 +548,8 @@ def main():
     exe_file_info = os.path.basename(os.path.abspath(__file__)).split(".")[0]
     print("%s | Computational Time for Bias Field Corrections: %s" % (
           exe_file_info, elapsed_time_bias))
+    print("%s | Computational Time for Automatic Target Stack Selection: %s" %
+          (exe_file_info, elapsed_time_target_stack))
     print("%s | Computational Time for Subject Space Reconstruction: %s" % (
           exe_file_info, elapsed_time_recon_subject_space))
     print("%s | Computational Time for Template Space Alignment: %s" % (

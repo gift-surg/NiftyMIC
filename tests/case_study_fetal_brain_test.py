@@ -42,13 +42,13 @@ class CaseStudyFetalBrainTest(unittest.TestCase):
 
         two_step_cycles = 1
         iter_max = 5
-        threshold = 0.84
+        threshold = 0.75
         alpha = 0.02
-        alpha_first = 0.05
-        sigma = 0.6
+        alpha_first = 0.2
+        sigma = 1
         intensity_correction = 1
         isotropic_resolution = 1.02
-        v2v_method = "FLIRT"
+        v2v_method = "RegAladin"
 
         cmd_args = []
         cmd_args.append("--filenames %s" % " ".join(self.filenames))

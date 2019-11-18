@@ -182,11 +182,24 @@ class Stack:
             dir_input + prefix_stack + ".nii.gz", sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
+        # Store current affine transform of image
+        stack._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(
+            stack.sitk)
+
+        # Prepare history of affine transforms, i.e. encoded spatial
+        #  position+orientation of stack, and motion estimates of stack
+        #  obtained in the course of the registration/reconstruction process
+        stack._history_affine_transforms = []
+        stack._history_affine_transforms.append(stack._affine_transform_sitk)
+
+        stack._history_motion_corrections = []
+        stack._history_motion_corrections.append(sitk.Euler3DTransform())
+
         # Set slice thickness of acquisition
         if slice_thickness is None:
-            stack._slice_thickness = stack.sitk.GetSpacing()[-1]
+            stack._slice_thickness = float(stack.sitk.GetSpacing()[-1])
         else:
-            stack._slice_thickness = slice_thickness
+            stack._slice_thickness = float(slice_thickness)
 
         # Append masks (either provided or binary mask)
         if suffix_mask is not None and \
@@ -277,9 +290,9 @@ class Stack:
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
         # Set slice thickness of acquisition
-        if type(slice_thickness) is not float:
+        if not ph.is_float(slice_thickness):
             raise ValueError("Slice thickness must be of type float")
-        stack._slice_thickness = slice_thickness
+        stack._slice_thickness = float(slice_thickness)
 
         stack._filename = filename
         stack._dir = None

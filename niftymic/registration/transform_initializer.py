@@ -89,15 +89,7 @@ class TransformInitializer(object):
 
         # get best transformation according to selected similarity measure
         self._initial_transform_sitk = self._get_best_transform(
-            transformations)
-
-        if debug:
-            foo = sitk.Resample(
-                self._moving.sitk,
-                self._fixed.sitk,
-                self._initial_transform_sitk,
-            )
-            sitkh.show_sitk_image([fixed.sitk, foo])
+            transformations, debug=debug)
 
     @staticmethod
     def get_pca_from_mask(mask_sitk, robust=False):
@@ -172,7 +164,11 @@ class TransformInitializer(object):
             foo = [w.sitk for w in warps]
             foo.insert(0, self._fixed.sitk)
             labels.insert(0, "fixed")
-            sitkh.show_sitk_image(foo, label=labels)
+            sitkh.show_sitk_image(
+                foo,
+                segmentation=self._fixed.sitk_mask,
+                label=labels,
+            )
             for i in range(len(transformations)):
                 print("%s: %.6f" % (
                     labels[1 + i], similarities[self._similarity_measure][i])

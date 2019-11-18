@@ -7,15 +7,14 @@
 # \date       July 2016
 #
 
-# Import libraries
-import SimpleITK as sitk
 import numpy as np
+import SimpleITK as sitk
 
 import nsol.linear_operators as linop
 import nsol.tikhonov_linear_solver as tk
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
-# Import modules
+
 from niftymic.reconstruction.solver import Solver
 
 

@@ -66,7 +66,7 @@ class ImageDataReader(DataReader):
         if type(self._stacks) is not list:
             raise exceptions.ObjectNotCreated("read_data")
 
-        return self._stacks
+        return [st.Stack.from_stack(s) for s in self._stacks]
 
 
 ##
@@ -487,7 +487,7 @@ class MultiComponentImageReader(ImageDataReader):
                 stacks=self._stacks,
                 dir_motion_correction=self._dir_motion_correction,
                 volume_motion_only=self._volume_motion_only,
-                )
+            )
             motion_updater.run()
             self._stacks = motion_updater.get_data()
 

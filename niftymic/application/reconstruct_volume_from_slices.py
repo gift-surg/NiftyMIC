@@ -58,8 +58,8 @@ def main():
     input_parser.add_data_loss(default="linear")
     input_parser.add_data_loss_scale(default=1)
     input_parser.add_alpha(
-        default=0.01  # TK1L2
-        # default=0.006  #TVL2, HuberL2
+        default=0.01  # TK1L2 @ isotropic_resolution = 0.8
+        # default=0.006  #TVL2, HuberL2 @ isotropic_resolution = 0.8
     )
     input_parser.add_rho(default=0.1)
     input_parser.add_tv_solver(default="PD")
@@ -100,6 +100,8 @@ def main():
     dir_output = os.path.dirname(args.output)
     ph.create_directory(dir_output)
 
+    debug = 0
+
     if args.log_config:
         input_parser.log_config(os.path.abspath(__file__))
 
@@ -131,6 +133,7 @@ def main():
     if args.target_stack is None:
         target_stack_index = 0
     else:
+        # TODO: deal with case when target stack got rejected in previous step
         filenames = ["%s.nii.gz" % s.get_filename() for s in stacks]
         filename_target_stack = os.path.basename(args.target_stack)
         try:
@@ -171,11 +174,13 @@ def main():
     # -------------------------Volumetric Reconstruction-----------------------
     ph.print_title("Volumetric Reconstruction")
 
-    # Reconstruction space is given isotropically resampled target stack
+    # Reconstruction space defined by isotropically resampled,
+    # bounding box-cropped target stack
     if args.reconstruction_space is None:
         recon0 = stacks[target_stack_index].get_isotropically_resampled_stack(
             resolution=args.isotropic_resolution,
-            extra_frame=args.extra_frame_target)
+            extra_frame=args.extra_frame_target,
+        )
         recon0 = recon0.get_cropped_stack_based_on_mask(
             boundary_i=args.extra_frame_target,
             boundary_j=args.extra_frame_target,
@@ -202,6 +207,12 @@ def main():
         "Reconstruction space defined with %s mm3 resolution" %
         " x ".join(["%.2f" % s for s in recon0.sitk.GetSpacing()])
     )
+
+    if debug:
+        # visualize (intensity corrected) data alongside recon0 init
+        show = [st.Stack.from_stack(s) for s in stacks]
+        show.insert(0, recon0)
+        sitkh.show_stacks(show)
 
     if args.sda:
         ph.print_title("Compute SDA reconstruction")
