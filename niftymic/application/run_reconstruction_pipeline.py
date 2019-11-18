@@ -263,14 +263,21 @@ def main():
         cmd_args.append("--outlier-rejection %d" % args.outlier_rejection)
         cmd_args.append("--threshold-first %f" % args.threshold_first)
         cmd_args.append("--threshold %f" % args.threshold)
+        cmd_args.append("--verbose %d" % args.verbose)
+        cmd_args.append("--log-config %d" % args.log_config)
+
+        if args.isotropic_resolution is not None:
+            isotropic_resolution = args.isotropic_resolution
+        else:
+            # Gholipour et al. (2015) atlas grid spacing (0.7999989986419678)
+            # for comparability
+            isotropic_resolution = 0.8
+        cmd_args.append("--isotropic-resolution %f" % isotropic_resolution)
+
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
-        cmd_args.append("--verbose %d" % args.verbose)
-        cmd_args.append("--log-config %d" % args.log_config)
-        if args.isotropic_resolution is not None:
-            cmd_args.append("--isotropic-resolution %f" %
-                            args.isotropic_resolution)
+
         if args.reference is not None:
             cmd_args.append("--reference '%s'" % args.reference)
         if args.reference_mask is not None:
@@ -371,6 +378,9 @@ def main():
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
         cmd_args.append("--verbose %s" % args.verbose)
         cmd_args.append("--log-config %d" % args.log_config)
+        if args.isotropic_resolution is not None:
+            cmd_args.append("--isotropic-resolution %f" %
+                            args.isotropic_resolution)
         if args.slice_thicknesses is not None:
             cmd_args.append("--slice-thicknesses %s" %
                             " ".join(map(str, args.slice_thicknesses)))
@@ -395,6 +405,9 @@ def main():
             cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
             cmd_args.append("--log-config %d" % args.log_config)
             cmd_args.append("--mask")
+            if args.isotropic_resolution is not None:
+                cmd_args.append("--isotropic-resolution %f" %
+                                args.isotropic_resolution)
             if args.slice_thicknesses is not None:
                 cmd_args.append("--slice-thicknesses %s" %
                                 " ".join(map(str, args.slice_thicknesses)))
