@@ -78,8 +78,9 @@ builddocs:
     - gift-adelie
 
 installation:
-  # only:
-  #   - master
+  only:
+    - dev
+    # - master
   script:
     - python -m nose tests/installation_test.py
   tags:
