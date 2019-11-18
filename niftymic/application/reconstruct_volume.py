@@ -485,6 +485,22 @@ def main():
             for i, stack in enumerate(stacks):
                 deleted_slices = stack.get_deleted_slice_numbers()
                 deleted_slices_dic[stack.get_filename()] = deleted_slices
+
+            # check whether any stack was removed entirely
+            stacks0 = data_preprocessing.get_preprocessed_stacks()
+            if len(stacks) != len(stacks0):
+                stacks_remain = [s.get_filename() for s in stacks]
+                for stack in stacks0:
+                    if stack.get_filename() in stacks_remain:
+                        continue
+
+                    # add info that all slices of this stack were rejected
+                    deleted_slices = [
+                        slice.get_slice_number()
+                        for slice in stack.get_slices()
+                    ]
+                    deleted_slices_dic[stack.get_filename()] = deleted_slices
+
             ph.write_dictionary_to_json(
                 deleted_slices_dic,
                 os.path.join(
