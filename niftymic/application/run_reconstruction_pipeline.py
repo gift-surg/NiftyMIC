@@ -21,6 +21,7 @@ import niftymic.validation.show_evaluated_simulated_stack_similarity as \
 import niftymic.application.show_slice_coverage as show_slice_coverage
 import niftymic.validation.export_side_by_side_simulated_vs_original_slice_comparison as \
     export_side_by_side_simulated_vs_original_slice_comparison
+import niftymic.utilities.target_stack_estimator as ts_estimator
 from niftymic.utilities.input_arparser import InputArgparser
 import niftymic.utilities.template_stack_estimator as tse
 
@@ -133,6 +134,16 @@ def main():
         "specified interleave (--interleave) are registered until each "
         "slice is registered independently."
     )
+    input_parser.add_option(
+        option_string="--automatic-target-stack",
+        type=int,
+        help="If true, and no specific target stack is provided, "
+        "a target stack is automatically estimated. "
+        "A motion score similar to the one presented in Kainz et al. (2015). "
+        "is used to estimate the least motion-affected stack as initial "
+        "reference/target stack.",
+        default=1,
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
@@ -197,8 +208,30 @@ def main():
         filenames = args.filenames
 
     # Specify target stack for intensity correction and reconstruction space
+    elapsed_time_target_stack = ph.get_zero_time()
     if args.target_stack is None:
-        target_stack = filenames[0]
+
+        if args.automatic_target_stack:
+            ph.print_info(
+                "Searching for suitable target stack ... ", newline=False)
+            target_stack_estimator = \
+                ts_estimator.TargetStackEstimator.from_motion_score(
+                    file_paths=filenames,
+                    file_paths_masks=args.filenames_masks,
+                )
+            print("done")
+            elapsed_time_target_stack = \
+                target_stack_estimator.get_computational_time()
+            ph.print_info(
+                "Computational time for target stack selection: %s" % (elapsed_time_target_stack))
+            target_stack_index = \
+                target_stack_estimator.get_target_stack_index()
+            target_stack = filenames[target_stack_index]
+            ph.print_info("Chosen target stack: %s" % target_stack)
+
+        else:
+            target_stack = filenames[0]
+
     else:
         try:
             target_stack_index = args.filenames.index(args.target_stack)
@@ -502,6 +535,8 @@ def main():
     exe_file_info = os.path.basename(os.path.abspath(__file__)).split(".")[0]
     print("%s | Computational Time for Bias Field Corrections: %s" % (
           exe_file_info, elapsed_time_bias))
+    print("%s | Computational Time for Automatic Target Stack Selection: %s" %
+          (exe_file_info, elapsed_time_target_stack))
     print("%s | Computational Time for Subject Space Reconstruction: %s" % (
           exe_file_info, elapsed_time_recon_subject_space))
     print("%s | Computational Time for Template Space Alignment: %s" % (
