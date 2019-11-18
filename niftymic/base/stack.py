@@ -182,6 +182,19 @@ class Stack:
             dir_input + prefix_stack + ".nii.gz", sitk.sitkFloat64)
         stack.itk = sitkh.get_itk_from_sitk_image(stack.sitk)
 
+        # Store current affine transform of image
+        stack._affine_transform_sitk = sitkh.get_sitk_affine_transform_from_sitk_image(
+            stack.sitk)
+
+        # Prepare history of affine transforms, i.e. encoded spatial
+        #  position+orientation of stack, and motion estimates of stack
+        #  obtained in the course of the registration/reconstruction process
+        stack._history_affine_transforms = []
+        stack._history_affine_transforms.append(stack._affine_transform_sitk)
+
+        stack._history_motion_corrections = []
+        stack._history_motion_corrections.append(sitk.Euler3DTransform())
+
         # Set slice thickness of acquisition
         if slice_thickness is None:
             stack._slice_thickness = float(stack.sitk.GetSpacing()[-1])
