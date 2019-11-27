@@ -6,6 +6,8 @@
 # \date       May 2017
 #
 
+import numpy as np
+
 import niftymic.base.stack as st
 import niftymic.utilities.intensity_correction as ic
 import niftymic.utilities.n4_bias_field_correction as n4bfc
@@ -87,10 +89,16 @@ class DataPreprocessing:
 
         time_start = ph.start_timing()
 
-        # Segmentation propagation
-        all_masks_provided = 0
+        # if no mask is provided, use unity stacks for all masks
+        is_unity_mask = np.alltrue([s.is_unity_mask() for s in self._stacks])
+        if is_unity_mask:
+            ph.print_info(
+                "Keep unity masks for all stacks. "
+                "It is recommended to provide anatomical masks for increased "
+                "accuracy.")
 
-        if self._segmentation_propagator is not None:
+        # Segmentation propagation
+        if self._segmentation_propagator is not None and not is_unity_mask:
 
             stacks_to_propagate_indices = []
             for i in range(0, self._N_stacks):
@@ -119,7 +127,7 @@ class DataPreprocessing:
                 # self._stacks[i].show(1)
 
         # Crop to mask
-        if self._use_cropping_to_mask:
+        if self._use_cropping_to_mask and not is_unity_mask:
             ph.print_info("Crop stacks to their masks")
 
             for i in range(0, self._N_stacks):
@@ -136,7 +144,7 @@ class DataPreprocessing:
             for i in range(0, self._N_stacks):
                 ph.print_info(
                     "Perform N4 Bias Field Correction for stack %d ... "
-                    % (i+1), newline=False)
+                    % (i + 1), newline=False)
                 bias_field_corrector.set_stack(self._stacks[i])
                 bias_field_corrector.run_bias_field_correction()
                 self._stacks[i] = \
