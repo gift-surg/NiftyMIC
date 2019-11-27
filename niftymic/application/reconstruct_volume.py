@@ -227,7 +227,7 @@ def main():
         reference = st.Stack.from_stack(stacks[target_stack_index])
 
     # ------------------------Volume-to-Volume Registration--------------------
-    if args.two_step_cycles > 0 and len(stacks) > 1:
+    if len(stacks) > 1:
 
         if args.v2v_method == "FLIRT":
             # Define search angle ranges for FLIRT in all three dimensions
