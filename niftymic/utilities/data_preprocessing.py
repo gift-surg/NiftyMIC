@@ -168,8 +168,8 @@ class DataPreprocessing:
                     target.get_resampled_stack(resampling_grid=stack.sitk))
                 # intensity_corrector.run_affine_intensity_correction()
                 intensity_corrector.run_linear_intensity_correction()
-                self._stacks[
-                    i] = intensity_corrector.get_intensity_corrected_stack()
+                self._stacks[i] = \
+                    intensity_corrector.get_intensity_corrected_stack()
         self._computational_time = ph.stop_timing(time_start)
 
     # Get preprocessed stacks
