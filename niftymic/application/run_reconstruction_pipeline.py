@@ -376,7 +376,6 @@ def main():
         cmd_args.append("--iter-max %d" % args.iter_max)
         cmd_args.append("--alpha %s" % args.alpha)
         cmd_args.append("--suffix-mask '%s'" % args.suffix_mask)
-        cmd_args.append("--verbose %s" % args.verbose)
         cmd_args.append("--log-config %d" % args.log_config)
         if args.isotropic_resolution is not None:
             cmd_args.append("--isotropic-resolution %f" %
@@ -424,6 +423,9 @@ def main():
             ph.execute_command(cmd)
             elapsed_time_recon_template_space_mask = ph.stop_timing(
                 time_start)
+        
+        if args.verbose:
+            ph.show_nifti(srr_template, segmentation=srr_template_mask)
 
         # Copy SRR to output directory
         if 0:
