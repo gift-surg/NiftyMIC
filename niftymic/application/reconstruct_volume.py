@@ -500,6 +500,9 @@ def main():
                         for slice in stack.get_slices()
                     ]
                     deleted_slices_dic[stack.get_filename()] = deleted_slices
+                    ph.print_info(
+                        "All slices of stack '%s' were rejected entirely. "
+                        "Information added." % stack.get_filename())
 
             ph.write_dictionary_to_json(
                 deleted_slices_dic,
