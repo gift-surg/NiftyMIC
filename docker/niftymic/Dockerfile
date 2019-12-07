@@ -21,6 +21,15 @@ RUN apt-get update && \
         && \
     rm -rf /var/lib/apt/lists/* 
 
+# download fetal_brain_seg
+RUN git clone \
+    https://github.com/gift-surg/fetal_brain_seg.git /app/fetal_brain_seg
+ADD https://github.com/taigw/Demic/archive/v0.1.tar.gz /app/Demic-0.1.tar.gz
+RUN cd /app && \
+    tar xvf Demic-0.1.tar.gz && \
+    mv Demic-0.1 /app/fetal_brain_seg/Demic
+
+# download NiftyMIC
 RUN if [ "$VERSION" = "latest" ] ; then \
         git clone \
         https://github.com/gift-surg/${REPO}.git /app/${REPO} \
@@ -30,10 +39,10 @@ RUN if [ "$VERSION" = "latest" ] ; then \
         https://github.com/gift-surg/${REPO}.git /app/${REPO} \
     ;fi
 
-WORKDIR /app/${REPO}
-
 # remove unnecessary .git folders
 RUN rm -r /app/${REPO}/.git*
+RUN rm -r /app/fetal_brain_seg/.git*
+RUN rm -r /app/fetal_brain_seg/Demic/.git*
 
 # -----------------------------------------------------------------------------
 FROM $IMAGE AS runtime-image
@@ -47,6 +56,24 @@ LABEL title="$REPO"
 LABEL version="$VERSION"
 LABEL uri="https://github.com/gift-surg/${REPO}"
 
+# prepare fetal_brain_seg
+COPY --from=compile-image /app/fetal_brain_seg /app/fetal_brain_seg
+WORKDIR /app/fetal_brain_seg
+RUN pip install \
+    nibabel==2.3.3 \
+    niftynet==0.2 \
+    numpy==1.15.4 \
+    scikit_image==0.14.1 \
+    scipy==1.1.0 \
+    SimpleITK==1.2.4 \
+    tensorflow==1.12.0
+RUN SITEDIR=$(python -m site --user-site) && \
+    mkdir -p $SITEDIR && \
+    echo /app/fetal_brain_seg > $SITEDIR/Demic.pth
+ENV FETAL_BRAIN_SEG=/app/fetal_brain_seg
+
+# install NiftyMIC
+COPY --from=compile-image /app/${REPO} /app/${REPO}
 RUN apt-get update && \
     apt-get install -y \
         build-essential \
@@ -56,8 +83,6 @@ RUN apt-get update && \
         cmake \
         && \
     rm -rf /var/lib/apt/lists/* 
-
-COPY --from=compile-image /app/${REPO} /app/${REPO}
 
 WORKDIR /app/${REPO}
 RUN pip install six
