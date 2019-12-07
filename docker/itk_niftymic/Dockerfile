@@ -19,6 +19,7 @@ RUN apt-get update && \
         git \
         && \
     rm -rf /var/lib/apt/lists/* 
+
 RUN if [ "$VERSION" = "latest" ] ; then \
             git clone \
             https://github.com/gift-surg/${REPO}.git /code/${REPO}/${REPO} \
@@ -27,6 +28,7 @@ RUN if [ "$VERSION" = "latest" ] ; then \
             --branch ${VERSION} \
             https://github.com/gift-surg/${REPO}.git /code/${REPO}/${REPO} \
         ;fi
+
 RUN mkdir -p /code/${REPO}/${REPO}-build && \
     cd /code/${REPO}/${REPO}-build && \
     cmake \
@@ -34,7 +36,6 @@ RUN mkdir -p /code/${REPO}/${REPO}-build && \
         -D BUILD_SHARED_LIBS=ON \
         -D BUILD_TESTING=OFF \
         -D CMAKE_BUILD_TYPE=Release \
-        -D CMAKE_INSTALL_PREFIX=/code/${REPO}/${REPO}-install/itk \
         -D ITK_LEGACY_SILENT=ON \
         -D ITK_WRAP_covariant_vector_double=ON \
         -D ITK_WRAP_double=ON \
@@ -51,17 +52,20 @@ RUN mkdir -p /code/${REPO}/${REPO}-build && \
         -D Module_BridgeNumPy=ON \
         -D Module_ITKReview=ON \
         -D Module_SmoothingRecursiveYvvGaussianFilter=ON \
-        -D WRAP_ITK_INSTALL_PREFIX=/code/${REPO}/${REPO}-install/wrapitk \
         /code/${REPO}/${REPO}
 RUN cd /code/${REPO}/${REPO}-build && make -j 4
-# RUN cd /code/${REPO}/${REPO}-build && make install
+
+# install files to /usr/local
+RUN cd /code/${REPO}/${REPO}-build && make install
+
+# make shared libraries available to Python
+ENV LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 
 # remove unnecessary .git folders
 RUN rm -r /code/${REPO}/${REPO}/.git*
 
 # -----------------------------------------------------------------------------
-FROM compile-image AS runtime-image
-# FROM $IMAGE AS runtime-image
+FROM $IMAGE AS runtime-image
 
 ARG REPO
 ARG VERSION
@@ -72,10 +76,11 @@ LABEL title="$REPO"
 LABEL version="$VERSION"
 LABEL uri="https://github.com/gift-surg/${REPO}"
 
-WORKDIR /code/${REPO}
+# copy compiled ITK data and make libraries available to Python
+COPY --from=compile-image /usr/local /usr/local
+ENV LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 
 # add Dockerfile to image
 ADD Dockerfile /
 
 CMD bash
-
