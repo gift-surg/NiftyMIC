@@ -8,7 +8,7 @@
 
 ARG VERSION=noitksnap
 ARG REPO=SimpleReg-dependencies
-ARG IMAGE=renbem/itk_niftymic:v0.1
+ARG IMAGE=renbem/itk_niftymic:v4.13.1-niftymic-v1
 
 # -----------------------------------------------------------------------------
 FROM $IMAGE as compile-image-fsl
