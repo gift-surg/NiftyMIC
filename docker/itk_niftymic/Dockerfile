@@ -76,7 +76,7 @@ LABEL title="$REPO"
 LABEL version="$VERSION"
 LABEL uri="https://github.com/gift-surg/${REPO}"
 
-# copy compiled ITK data and make libraries available to Python
+# copy compiled ITK files and make libraries available to Python
 COPY --from=compile-image /usr/local /usr/local
 ENV LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 
