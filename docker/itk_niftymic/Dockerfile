@@ -21,13 +21,13 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* 
 
 RUN if [ "$VERSION" = "latest" ] ; then \
-            git clone \
-            https://github.com/gift-surg/${REPO}.git /code/${REPO}/${REPO} \
-        ;else \
-            git clone \
-            --branch ${VERSION} \
-            https://github.com/gift-surg/${REPO}.git /code/${REPO}/${REPO} \
-        ;fi
+        git clone \
+        https://github.com/gift-surg/${REPO}.git /code/${REPO}/${REPO} \
+    ;else \
+        git clone \
+        --branch ${VERSION} \
+        https://github.com/gift-surg/${REPO}.git /code/${REPO}/${REPO} \
+    ;fi
 
 RUN mkdir -p /code/${REPO}/${REPO}-build && \
     cd /code/${REPO}/${REPO}-build && \
