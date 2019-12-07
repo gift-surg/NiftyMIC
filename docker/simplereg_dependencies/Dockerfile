@@ -99,7 +99,7 @@ LABEL title="$REPO"
 LABEL version="$VERSION"
 LABEL uri="https://github.com/gift-surg/SimpleReg/wiki/simplereg-dependencies"
 
-# copy compiled FSL data and link associated binaries
+# copy compiled FSL files and link associated binaries
 COPY --from=compile-image-fsl /etc/fsl /etc/fsl
 COPY --from=compile-image-fsl /usr/lib /usr/lib
 COPY --from=compile-image-fsl /usr/share/fsl /usr/share/fsl
@@ -112,11 +112,11 @@ RUN ln -s /usr/bin/fsl5.0-flirt /usr/local/bin/flirt && \
     ln -s /usr/bin/fsl5.0-fslswapdim /usr/local/bin/fslswapdim && \
     ln -s /usr/bin/fsl5.0-bet /usr/local/bin/bet
 
-# copy compiled NiftyReg data and link associated binaries
+# copy compiled NiftyReg files and link associated binaries
 COPY --from=compile-image-niftyreg /usr/share/niftyreg /usr/share/niftyreg
 ENV PATH="/usr/share/niftyreg/bin:$PATH"
 
-# copy compiled itksnap data
+# copy compiled itksnap files
 COPY --from=compile-image-itksnap /code/c3d/bin /usr/local/bin
 COPY --from=compile-image-itksnap /code/c3d/lib /usr/local/lib
 COPY --from=compile-image-itksnap /code/c3d/share /usr/local/share
