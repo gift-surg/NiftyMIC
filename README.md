@@ -240,7 +240,7 @@ niftymic_show_parameter_study \
 ```
 
 ### Automatic Segmentation and High-Resolution Reconstruction of Fetal Brain MRI
-Based on the work described in [EbnerWang2018][ebner-wang-2018], an automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2). 
+Based on the work described in [EbnerWang2018][ebner-wang-2018] and [EbnerWang2019][ebner-wang-2019], an automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2). 
 
 Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic fetal brain masks of HASTE-like images:
 ```
