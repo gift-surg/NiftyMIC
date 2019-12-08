@@ -431,16 +431,6 @@ class InputArgparser(object):
     ):
         self._add_argument(dict(locals()))
 
-    def add_use_robust_registration(
-        self,
-        option_string="--use-robust-registration",
-        type=int,
-        help="Turn on/off use of robust slice-to-volume registration.",
-        default=0,
-        required=False,
-    ):
-        self._add_argument(dict(locals()))
-
     def add_boundary_stacks(
         self,
         option_string="--boundary-stacks",

@@ -21,7 +21,6 @@ import pysitk.simple_itk_helper as sitkh
 import niftymic.base.stack as st
 import niftymic.validation.motion_evaluator as me
 import niftymic.utilities.outlier_rejector as outre
-import niftymic.utilities.robust_motion_estimator as rme
 import niftymic.registration.transform_initializer as tinit
 import niftymic.reconstruction.scattered_data_approximation as sda
 import niftymic.utilities.binary_mask_from_mask_srr_estimator as bm
@@ -91,7 +90,7 @@ class RegistrationPipeline(Pipeline):
     # \param      stacks               List of Stack objects
     # \param      reference            Reference as Stack object
     # \param      registration_method  Registration method, e.g.
-    #                                  CppItkRegistration
+    #                                  SimpleItkRegistration
     #
     def __init__(self, verbose, stacks, reference, registration_method, viewer):
 
@@ -189,7 +188,7 @@ class SliceToVolumeRegistration(RegistrationPipeline):
     # \param      stacks               The stacks
     # \param      reference            The reference
     # \param      registration_method  Registration method, e.g.
-    #                                  CppItkRegistration
+    #                                  SimpleItkRegistration
     # \param      verbose              The verbose
     # \param      print_prefix         Print at each iteration at the
     #                                  beginning, string
@@ -200,7 +199,6 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                  registration_method,
                  verbose=1,
                  print_prefix="",
-                 s2v_smoothing=None,
                  interleave=2,
                  viewer=VIEWER,
                  ):
@@ -213,17 +211,10 @@ class SliceToVolumeRegistration(RegistrationPipeline):
             viewer=viewer,
         )
         self._print_prefix = print_prefix
-        self._s2v_smoothing = s2v_smoothing
         self._interleave = interleave
 
     def set_print_prefix(self, print_prefix):
         self._print_prefix = print_prefix
-
-    def set_s2v_smoothing(self, s2v_smoothing):
-        self._s2v_smoothing = s2v_smoothing
-
-    def get_s2v_smoothing(self):
-        return self._s2v_smoothing
 
     def _run(self):
 
@@ -255,66 +246,6 @@ class SliceToVolumeRegistration(RegistrationPipeline):
                 transform_sitk = \
                     self._registration_method.get_registration_transform_sitk()
                 transforms_sitk[slice_j.get_slice_number()] = transform_sitk
-
-            # Avoid slice misregistrations
-            if self._s2v_smoothing is not None:
-                # import os
-                # for slice_number in transforms_sitk.keys():
-                #     path_to_file = os.path.join(
-                #         "/tmp/fetal_brain", "%s_slice%d.tfm" % (
-                #             stack.get_filename(), slice_number))
-                #     sitk.WriteTransform(
-                #         transforms_sitk[slice_number], path_to_file)
-                ph.print_subtitle(
-                    "Robust slice motion estimation "
-                    "(GP smoothing = %g, interleave = %d)" % (
-                        self._s2v_smoothing, self._interleave))
-                robust_motion_estimator = rme.RobustMotionEstimator(
-                    transforms_sitk=transforms_sitk,
-                    interleave=self._interleave)
-                robust_motion_estimator.run(self._s2v_smoothing)
-                transforms_sitk = \
-                    robust_motion_estimator.get_robust_transforms_sitk()
-
-                # Update position of slice
-                for slice in slices:
-                    slice_number = slice.get_slice_number()
-                    slice.update_motion_correction(
-                        transforms_sitk[slice_number])
-
-                # Run s2v-reg again
-                for j, slice_j in enumerate(slices):
-                    txt = "%sSlice-to-Volume Registration -- " \
-                        "Stack %d/%d -- Slice %d/%d (after GP init)" % (
-                            self._print_prefix,
-                            i + 1, len(self._stacks),
-                            j + 1, len(slices))
-                    if self._verbose:
-                        ph.print_subtitle(txt)
-                    else:
-                        ph.print_info(txt)
-
-                    self._registration_method.set_fixed(slice_j)
-                    self._registration_method.run()
-
-                    # Store information on registration transform
-                    transform_sitk = \
-                        self._registration_method.get_registration_transform_sitk()
-                    transforms_sitk[
-                        slice_j.get_slice_number()] = transform_sitk
-
-                # Export figures
-                # title = "%s_Stack%d%s" % (
-                #     self._print_prefix, i, stack.get_filename())
-                # title = ph.replace_string_for_print(title)
-                # robust_motion_estimator.show_estimated_transform_parameters(
-                #     dir_output="/tmp/fetal_brain/figs", title=title)
-
-            # dir_output = "/tmp/fetal/figs"
-            # motion_evaluator = me.MotionEvaluator(transforms_sitk)
-            # motion_evaluator.run()
-            # motion_evaluator.display(dir_output=dir_output, title=title)
-            # motion_evaluator.show(dir_output=dir_output, title=title)
 
             # Update position of slice
             for slice in slices:
@@ -490,7 +421,7 @@ class ReconstructionRegistrationPipeline(RegistrationPipeline):
     # \param      stacks                 List of Stack objects
     # \param      reference              Reference as Stack object
     # \param      registration_method    Registration method, e.g.
-    #                                    CppItkRegistration
+    #                                    SimpleItkRegistration
     # \param      reconstruction_method  Reconstruction method, e.g. TK1
     # \param      alpha_range            Specify regularization parameter
     #                                    range, i.e. list [alpha_min,
@@ -550,7 +481,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
     # \param      stacks                         The stacks
     # \param      reference                      The reference
     # \param      registration_method            Registration method, e.g.
-    #                                            CppItkRegistration
+    #                                            SimpleItkRegistration
     # \param      reconstruction_method          Reconstruction method, e.g.
     #                                            TK1
     # \param      alphas                         List of alphas
@@ -560,9 +491,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
     # \param      outlier_rejection              The outlier rejection
     # \param      threshold_measure              The threshold measure
     # \param      thresholds                     The threshold range
-    # \param      use_robust_registration        The use robust registration
     # \param      use_hierarchical_registration  The use hierarchical registration
-    # \param      s2v_smoothing                  The s 2 v smoothing
     # \param      interleave                     The interleave
     # \param      viewer                         The viewer
     # \param      sigma_sda_mask                 The sigma sda mask
@@ -578,9 +507,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                  outlier_rejection=False,
                  threshold_measure="NCC",
                  thresholds=[0.6, 0.7, 0.8],
-                 use_robust_registration=False,
                  use_hierarchical_registration=False,
-                 s2v_smoothing=0.5,
                  interleave=3,
                  viewer=VIEWER,
                  sigma_sda_mask=1.,
@@ -613,9 +540,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
         self._outlier_rejection = outlier_rejection
         self._threshold_measure = threshold_measure
         self._thresholds = thresholds
-        self._use_robust_registration = use_robust_registration
         self._use_hierarchical_registration = use_hierarchical_registration
-        self._s2v_smoothing = s2v_smoothing
         self._interleave = interleave
 
     def _run(self):
@@ -652,10 +577,6 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
                 s2vreg.set_reference(reference)
                 s2vreg.set_print_prefix("Cycle %d/%d: " %
                                         (cycle + 1, self._cycles))
-                if self._use_robust_registration and cycle == 0:
-                    s2vreg.set_s2v_smoothing(self._s2v_smoothing)
-                else:
-                    s2vreg.set_s2v_smoothing(None)
                 s2vreg.run()
 
             self._computational_time_registration += \
@@ -742,7 +663,7 @@ class HieararchicalSliceSetRegistration(RegistrationPipeline):
     # \param      self                 The object
     # \param      stacks               List of stacks to be registered
     # \param      reference            Reference image as Stack object.
-    # \param      registration_method  method, e.g. CppItkRegistration
+    # \param      registration_method  method, e.g. SimpleItkRegistration
     # \param      interleave           Interleave of scans, integer
     # \param      min_slices           The minimum slices
     # \param      verbose              The verbose

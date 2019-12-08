@@ -94,7 +94,17 @@ class RegAladin(AffineRegistrationMethod):
             options=options,
             verbose=self._use_verbose,
         )
-        self._registration_method.run()
+        try:
+            self._registration_method.run()
+        except RuntimeError as e:
+            raise RuntimeError(
+                "%s\n\n"
+                "Check whether image/mask coverage is sufficient between the "
+                "images '%s' (fixed) and '%s' (moving).\n" % (
+                    e,
+                    self._fixed.get_filename(),
+                    self._moving.get_filename()),
+            )
 
         self._registration_transform_sitk = \
             self._registration_method.get_registration_transform_sitk()

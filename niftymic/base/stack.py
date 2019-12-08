@@ -1146,8 +1146,11 @@ class Stack:
         [x_range, y_range, z_range] = self._get_rectangular_masked_region(
             self.sitk_mask)
 
-        if x_range is None:
-            return None
+        if np.array([x_range, y_range, z_range]).all() is None:
+            raise RuntimeError(
+                "Cropping to bounding box of mask led to an empty image. "
+                "Check the image stack to see whether the region of interest "
+                "is presented in '%s'." % self._filename)
 
         if unit == "mm":
             spacing = self.sitk.GetSpacing()

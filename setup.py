@@ -17,39 +17,11 @@ import re
 import os
 import sys
 from setuptools import setup, find_packages
-from setuptools.command.develop import develop
-from setuptools.command.install import install
-
-from install_cli import main as install_command_line_interfaces
 
 
 about = {}
 with open(os.path.join("niftymic", "__about__.py")) as fp:
     exec(fp.read(), about)
-
-
-##
-# Post-installation to build additionally required command line interface tools
-# located in niftymic/cli.
-# \date       2017-10-20 17:00:53+0100
-#
-class CustomDevelopCommand(develop):
-
-    def run(self):
-        install_command_line_interfaces()
-        develop.run(self)
-
-
-##
-# Post-installation to build additionally required command line interface tools
-# located in niftymic/cli.
-# \date       2017-10-20 17:00:53+0100
-#
-class CustomInstallCommand(install):
-
-    def run(self):
-        install_command_line_interfaces()
-        install.run(self)
 
 
 with open("README.md", "r") as fh:
@@ -93,10 +65,6 @@ setup(name='NiftyMIC',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
       ],
-      cmdclass={
-          "develop": CustomDevelopCommand,
-          "install": CustomInstallCommand,
-      },
       entry_points={
           'console_scripts': [
               'niftymic_correct_bias_field = niftymic.application.correct_bias_field:main',

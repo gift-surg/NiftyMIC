@@ -5,6 +5,8 @@ data/tests/
 dist/
 *.nii
 *.nii.gz
+*.tar.gz
+*.deb
 *.zip
 *.pyc
 *iterate.dat

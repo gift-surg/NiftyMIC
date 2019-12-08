@@ -1,0 +1,30 @@
+# Comments:
+#  - should work in principle, but not tested
+#  - seems not possible to add two tags per "service" with one run
+#  - existing docker images were created by executing Dockerfiles individually
+
+# SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa)" docker-compose build 
+
+version: "3.7"
+
+services:
+
+  itk_niftymic:
+    build:
+      context: ./itk_niftymic
+      args:
+        VERSION: v4.13.1-niftymic-v1
+    image: itk_niftymic:v4.13.1-niftymic-v1
+
+  simplereg_dependencies:
+    build:
+      context: ./simplereg_dependencies
+    image: simplereg_dependencies:noitksnap
+
+  niftymic:
+    build:
+      context: ./niftymic
+      args:
+        VERSION: v0.7.4
+    image: niftymic:v0.7.4
+

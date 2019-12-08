@@ -193,6 +193,7 @@ def main():
 
     segmentation_propagator = segprop.SegmentationPropagation(
         # registration_method=regflirt.FLIRT(use_verbose=args.verbose),
+        # registration_method=niftyreg.RegAladin(use_verbose=False),
         dilation_radius=args.dilation_radius,
         dilation_kernel="Ball",
     )
@@ -225,7 +226,7 @@ def main():
         reference = st.Stack.from_stack(stacks[target_stack_index])
 
     # ------------------------Volume-to-Volume Registration--------------------
-    if args.two_step_cycles > 0 and len(stacks) > 1:
+    if len(stacks) > 1:
 
         if args.v2v_method == "FLIRT":
             # Define search angle ranges for FLIRT in all three dimensions
@@ -496,6 +497,9 @@ def main():
                         for slice in stack.get_slices()
                     ]
                     deleted_slices_dic[stack.get_filename()] = deleted_slices
+                    ph.print_info(
+                        "All slices of stack '%s' were rejected entirely. "
+                        "Information added." % stack.get_filename())
 
             ph.write_dictionary_to_json(
                 deleted_slices_dic,

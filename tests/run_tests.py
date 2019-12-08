@@ -24,7 +24,6 @@ from segmentation_propagation_test import *
 from stack_test import *
 
 # from parameter_normalization_test import *
-# from cpp_itk_registration_test import *  # TBC
 # from registration_test import *  # TBC
 # from intra_stack_registration_test import *  # TBC
 

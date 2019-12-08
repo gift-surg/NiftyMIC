@@ -62,11 +62,10 @@ COPY_DICOM_TAGS = {
     "StudyDescription",
 }
 
-INSTITUTION_NAME = "UCL, WEISS"
+INSTITUTION_NAME = "NiftyMIC-v%s " % niftymic.__version__
 ACCESSION_NUMBER = "1"
 SERIES_NUMBER = "0"
-IMAGE_COMMENTS = "NiftyMIC-v%s *** NOT APPROVED FOR CLINICAL USE ***" % (
-    niftymic.__version__)
+IMAGE_COMMENTS = "*** NOT APPROVED FOR CLINICAL USE ***"
 
 
 def main():
