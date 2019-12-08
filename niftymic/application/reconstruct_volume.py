@@ -195,6 +195,7 @@ def main():
 
     segmentation_propagator = segprop.SegmentationPropagation(
         # registration_method=regflirt.FLIRT(use_verbose=args.verbose),
+        # registration_method=niftyreg.RegAladin(use_verbose=False),
         dilation_radius=args.dilation_radius,
         dilation_kernel="Ball",
     )
