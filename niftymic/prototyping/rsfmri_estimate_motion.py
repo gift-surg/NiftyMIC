@@ -120,7 +120,6 @@ def main():
     segmentation_propagator = segprop.SegmentationPropagation(
         # registration_method=regniftyreg.RegAladin(use_verbose=args.verbose),
         # registration_method=regsitk.SimpleItkRegistration(use_verbose=args.verbose),
-        # registration_method=regitk.CppItkRegistration(use_verbose=args.verbose),
         dilation_radius=args.dilation_radius,
         dilation_kernel="Ball",
     )

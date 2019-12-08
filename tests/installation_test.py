@@ -12,7 +12,6 @@ import unittest
 from nipype.testing import example_data
 
 import niftymic.base.stack as st
-import niftymic.registration.cpp_itk_registration as cppreg
 import niftymic.registration.flirt as flirt
 import niftymic.registration.niftyreg as niftyreg
 import niftymic.utilities.brain_stripping as bs
@@ -71,12 +70,3 @@ class InstallationTest(unittest.TestCase):
         image_itk = itk.Image.D3.New()
         filter_itk = itk.OrientedGaussianInterpolateImageFilter.ID3ID3.New()
 
-    ##
-    # Test whether command line interfaces have been installed successfully
-    # \date       2017-10-26 15:26:34+0100
-    #
-    def test_command_line_interfaces(self):
-
-        registration_method = cppreg.CppItkRegistration(
-            fixed=self.fixed, moving=self.moving)
-        registration_method.run()
