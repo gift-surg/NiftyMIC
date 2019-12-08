@@ -21,7 +21,7 @@ import pysitk.simple_itk_helper as sitkh
 import niftymic.base.stack as st
 import niftymic.validation.motion_evaluator as me
 import niftymic.utilities.outlier_rejector as outre
-import niftymic.utilities.robust_motion_estimator as rme
+import niftymic.prototyping.robust_motion_estimator as rme
 import niftymic.registration.transform_initializer as tinit
 import niftymic.reconstruction.scattered_data_approximation as sda
 import niftymic.utilities.binary_mask_from_mask_srr_estimator as bm
