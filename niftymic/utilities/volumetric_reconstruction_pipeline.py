@@ -91,7 +91,7 @@ class RegistrationPipeline(Pipeline):
     # \param      stacks               List of Stack objects
     # \param      reference            Reference as Stack object
     # \param      registration_method  Registration method, e.g.
-    #                                  CppItkRegistration
+    #                                  SimpleItkRegistration
     #
     def __init__(self, verbose, stacks, reference, registration_method, viewer):
 
@@ -189,7 +189,7 @@ class SliceToVolumeRegistration(RegistrationPipeline):
     # \param      stacks               The stacks
     # \param      reference            The reference
     # \param      registration_method  Registration method, e.g.
-    #                                  CppItkRegistration
+    #                                  SimpleItkRegistration
     # \param      verbose              The verbose
     # \param      print_prefix         Print at each iteration at the
     #                                  beginning, string
@@ -490,7 +490,7 @@ class ReconstructionRegistrationPipeline(RegistrationPipeline):
     # \param      stacks                 List of Stack objects
     # \param      reference              Reference as Stack object
     # \param      registration_method    Registration method, e.g.
-    #                                    CppItkRegistration
+    #                                    SimpleItkRegistration
     # \param      reconstruction_method  Reconstruction method, e.g. TK1
     # \param      alpha_range            Specify regularization parameter
     #                                    range, i.e. list [alpha_min,
@@ -550,7 +550,7 @@ class TwoStepSliceToVolumeRegistrationReconstruction(
     # \param      stacks                         The stacks
     # \param      reference                      The reference
     # \param      registration_method            Registration method, e.g.
-    #                                            CppItkRegistration
+    #                                            SimpleItkRegistration
     # \param      reconstruction_method          Reconstruction method, e.g.
     #                                            TK1
     # \param      alphas                         List of alphas
@@ -742,7 +742,7 @@ class HieararchicalSliceSetRegistration(RegistrationPipeline):
     # \param      self                 The object
     # \param      stacks               List of stacks to be registered
     # \param      reference            Reference image as Stack object.
-    # \param      registration_method  method, e.g. CppItkRegistration
+    # \param      registration_method  method, e.g. SimpleItkRegistration
     # \param      interleave           Interleave of scans, integer
     # \param      min_slices           The minimum slices
     # \param      verbose              The verbose

@@ -16,19 +16,14 @@ import numpy as np
 import pysitk.simple_itk_helper as sitkh
 import pysitk.python_helper as ph
 
-# Import modules
 import niftymic.base.stack as st
 import niftymic.utilities.stack_mask_morphological_operations as stmorph
-import niftymic.registration.simple_itk_registration as regsitk
-import niftymic.registration.cpp_itk_registration as regitk
-import niftymic.registration.niftyreg as regniftyreg
+
 
 ##
 # Class implementing the segmentation propagation from one image to another
 # \date       2017-05-10 23:48:08+0100
 #
-
-
 class SegmentationPropagation(object):
 
     # Constructor
