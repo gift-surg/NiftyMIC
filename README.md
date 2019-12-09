@@ -101,7 +101,7 @@ whose installation requirements need to be met. Therefore, the local installatio
 1. [Installation of SimpleReg dependencies][simplereg-dependencies]
 1. [Installation of NiftyMIC][niftymic-install]
 
-Alternatively, NiftyMIC can also be used as virtual machine via VirtualBox without having to go through all the manual installation steps. The respective information can be found [here][niftymic-vm].
+Alternatively, NiftyMIC is also available as a [virtual machine][niftymic-vm] and [Docker image][niftymic-docker].
 
 ## Usage
 
@@ -314,6 +314,7 @@ Selected publications associated with NiftyMIC are:
 [itkniftymic]: https://github.com/gift-surg/ITK_NiftyMIC/wikis/home
 [niftymic-install]: https://github.com/gift-surg/NiftyMIC/wikis/niftymic-installation
 [niftymic-vm]: https://github.com/gift-surg/NiftyMIC/wiki/niftymic-virtualbox
+[niftymic-docker]: https://hub.docker.com/r/renbem/niftymic
 [nsol]: https://github.com/gift-surg/NSoL
 [simplereg]: https://github.com/gift-surg/SimpleReg
 [simplereg-dependencies]: https://github.com/gift-surg/SimpleReg/wikis/simplereg-dependencies
