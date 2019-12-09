@@ -275,7 +275,7 @@ seg/name-of-stackN.nii.gz \
 --dir-output srr
 ```
 
-Additional options such as the regularization parameter `alpha` can be specified too. For more information please execute `niftymic_run_reconstruction_pipeline -h`.
+Additional parameters such as the regularization parameter `alpha` can be specified too. For more information please execute `niftymic_run_reconstruction_pipeline -h`.
 
 ## Licensing and Copyright
 Copyright (c) 2019 Michael Ebner and contributors.
