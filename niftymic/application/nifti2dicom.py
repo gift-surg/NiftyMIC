@@ -39,7 +39,7 @@ import pydicom
 
 import pysitk.python_helper as ph
 
-import niftymic
+import niftymic.base.data_reader as dr
 from niftymic.utilities.input_arparser import InputArgparser
 from niftymic.definitions import DIR_TMP
 
@@ -62,7 +62,6 @@ COPY_DICOM_TAGS = {
     "StudyDescription",
 }
 
-INSTITUTION_NAME = "NiftyMIC-v%s " % niftymic.__version__
 ACCESSION_NUMBER = "1"
 SERIES_NUMBER = "0"
 IMAGE_COMMENTS = "*** NOT APPROVED FOR CLINICAL USE ***"
@@ -101,6 +100,15 @@ def main():
         dir_output_2d_slices = os.path.join(args.dir_output, args.label)
     ph.create_directory(dir_output_2d_slices, delete_files=True)
 
+    # read NiftyMIC version (if available)
+    data_reader = dr.ImageHeaderReader(args.filename)
+    data_reader.read_data()
+    niftymic_version = data_reader.get_niftymic_version()
+    if niftymic_version is None:
+        niftymic_version = "NiftyMIC"
+    else:
+        niftymic_version = "NiftyMIC-v%s" % niftymic_version
+
     # Create set of 2D DICOM slices from 3D NIfTI image
     # (correct image orientation!)
     ph.print_title("Create set of 2D DICOM slices from 3D NIfTI image")
@@ -112,12 +120,12 @@ def main():
     cmd_args.append("--seriesdescription '%s'" % args.label)
     cmd_args.append("--accessionnumber '%s'" % ACCESSION_NUMBER)
     cmd_args.append("--seriesnumber '%s'" % SERIES_NUMBER)
-    cmd_args.append("--institutionname '%s'" % INSTITUTION_NAME)
+    cmd_args.append("--institutionname '%s'" % IMAGE_COMMENTS)
 
     # Overwrite default "nifti2dicom" tags which would be added otherwise
     # (no deletion/update with empty '' sufficient to overwrite them)
-    cmd_args.append("--manufacturersmodelname '%s'" % IMAGE_COMMENTS)
-    cmd_args.append("--protocolname '%s'" % IMAGE_COMMENTS)
+    cmd_args.append("--manufacturersmodelname '%s'" % "NiftyMIC")
+    cmd_args.append("--protocolname '%s'" % niftymic_version)
 
     cmd_args.append("-y")
     ph.execute_command(" ".join(cmd_args))
@@ -153,7 +161,7 @@ def main():
 
         # Additional tags
         update_dicom_tags["SeriesDescription"] = args.label
-        update_dicom_tags["InstitutionName"] = INSTITUTION_NAME
+        update_dicom_tags["InstitutionName"] = institution_name
         update_dicom_tags["ImageComments"] = IMAGE_COMMENTS
         update_dicom_tags["AccessionNumber"] = ACCESSION_NUMBER
         update_dicom_tags["SeriesNumber"] = SERIES_NUMBER
