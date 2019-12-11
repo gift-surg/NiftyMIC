@@ -68,6 +68,7 @@ RUN apt-get update && \
 RUN pip install \
     matplotlib==3.1.1 \
     natsort==6.0.0 \
+    nibabel==2.4.1 \
     nipype==1.2.0 \
     nose==1.3.7 \
     numpy==1.16.4 \
@@ -88,7 +89,6 @@ RUN pip install -e .
 COPY --from=compile-image /app/fetal_brain_seg /app/fetal_brain_seg
 WORKDIR /app/fetal_brain_seg
 RUN pip install \
-    nibabel==2.3.3 \
     niftynet==0.2 \
     tensorflow==1.12.0
 RUN SITEDIR=$(python -m site --user-site) && \
