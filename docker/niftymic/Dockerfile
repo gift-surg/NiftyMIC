@@ -100,4 +100,7 @@ ENV FETAL_BRAIN_SEG=/app/fetal_brain_seg
 ADD Dockerfile /
 
 WORKDIR /app
+
+# use bash with color output
+RUN echo 'alias ls="ls --color=auto"' >> ~/.bashrc
 CMD bash

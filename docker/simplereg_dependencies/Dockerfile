@@ -139,4 +139,6 @@ COPY --from=compile-image-itksnap /code/itksnap/lib /usr/local/lib
 # add Dockerfile to image
 ADD Dockerfile /
 
+# use bash with color output
+RUN echo 'alias ls="ls --color=auto"' >> ~/.bashrc
 CMD bash

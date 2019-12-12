@@ -83,4 +83,6 @@ ENV LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 # add Dockerfile to image
 ADD Dockerfile /
 
+# use bash with color output
+RUN echo 'alias ls="ls --color=auto"' >> ~/.bashrc
 CMD bash
