@@ -101,6 +101,13 @@ class Stack:
                     e.message)
             stack._is_unity_mask = False
 
+            # Check that binary mask is provided
+            nda_mask = sitk.GetArrayFromImage(stack.sitk_mask)
+            if nda_mask.max() > 1:
+                raise ValueError(
+                    "Mask values > 1 encountered in '%s'. "
+                    "Only binary masks are allowed." % file_path_mask)
+
         # Append itk object
         stack.itk_mask = sitkh.get_itk_from_sitk_image(stack.sitk_mask)
 
