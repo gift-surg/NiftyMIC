@@ -128,9 +128,28 @@ COPY --from=compile-image-itksnap /code/itksnap/lib /usr/local/lib
 # but errors/problems as above; thus, deactivated for now)
 # RUN apt-get update && \
 #     apt-get install -y \
+#         wget \
+#         libglu1 \
+#         libcurl4-openssl-dev \
+#         libsm6 \
+#         libxt6 \
+#         libfreetype6 \
+#         libxrender1 \
+#         libfontconfig1 \
+#         libglib2.0-0 \
+#         libqt4-dev \
+#         libgtk2.0-dev \
 #         curl \
 #         libgtk2.0 \
 #         qt5dxcb-plugin \
+#         && \
+#     rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && \
+#     apt-get install -y \
+#         libxcb1 libxcb1-dev \
+#         libx11-dev \
+#         libgl1-mesa-dev \
+#         libxt-dev libxft-dev \
 #         && \
 #     rm -rf /var/lib/apt/lists/*
 # ADD libpng12-0_1.2.54-1ubuntu1.1_amd64.deb /code/
