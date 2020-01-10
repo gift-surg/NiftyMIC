@@ -7,12 +7,13 @@
 #
 
 
-import SimpleITK as sitk
-import natsort
-import numpy as np
 import os
 import re
 import six
+import natsort
+import numpy as np
+import nibabel as nib
+import SimpleITK as sitk
 from abc import ABCMeta, abstractmethod
 
 import pysitk.python_helper as ph
@@ -40,6 +41,37 @@ class DataReader(object):
     @abstractmethod
     def get_data(self):
         pass
+
+
+class ImageHeaderReader(DataReader):
+
+    def __init__(self, path_to_image):
+        self._path_to_image = path_to_image
+        self._image_nib = None
+
+    def read_data(self):
+        self._image_nib = nib.load(self._path_to_image)
+
+    def get_data(self):
+        return self._image_nib.header
+
+    def get_niftymic_version(self):
+        if self._image_nib is None:
+            raise RuntimeError("Execute 'read_data' first.")
+
+        # NiftyMIC version embedded in the aux_file field
+        aux_file_entry = str(self._image_nib.header["aux_file"])
+
+        if "NiftyMIC" in aux_file_entry:
+            version_str = re.sub("NiftyMIC-v", "", aux_file_entry)
+
+            # remove annoying byte code format embedded in string "b'...'":
+            if "b'" == version_str[0:2] and "'" == version_str[-1]:
+                version_str = version_str[2:-1]
+
+            return version_str
+        else:
+            return None
 
 
 ##

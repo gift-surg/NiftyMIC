@@ -21,14 +21,6 @@ RUN apt-get update && \
         && \
     rm -rf /var/lib/apt/lists/* 
 
-# download fetal_brain_seg
-RUN git clone \
-    https://github.com/gift-surg/fetal_brain_seg.git /app/fetal_brain_seg
-ADD https://github.com/taigw/Demic/archive/v0.1.tar.gz /app/Demic-0.1.tar.gz
-RUN cd /app && \
-    tar xvf Demic-0.1.tar.gz && \
-    mv Demic-0.1 /app/fetal_brain_seg/Demic
-
 # download NiftyMIC
 RUN if [ "$VERSION" = "latest" ] ; then \
         git clone \
@@ -38,6 +30,14 @@ RUN if [ "$VERSION" = "latest" ] ; then \
         --branch ${VERSION} \
         https://github.com/gift-surg/${REPO}.git /app/${REPO} \
     ;fi
+
+# download fetal_brain_seg
+RUN git clone \
+    https://github.com/gift-surg/fetal_brain_seg.git /app/fetal_brain_seg
+ADD https://github.com/taigw/Demic/archive/v0.1.tar.gz /app/Demic-0.1.tar.gz
+RUN cd /app && \
+    tar xvf Demic-0.1.tar.gz && \
+    mv Demic-0.1 /app/fetal_brain_seg/Demic
 
 # remove unnecessary .git folders
 RUN rm -r /app/${REPO}/.git*
@@ -56,40 +56,51 @@ LABEL title="$REPO"
 LABEL version="$VERSION"
 LABEL uri="https://github.com/gift-surg/${REPO}"
 
-# prepare fetal_brain_seg
+# install NiftyMIC with specific python library versions
+COPY --from=compile-image /app/${REPO} /app/${REPO}
+WORKDIR /app/${REPO}
+RUN apt-get update && \
+    apt-get install -y \
+        build-essential \
+        nifti2dicom \
+        && \
+    rm -rf /var/lib/apt/lists/* 
+RUN pip install \
+    matplotlib==3.1.1 \
+    natsort==6.0.0 \
+    nibabel==2.4.1 \
+    nipype==1.2.0 \
+    nose==1.3.7 \
+    numpy==1.16.4 \
+    pandas==0.25.0 \
+    pydicom==1.3.0 \
+    scikit_image==0.15.0 \
+    scipy==1.3.0 \
+    seaborn==0.9.0 \
+    SimpleITK==1.2.4 \
+    six==1.12.0 \
+    # own libraries:
+    nsol>=0.1.14 \
+    pysitk>=0.2.19 \
+    simplereg>=0.3.2
+RUN pip install -e .
+
+# prepare fetal_brain_seg with specific python library versions
 COPY --from=compile-image /app/fetal_brain_seg /app/fetal_brain_seg
 WORKDIR /app/fetal_brain_seg
 RUN pip install \
-    nibabel==2.3.3 \
     niftynet==0.2 \
-    numpy==1.15.4 \
-    scikit_image==0.14.1 \
-    scipy==1.1.0 \
-    SimpleITK==1.2.4 \
     tensorflow==1.12.0
 RUN SITEDIR=$(python -m site --user-site) && \
     mkdir -p $SITEDIR && \
     echo /app/fetal_brain_seg > $SITEDIR/Demic.pth
 ENV FETAL_BRAIN_SEG=/app/fetal_brain_seg
 
-# install NiftyMIC
-COPY --from=compile-image /app/${REPO} /app/${REPO}
-RUN apt-get update && \
-    apt-get install -y \
-        build-essential \
-        libblas-dev \
-        nifti2dicom \
-        libboost-program-options-dev \
-        cmake \
-        && \
-    rm -rf /var/lib/apt/lists/* 
-
-WORKDIR /app/${REPO}
-RUN pip install six
-RUN pip install -e .
-
 # add Dockerfile to image
 ADD Dockerfile /
 
 WORKDIR /app
+
+# use bash with color output
+RUN echo 'alias ls="ls --color=auto"' >> ~/.bashrc
 CMD bash
