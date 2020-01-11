@@ -79,10 +79,9 @@ RUN pip install \
     seaborn==0.9.0 \
     SimpleITK==1.2.4 \
     six==1.12.0 \
-    # own libraries:
-    nsol>=0.1.14 \
-    pysitk>=0.2.19 \
-    simplereg>=0.3.2
+    pysitk==0.2.1 \
+    simplereg==0.3.2 \
+    nsol==0.1.14
 RUN pip install -e .
 
 # prepare fetal_brain_seg with specific python library versions
