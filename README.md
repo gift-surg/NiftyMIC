@@ -85,7 +85,7 @@ If you use this software in your work, please cite
 
 ## Installation
 
-### From Source:
+### From Source
 NiftyMIC was developed in Ubuntu 16.04, 18.04 and Mac OS X 10.12 and tested for Python 2.7, 3.5 and 3.6.
 It builds on a couple of additional libraries developed within the [GIFT-Surg][giftsurg] project including 
 * [NSoL][nsol]
@@ -93,13 +93,13 @@ It builds on a couple of additional libraries developed within the [GIFT-Surg][g
 * [PySiTK][pysitk]
 * [ITK_NiftyMIC][itkniftymic]
 
-whose installation requirements need to be met. Therefore, the local installation from source comes in three steps:
+whose installation requirements need to be met. Therefore, the local installation comes in three steps:
 
 1. [Installation of ITK_NiftyMIC][itkniftymic]
 1. [Installation of SimpleReg dependencies][simplereg-dependencies]
 1. [Installation of NiftyMIC][niftymic-install]
 
-### Virtual Machine and Docker:
+### Virtual Machine and Docker
 
 To avoid manual installation from source, NiftyMIC is also available as a [virtual machine][niftymic-vm] and [Docker image][niftymic-docker].
 
