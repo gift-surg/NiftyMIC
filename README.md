@@ -73,9 +73,7 @@ The **available regularizers** include
 Additionally, the choice of finding **optimal reconstruction parameters** is facilitated by the [Numerical Solver Library (NSoL)][nsol].
 
 ## Disclaimer
-NiftyMIC supports medical image registration and volumetric reconstruction for ultra-fast 2D MRI.
-<!-- It has not been tested on larger cohort data yet. -->
-**NiftyMIC is not intended for clinical use**.
+NiftyMIC supports medical image registration and volumetric reconstruction for ultra-fast 2D MRI. **NiftyMIC is not intended for clinical use**.
 
 ## How to cite
 If you use this software in your work, please cite
@@ -87,8 +85,8 @@ If you use this software in your work, please cite
 
 ## Installation
 
-NiftyMIC was developed in Ubuntu 16.04 and Mac OS X 10.12 and tested for Python 2.7.12 and 3.5.2.
-
+### From Source
+NiftyMIC was developed in Ubuntu 16.04, 18.04 and Mac OS X 10.12 and tested for Python 2.7, 3.5 and 3.6.
 It builds on a couple of additional libraries developed within the [GIFT-Surg][giftsurg] project including 
 * [NSoL][nsol]
 * [SimpleReg][simplereg]
@@ -101,7 +99,9 @@ whose installation requirements need to be met. Therefore, the local installatio
 1. [Installation of SimpleReg dependencies][simplereg-dependencies]
 1. [Installation of NiftyMIC][niftymic-install]
 
-Alternatively, NiftyMIC is also available as a [virtual machine][niftymic-vm] and [Docker image][niftymic-docker].
+### Virtual Machine and Docker
+
+To avoid manual installation from source, NiftyMIC is also available as a [virtual machine][niftymic-vm] and [Docker image][niftymic-docker].
 
 ## Usage
 
