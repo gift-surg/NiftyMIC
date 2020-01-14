@@ -243,10 +243,10 @@ def main():
 
     if args.verbose:
         cmd_args = ["simplereg_resample"]
-        cmd_args.append("-f %s" % args.fixed)
-        cmd_args.append("-m %s" % args.moving)
-        cmd_args.append("-t %s" % args.output)
-        cmd_args.append("-o %s" % path_to_tmp_output)
+        cmd_args.append("-f '%s'" % args.fixed)
+        cmd_args.append("-m '%s'" % args.moving)
+        cmd_args.append("-t '%s'" % args.output)
+        cmd_args.append("-o '%s'" % path_to_tmp_output)
         ph.execute_command(" ".join(cmd_args))
 
         ph.show_niftis([args.fixed, path_to_tmp_output])
