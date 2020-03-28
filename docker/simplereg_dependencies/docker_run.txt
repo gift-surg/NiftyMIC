@@ -1,0 +1,76 @@
+
+xhost +local:docker
+# xhost +local:root
+docker run -it --rm \
+--net=host \
+--env="DISPLAY" \
+--env="QT_X11_NO_MITSHM=1" \
+--volume="$HOME/.Xauthority:/root/.Xauthority:rw" \
+--volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+-v /home/mebner/Data/UCH-FetalNeckSubject/srr:/shared \
+--device /dev/dri \
+pyushkevich/itksnap
+dorianps/itksnap:latest bash
+# pyushkevich/itksnap bash
+# renbem/simplereg_dependencies itksnap
+
+# --privileged \
+xhost -local:docker
+xhost -local:root
+
+------------------------------------------------------
+docker run --rm -ti \
+--net=host \
+--env="DISPLAY" \
+--volume="$HOME/.Xauthority:/root/.Xauthority:rw" \
+renbem/simplereg_dependencies
+dorianps/itksnap:latest
+
+docker run --rm -ti \
+--net=host \
+--env="DISPLAY" \
+
+--volume="/etc/group:/etc/group:ro" \
+--volume="/etc/passwd:/etc/passwd:ro" \
+--volume="/etc/shadow:/etc/shadow:ro" \
+--volume="/etc/sudoers.d:/etc/sudoers.d:ro" \
+--volume="$HOME/.Xauthority:/root/.Xauthority:ro" \
+--volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+dorianps/itksnap:latest
+
+docker run -it \
+--env="DISPLAY" \
+--workdir="/home/$USER" \
+--volume="/home/$USER:/home/$USER" \
+--volume="/etc/group:/etc/group:ro" \
+--volume="/etc/passwd:/etc/passwd:ro" \
+--volume="/etc/shadow:/etc/shadow:ro" \
+--volume="/etc/sudoers.d:/etc/sudoers.d:ro" \
+--volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+dorianps/itksnap:latest
+
+docker run -it \
+--volume=$XSOCK:$XSOCK:rw \
+--volume=$XAUTH:$XAUTH:rw \
+--env="XAUTHORITY=${XAUTH}" \
+--env="DISPLAY" \
+dorianps/itksnap:latest
+
+
+docker run -it --rm \
+--env="DISPLAY" \
+--env="QT_X11_NO_MITSHM=1" \
+--volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+--volume="$HOME/.Xauthority:/root/.Xauthority:rw" \
+-v /home/mebner/Data/UCH-FetalNeckSubject/srr:/shared \
+--device /dev/dri --privileged \
+renbem/simplereg_dependencies 
+
+
+--workdir="/home/$USER" \
+--volume="/home/$USER:/home/$USER" \
+--volume="/etc/group:/etc/group:ro" \
+--volume="/etc/passwd:/etc/passwd:ro" \
+--volume="/etc/shadow:/etc/shadow:ro" \
+--volume="/etc/sudoers.d:/etc/sudoers.d:ro" \
+--volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
