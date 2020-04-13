@@ -92,7 +92,8 @@ class OutlierRejector(object):
                 if len(rejections) > 0:
                     res_values = nda_sim[rejections]
                     txt += " | Latest rejections: " \
-                        "[%s] (%s < %g): %s" % (
+                        "%d [%s] (%s < %g): %s" % (
+                            len(rejections),
                             ph.convert_numbers_to_hyphenated_ranges(
                                 rejections),
                             self._measure,
