@@ -97,6 +97,7 @@ class CaseStudyRestingStateFMRITest(unittest.TestCase):
 
         iter_max = 3
         alpha = 0.05
+        beta = -1
 
         cmd_args = []
         exe = os.path.abspath(rsfmri_reconstruct_volume_from_slices.__file__)
@@ -108,6 +109,44 @@ class CaseStudyRestingStateFMRITest(unittest.TestCase):
         cmd_args.append("--output %s" % output)
         cmd_args.append("--iter-max %d" % iter_max)
         cmd_args.append("--alpha %f" % alpha)
+        cmd_args.append("--beta %f" % beta)
+        cmd = (" ").join(cmd_args)
+        self.assertEqual(ph.execute_command(cmd), 0)
+
+        # Check whether identical reconstruction has been created
+        reconstruction_sitk = sitkh.read_sitk_vector_image(output)
+        reference_sitk = sitkh.read_sitk_vector_image(path_to_reference)
+
+        difference_sitk = reconstruction_sitk - reference_sitk
+        error = np.linalg.norm(sitk.GetArrayFromImage(difference_sitk))
+
+        self.assertAlmostEqual(error, 0, places=self.precision)
+
+    def test_reconstruct_volume_from_slices_temporal_reg(self):
+        filename = "bold_s2v_alpha0p05_beta0p5.nii.gz"
+        output = os.path.join(self.dir_output, filename)
+        dir_reference = os.path.join(
+            self.dir_data, "reconstruct_volume_from_slices")
+        dir_input_mc = os.path.join(
+            self.dir_data, "reconstruct_volume_from_slices", "motion_correction")
+        path_to_reference = os.path.join(dir_reference, filename)
+
+        iter_max = 3
+        alpha = 0.05
+        beta = 0.5
+
+        cmd_args = []
+        exe = os.path.abspath(rsfmri_reconstruct_volume_from_slices.__file__)
+        cmd_args = ["python %s" % exe]
+        cmd_args.append("--filename %s" % self.filename)
+        cmd_args.append("--filename-mask %s" % ph.append_to_filename(
+            self.filename, self.suffix_mask))
+        cmd_args.append("--dir-input-mc %s" % dir_input_mc)
+        cmd_args.append("--output %s" % output)
+        cmd_args.append("--iter-max %d" % iter_max)
+        cmd_args.append("--alpha %f" % alpha)
+        cmd_args.append("--beta %f" % beta)
+        # cmd_args.append("--reconstruction-type TVL2")
         cmd = (" ").join(cmd_args)
         self.assertEqual(ph.execute_command(cmd), 0)
 

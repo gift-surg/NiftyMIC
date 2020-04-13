@@ -23,6 +23,8 @@ from segmentation_propagation_test import *
 from simulator_slice_acquisition_test import *
 from stack_test import *
 
+# from case_study_rsfmri_test import *
+
 # from parameter_normalization_test import *
 # from registration_test import *  # TBC
 # from intra_stack_registration_test import *  # TBC

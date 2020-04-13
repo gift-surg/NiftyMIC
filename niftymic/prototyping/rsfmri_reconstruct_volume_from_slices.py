@@ -60,7 +60,7 @@ def main():
     input_parser.add_reconstruction_type(default="TK1L2")
     input_parser.add_data_loss(default="linear")
     input_parser.add_minimizer(default="lsmr")
-    input_parser.add_iter_max(default=10)
+    input_parser.add_iter_max(default=20)
     input_parser.add_iterations(default=10)
     input_parser.add_argument(
         "--prototyping", "-prototyping",
@@ -82,6 +82,18 @@ def main():
         "'alpha' is considered the final 'sigma' for the "
         "iterative adjustment. "
         "Recommended value is, e.g., --alpha 0.8"
+    )
+    input_parser.add_option(
+        "--beta",
+        help="Regularization parameter beta to solve the Super-Resolution "
+        "Reconstruction problem with temporal regularization: "
+        "SRR = argmin_{x^t} ["
+        "sum_t sum_k ||y_k^t - A_k^t x^t||^2 "
+        "+ alpha * R(x) "
+        "+ beta * sum_t ||x^{t+1} - x^t||^2"
+        "].",
+        type=float,
+        default=0,
     )
     input_parser.add_use_masks_srr(default=1)
     input_parser.add_log_config(default=1)
@@ -151,39 +163,60 @@ def main():
             use_masks=args.use_masks_srr,
         )
     else:
-        if args.reconstruction_type in ["TVL2", "HuberL2"]:
-            recon_method = pd.PrimalDualSolver(
+        if args.beta < 0:
+            if args.reconstruction_type in ["TVL2", "HuberL2"]:
+                recon_method = pd.PrimalDualSolver(
+                    stacks=stacks,
+                    reconstruction=reconstruction_space,
+                    reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
+                    iterations=args.iterations,
+                    use_masks=args.use_masks_srr,
+                )
+            else:
+                recon_method = tk.TikhonovSolver(
+                    stacks=stacks,
+                    reconstruction=reconstruction_space,
+                    reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
+                    use_masks=args.use_masks_srr,
+                )
+            recon_method.set_alpha(args.alpha)
+            recon_method.set_iter_max(args.iter_max)
+            recon_method.set_verbose(True)
+
+            # ------Update individual timepoints based on updated slice positio
+            multi_component_reconstruction = pipeline.MultiComponentReconstruction(
                 stacks=stacks,
-                reconstruction=reconstruction_space,
-                reg_type="TV" if args.reconstruction_type == "TVL2" else "huber",
-                iterations=args.iterations,
-                use_masks=args.use_masks_srr,
-            )
+                reconstruction_method=recon_method,
+                suffix="_recon_v2v")
+            multi_component_reconstruction.run()
+            time_reconstruction = \
+                multi_component_reconstruction.get_computational_time()
+            stacks_recon = multi_component_reconstruction.get_reconstructions()
+            description = multi_component_reconstruction.\
+                get_reconstruction_method().get_setting_specific_filename()
+
         else:
-            recon_method = tk.TikhonovSolver(
+            if not args.reconstruction_type in ["TK0L2", "TK1L2"]:
+                raise ValueError(
+                    "Temporal Tikhonov regularization, i.e. beta>0, "
+                    "only possible for TK0L2 and TK1L2 currently")
+            recon_method = tk.TemporalTikhonovSolver(
                 stacks=stacks,
                 reconstruction=reconstruction_space,
                 reg_type="TK1" if args.reconstruction_type == "TK1L2" else "TK0",
                 use_masks=args.use_masks_srr,
+                beta=args.beta,
+                alpha=args.alpha,
+                iter_max=args.iter_max,
+                verbose=True,
             )
-        recon_method.set_alpha(args.alpha)
-        recon_method.set_iter_max(args.iter_max)
-        recon_method.set_verbose(True)
-
-    # ------Update individual timepoints based on updated slice positions------
-    multi_component_reconstruction = pipeline.MultiComponentReconstruction(
-        stacks=stacks,
-        reconstruction_method=recon_method,
-        suffix="_recon_v2v")
-    multi_component_reconstruction.run()
-    time_reconstruction = \
-        multi_component_reconstruction.get_computational_time()
-    stacks_recon = multi_component_reconstruction.get_reconstructions()
+            recon_method.run()
+            time_reconstruction = recon_method.get_computational_time()
+            stacks_recon = recon_method.get_reconstructions()
+            description = recon_method.get_setting_specific_filename()
 
     # --------------------------------Write Data------------------------------
     ph.print_title("Write Data")
-    description = multi_component_reconstruction.get_reconstruction_method().\
-        get_setting_specific_filename()
     data_writer = dw.MultiComponentImageWriter(
         stacks_recon, args.output, description=description)
     data_writer.write_data()
