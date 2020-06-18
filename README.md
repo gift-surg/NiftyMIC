@@ -5,8 +5,8 @@ NiftyMIC is a Python-based open-source toolkit for research developed within the
 The algorithm and software were developed by [Michael Ebner][mebner]
 at the [Wellcome/EPSRC Centre for Interventional and Surgical Sciences][weiss], [University College London (UCL)][ucl] (2015 -- 2019), and the [Department of Surgical and Interventional Sciences][sie], [King's College London (KCL)][kcl] (since 2019).
 
-A detailed description of the NiftyMIC algorithm is found in [EbnerWang2019][ebner-wang-2019]:
-* Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2019). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 116324.
+A detailed description of the NiftyMIC algorithm is found in [EbnerWang2020][ebner-wang-2020]:
+* Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 
 If you have any questions or comments, please drop an email to `michael.ebner@kcl.ac.uk`.
 
@@ -78,7 +78,7 @@ NiftyMIC supports medical image registration and volumetric reconstruction for u
 ## How to cite
 If you use this software in your work, please cite
 
-* [[EbnerWang2019]][ebner-wang-2019] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2019). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 116324.
+* [[EbnerWang2020]][ebner-wang-2020] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 * [[EbnerWang2018]][ebner-wang-2018] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Melbourne, A., Doel, T., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2018). An Automated Localization, Segmentation and Reconstruction Framework for Fetal Brain MRI. In Medical Image Computing and Computer-Assisted Intervention -- MICCAI 2018 (pp. 313–320). Springer.
 * [[Ebner2018]](https://www.sciencedirect.com/science/article/pii/S1053811917308042) Ebner, M., Chung, K. K., Prados, F., Cardoso, M. J., Chard, D. T., Vercauteren, T., Ourselin, S. (2018). Volumetric reconstruction from printed films: Enabling 30 year longitudinal analysis in MR neuroimaging. NeuroImage, 165, 238–250.
 
@@ -240,7 +240,7 @@ niftymic_show_parameter_study \
 ```
 
 ### Automatic Segmentation and High-Resolution Reconstruction of Fetal Brain MRI
-Based on the work described in [EbnerWang2018][ebner-wang-2018] and [EbnerWang2019][ebner-wang-2019], an automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2). 
+Based on the work described in [EbnerWang2018][ebner-wang-2018] and [EbnerWang2020][ebner-wang-2020], an automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2). 
 
 Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic fetal brain masks of HASTE-like images:
 ```
@@ -278,7 +278,7 @@ seg/name-of-stackN.nii.gz \
 Additional parameters such as the regularization parameter `alpha` can be specified too. For more information please execute `niftymic_run_reconstruction_pipeline -h`.
 
 ## Licensing and Copyright
-Copyright (c) 2019 Michael Ebner and contributors.
+Copyright (c) 2020 Michael Ebner and contributors.
 This framework is made available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
 
 
@@ -287,7 +287,7 @@ This work is partially funded by the UCL [Engineering and Physical Sciences Rese
 
 ## References
 Selected publications associated with NiftyMIC are:
-* [[EbnerWang2019]][ebner-wang-2019] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2019). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 116324.
+* [[EbnerWang2020]][ebner-wang-2020] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 * [[Ebner2019]](https://onlinelibrary.wiley.com/doi/abs/10.1002/mrm.27852) Ebner, M., Patel, P. A., Atkinson, D., Caselton, C., Firmin, F., Amin, Z., Bainbridge, A., De Coppi, P., Taylor, S. A., Ourselin, S., Chouhan, M. D., Vercauteren, T. (2019). Super‐resolution for upper abdominal MRI: Acquisition and post‐processing protocol optimization using brain MRI control data and expert reader validation. Magnetic Resonance in Medicine, 82(5), 1905–1919.
 * [[Sobotka2019]](http://link.springer.com/10.1007/978-3-030-32875-7_14) Sobotka, D., Licandro, R., Ebner, M., Schwartz, E., Vercauteren, T., Ourselin, S., Kasprian, G., Prayer, D., Langs, G. (2019). Reproducibility of Functional Connectivity Estimates in Motion Corrected Fetal fMRI. Smart Ultrasound Imaging and Perinatal, Preterm and Paediatric Image Analysis (pp. 123–132). Cham: Springer International Publishing.
 * [[EbnerWang2018]][ebner-wang-2018] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Melbourne, A., Doel, T., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2018). An Automated Localization, Segmentation and Reconstruction Framework for Fetal Brain MRI. In Medical Image Computing and Computer-Assisted Intervention -- MICCAI 2018 (pp. 313–320). Springer
@@ -295,7 +295,7 @@ Selected publications associated with NiftyMIC are:
 * [[Ranzini2017]](https://mski2017.files.wordpress.com/2017/09/miccai-mski2017.pdf) Ranzini, M. B., Ebner, M., Cardoso, M. J., Fotiadou, A., Vercauteren, T., Henckel, J., Hart, A., Ourselin, S., and Modat, M. (2017). Joint Multimodal Segmentation of Clinical CT and MR from Hip Arthroplasty Patients. MICCAI Workshop on Computational Methods and Clinical Applications in Musculoskeletal Imaging (MSKI) 2017.
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
 
-[ebner-wang-2019]: https://www.sciencedirect.com/science/article/pii/S1053811919309152
+[ebner-wang-2020]: https://www.sciencedirect.com/science/article/pii/S1053811919309152
 [ebner-wang-2018]: http://link.springer.com/10.1007/978-3-030-00928-1_36
 [mebner]: https://www.linkedin.com/in/ebnermichael
 [weiss]: https://www.ucl.ac.uk/interventional-surgical-sciences
