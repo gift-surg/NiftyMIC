@@ -224,7 +224,9 @@ class MotionUpdater(object):
             raise RuntimeError(
                 "All stacks removed. "
                 "Did you check that the correct motion-correction directory "
-                "was provided?")
+                "was provided? "
+                "Or, in case of 3D mask SRR, that --suffix-mask input is "
+                "correct?")
 
     def get_data(self):
         return self._stacks
