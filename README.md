@@ -125,8 +125,8 @@ Leveraging a two-step registration-reconstruction approach an isotropic, high-re
 An example for a basic usage reads
 ```
 niftymic_reconstruct_volume \
---filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
+--filenames path-to-stack-1.nii.gz ... path-to-stack-N.nii.gz \
+--filenames-masks path-to-stack-1_mask.nii.gz ... path-to-stack-N_mask.nii.gz \
 --output path-to-srr.nii.gz \
 ```
 whereby complete outlier removal during SRR is activated by default (`--outlier-rejection 1`).
@@ -134,8 +134,8 @@ whereby complete outlier removal during SRR is activated by default (`--outlier-
 A more elaborate example could be
 ```
 niftymic_reconstruct_volume \
---filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
+--filenames path-to-stack-1.nii.gz ... path-to-stack-N.nii.gz \
+--filenames-masks path-to-stack-1_mask.nii.gz ... path-to-stack-N_mask.nii.gz \
 --alpha 0.01 \
 --outlier-rejection 1 \
 --threshold-first 0.5 \
@@ -181,8 +181,8 @@ After performed/updated motion correction (or having static data in the first pl
 Solve the SRR problem for motion corrected data (or static data if `--dir-input-mc` is omitted):
 ```
 niftymic_reconstruct_volume_from_slices \
---filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
+--filenames path-to-stack-1.nii.gz ... path-to-stack-N.nii.gz \
+--filenames-masks path-to-stack-1_mask.nii.gz ... path-to-stack-N_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \ # optional
 --output path-to-srr.nii.gz \
 --reconstruction-type TK1L2 \
@@ -191,7 +191,7 @@ niftymic_reconstruct_volume_from_slices \
 ```
 ```
 niftymic_reconstruct_volume_from_slices \
---filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
+--filenames path-to-stack-1.nii.gz ... path-to-stack-N.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --output path-to-srr.nii.gz \
 --reconstruction-type HuberL2 \
@@ -208,8 +208,8 @@ In case a reference is available, similarity measures are evaluated against this
 Example are:
 ```
 niftymic_run_reconstruction_parameter_study \
---filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
+--filenames path-to-stack-1.nii.gz ... path-to-stack-N.nii.gz \
+--filenames-masks path-to-stack-1_mask.nii.gz ... path-to-stack-N_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type TK1L2 \
@@ -219,8 +219,8 @@ niftymic_run_reconstruction_parameter_study \
 ```
 ```
 niftymic_run_reconstruction_parameter_study \
---filenames path-to-stack1.nii.gz ... path-to-stackN.nii.gz \
---filenames-masks path-to-stack1_mask.nii.gz ... path-to-stackN_mask.nii.gz \
+--filenames path-to-stack-1.nii.gz ... path-to-stack-N.nii.gz \
+--filenames-masks path-to-stack-1_mask.nii.gz ... path-to-stack-N_mask.nii.gz \
 --dir-input-mc dir-to-motion_correction \
 --dir-output dir-to-param-study-output \
 --reconstruction-type HuberL2 \
@@ -246,13 +246,13 @@ Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic f
 ```
 niftymic_segment_fetal_brains \
 --filenames \
-nifti/name-of-stack1.nii.gz \
-nifti/name-of-stack2.nii.gz \
-nifti/name-of-stackN.nii.gz \
+nifti/name-of-stack-1.nii.gz \
+nifti/name-of-stack-2.nii.gz \
+nifti/name-of-stack-N.nii.gz \
 --filenames-masks \
-seg/name-of-stack1.nii.gz \
-seg/name-of-stack2.nii.gz \
-seg/name-of-stackN.nii.gz
+seg/name-of-stack-1.nii.gz \
+seg/name-of-stack-2.nii.gz \
+seg/name-of-stack-N.nii.gz
 ```
 
 Afterwards, four consecutive steps including
@@ -265,19 +265,19 @@ are performed to create a high-resolution fetal brain MRI reconstruction in the 
 ```
 niftymic_run_reconstruction_pipeline \
 --filenames \
-nifti/name-of-stack1.nii.gz \
-nifti/name-of-stack2.nii.gz \
-nifti/name-of-stackN.nii.gz \
+nifti/name-of-stack-1.nii.gz \
+nifti/name-of-stack-2.nii.gz \
+nifti/name-of-stack-N.nii.gz \
 --filenames-masks \
-seg/name-of-stack1.nii.gz \
-seg/name-of-stack2.nii.gz \
-seg/name-of-stackN.nii.gz \
+seg/name-of-stack-1.nii.gz \
+seg/name-of-stack-2.nii.gz \
+seg/name-of-stack-N.nii.gz \
 --dir-output srr
 ```
 
-*Note*: In case a suffix distinguishes image segmentation (`--filenames-masks`) from the associated image filenames (`--filenames`), you need to specify the argument `--suffix-mask` so that they can be recognized for reconstructing the HR brain volume mask as part of the pipeline. E.g. if images with filename structure `name-of-stack.nii.gz` are associated with a mask `name-of-stack_mask.nii.gz` you need to additionally provide the argument `--suffix-mask _mask`.
-
 Additional parameters such as the regularization parameter `alpha` can be specified too. For more information please execute `niftymic_run_reconstruction_pipeline -h`.
+
+*Note*: In case a suffix distinguishes image segmentation (`--filenames-masks`) from the associated image filenames (`--filenames`), the argument `--suffix-mask` needs to be provided for reconstructing the HR brain volume mask as part of the pipeline. E.g. if images `name-of-stack-i.nii.gz` are associated with the mask `name-of-stack-i_mask.nii.gz`, then the additional argument `--suffix-mask _mask` needs to be specified.
 
 ## Licensing and Copyright
 Copyright (c) 2020 Michael Ebner and contributors.
