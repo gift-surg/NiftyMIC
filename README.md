@@ -275,6 +275,8 @@ seg/name-of-stackN.nii.gz \
 --dir-output srr
 ```
 
+*Note*: In case a suffix distinguishes image segmentation (`--filenames-masks`) from the associated image filenames (`--filenames`), you need to specify the argument `--suffix-mask` so that they can be recognized for reconstructing the HR brain volume mask as part of the pipeline. E.g. if images with filename structure `name-of-stack.nii.gz` are associated with a mask `name-of-stack_mask.nii.gz` you need to additionally provide the argument `--suffix-mask _mask`.
+
 Additional parameters such as the regularization parameter `alpha` can be specified too. For more information please execute `niftymic_run_reconstruction_pipeline -h`.
 
 ## Licensing and Copyright
