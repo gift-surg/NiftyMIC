@@ -33,8 +33,8 @@ from monai.transforms import (
     AsDiscreted
 )
 
-from monaifbs.utils.custom_inferer import SlidingWindowInferer2D
-from monaifbs.utils.custom_transform import InPlaneSpacingd
+from monaifbs.src.utils.custom_inferer import SlidingWindowInferer2D
+from monaifbs.src.utils.custom_transform import InPlaneSpacingd
 
 
 def create_data_list_of_dictionaries(input_files):
@@ -169,10 +169,11 @@ def run_inference(input_data, config_info):
     else:
         raise Exception("incompatible number of output channels")
     print(f"Using sigmoid={do_sigmoid} and softmax={do_softmax} as final activation")
+    #TODO: keep only largest connected component?
     val_post_transforms = Compose(
         [
             Activationsd(keys="pred", sigmoid=do_sigmoid, softmax=do_softmax),
-            AsDiscreted(keys="pred", logit_thresh=prob_thr)                     #TODO: test this!
+            AsDiscreted(keys="pred", argmax=True, threshold_values=True, logit_thresh=prob_thr)
         ]
     )
     val_handlers = [
@@ -255,6 +256,12 @@ if __name__ == '__main__':
                         type=str,
                         help='directory where to store the outputs',
                         required=True)
+    parser.add_argument('--out_postfix',
+                        dest='out_postfix',
+                        metavar='out_postfix',
+                        type=str,
+                        help='postfix to add to the input names for the output filename',
+                        default='_seg')
     args = parser.parse_args()
 
     # read the config file
@@ -268,6 +275,7 @@ if __name__ == '__main__':
     config['output']['out_dir'] = args.out_folder
     if not os.path.exists(config['output']['out_dir']):
         os.makedirs(config['output']['out_dir'])
+    config['output']['out_postfix'] = args.out_postfix
 
     # run inference with MONAI dynUnet
     run_inference(in_files, config)
