@@ -16,3 +16,4 @@ dist/
 /.project
 .DS_Store
 **/.DS_Store
+monaifbs/models/
