@@ -16,6 +16,7 @@ import niftymic.utilities.n4_bias_field_correction as n4itk
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
+import monaifbs
 
 from niftymic.definitions import ALLOWED_EXTENSIONS
 
@@ -41,7 +42,7 @@ def main():
     try:
         DIR_FETAL_BRAIN_SEG = os.environ["FETAL_BRAIN_SEG"]
     except KeyError as e:
-        DIR_FETAL_BRAIN_SEG = "../../monaifbs"
+        DIR_FETAL_BRAIN_SEG = os.path.dirname(monaifbs.__file__)
         print(DIR_FETAL_BRAIN_SEG)
         # raise RuntimeError(
         #     "Environment variable FETAL_BRAIN_SEG is not specified. "

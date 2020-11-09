@@ -20,6 +20,7 @@
 import os
 import argparse
 import yaml
+import monaifbs
 
 from monaifbs.src.inference.monai_dynunet_inference import run_inference
 
@@ -51,7 +52,8 @@ if __name__ == '__main__':
     # check existence of config file and read it
     config_file = args.config_file
     if config_file is None:
-        config_file = os.path.join("config", "monai_dynUnet_inference_config.yml")
+        config_file = os.path.join(*[os.path.dirname(monaifbs.__file__),
+                                     "config", "monai_dynUnet_inference_config.yml"])
     if not os.path.isfile(config_file):
         raise FileNotFoundError('Expected config file: {} not found'.format(config_file))
     with open(config_file) as f:
