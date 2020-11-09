@@ -1,6 +1,6 @@
 ##
 # \file correct_bias_field.py
-# \brief      Script to correct for bias field. Based on N4ITK
+# \brief      Script to apply automated fetal brain mask segmentation using monaifbs/fetal_brain_seg.py
 #
 # \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
 # \date       October 2017
@@ -27,7 +27,7 @@ def main():
 
     input_parser = InputArgparser(
         description="Perform automatic brain masking using "
-        "fetal_brain_seg (https://github.com/gift-surg/fetal_brain_seg). ",
+        "fetal_brain_seg, part of the monaifbs package. ",
     )
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks(required=False)
@@ -41,13 +41,15 @@ def main():
     try:
         DIR_FETAL_BRAIN_SEG = os.environ["FETAL_BRAIN_SEG"]
     except KeyError as e:
-        raise RuntimeError(
-            "Environment variable FETAL_BRAIN_SEG is not specified. "
-            "Specify the root directory of fetal_brain_seg "
-            "(https://github.com/gift-surg/fetal_brain_seg) "
-            "using "
-            "'export FETAL_BRAIN_SEG=path_to_fetal_brain_seg_dir' "
-            "(in bashrc).")
+        DIR_FETAL_BRAIN_SEG = "../../monaifbs"
+        print(DIR_FETAL_BRAIN_SEG)
+        # raise RuntimeError(
+        #     "Environment variable FETAL_BRAIN_SEG is not specified. "
+        #     "Specify the root directory of fetal_brain_seg "
+        #     "(https://github.com/gift-surg/fetal_brain_seg) "
+        #     "using "
+        #     "'export FETAL_BRAIN_SEG=path_to_fetal_brain_seg_dir' "
+        #     "(in bashrc).")
 
     if args.filenames_masks is None and args.dir_output is None:
         raise IOError("Either --filenames-masks or --dir-output must be set")

@@ -14,3 +14,9 @@ seaborn>=0.8.1
 SimpleITK>=1.2.0
 simplereg>=0.3.2
 six>=1.11.0
+torch>=1.4.0
+torch-summary>=1.3.2
+monai==0.3.0
+pyyaml>=5.3.1
+pytorch-ignite>=0.3.0
+tensorboard>=2.2.1
