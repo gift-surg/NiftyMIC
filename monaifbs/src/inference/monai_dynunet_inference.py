@@ -30,7 +30,8 @@ from monai.transforms import (
     NormalizeIntensityd,
     ToTensord,
     Activationsd,
-    AsDiscreted
+    AsDiscreted,
+    KeepLargestConnectedComponentd
 )
 
 from monaifbs.src.utils.custom_inferer import SlidingWindowInferer2D
@@ -77,16 +78,16 @@ def run_inference(input_data, config_info):
     if not os.path.exists(model_to_load):
         raise FileNotFoundError('Trained model not found')
     patch_size = config_info["inference"]["inplane_size"] + [1]
-    print(f"Considering patch size = {patch_size}")
+    print("Considering patch size = {}".format(patch_size))
 
     # set up either GPU or CPU usage
     if torch.cuda.is_available():
         print("\n#### GPU INFORMATION ###")
-        print(f"Using device number: {torch.cuda.current_device()}, name: {torch.cuda.get_device_name()}")
+        print("Using device number: {}, name: {}".format(torch.cuda.current_device(), torch.cuda.get_device_name()))
         current_device = torch.device("cuda:0")
     else:
         current_device = torch.device("cpu")
-        print(f"Using device: {current_device}")
+        print("Using device: {}".format(current_device))
 
     """
     Data Preparation
@@ -143,6 +144,10 @@ def run_inference(input_data, config_info):
         strides.append(stride)
     strides.insert(0, len(spacings) * [1])
     kernels.append(len(spacings) * [3])
+    print("strides:")
+    print(strides)
+    print("kernels:")
+    print(kernels)
 
     net = DynUNet(
         spatial_dims=2,
@@ -150,10 +155,11 @@ def run_inference(input_data, config_info):
         out_channels=nr_out_channels,
         kernel_size=kernels,
         strides=strides,
+        upsample_kernel_size=strides[1:],
         norm_name="instance",
         deep_supervision=True,
         deep_supr_num=2,
-        res_block=False,
+        res_block=False
     ).to(current_device)
 
     """
@@ -168,17 +174,17 @@ def run_inference(input_data, config_info):
         do_softmax = True
     else:
         raise Exception("incompatible number of output channels")
-    print(f"Using sigmoid={do_sigmoid} and softmax={do_softmax} as final activation")
-    #TODO: keep only largest connected component?
+    print("Using sigmoid={} and softmax={} as final activation".format(do_sigmoid, do_softmax))
     val_post_transforms = Compose(
         [
             Activationsd(keys="pred", sigmoid=do_sigmoid, softmax=do_softmax),
-            AsDiscreted(keys="pred", argmax=True, threshold_values=True, logit_thresh=prob_thr)
+            AsDiscreted(keys="pred", argmax=True, threshold_values=True, logit_thresh=prob_thr),
+            KeepLargestConnectedComponentd(keys="pred", applied_labels=1)
         ]
     )
     val_handlers = [
         StatsHandler(output_transform=lambda x: None),
-        CheckpointLoader(load_path=model_to_load, load_dict={"net": net}),
+        CheckpointLoader(load_path=model_to_load, load_dict={"net": net}, map_location=torch.device('cpu')),
         SegmentationSaver(
             output_dir=config_info['output']['out_dir'],
             output_ext='.nii.gz',
@@ -195,13 +201,16 @@ def run_inference(input_data, config_info):
             inputs = inputs.to(engine.state.device)
             if targets is not None:
                 targets = targets.to(engine.state.device)
-            flip_inputs = torch.flip(inputs, dims=(2, 3))
+            flip_inputs_1 = torch.flip(inputs, dims=(2,))
+            flip_inputs_2 = torch.flip(inputs, dims=(3,))
+            flip_inputs_3 = torch.flip(inputs, dims=(2, 3))
 
             def _compute_pred():
                 pred = self.inferer(inputs, self.network)
-                # TODO: should test also other flipping combinations
-                flip_pred = torch.flip(self.inferer(flip_inputs, self.network), dims=(2, 3))
-                return (pred + flip_pred) / 2
+                flip_pred_1 = torch.flip(self.inferer(flip_inputs_1, self.network), dims=(2,))
+                flip_pred_2 = torch.flip(self.inferer(flip_inputs_2, self.network), dims=(3,))
+                flip_pred_3 = torch.flip(self.inferer(flip_inputs_3, self.network), dims=(2, 3))
+                return (pred + flip_pred_1 + flip_pred_2 + flip_pred_3) / 4
 
             # execute forward computation
             self.network.eval()

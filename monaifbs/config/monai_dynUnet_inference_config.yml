@@ -18,6 +18,6 @@ inference:
   spacing: [0.8, 0.8, -1.0]
   batch_size_inference: 1
   probability_threshold: 0.5
-  model_to_load: "../../models/checkpoint_dynUnet_DiceXent.pth"
+  model_to_load: "models/checkpoint_dynUnet_DiceXent.pt"
   
 

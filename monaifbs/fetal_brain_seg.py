@@ -9,6 +9,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+##
+# \file fetal_brain_seg.py
+# \brief      Script to apply automated fetal brain mask segmentation using a pre-trained dynUNet model in MONAI
+#
+# \author     Marta B M Ranzini (marta.ranzini@kcl.ac.uk)
+# \date       November 2020
+#
+
 import os
 import argparse
 import yaml
@@ -43,10 +51,12 @@ if __name__ == '__main__':
     # check existence of config file and read it
     config_file = args.config_file
     if config_file is None:
-        config_file = "config/monai_dynunet_inference_config.yml"
+        config_file = os.path.join("config", "monai_dynUnet_inference_config.yml")
     if not os.path.isfile(config_file):
         raise FileNotFoundError('Expected config file: {} not found'.format(config_file))
     with open(config_file) as f:
+        print("*** Config file")
+        print(config_file)
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     assert len(args.input_names) == len(args.segment_output_names), "The numbers of input output filenames do not match"
@@ -60,8 +70,7 @@ if __name__ == '__main__':
             out_folder = os.getcwd()
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
-        config['output']['out_postfix'] = 'seg'
-        config['output']['out_dir'] = out_folder
+        config['output'] = {'out_postfix': 'seg', 'out_dir': out_folder}
 
         # run inference
         run_inference(input_data=img, config_info=config)
@@ -74,17 +83,19 @@ if __name__ == '__main__':
             flag_zip = 1
         else:
             img_filename = img_filename[:-4]
-        out_filename = img_filename + '_' + config['output']['out_postfix'] + 'nii.gz' if flag_zip \
-            else img_filename + '_' + config['output']['out_postfix'] + 'nii'
-        out_filename = os.path.join(out_folder, out_filename)
+        out_filename = img_filename + '_' + config['output']['out_postfix'] + '.nii.gz' if flag_zip \
+            else img_filename + '_' + config['output']['out_postfix'] + '.nii'
+        out_filename = os.path.join(*[out_folder, img_filename, out_filename])
 
         # check existence of segmentation file
         if not os.path.exists(out_filename):
-            raise FileNotFoundError(f"Network output file {out_filename} not found, "
-                                    f"check if the segmentation pipeline has failed")
+            raise FileNotFoundError("Network output file {} not found, "
+                                    "check if the segmentation pipeline has failed".format(out_filename))
 
         # rename file with the indicated output name
         os.rename(out_filename, seg)
+        if os.path.exists(seg):
+            os.rmdir(os.path.join(out_folder, img_filename))
 
 
 
