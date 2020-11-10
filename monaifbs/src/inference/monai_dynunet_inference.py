@@ -9,6 +9,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+##
+# \file       monai_dynunet_inference.py
+# \brief      Script to perform automated fetal brain segmentation using a pre-trained dynUNet model in MONAI
+#               Example config file required by the main function is shown in
+#               monaifbs/config/monai_dynUnet_inference_config.yml
+#               Example of model loaded by this evaluation function is stored in
+#               monaifbs/models/checkpoint_dynUnet_DiceXent.pt
+#
+# \author     Marta B M Ranzini (marta.ranzini@kcl.ac.uk)
+# \date       November 2020
+#
+
 import os
 import sys
 import yaml
@@ -34,11 +46,17 @@ from monai.transforms import (
     KeepLargestConnectedComponentd
 )
 
+import monaifbs
 from monaifbs.src.utils.custom_inferer import SlidingWindowInferer2D
 from monaifbs.src.utils.custom_transform import InPlaneSpacingd
 
 
 def create_data_list_of_dictionaries(input_files):
+    """
+    Convert the list of input files to be processed in the dictionary format needed for MONAI
+    :param input_files: str or list of strings, filenames of images to be processed
+    :return: list of dicts, storing the filenames input to the inference pipeline
+    """
 
     print("*** Input data: ")
     full_list = []
@@ -55,6 +73,20 @@ def create_data_list_of_dictionaries(input_files):
 
 
 def run_inference(input_data, config_info):
+    """
+    Pipeline to run inference with MONAI dynUNet model. The pipeline reads the input filenames, applies the required
+    preprocessing and creates the pytorch dataloader; it then performs evaluation on each input file using a trained
+    dynUNet model (random flipping augmentation is applied at inference).
+    It uses the dynUNet model implemented in the MONAI framework
+    (https://github.com/Project-MONAI/MONAI/blob/master/monai/networks/nets/dynunet.py)
+    which is inspired by the nnU-Net framework (https://arxiv.org/abs/1809.10486)
+    Inference is performed in 2D slice-by-slice, all slices are then recombined together into the 3D volume.
+
+    :param input_data: str or list of strings, filenames of images to be processed
+    :param config_info: dict, contains the configuration parameters to reload the trained model
+
+    """
+
     """
     Read input and configuration parameters
     """
@@ -129,6 +161,7 @@ def run_inference(input_data, config_info):
     Network preparation
     """
     print("***  Preparing network ... ")
+    # automatically extracts the strides and kernels based on nnU-Net empirical rules
     spacings = spacing[:2]
     sizes = patch_size[:2]
     strides, kernels = [], []
@@ -144,10 +177,6 @@ def run_inference(input_data, config_info):
         strides.append(stride)
     strides.insert(0, len(spacings) * [1])
     kernels.append(len(spacings) * [3])
-    print("strides:")
-    print(strides)
-    print("kernels:")
-    print(kernels)
 
     net = DynUNet(
         spatial_dims=2,
@@ -207,6 +236,7 @@ def run_inference(input_data, config_info):
 
             def _compute_pred():
                 pred = self.inferer(inputs, self.network)
+                # use random flipping as data augmentation at inference
                 flip_pred_1 = torch.flip(self.inferer(flip_inputs_1, self.network), dims=(2,))
                 flip_pred_2 = torch.flip(self.inferer(flip_inputs_2, self.network), dims=(3,))
                 flip_pred_3 = torch.flip(self.inferer(flip_inputs_3, self.network), dims=(2, 3))
@@ -246,12 +276,6 @@ def run_inference(input_data, config_info):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Run inference with dynUnet with MONAI.')
-    parser.add_argument('--config',
-                        dest='config',
-                        metavar='config',
-                        type=str,
-                        help='config file containing network information for inference',
-                        required=True)
     parser.add_argument('--in_files',
                         dest='in_files',
                         metavar='in_files',
@@ -270,21 +294,34 @@ if __name__ == '__main__':
                         metavar='out_postfix',
                         type=str,
                         help='postfix to add to the input names for the output filename',
-                        default='_seg')
+                        default='seg')
+    parser.add_argument('--config_file',
+                        dest='config_file',
+                        metavar='config_file',
+                        type=str,
+                        help='config file containing network information for inference',
+                        default=None)
     args = parser.parse_args()
 
-    # read the config file
-    with open(args.config) as f:
+    # check existence of config file and read it
+    config_file = args.config_file
+    if config_file is None:
+        config_file = os.path.join(*[os.path.dirname(monaifbs.__file__),
+                                     "config", "monai_dynUnet_inference_config.yml"])
+    if not os.path.isfile(config_file):
+        raise FileNotFoundError('Expected config file: {} not found'.format(config_file))
+    with open(config_file) as f:
+        print("*** Config file")
+        print(config_file)
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     # read the input files
     in_files = args.in_files
 
     # add the output directory to the config dictionary
-    config['output']['out_dir'] = args.out_folder
+    config['output'] = {'out_postfix': args.out_postfix, 'out_dir': args.out_folder}
     if not os.path.exists(config['output']['out_dir']):
         os.makedirs(config['output']['out_dir'])
-    config['output']['out_postfix'] = args.out_postfix
 
     # run inference with MONAI dynUnet
     run_inference(in_files, config)
