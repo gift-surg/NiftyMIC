@@ -1,6 +1,6 @@
 # Fetal brain segmentation with MONAI DynUNet
 
-monaifbs (MONAI Fetal Brain Segmentation) is Pytorch-based toolkit to train and test deep learning models for automated 
+monaifbs (MONAI Fetal Brain Segmentation) is a Pytorch-based toolkit to train and test deep learning models for automated 
 fetal brain segmentation in HASTE-like MR images.
 The toolkit was developed within the [GIFT-Surg][giftsurg] research project, and takes advantage of [MONAI][monai], 
 a freely available, community-supported, PyTorch-based framework for deep learning in healthcare imaging.
@@ -26,10 +26,11 @@ all Python and Pytorch dependencies by running the following three commands sequ
 `pip install -r requirements-monaifbs.txt`  
 `pip install -e .`
 
-NOTE: MONAI and monaifbs require Python versions >= 3.6.
+*Note*: MONAI and monaifbs require Python versions >= 3.6.
 
 
 ## Training
+TODO
 
 ## Inference
 Inference can be run with the provided inference script with the following command:  
@@ -126,4 +127,5 @@ Other licenses may apply for dependencies.
 [dynUnettutorial]: https://github.com/Project-MONAI/tutorials/blob/master/modules/dynunet_tutorial.ipynb
 [nnunet]: https://arxiv.org/abs/1809.10486
 [inference_config]: TODO
-[mranzini]: marta.ranzini@kcl.ac.uk
+[mranzini]: www.linkedin.com/in/marta-bianca-maria-ranzini
+[bsd]: https://opensource.org/licenses/BSD-3-Clause
