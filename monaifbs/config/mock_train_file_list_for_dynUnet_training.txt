@@ -1,0 +1,5 @@
+/path/to/file/for/subj1_img.nii.gz,/path/to/file/for/subj1_seg.nii.gz
+/path/to/file/for/subj2_img.nii.gz,/path/to/file/for/subj2_seg.nii.gz
+/path/to/file/for/subj3_img.nii.gz,/path/to/file/for/subj3_seg.nii.gz
+/path/to/file/for/subj4_img.nii.gz,/path/to/file/for/subj4_seg.nii.gz
+/path/to/file/for/subj5_img.nii.gz,/path/to/file/for/subj5_seg.nii.gz
