@@ -37,7 +37,7 @@ from torch.nn.functional import interpolate
 from torch.utils.tensorboard import SummaryWriter
 from monai.config import print_config
 from monai.data import DataLoader, PersistentDataset
-from monai.utils import misc
+from monai.utils import misc, set_determinism
 from monai.engines import SupervisedTrainer
 from monai.networks.nets import DynUNet
 from monai.transforms import (
@@ -246,6 +246,15 @@ def run_training(train_file_list, valid_file_list, config_info):
     else:
         current_device = torch.device("cpu")
         print("Using device: {}".format(current_device))
+
+    # set determinism if required
+    if 'manual_seed' in config_info['training'].keys() and config_info['training']['manual_seed'] is not None:
+        seed = config_info['training']['manual_seed']
+    else:
+        seed = None
+    if seed is not None:
+        print("Using determinism with seed = {}\n".format(seed))
+        set_determinism(seed=seed)
 
     """
     Setup data output directory
