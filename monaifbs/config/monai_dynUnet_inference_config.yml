@@ -10,14 +10,14 @@
 # limitations under the License.
 
 device:
-  num_workers: 1
+  num_workers: 1              # number of workers to use in pytorch for multi-processing
 
 inference:
-  nr_out_channels: 2
-  inplane_size: [448, 512]
-  spacing: [0.8, 0.8, -1.0]
-  batch_size_inference: 1
-  probability_threshold: 0.5
-  model_to_load: "models/checkpoint_dynUnet_DiceXent.pt"
+  nr_out_channels: 2          # number of channels in the network output
+  inplane_size: [448, 512]    # 2D patch size, slices are either randomly cropped or padded to this dimension based on their size
+  spacing: [0.8, 0.8, -1.0]   # images are resampled to this spacing in mm (use -1.0 to preserve the original spacing in given direction)
+  batch_size_inference: 1     # batch size at inferece, 1 is recommended
+  probability_threshold: 0.5  # probability threshold to convert network output predictions to hard label
+  model_to_load: "models/checkpoint_dynUnet_DiceXent.pt"  # pretrained network to be used for inference
   
 
