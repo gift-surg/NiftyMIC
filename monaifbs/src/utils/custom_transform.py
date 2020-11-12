@@ -9,13 +9,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+##
+# \file       custom_transform.py
+# \brief      contains a series of custom dict transforms to be used in MONAI data preparation for the dynUnet model
+#
+# \author     Marta B M Ranzini (marta.ranzini@kcl.ac.uk)
+# \date       November 2020
+
 import numpy as np
 import copy
-from typing import Any, Callable, Dict, Hashable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Dict, Hashable, Mapping, Optional, Sequence, Union
 
-from monai.config import IndexSelection, KeysCollection
+from monai.config import KeysCollection
 from monai.transforms import (
-    DivisiblePad, SpatialCrop, BorderPad, MapTransform, Spacing, Spacingd
+    DivisiblePad, MapTransform, Spacing, Spacingd
 )
 from monai.utils import (
     NumpyPadMode,
@@ -34,12 +41,15 @@ InterpolateModeSequence = Union[Sequence[Union[InterpolateMode, str]], Interpola
 
 class ConverToOneHotd(MapTransform):
     """
-    Convert multi-class label to One Hot Encoding:
+    Convert multi-class label to One Hot Encoding
     """
 
     def __init__(self, keys, labels):
         """
         Args:
+            keys: keys of the corresponding items to be transformed.
+                See also: :py:class:`monai.transforms.compose.MapTransform`
+            labels: list of labels to be converted to one-hot
 
         """
         super().__init__(keys)
@@ -95,10 +105,11 @@ class MinimumPadd(MapTransform):
 
 class InPlaneSpacingd(Spacingd):
     """
-    Performs the same operation as the Spacingd transform, but allows to preserve the spacing along some axes,
+    Performs the same operation as the MONAI Spacingd transform, but allows to preserve the spacing along some axes,
     which should be indicated as -1.0 in the input pixdim.
     E.g. pixdim=(0.8, 0.8, -1.0) would change the x-y plane spacing to (0.8, 0.8) while preserving the original
     spacing along z.
+    See also :py:class: `monai.transforms.Spacingd`
     """
     def __init__(self,
                  keys: KeysCollection,
@@ -110,6 +121,27 @@ class InPlaneSpacingd(Spacingd):
                  dtype: Optional[Union[Sequence[np.dtype], np.dtype]] = np.float64,
                  meta_key_postfix: str = "meta_dict",
                  ) -> None:
+        """
+        Args
+            keys: keys of the corresponding items to be transformed.
+                See also: :py:class:`monai.transforms.compose.MapTransform`
+            pixdim: output voxel spacing.
+            diagonal: whether to resample the input to have a diagonal affine matrix.
+            mode: {``"bilinear"``, ``"nearest"``}. Interpolation mode to calculate output values.
+                Defaults to ``"bilinear"``.
+                It also can be a sequence of string, each element corresponds to a key in ``keys``.
+            padding_mode: {``"zeros"``, ``"border"``, ``"reflection"``}
+                Padding mode for outside grid values. Defaults to ``"border"``.
+                It also can be a sequence of string, each element corresponds to a key in ``keys``.
+            align_corners:  Geometrically, we consider the pixels of the input as squares rather than points.
+                See also: https://pytorch.org/docs/stable/nn.functional.html#grid-sample
+                It also can be a sequence of bool, each element corresponds to a key in ``keys``.
+            dtype: data type for resampling computation. Defaults to ``np.float64`` for best precision.
+                It also can be a sequence of bool, each element corresponds to a key in ``keys``.
+            meta_key_postfix: use `key_{postfix}` to to fetch the meta data according to the key data,
+                default is `meta_dict`, the meta data is a dictionary object.
+        See also :py:class: `monai.transforms.Spacingd` for more information on the inputs
+        """
         super().__init__(keys,
                          pixdim,
                          diagonal,

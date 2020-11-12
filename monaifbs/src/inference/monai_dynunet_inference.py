@@ -54,8 +54,10 @@ from monaifbs.src.utils.custom_transform import InPlaneSpacingd
 def create_data_list_of_dictionaries(input_files):
     """
     Convert the list of input files to be processed in the dictionary format needed for MONAI
-    :param input_files: str or list of strings, filenames of images to be processed
-    :return: list of dicts, storing the filenames input to the inference pipeline
+    Args:
+        input_files: str or list of strings, filenames of images to be processed
+    Returns:
+        full_list: list of dicts, storing the filenames input to the inference pipeline
     """
 
     print("*** Input data: ")
@@ -82,8 +84,9 @@ def run_inference(input_data, config_info):
     which is inspired by the nnU-Net framework (https://arxiv.org/abs/1809.10486)
     Inference is performed in 2D slice-by-slice, all slices are then recombined together into the 3D volume.
 
-    :param input_data: str or list of strings, filenames of images to be processed
-    :param config_info: dict, contains the configuration parameters to reload the trained model
+    Args:
+        input_data: str or list of strings, filenames of images to be processed
+        config_info: dict, contains the configuration parameters to reload the trained model
 
     """
 

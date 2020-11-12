@@ -9,6 +9,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+##
+# \file       custom_inferer.py
+# \brief      contains a series of classes to adapt the MONAI SlidingWindowInferer to the case of feeding slices
+#               from a 3D volume into a 2D network.
+#               Adapted from the MONAI class SlidingWindowInferer
+#               https://github.com/Project-MONAI/MONAI/blob/releases/0.3.0/monai/inferers/inferer.py
+#
+# \author     Marta B M Ranzini (marta.ranzini@kcl.ac.uk)
+# \date       November 2020
+
 import copy
 import torch
 from typing import Union
@@ -20,17 +30,22 @@ from monai.utils import BlendMode
 
 class Predict2DFrom3D:
     """
-    Crop 2D slices from 3D inputs and perform 2D predictions
+    Crop 2D slices from 3D inputs and perform 2D predictions.
+    Args:
+        predictor (Network): trained network to perform the prediction
     """
     def __init__(self,
                  predictor):
-        """
-
-        :param predictor:
-        """
         self.predictor = predictor
 
     def __call__(self, data):
+        """
+        Callable function to perform the prediction on input data given the defined predictor (network) after
+        squeezing dimensions = 1. The removed dimension is added back after the prediction.
+        Args:
+            data: torch.tensor, model input data for inference.
+        :return:
+        """
         # squeeze dimensions equal to 1
         orig_size = list(data.shape)
         data_size = list(data.shape[2:])
@@ -48,9 +63,9 @@ class SlidingWindowInferer2D(Inferer):
     """
     Sliding window method for model inference,
     with `sw_batch_size` windows for every model.forward().
-    Modified from monai.inferers.SlidingWindowInferer to squeeze the extra dimension derived from cropping sliced from a
+    Modified from monai.inferers.SlidingWindowInferer to squeeze the extra dimension derived from cropping slices from a
     3D volume. In other words, reduces the input from [B, C, H, W, 1] to [B, C, H, W] for the forward pass through the
-    network and then reshapes it back to [B, C, H, W, 1], before stiching all the patches back together.
+    network and then reshapes it back to [B, C, H, W, 1], before stitching all the patches back together.
 
     Args:
         roi_size (list, tuple): the window size to execute SlidingWindow evaluation.
