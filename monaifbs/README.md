@@ -1,7 +1,7 @@
 # Fetal brain segmentation with MONAI DynUNet
 
 monaifbs (MONAI Fetal Brain Segmentation) is a Pytorch-based toolkit to train and test deep learning models for automated 
-fetal brain segmentation in HASTE-like MR images.
+fetal brain segmentation of HASTE-like MR images.
 The toolkit was developed within the [GIFT-Surg][giftsurg] research project, and takes advantage of [MONAI][monai], 
 a freely available, community-supported, PyTorch-based framework for deep learning in healthcare imaging.
 
@@ -30,7 +30,86 @@ all Python and Pytorch dependencies by running the following three commands sequ
 
 
 ## Training
-TODO
+A python script was developed to train a [dynUNet][dynUnettutorial] model using [MONAI][monai]. 
+The dynUNet is based on the [nnU-Net][nnunet] approach, which employs a series of heuristic rules to determine
+the optimal kernel sizes, strides and network depth from the training set. 
+ 
+The available script trains a 2D dynUNet by randomly sampling 2D slices from the training set. By default, Dice + Cross 
+Entropy is used as loss function (other options are available).   
+Validation during training is also performed: a 
+whole-volume validation strategy is applied (using a 2D sliding-window approach throughout each 3D image) and 
+Mean 3D Dice Score over the validation set is used as metric for best model selection.
+
+#### Setting the training to run
+
+To run the training with your own data, the following command can be used:
+```
+python <path_to_monaifbs>/src/train/monai_dynunet_training.py \
+--train_files_list <path-to-list-of-training-files.txt> \
+--validation_files_list <path-to-list-of-validation-files.txt>\
+--out_folder <path-to-output-directory>
+```
+The files `<path-to-list-of-training-files.txt>` and `<path-to-list-of-validation-files.txt>` should be either .txt or 
+.csv files storing pairs of image-segmentation filenames in each line, separated by a comma, as follows:
+```
+/path/to/file/for/subj1_img.nii.gz,/path/to/file/for/subj1_seg.nii.gz
+/path/to/file/for/subj2_img.nii.gz,/path/to/file/for/subj2_seg.nii.gz
+/path/to/file/for/subj3_img.nii.gz,/path/to/file/for/subj3_seg.nii.gz
+...
+```
+Examples of the expected file formats are in `config/mock_train_file_list_for_dynUnet_training.txt` and 
+`config/mock_valid_file_list_for_dynUnet_training.txt`.  
+
+See `python <path_to_monaifbs>/src/train/monai_dynunet_training.py -h` for help on additional input arguments.
+
+#### Changing the network configurations
+By default, the network will be trained with the configurations defined in `config/monai_dynUnet_training_config.yml`.
+See [the file][training_config] for a description of the user-defined parameters.  
+To change the parameter values, create your own yaml config file following the structure [here][training_config]. The
+new config file can be input as an argument when running the training as follows:
+```
+python <path_to_monaifbs>/src/train/monai_dynunet_training.py \
+--train_files_list <path-to-list-of-training-files.txt> \
+--validation_files_list <path-to-list-of-validation-files.txt>\
+--out_folder <path-to-output-directory>
+--config_file <path-to-customed-config-file.yml>
+```
+When running inference, make sure the config file for inference is also updated accordingly, otherwise the model might 
+not be correctly reloaded (See the section Inference below).
+
+#### Using the GPU
+The code is optimised to be used with 1 GPU (multi-GPU computation is not supported at present).
+To set the GPU to use, run the command `export CUDA_VISIBLE_DEVICES=<gpu_number>` before running the python commands 
+described above.
+
+#### Understanding the output
+The script will generate two subfolders in the indicated output directory:
+* folder with name formatted as `Year-month-day_hours-minutes-seconds_out_postfix`, which stores the results
+of the training. `out_postix` is `monai_dynUnet_2D` by default, but can be changed as input argument when running the training. 
+This folder contains:
+    * `best_valid_checkpoint_key_metric=####.pt`: saved pytorch model best performing on the validation set 
+    (based on Mean 3D Dice Score)
+    * `checkpoint_epoch=####.pth`: latest saved pytorch model
+    * directories `train` and `valid` storing the tensorboard outputs for the training and the validation respectively  
+ 
+  
+    
+* folder named `persistent_cache`. To speed up the computation, the script uses MONAI 
+[PersistentDataset][persistent_dataset], which pre-computes and stores to disk all the non-random pre-processing steps 
+(pre-processing transforms outputs). This folder stores the results of these pre-computations. 
+
+
+*Notes on the persistent cache*: 
+1. The persistent cache dataset favours reusability of pre-processed data when multiple runs need to be executed 
+(e.g. for hyperparameters tuning). To change the location of this persistent cache or to re-use a pre-existing cache, 
+the option `--cache_dir <path-to-persistent-cache>` can be used in the command line for setting the training to run. 
+2. The persistent cache can take up quite some large amount of storage space, depending on the size of the training set
+and on the selected patch size for training (Example: with about 400 3D volumes and default patch size (418, 512), 
+it took about 30G).
+3. Alternate solutions to the PersistentCache exist which do not use this much storage space, but are not currently 
+implemented in the training script. See this [MONAI tutorial][monai_datasets] for more information. 
+To integrate other MONAI Datasets into the script, change the `train_ds` and `val_ds` definitions 
+in `src/train/monai_dynunet_training.py`.
 
 ## Inference
 Inference can be run with the provided inference script with the following command:  
@@ -127,5 +206,8 @@ Other licenses may apply for dependencies.
 [dynUnettutorial]: https://github.com/Project-MONAI/tutorials/blob/master/modules/dynunet_tutorial.ipynb
 [nnunet]: https://arxiv.org/abs/1809.10486
 [inference_config]: TODO
+[training_config]: TODO
 [mranzini]: www.linkedin.com/in/marta-bianca-maria-ranzini
 [bsd]: https://opensource.org/licenses/BSD-3-Clause
+[persistent_dataset]: https://github.com/Project-MONAI/MONAI/blob/9f51893d162e5650f007dff8e0bcc09f0d9a6680/monai/data/dataset.py#L71
+[monai_datasets]: https://github.com/Project-MONAI/tutorials/blob/master/acceleration/dataset_type_performance.ipynb
