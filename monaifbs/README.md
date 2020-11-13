@@ -17,7 +17,8 @@ More information about MONAI dynUNet can be found [here][dynUnettutorial]. This 
 ### Contact information
 This package was developed by [Marta B.M. Ranzini][mranzini] at the [Department of Surgical and Interventional Sciences][sie], 
 [King's College London (KCL)][kcl] (2020).
-If you have any questions or comments, please drop an email to `marta.ranzini@kcl.ac.uk`.
+If you have any questions or comments, please open an issue on GitHub or contact Prof Tom Vercauteren at 
+`tom.vercauteren@kcl.ac.uk`.
 
 ## Installation
 Please follow the [installation instructions][installation] for NiftyMIC. To use monaifbs, please make sure you install
@@ -190,17 +191,27 @@ seg/name-of-stack-2.nii.gz \
 seg/name-of-stack-N.nii.gz
 ```
 
+## Disclaimer
 
+Not intended for clinical use.
 
-## Licensing and Copyright [TOCHECK]
+## Licensing and Copyright
 Copyright (c) 2020 Marta Bianca Maria Ranzini and contributors.
-This framework is made available as free open-source software under the [BSD-3-Clause License][bsd]. 
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+`http://www.apache.org/licenses/LICENSE-2.0`
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
 Other licenses may apply for dependencies.
 
-## Acknowledgements [TOCHECK]
-This work is part of the [GIFT-Surg project][giftsurg]. [TODO]: Add fundings.
+## Acknowledgements 
+This work is part of the [GIFT-Surg project][giftsurg] and is funded by the Innovative Engineering for Health award ([Wellcome Trust][wellcometrust] [WT101957] and [EPSRC][epsrc] [NS/A000027/1]),
+the Wellcome/EPSRC [Centre for Medical Engineering][cme] [WT 203148/Z/16/Z, NS/A000049/1]] and supported by researchers at the NIHR Biomedical Research
+Centre based at GSTT NHS Trust and King's College London.
 
 [giftsurg]: http://www.gift-surg.ac.uk
+[tomvercauteren]: tom.vercauteren@kcl.ac.uk
 [kcl]: https://www.kcl.ac.uk
 [sie]: https://www.kcl.ac.uk/bmeis/our-departments/surgical-interventional-engineering
 [monai]: https://monai.io/
@@ -216,3 +227,6 @@ This work is part of the [GIFT-Surg project][giftsurg]. [TODO]: Add fundings.
 [bsd]: https://opensource.org/licenses/BSD-3-Clause
 [persistent_dataset]: https://github.com/Project-MONAI/MONAI/blob/9f51893d162e5650f007dff8e0bcc09f0d9a6680/monai/data/dataset.py#L71
 [monai_datasets]: https://github.com/Project-MONAI/tutorials/blob/master/acceleration/dataset_type_performance.ipynb
+[wellcometrust]: http://www.wellcome.ac.uk
+[epsrc]: http://www.epsrc.ac.uk
+[cme]: https://medicalengineering.org.uk/

@@ -11,7 +11,8 @@ A detailed description of the NiftyMIC algorithm is found in [EbnerWang2020][ebn
 If you have any questions or comments, please drop an email to `michael.ebner@kcl.ac.uk`.
 
 ## NiftyMIC applied to Fetal Brain MRI
-Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg]. **UPDATE**: A new and better performing automated segmentation called [monaifbs][monaifbs] tool has now been included as part of the NiftyMIC package.  
+Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. 
+The associated brain masks for motion correction can be obtained with the included automated segmentation tool [monaifbs][monaifbs] (a legacy method for automated segmentation can also be found in the [fetal_brain_seg][fetal_brain_seg] package).   
 Full working examples on automated segmentation and high-resolution reconstruction of fetal brain MRI using NiftyMIC is described in the [Usage](https://github.com/gift-surg/NiftyMIC#automatic-segmentation-and-high-resolution-reconstruction-of-fetal-brain-mri) section below. 
 
 <p align="center">
@@ -257,7 +258,7 @@ The current NiftyMIC version is still compatible with the older segmentation pip
 package and presented in [EbnerWang2020][ebner-wang-2020]. Details on its use are available below, although 
 `monaifbs` is the recommended option.
 
-#### Using monaifbs  
+#### Using monaifbs (recommended)
 Provided the dependencies for `monaifbs` are [installed][niftymic-install], create the automatic fetal brain masks of HASTE-like images:
 ```
 niftymic_segment_fetal_brains \
@@ -295,7 +296,7 @@ Additional parameters such as the regularization parameter `alpha` can be specif
 
 *Note*: In case a suffix distinguishes image segmentation (`--filenames-masks`) from the associated image filenames (`--filenames`), the argument `--suffix-mask` needs to be provided for reconstructing the HR brain volume mask as part of the pipeline. E.g. if images `name-of-stack-i.nii.gz` are associated with the mask `name-of-stack-i_mask.nii.gz`, then the additional argument `--suffix-mask _mask` needs to be specified.
 
-#### Using fetal_brain_seg
+#### Using fetal_brain_seg (legacy method)
 Previous release of the NiftyMIC package took advantage of an external package for automated fetal brain segmentation, 
 called [fetal_brain_seg][fetal_brain_seg]. If required, this can still be used instead of the default [monaifbs][monaifbs] 
 segmentation tool.  
