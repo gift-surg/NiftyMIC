@@ -28,6 +28,8 @@ all Python and Pytorch dependencies by running the following three commands sequ
 
 *Note*: MONAI and monaifbs require Python versions >= 3.6.
 
+*Note*: A CUDA compatible GPU is recommended for training. Inference can be run both on GPU or on CPU.
+
 
 ## Training
 A python script was developed to train a [dynUNet][dynUnettutorial] model using [MONAI][monai]. 
@@ -190,10 +192,13 @@ seg/name-of-stack-N.nii.gz
 
 
 
-## Licensing and Copyright
+## Licensing and Copyright [TOCHECK]
 Copyright (c) 2020 Marta Bianca Maria Ranzini and contributors.
 This framework is made available as free open-source software under the [BSD-3-Clause License][bsd]. 
 Other licenses may apply for dependencies.
+
+## Acknowledgements [TOCHECK]
+This work is part of the [GIFT-Surg project][giftsurg]. [TODO]: Add fundings.
 
 [giftsurg]: http://www.gift-surg.ac.uk
 [kcl]: https://www.kcl.ac.uk
