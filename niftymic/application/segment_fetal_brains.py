@@ -35,22 +35,32 @@ def main():
     input_parser.add_dir_output(required=False)
     input_parser.add_verbose(default=0)
     input_parser.add_log_config(default=0)
+    input_parser.add_option(
+        option_string="--neuroimage-legacy-seg",
+        type=int,
+        required=False,
+        default=0,
+        help="If set to 1, use the legacy method for fetal brain segmentation "
+             "i.e. the two-step approach proposed in Ebner, Wang et al "
+             "NeuroImage (2020)"
+    )
 
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    try:
-        DIR_FETAL_BRAIN_SEG = os.environ["FETAL_BRAIN_SEG"]
-    except KeyError as e:
-        DIR_FETAL_BRAIN_SEG = os.path.dirname(monaifbs.__file__)
-        print(DIR_FETAL_BRAIN_SEG)
-        # raise RuntimeError(
-        #     "Environment variable FETAL_BRAIN_SEG is not specified. "
-        #     "Specify the root directory of fetal_brain_seg "
-        #     "(https://github.com/gift-surg/fetal_brain_seg) "
-        #     "using "
-        #     "'export FETAL_BRAIN_SEG=path_to_fetal_brain_seg_dir' "
-        #     "(in bashrc).")
+    DIR_FETAL_BRAIN_SEG = os.path.dirname(monaifbs.__file__)
+    if args.neuroimage_legacy_seg == 1:
+        try:
+            DIR_FETAL_BRAIN_SEG = os.environ["FETAL_BRAIN_SEG"]
+        except KeyError as e:
+            raise RuntimeError(
+                "Environment variable FETAL_BRAIN_SEG is not specified. "
+                "Specify the root directory of fetal_brain_seg "
+                "(https://github.com/gift-surg/fetal_brain_seg) "
+                "using "
+                "'export FETAL_BRAIN_SEG=path_to_fetal_brain_seg_dir' "
+                "(in bashrc).")
+    print("Using executable from {}".format(DIR_FETAL_BRAIN_SEG))
 
     if args.filenames_masks is None and args.dir_output is None:
         raise IOError("Either --filenames-masks or --dir-output must be set")
