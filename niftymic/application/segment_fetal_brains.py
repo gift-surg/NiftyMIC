@@ -16,7 +16,6 @@ import niftymic.utilities.n4_bias_field_correction as n4itk
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 from niftymic.utilities.input_arparser import InputArgparser
-import monaifbs
 
 from niftymic.definitions import ALLOWED_EXTENSIONS
 
@@ -48,7 +47,6 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    DIR_FETAL_BRAIN_SEG = os.path.dirname(monaifbs.__file__)
     if args.neuroimage_legacy_seg == 1:
         try:
             DIR_FETAL_BRAIN_SEG = os.environ["FETAL_BRAIN_SEG"]
@@ -60,6 +58,17 @@ def main():
                 "using "
                 "'export FETAL_BRAIN_SEG=path_to_fetal_brain_seg_dir' "
                 "(in bashrc).")
+    else:
+        try:
+            import monaifbs
+            DIR_FETAL_BRAIN_SEG = os.path.dirname(monaifbs.__file__)
+        except ImportError as e:
+            raise RuntimeError(
+                "monaifbs not correctly installed."
+                "Please check its installation running"
+                "pip install -e MONAIfbs/ "
+            )
+
     print("Using executable from {}".format(DIR_FETAL_BRAIN_SEG))
 
     if args.filenames_masks is None and args.dir_output is None:
