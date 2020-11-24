@@ -41,6 +41,22 @@ RUN if [ "$VERSION" = "latest" ] ; then \
         https://github.com/gift-surg/${REPO}.git /app/${REPO} \
     ;fi
 
+# download submodule for MONAIfbs
+WORKDIR /app/${REPO}
+RUN git submodule update --init
+
+# download model for MONAIfbs
+RUN if [ "$FETAL_SEG_TOOL" = "monaifbs" ] ; then \
+        # fetch the pretrained model
+        cd /app && \
+        pip install zenodo-get && \
+        zenodo_get 10.5281/zenodo.4282679 && \
+        tar xvf models.tar.gz && \
+        mv models /app/${REPO}/MONAIfbs/monaifbs/ && \
+        # remove the downloaded compressed file
+        rm -r /app/models.tar.gz \
+    ;fi
+
 # download fetal_brain_seg if required (need to create an empty directory for following copy, line 105)
 RUN mkdir /app/fetal_brain_seg
 ADD https://github.com/taigw/Demic/archive/v0.1.tar.gz /app/Demic-0.1.tar.gz
@@ -80,7 +96,8 @@ RUN apt-get update && \
         build-essential \
         nifti2dicom \
         && \
-    rm -rf /var/lib/apt/lists/* 
+    rm -rf /var/lib/apt/lists/*
+
 RUN pip install \
     matplotlib==3.1.1 \
     natsort==6.0.0 \
@@ -99,16 +116,16 @@ RUN pip install \
     simplereg==0.3.2 \
     nsol==0.1.14
 # install monaifbs dependencies
-RUN if [ "$FETAL_SEG_TOOL" = "monaifbs" ] ; then \
-        pip install \
-        torch==1.4.0 \
-        torch-summary==1.4.3 \
-        monai==0.3.0  \
-        pyyaml==5.3.1 \
-        pytorch-ignite==0.4.2 \
-        tensorboard==2.3.0 \
-    ;fi
+RUN pip install \
+    torch==1.4.0 \
+    torch-summary==1.4.3 \
+    monai==0.3.0  \
+    pyyaml==5.3.1 \
+    pytorch-ignite==0.4.2 \
+    tensorboard==2.3.0
+# install packages for niftymic and for monaifbs
 RUN pip install -e .
+RUN pip install -e /app/${REPO}/MONAIfbs/
 
 # prepare fetal_brain_seg with specific python library versions if required
 COPY --from=compile-image /app/fetal_brain_seg /app/fetal_brain_seg
@@ -119,7 +136,10 @@ RUN if [ "$FETAL_SEG_TOOL" = "fetal_brain_seg" ] ; then \
         tensorflow==1.12.0 && \
         SITEDIR=$(python -m site --user-site) && \
         mkdir -p $SITEDIR && \
-        echo /app/fetal_brain_seg > $SITEDIR/Demic.pth \
+        echo /app/fetal_brain_seg > $SITEDIR/Demic.pth && \
+        export FETAL_BRAIN_SEG=/app/fetal_brain_seg \
+    ;else \
+        rm -r /app/fetal_brain_seg \
     ;fi
 
 # add Dockerfile to image
