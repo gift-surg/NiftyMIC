@@ -64,8 +64,8 @@ def main():
             DIR_FETAL_BRAIN_SEG = os.path.dirname(monaifbs.__file__)
         except ImportError as e:
             raise RuntimeError(
-                "monaifbs not correctly installed."
-                "Please check its installation running"
+                "monaifbs not correctly installed. "
+                "Please check its installation running "
                 "pip install -e MONAIfbs/ "
             )
 
