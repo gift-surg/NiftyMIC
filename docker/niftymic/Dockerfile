@@ -41,12 +41,10 @@ RUN if [ "$VERSION" = "latest" ] ; then \
         https://github.com/gift-surg/${REPO}.git /app/${REPO} \
     ;fi
 
-# download submodule for MONAIfbs
-WORKDIR /app/${REPO}
-RUN git submodule update --init
-
-# download model for MONAIfbs
+# fetch MONAIfbs and download pretrained model for MONAIfbs
 RUN if [ "$FETAL_SEG_TOOL" = "monaifbs" ] ; then \
+        cd /app/${REPO} && \
+        git submodule update --init && \
         # fetch the pretrained model
         cd /app && \
         pip install zenodo-get && \
@@ -116,16 +114,20 @@ RUN pip install \
     simplereg==0.3.2 \
     nsol==0.1.14
 # install monaifbs dependencies
-RUN pip install \
-    torch==1.4.0 \
-    torch-summary==1.4.3 \
-    monai==0.3.0  \
-    pyyaml==5.3.1 \
-    pytorch-ignite==0.4.2 \
-    tensorboard==2.3.0
+RUN if [ "$FETAL_SEG_TOOL" = "monaifbs" ] ; then \
+        pip install \
+        torch==1.4.0 \
+        torch-summary==1.4.3 \
+        monai==0.3.0  \
+        pyyaml==5.3.1 \
+        pytorch-ignite==0.4.2 \
+        tensorboard==2.3.0 \
+    ;fi
 # install packages for niftymic and for monaifbs
 RUN pip install -e .
-RUN pip install -e /app/${REPO}/MONAIfbs/
+RUN if [ "$FETAL_SEG_TOOL" = "monaifbs" ] ; then \
+        pip install -e /app/${REPO}/MONAIfbs/ \
+    ;fi
 
 # prepare fetal_brain_seg with specific python library versions if required
 COPY --from=compile-image /app/fetal_brain_seg /app/fetal_brain_seg
