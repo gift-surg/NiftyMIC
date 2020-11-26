@@ -8,6 +8,9 @@ at the [Wellcome/EPSRC Centre for Interventional and Surgical Sciences][weiss], 
 A detailed description of the NiftyMIC algorithm is found in [EbnerWang2020][ebner-wang-2020]:
 * Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 
+A later extension to this paper for fetal brain automatic segmentation building on [MONAI][monai] was provided by [Marta B.M. Ranzini][martaranzini]. 
+More information about the `MONAIfbs` package can be found [at this page][monaifbs].
+
 If you have any questions or comments, please drop an email to `michael.ebner@kcl.ac.uk`.
 
 ## NiftyMIC applied to Fetal Brain MRI
@@ -346,3 +349,4 @@ Selected publications associated with NiftyMIC are:
 [dynUNet]: https://github.com/Project-MONAI/tutorials/blob/master/modules/dynunet_tutorial.ipynb
 [monai]: https://monai.io/
 [wikifetalbrainseg]: TODO
+[martaranzini]: https://www.linkedin.com/in/marta-bianca-maria-ranzini
