@@ -8,10 +8,15 @@ at the [Wellcome/EPSRC Centre for Interventional and Surgical Sciences][weiss], 
 A detailed description of the NiftyMIC algorithm is found in [EbnerWang2020][ebner-wang-2020]:
 * Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 
+A later extension to this paper for fetal brain automatic segmentation building on [MONAI][monai] was provided by [Marta B.M. Ranzini][martaranzini]. 
+More information about the `MONAIfbs` package can be found [at this page][monaifbs].
+
 If you have any questions or comments, please drop an email to `michael.ebner@kcl.ac.uk`.
 
 ## NiftyMIC applied to Fetal Brain MRI
-Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg]. A full working example on automated segmentation and high-resolution reconstruction of fetal brain MRI using NiftyMIC is described in the [Usage](https://github.com/gift-surg/NiftyMIC#automatic-segmentation-and-high-resolution-reconstruction-of-fetal-brain-mri) section below.
+Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. 
+The associated brain masks for motion correction can be obtained with the included automated segmentation tool [MONAIfbs][monaifbs] (a legacy method for automated segmentation can also be found in the [fetal_brain_seg][fetal_brain_seg] package).   
+Full working examples on automated segmentation and high-resolution reconstruction of fetal brain MRI using NiftyMIC is described in the [Usage](https://github.com/gift-surg/NiftyMIC#automatic-segmentation-and-high-resolution-reconstruction-of-fetal-brain-mri) section below. 
 
 <p align="center">
    <img src="./data/demo/NiftyMIC_Algorithm.png" align="center" width="700">
@@ -99,6 +104,8 @@ whose installation requirements need to be met. Therefore, the local installatio
 1. [Installation of SimpleReg dependencies][simplereg-dependencies]
 1. [Installation of NiftyMIC][niftymic-install]
 
+*Note* `MONAIfbs` requires Python version >= 3.6.
+
 ### Virtual Machine and Docker
 
 To avoid manual installation from source, NiftyMIC is also available as a [virtual machine][niftymic-vm] and [Docker image][niftymic-docker].
@@ -109,7 +116,7 @@ Provided the input MR image data in NIfTI format (`nii` or `nii.gz`), NiftyMIC c
 
 A recommended workflow is [associated applications in square brackets]:
 
-1. Segmentation of the anatomy of interest for all input images. For fetal brain MRI reconstructions, we recommend the use of the fully automatic segmentation tool [fetal_brain_seg][fetal_brain_seg] for this step.
+1. Segmentation of the anatomy of interest for all input images. For fetal brain MRI reconstructions, we recommend the use of the fully automatic segmentation tool [MONAIfbs][monaifbs], already included in the NiftyMIC package [`niftymic_segment_fetal_brains`].
 1. Bias-field correction [`niftymic_correct_bias_field`]
 1. Volumetric reconstruction in subject space using two-step iterative approach based on rigid slice-to-volume registration and SRR cycles [`niftymic_reconstruct_volume`]
 
@@ -240,9 +247,23 @@ niftymic_show_parameter_study \
 ```
 
 ### Automatic Segmentation and High-Resolution Reconstruction of Fetal Brain MRI
-Based on the work described in [EbnerWang2018][ebner-wang-2018] and [EbnerWang2020][ebner-wang-2020], an automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2). 
+An automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2).
+This includes two main subsequent blocks:
+1. Automatic segmentation to generate fetal brain masks
+2. Automatic high-resolution reconstruction.
 
-Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic fetal brain masks of HASTE-like images:
+The latter is based on the work described in [EbnerWang2018][ebner-wang-2018] and [EbnerWang2020][ebner-wang-2020].
+Compared to the segmentation approach proposed in [EbnerWang2020][ebner-wang-2020], a new automated segmentation tool has
+been included in the NiftyMIC package, called [MONAIfbs][monaifbs]. 
+This implements a single-step segmentation approach based on the [dynUNet][dynUNet] implemented in [MONAI][monai].
+
+The current NiftyMIC version is still compatible with the older segmentation pipeline based on the [fetal_brain_seg][fetal_brain_seg] 
+package and presented in [EbnerWang2020][ebner-wang-2020]. Details on its use are available at [this wiki page][wikifetalbrainseg], 
+although `MONAIfbs` is the recommended option.
+
+
+#### Automatic segmentation
+Provided the dependencies for `MONAIfbs` are [installed][niftymic-install], create the automatic fetal brain masks of HASTE-like images:
 ```
 niftymic_segment_fetal_brains \
 --filenames \
@@ -255,6 +276,7 @@ seg/name-of-stack-2.nii.gz \
 seg/name-of-stack-N.nii.gz
 ```
 
+#### Automatic reconstruction
 Afterwards, four consecutive steps including
 1. bias field correction (`niftymic_correct_bias_field`),
 1. subject-space reconstruction (`niftymic_reconstruct_volume`),
@@ -323,3 +345,8 @@ Selected publications associated with NiftyMIC are:
 [pysitk]: https://github.com/gift-surg/PySiTK
 [fetal_brain_seg]: https://github.com/gift-surg/fetal_brain_seg
 [gholipour_atlas]: https://www.nature.com/articles/s41598-017-00525-w
+[monaifbs]: https://github.com/gift-surg/MONAIfbs
+[dynUNet]: https://github.com/Project-MONAI/tutorials/blob/master/modules/dynunet_tutorial.ipynb
+[monai]: https://monai.io/
+[wikifetalbrainseg]: TODO
+[martaranzini]: https://www.linkedin.com/in/marta-bianca-maria-ranzini
