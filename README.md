@@ -246,8 +246,8 @@ niftymic_show_parameter_study \
 ### Automatic Segmentation and High-Resolution Reconstruction of Fetal Brain MRI
 An automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2).
 This includes two main subsequent blocks:
-1. Automated segmentation to generate fetal brain masks
-2. Automated high-resolution reconstruction.
+1. Automatic segmentation to generate fetal brain masks
+2. Automatic high-resolution reconstruction.
 
 The latter is based on the work described in [EbnerWang2018][ebner-wang-2018] and [EbnerWang2020][ebner-wang-2020].
 Compared to the segmentation approach proposed in [EbnerWang2020][ebner-wang-2020], a new automated segmentation tool has
@@ -258,7 +258,8 @@ The current NiftyMIC version is still compatible with the older segmentation pip
 package and presented in [EbnerWang2020][ebner-wang-2020]. Details on its use are available at [this wiki page][wikifetalbrainseg], 
 although `MONAIfbs` is the recommended option.
 
-#### Using MONAIfbs (recommended)
+
+#### Automatic segmentation
 Provided the dependencies for `MONAIfbs` are [installed][niftymic-install], create the automatic fetal brain masks of HASTE-like images:
 ```
 niftymic_segment_fetal_brains \
@@ -272,6 +273,7 @@ seg/name-of-stack-2.nii.gz \
 seg/name-of-stack-N.nii.gz
 ```
 
+#### Automatic reconstruction
 Afterwards, four consecutive steps including
 1. bias field correction (`niftymic_correct_bias_field`),
 1. subject-space reconstruction (`niftymic_reconstruct_volume`),

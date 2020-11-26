@@ -47,7 +47,7 @@ def main():
     args = input_parser.parse_args()
     input_parser.print_arguments(args)
 
-    if args.neuroimage_legacy_seg == 1:
+    if args.neuroimage_legacy_seg:
         try:
             DIR_FETAL_BRAIN_SEG = os.environ["FETAL_BRAIN_SEG"]
         except KeyError as e:
