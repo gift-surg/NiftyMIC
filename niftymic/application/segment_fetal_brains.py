@@ -27,7 +27,8 @@ def main():
 
     input_parser = InputArgparser(
         description="Perform automatic brain masking using "
-        "fetal_brain_seg, part of the monaifbs package. ",
+        "fetal_brain_seg, part of the MONAIfbs package "
+        "(https://github.com/gift-surg/MONAIfbs). ",
     )
     input_parser.add_filenames(required=True)
     input_parser.add_filenames_masks(required=False)
