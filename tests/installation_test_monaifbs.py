@@ -1,10 +1,10 @@
 ##
-# \file installation_test_fetal_brain_seg.py
-# \brief      Class to test installation of fetal_brain_seg
-#             (https://github.com/gift-surg/fetal_brain_seg)
+# \file installation_test_monaifbs.py
+# \brief      Class to test installation of MONAIfbs
+#             (https://github.com/gift-surg/MONAIfbs)
 #
-# \author     Michael Ebner (michael.ebner.14@ucl.ac.uk)
-# \date       March 2019
+# \author     Marta Ranzini (marta.ranzini@kcl.ac.uk)
+# \date       December 2020
 #
 
 import os
@@ -15,7 +15,7 @@ import pysitk.python_helper as ph
 from niftymic.definitions import DIR_TMP, DIR_TEMPLATES
 
 
-class InstallationTest(unittest.TestCase):
+class InstallationTestMonaiFbs(unittest.TestCase):
 
     def setUp(self):
 
@@ -24,7 +24,7 @@ class InstallationTest(unittest.TestCase):
         self.path_to_image = os.path.join(DIR_TEMPLATES, "STA23.nii.gz")
 
     ##
-    # Test whether fetal_brain_seg can be called
+    # Test whether monaifbs can be called
     # \date       2019-03-24 14:14:18+0000
     #
     def test_fetal_brain_seg(self):
@@ -33,7 +33,6 @@ class InstallationTest(unittest.TestCase):
         cmd_args = ["niftymic_segment_fetal_brains"]
         cmd_args.append("--filenames %s" % self.path_to_image)
         cmd_args.append("--dir-output %s" % dir_output)
-        cmd_args.append("--neuroimage-legacy-seg 1")
         # cmd_args.append("--verbose 1")
         cmd = " ".join(cmd_args)
 

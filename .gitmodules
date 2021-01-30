@@ -1,0 +1,3 @@
+[submodule "MONAIfbs"]
+	path = MONAIfbs
+	url = https://github.com/gift-surg/MONAIfbs
