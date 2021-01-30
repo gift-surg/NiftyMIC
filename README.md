@@ -9,7 +9,7 @@ A detailed description of the NiftyMIC algorithm is found in [EbnerWang2020][ebn
 * Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 
 A later extension to this paper for fetal brain automatic segmentation building on [MONAI][monai] was provided by [Marta B.M. Ranzini][martaranzini]. 
-More information about the `MONAIfbs` package can be found [at this page][monaifbs].
+More information about `MONAIfbs` can be found [here][monaifbs].
 
 If you have any questions or comments, please drop an email to `michael.ebner@kcl.ac.uk`.
 
@@ -102,9 +102,9 @@ whose installation requirements need to be met. Therefore, the local installatio
 
 1. [Installation of ITK_NiftyMIC][itkniftymic]
 1. [Installation of SimpleReg dependencies][simplereg-dependencies]
-1. [Installation of NiftyMIC][niftymic-install]
+1. [Installation of NiftyMIC (including optional MONAIfbs)][niftymic-install]
 
-*Note* `MONAIfbs` requires Python version >= 3.6.
+Note: The optional use of the automated fetal brain segmentation tool [MONAIfbs][monaifbs] requires Python version >= 3.6.
 
 ### Virtual Machine and Docker
 
@@ -116,7 +116,7 @@ Provided the input MR image data in NIfTI format (`nii` or `nii.gz`), NiftyMIC c
 
 A recommended workflow is [associated applications in square brackets]:
 
-1. Segmentation of the anatomy of interest for all input images. For fetal brain MRI reconstructions, we recommend the use of the fully automatic segmentation tool [MONAIfbs][monaifbs], already included in the NiftyMIC package [`niftymic_segment_fetal_brains`].
+1. Segmentation of the anatomy of interest for all input images. For fetal brain MRI reconstructions, we recommend the use of the fully automatic segmentation tool [MONAIfbs][monaifbs] already integrated in NiftyMIC [`niftymic_segment_fetal_brains`].
 1. Bias-field correction [`niftymic_correct_bias_field`]
 1. Volumetric reconstruction in subject space using two-step iterative approach based on rigid slice-to-volume registration and SRR cycles [`niftymic_reconstruct_volume`]
 
@@ -302,7 +302,7 @@ Additional parameters such as the regularization parameter `alpha` can be specif
 *Note*: In case a suffix distinguishes image segmentation (`--filenames-masks`) from the associated image filenames (`--filenames`), the argument `--suffix-mask` needs to be provided for reconstructing the HR brain volume mask as part of the pipeline. E.g. if images `name-of-stack-i.nii.gz` are associated with the mask `name-of-stack-i_mask.nii.gz`, then the additional argument `--suffix-mask _mask` needs to be specified.
 
 ## Licensing and Copyright
-Copyright (c) 2020 Michael Ebner and contributors.
+Copyright (c) 2021 Michael Ebner and contributors.
 This framework is made available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
 
 
