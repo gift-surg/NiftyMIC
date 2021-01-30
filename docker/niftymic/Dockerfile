@@ -32,9 +32,7 @@ RUN apt-get update && \
 # download NiftyMIC
 RUN if [ "$VERSION" = "latest" ] ; then \
         git clone \
-#        https://github.com/gift-surg/${REPO}.git /app/${REPO} \
-        --branch monai-segmentation \
-        https://github.com/martaranzini/NiftyMIC.git /app/${REPO} \
+        https://github.com/gift-surg/${REPO}.git /app/${REPO} \
     ;else \
         git clone \
         --branch ${VERSION} \
@@ -123,7 +121,7 @@ RUN if [ "$FETAL_SEG_TOOL" = "monaifbs" ] ; then \
         pytorch-ignite==0.4.2 \
         tensorboard==2.3.0 \
     ;fi
-# install packages for niftymic and for monaifbs
+# install packages for niftymic and monaifbs
 RUN pip install -e .
 RUN if [ "$FETAL_SEG_TOOL" = "monaifbs" ] ; then \
         pip install -e /app/${REPO}/MONAIfbs/ \
