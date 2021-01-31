@@ -31,11 +31,11 @@ Full working examples on automated segmentation and high-resolution reconstructi
 
 ## Algorithm
 Several methods have been implemented to solve the **Robust Super-Resolution Reconstruction (SRR)** problem 
-<!-- ```math -->
-<!-- \vec{x}^* := \text{argmin}_{\vec{x}\ge 0} \Big[\sum_{k\in\mathcal{K}_\sigma} \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big] -->
-<!-- ``` -->
+<!-- ```math
+\vec{x}^* := \text{argmin}_{\vec{x}\ge 0} \Big[\sum_{k\in\mathcal{K}_\sigma} \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big]
+``` -->
 <p align="center">
-<img src="https://latex.codecogs.com/svg.latex?\vec{x}^*&space;:=&space;\text{argmin}_{\vec{x}\ge&space;0}&space;\Big[\sum_{k\in\mathcal{K}}&space;\sum_{i=1}^{N_k}&space;\varrho\big(&space;(A_k\vec{x}&space;-&space;\vec{y}_k)_i^2&space;\big)&space;&plus;&space;\alpha\,\text{Reg}(\vec{x})&space;\Big]">
+<img src="http://latex.codecogs.com/svg.latex?\vec{x}^*&space;:=&space;\text{argmin}_{\vec{x}\ge&space;0}&space;\Big[\sum_{k\in\mathcal{K}_\sigma}&space;\sum_{i=1}^{N_k}&space;\varrho\big(&space;(A_k\vec{x}&space;-&space;\vec{y}_k)_i^2&space;\big)&space;&plus;&space;\alpha\,\text{Reg}(\vec{x})&space;\Big]" title="http://latex.codecogs.com/svg.latex?\vec{x}^* := \text{argmin}_{\vec{x}\ge 0} \Big[\sum_{k\in\mathcal{K}_\sigma} \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big]" />
 </p>
 
 <!--to obtain the (vectorized) high-resolution 3D MRI volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D MR slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$-->
@@ -56,11 +56,11 @@ The provided **data loss functions** ![img](http://latex.codecogs.com/svg.latex?
 <!--$`\varrho(e)=|e|_\gamma=\begin{cases}e,&e<\gamma^2\\2\gamma\sqrt{e}-\gamma^2,&e\ge\gamma^2\end{cases}`$-->
 <!--$`\varrho(e)=\arctan(e)`$-->
 <!--$`\varrho(e)=\ln(1 + e)`$-->
-* `linear`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3De)
-* `soft_l1`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D2%28%5Csqrt%7B1%2Be%7D-1%29)
-* `huber`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%7Ce%7C_%5Cgamma:%3D%5Cbegin%7Bcases%7De%2C%26e%3C%5Cgamma%5E2%5C%5C2%5Cgamma%5Csqrt%7Be%7D-%5Cgamma%5E2%2C%26e%5Cge%5Cgamma%5E2%5Cend%7Bcases%7D)
-* `arctan`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%5Carctan%28e%29)
-* `cauchy`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%5Cln%281%2Be%29)
+* `linear`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=e" title="http://latex.codecogs.com/svg.latex?\varrho(e)=e" />
+* `soft_l1`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=2(\sqrt{1&plus;e}-1)" title="http://latex.codecogs.com/svg.latex?\varrho(e)=2(\sqrt{1+e}-1)" />
+* `huber`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=|e|_\gamma=\begin{cases}e,&e<\gamma^2\\2\gamma\sqrt{e}-\gamma^2,&e\ge\gamma^2\end{cases}" title="http://latex.codecogs.com/svg.latex?\varrho(e)=|e|_\gamma=\begin{cases}e,&e<\gamma^2\\2\gamma\sqrt{e}-\gamma^2,&e\ge\gamma^2\end{cases}" />
+* `arctan`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=\arctan(e)" title="http://latex.codecogs.com/svg.latex?\varrho(e)=\arctan(e)" />
+* `cauchy`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=\ln(1&space;&plus;&space;e)" title="http://latex.codecogs.com/svg.latex?\varrho(e)=\ln(1 + e)" />
 
 ---
 
@@ -69,10 +69,10 @@ The **available regularizers** include
 <!-- * First-order Tikhonov (TK1): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \nabla \vec{x} \Vert_{\ell^2}^2`$ -->
 <!-- * Isotropic Total Variation (TV): $`\text{Reg}(\vec{x}) = \text{TV}_\text{iso}(\vec{x}) = \big\Vert |\nabla \vec{x}| \big\Vert_{\ell^1}`$ -->
 <!-- * Huber Function: $`\text{Reg}(\vec{x}) = \frac{1}{2\gamma} \big| |\nabla \vec{x}| \big|_{\gamma}`$ -->
-* Zeroth-order Tikhonov (TK0): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%7D%5CVert%5Cvec%7Bx%7D%5CVert_%7B%5Cell%5E2%7D%5E2)
-* First-order Tikhonov (TK1): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%7D%5CVert%5Cnabla%5Cvec%7Bx%7D%5CVert_%7B%5Cell%5E2%7D%5E2)
-* Isotropic Total Variation (TV): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Ctext%7BTV%7D_%5Ctext%7Biso%7D%28%5Cvec%7Bx%7D%29:%3D%5Cbig%5CVert%7C%5Cnabla%5Cvec%7Bx%7D%7C%5Cbig%5CVert_%7B%5Cell%5E1%7D)
-* Huber Function: ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%5Cgamma%7D%5Cbig%7C%7C%5Cnabla%5Cvec%7Bx%7D%7C%5Cbig%7C_%7B%5Cgamma%7D)
+* Zeroth-order Tikhonov (TK0): <img src="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x})&space;=&space;\frac{1}{2}\Vert&space;\vec{x}&space;\Vert_{\ell^2}^2" title="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \vec{x} \Vert_{\ell^2}^2" />
+* First-order Tikhonov (TK1): <img src="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x})&space;=&space;\frac{1}{2}\Vert&space;\nabla&space;\vec{x}&space;\Vert_{\ell^2}^2" title="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \nabla \vec{x} \Vert_{\ell^2}^2" />
+* Isotropic Total Variation (TV): <img src="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x})&space;=&space;\text{TV}_\text{iso}(\vec{x})&space;=&space;\big\Vert&space;|\nabla&space;\vec{x}|&space;\big\Vert_{\ell^1}" title="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x}) = \text{TV}_\text{iso}(\vec{x}) = \big\Vert |\nabla \vec{x}| \big\Vert_{\ell^1}" />
+* Huber Function: <img src="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x})&space;=&space;\frac{1}{2\gamma}&space;\big|&space;|\nabla&space;\vec{x}|&space;\big|_{\gamma}" title="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x}) = \frac{1}{2\gamma} \big| |\nabla \vec{x}| \big|_{\gamma}" />
 ---
 
 Additionally, the choice of finding **optimal reconstruction parameters** is facilitated by the [Numerical Solver Library (NSoL)][nsol].
