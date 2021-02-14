@@ -349,4 +349,4 @@ Selected publications associated with NiftyMIC are:
 [uclh]: http://www.uclh.nhs.uk
 [weiss]: https://www.ucl.ac.uk/interventional-surgical-sciences
 [wellcometrust]: http://www.wellcome.ac.uk
-[wikifetalbrainseg]: TODO
+[wikifetalbrainseg]: https://github.com/gift-surg/NiftyMIC/wiki/Legacy-Segmentation-Tool-(fetal_brain_seg)
