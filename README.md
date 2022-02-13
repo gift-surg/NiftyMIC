@@ -11,6 +11,9 @@ A detailed description of the NiftyMIC algorithm is found in [EbnerWang2020][ebn
 A later extension to this paper for fetal brain automatic segmentation building on [MONAI][monai] was provided by [Marta B.M. Ranzini][martaranzini]. 
 More information about `MONAIfbs` can be found [here][monaifbs].
 
+An extension of NiftyMIC for fetal functional MRI was developed in collaboration with members of the [Computational Image Research Lab][cir], Department of Biomedical Imaging and Image-guided Therapy at the [Medical University of Vienna][muw]. A detailed description of the NiftyMIC algorithm for fetal fMRI is found in [Sobotka2022][sobotka-2022]:
+* D. Sobotka, M. Ebner, E. Schwartz, K.-H. Nenning, A. Taymourtash, T. Vercauteren, S. Ourselin, G. Kasprian, D. Prayer, G. Langs, R. Licandro, “Motion Correction and Volumetric Reconstruction for Fetal fMRI”, arXiv, 2022.
+
 If you have any questions or comments, please drop an email to `michael.ebner@kcl.ac.uk`.
 
 ## NiftyMIC applied to Fetal Brain MRI
@@ -81,12 +84,15 @@ Additionally, the choice of finding **optimal reconstruction parameters** is fac
 NiftyMIC supports medical image registration and volumetric reconstruction for ultra-fast 2D MRI. **NiftyMIC is not intended for clinical use**.
 
 ## How to cite
-If you use this software in your work, please cite
+If you use this software in your work for structural MRI reconstruction, please cite
 
 * [[EbnerWang2020]][ebner-wang-2020] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 * [[EbnerWang2018]][ebner-wang-2018] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Melbourne, A., Doel, T., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2018). An Automated Localization, Segmentation and Reconstruction Framework for Fetal Brain MRI. In Medical Image Computing and Computer-Assisted Intervention -- MICCAI 2018 (pp. 313–320). Springer.
 * [[Ebner2018]](https://www.sciencedirect.com/science/article/pii/S1053811917308042) Ebner, M., Chung, K. K., Prados, F., Cardoso, M. J., Chard, D. T., Vercauteren, T., Ourselin, S. (2018). Volumetric reconstruction from printed films: Enabling 30 year longitudinal analysis in MR neuroimaging. NeuroImage, 165, 238–250.
 
+If you use this software in your work for functional MRI reconstruction, please cite
+* [[Sobotka2022]][sobotka-2022] D. Sobotka, M. Ebner, E. Schwartz, K.-H. Nenning, A. Taymourtash, T. Vercauteren, S. Ourselin, G. Kasprian, D. Prayer, G. Langs, R. Licandro, “Motion Correction and Volumetric Reconstruction for Fetal fMRI”, arXiv, 2022.
+* [[EbnerWang2020]][ebner-wang-2020] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 
 ## Installation
 
@@ -301,6 +307,61 @@ Additional parameters such as the regularization parameter `alpha` can be specif
 
 *Note*: In case a suffix distinguishes image segmentation (`--filenames-masks`) from the associated image filenames (`--filenames`), the argument `--suffix-mask` needs to be provided for reconstructing the HR brain volume mask as part of the pipeline. E.g. if images `name-of-stack-i.nii.gz` are associated with the mask `name-of-stack-i_mask.nii.gz`, then the additional argument `--suffix-mask _mask` needs to be specified.
 
+### NiftyMIC applied to Fetal Brain functional MRI
+
+An extension of NiftyMIC for fetal functional MRI is described in [Sobotka2022][sobotka-2022]:
+
+<p align="center">
+   <img src="./data/demo/NiftyMIC_rsfmri_Algorithm.png" align="center" width="700">
+</p>
+
+<p align="center">
+Figure 3: Overview of the proposed motion correction and volumetric reconstruction algorithm for rs-fMRI. With the first 𝑥 time points a HR reference volume with outlier rejection is estimated (Ebner et al., 2020). Afterwards each slice of a time point is registered to the HR reference volume and with Huber L2 regularization the input slices are reconstructed.<p align="center">
+
+<p align="center">
+   <img src="./data/demo/NiftyMIC_rsfmri_Reconstruction.png" align="center" width="700">
+</p>
+<p align="center">
+Figure 4: Qualitative comparison of the original low-resolution input sequence (top row) and the obtained high-resolution volumetric reconstruction of the functional MRI (bottom row) in both the original patient-specific and standard anatomical orientations. A sequence of axial stacks were used as input.<p align="center">
+
+
+A recommended workflow is [associated applications in square brackets]:
+
+1. Volumetric segmentation of the fetal brain for all input images in the sequence. We tested the algorithm with fetal functional brains masks created using the Brain Extraction Tool incorporated in the [FSL Toolbox][fsl] (Smith et al. 2002).
+
+1. Motion estimation [`rsfmri_estimate_motion`]
+   ```
+    rsfmri_estimate_motion \
+    --filename path-to-bold.nii.gz  \
+    --filename-mask path-to-bold_mask.nii.gz \
+    --dir-output path-to-dir-output
+    ```
+1. Functional volumetric reconstruction [`rsfmri_reconstruct_volume_from_slices`]
+    
+   An example for a basic usage reads
+    ```
+    rsfmri_reconstruct_volume_from_slices \
+    --filename path-to-bold.nii.gz  \
+    --filename-mask path-to-bold_mask.nii.gz \
+    --dir-input-mc path-to-motion_correction \ # created in `dir-output` in step 2 above
+    --output path/to/bold_reconstructed.nii.gz \
+    ```
+    
+   A more elaborate example using a different reconstruction approach `HuberL2` could be
+    ```
+    rsfmri_reconstruct_volume_from_slices \
+    --filename path-to-bold.nii.gz \
+    --filename-mask path-to-bold_mask.nii.gz \
+    --dir-input-mc path-to-motion_correction \ # created in `dir-output` in step 2 above
+    --output path-to-bold_reconstructed.nii.gz \
+    --reconstruction-type HuberL2
+    --alpha 0.1 \
+    --iter-max 20
+   ```
+
+If you have any questions or comments with regards to the use of NiftyMIC for functional MRI, please drop an email to `daniel.sobotka@meduniwien.ac.at`.
+   
+   
 ## Licensing and Copyright
 Copyright (c) 2022 Michael Ebner and contributors.
 This framework is made available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
@@ -311,6 +372,7 @@ This work is partially funded by the UCL [Engineering and Physical Sciences Rese
 
 ## References
 Selected publications associated with NiftyMIC are:
+* [[Sobotka2022]][sobotka-2022] D. Sobotka, M. Ebner, E. Schwartz, K.-H. Nenning, A. Taymourtash, T. Vercauteren, S. Ourselin, G. Kasprian, D. Prayer, G. Langs, R. Licandro, “Motion Correction and Volumetric Reconstruction for Fetal fMRI”, arXiv, 2022.
 * [[EbnerWang2020]][ebner-wang-2020] Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 * [[Ebner2019]](https://onlinelibrary.wiley.com/doi/abs/10.1002/mrm.27852) Ebner, M., Patel, P. A., Atkinson, D., Caselton, C., Firmin, F., Amin, Z., Bainbridge, A., De Coppi, P., Taylor, S. A., Ourselin, S., Chouhan, M. D., Vercauteren, T. (2019). Super‐resolution for upper abdominal MRI: Acquisition and post‐processing protocol optimization using brain MRI control data and expert reader validation. Magnetic Resonance in Medicine, 82(5), 1905–1919.
 * [[Sobotka2019]](http://link.springer.com/10.1007/978-3-030-32875-7_14) Sobotka, D., Licandro, R., Ebner, M., Schwartz, E., Vercauteren, T., Ourselin, S., Kasprian, G., Prayer, D., Langs, G. (2019). Reproducibility of Functional Connectivity Estimates in Motion Corrected Fetal fMRI. Smart Ultrasound Imaging and Perinatal, Preterm and Paediatric Image Analysis (pp. 123–132). Cham: Springer International Publishing.
@@ -320,12 +382,14 @@ Selected publications associated with NiftyMIC are:
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
 
 [bsd]: https://opensource.org/licenses/BSD-3-Clause
+[cir]: https://www.cir.meduniwien.ac.at/
 [cmic]: http://cmic.cs.ucl.ac.uk
 [dynUNet]: https://github.com/Project-MONAI/tutorials/blob/master/modules/dynunet_tutorial.ipynb
 [ebner-wang-2018]: http://link.springer.com/10.1007/978-3-030-00928-1_36
 [ebner-wang-2020]: https://www.sciencedirect.com/science/article/pii/S1053811919309152
 [epsrc]: http://www.epsrc.ac.uk
 [fetal_brain_seg]: https://github.com/gift-surg/fetal_brain_seg
+[fsl]: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET
 [gholipour_atlas]: https://www.nature.com/articles/s41598-017-00525-w
 [giftsurg]: http://www.gift-surg.ac.uk
 [guarantors]: https://guarantorsofbrain.org/
@@ -336,6 +400,7 @@ Selected publications associated with NiftyMIC are:
 [monai]: https://monai.io/
 [monaifbs]: https://github.com/gift-surg/MONAIfbs
 [mssociety]: https://www.mssociety.org.uk/
+[muw]: https://www.meduniwien.ac.at
 [niftymic-docker]: https://hub.docker.com/r/renbem/niftymic
 [niftymic-install]: https://github.com/gift-surg/NiftyMIC/wikis/niftymic-installation
 [niftymic-vm]: https://github.com/gift-surg/NiftyMIC/wiki/niftymic-virtualbox
@@ -345,8 +410,10 @@ Selected publications associated with NiftyMIC are:
 [sie]: https://www.kcl.ac.uk/bmeis/our-departments/surgical-interventional-engineering
 [simplereg-dependencies]: https://github.com/gift-surg/SimpleReg/wikis/simplereg-dependencies
 [simplereg]: https://github.com/gift-surg/SimpleReg
+[sobotka-2022]: TODO
 [ucl]: http://www.ucl.ac.uk
 [uclh]: http://www.uclh.nhs.uk
 [weiss]: https://www.ucl.ac.uk/interventional-surgical-sciences
 [wellcometrust]: http://www.wellcome.ac.uk
 [wikifetalbrainseg]: https://github.com/gift-surg/NiftyMIC/wiki/Legacy-Segmentation-Tool-(fetal_brain_seg)
+
