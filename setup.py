@@ -77,6 +77,10 @@ setup(name='NiftyMIC',
               'niftymic_nifti2dicom = niftymic.application.nifti2dicom:main',
               'niftymic_show_reconstruction_parameter_study = nsol.application.show_parameter_study:main',
               'niftymic_segment_fetal_brains = niftymic.application.segment_fetal_brains:main',
+
+              # rs-fMRI 
+              'niftymic_rsfmri_estimate_motion = niftymic.application.rsfmri_estimate_motion:main',
+              'niftymic_rsfmri_reconstruct_volume_from_slices = niftymic.application.rsfmri_reconstruct_volume_from_slices:main',
           ],
       },
       )

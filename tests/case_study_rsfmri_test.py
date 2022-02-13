@@ -15,10 +15,10 @@ import SimpleITK as sitk
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
-from niftymic.definitions import DIR_TMP, DIR_TEST, REGEX_FILENAMES, DIR_TEMPLATES
+from niftymic.definitions import DIR_TMP, DIR_TEST, REGEX_FILENAMES
 
-import niftymic.prototyping.rsfmri_estimate_motion as rsfmri_estimate_motion
-import niftymic.prototyping.rsfmri_reconstruct_volume_from_slices as rsfmri_reconstruct_volume_from_slices
+import niftymic.application.rsfmri_estimate_motion as rsfmri_estimate_motion
+import niftymic.application.rsfmri_reconstruct_volume_from_slices as rsfmri_reconstruct_volume_from_slices
 
 
 class CaseStudyRestingStateFMRITest(unittest.TestCase):
