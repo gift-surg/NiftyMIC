@@ -316,7 +316,7 @@ An extension of NiftyMIC for fetal functional MRI is described in [Sobotka2022][
 </p>
 
 <p align="center">
-Figure 3: Overview of the proposed motion correction and volumetric reconstruction algorithm for rs-fMRI. With the first n=15 (default) time points a HR reference volume with outlier rejection is estimated [EbnerWang2020][ebner-wang-2020]. Afterwards each slice of a time point is registered to the HR reference volume following which individual time points are reconstructed using Huber L2 regularization.<p align="center">
+Figure 3: Overview of the proposed motion correction and volumetric reconstruction algorithm for rs-fMRI. With the first n=15 (default) time points a HR reference volume with outlier rejection is estimated (Ebner, Wang et al., 2020). Afterwards each slice of a time point is registered to the HR reference volume following which individual time points are reconstructed using Huber L2 regularization.<p align="center">
 
 <p align="center">
    <img src="./data/demo/NiftyMIC_rsfmri_Reconstruction.png" align="center" width="700">
