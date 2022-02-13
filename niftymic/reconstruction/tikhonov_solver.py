@@ -7,15 +7,18 @@
 # \date       July 2016
 #
 
+import scipy
 import numpy as np
 import SimpleITK as sitk
 
+from nsol.definitions import EPS
 import nsol.linear_operators as linop
 import nsol.tikhonov_linear_solver as tk
 import pysitk.python_helper as ph
 import pysitk.simple_itk_helper as sitkh
 
 from niftymic.reconstruction.solver import Solver
+import niftymic.base.stack as st
 
 
 # This class implements the framework to iteratively solve
@@ -280,3 +283,293 @@ class TikhonovSolver(Solver):
         ph.print_info(
             "Maximum number of iterations: " + str(self._iter_max))
         # ph.print_info("Tolerance: %.0e" %(self._tolerance))
+
+
+class TemporalTikhonovSolver(object):
+
+    def __init__(self,
+                 stacks,
+                 reconstruction,
+                 alpha_cut=3,
+                 alpha=0.03,
+                 beta=0.1,
+                 iter_max=10,
+                 reg_type="TK1",
+                 minimizer="lsmr",
+                 deconvolution_mode="full_3D",
+                 x_scale="max",
+                 data_loss="linear",
+                 data_loss_scale=1,
+                 huber_gamma=1.345,
+                 predefined_covariance=None,
+                 use_masks=True,
+                 verbose=1,
+                 ):
+
+        self._solvers = [
+            TikhonovSolver(
+                stacks=[s],
+                reconstruction=st.Stack.from_stack(reconstruction),
+                alpha_cut=alpha_cut,
+                alpha=alpha,
+                iter_max=iter_max,
+                reg_type=reg_type,
+                minimizer=minimizer,
+                deconvolution_mode=deconvolution_mode,
+                x_scale=x_scale,
+                data_loss=data_loss,
+                data_loss_scale=data_loss_scale,
+                huber_gamma=huber_gamma,
+                predefined_covariance=predefined_covariance,
+                use_masks=use_masks,
+                verbose=verbose,
+            )
+            for s in stacks
+        ]
+
+        self._reg_type = reg_type
+
+        self._alpha = alpha
+        self._beta = beta
+        self._iter_max = iter_max
+        self._verbose = verbose
+
+        self._stacks = stacks
+        self._reconstruction = reconstruction
+
+        self._computational_time = None
+        self._reconstructions = None
+        self._bounds = (0, np.inf)
+
+    def get_computational_time(self):
+        return self._computational_time
+
+    def get_reconstructions(self):
+        return self._reconstructions
+
+    def run(self):
+        time_start = ph.start_timing()
+        self._print_info_text()
+
+        shape_x = self._solvers[0]._reconstruction_shape
+        self._n_x = np.array(shape_x).prod()
+        self._n_x_total = len(self._solvers) * self._n_x
+
+        x0 = self._solvers[0].get_x0()
+        if self._reg_type == "TK0":
+            self._B = lambda x: x.flatten()
+            self._B_adj = lambda x: x.flatten()
+
+        elif self._reg_type == "TK1":
+            spacing = np.array(self._reconstruction.sitk.GetSpacing())
+            linear_operators = linop.LinearOperators3D(spacing=spacing)
+            grad, grad_adj = linear_operators.get_gradient_operators()
+
+            X_shape = shape_x
+            Z_shape = grad(x0.reshape(*X_shape)).shape
+
+            self._B = lambda x: grad(x.reshape(*X_shape)).flatten()
+            self._B_adj = lambda x: grad_adj(x.reshape(*Z_shape)).flatten()
+
+        self._B_shape = (self._B(x0).size, x0.size)
+
+        n_rhs = 0
+        self._rhs = []
+        self._A = []
+        self._A_adj = []
+        self._D = []
+        self._D_adj = []
+        for solver in self._solvers:
+            b = solver.get_b()
+            n_rhs += len(b)
+            self._rhs.append(b)
+            self._A.append(solver.get_A())
+            self._A_adj.append(solver.get_A_adj())
+
+        if self._alpha > EPS:
+            n_rhs += len(self._solvers) * self._B_shape[0]
+
+        if self._beta > EPS:
+            n_rhs += (len(self._solvers) - 1) * self._n_x
+
+        self._x_1D = np.zeros(self._n_x_total)
+        self._rhs_1D = np.zeros(n_rhs)
+
+        A_fw = lambda x: self._A_fw(
+            x, np.sqrt(self._alpha), np.sqrt(self._beta))
+        A_bw = lambda x: self._A_bw(
+            x, np.sqrt(self._alpha), np.sqrt(self._beta))
+
+        # Construct (sparse) linear operator A
+        A = scipy.sparse.linalg.LinearOperator(
+            shape=(self._rhs_1D.size, self._x_1D.size),
+            matvec=A_fw,
+            rmatvec=A_bw)
+        b = np.zeros_like(A(self._x_1D))
+        b_upper = np.concatenate(self._rhs)
+        b[:b_upper.size] = b_upper
+
+        x = scipy.sparse.linalg.lsmr(
+            A, b,
+            maxiter=self._iter_max,
+            show=self._verbose,
+            atol=0,
+            btol=0)[0]
+
+        if self._bounds is not None:
+            # Clip to bounds
+            x = np.clip(x, self._bounds[0], self._bounds[1])
+
+        self._reconstructions = self._get_reconstructions(x)
+
+        # y_vec = s.get_b()
+
+        self._computational_time = ph.stop_timing(time_start)
+
+    def _A_fw(self, x, sqrt_alpha, sqrt_beta):
+
+        i0 = 0
+
+        # cost
+        for i, solver in enumerate(self._solvers):
+            i1 = i0 + len(self._rhs[i])
+            self._rhs_1D[i0:i1] = self._A[i](
+                x[i * self._n_x:(i + 1) * self._n_x]
+            )
+            i0 = i1
+
+        # tikhonov
+        if sqrt_alpha > EPS:
+            for i, solver in enumerate(self._solvers):
+                self._rhs_1D[
+                    i0 + self._B_shape[0] * i:
+                    i0 + self._B_shape[0] * (i + 1)
+                ] = sqrt_alpha * self._B(x[i * self._n_x:(i + 1) * self._n_x])
+                i1 = i0 + self._B_shape[0] * (i + 1)
+
+        # temporal
+        if sqrt_beta > EPS:
+            for i in range(len(self._solvers) - 1):
+                self._rhs_1D[
+                    i1 + self._n_x * i:
+                    i1 + self._n_x * (i + 1)
+                ] = sqrt_beta * (
+                    x[(i + 1) * self._n_x:(i + 2) * self._n_x]
+                    - x[i * self._n_x:(i + 1) * self._n_x]
+                )
+
+        return self._rhs_1D
+
+    def _A_bw(self, b, sqrt_alpha, sqrt_beta):
+        i0 = 0
+        self._x_1D[:] = 0
+
+        # cost
+        for i, solver in enumerate(self._solvers):
+            i1 = i0 + len(self._rhs[i])
+            self._x_1D[i * self._n_x:(i + 1) * self._n_x] = \
+                self._A_adj[i](b[i0:i1])
+            i0 = i1
+
+        # tikhonov
+        if sqrt_alpha > EPS:
+            for i, solver in enumerate(self._solvers):
+                self._x_1D[i * self._n_x:(i + 1) * self._n_x] += \
+                    sqrt_alpha * self._B_adj(
+                        b[i0:i0 + self._B_shape[0]]
+                )
+                i0 += self._B_shape[0]
+
+        # temporal
+        if sqrt_beta > EPS:
+            i = 0
+            self._x_1D[i * self._n_x:(i + 1) * self._n_x] += \
+                - sqrt_beta * b[i0 + self._n_x * i: i0 + self._n_x * (i + 1)]
+
+            for i in range(1, len(self._solvers) - 1):
+                self._x_1D[i * self._n_x:(i + 1) * self._n_x] += \
+                    sqrt_beta * (
+                        b[i0 + self._n_x * (i - 1): i0 + self._n_x * i]
+                        - b[i0 + self._n_x * i: i0 + self._n_x * (i + 1)]
+                )
+
+            i = len(self._solvers) - 1
+            self._x_1D[i * self._n_x:(i + 1) * self._n_x] += \
+                sqrt_beta * (
+                    b[i0 + self._n_x * (i - 1): i0 + self._n_x * i]
+            )
+
+        return self._x_1D
+
+    def _get_reconstructions(self, x):
+
+        reconstructions = []
+        for i, solver in enumerate(self._solvers):
+            x_vec = x[i * self._n_x:(i + 1) * self._n_x]
+            recon_itk = solver._get_itk_image_from_array_vec(
+                x_vec, self._reconstruction.itk)
+            recon_sitk = sitkh.get_sitk_from_itk_image(recon_itk)
+            reconstructions.append(
+                st.Stack.from_sitk_image(
+                    image_sitk=recon_sitk,
+                    slice_thickness=self._reconstruction.get_slice_thickness(),
+                    image_sitk_mask=self._reconstruction.sitk_mask,
+                )
+            )
+        return reconstructions
+
+    def _print_info_text(self):
+
+        ph.print_subtitle("Temporal Tikhonov Solver:")
+        ph.print_info("Chosen regularization type: ", newline=False)
+        if self._reg_type in ["TK0"]:
+            print("Zeroth-order Tikhonov")
+
+        else:
+            print("First-order Tikhonov")
+
+        # if self._deconvolution_mode in ["only_in_plane"]:
+        #     ph.print_info("(Only in-plane deconvolution is performed)")
+
+        # elif self._deconvolution_mode in ["predefined_covariance"]:
+        #     ph.print_info("(Predefined covariance used: cov = %s)"
+        #                   % (np.diag(self._predefined_covariance)))
+
+        # if self._data_loss in ["huber"]:
+        #     ph.print_info("Loss function: %s (gamma = %g)" %
+        #                   (self._data_loss, self._huber_gamma))
+        # else:
+        #     ph.print_info("Loss function: %s" % (self._data_loss))
+
+        # if self._data_loss != "linear":
+        #     ph.print_info("Loss function scale: %g" % (self._data_loss_scale))
+
+        ph.print_info(
+            "Regularization parameter alpha (spatial reg): " + str(self._alpha))
+        ph.print_info(
+            "Regularization parameter beta (temporal reg): " + str(self._beta))
+        # ph.print_info("Minimizer: " + self._minimizer)
+        ph.print_info("Maximum number of iterations: " + str(self._iter_max))
+        # ph.print_info("Tolerance: %.0e" %(self._tolerance))
+
+    def get_setting_specific_filename(self, prefix="SRR_"):
+
+        # Build filename
+        filename = prefix
+        filename += "stacks" + str(len(self._stacks))
+        if self._alpha > 0 or self._beta > 0:
+            filename += "_" + self._reg_type
+        # filename += "_" + self._minimizer
+        # if self._data_loss not in ["linear"]:
+        #     filename += "_" + self._data_loss
+        #     if self._data_loss in ["huber"]:
+        #         filename += str(self._huber_gamma)
+        #     filename += "_fscale%g" % self._data_loss_scale
+        filename += "_alpha" + str(self._alpha)
+        filename += "_beta" + str(self._beta)
+        filename += "_itermax" + str(self._iter_max)
+
+        # Replace dots by 'p'
+        filename = filename.replace(".", "p")
+
+        return filename

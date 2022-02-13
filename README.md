@@ -302,7 +302,7 @@ Additional parameters such as the regularization parameter `alpha` can be specif
 *Note*: In case a suffix distinguishes image segmentation (`--filenames-masks`) from the associated image filenames (`--filenames`), the argument `--suffix-mask` needs to be provided for reconstructing the HR brain volume mask as part of the pipeline. E.g. if images `name-of-stack-i.nii.gz` are associated with the mask `name-of-stack-i_mask.nii.gz`, then the additional argument `--suffix-mask _mask` needs to be specified.
 
 ## Licensing and Copyright
-Copyright (c) 2021 Michael Ebner and contributors.
+Copyright (c) 2022 Michael Ebner and contributors.
 This framework is made available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
 
 
