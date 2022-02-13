@@ -322,7 +322,7 @@ Figure 3: Overview of the proposed motion correction and volumetric reconstructi
    <img src="./data/demo/NiftyMIC_rsfmri_Reconstruction.png" align="center" width="700">
 </p>
 <p align="center">
-Figure 4: Qualitative comparison of the original low-resolution input sequence (top row) and the obtained high-resolution volumetric reconstruction of the functional MRI (bottom row) in both the original patient-specific and standard anatomical orientations. A sequence of axial stacks were used as input.<p align="center">
+Figure 4: Qualitative comparison of the original low-resolution input sequence (top row) and the obtained volumetric reconstruction of the functional MRI (bottom row) in patient-specific orientation. A sequence of axial stacks were used as input.<p align="center">
 
 
 A recommended workflow is [associated applications in square brackets]:
