@@ -307,7 +307,7 @@ Additional parameters such as the regularization parameter `alpha` can be specif
 
 *Note*: In case a suffix distinguishes image segmentation (`--filenames-masks`) from the associated image filenames (`--filenames`), the argument `--suffix-mask` needs to be provided for reconstructing the HR brain volume mask as part of the pipeline. E.g. if images `name-of-stack-i.nii.gz` are associated with the mask `name-of-stack-i_mask.nii.gz`, then the additional argument `--suffix-mask _mask` needs to be specified.
 
-### NiftyMIC applied to Fetal Brain functional MRI
+### NiftyMIC applied to Fetal Brain Functional MRI
 
 An extension of NiftyMIC for fetal functional MRI is described in [Sobotka2022][sobotka-2022]:
 
@@ -316,7 +316,7 @@ An extension of NiftyMIC for fetal functional MRI is described in [Sobotka2022][
 </p>
 
 <p align="center">
-Figure 3: Overview of the proposed motion correction and volumetric reconstruction algorithm for rs-fMRI. With the first 𝑥 time points a HR reference volume with outlier rejection is estimated (Ebner et al., 2020). Afterwards each slice of a time point is registered to the HR reference volume and with Huber L2 regularization the input slices are reconstructed.<p align="center">
+Figure 3: Overview of the proposed motion correction and volumetric reconstruction algorithm for rs-fMRI. With the first n=15 (default) time points a HR reference volume with outlier rejection is estimated [EbnerWang2020][ebner-wang-2020]. Afterwards each slice of a time point is registered to the HR reference volume following which individual time points are reconstructed using Huber L2 regularization.<p align="center">
 
 <p align="center">
    <img src="./data/demo/NiftyMIC_rsfmri_Reconstruction.png" align="center" width="700">
