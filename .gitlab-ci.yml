@@ -184,7 +184,7 @@ rsfmri_estimate_motion:
   script:
     - recon_type=HuberL2
     - >
-      python niftymic/prototyping/rsfmri_estimate_motion.py
+      niftymic_rsfmri_estimate_motion
       --filename ${DATADIR}/rsfmri/bold.nii.gz
       --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
       --dir-output ${TMPDIR}/rsfmri 
@@ -203,7 +203,7 @@ rsfmri_reconstruct_volume_from_slices:
   script:
     - recon_type=TK1L2
     - >
-      python niftymic/prototyping/rsfmri_reconstruct_volume_from_slices.py
+      niftymic_rsfmri_reconstruct_volume_from_slices
       --filename ${DATADIR}/rsfmri/bold.nii.gz
       --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
       --output ${TMPDIR}/rsfmri/foo.nii.gz 

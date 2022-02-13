@@ -8,10 +8,15 @@ at the [Wellcome/EPSRC Centre for Interventional and Surgical Sciences][weiss], 
 A detailed description of the NiftyMIC algorithm is found in [EbnerWang2020][ebner-wang-2020]:
 * Ebner, M., Wang, G., Li, W., Aertsen, M., Patel, P. A., Aughwane, R., Melbourne, A., Doel, T., Dymarkowski, S., De Coppi, P., David, A. L., Deprest, J., Ourselin, S., Vercauteren, T. (2020). An automated framework for localization, segmentation and super-resolution reconstruction of fetal brain MRI. NeuroImage, 206, 116324.
 
+A later extension to this paper for fetal brain automatic segmentation building on [MONAI][monai] was provided by [Marta B.M. Ranzini][martaranzini]. 
+More information about `MONAIfbs` can be found [here][monaifbs].
+
 If you have any questions or comments, please drop an email to `michael.ebner@kcl.ac.uk`.
 
 ## NiftyMIC applied to Fetal Brain MRI
-Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. The associated brain masks for motion correction were obtained using the automatic segmentation tool [fetal_brain_seg][fetal_brain_seg]. A full working example on automated segmentation and high-resolution reconstruction of fetal brain MRI using NiftyMIC is described in the [Usage](https://github.com/gift-surg/NiftyMIC#automatic-segmentation-and-high-resolution-reconstruction-of-fetal-brain-mri) section below.
+Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, NiftyMIC produces an isotropic, high-resolution 3D volume. As an example, we illustrate its use for fetal MRI by computing a high-resolution visualization of the brain for a neck mass subject. Standard clinical HASTE sequences were used to acquire the low-resolution images in multiple orientations. 
+The associated brain masks for motion correction can be obtained with the included automated segmentation tool [MONAIfbs][monaifbs] (a legacy method for automated segmentation can also be found in the [fetal_brain_seg][fetal_brain_seg] package).   
+Full working examples on automated segmentation and high-resolution reconstruction of fetal brain MRI using NiftyMIC is described in the [Usage](https://github.com/gift-surg/NiftyMIC#automatic-segmentation-and-high-resolution-reconstruction-of-fetal-brain-mri) section below. 
 
 <p align="center">
    <img src="./data/demo/NiftyMIC_Algorithm.png" align="center" width="700">
@@ -26,11 +31,11 @@ Given a set of low-resolution, possibly motion-corrupted, stacks of 2D slices, N
 
 ## Algorithm
 Several methods have been implemented to solve the **Robust Super-Resolution Reconstruction (SRR)** problem 
-<!-- ```math -->
-<!-- \vec{x}^* := \text{argmin}_{\vec{x}\ge 0} \Big[\sum_{k\in\mathcal{K}_\sigma} \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big] -->
-<!-- ``` -->
+<!-- ```math
+\vec{x}^* := \text{argmin}_{\vec{x}\ge 0} \Big[\sum_{k\in\mathcal{K}_\sigma} \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big]
+``` -->
 <p align="center">
-<img src="https://latex.codecogs.com/svg.latex?\vec{x}^*&space;:=&space;\text{argmin}_{\vec{x}\ge&space;0}&space;\Big[\sum_{k\in\mathcal{K}}&space;\sum_{i=1}^{N_k}&space;\varrho\big(&space;(A_k\vec{x}&space;-&space;\vec{y}_k)_i^2&space;\big)&space;&plus;&space;\alpha\,\text{Reg}(\vec{x})&space;\Big]">
+<img src="http://latex.codecogs.com/svg.latex?\vec{x}^*&space;:=&space;\text{argmin}_{\vec{x}\ge&space;0}&space;\Big[\sum_{k\in\mathcal{K}_\sigma}&space;\sum_{i=1}^{N_k}&space;\varrho\big(&space;(A_k\vec{x}&space;-&space;\vec{y}_k)_i^2&space;\big)&space;&plus;&space;\alpha\,\text{Reg}(\vec{x})&space;\Big]" title="http://latex.codecogs.com/svg.latex?\vec{x}^* := \text{argmin}_{\vec{x}\ge 0} \Big[\sum_{k\in\mathcal{K}_\sigma} \sum_{i=1}^{N_k} \varrho\big( (A_k\vec{x} - \vec{y}_k)_i^2 \big) + \alpha\,\text{Reg}(\vec{x}) \Big]" />
 </p>
 
 <!--to obtain the (vectorized) high-resolution 3D MRI volume $`\vec{x}\in\mathbb{R}^N`$ from multiple, possibly motion corrupted, low-resolution stacks of (vectorized) 2D MR slices $`\vec{y}_k \in\mathbb{R}^{N_k}`$ with $`N_k\ll N`$ for $`k=1,...,\,K`$-->
@@ -51,11 +56,11 @@ The provided **data loss functions** ![img](http://latex.codecogs.com/svg.latex?
 <!--$`\varrho(e)=|e|_\gamma=\begin{cases}e,&e<\gamma^2\\2\gamma\sqrt{e}-\gamma^2,&e\ge\gamma^2\end{cases}`$-->
 <!--$`\varrho(e)=\arctan(e)`$-->
 <!--$`\varrho(e)=\ln(1 + e)`$-->
-* `linear`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3De)
-* `soft_l1`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D2%28%5Csqrt%7B1%2Be%7D-1%29)
-* `huber`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%7Ce%7C_%5Cgamma:%3D%5Cbegin%7Bcases%7De%2C%26e%3C%5Cgamma%5E2%5C%5C2%5Cgamma%5Csqrt%7Be%7D-%5Cgamma%5E2%2C%26e%5Cge%5Cgamma%5E2%5Cend%7Bcases%7D)
-* `arctan`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%5Carctan%28e%29)
-* `cauchy`: ![img](http://latex.codecogs.com/svg.latex?%5Cvarrho%28e%29%3D%5Cln%281%2Be%29)
+* `linear`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=e" title="http://latex.codecogs.com/svg.latex?\varrho(e)=e" />
+* `soft_l1`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=2(\sqrt{1&plus;e}-1)" title="http://latex.codecogs.com/svg.latex?\varrho(e)=2(\sqrt{1+e}-1)" />
+* `huber`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=|e|_\gamma=\begin{cases}e,&e<\gamma^2\\2\gamma\sqrt{e}-\gamma^2,&e\ge\gamma^2\end{cases}" title="http://latex.codecogs.com/svg.latex?\varrho(e)=|e|_\gamma=\begin{cases}e,&e<\gamma^2\\2\gamma\sqrt{e}-\gamma^2,&e\ge\gamma^2\end{cases}" />
+* `arctan`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=\arctan(e)" title="http://latex.codecogs.com/svg.latex?\varrho(e)=\arctan(e)" />
+* `cauchy`: <img src="http://latex.codecogs.com/svg.latex?\varrho(e)=\ln(1&space;&plus;&space;e)" title="http://latex.codecogs.com/svg.latex?\varrho(e)=\ln(1 + e)" />
 
 ---
 
@@ -64,10 +69,10 @@ The **available regularizers** include
 <!-- * First-order Tikhonov (TK1): $`\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \nabla \vec{x} \Vert_{\ell^2}^2`$ -->
 <!-- * Isotropic Total Variation (TV): $`\text{Reg}(\vec{x}) = \text{TV}_\text{iso}(\vec{x}) = \big\Vert |\nabla \vec{x}| \big\Vert_{\ell^1}`$ -->
 <!-- * Huber Function: $`\text{Reg}(\vec{x}) = \frac{1}{2\gamma} \big| |\nabla \vec{x}| \big|_{\gamma}`$ -->
-* Zeroth-order Tikhonov (TK0): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%7D%5CVert%5Cvec%7Bx%7D%5CVert_%7B%5Cell%5E2%7D%5E2)
-* First-order Tikhonov (TK1): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%7D%5CVert%5Cnabla%5Cvec%7Bx%7D%5CVert_%7B%5Cell%5E2%7D%5E2)
-* Isotropic Total Variation (TV): ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Ctext%7BTV%7D_%5Ctext%7Biso%7D%28%5Cvec%7Bx%7D%29:%3D%5Cbig%5CVert%7C%5Cnabla%5Cvec%7Bx%7D%7C%5Cbig%5CVert_%7B%5Cell%5E1%7D)
-* Huber Function: ![img](http://latex.codecogs.com/svg.latex?%5Ctext%7BReg%7D%28%5Cvec%7Bx%7D%29%3D%5Cfrac%7B1%7D%7B2%5Cgamma%7D%5Cbig%7C%7C%5Cnabla%5Cvec%7Bx%7D%7C%5Cbig%7C_%7B%5Cgamma%7D)
+* Zeroth-order Tikhonov (TK0): <img src="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x})&space;=&space;\frac{1}{2}\Vert&space;\vec{x}&space;\Vert_{\ell^2}^2" title="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \vec{x} \Vert_{\ell^2}^2" />
+* First-order Tikhonov (TK1): <img src="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x})&space;=&space;\frac{1}{2}\Vert&space;\nabla&space;\vec{x}&space;\Vert_{\ell^2}^2" title="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x}) = \frac{1}{2}\Vert \nabla \vec{x} \Vert_{\ell^2}^2" />
+* Isotropic Total Variation (TV): <img src="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x})&space;=&space;\text{TV}_\text{iso}(\vec{x})&space;=&space;\big\Vert&space;|\nabla&space;\vec{x}|&space;\big\Vert_{\ell^1}" title="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x}) = \text{TV}_\text{iso}(\vec{x}) = \big\Vert |\nabla \vec{x}| \big\Vert_{\ell^1}" />
+* Huber Function: <img src="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x})&space;=&space;\frac{1}{2\gamma}&space;\big|&space;|\nabla&space;\vec{x}|&space;\big|_{\gamma}" title="http://latex.codecogs.com/svg.latex?\text{Reg}(\vec{x}) = \frac{1}{2\gamma} \big| |\nabla \vec{x}| \big|_{\gamma}" />
 ---
 
 Additionally, the choice of finding **optimal reconstruction parameters** is facilitated by the [Numerical Solver Library (NSoL)][nsol].
@@ -97,7 +102,9 @@ whose installation requirements need to be met. Therefore, the local installatio
 
 1. [Installation of ITK_NiftyMIC][itkniftymic]
 1. [Installation of SimpleReg dependencies][simplereg-dependencies]
-1. [Installation of NiftyMIC][niftymic-install]
+1. [Installation of NiftyMIC (including optional MONAIfbs)][niftymic-install]
+
+Note: The optional use of the automated fetal brain segmentation tool [MONAIfbs][monaifbs] requires Python version >= 3.6.
 
 ### Virtual Machine and Docker
 
@@ -109,7 +116,7 @@ Provided the input MR image data in NIfTI format (`nii` or `nii.gz`), NiftyMIC c
 
 A recommended workflow is [associated applications in square brackets]:
 
-1. Segmentation of the anatomy of interest for all input images. For fetal brain MRI reconstructions, we recommend the use of the fully automatic segmentation tool [fetal_brain_seg][fetal_brain_seg] for this step.
+1. Segmentation of the anatomy of interest for all input images. For fetal brain MRI reconstructions, we recommend the use of the fully automatic segmentation tool [MONAIfbs][monaifbs] already integrated in NiftyMIC [`niftymic_segment_fetal_brains`].
 1. Bias-field correction [`niftymic_correct_bias_field`]
 1. Volumetric reconstruction in subject space using two-step iterative approach based on rigid slice-to-volume registration and SRR cycles [`niftymic_reconstruct_volume`]
 
@@ -240,9 +247,23 @@ niftymic_show_parameter_study \
 ```
 
 ### Automatic Segmentation and High-Resolution Reconstruction of Fetal Brain MRI
-Based on the work described in [EbnerWang2018][ebner-wang-2018] and [EbnerWang2020][ebner-wang-2020], an automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2). 
+An automated framework is implemented to obtain a high-resolution fetal brain MRI reconstruction in the standard anatomical planes (Figure 2).
+This includes two main subsequent blocks:
+1. Automatic segmentation to generate fetal brain masks
+2. Automatic high-resolution reconstruction.
 
-Provided [fetal_brain_seg][fetal_brain_seg] is installed, create the automatic fetal brain masks of HASTE-like images:
+The latter is based on the work described in [EbnerWang2018][ebner-wang-2018] and [EbnerWang2020][ebner-wang-2020].
+Compared to the segmentation approach proposed in [EbnerWang2020][ebner-wang-2020], a new automated segmentation tool has
+been included in the NiftyMIC package, called [MONAIfbs][monaifbs]. 
+This implements a single-step segmentation approach based on the [dynUNet][dynUNet] implemented in [MONAI][monai].
+
+The current NiftyMIC version is still compatible with the older segmentation pipeline based on the [fetal_brain_seg][fetal_brain_seg] 
+package and presented in [EbnerWang2020][ebner-wang-2020]. Details on its use are available at [this wiki page][wikifetalbrainseg], 
+although `MONAIfbs` is the recommended option.
+
+
+#### Automatic segmentation
+Provided the dependencies for `MONAIfbs` are [installed][niftymic-install], create the automatic fetal brain masks of HASTE-like images:
 ```
 niftymic_segment_fetal_brains \
 --filenames \
@@ -255,6 +276,7 @@ seg/name-of-stack-2.nii.gz \
 seg/name-of-stack-N.nii.gz
 ```
 
+#### Automatic reconstruction
 Afterwards, four consecutive steps including
 1. bias field correction (`niftymic_correct_bias_field`),
 1. subject-space reconstruction (`niftymic_reconstruct_volume`),
@@ -280,7 +302,7 @@ Additional parameters such as the regularization parameter `alpha` can be specif
 *Note*: In case a suffix distinguishes image segmentation (`--filenames-masks`) from the associated image filenames (`--filenames`), the argument `--suffix-mask` needs to be provided for reconstructing the HR brain volume mask as part of the pipeline. E.g. if images `name-of-stack-i.nii.gz` are associated with the mask `name-of-stack-i_mask.nii.gz`, then the additional argument `--suffix-mask _mask` needs to be specified.
 
 ## Licensing and Copyright
-Copyright (c) 2020 Michael Ebner and contributors.
+Copyright (c) 2022 Michael Ebner and contributors.
 This framework is made available as free open-source software under the [BSD-3-Clause License][bsd]. Other licenses may apply for dependencies.
 
 
@@ -297,29 +319,34 @@ Selected publications associated with NiftyMIC are:
 * [[Ranzini2017]](https://mski2017.files.wordpress.com/2017/09/miccai-mski2017.pdf) Ranzini, M. B., Ebner, M., Cardoso, M. J., Fotiadou, A., Vercauteren, T., Henckel, J., Hart, A., Ourselin, S., and Modat, M. (2017). Joint Multimodal Segmentation of Clinical CT and MR from Hip Arthroplasty Patients. MICCAI Workshop on Computational Methods and Clinical Applications in Musculoskeletal Imaging (MSKI) 2017.
 * [[Ebner2017]](https://link.springer.com/chapter/10.1007%2F978-3-319-52280-7_1) Ebner, M., Chouhan, M., Patel, P. A., Atkinson, D., Amin, Z., Read, S., Punwani, S., Taylor, S., Vercauteren, T., Ourselin, S. (2017). Point-Spread-Function-Aware Slice-to-Volume Registration: Application to Upper Abdominal MRI Super-Resolution. In Zuluaga, M. A., Bhatia, K., Kainz, B., Moghari, M. H., and Pace, D. F., editors, Reconstruction, Segmentation, and Analysis of Medical Images. RAMBO 2016, volume 10129 of Lecture Notes in Computer Science, pages 3–13. Springer International Publishing.
 
-[ebner-wang-2020]: https://www.sciencedirect.com/science/article/pii/S1053811919309152
-[ebner-wang-2018]: http://link.springer.com/10.1007/978-3-030-00928-1_36
-[mebner]: https://www.linkedin.com/in/ebnermichael
-[weiss]: https://www.ucl.ac.uk/interventional-surgical-sciences
 [bsd]: https://opensource.org/licenses/BSD-3-Clause
-[giftsurg]: http://www.gift-surg.ac.uk
 [cmic]: http://cmic.cs.ucl.ac.uk
-[guarantors]: https://guarantorsofbrain.org/
-[ucl]: http://www.ucl.ac.uk
-[kcl]: https://www.kcl.ac.uk
-[sie]: https://www.kcl.ac.uk/bmeis/our-departments/surgical-interventional-engineering
-[uclh]: http://www.uclh.nhs.uk
+[dynUNet]: https://github.com/Project-MONAI/tutorials/blob/master/modules/dynunet_tutorial.ipynb
+[ebner-wang-2018]: http://link.springer.com/10.1007/978-3-030-00928-1_36
+[ebner-wang-2020]: https://www.sciencedirect.com/science/article/pii/S1053811919309152
 [epsrc]: http://www.epsrc.ac.uk
-[wellcometrust]: http://www.wellcome.ac.uk
-[mssociety]: https://www.mssociety.org.uk/
-[nihr]: http://www.nihr.ac.uk/research
-[itkniftymic]: https://github.com/gift-surg/ITK_NiftyMIC/wikis/home
-[niftymic-install]: https://github.com/gift-surg/NiftyMIC/wikis/niftymic-installation
-[niftymic-vm]: https://github.com/gift-surg/NiftyMIC/wiki/niftymic-virtualbox
-[niftymic-docker]: https://hub.docker.com/r/renbem/niftymic
-[nsol]: https://github.com/gift-surg/NSoL
-[simplereg]: https://github.com/gift-surg/SimpleReg
-[simplereg-dependencies]: https://github.com/gift-surg/SimpleReg/wikis/simplereg-dependencies
-[pysitk]: https://github.com/gift-surg/PySiTK
 [fetal_brain_seg]: https://github.com/gift-surg/fetal_brain_seg
 [gholipour_atlas]: https://www.nature.com/articles/s41598-017-00525-w
+[giftsurg]: http://www.gift-surg.ac.uk
+[guarantors]: https://guarantorsofbrain.org/
+[itkniftymic]: https://github.com/gift-surg/ITK_NiftyMIC/wikis/home
+[kcl]: https://www.kcl.ac.uk
+[martaranzini]: https://www.linkedin.com/in/marta-bianca-maria-ranzini
+[mebner]: https://www.linkedin.com/in/ebnermichael
+[monai]: https://monai.io/
+[monaifbs]: https://github.com/gift-surg/MONAIfbs
+[mssociety]: https://www.mssociety.org.uk/
+[niftymic-docker]: https://hub.docker.com/r/renbem/niftymic
+[niftymic-install]: https://github.com/gift-surg/NiftyMIC/wikis/niftymic-installation
+[niftymic-vm]: https://github.com/gift-surg/NiftyMIC/wiki/niftymic-virtualbox
+[nihr]: http://www.nihr.ac.uk/research
+[nsol]: https://github.com/gift-surg/NSoL
+[pysitk]: https://github.com/gift-surg/PySiTK
+[sie]: https://www.kcl.ac.uk/bmeis/our-departments/surgical-interventional-engineering
+[simplereg-dependencies]: https://github.com/gift-surg/SimpleReg/wikis/simplereg-dependencies
+[simplereg]: https://github.com/gift-surg/SimpleReg
+[ucl]: http://www.ucl.ac.uk
+[uclh]: http://www.uclh.nhs.uk
+[weiss]: https://www.ucl.ac.uk/interventional-surgical-sciences
+[wellcometrust]: http://www.wellcome.ac.uk
+[wikifetalbrainseg]: https://github.com/gift-surg/NiftyMIC/wiki/Legacy-Segmentation-Tool-(fetal_brain_seg)
