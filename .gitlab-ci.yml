@@ -178,44 +178,44 @@ param_study_huberl2:
   tags:
     - gift-adelie
 
-# rsfmri_estimate_motion:
-#   # only:
-#   #   - master
-#   script:
-#     - recon_type=HuberL2
-#     - >
-#       python niftymic/prototyping/rsfmri_estimate_motion.py
-#       --filename ${DATADIR}/rsfmri/bold.nii.gz
-#       --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
-#       --dir-output ${TMPDIR}/rsfmri 
-#       --two-step-cycles 1
-#       --iterations 2
-#       --sda
-#       --alpha 1
-#       --verbose 0 
-#       --prototyping
-#   tags:
-#     - gift-adelie
+rsfmri_estimate_motion:
+  # only:
+  #   - master
+  script:
+    - recon_type=HuberL2
+    - >
+      niftymic_rsfmri_estimate_motion
+      --filename ${DATADIR}/rsfmri/bold.nii.gz
+      --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
+      --dir-output ${TMPDIR}/rsfmri 
+      --two-step-cycles 1
+      --iterations 2
+      --sda
+      --alpha 1
+      --verbose 0 
+      --prototyping
+  tags:
+    - gift-adelie
 
-# rsfmri_reconstruct_volume_from_slices:
-#   # only:
-#   #   - master
-#   script:
-#     - recon_type=TK1L2
-#     - >
-#       python niftymic/prototyping/rsfmri_reconstruct_volume_from_slices.py
-#       --filename ${DATADIR}/rsfmri/bold.nii.gz
-#       --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
-#       --output ${TMPDIR}/rsfmri/foo.nii.gz 
-#       --alpha 0.05
-#       --iter-max 2 
-#       --verbose 0 
-#       --reconstruction-type ${recon_type} 
-#       --reconstruction-spacing 2 2 5
-#       --use-masks-srr 1
-#       --prototyping
-#   tags:
-#     - gift-adelie
+rsfmri_reconstruct_volume_from_slices:
+  # only:
+  #   - master
+  script:
+    - recon_type=TK1L2
+    - >
+      niftymic_rsfmri_reconstruct_volume_from_slices
+      --filename ${DATADIR}/rsfmri/bold.nii.gz
+      --filename-mask ${DATADIR}/rsfmri/bold_4Dmask.nii.gz
+      --output ${TMPDIR}/rsfmri/foo.nii.gz 
+      --alpha 0.05
+      --iter-max 2 
+      --verbose 0 
+      --reconstruction-type ${recon_type} 
+      --reconstruction-spacing 2 2 5
+      --use-masks-srr 1
+      --prototyping
+  tags:
+    - gift-adelie
 
 ##
 # Results can (slightly) change depending on the downloaded library version;

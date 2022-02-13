@@ -1,8 +1,10 @@
 build/
 html/
-latex/
 data/tests/
 dist/
+latex/
+monaifbs/models/
+prototyping/
 *.nii
 *.nii.gz
 *.tar.gz
@@ -16,4 +18,3 @@ dist/
 /.project
 .DS_Store
 **/.DS_Store
-monaifbs/models/
